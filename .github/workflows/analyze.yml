@@ -1,0 +1,52 @@
+name: Run Sonar analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        type: string
+        description: Branch to analyze
+
+jobs:
+  code_analysis:
+    runs-on: [k8s]
+
+    defaults:
+      run:
+        working-directory: cpp
+
+    env:
+      BUILD_WRAPPER_OUT_DIR: ".build_wrapper_out"
+      SONAR_SERVER_URL: "https://sonarcloud.io"
+      SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
+      SONAR_ORGANIZATION: "uweseimet-org"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+ 
+      - name: Run build-wrapper
+        run: |
+          build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR \
+          make -j2 coverage DEBUG=1
+
+      - name: Generate coverage data
+        run: gcovr --sonarqube > coverage.xml
+
+      - name: Run sonar-scanner
+        run: |
+          sonar-scanner \
+            --define sonar.host.url=$SONAR_SERVER_URL \
+            --define sonar.projectKey=$SONAR_PROJECT_KEY \
+            --define sonar.organization=$SONAR_ORGANIZATION \
+            --define sonar.scm.provider=git \
+            --define sonar.sourceEncoding=UTF-8 \
+            --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
+            --define sonar.coverageReportPaths=coverage.xml \
+            --define sonar.branch.name=${{ inputs.branch }} \
+            --define sonar.test.inclusions=test/*.cpp

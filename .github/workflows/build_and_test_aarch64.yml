@@ -1,0 +1,56 @@
+name: Build and test on aarch64
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        required: false
+        type: boolean
+        description: Debug build
+        default: true
+      board:
+        required: false
+        type: choice
+        description: Board type
+        options:
+        - FULLSPEC
+        - STANDARD
+        default: FULLSPEC
+      branch:
+        required: true
+        type: string
+        description: Branch to build
+
+  workflow_call:
+    inputs:
+      debug:
+        required: false
+        type: boolean
+        default: true
+      board:
+        required: false
+        type: string
+        default: FULLSPEC
+      branch:
+        required: false
+        type: string
+
+jobs:
+  build:
+    runs-on: [ora, ARM64]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Compile
+        run: |
+          debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
+          make -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
+
+      - name: Run unit tests
+        run: |
+          debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
+          make -C cpp test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
+

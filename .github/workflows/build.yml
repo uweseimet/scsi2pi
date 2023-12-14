@@ -1,0 +1,28 @@
+name: Build and test on code change
+
+on:
+  workflow_call:
+  push:
+    paths:
+      - 'cpp/**'
+      - 'proto/**'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build_and_test_aarch64.yml'
+  pull_request:
+    paths:
+      - 'cpp/**'
+      - 'proto/**'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build_and_test_aarch64.yml'
+    types:
+      - assigned
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - 'develop'
+      - 'main'
+
+jobs:
+  fullspec:
+    uses: ./.github/workflows/build_and_test_aarch64.yml

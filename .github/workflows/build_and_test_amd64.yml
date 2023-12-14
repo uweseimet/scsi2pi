@@ -1,0 +1,60 @@
+name: Build and test on amd64
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        required: true
+        type: boolean
+        description: Debug build
+        default: true
+      board:
+        required: true
+        type: choice
+        description: Board type
+        options:
+        - FULLSPEC
+        - STANDARD
+        default: FULLSPEC
+      branch:
+        required: true
+        type: string
+        description: Branch to build
+
+  workflow_call:
+    inputs:
+      debug:
+        required: true
+        type: boolean
+        default: true
+      board:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: [ora, X64]
+
+    env:
+      PACKAGES: "libspdlog-dev libpcap-dev libgmock-dev protobuf-compiler"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Install additional packages
+        run: sudo apt install --yes $PACKAGES
+
+      - name: Compile
+        run: |
+          debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
+          make -j $(nproc) BOARD=${{ inputs.board }} $debug
+
+      - name: Run unit tests
+        run: |
+          debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
+          make -C cpp test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++

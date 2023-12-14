@@ -1,0 +1,71 @@
+.TH s2odump 1
+.SH NAME
+s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
+.SH SYNOPSIS
+.B s2pdump
+\fB\-t\fR \fIID[:LUN]\fR
+[\fB\-i\fR \fIBID\fR]
+\fB\-f\fR \fIFILE\fR
+[\fB\-s\fR \fIBUFFER_SIZE\fR]
+[\fB\-r\fR]
+[\fB\-v\fR]
+[\fB\-p\fR]
+[\fB\-I\fR] ID[:LUN]
+[\fB\-S\fR]
+.SH DESCRIPTION
+.B s2pdump
+has two modes of operation: dump and restore. These can be used with physical storage media, including hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
+
+When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. If enabled, it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
+
+In restore mode s2pdump copies the data from a local binary image to a remote physical drive. The remote drive must be writable. 
+
+.SH NOTES
+
+.B s2pdump
+requires either a direct connection (one without transceivers) or a FULLSPEC PiSCSI/RaSCSI board.
+
+If the generated drive image is intended to be used with SCSI2Pi, the drive image should be moved by the user to ~/images (or the location specified to the s2p service).
+
+.SH OPTIONS
+.TP
+.BR \-t\fI " "\fIID[:LUN]
+SCSI ID and optional LUN of the remote SCSI device. The remote SCSI device will be functioning as the "Target" device.
+.TP
+.BR \-i\fI " "\fIBID
+SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the "Initiator" device.
+.TP
+.BR \-f\fI " "\fIFILE
+Path to the dump file.
+.TP
+.BR \-s\fI " "\fIBUFFER_SIZE
+The transfer buffer size in bytes. Default is 1 MiB. This is specified in bytes with a minimum value of 65536 (64 KiB).
+.TP
+.BR \-r\fI
+Run in restore mode. Default is dump mode.
+.TP
+.BR \-v\fI
+Enable verbose logging.
+.TP
+.BR \-p\fI
+Generate a .properties file that is compatible with the SCSI2Pi web interface. The output filename will match the image filename with ".properties" appended. The generated file should be moved to ~/.config/s2p.
+.TP
+.BR \-I\fI " "\fIID[:LUN]
+Display INQUIRY data of ID[:LUN].
+.TP
+.BR \-S\fI
+Scan SCSI bus for devices.
+
+.SH EXAMPLES
+Dump Mode: [SCSI Drive] ---> [SCSI2Pi host]
+Launch s2pdump to dump all data from SCSI ID 3 with block size 64 KiB, store it on the local filesystem as a drive image named outimage.hds, and generate the outimage.hds.properties file with the drive's INQUIRY information:
+   s2pdump -t 3 -f outimage.hds -s 65536 -p
+
+Restore Mode: [SCSI2Pi host] ---> [SCSI Drive]
+Launch s2pdump to restore/upload a drive image from the local file system to SCSI ID 0 with block size 1MiB:
+   s2pdump -r -t 0 -f outimage.hda -s 1048576
+
+.SH SEE ALSO
+s2pctl(1), s2p(1), s2pexec(1)
+ 
+Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.
