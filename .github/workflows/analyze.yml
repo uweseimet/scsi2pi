@@ -49,5 +49,4 @@ jobs:
             --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
             --define sonar.coverageReportPaths=coverage.xml \
             --define sonar.branch.name=${{ inputs.branch }} \
-            --define sonar.exclusions=generated/** \
-            --define sonar.test.inclusions=test/*.cpp
+            --define sonar.test.inclusions=test/**
