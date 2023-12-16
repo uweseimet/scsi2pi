@@ -267,8 +267,13 @@ $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
 $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE): | $(LIBDIR)
 	$(AR) rcs $@ $^
 
+ifeq ($(DATABASE), 1)
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(SRC_GENERATED)
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -MJ $@.json
+else
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(SRC_GENERATED)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+endif
 
 $(OBJ_GENERATED): | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
