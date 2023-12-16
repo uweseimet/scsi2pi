@@ -36,18 +36,17 @@ jobs:
           make -j2 coverage DEBUG=1
 
       - name: Generate coverage data
-        run: gcovr --sonarqube > coverage.xml
+        run: gcov --preserve-paths $(find -name '*.gcno')
 
       - name: Run sonar-scanner
         run: |
           sonar-scanner \
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
-            --define sonar.projectVersion=${{ inputs.branch }} \
             --define sonar.organization=$SONAR_ORGANIZATION \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
             --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
-            --define sonar.coverageReportPaths=coverage.xml \
+            --define sonar.cfamily.gcov.reportsPath=. \
             --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.test.inclusions=test/**
