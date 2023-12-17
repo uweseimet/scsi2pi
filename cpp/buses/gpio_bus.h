@@ -133,9 +133,6 @@ class GpioBus : public Bus
 
 public:
 
-    GpioBus() = default;
-    ~GpioBus() override = default;
-
     bool Init(mode_e mode = mode_e::TARGET) override;
 
     int CommandHandShake(vector<uint8_t>&) override;

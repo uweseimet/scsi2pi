@@ -839,3 +839,10 @@ TEST(DiskTest, BlockCount)
     disk.SetBlockCount(0x1234567887654321);
     EXPECT_EQ(0x1234567887654321, disk.GetBlockCount());
 }
+
+TEST(DiskTest, GetStatistics)
+{
+    MockDisk disk;
+
+    EXPECT_EQ(2, disk.GetStatistics().size());
+}

@@ -283,8 +283,7 @@ $(SRC_GENERATED): $(SRC_PROTOC) | $(GENERATED_DIR)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:
-##   all             Rebuild all of the executable files and re-generate 
-##                   the text versions of the manpages
+##   all             Rebuild all of the executable files (default target)
 ##   test            Build and run unit tests
 ##   in_process_test Build the in-process test
 ##   coverage        Build and run unit tests and create coverage files

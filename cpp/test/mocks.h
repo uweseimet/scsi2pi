@@ -12,6 +12,7 @@
 #include "shared_command/command_executor.h"
 #include "buses/in_process_bus.h"
 #include "controllers/scsi_controller.h"
+#include "devices/sasi_hd.h"
 #include "devices/scsi_hd.h"
 #include "devices/scsi_cd.h"
 #include "devices/optical_memory.h"
@@ -166,7 +167,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(HostServicesTest, ModeSense6);
     FRIEND_TEST(HostServicesTest, ModeSense10);
     FRIEND_TEST(HostServicesTest, SetUpModePages);
-    FRIEND_TEST(ScsiPrinterTest, Print);
+    FRIEND_TEST(PrinterTest, Print);
 
 public:
 
@@ -380,6 +381,21 @@ public:
     {
     }
     ~MockDisk() override = default;
+};
+
+class MockSasiHd : public SasiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+{
+    FRIEND_TEST(SasiHdTest, FinalizeSetup);
+
+public:
+
+    MockSasiHd(int lun) : SasiHd(lun)
+    {
+    }
+    explicit MockSasiHd(const unordered_set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
+    {
+    }
+    ~MockSasiHd() override = default;
 };
 
 class MockScsiHd : public ScsiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests

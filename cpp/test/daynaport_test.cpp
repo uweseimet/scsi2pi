@@ -207,6 +207,7 @@ TEST(ScsiDaynaportTest, EnableInterface)
     auto d = daynaport;
 
     // Enable
+    controller->SetCmdByte(5, 0x80);
     EXPECT_THAT([&]
         {
             d->Dispatch(scsi_command::cmd_enable_interface)
@@ -232,4 +233,11 @@ TEST(ScsiDaynaportTest, GetSendDelay)
     daynaport.Init( { });
 
     EXPECT_EQ(6, daynaport.GetSendDelay());
+}
+
+TEST(ScsiDaynaportTest, GetStatistics)
+{
+    DaynaPort daynaport(0);
+
+    EXPECT_EQ(2, daynaport.GetStatistics().size());
 }

@@ -8,7 +8,6 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "devices/scsi_hd.h"
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {

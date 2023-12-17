@@ -736,7 +736,6 @@ void RpiBus::SetSignal(int pin, bool ast)
 #endif
 }
 
-// TODO This could be faster. Use a function pointer based on the Pi type, which you determine only once
 void RpiBus::DisableIRQ()
 {
 #ifndef NO_IRQ_DISABLE

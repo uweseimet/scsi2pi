@@ -22,7 +22,8 @@ SCSI2Pi focuses on vintage computers like Macs, Ataris, Amigas, workstations and
 
 # SCSI2Pi website
 
-The <a href="https://www.scsi2pi.net" target="blank">SCSI2Pi website</a> addresses both users and developers, whereas the information on GitHub is rather developer-centric. The website also provides <a href="https://www.scsi2pi.net/en/downloads.html" target="blank">daily builds and release builds</a> as Debian packages. These packages contain the SCSI2Pi binaries, i.e. no time-consuming compilation is required. Installing SCSI2Pi on your Pi is just a matter of seconds.
+The <a href="https://www.scsi2pi.net" target="blank">SCSI2Pi website</a> addresses both users and developers, whereas the information on GitHub is rather developer-centric. The website also provides <a href="https://www.scsi2pi.net/en/downloads.html" target="blank">regular development builds and release builds</a> as Debian packages. These packages contain the SCSI2Pi binaries, i.e. no time-consuming compilation is required. Installing SCSI2Pi on your Pi is just a matter of seconds.<br />
+The website also provides information on the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android.
 
 # Contributing to SCSI2Pi
 
