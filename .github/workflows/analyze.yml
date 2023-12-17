@@ -1,4 +1,4 @@
-name: Run Sonar analysis
+name: Run code analysis
 
 on:
   workflow_dispatch:
@@ -46,6 +46,9 @@ jobs:
             --define sonar.organization=$SONAR_ORGANIZATION \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
+            --define sonar.c.file.suffixes= \
+            --define sonar.cpp.file.suffixes=.cpp,.h \
+            --define sonar.sonarLanguages=c++ \
             --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
             --define sonar.coverageReportPaths=coverage.xml \
             --define sonar.branch.name=${{ inputs.branch }} \
