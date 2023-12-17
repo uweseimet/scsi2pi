@@ -18,14 +18,14 @@ void ScsiController::Reset()
 
     identified_lun = -1;
 
-    scsi = { };
+    atnmsg = false;
 }
 
 void ScsiController::BusFree()
 {
     if (!IsBusFree()) {
         // Initialize ATN message reception status
-        scsi.atnmsg = false;
+        atnmsg = false;
 
         identified_lun = -1;
     }
@@ -38,9 +38,9 @@ void ScsiController::MsgOut()
     if (!IsMsgOut()) {
         // Process the IDENTIFY message
         if (IsSelection()) {
-            scsi.atnmsg = true;
-            scsi.msc = 0;
-            scsi.msb = { };
+            atnmsg = true;
+            msc = 0;
+            msb = { };
         }
 
         LogTrace("Message Out phase");
@@ -66,10 +66,10 @@ bool ScsiController::XferMsg(int msg)
     assert(IsMsgOut());
 
     // Save message out data
-    if (scsi.atnmsg) {
-        scsi.msb[scsi.msc] = (uint8_t)msg;
-        scsi.msc++;
-        scsi.msc %= 256;
+    if (atnmsg) {
+        msb[msc] = (uint8_t)msg;
+        msc++;
+        msc %= 256;
     }
 
     return true;
@@ -78,8 +78,8 @@ bool ScsiController::XferMsg(int msg)
 void ScsiController::ParseMessage()
 {
     int i = 0;
-    while (i < scsi.msc) {
-        const uint8_t message_type = scsi.msb[i];
+    while (i < msc) {
+        const uint8_t message_type = msb[i];
 
         if (message_type == 0x06) {
             LogTrace("Received ABORT message");
@@ -89,7 +89,6 @@ void ScsiController::ParseMessage()
 
         if (message_type == 0x0C) {
             LogTrace("Received BUS DEVICE RESET message");
-            scsi.syncoffset = 0;
             if (auto device = GetDeviceForLun(identified_lun); device) {
                 device->DiscardReservation();
             }
@@ -105,34 +104,10 @@ void ScsiController::ParseMessage()
         if (message_type == 0x01) {
             LogTrace("Received EXTENDED MESSAGE");
 
-            // Check only when synchronous transfer is possible
-            // TODO Is this needed?
-            if (!scsi.syncenable || scsi.msb[i + 2] != 0x01) {
-                SetLength(1);
-                SetBlocks(1);
-                GetBuffer()[0] = 0x07;
-                MsgIn();
-                return;
-            }
-
-            scsi.syncperiod = scsi.msb[i + 3];
-            if (scsi.syncperiod > MAX_SYNC_PERIOD) {
-                scsi.syncperiod = MAX_SYNC_PERIOD;
-            }
-
-            scsi.syncoffset = scsi.msb[i + 4];
-            if (scsi.syncoffset > MAX_SYNC_OFFSET) {
-                scsi.syncoffset = MAX_SYNC_OFFSET;
-            }
-
-            // STDR response message generation
-            SetLength(5);
+            SetLength(1);
             SetBlocks(1);
-            GetBuffer()[0] = 0x01;
-            GetBuffer()[1] = 0x03;
-            GetBuffer()[2] = 0x01;
-            GetBuffer()[3] = scsi.syncperiod;
-            GetBuffer()[4] = scsi.syncoffset;
+            // MESSSAGE REJECT
+            GetBuffer()[0] = 0x07;
             MsgIn();
             return;
         }
@@ -153,12 +128,12 @@ void ScsiController::ProcessMessage()
         return;
     }
 
-    if (scsi.atnmsg) {
+    if (atnmsg) {
         ParseMessage();
     }
 
     // Initialize ATN message reception status
-    scsi.atnmsg = false;
+    atnmsg = false;
 
     Command();
 }
@@ -166,8 +141,8 @@ void ScsiController::ProcessMessage()
 void ScsiController::ProcessExtendedMessage()
 {
     // Completed sending response to extended message of IDENTIFY message
-    if (scsi.atnmsg) {
-        scsi.atnmsg = false;
+    if (atnmsg) {
+        atnmsg = false;
 
         Command();
     } else {
