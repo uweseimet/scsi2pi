@@ -132,6 +132,8 @@ unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DeviceFact
 #ifdef BUILD_SCCD
     mapping["is1"] = SCCD;
     mapping["iso"] = SCCD;
+    mapping["cdr"] = SCCD;
+    mapping["toast"] = SCCD;
 #endif
 
     return mapping;
