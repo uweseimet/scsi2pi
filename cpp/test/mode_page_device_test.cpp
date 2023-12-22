@@ -107,11 +107,11 @@ TEST(ModePageDeviceTest, ModeSelect)
 
     EXPECT_THAT([&] {device.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, 0);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Unexpected MODE SELECT(6) default implementation";
     EXPECT_THAT([&] {device.ModeSelect(scsi_command::cmd_mode_select10, cmd, buf, 0);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Unexpected MODE SELECT(10) default implementation";
 }
 

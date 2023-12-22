@@ -123,8 +123,10 @@ void ModePageDevice::ModeSense10() const
 
 void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int) const
 {
-    // There is no default implementation of MODE SELECT
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    // There is no default implementation of MODE SELECT.
+    // An ASC of invalid_field_in_cdb might be more compatible with some computers
+    // than invalid_command_operation_code.
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
 void ModePageDevice::ModeSelect6() const
