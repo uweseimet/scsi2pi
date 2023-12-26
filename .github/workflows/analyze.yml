@@ -23,7 +23,7 @@ jobs:
       SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      APT_PACKAGES: llvm-15 clang-15 protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
+      APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
     steps:
       - uses: actions/checkout@v4
