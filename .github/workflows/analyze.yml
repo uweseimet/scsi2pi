@@ -23,7 +23,7 @@ jobs:
       SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      APT_PACKAGES: clang llvm protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
+      APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: sudo apt install -y ${{ env.APT_PACKAGES }} && sudo apt remove -y gcc g++
+        run: sudo apt install -y ${{ env.APT_PACKAGES }} && rm -rf /usr/lib/gcc
 
       - name: Compile with coverage data
         run: |
