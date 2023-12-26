@@ -48,6 +48,7 @@ jobs:
       - name: Compile with coverage data
         run: |
           $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64
+          --out-dir $BUILD_WRAPPER_OUT_DIR
           make -j $(nproc) coverage
 
       - name: Run gcov
