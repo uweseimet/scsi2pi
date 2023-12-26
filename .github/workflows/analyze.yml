@@ -61,6 +61,7 @@ jobs:
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
+            --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
             --define sonar.cfamily.gcov.reportsPath=. \
