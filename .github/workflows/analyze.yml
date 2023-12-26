@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: sudo apt install -y ${{ env.APT_PACKAGES }} && rm -rf /usr/lib/gcc
+        run: sudo apt install -y ${{ env.APT_PACKAGES }} && sudo rm -rf /usr/lib/gcc
 
       - name: Compile with coverage data
         run: |
