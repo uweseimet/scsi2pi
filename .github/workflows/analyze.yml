@@ -63,10 +63,8 @@ jobs:
             --define sonar.organization=$SONAR_ORGANIZATION \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
-            --define sonar.cfamily.compile-commands=compile_commands.json \
-            --define sonar.cfamily.llvm-cov.reportPath=coverage.txt \
+            --define sonar.cfamily.gcov.reportsPath=. \
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.sonarLanguages=c++ \
-            --define sonar.branch.name=`git rev-parse --abbrev-ref HEAD` \
             --define sonar.test.inclusions=test/**
