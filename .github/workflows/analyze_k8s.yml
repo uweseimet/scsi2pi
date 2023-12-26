@@ -1,4 +1,4 @@
-name: Run code analysis
+name: Run code analysis (k8s)
 
 on:
   workflow_dispatch:
@@ -10,40 +10,33 @@ on:
 
 jobs:
   code_analysis:
-    runs-on: ubuntu-22.04
+    runs-on: [k8s]
 
     defaults:
       run:
         working-directory: cpp
 
     env:
+      BUILD_WRAPPER_OUT_DIR: ".build_wrapper_out"
       SONAR_SERVER_URL: "https://sonarcloud.io"
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
-      SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      APT_PACKAGES: llvm clang protobuf-compiler libspdlog-dev libpcap-dev \
-      libgmock-dev
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
-
-      - name: Install dependencies
-        run: sudo apt-get install ${{ env.APT_PACKAGES }}
-
-      - name: Compile with coverage data
+ 
+      - name: Run build-wrapper
         run: |
-          make -j $(nproc) EXTRA_FLAGS="-fprofile-instr-generate -fcoverage-mapping" CXX=clang++ DEBUG=1 DATABASE=1 test &&
-          sed -e '1s/^/[\n/' -e '$s/,$/\n]/' obj/*.o.json > compile_commands.json
+          build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR \
+          make -j2 coverage DEBUG=1
 
-      - name: Convert coverage data
-        run: |
-          llvm-profdata merge default.profraw > coverage.dat &&
-          llvm-cov show --show-branches=count --instr-profile coverage.dat bin/s2p_test > coverage.txt
+      - name: Generate coverage data
+        run: gcovr --sonarqube > coverage.xml
 
       - name: Run sonar-scanner
         run: |
@@ -53,10 +46,10 @@ jobs:
             --define sonar.organization=$SONAR_ORGANIZATION \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
-            --define sonar.cfamily.compile-commands=compile_commands.json \
-            --define sonar.cfamily.llvm-cov.reportPath=coverage.txt \
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.sonarLanguages=c++ \
-            --define sonar.branch.name=`git rev-parse --abbrev-ref HEAD` \
+            --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
+            --define sonar.coverageReportPaths=coverage.xml \
+            --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.test.inclusions=test/**
