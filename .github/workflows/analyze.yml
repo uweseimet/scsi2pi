@@ -50,7 +50,7 @@ jobs:
           mkdir -p $BUILD_WRAPPER_OUT_DIR
           $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 \
           --out-dir $BUILD_WRAPPER_OUT_DIR \
-          make -j $(nproc) -DDEBUG coverage
+          make -j $(nproc) DEBUG=1 coverage
 
       - name: Run gcov
         run: gcov --preserve-paths $(find -name '*.gcno')
