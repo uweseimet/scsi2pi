@@ -43,7 +43,6 @@ jobs:
           unzip -o /tmp/wrapper.zip -d $HOME/.sonar/
           curl -sSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
           unzip -o /tmp/scanner.zip -d $HOME/.sonar/
-          curl -sSLo /tmp/build-wrapper-linux-x86.zip $SONAR_SERVER_URL
 
       - name: Compile with coverage data
         run: |
