@@ -68,4 +68,5 @@ jobs:
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.sonarLanguages=c++ \
+            --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.test.inclusions=test/**
