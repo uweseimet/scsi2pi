@@ -24,7 +24,7 @@ public:
 
 private:
 
-    bool XferMsg(int) override;
+    void XferMsg(int) override;
 
     void ParseMessage() override;
     void ProcessMessage() override;

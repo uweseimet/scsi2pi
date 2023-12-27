@@ -87,7 +87,7 @@
 #include "shared/shared_exceptions.h"
 #include "shared_protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 #include "host_services.h"
 #include "generated/s2p_interface.pb.h"
 
@@ -96,7 +96,7 @@ using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_interface;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 using namespace protobuf_util;
 
 HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun)

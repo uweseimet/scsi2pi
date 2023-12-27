@@ -45,11 +45,15 @@ TEST(ScsiHdTest, SCRM_DeviceDefaults)
 
 void ScsiHdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(5, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(9, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12, pages[1].size());
+    EXPECT_EQ(16, pages[2].size());
     EXPECT_EQ(24, pages[3].size());
     EXPECT_EQ(24, pages[4].size());
+    EXPECT_EQ(12, pages[7].size());
     EXPECT_EQ(12, pages[8].size());
+    EXPECT_EQ(8, pages[10].size());
+    EXPECT_EQ(24, pages[12].size());
     EXPECT_EQ(30, pages[48].size());
 }
 
@@ -138,23 +142,28 @@ TEST(ScsiHdTest, ModeSelect)
 {
     MockScsiHd hd( { 512 });
     vector<int> cmd(10);
-    vector<uint8_t> buf(255);
+    vector<uint8_t> buf(30);
 
     hd.SetSectorSizeInBytes(512);
 
     // PF
     cmd[1] = 0x10;
-    // Page 3 (Device Format Page)
+    // Page 3 (Format device page)
     buf[4] = 0x03;
+    // Page length
+    buf[5] = 0x16;
     // 512 bytes per sector
     buf[16] = 0x02;
-    EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, 255))<< "MODE SELECT(6) is supported";
+    EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, buf.size()))<< "MODE SELECT(6) is supported";
     buf[4] = 0;
+    buf[5] = 0;
     buf[16] = 0;
 
-    // Page 3 (Device Format Page)
+    // Page 3 (Format device page)
     buf[8] = 0x03;
+    // Page length
+    buf[9] = 0x16;
     // 512 bytes per sector
     buf[20] = 0x02;
-    EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select10, cmd, buf, 255))<< "MODE SELECT(10) is supported";
+    EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select10, cmd, buf, buf.size()))<< "MODE SELECT(10) is supported";
 }

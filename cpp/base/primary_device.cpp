@@ -7,12 +7,12 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "scsi_command_util.h"
+#include "memory_util.h"
 #include "primary_device.h"
 
 using namespace std;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 bool PrimaryDevice::Init(const param_map &params)
 {

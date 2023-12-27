@@ -11,10 +11,10 @@
 #include "shared/shared_exceptions.h"
 #include "base/primary_device.h"
 #include "base/device_factory.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePrimaryDevice(int id = 0)
 {

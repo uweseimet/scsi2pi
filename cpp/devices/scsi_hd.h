@@ -28,7 +28,6 @@ public:
 
     void Open() override;
 
-    // Commands
     vector<uint8_t> InquiryInternal() const override;
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
 

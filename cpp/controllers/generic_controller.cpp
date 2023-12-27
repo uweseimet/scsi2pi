@@ -429,11 +429,8 @@ void GenericController::Receive()
 
     case phase_t::msgout:
         SetMessage(GetBuffer()[0]);
-        if (!XferMsg(GetMessage())) {
-            // Immediately free the bus if message output fails
-            BusFree();
-            return;
-        }
+
+        XferMsg(GetMessage());
 
         // Clear message data in preparation for Message In
         SetMessage(0x00);
@@ -496,11 +493,8 @@ void GenericController::ReceiveBytes()
 
     case phase_t::msgout:
         SetMessage(GetBuffer()[0]);
-        if (!XferMsg(GetMessage())) {
-            // Immediately free the bus if message output fails
-            BusFree();
-            return;
-        }
+
+        XferMsg(GetMessage());
 
         // Clear message data in preparation for Message In
         SetMessage(0x00);

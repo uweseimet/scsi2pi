@@ -9,10 +9,10 @@
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "devices/disk.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
 {

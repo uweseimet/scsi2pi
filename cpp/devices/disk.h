@@ -147,10 +147,14 @@ protected:
     void Resize_cache(const string&, bool);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddErrorPage(map<int, vector<byte>>&, bool) const;
+    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
+    void AddDisconnectReconnectPage(map<int, vector<byte>>&, bool) const;
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
     virtual void AddFormatPage(map<int, vector<byte>>&, bool) const;
     virtual void AddDrivePage(map<int, vector<byte>>&, bool) const;
     void AddCachePage(map<int, vector<byte>>&, bool) const;
+    void AddControlModePage(map<int, vector<byte>>&, bool) const;
+    void AddNotchPage(map<int, vector<byte>>&, bool) const;
 
     unordered_set<uint32_t> GetSectorSizes() const;
     void SetSectorSizeInBytes(uint32_t);

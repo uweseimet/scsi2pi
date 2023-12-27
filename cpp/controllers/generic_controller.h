@@ -57,7 +57,7 @@ protected:
 private:
 
     void Send();
-    virtual bool XferMsg(int) = 0;
+    virtual void XferMsg(int) = 0;
     bool XferOutBlockOriented(bool);
     void ReceiveBytes();
 

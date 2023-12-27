@@ -21,11 +21,11 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 #include "daynaport.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
 {
