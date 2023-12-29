@@ -438,6 +438,8 @@ void DaynaPort::EnableInterface()
             LogWarn("Unable to disable the DaynaPort Interface: " + error);
             throw scsi_exception(sense_key::aborted_command);
         }
+
+        LogDebug("The DaynaPort interface has been disabled");
     }
 
     EnterStatusPhase();
