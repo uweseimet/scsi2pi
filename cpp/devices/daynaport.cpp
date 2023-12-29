@@ -23,6 +23,7 @@
 #include "shared/shared_exceptions.h"
 #include "shared/network_util.h"
 #include "base/memory_util.h"
+#include "buses/bus.h"
 #include "daynaport.h"
 
 using namespace scsi_defs;
@@ -99,7 +100,7 @@ vector<uint8_t> DaynaPort::InquiryInternal()
     vector<uint8_t> buf = HandleInquiry(device_type::processor, scsi_level::scsi_2, false);
 
     if (GetController()->GetCmdByte(4) == 37) {
-        is_macos = true;
+        macos_seen = true;
 
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
         // add a vendor-specific byte in order to satisfy this driver.
@@ -415,22 +416,30 @@ void DaynaPort::EnableInterface()
             throw scsi_exception(sense_key::aborted_command);
         }
 
-        if (is_macos) {
-            // The MacOS Daynaport driver needs to have a delay after the size/flags field of the read response
-            SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
-        }
-
         tap.Flush();
 
-        LogDebug("The DaynaPort interface has been enabled");
+        // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
+        // The NetBSD drivers for the Mac fail when there is a delay.
+        // The Atari drivers (STiNG and MiNT) work with and without a delay.
+        // In order to work with all drivers the delay depends on the last INQUIRY received. A peculiarity of
+        // the MacOS DaynaPort helps to identify which driver is being used and which delay is the working one.
+
+        if (macos_seen) {
+            macos_seen = false;
+            SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
+            LogDebug("The DaynaPort interface has been enabled for MacOS");
+        }
+        else {
+            SetSendDelay(Bus::SEND_NO_DELAY);
+            LogDebug("The DaynaPort interface has been enabled");
+        }
+
     }
     else {
         if (const string error = tap.IpLink(false); !error.empty()) {
             LogWarn("Unable to disable the DaynaPort Interface: " + error);
             throw scsi_exception(sense_key::aborted_command);
         }
-
-        LogDebug("The DaynaPort interface has been disabled");
     }
 
     EnterStatusPhase();

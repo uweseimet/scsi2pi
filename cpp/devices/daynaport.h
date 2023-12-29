@@ -130,5 +130,5 @@ private:
 
     bool tap_enabled = false;
 
-    bool is_macos = false;
+    bool macos_seen = false;
 };
