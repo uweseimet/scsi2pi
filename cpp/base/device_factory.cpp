@@ -112,7 +112,7 @@ unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DeviceFact
 {
     unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> mapping;
 
-#if defined BUILD_SCHD | defined BUILD_SCRM
+#if defined BUILD_SCHD || defined BUILD_SCRM
     mapping["hd1"] = SCHD;
     mapping["hds"] = SCHD;
     mapping["hda"] = SCHD;
