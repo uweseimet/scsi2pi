@@ -42,7 +42,6 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
         }
     }
 
-    shared_ptr<PrimaryDevice> device;
     switch (type) {
 
 #if defined BUILD_SCHD || defined BUILD_SCRM
