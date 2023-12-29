@@ -74,7 +74,7 @@ protected:
     void AddCommand(scsi_command, const operation&);
 
     vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
-    virtual vector<uint8_t> InquiryInternal() const = 0;
+    virtual vector<uint8_t> InquiryInternal() = 0;
     void CheckReady();
 
     void Inquiry() override;

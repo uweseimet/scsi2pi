@@ -43,7 +43,7 @@ TEST(ScsiDaynaportTest, GetDefaultParams)
 
 TEST(ScsiDaynaportTest, Inquiry)
 {
-    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x20, false);
+    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
 TEST(ScsiDaynaportTest, TestUnitReady)
@@ -225,14 +225,6 @@ TEST(ScsiDaynaportTest, EnableInterface)
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
             Property(&scsi_exception::get_asc, asc::no_additional_sense_information))));
-}
-
-TEST(ScsiDaynaportTest, GetSendDelay)
-{
-    DaynaPort daynaport(0);
-    daynaport.Init( { });
-
-    EXPECT_EQ(6, daynaport.GetSendDelay());
 }
 
 TEST(ScsiDaynaportTest, GetStatistics)

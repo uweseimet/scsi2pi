@@ -56,7 +56,7 @@ void OpticalMemory::Open()
     }
 }
 
-vector<uint8_t> OpticalMemory::InquiryInternal() const
+vector<uint8_t> OpticalMemory::InquiryInternal()
 {
     return HandleInquiry(device_type::optical_memory, scsi_level::scsi_2, true);
 }

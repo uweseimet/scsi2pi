@@ -44,7 +44,7 @@ public:
 
     param_map GetDefaultParams() const override;
 
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
 
     bool WriteByteSequence(span<const uint8_t>) override;
 

@@ -136,7 +136,7 @@ void HostServices::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> HostServices::InquiryInternal() const
+vector<uint8_t> HostServices::InquiryInternal()
 {
     return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
 }

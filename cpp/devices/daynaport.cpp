@@ -37,9 +37,6 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
     SetRevision("1.4a");
 
     SupportsParams(true);
-
-    // The MacOS Daynaport driver needs to have a delay after the size/flags field of the read response
-    SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
 }
 
 bool DaynaPort::Init(const param_map &params)
@@ -97,14 +94,18 @@ void DaynaPort::CleanUp()
     tap.CleanUp();
 }
 
-vector<uint8_t> DaynaPort::InquiryInternal() const
+vector<uint8_t> DaynaPort::InquiryInternal()
 {
     vector<uint8_t> buf = HandleInquiry(device_type::processor, scsi_level::scsi_2, false);
 
-    // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
-    // add a vendor-specific byte in order to satisfy this driver.
-    buf[4]++;
-    buf.push_back(0);
+    if (GetController()->GetCmdByte(4) == 37) {
+        is_macos = true;
+
+        // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
+        // add a vendor-specific byte in order to satisfy this driver.
+        buf[4]++;
+        buf.push_back(0);
+    }
 
     return buf;
 }
@@ -406,12 +407,17 @@ void DaynaPort::SetMcastAddr() const
 //            seconds
 //
 //---------------------------------------------------------------------------
-void DaynaPort::EnableInterface() const
+void DaynaPort::EnableInterface()
 {
     if (GetController()->GetCmdByte(5) & 0x80) {
         if (const string error = tap.IpLink(true); !error.empty()) {
             LogWarn("Unable to enable the DaynaPort Interface: " + error);
             throw scsi_exception(sense_key::aborted_command);
+        }
+
+        if (is_macos) {
+            // The MacOS Daynaport driver needs to have a delay after the size/flags field of the read response
+            SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
         }
 
         tap.Flush();

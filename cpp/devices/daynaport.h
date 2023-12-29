@@ -57,7 +57,7 @@ public:
     }
 
     // Commands
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     bool Write(cdb_t, span<const uint8_t>);
 
@@ -69,7 +69,7 @@ public:
     void RetrieveStatistics() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
-    void EnableInterface() const;
+    void EnableInterface();
 
     vector<PbStatistics> GetStatistics() const override;
 
@@ -129,4 +129,6 @@ private:
     CTapDriver tap;
 
     bool tap_enabled = false;
+
+    bool is_macos = false;
 };

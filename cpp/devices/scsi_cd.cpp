@@ -143,7 +143,7 @@ void ScsiCd::ReadToc()
     EnterDataInPhase();
 }
 
-vector<uint8_t> ScsiCd::InquiryInternal() const
+vector<uint8_t> ScsiCd::InquiryInternal()
 {
     return HandleInquiry(device_type::cd_rom, scsi_level, true);
 }

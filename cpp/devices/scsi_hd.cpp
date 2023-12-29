@@ -77,7 +77,7 @@ void ScsiHd::Open()
     FinalizeSetup(0);
 }
 
-vector<uint8_t> ScsiHd::InquiryInternal() const
+vector<uint8_t> ScsiHd::InquiryInternal()
 {
     return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
 }

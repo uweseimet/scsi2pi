@@ -28,7 +28,7 @@ public:
 
     void Open() override;
 
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const override;
