@@ -561,7 +561,11 @@ void GenericController::DataOutNonBlockOriented() const
         break;
 
     case scsi_command::cmd_set_mcast_addr:
-        // TODO: Eventually, we should store off the multicast address configuration data here...
+        // TODO: Eventually, we should store off the multicast address configuration data here
+        break;
+
+    case scsi_command::cmd_set_iface_mode:
+        // TODO Should the DaynaPort MAC address actually be set here?
         break;
 
     default:
@@ -702,7 +706,11 @@ bool GenericController::XferOutBlockOriented(bool cont)
     }
 
     case scsi_command::cmd_set_mcast_addr:
-        LogTrace("Done with DaynaPort Set Multicast Address");
+        LogTrace("Ignored DaynaPort Set Multicast Address");
+        break;
+
+    case scsi_command::cmd_set_iface_mode:
+        LogTrace("Ignored DaynaPort Set Interface Mode");
         break;
 
     default:

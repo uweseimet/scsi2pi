@@ -54,6 +54,11 @@ public:
 
     static uint32_t Crc32(span<const uint8_t>);
 
+    static string GetBridgeName()
+    {
+        return BRIDGE_NAME;
+    }
+
 private:
 
     static string SetUpEth0(int, const string&);

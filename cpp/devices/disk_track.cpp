@@ -72,27 +72,24 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     // Calculate length (data size of this track)
     const int length = dt.sectors << dt.size;
 
-    // Allocate buffer memory
     assert((dt.sectors > 0) && (dt.sectors <= 0x100));
 
+    // Allocate buffer memory
     if (!dt.buffer) {
-        if (posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
-            spdlog::warn("posix_memalign failed");
-        }
+        (void)posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512);
+        dt.length = length;
+    }
+
+    // Reallocate if the buffer length is different
+    if (dt.buffer && dt.length != static_cast<uint32_t>(length)) {
+        free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
+        dt.buffer = nullptr;
+        (void)posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512);
         dt.length = length;
     }
 
     if (!dt.buffer) {
         return false;
-    }
-
-    // Reallocate if the buffer length is different
-    if (dt.length != static_cast<uint32_t>(length)) {
-        free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
-        if (posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
-            spdlog::warn("posix_memalign failed");
-        }
-        dt.length = length;
     }
 
     // Resize and clear changemap
@@ -180,7 +177,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
             // Initialize write size
             total = 0;
 
-            out.seekp(offset + ((off_t)i << dt.size));
+            out.seekp(offset + (i << dt.size));
             if (out.fail()) {
                 return false;
             }
@@ -234,7 +231,7 @@ bool DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
     // Copy
     assert(dt.buffer);
     assert((dt.sectors > 0) && (dt.sectors <= 0x100));
-    memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], (off_t)1 << dt.size);
+    memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], 1 << dt.size);
 
     // Success
     return true;

@@ -141,7 +141,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented, do nothing
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
@@ -161,7 +161,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_ENABLE);
@@ -171,7 +171,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SET);
@@ -181,7 +181,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 }
 
 TEST(ScsiDaynaportTest, SetMcastAddr)
