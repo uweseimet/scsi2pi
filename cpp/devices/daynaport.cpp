@@ -423,7 +423,6 @@ void DaynaPort::EnableInterface()
         // The Atari drivers (STiNG and MiNT) work with and without a delay.
         // In order to work with all drivers the delay depends on the last INQUIRY received. A peculiarity of
         // the MacOS DaynaPort helps to identify which driver is being used and which delay is the working one.
-
         if (macos_seen) {
             macos_seen = false;
             SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
@@ -433,7 +432,6 @@ void DaynaPort::EnableInterface()
             SetSendDelay(Bus::SEND_NO_DELAY);
             LogDebug("The DaynaPort interface has been enabled");
         }
-
     }
     else {
         if (const string error = tap.IpLink(false); !error.empty()) {
