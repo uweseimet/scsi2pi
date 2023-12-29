@@ -23,7 +23,6 @@
 #include "shared/shared_exceptions.h"
 #include "shared/network_util.h"
 #include "base/memory_util.h"
-#include "buses/bus.h"
 #include "daynaport.h"
 
 using namespace scsi_defs;
