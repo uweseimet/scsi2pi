@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include "spdlog/spdlog.h"
 
 using namespace std;
@@ -17,9 +16,6 @@ class DeviceLogger
 {
 
 public:
-
-    DeviceLogger() = default;
-    ~DeviceLogger() = default;
 
     void Trace(const string&) const;
     void Debug(const string&) const;
