@@ -28,8 +28,6 @@
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif
-#include <string>
-#include <span>
 #include <unordered_map>
 #include <array>
 #include "base/primary_device.h"

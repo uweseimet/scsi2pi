@@ -10,7 +10,6 @@
 #pragma once
 
 #include <fstream>
-#include <string>
 #include <unordered_map>
 #include <span>
 #include "base/interfaces/scsi_printer_commands.h"

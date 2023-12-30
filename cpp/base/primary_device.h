@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <string>
 #include <unordered_map>
 #include <span>
 #include <functional>
@@ -40,7 +39,6 @@ public:
     {
         // Override if cleanup work is required for a derived device
     }
-    ;
 
     virtual void Dispatch(scsi_command);
 

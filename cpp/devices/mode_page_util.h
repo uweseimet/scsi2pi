@@ -11,7 +11,6 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 #include <vector>
 #include <map>
 #include "shared/scsi.h"

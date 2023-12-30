@@ -9,7 +9,6 @@
 #pragma once
 
 #include "buses/gpio_bus.h"
-#include <cstdint>
 #include <cassert>
 #include <unordered_map>
 #include <mutex>
