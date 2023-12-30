@@ -25,7 +25,7 @@ bool PrimaryDevice::Init(const param_map &params)
         {
             Inquiry();
         });
-    AddCommand(scsi_command::cmd_reportLuns, [this]
+    AddCommand(scsi_command::cmd_report_luns, [this]
         {
             ReportLuns();
         });

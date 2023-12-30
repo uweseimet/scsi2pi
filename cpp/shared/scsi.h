@@ -111,7 +111,7 @@ enum class scsi_command
     cmd_synchronize_cache16 = 0x91,
     cmd_read_capacity16_read_long16 = 0x9e,
     cmd_write_long16 = 0x9f,
-    cmd_reportLuns = 0xa0,
+    cmd_report_luns = 0xa0,
     // Host services specific commands
     cmd_execute_operation = 0xc0,
     cmd_receive_operation_results = 0xc1
@@ -195,7 +195,7 @@ static const unordered_map<scsi_command, pair<int, string>> command_mapping = {
     { scsi_command::cmd_synchronize_cache16, make_pair(16, "SynchronizeCache16") },
     { scsi_command::cmd_read_capacity16_read_long16, make_pair(16, "ReadCapacity16/ReadLong16") },
     { scsi_command::cmd_write_long16, make_pair(16, "WriteLong16") },
-    { scsi_command::cmd_reportLuns, make_pair(12, "ReportLuns") },
+    { scsi_command::cmd_report_luns, make_pair(12, "ReportLuns") },
     { scsi_command::cmd_execute_operation, make_pair(10, "ExecuteOperation") },
     { scsi_command::cmd_receive_operation_results, make_pair(10, "Receive_operation_results") }
 };

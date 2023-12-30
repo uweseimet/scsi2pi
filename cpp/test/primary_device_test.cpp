@@ -332,7 +332,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     controller->SetCmdByte(9, 255);
 
     EXPECT_CALL(*controller, DataIn);
-    device1->Dispatch(scsi_command::cmd_reportLuns);
+    device1->Dispatch(scsi_command::cmd_report_luns);
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";
@@ -346,7 +346,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_EQ(LUN2, GetInt16(buffer, 22)) << "Wrong LUN2 number";
 
     controller->SetCmdByte(2, 0x01);
-    EXPECT_THAT([&] {device1->Dispatch(scsi_command::cmd_reportLuns);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {device1->Dispatch(scsi_command::cmd_report_luns);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Only SELECT REPORT mode 0 is supported";
@@ -372,6 +372,13 @@ TEST(PrimaryDeviceTest, Init)
     MockPrimaryDevice device(0);
 
     EXPECT_TRUE(device.Init(params)) << "Initialization of primary device must not fail";
+}
+
+TEST(PrimaryDeviceTest, GetSendDelay)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_EQ(-1, device.GetSendDelay());
 }
 
 TEST(PrimaryDeviceTest, GetStatistics)
