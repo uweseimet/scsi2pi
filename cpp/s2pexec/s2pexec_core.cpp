@@ -14,7 +14,6 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
-#include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "shared/s2p_util.h"
 #include "s2pexec_core.h"
