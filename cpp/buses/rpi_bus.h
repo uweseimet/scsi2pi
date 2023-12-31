@@ -141,16 +141,16 @@ private:
     int rpitype = 0;
 
     // GPIO register
-    volatile uint32_t *gpio = nullptr;
+    volatile uint32_t *gpio = nullptr; // NOSONAR volatile is correct here
 
     // PADS register
-    volatile uint32_t *pads = nullptr;
+    volatile uint32_t *pads = nullptr; // NOSONAR volatile is correct here
 
     // Interrupt control register
-    volatile uint32_t *irpctl = nullptr;
+    volatile uint32_t *irpctl = nullptr; // NOSONAR volatile is correct here
 
     // QA7 register
-    volatile uint32_t *qa7regs = nullptr;
+    volatile uint32_t *qa7regs = nullptr; // NOSONAR volatile is correct here
 
 #ifndef NO_IRQ_DISABLE
     // Interrupt enabled state
