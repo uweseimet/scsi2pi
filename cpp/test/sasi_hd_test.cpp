@@ -9,6 +9,19 @@
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 
+TEST(SasiHdTest, Inquiry)
+{
+    auto [controller, device] = CreateDevice(SAHD);
+
+    // ALLOCATION LENGTH
+    controller->SetCmdByte(4, 255);
+    EXPECT_CALL(*controller, DataIn());
+    device->Dispatch(scsi_command::cmd_inquiry);
+    const vector<uint8_t> &buffer = controller->GetBuffer();
+    EXPECT_EQ(0, buffer[0]);
+    EXPECT_EQ(0, buffer[1]);
+}
+
 TEST(SasiHdTest, FinalizeSetup)
 {
     MockSasiHd hd(0);
