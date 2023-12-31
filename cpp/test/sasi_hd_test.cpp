@@ -24,7 +24,8 @@ TEST(SasiHdTest, Inquiry)
 
 TEST(SasiHdTest, RequestSense)
 {
-    auto [controller, hd] = CreateDevice(SAHD);
+    const int LUN = 1;
+    auto [controller, hd] = CreateDevice(SAHD, LUN);
 
     // ALLOCATION LENGTH
     controller->SetCmdByte(4, 255);
@@ -32,6 +33,7 @@ TEST(SasiHdTest, RequestSense)
     hd->Dispatch(scsi_command::cmd_request_sense);
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
+    EXPECT_EQ(LUN << 5, buffer[1]);
 }
 
 TEST(SasiHdTest, FinalizeSetup)
