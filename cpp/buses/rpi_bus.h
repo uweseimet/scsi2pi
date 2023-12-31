@@ -141,29 +141,29 @@ private:
     int rpitype = 0;
 
     // GPIO register
-    volatile uint32_t *gpio = nullptr; // NOSONAR volatile is correct here
+    volatile uint32_t *gpio = nullptr;
 
     // PADS register
-    volatile uint32_t *pads = nullptr; // NOSONAR volatile is correct here
+    volatile uint32_t *pads = nullptr;
 
     // Interrupt control register
-    volatile uint32_t *irpctl = nullptr; // NOSONAR volatile is correct here
+    volatile uint32_t *irpctl = nullptr;
 
     // QA7 register
-    volatile uint32_t *qa7regs = nullptr; // NOSONAR volatile is correct here
+    volatile uint32_t *qa7regs = nullptr;
 
 #ifndef NO_IRQ_DISABLE
     // Interrupt enabled state
-    volatile uint32_t irptenb;
+    volatile uint32_t irptenb; // NOSONAR volatile is correct here
 
     // Interupt control target CPU
-    volatile int tintcore;
+    volatile int tintcore; // NOSONAR volatile is correct here
 
     // Interupt control
-    volatile uint32_t tintctl;
+    volatile uint32_t tintctl; // NOSONAR volatile is correct here
 
     // GICC priority setting
-    volatile uint32_t giccpmr;
+    volatile uint32_t giccpmr; // NOSONAR volatile is correct here
 #endif
 
     // GIC Interrupt distributor register
