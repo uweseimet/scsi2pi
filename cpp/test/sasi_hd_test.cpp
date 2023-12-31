@@ -22,6 +22,18 @@ TEST(SasiHdTest, Inquiry)
     EXPECT_EQ(0, buffer[1]);
 }
 
+TEST(SasiHdTest, RequestSense)
+{
+    auto [controller, hd] = CreateDevice(SAHD);
+
+    // ALLOCATION LENGTH
+    controller->SetCmdByte(4, 255);
+    EXPECT_CALL(*controller, DataIn());
+    hd->Dispatch(scsi_command::cmd_request_sense);
+    const vector<uint8_t> &buffer = controller->GetBuffer();
+    EXPECT_EQ(0, buffer[0]);
+}
+
 TEST(SasiHdTest, FinalizeSetup)
 {
     MockSasiHd hd(0);

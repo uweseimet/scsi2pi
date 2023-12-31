@@ -169,6 +169,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(HostServicesTest, SetUpModePages);
     FRIEND_TEST(PrinterTest, Print);
     FRIEND_TEST(SasiHdTest, Inquiry);
+    FRIEND_TEST(SasiHdTest, RequestSense);
 
 public:
 
