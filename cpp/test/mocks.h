@@ -269,6 +269,11 @@ public:
     {
     }
     ~MockPrimaryDevice() override = default;
+
+    void SetSendDelay(int delay)
+    {
+        PrimaryDevice::SetSendDelay(delay);
+    }
 };
 
 class MockModePageDevice : public ModePageDevice

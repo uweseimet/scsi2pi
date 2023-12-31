@@ -374,11 +374,13 @@ TEST(PrimaryDeviceTest, Init)
     EXPECT_TRUE(device.Init(params)) << "Initialization of primary device must not fail";
 }
 
-TEST(PrimaryDeviceTest, GetSendDelay)
+TEST(PrimaryDeviceTest, SetGetSendDelay)
 {
     MockPrimaryDevice device(0);
 
     EXPECT_EQ(-1, device.GetSendDelay());
+    device.SetSendDelay(1234);
+    EXPECT_EQ(1234, device.GetSendDelay());
 }
 
 TEST(PrimaryDeviceTest, GetStatistics)
