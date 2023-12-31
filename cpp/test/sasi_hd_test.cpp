@@ -11,12 +11,12 @@
 
 TEST(SasiHdTest, Inquiry)
 {
-    auto [controller, device] = CreateDevice(SAHD);
+    auto [controller, hd] = CreateDevice(SAHD);
 
     // ALLOCATION LENGTH
     controller->SetCmdByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    device->Dispatch(scsi_command::cmd_inquiry);
+    hd->Dispatch(scsi_command::cmd_inquiry);
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(0, buffer[1]);
