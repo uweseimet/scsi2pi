@@ -46,9 +46,9 @@ public:
 
     virtual bool WriteByteSequence(span<const uint8_t>);
 
-    int GetSendDelay() const
+    int GetDelayAfterBytes() const
     {
-        return send_delay;
+        return delay_after_bytes;
     }
 
     bool CheckReservation(int, scsi_command, bool) const;
@@ -121,9 +121,9 @@ protected:
         device_logger.Error(s);
     }
 
-    void SetSendDelay(int delay)
+    void SetDelayAfterBytes(int delay)
     {
-        send_delay = delay;
+        delay_after_bytes = delay;
     }
 
 private:
@@ -144,7 +144,8 @@ private:
 
     unordered_map<scsi_command, operation> commands;
 
-    int send_delay = Bus::SEND_NO_DELAY;
+    // Number of bytes during a transfer after which to delay for the DaynaPort driver
+    int delay_after_bytes = Bus::SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
 };

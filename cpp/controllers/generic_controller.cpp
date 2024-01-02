@@ -329,7 +329,7 @@ void GenericController::Send()
         // The delay should be taken from the respective LUN, but as there are no Mac Daynaport drivers
         // for LUNs other than 0 this work-around works.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
-            GetDeviceForLun(0)->GetSendDelay()); len != static_cast<int>(GetLength())) {
+            GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
             Error(sense_key::aborted_command);
         }
         else {

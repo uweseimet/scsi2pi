@@ -424,11 +424,11 @@ void DaynaPort::EnableInterface()
         // the MacOS DaynaPort helps to identify which driver is being used and which delay is the working one.
         if (macos_seen) {
             macos_seen = false;
-            SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
+            SetDelayAfterBytes(DAYNAPORT_READ_HEADER_SZ);
             LogDebug("The DaynaPort interface has been enabled for MacOS");
         }
         else {
-            SetSendDelay(Bus::SEND_NO_DELAY);
+            SetDelayAfterBytes(Bus::SEND_NO_DELAY);
             LogDebug("The DaynaPort interface has been enabled");
         }
     }

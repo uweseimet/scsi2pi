@@ -272,9 +272,9 @@ public:
     }
     ~MockPrimaryDevice() override = default;
 
-    void SetSendDelay(int delay)
+    void SetDelayAfterBytes(int delay_after_bytes)
     {
-        PrimaryDevice::SetSendDelay(delay);
+        PrimaryDevice::SetDelayAfterBytes(delay_after_bytes);
     }
 };
 
