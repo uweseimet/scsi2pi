@@ -90,11 +90,6 @@ public:
 
 private:
 
-    // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of uS that will be delayed between the
-    // header and the actual data.
-    static const int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
-
     enum class read_data_flags_t : uint32_t
     {
         e_no_more_data = 0x00000000,
