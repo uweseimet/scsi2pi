@@ -250,7 +250,7 @@ GENERATED_DIR := generated
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
 ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
-	$(OBJ_S2PEXEC) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUS) \
+	$(OBJ_S2PEXEC) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) \
 	$(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST) $(OBJ_IN_PROCESS_TEST))
 -include $(ALL_DEPS)
 
