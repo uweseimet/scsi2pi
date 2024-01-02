@@ -158,4 +158,9 @@ protected:
 private:
 
     mode_e operation_mode = mode_e::TARGET;
+
+    // The DaynaPort SCSI Link do a short delay in the middle of transfering
+    // a packet. This is the number of ns that will be delayed between the
+    // header and the actual data.
+    inline const static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 };
