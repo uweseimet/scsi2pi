@@ -86,6 +86,9 @@ TEST(S2pCtlCommandsTest, Execute)
     command.set_operation(MAPPING_INFO);
     EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
 
+    command.set_operation(STATISTICS_INFO);
+    EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
+
     command.set_operation(OPERATION_INFO);
     EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
 
