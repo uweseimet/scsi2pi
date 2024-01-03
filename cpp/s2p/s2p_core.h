@@ -9,7 +9,6 @@
 #pragma once
 
 #include <span>
-#include <string>
 #include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "shared_protobuf/command_context.h"

@@ -11,8 +11,6 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <memory>
-#include <vector>
 #include "buses/bus.h"
 
 //---------------------------------------------------------------------------

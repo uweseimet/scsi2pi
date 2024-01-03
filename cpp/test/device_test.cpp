@@ -143,6 +143,9 @@ TEST(DeviceTest, GetTypeString)
 
     MockDevice sclp(SCLP);
     EXPECT_EQ("SCLP", sclp.GetTypeString());
+
+    MockDevice sahd(SAHD);
+    EXPECT_EQ("SAHD", sahd.GetTypeString());
 }
 
 TEST(DeviceTest, GetIdentifier)

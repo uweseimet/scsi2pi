@@ -40,7 +40,7 @@ TEST(PrinterTest, GetDefaultParams)
 {
     const auto [controller, printer] = CreateDevice(SCLP);
     const auto params = printer->GetDefaultParams();
-    EXPECT_EQ(1, params.size());
+    EXPECT_EQ(1U, params.size());
 }
 
 TEST(PrinterTest, Init)
@@ -147,6 +147,6 @@ TEST(PrinterTest, GetStatistics)
 {
     Printer printer(0);
 
-    EXPECT_EQ(4, printer.GetStatistics().size());
+    EXPECT_EQ(4U, printer.GetStatistics().size());
 }
 

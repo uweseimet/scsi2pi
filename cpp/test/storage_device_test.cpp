@@ -133,11 +133,11 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     device->ReserveFile();
 
     const auto &reserved_files = StorageDevice::GetReservedFiles();
-    EXPECT_EQ(1, reserved_files.size());
+    EXPECT_EQ(1U, reserved_files.size());
     EXPECT_TRUE(reserved_files.contains("filename"));
 
     StorageDevice::SetReservedFiles(reserved_files);
-    EXPECT_EQ(1, reserved_files.size());
+    EXPECT_EQ(1U, reserved_files.size());
     EXPECT_TRUE(reserved_files.contains("filename"));
 }
 

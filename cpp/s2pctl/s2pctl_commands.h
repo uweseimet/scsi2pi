@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <string>
-#include "generated/s2p_interface.pb.h"
 #include "s2pctl_display.h"
 
 using namespace s2p_interface;

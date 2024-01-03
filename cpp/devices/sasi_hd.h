@@ -24,6 +24,6 @@ public:
     void Open() override;
 
     void Inquiry() override;
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
     void RequestSense() override;
 };

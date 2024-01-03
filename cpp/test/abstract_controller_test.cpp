@@ -28,20 +28,20 @@ TEST(AbstractControllerTest, AllocateCmd)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(16, controller.GetCmd().size());
+    EXPECT_EQ(16U, controller.GetCmd().size());
     controller.AllocateCmd(1234);
-    EXPECT_EQ(1234, controller.GetCmd().size());
+    EXPECT_EQ(1234U, controller.GetCmd().size());
 }
 
 TEST(AbstractControllerTest, SetLength)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(4096, controller.GetBuffer().size());
+    EXPECT_EQ(4096U, controller.GetBuffer().size());
     controller.SetLength(1);
-    EXPECT_LE(1, controller.GetBuffer().size());
+    EXPECT_LE(1U, controller.GetBuffer().size());
     controller.SetLength(10000);
-    EXPECT_LE(10000, controller.GetBuffer().size());
+    EXPECT_LE(10000U, controller.GetBuffer().size());
 }
 
 TEST(AbstractControllerTest, Reset)
@@ -58,7 +58,7 @@ TEST(AbstractControllerTest, Reset)
     controller->Reset();
     EXPECT_TRUE(controller->IsBusFree());
     EXPECT_EQ(status::good, controller->GetStatus());
-    EXPECT_EQ(0, controller->GetLength());
+    EXPECT_EQ(0U, controller->GetLength());
 }
 
 TEST(AbstractControllerTest, Next)
@@ -66,9 +66,9 @@ TEST(AbstractControllerTest, Next)
     MockAbstractController controller;
 
     controller.SetNext(0x1234);
-    EXPECT_EQ(0x1234, controller.GetNext());
+    EXPECT_EQ(0x1234U, controller.GetNext());
     controller.IncrementNext();
-    EXPECT_EQ(0x1235, controller.GetNext());
+    EXPECT_EQ(0x1235U, controller.GetNext());
 }
 
 TEST(AbstractControllerTest, Message)
@@ -95,9 +95,9 @@ TEST(AbstractControllerTest, InitBytesToTransfer)
 
     controller.SetLength(0x1234);
     controller.InitBytesToTransfer();
-    EXPECT_EQ(0x1234, controller.GetBytesToTransfer());
+    EXPECT_EQ(0x1234U, controller.GetBytesToTransfer());
     controller.SetByteTransfer(false);
-    EXPECT_EQ(0, controller.GetBytesToTransfer());
+    EXPECT_EQ(0U, controller.GetBytesToTransfer());
 }
 
 TEST(AbstractControllerTest, GetMaxLuns)
@@ -176,7 +176,7 @@ TEST(AbstractControllerTest, Length)
     EXPECT_FALSE(controller.HasValidLength());
 
     controller.SetLength(1);
-    EXPECT_EQ(1, controller.GetLength());
+    EXPECT_EQ(1U, controller.GetLength());
     EXPECT_TRUE(controller.HasValidLength());
 }
 
@@ -187,7 +187,7 @@ TEST(AbstractControllerTest, UpdateOffsetAndLength)
     EXPECT_FALSE(controller.HasValidLength());
 
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0, controller.GetLength());
+    EXPECT_EQ(0U, controller.GetLength());
 }
 
 TEST(AbstractControllerTest, Offset)

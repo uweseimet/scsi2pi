@@ -91,7 +91,7 @@ set<int> S2pDumpExecutor::ReportLuns()
     cdb[9] = static_cast<uint8_t>(buffer.size());
 
     // Assume 8 LUNs in case REPORT LUNS is not available
-    if (!phase_executor->Execute(scsi_command::cmd_reportLuns, cdb, buffer, static_cast<int>(buffer.size()))) {
+    if (!phase_executor->Execute(scsi_command::cmd_report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
         spdlog::trace("Target does not support REPORT LUNS");
         return {0, 1, 2, 3, 4, 5, 6, 7};
     }

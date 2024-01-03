@@ -54,12 +54,12 @@ bool BusFactory::CheckForPi()
     const string model = s.str();
 
     if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
-        spdlog::info("Detected {}", model);
+        spdlog::info("Detected '{}'", model);
         is_raspberry_pi = true;
         return true;
     }
 
-    spdlog::error("Unsupported Raspberry Pi model '{}', functionality may be limited", model);
+    spdlog::error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
 
     return false;
 }

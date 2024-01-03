@@ -23,13 +23,13 @@ using namespace filesystem;
 const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publicly writable directory is fine here
     path(fmt::format("scsi2pi-test-{}", getpid())));
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type,
+pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
     DeviceFactory device_factory;
 
-    auto controller = make_shared<NiceMock<MockAbstractController>>(0);
-    auto device = device_factory.CreateDevice(type, 0, extension);
+    auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
+    auto device = device_factory.CreateDevice(type, lun, extension);
     device->Init( { });
 
     EXPECT_TRUE(controller->AddDevice(device));
@@ -46,7 +46,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     int additional_length,
     bool removable, const string &extension)
 {
-    auto [controller, device] = CreateDevice(type, extension);
+    auto [controller, device] = CreateDevice(type, 0, extension);
 
     // ALLOCATION LENGTH
     controller->SetCmdByte(4, 255);

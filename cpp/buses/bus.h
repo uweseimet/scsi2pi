@@ -12,7 +12,6 @@
 
 #include <string>
 #include <array>
-#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <vector>

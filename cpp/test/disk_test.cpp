@@ -791,32 +791,32 @@ TEST(DiskTest, SectorSize)
     EXPECT_TRUE(disk.IsSectorSizeConfigurable());
 
     disk.SetSectorSizeShiftCount(9);
-    EXPECT_EQ(9, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(512, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(9U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(512U, disk.GetSectorSizeInBytes());
     disk.SetSectorSizeInBytes(512);
-    EXPECT_EQ(9, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(512, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(9U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(512U, disk.GetSectorSizeInBytes());
 
     disk.SetSectorSizeShiftCount(10);
-    EXPECT_EQ(10, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(1024, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(10U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(1024U, disk.GetSectorSizeInBytes());
     disk.SetSectorSizeInBytes(1024);
-    EXPECT_EQ(10, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(1024, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(10U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(1024U, disk.GetSectorSizeInBytes());
 
     disk.SetSectorSizeShiftCount(11);
-    EXPECT_EQ(11, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(2048, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(11U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(2048U, disk.GetSectorSizeInBytes());
     disk.SetSectorSizeInBytes(2048);
-    EXPECT_EQ(11, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(2048, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(11U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(2048U, disk.GetSectorSizeInBytes());
 
     disk.SetSectorSizeShiftCount(12);
-    EXPECT_EQ(12, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(4096, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(12U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(4096U, disk.GetSectorSizeInBytes());
     disk.SetSectorSizeInBytes(4096);
-    EXPECT_EQ(12, disk.GetSectorSizeShiftCount());
-    EXPECT_EQ(4096, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(12U, disk.GetSectorSizeShiftCount());
+    EXPECT_EQ(4096U, disk.GetSectorSizeInBytes());
 
     EXPECT_THROW(disk.SetSectorSizeInBytes(1234), io_exception);
 }
@@ -826,10 +826,10 @@ TEST(DiskTest, ConfiguredSectorSize)
     MockScsiHd disk(0, false);
 
     EXPECT_TRUE(disk.SetConfiguredSectorSize(512));
-    EXPECT_EQ(512, disk.GetConfiguredSectorSize());
+    EXPECT_EQ(512U, disk.GetConfiguredSectorSize());
 
     EXPECT_FALSE(disk.SetConfiguredSectorSize(1234));
-    EXPECT_EQ(512, disk.GetConfiguredSectorSize());
+    EXPECT_EQ(512U, disk.GetConfiguredSectorSize());
 }
 
 TEST(DiskTest, BlockCount)
@@ -837,12 +837,12 @@ TEST(DiskTest, BlockCount)
     MockDisk disk;
 
     disk.SetBlockCount(0x1234567887654321);
-    EXPECT_EQ(0x1234567887654321, disk.GetBlockCount());
+    EXPECT_EQ(0x1234567887654321U, disk.GetBlockCount());
 }
 
 TEST(DiskTest, GetStatistics)
 {
     MockDisk disk;
 
-    EXPECT_EQ(2, disk.GetStatistics().size());
+    EXPECT_EQ(2U, disk.GetStatistics().size());
 }

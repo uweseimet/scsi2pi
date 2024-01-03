@@ -10,7 +10,7 @@
 
 TEST(BusTest, GetCommandByteCount)
 {
-    EXPECT_EQ(43, scsi_defs::command_mapping.size());
+    EXPECT_EQ(43U, scsi_defs::command_mapping.size());
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x00));
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x01));
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x03));

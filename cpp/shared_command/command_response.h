@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include <set>
 #include "base/device_factory.h"
 #include "base/primary_device.h"

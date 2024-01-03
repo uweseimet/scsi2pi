@@ -37,9 +37,6 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
     SetRevision("1.4a");
 
     SupportsParams(true);
-
-    // The MacOS Daynaport driver needs to have a delay after the size/flags field of the read response
-    SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
 }
 
 bool DaynaPort::Init(const param_map &params)
@@ -97,14 +94,18 @@ void DaynaPort::CleanUp()
     tap.CleanUp();
 }
 
-vector<uint8_t> DaynaPort::InquiryInternal() const
+vector<uint8_t> DaynaPort::InquiryInternal()
 {
     vector<uint8_t> buf = HandleInquiry(device_type::processor, scsi_level::scsi_2, false);
 
-    // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
-    // add a vendor-specific byte in order to satisfy this driver.
-    buf[4]++;
-    buf.push_back(0);
+    if (GetController()->GetCmdByte(4) == 37) {
+        macos_seen = true;
+
+        // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
+        // add a vendor-specific byte in order to satisfy this driver.
+        buf[4]++;
+        buf.push_back(0);
+    }
 
     return buf;
 }
@@ -406,7 +407,7 @@ void DaynaPort::SetMcastAddr() const
 //            seconds
 //
 //---------------------------------------------------------------------------
-void DaynaPort::EnableInterface() const
+void DaynaPort::EnableInterface()
 {
     if (GetController()->GetCmdByte(5) & 0x80) {
         if (const string error = tap.IpLink(true); !error.empty()) {
@@ -416,7 +417,20 @@ void DaynaPort::EnableInterface() const
 
         tap.Flush();
 
-        LogDebug("The DaynaPort interface has been enabled");
+        // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
+        // The NetBSD drivers for the Mac fail when there is a delay.
+        // The Atari drivers (STiNG and MiNT) work with and without a delay.
+        // In order to work with all drivers the delay depends on the last INQUIRY received. A peculiarity of
+        // the MacOS DaynaPort helps to identify which driver is being used and which delay is the working one.
+        if (macos_seen) {
+            macos_seen = false;
+            SetDelayAfterBytes(DAYNAPORT_READ_HEADER_SZ);
+            LogDebug("The DaynaPort interface has been enabled for MacOS");
+        }
+        else {
+            SetDelayAfterBytes(Bus::SEND_NO_DELAY);
+            LogDebug("The DaynaPort interface has been enabled");
+        }
     }
     else {
         if (const string error = tap.IpLink(false); !error.empty()) {

@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include <cstring>
-#include <ranges>
 #include "shared/shared_exceptions.h"
 #include "base/primary_device.h"
 #include "abstract_controller.h"

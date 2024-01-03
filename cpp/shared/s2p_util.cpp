@@ -118,7 +118,7 @@ string s2p_util::Banner(string_view app)
     }
     s << "\nCopyright (C) 2016-2020 GIMONS\n"
         << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
-        << "Copyright (C) 2023 Uwe Seimet\n";
+        << "Copyright (C) 2023-2024 Uwe Seimet\n";
 
     return s.str();
 }

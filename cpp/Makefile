@@ -33,7 +33,7 @@ ifeq ("$(shell uname -s)", "FreeBSD")
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
-	CXXFLAGS += -fexperimental-library -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ## EXTRA_FLAGS Can be used to pass special purpose flag

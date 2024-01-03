@@ -38,12 +38,12 @@ TEST(ScsiDaynaportTest, GetDefaultParams)
 {
     const auto [controller, daynaport] = CreateDevice(SCDP);
     const auto params = daynaport->GetDefaultParams();
-    EXPECT_EQ(2, params.size());
+    EXPECT_EQ(2U, params.size());
 }
 
 TEST(ScsiDaynaportTest, Inquiry)
 {
-    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x20, false);
+    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
 TEST(ScsiDaynaportTest, TestUnitReady)
@@ -227,17 +227,9 @@ TEST(ScsiDaynaportTest, EnableInterface)
             Property(&scsi_exception::get_asc, asc::no_additional_sense_information))));
 }
 
-TEST(ScsiDaynaportTest, GetSendDelay)
-{
-    DaynaPort daynaport(0);
-    daynaport.Init( { });
-
-    EXPECT_EQ(6, daynaport.GetSendDelay());
-}
-
 TEST(ScsiDaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);
 
-    EXPECT_EQ(2, daynaport.GetStatistics().size());
+    EXPECT_EQ(2U, daynaport.GetStatistics().size());
 }

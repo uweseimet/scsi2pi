@@ -136,7 +136,7 @@ void HostServices::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> HostServices::InquiryInternal() const
+vector<uint8_t> HostServices::InquiryInternal()
 {
     return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
 }
@@ -200,7 +200,7 @@ void HostServices::ReceiveOperationResults()
     case protobuf_format::json: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
-        MessageToJsonString(result, &data).ok();
+        (void)MessageToJsonString(result, &data).ok();
         break;
     }
 

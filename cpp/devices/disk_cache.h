@@ -16,7 +16,6 @@
 #include <span>
 #include <array>
 #include <memory>
-#include <string>
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

@@ -29,13 +29,13 @@ TEST(MemoryUtilTest, GetInt24)
 TEST(MemoryUtilTest, GetInt32)
 {
     vector<int> v = { 0x12, 0x34, 0x56, 0x78 };
-    EXPECT_EQ(0x12345678, GetInt32(v, 0));
+    EXPECT_EQ(0x12345678U, GetInt32(v, 0));
 }
 
 TEST(MemoryUtilTest, GetInt64)
 {
     vector<int> v = { 0x12, 0x34, 0x56, 0x78, 0x87, 0x65, 0x43, 0x21 };
-    EXPECT_EQ(0x1234567887654321, GetInt64(v, 0));
+    EXPECT_EQ(0x1234567887654321U, GetInt64(v, 0));
 }
 
 TEST(MemoryUtilTest, SetInt16)
