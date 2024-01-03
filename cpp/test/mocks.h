@@ -29,23 +29,23 @@ public:
     MOCK_METHOD(bool, Init, (mode_e), (override));
     MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, CleanUp, (), (override));
-    MOCK_METHOD(bool, GetBSY, (), (const override));
+    MOCK_METHOD(bool, GetBSY, (), (const, override));
     MOCK_METHOD(void, SetBSY, (bool), (override));
-    MOCK_METHOD(bool, GetSEL, (), (const override));
+    MOCK_METHOD(bool, GetSEL, (), (const, override));
     MOCK_METHOD(void, SetSEL, (bool), (override));
-    MOCK_METHOD(bool, GetATN, (), (const override));
+    MOCK_METHOD(bool, GetATN, (), (const, override));
     MOCK_METHOD(void, SetATN, (bool), (override));
-    MOCK_METHOD(bool, GetACK, (), (const override));
+    MOCK_METHOD(bool, GetACK, (), (const, override));
     MOCK_METHOD(void, SetACK, (bool), (override));
-    MOCK_METHOD(bool, GetRST, (), (const override));
+    MOCK_METHOD(bool, GetRST, (), (const, override));
     MOCK_METHOD(void, SetRST, (bool), (override));
-    MOCK_METHOD(bool, GetMSG, (), (const override));
+    MOCK_METHOD(bool, GetMSG, (), (const, override));
     MOCK_METHOD(void, SetMSG, (bool), (override));
-    MOCK_METHOD(bool, GetCD, (), (const override));
+    MOCK_METHOD(bool, GetCD, (), (const, override));
     MOCK_METHOD(void, SetCD, (bool), (override));
     MOCK_METHOD(bool, GetIO, (), (override));
     MOCK_METHOD(void, SetIO, (bool), (override));
-    MOCK_METHOD(bool, GetREQ, (), (const override));
+    MOCK_METHOD(bool, GetREQ, (), (const, override));
     MOCK_METHOD(void, SetREQ, (bool), (override));
     MOCK_METHOD(uint8_t, GetDAT, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
@@ -53,7 +53,7 @@ public:
     MOCK_METHOD(int, CommandHandShake, (vector<uint8_t>&), (override));
     MOCK_METHOD(int, ReceiveHandShake, (uint8_t *, int), (override));
     MOCK_METHOD(int, SendHandShake, (uint8_t *, int, int), (override));
-    MOCK_METHOD(bool, GetSignal, (int), (const override));
+    MOCK_METHOD(bool, GetSignal, (int), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
     MOCK_METHOD(void, PinConfig, (int, int), (override));
@@ -174,17 +174,17 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 public:
 
     MOCK_METHOD(bool, Process, (int), (override));
-    MOCK_METHOD(int, GetEffectiveLun, (), (const override));
+    MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
     MOCK_METHOD(void, Error, (scsi_defs::sense_key, scsi_defs::asc, scsi_defs::status), (override));
-    MOCK_METHOD(int, GetInitiatorId, (), (const override));
-    MOCK_METHOD(void, Status, (), ());
-    MOCK_METHOD(void, DataIn, (), ());
-    MOCK_METHOD(void, DataOut, (), ());
-    MOCK_METHOD(void, BusFree, (), ());
-    MOCK_METHOD(void, Selection, (), ());
-    MOCK_METHOD(void, Command, (), ());
-    MOCK_METHOD(void, MsgIn, (), ());
-    MOCK_METHOD(void, MsgOut, (), ());
+    MOCK_METHOD(int, GetInitiatorId, (), (const, override));
+    MOCK_METHOD(void, Status, (), (override));
+    MOCK_METHOD(void, DataIn, (), (override));
+    MOCK_METHOD(void, DataOut, (), (override));
+    MOCK_METHOD(void, BusFree, (), (override));
+    MOCK_METHOD(void, Selection, (), (override));
+    MOCK_METHOD(void, Command, (), (override));
+    MOCK_METHOD(void, MsgIn, (), (override));
+    MOCK_METHOD(void, MsgOut, (), (override));
 
     MockAbstractController() : AbstractController(*mock_bus, 0, 32)
     {
@@ -216,8 +216,8 @@ class MockScsiController : public ScsiController
 
 public:
 
-    MOCK_METHOD(void, Reset, (), ());
-    MOCK_METHOD(void, Status, (), ());
+    MOCK_METHOD(void, Reset, (), (override));
+    MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, Execute, (), ());
 
     using ScsiController::ScsiController;
@@ -242,7 +242,7 @@ class MockDevice : public Device
 
 public:
 
-    MOCK_METHOD(int, GetId, (), (const));
+    MOCK_METHOD(int, GetId, (), (const, override));
 
     explicit MockDevice(int lun) : Device(UNDEFINED, lun)
     {
@@ -265,7 +265,7 @@ class MockPrimaryDevice : public PrimaryDevice
 public:
 
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
-    MOCK_METHOD(void, FlushCache, (), ());
+    MOCK_METHOD(void, FlushCache, (), (override));
 
     explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
     {
@@ -287,8 +287,8 @@ class MockModePageDevice : public ModePageDevice
 public:
 
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const override));
+    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
+    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
 
     MockModePageDevice() : ModePageDevice(UNDEFINED, 0)
     {
@@ -334,9 +334,9 @@ public:
 
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
     MOCK_METHOD(void, Open, (), (override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const override));
-    MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const override));
+    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
+    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
+    MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
     MockStorageDevice() : StorageDevice(UNDEFINED, 0)
     {
