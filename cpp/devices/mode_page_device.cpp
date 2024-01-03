@@ -11,12 +11,14 @@
 #include <spdlog/spdlog.h>
 #include <cstddef>
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
+#include "mode_page_util.h"
 #include "mode_page_device.h"
 
 using namespace std;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
+using namespace mode_page_util;
 
 bool ModePageDevice::Init(const param_map &params)
 {

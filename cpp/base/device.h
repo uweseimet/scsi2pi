@@ -24,9 +24,11 @@ using param_map = unordered_map<string, string, s2p_util::StringHash, equal_to<>
 
 class Device // NOSONAR The number of fields and methods is justified, the complexity is low
 {
-    const string DEFAULT_VENDOR = "SCSI2Pi";
+    inline static const string DEFAULT_VENDOR = "SCSI2Pi";
 
-    PbDeviceType type;
+    // Immutable fields
+    const PbDeviceType type;
+    const int lun;
 
     bool ready = false;
     bool reset = false;
@@ -35,7 +37,7 @@ class Device // NOSONAR The number of fields and methods is justified, the compl
     // Device is protectable/write-protected
     bool protectable = false;
     bool write_protected = false;
-    // Device is permanently read-only
+    // Device is permanently read-only (e.g. a CD-ROM drive)
     bool read_only = false;
 
     // Device can be stopped (parked)/is stopped (parked)
@@ -55,9 +57,6 @@ class Device // NOSONAR The number of fields and methods is justified, the compl
 
     // A device can support an image file
     bool supports_file = false;
-
-    // Immutable LUN
-    int lun;
 
     // Device identifier (for INQUIRY)
     string vendor = DEFAULT_VENDOR;

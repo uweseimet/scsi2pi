@@ -26,7 +26,8 @@ namespace testing
 {
 extern const path test_data_temp_path;
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, const string& = "");
+pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
+    const string& = "");
 
 pair<int, path> OpenTempFile();
 path CreateTempFile(int);

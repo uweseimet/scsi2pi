@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,6 +12,8 @@
 #include <functional>
 #include "shared/scsi.h"
 #include "shared/shared_exceptions.h"
+
+using namespace scsi_defs;
 
 class PhaseHandler
 {
@@ -33,7 +35,7 @@ public:
     virtual void MsgIn() = 0;
     virtual void MsgOut()
     {
-        // To be implemented by controllers supporting this phase
+        // To be implemented by controllers supporting this phase (SCSI, but not SASI)
     }
 
     virtual bool Process(int) = 0;

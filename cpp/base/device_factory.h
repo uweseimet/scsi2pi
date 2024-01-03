@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <string>
 #include <unordered_map>
 #include "primary_device.h"
 #include "generated/s2p_interface.pb.h"

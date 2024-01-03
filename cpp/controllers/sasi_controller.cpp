@@ -14,10 +14,9 @@ void SasiController::MsgOut()
     Command();
 }
 
-bool SasiController::XferMsg(int)
+void SasiController::XferMsg(int)
 {
     assert(false);
-    return false;
 }
 
 void SasiController::ParseMessage()

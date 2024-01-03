@@ -12,11 +12,13 @@
 #include <array>
 #include <fstream>
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
+#include "mode_page_util.h"
 #include "scsi_cd.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
+using namespace mode_page_util;
 
 ScsiCd::ScsiCd(int lun, bool scsi1)
 : Disk(SCCD, lun, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
@@ -141,9 +143,17 @@ void ScsiCd::ReadToc()
     EnterDataInPhase();
 }
 
-vector<uint8_t> ScsiCd::InquiryInternal() const
+vector<uint8_t> ScsiCd::InquiryInternal()
 {
     return HandleInquiry(device_type::cd_rom, scsi_level, true);
+}
+
+void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+{
+    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    !result.empty()) {
+        LogWarn(result);
+    }
 }
 
 void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -184,6 +194,13 @@ void ScsiCd::AddCDDAPage(map<int, vector<byte>> &pages, bool) const
     // PLAY across multiple tracks
 
     pages[14] = buf;
+}
+
+void ScsiCd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
+{
+    Disk::AddFormatPage(pages, changeable);
+
+    EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
 }
 
 void ScsiCd::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const

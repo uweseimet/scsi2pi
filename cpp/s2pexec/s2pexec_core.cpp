@@ -14,7 +14,6 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
-#include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "shared/s2p_util.h"
 #include "s2pexec_core.h"
@@ -224,7 +223,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
 
     if (output_filename.empty()) {
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         cout << json << '\n';
 
         CleanUp();
@@ -251,7 +250,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
         }
 
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         out << json << '\n';
         break;
     }

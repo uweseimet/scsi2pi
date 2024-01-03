@@ -30,13 +30,13 @@
 
 #include <filesystem>
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 #include "printer.h"
 
 using namespace std;
 using namespace filesystem;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
@@ -121,7 +121,7 @@ void Printer::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> Printer::InquiryInternal() const
+vector<uint8_t> Printer::InquiryInternal()
 {
     return HandleInquiry(device_type::printer, scsi_level::scsi_2, false);
 }

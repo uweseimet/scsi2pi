@@ -33,7 +33,7 @@ public:
 
 private:
 
-    bool XferMsg(int) override;
+    void XferMsg(int) override;
 
     void ParseMessage() override;
     void ProcessMessage() override;
@@ -42,7 +42,7 @@ private:
     // The LUN from the IDENTIFY message
     int identified_lun = -1;
 
-    bool atnmsg = false;
+    bool atn_msg = false;
 
     // Message bytes and counter
     array<uint8_t, 256> msb = { };

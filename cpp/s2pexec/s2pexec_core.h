@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include <span>
 #include <vector>
 #include "buses/bus_factory.h"

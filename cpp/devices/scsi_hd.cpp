@@ -7,10 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "mode_page_util.h"
 #include "scsi_hd.h"
 
-using namespace scsi_command_util;
+using namespace mode_page_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
 : Disk(removable ? SCRM : SCHD, lun, sector_sizes), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
@@ -77,14 +77,14 @@ void ScsiHd::Open()
     FinalizeSetup(0);
 }
 
-vector<uint8_t> ScsiHd::InquiryInternal() const
+vector<uint8_t> ScsiHd::InquiryInternal()
 {
     return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
 }
 
 void ScsiHd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    if (const string result = scsi_command_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
     !result.empty()) {
         LogWarn(result);
     }

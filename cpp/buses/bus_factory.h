@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include "buses/in_process_bus.h"
 
 using namespace std;
@@ -17,9 +16,6 @@ class BusFactory
 {
 
 public:
-
-    BusFactory() = default;
-    ~BusFactory() = default;
 
     unique_ptr<Bus> CreateBus(Bus::mode_e, bool = false);
 

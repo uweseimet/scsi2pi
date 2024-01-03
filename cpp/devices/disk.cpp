@@ -13,11 +13,11 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 #include "disk.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 bool Disk::Init(const param_map &params)
 {
@@ -439,39 +439,84 @@ int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 
 void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
-    // Page code 1 (read-write error recovery)
+    // Page 1 (read-write error recovery)
     if (page == 0x01 || page == 0x3f) {
-        AddErrorPage(pages, changeable);
+        AddReadWriteErrorRecoveryPage(pages, changeable);
     }
 
-    // Page code 3 (format device)
+    // Page 2 (disconnect-reconnect)
+    if (page == 0x02 || page == 0x3f) {
+        AddDisconnectReconnectPage(pages, changeable);
+    }
+
+    // Page 3 (format device)
     if (page == 0x03 || page == 0x3f) {
         AddFormatPage(pages, changeable);
     }
 
-    // Page code 4 (rigid drive page)
+    // Page 4 (rigid drive page)
     if (page == 0x04 || page == 0x3f) {
         AddDrivePage(pages, changeable);
     }
 
-    // Page code 8 (caching)
+    // Page 7 (verify error recovery)
+    if (page == 0x07 || page == 0x3f) {
+        AddVerifyErrorRecoveryPage(pages, changeable);
+    }
+
+    // Page 8 (caching)
     if (page == 0x08 || page == 0x3f) {
         AddCachePage(pages, changeable);
+    }
+
+    // Page 10 (control mode)
+    if (page == 0x0a || page == 0x3f) {
+        AddControlModePage(pages, changeable);
+    }
+
+    // Page 12 (notch)
+    if (page == 0x0c || page == 0x3f) {
+        AddNotchPage(pages, changeable);
     }
 
     // Page (vendor special)
     AddVendorPage(pages, page, changeable);
 }
 
-void Disk::AddErrorPage(map<int, vector<byte>> &pages, bool) const
+void Disk::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages, bool) const
 {
-    // Retry count is 0, limit time uses internal default value
     vector<byte> buf(12);
 
-    // TB, PER, DTE (required for OpenVMS/VAX compatibility, see issue #1117)
+    // TB, PER, DTE (required for OpenVMS/VAX compatibility, see PiSCSI issue #1117)
     buf[2] = (byte)0x26;
 
+    // Read/write retry count and recovery time limit are those of an IBM DORS-39130 drive
+    buf[3] = (byte)1;
+    buf[8] = (byte)1;
+    buf[11] = (byte)218;
+
     pages[1] = buf;
+}
+
+void Disk::AddDisconnectReconnectPage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(16);
+
+    // For an IBM DORS-39130 drive all fields are 0
+
+    pages[2] = buf;
+}
+
+void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(12);
+
+    // The page data are those of an IBM DORS-39130 drive
+
+    // Verify retry count
+    buf[3] = (byte)1;
+
+    pages[7] = buf;
 }
 
 void Disk::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
@@ -565,6 +610,24 @@ void Disk::AddCachePage(map<int, vector<byte>> &pages, bool changeable) const
     SetInt16(buf, 0x0a, -1);
 
     pages[8] = buf;
+}
+
+void Disk::AddControlModePage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(8);
+
+    // For an IBM DORS-39130 drive all fields are 0
+
+    pages[10] = buf;
+}
+
+void Disk::AddNotchPage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(24);
+
+    // Not having a notched drive (i.e. not setting anything) probably provides the best compatibility
+
+    pages[12] = buf;
 }
 
 int Disk::Read(span<uint8_t> buf, uint64_t block)

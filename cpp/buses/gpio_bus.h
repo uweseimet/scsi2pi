@@ -11,8 +11,6 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <memory>
-#include <vector>
 #include "buses/bus.h"
 
 //---------------------------------------------------------------------------
@@ -162,8 +160,7 @@ private:
     mode_e operation_mode = mode_e::TARGET;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of uS that will be delayed between the
+    // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    // TODO Should be verified
     inline const static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 };

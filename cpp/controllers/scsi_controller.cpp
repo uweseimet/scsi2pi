@@ -18,14 +18,14 @@ void ScsiController::Reset()
 
     identified_lun = -1;
 
-    atnmsg = false;
+    atn_msg = false;
 }
 
 void ScsiController::BusFree()
 {
     if (!IsBusFree()) {
         // Initialize ATN message reception status
-        atnmsg = false;
+        atn_msg = false;
 
         identified_lun = -1;
     }
@@ -38,7 +38,7 @@ void ScsiController::MsgOut()
     if (!IsMsgOut()) {
         // Process the IDENTIFY message
         if (IsSelection()) {
-            atnmsg = true;
+            atn_msg = true;
             msc = 0;
             msb = { };
         }
@@ -61,49 +61,26 @@ void ScsiController::MsgOut()
     Receive();
 }
 
-bool ScsiController::XferMsg(int msg)
+void ScsiController::XferMsg(int msg)
 {
     assert(IsMsgOut());
 
     // Save message out data
-    if (atnmsg) {
+    if (atn_msg) {
         msb[msc] = (uint8_t)msg;
         msc++;
         msc %= 256;
     }
-
-    return true;
 }
 
 void ScsiController::ParseMessage()
 {
-    int i = 0;
-    while (i < msc) {
-        const uint8_t message_type = msb[i];
-
-        if (message_type == 0x06) {
-            LogTrace("Received ABORT message");
-            BusFree();
-            return;
-        }
-
-        if (message_type == 0x0C) {
-            LogTrace("Received BUS DEVICE RESET message");
-            if (auto device = GetDeviceForLun(identified_lun); device) {
-                device->DiscardReservation();
-            }
-            BusFree();
-            return;
-        }
-
-        if (message_type >= 0x80) {
-            identified_lun = static_cast<int>(message_type) & 0x1F;
-            LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
-        }
-
-        if (message_type == 0x01) {
+    int count = -1;
+    while (++count < msc) {
+        const uint8_t message = msb[count];
+        switch (message) {
+        case 0x01: {
             LogTrace("Received EXTENDED MESSAGE");
-
             SetLength(1);
             SetBlocks(1);
             // MESSSAGE REJECT
@@ -112,8 +89,28 @@ void ScsiController::ParseMessage()
             return;
         }
 
-        // Next message
-        i++;
+        case 0x06: {
+            LogTrace("Received ABORT message");
+            BusFree();
+            return;
+        }
+
+        case 0x0c: {
+            LogTrace("Received BUS DEVICE RESET message");
+            if (auto device = GetDeviceForLun(identified_lun); device) {
+                device->DiscardReservation();
+            }
+            BusFree();
+            return;
+        }
+
+        default:
+            if (message >= 0x80) {
+                identified_lun = static_cast<int>(message) & 0x1f;
+                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
+            }
+            break;
+        }
     }
 }
 
@@ -128,12 +125,12 @@ void ScsiController::ProcessMessage()
         return;
     }
 
-    if (atnmsg) {
+    if (atn_msg) {
         ParseMessage();
     }
 
     // Initialize ATN message reception status
-    atnmsg = false;
+    atn_msg = false;
 
     Command();
 }
@@ -141,8 +138,8 @@ void ScsiController::ProcessMessage()
 void ScsiController::ProcessExtendedMessage()
 {
     // Completed sending response to extended message of IDENTIFY message
-    if (atnmsg) {
-        atnmsg = false;
+    if (atn_msg) {
+        atn_msg = false;
 
         Command();
     } else {

@@ -13,7 +13,6 @@
 #pragma once
 
 #include <vector>
-#include <string>
 #include <span>
 #include "base/device.h"
 
@@ -53,6 +52,11 @@ public:
     void Flush() const;
 
     static uint32_t Crc32(span<const uint8_t>);
+
+    static string GetBridgeName()
+    {
+        return BRIDGE_NAME;
+    }
 
 private:
 

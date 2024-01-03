@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -109,6 +109,26 @@ TEST(InProcessBusTest, IO)
     EXPECT_FALSE(bus.GetIO());
 }
 
+TEST(InProcessBusTest, WaitREQ)
+{
+    MockInProcessBus bus;
+
+    EXPECT_CALL(bus, WaitSignal(PIN_REQ, false));
+    EXPECT_FALSE(bus.WaitREQ(false));
+    EXPECT_CALL(bus, WaitSignal(PIN_REQ, true));
+    EXPECT_FALSE(bus.WaitREQ(true));
+}
+
+TEST(InProcessBusTest, WaitACK)
+{
+    MockInProcessBus bus;
+
+    EXPECT_CALL(bus, WaitSignal(PIN_ACK, false));
+    EXPECT_FALSE(bus.WaitACK(false));
+    EXPECT_CALL(bus, WaitSignal(PIN_ACK, true));
+    EXPECT_FALSE(bus.WaitACK(true));
+}
+
 TEST(InProcessBusTest, DAT)
 {
     InProcessBus bus;
@@ -124,7 +144,7 @@ TEST(InProcessBusTest, Acquire)
     InProcessBus bus;
 
     bus.SetDAT(0x12);
-    EXPECT_EQ(0x12, bus.Acquire());
+    EXPECT_EQ(0x12U, bus.Acquire());
 }
 
 TEST(InProcessBusTest, Reset)
@@ -166,13 +186,22 @@ TEST(InProcessBusTest, WaitForSelection)
     EXPECT_TRUE(bus.WaitForSelection());
 }
 
+TEST(DelegatingProcessBusTest, Reset)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, false);
+
+    EXPECT_CALL(bus, Reset());
+    delegating_bus.Reset();
+}
+
 TEST(DelegatingProcessBusTest, Acquire)
 {
     InProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetDAT(0x45);
-    EXPECT_EQ(0x45, delegating_bus.Acquire());
+    EXPECT_EQ(0x45U, delegating_bus.Acquire());
 }
 
 TEST(DelegatingProcessBusTest, WaitACK)
@@ -205,4 +234,13 @@ TEST(DelegatingProcessBusTest, DAT)
     delegating_bus.SetDAT(0x56);
     EXPECT_EQ(0x56, delegating_bus.GetDAT());
     EXPECT_EQ(0x56, bus.GetDAT());
+}
+
+TEST(DelegatingProcessBusTest, CleanUp)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, false);
+
+    EXPECT_CALL(bus, CleanUp());
+    delegating_bus.CleanUp();
 }

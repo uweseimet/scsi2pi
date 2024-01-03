@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include "spdlog/spdlog.h"
 
 using namespace std;
@@ -17,9 +16,6 @@ class DeviceLogger
 {
 
 public:
-
-    DeviceLogger() = default;
-    ~DeviceLogger() = default;
 
     void Trace(const string&) const;
     void Debug(const string&) const;
@@ -37,7 +33,6 @@ private:
     int id = -1;
     int lun = -1;
 
-    // TODO Try to only have one shared instance, so that these fields do not have to be static
     static inline int log_device_id = -1;
     static inline int log_device_lun = -1;
 };

@@ -37,8 +37,8 @@ TEST(HostServicesTest, DeviceDefaults)
 
 void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(1, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(10, pages[32].size());
+    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(10U, pages[32].size());
 }
 
 TEST(HostServicesTest, TestUnitReady)

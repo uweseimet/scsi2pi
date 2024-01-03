@@ -40,14 +40,18 @@ TEST(ScsiCdTest, DeviceDefaults)
 
 void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(7, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(12, pages[1].size());
-    EXPECT_EQ(24, pages[3].size());
-    EXPECT_EQ(24, pages[4].size());
-    EXPECT_EQ(12, pages[8].size());
-    EXPECT_EQ(8, pages[13].size());
-    EXPECT_EQ(16, pages[14].size());
-    EXPECT_EQ(30, pages[48].size());
+    EXPECT_EQ(11U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(12U, pages[1].size());
+    EXPECT_EQ(16U, pages[2].size());
+    EXPECT_EQ(24U, pages[3].size());
+    EXPECT_EQ(24U, pages[4].size());
+    EXPECT_EQ(12U, pages[7].size());
+    EXPECT_EQ(12U, pages[8].size());
+    EXPECT_EQ(8U, pages[10].size());
+    EXPECT_EQ(24U, pages[12].size());
+    EXPECT_EQ(8U, pages[13].size());
+    EXPECT_EQ(16U, pages[14].size());
+    EXPECT_EQ(30U, pages[48].size());
 }
 
 TEST(ScsiCdTest, Inquiry)
@@ -63,7 +67,7 @@ TEST(ScsiCdTest, GetSectorSizes)
     MockScsiCd cd(0);
 
     const auto &sector_sizes = cd.GetSupportedSectorSizes();
-    EXPECT_EQ(2, sector_sizes.size());
+    EXPECT_EQ(2U, sector_sizes.size());
 
     EXPECT_TRUE(sector_sizes.contains(512));
     EXPECT_TRUE(sector_sizes.contains(2048));
@@ -101,7 +105,7 @@ TEST(ScsiCdTest, Open)
     filename = CreateTempFile(2 * 2048);
     cd_iso.SetFilename(string(filename));
     cd_iso.Open();
-    EXPECT_EQ(2, cd_iso.GetBlockCount());
+    EXPECT_EQ(2U, cd_iso.GetBlockCount());
     remove(filename);
 
     filename = CreateTempFile(0);
@@ -133,7 +137,7 @@ TEST(ScsiCdTest, Open)
     cd_raw.SetFilename(string(filename));
     resize_file(filename, 2 * 2536);
     cd_raw.Open();
-    EXPECT_EQ(2, cd_raw.GetBlockCount());
+    EXPECT_EQ(2U, cd_raw.GetBlockCount());
     remove(filename);
 
     filename = CreateTempFile(2 * 2048);

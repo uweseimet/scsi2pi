@@ -10,10 +10,12 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
+#include "mode_page_util.h"
 #include "optical_memory.h"
 
-using namespace scsi_command_util;
+using namespace memory_util;
+using namespace mode_page_util;
 
 OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, { 512, 1024, 2048, 4096 })
 {
@@ -54,7 +56,7 @@ void OpticalMemory::Open()
     }
 }
 
-vector<uint8_t> OpticalMemory::InquiryInternal() const
+vector<uint8_t> OpticalMemory::InquiryInternal()
 {
     return HandleInquiry(device_type::optical_memory, scsi_level::scsi_2, true);
 }
@@ -86,7 +88,7 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
 
 void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    if (const string result = scsi_command_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
     !result.empty()) {
         LogWarn(result);
     }
