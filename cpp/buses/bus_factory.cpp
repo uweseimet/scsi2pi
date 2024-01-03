@@ -59,7 +59,7 @@ bool BusFactory::CheckForPi()
         return true;
     }
 
-    spdlog::error("Unsupported Raspberry Pi model '{}', functionality may be limited", model);
+    spdlog::error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
 
     return false;
 }
