@@ -57,9 +57,9 @@ public:
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
     MOCK_METHOD(void, PinConfig, (int, int), (override));
-    MOCK_METHOD(void, PullConfig, (int , int ), (override));
-    MOCK_METHOD(void, SetControl, (int , bool ), (override));
-    MOCK_METHOD(void, SetMode, (int , int ), (override));
+    MOCK_METHOD(void, PullConfig, (int, int), (override));
+    MOCK_METHOD(void, SetControl, (int, bool), (override));
+    MOCK_METHOD(void, SetMode, (int, int), (override));
 
     MockBus() = default;
     ~MockBus() override = default;
@@ -73,6 +73,7 @@ public:
 
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, Reset, (), (override));
+    MOCK_METHOD(bool, WaitSignal, (int, bool), (override));
 
     using InProcessBus::InProcessBus;
 };
