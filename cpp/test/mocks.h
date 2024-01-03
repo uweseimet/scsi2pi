@@ -72,6 +72,7 @@ class MockInProcessBus : public InProcessBus
 public:
 
     MOCK_METHOD(void, CleanUp, (), (override));
+    MOCK_METHOD(void, Reset, (), (override));
 
     using InProcessBus::InProcessBus;
 };

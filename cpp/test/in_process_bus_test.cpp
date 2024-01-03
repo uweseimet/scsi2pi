@@ -166,6 +166,15 @@ TEST(InProcessBusTest, WaitForSelection)
     EXPECT_TRUE(bus.WaitForSelection());
 }
 
+TEST(DelegatingProcessBusTest, Reset)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, false);
+
+    EXPECT_CALL(bus, Reset());
+    delegating_bus.Reset();
+}
+
 TEST(DelegatingProcessBusTest, Acquire)
 {
     InProcessBus bus;
