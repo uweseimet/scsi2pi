@@ -45,16 +45,16 @@ TEST(ScsiHdTest, SCRM_DeviceDefaults)
 
 void ScsiHdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(9, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(12, pages[1].size());
-    EXPECT_EQ(16, pages[2].size());
-    EXPECT_EQ(24, pages[3].size());
-    EXPECT_EQ(24, pages[4].size());
-    EXPECT_EQ(12, pages[7].size());
-    EXPECT_EQ(12, pages[8].size());
-    EXPECT_EQ(8, pages[10].size());
-    EXPECT_EQ(24, pages[12].size());
-    EXPECT_EQ(30, pages[48].size());
+    EXPECT_EQ(9U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(12U, pages[1].size());
+    EXPECT_EQ(16U, pages[2].size());
+    EXPECT_EQ(24U, pages[3].size());
+    EXPECT_EQ(24U, pages[4].size());
+    EXPECT_EQ(12U, pages[7].size());
+    EXPECT_EQ(12U, pages[8].size());
+    EXPECT_EQ(8U, pages[10].size());
+    EXPECT_EQ(24U, pages[12].size());
+    EXPECT_EQ(30U, pages[48].size());
 }
 
 TEST(ScsiHdTest, Inquiry)
@@ -115,7 +115,7 @@ TEST(ScsiHdTest, GetSectorSizes)
     MockScsiHd hd(0, false);
 
     const auto &sector_sizes = hd.GetSupportedSectorSizes();
-    EXPECT_EQ(4, sector_sizes.size());
+    EXPECT_EQ(4U, sector_sizes.size());
 
     EXPECT_TRUE(sector_sizes.contains(512));
     EXPECT_TRUE(sector_sizes.contains(1024));

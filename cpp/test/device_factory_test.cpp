@@ -36,7 +36,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     DeviceFactory device_factory;
 
     auto mapping = device_factory.GetExtensionMapping();
-    EXPECT_EQ(9, mapping.size());
+    EXPECT_EQ(9U, mapping.size());
     EXPECT_EQ(SCHD, mapping["hd1"]);
     EXPECT_EQ(SCHD, mapping["hds"]);
     EXPECT_EQ(SCHD, mapping["hda"]);

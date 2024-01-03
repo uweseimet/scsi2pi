@@ -209,7 +209,7 @@ TEST(ScsiControllerTest, MsgOut)
     EXPECT_CALL(*bus, SetIO(false));
     controller.MsgOut();
     EXPECT_EQ(phase_t::msgout, controller.GetPhase());
-    EXPECT_EQ(1, controller.GetLength());
+    EXPECT_EQ(1U, controller.GetLength());
     EXPECT_EQ(0, controller.GetOffset());
 }
 

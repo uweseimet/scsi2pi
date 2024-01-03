@@ -120,7 +120,7 @@ TEST(S2pCtlCommandsTest, Export)
     auto [fd_bin, filename_bin] = OpenTempFile();
     S2pCtlCommands commands1(command, "localhost", 0, filename_bin, "", "");
     EXPECT_TRUE(commands1.Execute("", "", "", "", ""));
-    EXPECT_EQ(2, file_size(filename_bin));
+    EXPECT_EQ(2U, file_size(filename_bin));
     remove(filename_bin);
 
     auto [fd_json, filename_json] = OpenTempFile();

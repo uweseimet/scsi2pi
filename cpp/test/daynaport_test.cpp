@@ -38,7 +38,7 @@ TEST(ScsiDaynaportTest, GetDefaultParams)
 {
     const auto [controller, daynaport] = CreateDevice(SCDP);
     const auto params = daynaport->GetDefaultParams();
-    EXPECT_EQ(2, params.size());
+    EXPECT_EQ(2U, params.size());
 }
 
 TEST(ScsiDaynaportTest, Inquiry)
@@ -231,5 +231,5 @@ TEST(ScsiDaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);
 
-    EXPECT_EQ(2, daynaport.GetStatistics().size());
+    EXPECT_EQ(2U, daynaport.GetStatistics().size());
 }

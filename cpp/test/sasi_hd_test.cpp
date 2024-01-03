@@ -49,7 +49,7 @@ TEST(SasiHdTest, GetSectorSizes)
     MockSasiHd hd(0);
 
     const auto &sector_sizes = hd.GetSupportedSectorSizes();
-    EXPECT_EQ(3, sector_sizes.size());
+    EXPECT_EQ(3U, sector_sizes.size());
 
     EXPECT_TRUE(sector_sizes.contains(256));
     EXPECT_TRUE(sector_sizes.contains(512));

@@ -125,7 +125,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     CommandContext context_reserve_ids1(command_reserve_ids1, "", "");
     EXPECT_TRUE(executor->ProcessCmd(context_reserve_ids1));
     const unordered_set<int> ids = executor->GetReservedIds();
-    EXPECT_EQ(2, ids.size());
+    EXPECT_EQ(2U, ids.size());
     EXPECT_TRUE(ids.contains(2));
     EXPECT_TRUE(ids.contains(3));
 
@@ -375,7 +375,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     error = executor->SetReservedIds("7,1,2,3,5");
     EXPECT_TRUE(error.empty());
     unordered_set<int> reserved_ids = executor->GetReservedIds();
-    EXPECT_EQ(5, reserved_ids.size());
+    EXPECT_EQ(5U, reserved_ids.size());
     EXPECT_TRUE(reserved_ids.contains(1));
     EXPECT_TRUE(reserved_ids.contains(2));
     EXPECT_TRUE(reserved_ids.contains(3));
