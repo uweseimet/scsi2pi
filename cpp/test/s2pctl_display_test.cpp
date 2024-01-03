@@ -189,7 +189,7 @@ TEST(S2pCtlDisplayTest, DisplayReservedIdsInfo)
     EXPECT_NE(string::npos, s.find("5, 6"));
 }
 
-TEST(S2pCtlDisplayTest, DisplayNetworkInterfacesInfo)
+TEST(S2pCtlDisplayTest, DisplayNetworkInterfaces)
 {
     S2pCtlDisplay display;
     PbNetworkInterfacesInfo info;
