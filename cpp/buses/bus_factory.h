@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <string>
 #include "buses/in_process_bus.h"
 
 using namespace std;
