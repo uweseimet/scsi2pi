@@ -131,8 +131,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
     S2pCtlDisplay display;
     PbDeviceTypesInfo info;
 
-    // Start with 2 instead of 1. 1 was the removed SASI drive type.
-    int ordinal = 2;
+    int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
         PbDeviceType type = UNDEFINED;
         PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
