@@ -206,3 +206,12 @@ TEST(DelegatingProcessBusTest, DAT)
     EXPECT_EQ(0x56, delegating_bus.GetDAT());
     EXPECT_EQ(0x56, bus.GetDAT());
 }
+
+TEST(DelegatingProcessBusTest, CleanUp)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, false);
+
+    EXPECT_CALL(bus, CleanUp());
+    delegating_bus.CleanUp();
+}
