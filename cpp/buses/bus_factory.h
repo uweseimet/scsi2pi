@@ -17,9 +17,6 @@ class BusFactory
 
 public:
 
-    BusFactory() = default;
-    ~BusFactory() = default;
-
     unique_ptr<Bus> CreateBus(Bus::mode_e, bool = false);
 
     bool IsRaspberryPi() const
