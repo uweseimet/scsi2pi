@@ -2,12 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "buses/bus.h"
 #include "phase_handler.h"
+
+using namespace scsi_defs;
 
 void PhaseHandler::Init()
 {
