@@ -223,7 +223,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
 
     if (output_filename.empty()) {
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         cout << json << '\n';
 
         CleanUp();
@@ -250,7 +250,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
         }
 
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         out << json << '\n';
         break;
     }

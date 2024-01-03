@@ -200,7 +200,7 @@ void HostServices::ReceiveOperationResults()
     case protobuf_format::json: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
-        MessageToJsonString(result, &data).ok();
+        (void)MessageToJsonString(result, &data).ok();
         break;
     }
 
