@@ -218,6 +218,9 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_EQ(string::npos, s.find("INFO"));
     EXPECT_EQ(string::npos, s.find("WARNING"));
     EXPECT_EQ(string::npos, s.find("ERROR"));
+    EXPECT_EQ(string::npos, s.find("info"));
+    EXPECT_EQ(string::npos, s.find("warning"));
+    EXPECT_EQ(string::npos, s.find("error"));
 
     auto st1 = info.add_statistics();
     st1->set_category(PbStatisticsCategory::CATEGORY_INFO);
