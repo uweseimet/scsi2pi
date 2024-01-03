@@ -79,6 +79,8 @@ TEST(S2pCtlDisplayTest, DisplayVersionInfo)
     string s = display.DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("1.2.3"));
+    EXPECT_NE(string::npos, s.find("identifier"));
+    EXPECT_EQ(string::npos, s.find("development"));
 
     info.set_patch_version(-1);
     s = display.DisplayVersionInfo(info);
@@ -89,6 +91,25 @@ TEST(S2pCtlDisplayTest, DisplayVersionInfo)
     s = display.DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("rc"));
+
+    info.set_major_version(21);
+    info.set_minor_version(11);
+    info.set_identifier("");
+    s = display.DisplayVersionInfo(info);
+    EXPECT_NE(string::npos, s.find("RaSCSI"));
+    EXPECT_NE(string::npos, s.find("development"));
+
+    info.set_major_version(22);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_NE(string::npos, s.find("PiSCSI"));
+    EXPECT_NE(string::npos, s.find("development"));
+
+    info.set_patch_version(0);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_EQ(string::npos, s.find("development"));
+    info.set_patch_version(1);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_EQ(string::npos, s.find("development"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayLogLevelInfo)
