@@ -128,9 +128,8 @@ bool CTapDriver::Init(const param_map &const_params)
         return false;
     };
 
-    // Check if the bridge has already been created
-    // TODO Find an alternative to accessing a file, there is most likely a system call/ioctl
-    if (access(string("/sys/class/net/" + BRIDGE_NAME).c_str(), F_OK)) {
+    // Check if the bridge has already been created by checking whether there is a MAC address for the bridge.
+    if (network_util::GetMacAddress(BRIDGE_NAME).empty()) {
         spdlog::trace("Checking which interface is available for creating the bridge " + BRIDGE_NAME);
 
         const auto &it = ranges::find_if(interfaces, [](const string &iface) {return IsInterfaceUp(iface);});
