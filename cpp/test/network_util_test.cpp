@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,6 +17,13 @@ TEST(NetworkUtilTest, IsInterfaceUp)
 {
     EXPECT_FALSE(IsInterfaceUp("foo_bar"));
 }
+
+#ifdef __linux__
+TEST(NetworkUtilTest, GetNetworkInterfaces)
+{
+    EXPECT_FALSE(GetNetworkInterfaces().empty());
+}
+#endif
 
 TEST(NetworkUtilTest, ResolveHostName)
 {
