@@ -210,7 +210,7 @@ param_map CTapDriver::GetDefaultParams() const
 pair<string, string> CTapDriver::ExtractAddressAndMask(const string &s)
 {
     string address = s;
-    string netmask = "255.255.255.0"; // NOSONAR This hardcoded IP address is safe
+    string netmask = DEFAULT_NETMASK;
     if (const auto &components = Split(s, '/', 2); components.size() == 2) {
         address = components[0];
 

@@ -31,6 +31,8 @@ class CTapDriver
 
     const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
 
+    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
+
 public:
 
     CTapDriver() = default;
