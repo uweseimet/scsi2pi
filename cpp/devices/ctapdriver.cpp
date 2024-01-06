@@ -195,7 +195,6 @@ void CTapDriver::CleanUp() const
             close(br_socket_fd);
         }
 
-        // Release TAP device
         close(m_hTAP);
     }
 }
@@ -244,9 +243,11 @@ string CTapDriver::SetUpEth0(int socket_fd, const string &bridge_interface)
     if (const string error = br_setif(socket_fd, BRIDGE_NAME, bridge_interface, true); !error.empty()) {
         return error;
     }
-#endif
 
     return "";
+#else
+    return "SIOCBRADDBR: Linux is required";
+#endif
 }
 
 string CTapDriver::SetUpNonEth0(int socket_fd, int ip_fd, const string &s)
