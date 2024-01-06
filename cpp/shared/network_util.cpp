@@ -63,8 +63,8 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 
     while (tmp) {
         if (const string name = tmp->ifa_name; tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_PACKET &&
-            !(tmp->ifa_flags & IFF_LOOPBACK) && name != "piscsi_bridge" && !name.starts_with("dummy")
-            && !name.starts_with("vbox") && IsInterfaceUp(name)) {
+            !(tmp->ifa_flags & IFF_LOOPBACK) && (name.starts_with("eth") || name.starts_with("wlan"))
+            && IsInterfaceUp(name)) {
             // Only list interfaces that are up
             network_interfaces.insert(name);
         }
