@@ -33,6 +33,8 @@ class CTapDriver
 
     const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 
+    const inline static string DEFAULT_BRIDGE_IF = "piscsi0";
+
 public:
 
     CTapDriver() = default;

@@ -89,7 +89,7 @@ bool CTapDriver::Init(const param_map &const_params)
     // IFF_NO_PI for no extra packet information
     ifreq ifr = { };
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-    strncpy(ifr.ifr_name, "piscsi0", IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    strncpy(ifr.ifr_name, DEFAULT_BRIDGE_IF.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
 
     spdlog::trace("Going to open " + string(ifr.ifr_name));
 
@@ -160,22 +160,22 @@ bool CTapDriver::Init(const param_map &const_params)
         spdlog::info(BRIDGE_NAME + " is already available");
     }
 
-    spdlog::trace(">ip link set piscsi0 up");
+    spdlog::trace(">ip link set " + DEFAULT_BRIDGE_IF + " up");
 
-    if (const string error = ip_link(ip_fd, "piscsi0", true); !error.empty()) {
+    if (const string error = ip_link(ip_fd, DEFAULT_BRIDGE_IF.c_str(), true); !error.empty()) {
         return cleanUp(error);
     }
 
-    spdlog::trace(">brctl addif " + BRIDGE_NAME + " piscsi0");
+    spdlog::trace(">brctl addif " + BRIDGE_NAME + " " + DEFAULT_BRIDGE_IF);
 
-    if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, "piscsi0", true); !error.empty()) {
+    if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, DEFAULT_BRIDGE_IF, true); !error.empty()) {
         return cleanUp(error);
     }
 
     close(ip_fd);
     close(br_socket_fd);
 
-    spdlog::info("Tap device " + string(ifr.ifr_name) + " created");
+    spdlog::info("Tap device " + DEFAULT_BRIDGE_IF + " created");
 
     return true;
 #endif
@@ -187,9 +187,9 @@ void CTapDriver::CleanUp() const
         if (const int br_socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0); br_socket_fd < 0) {
             LogErrno("Can't open bridge socket");
         } else {
-            spdlog::trace(">brctl delif " + BRIDGE_NAME + " piscsi0");
-            if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, "piscsi0", false); !error.empty()) {
-                spdlog::warn("Warning: Removing piscsi0 from the bridge failed: " + error);
+            spdlog::trace(">brctl delif " + BRIDGE_NAME + " " + DEFAULT_BRIDGE_IF);
+            if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, DEFAULT_BRIDGE_IF, false); !error.empty()) {
+                spdlog::warn("Warning: Removing " + DEFAULT_BRIDGE_IF + " from the bridge failed: " + error);
                 spdlog::warn("You may need to manually remove the tap device");
             }
             close(br_socket_fd);
@@ -285,16 +285,18 @@ string CTapDriver::SetUpNonEth0(int socket_fd, int ip_fd, const string &s)
     if (ioctl(ip_fd, SIOCSIFADDR, &ifr_a) < 0 || ioctl(ip_fd, SIOCSIFNETMASK, &ifr_n) < 0) {
         return "Can't ioctl SIOCSIFADDR or SIOCSIFNETMASK";
     }
-#endif
 
     return "";
+#else
+    return " SIOCSIFADDR/SIOCSIFNETMASK: Linux is required";
+#endif
 }
 
 string CTapDriver::IpLink(bool enable) const
 {
     const int fd = socket(PF_INET, SOCK_DGRAM, 0);
-    spdlog::trace(string(">ip link set piscsi0 ") + (enable ? "up" : "down"));
-    const string result = ip_link(fd, "piscsi0", enable);
+    spdlog::trace(string(">ip link set " + DEFAULT_BRIDGE_IF + " ") + (enable ? "up" : "down"));
+    const string result = ip_link(fd, DEFAULT_BRIDGE_IF.c_str(), enable);
     close(fd);
     return result;
 }
