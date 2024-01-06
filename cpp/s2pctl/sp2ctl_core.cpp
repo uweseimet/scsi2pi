@@ -50,7 +50,7 @@ void ScsiCtl::Banner(const vector<char*> &args) const
             << "        HOST := s2p host to connect to, default is 'localhost'\n"
             << "        PORT := s2p port to connect to, default is 6868\n"
             << "        RESERVED_IDS := comma-separated list of IDs to reserve\n"
-            << "        LOG_LEVEL := log level {trace|debug|info|warn|err|off}, default is 'info'\n"
+            << "        LOG_LEVEL := log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
             << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n"
             << "Usage: " << args[0] << " -l\n"
             << "       Print device list.\n" << flush;
