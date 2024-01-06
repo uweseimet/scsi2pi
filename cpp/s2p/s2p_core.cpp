@@ -309,8 +309,8 @@ int S2p::run(span<char*> args, bool in_process)
         Banner(args);
     }
 
-    // The -v option shall result in no other action except displaying the version
-    if (ranges::find_if(args, [](const char *arg) {return !strcasecmp(arg, "-v");}) != args.end()) {
+    // The -v option shall result in no other action except displaying the version, -V display more information
+    if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v");}) != args.end()) {
         cout << GetVersionString() << '\n';
         return EXIT_SUCCESS;
     }
