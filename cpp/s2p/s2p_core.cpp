@@ -409,7 +409,7 @@ void S2p::ProcessScsiCommands()
     while (service_thread.IsRunning()) {
         // Only process the SCSI command if the bus is not busy and no other device responded
         // TODO There may be something wrong with the SEL/BSY handling, see PhaseExecutor/Arbitration
-        if (WaitForSelection() && WaitForNotBusy()) {
+        if (bus->WaitForSelection() && WaitForNotBusy()) {
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
@@ -449,20 +449,6 @@ bool S2p::WaitForNotBusy() const
             if (!bus->GetBSY()) {
                 return true;
             }
-        }
-
-        return false;
-    }
-
-    return true;
-}
-
-bool S2p::WaitForSelection()
-{
-    if (!bus->WaitForSelection()) {
-        // Stop on interrupt
-        if (errno == EINTR) {
-            service_thread.Stop();
         }
 
         return false;

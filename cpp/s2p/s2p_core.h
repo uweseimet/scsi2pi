@@ -44,7 +44,6 @@ private:
     void SetUpEnvironment();
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
-    bool WaitForSelection();
 
     bool ExecuteCommand(CommandContext&);
     bool ExecuteWithLock(const CommandContext&);
