@@ -35,7 +35,7 @@ using namespace scsi_defs;
 void S2p::Banner(span<char*> args) const
 {
     cout << s2p_util::Banner("(Target Emulation Service)")
-        << "\nUsage: " << args[0] << " [-id|hd[:LUN]] FILE] ...\n\n"
+        << "\nUsage: " << args[0] << " [-id|hd ID[:LUN]] FILE] ...\n\n"
         << " id|ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
         << " hd|HD is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
         << " LUN is the optional logical unit, 0 is the default"
