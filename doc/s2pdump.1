@@ -8,9 +8,9 @@ s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
 \fB\-f\fR \fIFILE\fR
 [\fB\-s\fR \fIBUFFER_SIZE\fR]
 [\fB\-r\fR]
-[\fB\-v\fR]
 [\fB\-p\fR]
 [\fB\-I\fR] ID[:LUN]
+[\fB\-L\fR \fILOG_LEVEL\fR]
 [\fB\-S\fR]
 .SH DESCRIPTION
 .B s2pdump
@@ -44,14 +44,14 @@ The transfer buffer size in bytes. Default is 1 MiB. This is specified in bytes 
 .BR \-r\fI
 Run in restore mode. Default is dump mode.
 .TP
-.BR \-v\fI
-Enable verbose logging.
-.TP
 .BR \-p\fI
 Generate a .properties file that is compatible with the SCSI2Pi web interface. The output filename will match the image filename with ".properties" appended. The generated file should be moved to ~/.config/s2p.
 .TP
 .BR \-I\fI " "\fIID[:LUN]
 Display INQUIRY data of ID[:LUN].
+.TP
+.BR \-L\fI " " \fILOG_LEVEL
+Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \-S\fI
 Scan SCSI bus for devices.
