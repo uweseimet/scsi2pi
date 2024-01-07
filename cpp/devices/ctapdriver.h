@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include <vector>
 #include <span>
 #include "base/device.h"
 
@@ -27,7 +26,7 @@ using namespace std;
 
 class CTapDriver
 {
-    static const string BRIDGE_NAME;
+    const inline static string BRIDGE_NAME = "piscsi_bridge";
 
     const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
 
@@ -50,8 +49,10 @@ public:
     int Receive(uint8_t*) const;
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
+
     // Enable/Disable the piscsi0 interface
     string IpLink(bool) const;
+
     // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
@@ -69,7 +70,7 @@ private:
     static pair<string, string> ExtractAddressAndMask(const string&);
 
     // File handle
-    int m_hTAP = -1;
+    int tap_fd = -1;
 
     // Prioritized comma-separated list of interfaces to create the bridge for
     vector<string> interfaces;

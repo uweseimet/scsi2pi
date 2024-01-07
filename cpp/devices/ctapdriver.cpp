@@ -28,8 +28,6 @@ using namespace std;
 using namespace s2p_util;
 using namespace network_util;
 
-const string CTapDriver::BRIDGE_NAME = "piscsi_bridge";
-
 static string br_setif(int br_socket_fd, const string &bridgename, const string &ifname, bool add)
 {
 #ifndef __linux__
@@ -37,7 +35,7 @@ static string br_setif(int br_socket_fd, const string &bridgename, const string 
 #else
     ifreq ifr;
     ifr.ifr_ifindex = if_nametoindex(ifname.c_str());
-    if (ifr.ifr_ifindex == 0) {
+    if (!ifr.ifr_ifindex) {
         return "Can't if_nametoindex " + ifname;
     }
     strncpy(ifr.ifr_name, bridgename.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
@@ -75,9 +73,7 @@ bool CTapDriver::Init(const param_map &const_params)
     }
     inet = params["inet"];
 
-    spdlog::trace("Opening tap device");
-    // TAP device initilization
-    if ((m_hTAP = open("/dev/net/tun", O_RDWR)) < 0) {
+    if ((tap_fd = open("/dev/net/tun", O_RDWR)) < 0) {
         LogErrno("Can't open tun");
         return false;
     }
@@ -91,45 +87,38 @@ bool CTapDriver::Init(const param_map &const_params)
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, DEFAULT_BRIDGE_IF.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
 
-    spdlog::trace("Going to open " + string(ifr.ifr_name));
-
-    const int ret = ioctl(m_hTAP, TUNSETIFF, (void*)&ifr);
+    const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr);
     if (ret < 0) {
         LogErrno("Can't ioctl TUNSETIFF");
-
-        close(m_hTAP);
+        close(tap_fd);
         return false;
     }
-
-    spdlog::trace("Return code from ioctl was " + to_string(ret));
 
     const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (ip_fd < 0) {
         LogErrno("Can't open ip socket");
-
-        close(m_hTAP);
+        close(tap_fd);
         return false;
     }
 
     const int br_socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (br_socket_fd < 0) {
         LogErrno("Can't open bridge socket");
-
-        close(m_hTAP);
+        close(tap_fd);
         close(ip_fd);
         return false;
     }
 
     auto cleanUp = [&](const string &error) {
         LogErrno(error);
-        close(m_hTAP);
+        close(tap_fd);
         close(ip_fd);
         close(br_socket_fd);
         return false;
     };
 
     // Check if the bridge has already been created by checking whether there is a MAC address for the bridge.
-    if (network_util::GetMacAddress(BRIDGE_NAME).empty()) {
+    if (GetMacAddress(BRIDGE_NAME).empty()) {
         spdlog::trace("Checking which interface is available for creating the bridge " + BRIDGE_NAME);
 
         const auto &it = ranges::find_if(interfaces, [](const string &iface) {return IsInterfaceUp(iface);});
@@ -183,7 +172,7 @@ bool CTapDriver::Init(const param_map &const_params)
 
 void CTapDriver::CleanUp() const
 {
-    if (m_hTAP != -1) {
+    if (tap_fd != -1) {
         if (const int br_socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0); br_socket_fd < 0) {
             LogErrno("Can't open bridge socket");
         } else {
@@ -195,7 +184,7 @@ void CTapDriver::CleanUp() const
             close(br_socket_fd);
         }
 
-        close(m_hTAP);
+        close(tap_fd);
     }
 }
 
@@ -311,11 +300,9 @@ void CTapDriver::Flush() const
 
 bool CTapDriver::HasPendingPackets() const
 {
-    assert(m_hTAP != -1);
-
     // Check if there is data that can be received
     pollfd fds;
-    fds.fd = m_hTAP;
+    fds.fd = tap_fd;
     fds.events = POLLIN | POLLERR;
     fds.revents = 0;
     poll(&fds, 1, 0);
@@ -339,44 +326,33 @@ uint32_t CTapDriver::Crc32(span<const uint8_t> data)
 
 int CTapDriver::Receive(uint8_t *buf) const
 {
-    assert(m_hTAP != -1);
-
     // Check if there is data that can be received
     if (!HasPendingPackets()) {
         return 0;
     }
 
-    // Receive
-    auto dwReceived = static_cast<uint32_t>(read(m_hTAP, buf, ETH_FRAME_LEN));
-    if (dwReceived == static_cast<uint32_t>(-1)) {
+    auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf, ETH_FRAME_LEN));
+    if (bytes_received == static_cast<uint32_t>(-1)) {
         spdlog::warn("Error occured while receiving a packet");
         return 0;
     }
 
-    // If reception is enabled
-    if (dwReceived > 0) {
+    if (bytes_received > 0) {
         // We need to add the Frame Check Status (FCS) CRC back onto the end of the packet.
-        // The Linux network subsystem removes it, since most software apps shouldn't ever
-        // need it.
-        const int crc = Crc32(span(buf, dwReceived));
+        // The Linux network subsystem removes it, since most software apps shouldn't ever need it.
+        const int crc = Crc32(span(buf, bytes_received));
 
-        buf[dwReceived + 0] = (uint8_t)((crc >> 0) & 0xFF);
-        buf[dwReceived + 1] = (uint8_t)((crc >> 8) & 0xFF);
-        buf[dwReceived + 2] = (uint8_t)((crc >> 16) & 0xFF);
-        buf[dwReceived + 3] = (uint8_t)((crc >> 24) & 0xFF);
-
-        // Add FCS size to the received message size
-        dwReceived += 4;
+        buf[bytes_received + 0] = (uint8_t)((crc >> 0) & 0xff);
+        buf[bytes_received + 1] = (uint8_t)((crc >> 8) & 0xff);
+        buf[bytes_received + 2] = (uint8_t)((crc >> 16) & 0xff);
+        buf[bytes_received + 3] = (uint8_t)((crc >> 24) & 0xff);
+        bytes_received += 4;
     }
 
-    // Return the number of bytes
-    return dwReceived;
+    return bytes_received;
 }
 
 int CTapDriver::Send(const uint8_t *buf, int len) const
 {
-    assert(m_hTAP != -1);
-
-    // Start sending
-    return static_cast<int>(write(m_hTAP, buf, len));
+    return static_cast<int>(write(tap_fd, buf, len));
 }
