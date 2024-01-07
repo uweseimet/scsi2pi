@@ -35,7 +35,7 @@ TEST(ImageSupportTest, CreateImage)
 {
     S2pImage image;
 
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     PbCommand command1;
     CommandContext context1(command1, "", "");
@@ -69,7 +69,7 @@ TEST(ImageSupportTest, DeleteImage)
 {
     S2pImage image;
 
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     PbCommand command1;
     CommandContext context1(command1, "", "");
@@ -95,7 +95,7 @@ TEST(ImageSupportTest, RenameImage)
 {
     S2pImage image;
 
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     PbCommand command1;
     CommandContext context1(command1, "", "");
@@ -118,7 +118,7 @@ TEST(ImageSupportTest, CopyImage)
 {
     S2pImage image;
 
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     PbCommand command1;
     CommandContext context1(command1, "", "");
@@ -141,7 +141,7 @@ TEST(ImageSupportTest, SetImagePermissions)
 {
     S2pImage image;
 
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     PbCommand command1;
     CommandContext context1(command1, "", "");

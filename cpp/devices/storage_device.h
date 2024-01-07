@@ -41,8 +41,6 @@ public:
 
     void ReserveFile() const;
     void UnreserveFile();
-    // TODO Remove this method, it is only used by the unit tests
-    static void UnreserveAll();
 
     static bool FileExists(string_view);
 

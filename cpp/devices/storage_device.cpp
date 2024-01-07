@@ -93,11 +93,6 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
     return {-1, -1};
 }
 
-void StorageDevice::UnreserveAll()
-{
-    reserved_files.clear();
-}
-
 bool StorageDevice::FileExists(string_view file)
 {
     return exists(path(file));

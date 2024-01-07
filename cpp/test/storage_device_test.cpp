@@ -80,7 +80,7 @@ TEST(StorageDeviceTest, GetIdsForReservedFile)
     MockAbstractController controller(bus, ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");
-    StorageDevice::UnreserveAll();
+    StorageDevice::SetReservedFiles( { });
 
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
 
@@ -97,25 +97,6 @@ TEST(StorageDeviceTest, GetIdsForReservedFile)
     const auto [id3, lun3] = StorageDevice::GetIdsForReservedFile("filename");
     EXPECT_EQ(-1, id3);
     EXPECT_EQ(-1, lun3);
-}
-
-TEST(StorageDeviceTest, UnreserveAll)
-{
-    const int ID = 1;
-    const int LUN = 0;
-    auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
-    MockAbstractController controller(bus, ID);
-    auto device = make_shared<MockScsiHd>(LUN, false);
-    device->SetFilename("filename");
-
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
-
-    device->ReserveFile();
-    StorageDevice::UnreserveAll();
-    const auto [id, lun] = StorageDevice::GetIdsForReservedFile("filename");
-    EXPECT_EQ(-1, id);
-    EXPECT_EQ(-1, lun);
 }
 
 TEST(StorageDeviceTest, GetSetReservedFiles)
