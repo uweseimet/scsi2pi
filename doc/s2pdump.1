@@ -6,12 +6,14 @@ s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
 \fB\-t\fR \fIID[:LUN]\fR
 [\fB\-i\fR \fIBID\fR]
 \fB\-f\fR \fIFILE\fR
-[\fB\-s\fR \fIBUFFER_SIZE\fR]
+[\fB\-b\fR \fIBUFFER_SIZE\fR]
 [\fB\-r\fR]
 [\fB\-p\fR]
-[\fB\-I\fR] ID[:LUN]
+[\fB\-I\fR] \fID[:LUN]\fR
 [\fB\-L\fR \fILOG_LEVEL\fR]
-[\fB\-S\fR]
+[\fB\-s\fR]
+[\fB\-S\fR \fISTART\fR]
+[\fB\-C\fR \fICOUNT\fR]
 .SH DESCRIPTION
 .B s2pdump
 has two modes of operation: dump and restore. These can be used with physical storage media, including hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
@@ -38,7 +40,7 @@ SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 
 .BR \-f\fI " "\fIFILE
 Path to the dump file.
 .TP
-.BR \-s\fI " "\fIBUFFER_SIZE
+.BR \-b\fI " "\fIBUFFER_SIZE
 The transfer buffer size in bytes. Default is 1 MiB. This is specified in bytes with a minimum value of 65536 (64 KiB).
 .TP
 .BR \-r\fI
@@ -53,8 +55,14 @@ Display INQUIRY data of ID[:LUN].
 .BR \-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
-.BR \-S\fI
+.BR \-s\fI
 Scan SCSI bus for devices.
+.TP
+.BR \-S\fI "  " \fISTART
+Start sector, default is 0.
+.TP
+.BR \-C\fI "  " \fICOUNT
+Sector count, default is the drive capacity.
 
 .SH EXAMPLES
 Dump Mode: [SCSI Drive] ---> [SCSI2Pi host]

@@ -50,7 +50,7 @@ bool S2pDump::Banner(span<char*> args) const
     if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
         cout << s2p_util::Banner("(SCSI Hard Disk Dump/Restore Utility)")
             << "Usage: " << args[0] << " -t ID[:LUN] [-i BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
-            << " [-L LOG_LEVEL] [-p] [-I] [-s]\n"
+            << " [-L LOG_LEVEL] [-p] [-I] [-s] [-S START] [-C COUNT]\n"
             << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
             << " Default is 0.\n"
@@ -66,6 +66,8 @@ bool S2pDump::Banner(span<char*> args) const
             << " Only valid for dump and inquiry mode.\n"
             << " -I Display INQUIRY data of ID[:LUN].\n"
             << " -s Scan SCSI bus for devices.\n"
+            << " -S Start sector, default is 0.\n"
+            << " -C Sector count, default is the drive capacity."
             << flush;
 
         return false;
