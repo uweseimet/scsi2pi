@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         s2p->run(target_args, true);
     });
 
-    // TODO Avoid sleeping
+    // Give s2p time to initialize
     sleep(1);
 
     auto s2pdump = make_unique<S2pDump>();
