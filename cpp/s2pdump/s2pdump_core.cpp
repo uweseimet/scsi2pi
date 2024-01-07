@@ -150,7 +150,7 @@ void S2pDump::ParseArguments(span<char*> args)
 
         case 'C':
             if (!GetAsUnsignedInt(optarg, count) || !count) {
-                throw parser_exception("Invalid sector count " + string(optarg));
+                throw parser_exception("Invalid sector count: " + string(optarg));
             }
             break;
 
@@ -164,7 +164,7 @@ void S2pDump::ParseArguments(span<char*> args)
 
         case 'S':
             if (!GetAsUnsignedInt(optarg, start)) {
-                throw parser_exception("Invalid start sector " + string(optarg));
+                throw parser_exception("Invalid start sector: " + string(optarg));
             }
             break;
 
@@ -377,8 +377,11 @@ string S2pDump::DumpRestore()
     }
 
     if (!to_stdout) {
-        cout << "Starting " << (restore ? "restore" : "dump") << ", buffer size is " << buffer.size()
-            << " bytes\n\n" << flush;
+        cout << "Starting " << (restore ? "restore" : "dump") << "\n"
+            << "  Start sector is " << start << "\n"
+            << "  Sector count is " << count << "\n"
+            << "  Buffer size is " << buffer.size() << " bytes\n\n"
+            << flush;
     }
 
     int sector_offset = start;
@@ -477,12 +480,12 @@ long S2pDump::CalculateEffectiveSize()
     }
 
     if (inq_info.capacity <= static_cast<uint64_t>(start)) {
-        cerr << "Start sector " << start << " out of range (" << inq_info.capacity - 1 << ")" << endl;
+        cerr << "Start sector " << start << " is out of range (" << inq_info.capacity - 1 << ")" << endl;
         return -1;
     }
 
     if (inq_info.capacity < static_cast<uint64_t>(start + count)) {
-        cerr << "Sector count " << count << " out of range (" << inq_info.capacity - start << ")" << endl;
+        cerr << "Sector count " << count << " is out of range (" << inq_info.capacity - start << ")" << endl;
         return -1;
     }
 
