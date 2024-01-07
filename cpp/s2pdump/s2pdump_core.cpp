@@ -456,12 +456,12 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
 
         if (!scsi_executor->ReadWrite(buffer, sector_offset, sector_count,
             sector_count * inq_info.sector_size, true)) {
-            return "Error writing to device";
+            return "Error/interrupted while writing to device";
         }
     } else {
         if (!scsi_executor->ReadWrite(buffer, sector_offset,
             sector_count, sector_count * inq_info.sector_size, false)) {
-            return "Error reading from device";
+            return "Error/interrupted while reading from device";
         }
 
         out.write((const char*)buffer.data(), byte_count);
