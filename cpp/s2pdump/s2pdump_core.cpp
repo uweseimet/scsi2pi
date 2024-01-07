@@ -415,7 +415,7 @@ string S2pDump::DumpRestore()
         if (!to_stdout) {
             cout << setw(3) << (effective_size - remaining) * 100 / effective_size << "% ("
                 << effective_size - remaining
-                << "/" << effective_size << ")\n" << flush;
+                << "/" << effective_size << " bytes)\n" << flush;
         }
     }
 
