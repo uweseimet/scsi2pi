@@ -27,7 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: uweseimet/scsi2pi
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 

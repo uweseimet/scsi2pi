@@ -48,9 +48,9 @@ void S2pDump::TerminationHandler(int)
 bool S2pDump::Banner(span<char*> args) const
 {
     if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
-        cout << s2p_util::Banner("(Hard Disk Dump/Restore Utility)")
+        cout << s2p_util::Banner("(SCSI Hard Disk Dump/Restore Utility)")
             << "Usage: " << args[0] << " -t ID[:LUN] [-i BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
-            << " [-L log_level] [-p] [-I] [-s]\n"
+            << " [-L LOG_LEVEL] [-p] [-I] [-s]\n"
             << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
             << " Default is 0.\n"
@@ -59,9 +59,10 @@ bool S2pDump::Banner(span<char*> args) const
             << " requested.\n"
             << " BUFFER_SIZE is the transfer buffer size in bytes, at least " << MINIMUM_BUFFER_SIZE
             << " bytes. Default is 1 MiB.\n"
+            << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
             << " -a Scan all potential LUNs during bus scan, default is LUN 0 only.\n"
             << " -r Restore instead of dump.\n"
-            << " -p Generate .properties file to be used with the web interface."
+            << " -p Generate .properties file to be used with the PiSCSI web interface."
             << " Only valid for dump and inquiry mode.\n"
             << " -I Display INQUIRY data of ID[:LUN].\n"
             << " -s Scan SCSI bus for devices.\n"

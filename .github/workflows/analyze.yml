@@ -10,46 +10,62 @@ on:
 
 jobs:
   code_analysis:
-    runs-on: [k8s]
+    runs-on: ubuntu-22.04
 
     defaults:
       run:
         working-directory: cpp
 
     env:
-      BUILD_WRAPPER_OUT_DIR: ".build_wrapper_out"
       SONAR_SERVER_URL: "https://sonarcloud.io"
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
+      SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_SCANNER_VERSION: 5.0.1.3006
+      BUILD_WRAPPER_OUT_DIR: "$HOME/.build_wrapper_out"
+      APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
- 
-      - name: Run build-wrapper
-        run: |
-          build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR \
-          make -j2 coverage DEBUG=1
 
-      - name: Generate coverage data
-        run: gcovr --sonarqube > coverage.xml
+      - name: Install dependencies
+        run: sudo apt install -y ${{ env.APT_PACKAGES }}
+
+      - name: Set up build-wrapper and sonar-scanner
+        run: |
+          mkdir -p $HOME/.sonar
+          curl -sSLo /tmp/wrapper.zip $SONAR_SERVER_URL/static/cpp/build-wrapper-linux-x86.zip
+          unzip -o /tmp/wrapper.zip -d $HOME/.sonar/
+          curl -sSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+          unzip -o /tmp/scanner.zip -d $HOME/.sonar/
+
+      - name: Compile with coverage data
+        run: |
+          mkdir -p $BUILD_WRAPPER_OUT_DIR
+          $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 \
+          --out-dir $BUILD_WRAPPER_OUT_DIR \
+          make -j $(nproc) DEBUG=1 coverage
+
+      - name: Run gcov
+        run: gcov --preserve-paths $(find -name '*.gcno')
 
       - name: Run sonar-scanner
         run: |
-          sonar-scanner \
+          $HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner \
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
+            --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
             --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
+            --define sonar.cfamily.gcov.reportsPath=. \
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.sonarLanguages=c++ \
-            --define sonar.cfamily.build-wrapper-output=$BUILD_WRAPPER_OUT_DIR \
-            --define sonar.coverageReportPaths=coverage.xml \
             --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.test.inclusions=test/**

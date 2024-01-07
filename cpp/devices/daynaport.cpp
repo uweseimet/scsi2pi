@@ -169,9 +169,6 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 
     byte_read_count += rx_packet_size;
 
-    // TODO: We should check to see if this message is in the multicast
-    // configuration from SCSI command 0x0D
-
     int size = rx_packet_size;
     if (size < 128) {
         // A frame must have at least 64 bytes for the Atari driver, see https://github.com/PiSCSI/piscsi/issues/619,

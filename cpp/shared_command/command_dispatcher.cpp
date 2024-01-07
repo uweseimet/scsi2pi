@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -141,7 +141,6 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return executor.ProcessCmd(context);
 
     default:
-        // TODO Verify, especially for host services device
         // The remaining commands may only be executed when the target is idle
         if (!ExecuteWithLock(context)) {
             return false;
@@ -265,17 +264,19 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     set_level(l);
     DeviceLogger::SetLogIdAndLun(id, lun);
 
+    string msg;
     if (id != -1) {
         if (lun == -1) {
-            spdlog::info("Set log level for device " + to_string(id) + " to '" + level + "'");
+            msg = fmt::format("Set log level for device {0} to '{1}'", id, level);
         }
         else {
-            spdlog::info("Set log level for device " + to_string(id) + ":" + to_string(lun) + " to '" + level + "'");
+            msg = fmt::format("Set log level for device {0}:{1} to '{2}'", id, lun, level);
         }
     }
     else {
-        spdlog::info("Set log level to '" + level + "'");
+        msg = fmt::format("Set log level to '{}'", level);
     }
+    spdlog::info(msg);
 
     return true;
 }

@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ using namespace scsi_defs;
 void S2p::Banner(span<char*> args) const
 {
     cout << s2p_util::Banner("(Target Emulation Service)")
-        << "\nUsage: " << args[0] << " [-id|hd[:LUN]] FILE] ...\n\n"
+        << "\nUsage: " << args[0] << " [-id|hd ID[:LUN]] FILE] ...\n\n"
         << " id|ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
         << " hd|HD is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
         << " LUN is the optional logical unit, 0 is the default"
@@ -309,8 +309,8 @@ int S2p::run(span<char*> args, bool in_process)
         Banner(args);
     }
 
-    // The -v option shall result in no other action except displaying the version
-    if (ranges::find_if(args, [](const char *arg) {return !strcasecmp(arg, "-v");}) != args.end()) {
+    // The -v option shall result in no other action except displaying the version, -V display more information
+    if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v");}) != args.end()) {
         cout << GetVersionString() << '\n';
         return EXIT_SUCCESS;
     }
@@ -409,7 +409,7 @@ void S2p::ProcessScsiCommands()
     while (service_thread.IsRunning()) {
         // Only process the SCSI command if the bus is not busy and no other device responded
         // TODO There may be something wrong with the SEL/BSY handling, see PhaseExecutor/Arbitration
-        if (WaitForSelection() && WaitForNotBusy()) {
+        if (bus->WaitForSelection() && WaitForNotBusy()) {
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
@@ -449,20 +449,6 @@ bool S2p::WaitForNotBusy() const
             if (!bus->GetBSY()) {
                 return true;
             }
-        }
-
-        return false;
-    }
-
-    return true;
-}
-
-bool S2p::WaitForSelection()
-{
-    if (!bus->WaitForSelection()) {
-        // Stop on interrupt
-        if (errno == EINTR) {
-            service_thread.Stop();
         }
 
         return false;

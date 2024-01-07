@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -44,7 +44,6 @@ private:
     void SetUpEnvironment();
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
-    bool WaitForSelection();
 
     bool ExecuteCommand(CommandContext&);
     bool ExecuteWithLock(const CommandContext&);

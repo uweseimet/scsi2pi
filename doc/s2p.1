@@ -14,6 +14,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\-r\fR \fIRESERVED_IDS\fR]
 [\fB\-n\fR \fITYPE\fR]
 [\fB\-v\fR]
+[\fB\-V\fR]
 [\fB\-z\fR \fILOCALE\fR]
 [\fB\-hd n[:u]\fR \fIFILE\fR]
 [\fB\-id n[:u]\fR \fIFILE\fR]
@@ -44,13 +45,13 @@ To quit s2p press Control-C. If it is running in the background, you can kill it
 .SH OPTIONS
 .TP
 .BR \-b\fI " " \fIBLOCK_SIZE
-The optional sector size, either 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
+The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
 .TP
 .BR \-F\fI " " \fIFOLDER
 The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images'.
 .TP
 .BR \-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a particular device ID and an optional LUN was provided when setting the level.
+The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN was provided when setting the level.
 .TP
 .BR \-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
@@ -75,6 +76,9 @@ The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, S
 .TP
 .BR \-v\fI " " \fI
 Displays the s2p version.
+.TP
+.BR \-V\fI " " \fI
+Displays usage information.
 .TP
 .BR \-z\fI " "\fILOCALE
 Overrides the default locale for client-facing error messages. The client can override the locale.
