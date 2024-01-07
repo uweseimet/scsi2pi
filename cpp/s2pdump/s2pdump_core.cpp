@@ -103,20 +103,10 @@ void S2pDump::ParseArguments(span<char*> args)
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:arspI")) != -1) {
+    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:C:S:arspI")) != -1) {
         switch (opt) {
-        case 'i':
-            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
-                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
-            }
-            break;
-
-        case 'f':
-            filename = optarg;
-            break;
-
-        case 'I':
-            run_inquiry = true;
+        case 'a':
+            scan_all_luns = true;
             break;
 
         case 'b':
@@ -125,6 +115,24 @@ void S2pDump::ParseArguments(span<char*> args)
                     "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
             }
 
+            break;
+
+        case 'f':
+            filename = optarg;
+            break;
+
+        case 'i':
+            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
+                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
+            }
+            break;
+
+        case 'p':
+            create_properties_file = true;
+            break;
+
+        case 'r':
+            restore = true;
             break;
 
         case 's':
@@ -138,20 +146,24 @@ void S2pDump::ParseArguments(span<char*> args)
             }
             break;
 
+        case 'C':
+            if (!GetAsUnsignedInt(optarg, count) || !count) {
+                throw parser_exception("Invalid sector count " + string(optarg));
+            }
+            break;
+
+        case 'I':
+            run_inquiry = true;
+            break;
+
         case 'L':
             log_level = optarg;
             break;
 
-        case 'a':
-            scan_all_luns = true;
-            break;
-
-        case 'r':
-            restore = true;
-            break;
-
-        case 'p':
-            create_properties_file = true;
+        case 'S':
+            if (!GetAsUnsignedInt(optarg, start)) {
+                throw parser_exception("Invalid start sector " + string(optarg));
+            }
             break;
 
         default:
@@ -367,7 +379,7 @@ string S2pDump::DumpRestore()
             << " bytes\n\n" << flush;
     }
 
-    int sector_offset = 0;
+    int sector_offset = start;
 
     auto remaining = effective_size;
 
@@ -456,36 +468,51 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
     return "";
 }
 
-long S2pDump::CalculateEffectiveSize() const
+long S2pDump::CalculateEffectiveSize()
 {
-    const off_t disk_size = inq_info.capacity * inq_info.sector_size;
+    if (!count) {
+        count = inq_info.capacity;
+    }
+
+    if (inq_info.capacity <= static_cast<uint64_t>(start)) {
+        cerr << "Invalid start sector: " << start << endl;
+        return -1;
+    }
+
+    if (inq_info.capacity < static_cast<uint64_t>(start + count)) {
+        cerr << "Invalid sector count: " << count << endl;
+        return -1;
+    }
+
+    const off_t disk_size_in_bytes = count * inq_info.sector_size;
 
     size_t effective_size;
     if (restore) {
-        off_t size;
+        off_t image_file_size;
         try {
-            size = file_size(path(filename));
+            image_file_size = file_size(path(filename));
         }
         catch (const filesystem_error &e) {
             cerr << "Can't determine image file size: " << e.what() << endl;
             return -1;
         }
 
-        effective_size = min(size, disk_size);
+        effective_size = min(image_file_size, disk_size_in_bytes);
 
         if (!to_stdout) {
-            cout << "Restore image file size: " << size << " bytes\n" << flush;
+            cout << "Restore image file size: " << image_file_size << " bytes\n" << flush;
         }
 
-        if (size > disk_size) {
-            cerr << "Warning: Image file size of " << size
-                << " byte(s) is larger than disk size of " << disk_size << " bytes(s)\n" << flush;
-        } else if (size < disk_size) {
-            cerr << "Warning: Image file size of " << size
-                << " byte(s) is smaller than disk size of " << disk_size << " bytes(s)\n" << flush;
+        if (image_file_size > disk_size_in_bytes) {
+            cerr << "Warning: Image file size of " << image_file_size
+                << " byte(s) is larger than drive size/sector count of " << disk_size_in_bytes << " bytes(s)\n" << flush;
+        } else if (image_file_size < disk_size_in_bytes) {
+            cerr << "Warning: Image file size of " << image_file_size
+                << " byte(s) is smaller than drive size/sector count of " << disk_size_in_bytes << " bytes(s)\n"
+                << flush;
         }
     } else {
-        effective_size = disk_size;
+        effective_size = disk_size_in_bytes;
     }
 
     return static_cast<long>(effective_size);
