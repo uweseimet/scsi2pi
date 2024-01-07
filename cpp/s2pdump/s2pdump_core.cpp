@@ -475,13 +475,13 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
 
 long S2pDump::CalculateEffectiveSize()
 {
-    if (!count) {
-        count = inq_info.capacity;
-    }
-
     if (inq_info.capacity <= static_cast<uint64_t>(start)) {
         cerr << "Start sector " << start << " is out of range (" << inq_info.capacity - 1 << ")" << endl;
         return -1;
+    }
+
+    if (!count) {
+        count = inq_info.capacity - start;
     }
 
     if (inq_info.capacity < static_cast<uint64_t>(start + count)) {
