@@ -141,7 +141,6 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return executor.ProcessCmd(context);
 
     default:
-        // TODO Verify, especially for host services device
         // The remaining commands may only be executed when the target is idle
         if (!ExecuteWithLock(context)) {
             return false;
