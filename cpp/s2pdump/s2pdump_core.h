@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ private:
     void ParseArguments(span<char*>);
     void DisplayBoardId() const;
     string ReadWrite(ostream&, fstream&, int, uint32_t, int);
-    long CalculateEffectiveSize() const;
+    long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
     string DumpRestore();
@@ -74,6 +74,9 @@ private:
     string filename;
 
     string log_level = "info";
+
+    int start = 0;
+    int count = 0;
 
     bool to_stdout = false;
 

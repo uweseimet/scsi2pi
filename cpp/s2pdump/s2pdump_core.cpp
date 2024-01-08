@@ -3,7 +3,7 @@
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022 akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -49,8 +49,8 @@ bool S2pDump::Banner(span<char*> args) const
 {
     if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
         cout << s2p_util::Banner("(SCSI Hard Disk Dump/Restore Utility)")
-            << "Usage: " << args[0] << " -t ID[:LUN] [-i BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
-            << " [-L LOG_LEVEL] [-p] [-I] [-s]\n"
+            << "Usage: " << args[0] << " -i ID[:LUN] [-B BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
+            << " [-L LOG_LEVEL] [-p] [-I] [-s] [-S START] [-C COUNT]\n"
             << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
             << " Default is 0.\n"
@@ -66,6 +66,8 @@ bool S2pDump::Banner(span<char*> args) const
             << " Only valid for dump and inquiry mode.\n"
             << " -I Display INQUIRY data of ID[:LUN].\n"
             << " -s Scan SCSI bus for devices.\n"
+            << " -S Start sector, default is 0.\n"
+            << " -C Sector count, default is the drive capacity."
             << flush;
 
         return false;
@@ -103,20 +105,10 @@ void S2pDump::ParseArguments(span<char*> args)
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:arspI")) != -1) {
+    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:C:S:arspI")) != -1) {
         switch (opt) {
-        case 'i':
-            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
-                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
-            }
-            break;
-
-        case 'f':
-            filename = optarg;
-            break;
-
-        case 'I':
-            run_inquiry = true;
+        case 'a':
+            scan_all_luns = true;
             break;
 
         case 'b':
@@ -127,31 +119,53 @@ void S2pDump::ParseArguments(span<char*> args)
 
             break;
 
-        case 's':
-            run_bus_scan = true;
+        case 'f':
+            filename = optarg;
             break;
 
-        case 't':
+        case 'i':
             if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
                 optarg, target_id, target_lun); !error.empty()) {
                 throw parser_exception(error);
             }
             break;
 
-        case 'L':
-            log_level = optarg;
-            break;
-
-        case 'a':
-            scan_all_luns = true;
+        case 'p':
+            create_properties_file = true;
             break;
 
         case 'r':
             restore = true;
             break;
 
-        case 'p':
-            create_properties_file = true;
+        case 's':
+            run_bus_scan = true;
+            break;
+
+        case 'B':
+            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
+                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
+            }
+            break;
+
+        case 'C':
+            if (!GetAsUnsignedInt(optarg, count) || !count) {
+                throw parser_exception("Invalid sector count: " + string(optarg));
+            }
+            break;
+
+        case 'I':
+            run_inquiry = true;
+            break;
+
+        case 'L':
+            log_level = optarg;
+            break;
+
+        case 'S':
+            if (!GetAsUnsignedInt(optarg, start)) {
+                throw parser_exception("Invalid start sector: " + string(optarg));
+            }
             break;
 
         default:
@@ -363,11 +377,14 @@ string S2pDump::DumpRestore()
     }
 
     if (!to_stdout) {
-        cout << "Starting " << (restore ? "restore" : "dump") << ", buffer size is " << buffer.size()
-            << " bytes\n\n" << flush;
+        cout << "Starting " << (restore ? "restore" : "dump") << "\n"
+            << "  Start sector is " << start << "\n"
+            << "  Sector count is " << count << "\n"
+            << "  Buffer size is " << buffer.size() << " bytes\n\n"
+            << flush;
     }
 
-    int sector_offset = 0;
+    int sector_offset = start;
 
     auto remaining = effective_size;
 
@@ -398,7 +415,7 @@ string S2pDump::DumpRestore()
         if (!to_stdout) {
             cout << setw(3) << (effective_size - remaining) * 100 / effective_size << "% ("
                 << effective_size - remaining
-                << "/" << effective_size << ")\n" << flush;
+                << "/" << effective_size << " bytes)\n" << flush;
         }
     }
 
@@ -439,12 +456,12 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
 
         if (!scsi_executor->ReadWrite(buffer, sector_offset, sector_count,
             sector_count * inq_info.sector_size, true)) {
-            return "Error writing to device";
+            return "Error/interrupted while writing to device";
         }
     } else {
         if (!scsi_executor->ReadWrite(buffer, sector_offset,
             sector_count, sector_count * inq_info.sector_size, false)) {
-            return "Error reading from device";
+            return "Error/interrupted while reading from device";
         }
 
         out.write((const char*)buffer.data(), byte_count);
@@ -456,36 +473,51 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
     return "";
 }
 
-long S2pDump::CalculateEffectiveSize() const
+long S2pDump::CalculateEffectiveSize()
 {
-    const off_t disk_size = inq_info.capacity * inq_info.sector_size;
+    if (inq_info.capacity <= static_cast<uint64_t>(start)) {
+        cerr << "Start sector " << start << " is out of range (" << inq_info.capacity - 1 << ")" << endl;
+        return -1;
+    }
+
+    if (!count) {
+        count = inq_info.capacity - start;
+    }
+
+    if (inq_info.capacity < static_cast<uint64_t>(start + count)) {
+        cerr << "Sector count " << count << " is out of range (" << inq_info.capacity - start << ")" << endl;
+        return -1;
+    }
+
+    const off_t disk_size_in_bytes = count * inq_info.sector_size;
 
     size_t effective_size;
     if (restore) {
-        off_t size;
+        off_t image_file_size;
         try {
-            size = file_size(path(filename));
+            image_file_size = file_size(path(filename));
         }
         catch (const filesystem_error &e) {
             cerr << "Can't determine image file size: " << e.what() << endl;
             return -1;
         }
 
-        effective_size = min(size, disk_size);
+        effective_size = min(image_file_size, disk_size_in_bytes);
 
         if (!to_stdout) {
-            cout << "Restore image file size: " << size << " bytes\n" << flush;
+            cout << "Restore image file size: " << image_file_size << " bytes\n" << flush;
         }
 
-        if (size > disk_size) {
-            cerr << "Warning: Image file size of " << size
-                << " byte(s) is larger than disk size of " << disk_size << " bytes(s)\n" << flush;
-        } else if (size < disk_size) {
-            cerr << "Warning: Image file size of " << size
-                << " byte(s) is smaller than disk size of " << disk_size << " bytes(s)\n" << flush;
+        if (image_file_size > disk_size_in_bytes) {
+            cerr << "Warning: Image file size of " << image_file_size
+                << " byte(s) is larger than drive size/sector count of " << disk_size_in_bytes << " bytes(s)\n" << flush;
+        } else if (image_file_size < disk_size_in_bytes) {
+            cerr << "Warning: Image file size of " << image_file_size
+                << " byte(s) is smaller than drive size/sector count of " << disk_size_in_bytes << " bytes(s)\n"
+                << flush;
         }
     } else {
-        effective_size = disk_size;
+        effective_size = disk_size_in_bytes;
     }
 
     return static_cast<long>(effective_size);
