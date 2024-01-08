@@ -3,8 +3,8 @@
 s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
 .SH SYNOPSIS
 .B s2pdump
-\fB\-t\fR \fIID[:LUN]\fR
-[\fB\-i\fR \fIBID\fR]
+\fB\-i\fR \fIID[:LUN]\fR
+[\fB\-B\fR \fIBID\fR]
 \fB\-f\fR \fIFILE\fR
 [\fB\-b\fR \fIBUFFER_SIZE\fR]
 [\fB\-r\fR]
@@ -31,11 +31,11 @@ If the generated drive image is intended to be used with SCSI2Pi, the drive imag
 
 .SH OPTIONS
 .TP
-.BR \-t\fI " "\fIID[:LUN]
+.BR \-i\fI " "\fIID[:LUN]
 SCSI ID and optional LUN of the remote SCSI device. The remote SCSI device will be functioning as the "Target" device.
 .TP
-.BR \-i\fI " "\fIBID
-SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the "Initiator" device.
+.BR \-B\fI " "\fIBID
+SCSI ID of the SCSI2Pi board. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the "initiator" device.
 .TP
 .BR \-f\fI " "\fIFILE
 Path to the dump file.
@@ -67,11 +67,11 @@ Sector count, default is the drive capacity.
 .SH EXAMPLES
 Dump Mode: [SCSI Drive] ---> [SCSI2Pi host]
 Launch s2pdump to dump all data from SCSI ID 3 with block size 64 KiB, store it on the local filesystem as a drive image named outimage.hds, and generate the outimage.hds.properties file with the drive's INQUIRY information:
-   s2pdump -t 3 -f outimage.hds -s 65536 -p
+   s2pdump -i 3 -f outimage.hds -s 65536 -p
 
 Restore Mode: [SCSI2Pi host] ---> [SCSI Drive]
 Launch s2pdump to restore/upload a drive image from the local file system to SCSI ID 0 with block size 1MiB:
-   s2pdump -r -t 0 -f outimage.hda -s 1048576
+   s2pdump -r -i 0 -f outimage.hda -s 1048576
 
 .SH SEE ALSO
 s2pctl(1), s2p(1), s2pexec(1)

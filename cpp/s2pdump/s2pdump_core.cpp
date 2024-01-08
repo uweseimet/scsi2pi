@@ -49,7 +49,7 @@ bool S2pDump::Banner(span<char*> args) const
 {
     if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
         cout << s2p_util::Banner("(SCSI Hard Disk Dump/Restore Utility)")
-            << "Usage: " << args[0] << " -t ID[:LUN] [-i BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
+            << "Usage: " << args[0] << " -i ID[:LUN] [-B BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
             << " [-L LOG_LEVEL] [-p] [-I] [-s] [-S START] [-C COUNT]\n"
             << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
@@ -124,8 +124,9 @@ void S2pDump::ParseArguments(span<char*> args)
             break;
 
         case 'i':
-            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
-                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
+            if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
+                optarg, target_id, target_lun); !error.empty()) {
+                throw parser_exception(error);
             }
             break;
 
@@ -141,10 +142,9 @@ void S2pDump::ParseArguments(span<char*> args)
             run_bus_scan = true;
             break;
 
-        case 't':
-            if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-                optarg, target_id, target_lun); !error.empty()) {
-                throw parser_exception(error);
+        case 'B':
+            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
+                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
             }
             break;
 
