@@ -34,7 +34,7 @@ public:
 
 private:
 
-    __attribute__((noreturn)) void Banner(span<char*>) const;
+    void Banner(span<char*>, bool) const;
     bool InitBus(bool);
     void CleanUp();
     void ReadAccessToken(const path&);

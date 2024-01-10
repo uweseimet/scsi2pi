@@ -4,7 +4,7 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ class GpioBus : public Bus
 
 public:
 
-    bool Init(mode_e mode = mode_e::TARGET) override;
+    bool Init(bool = true) override;
 
     int CommandHandShake(vector<uint8_t>&) override;
     int ReceiveHandShake(uint8_t*, int) override;
@@ -141,7 +141,7 @@ protected:
 
     bool IsTarget() const
     {
-        return operation_mode == mode_e::TARGET;
+        return target_mode;
     }
 
     virtual bool WaitSignal(int, bool);
@@ -157,7 +157,7 @@ protected:
 
 private:
 
-    mode_e operation_mode = mode_e::TARGET;
+    bool target_mode;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the

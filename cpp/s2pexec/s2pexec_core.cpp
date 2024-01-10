@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ bool ScsiExec::Init(bool)
 
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(Bus::mode_e::INITIATOR);
+    bus = bus_factory->CreateBus(false);
     if (bus) {
         scsi_executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }

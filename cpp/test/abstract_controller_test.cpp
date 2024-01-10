@@ -200,3 +200,12 @@ TEST(AbstractControllerTest, Offset)
     controller.UpdateOffsetAndLength();
     EXPECT_EQ(0, controller.GetOffset());
 }
+
+TEST(AbstractControllerTest, ProcessOnController)
+{
+    auto bus = make_shared<MockBus>();
+    auto controller = make_shared<MockAbstractController>(bus, 1);
+
+    EXPECT_CALL(*controller, Process(-1));
+    controller->ProcessOnController(0x02);
+}

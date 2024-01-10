@@ -26,7 +26,7 @@ class MockBus : public Bus // NOSONAR Having many fields/methods cannot be avoid
 
 public:
 
-    MOCK_METHOD(bool, Init, (mode_e), (override));
+    MOCK_METHOD(bool, Init, (bool), (override));
     MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(bool, GetBSY, (), (const, override));

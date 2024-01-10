@@ -62,6 +62,8 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     map<int, vector<byte>> pages;
     SetUpModePages(pages, page, changeable);
 
+    // TODO Add user-defined mode pages, which may override the default ones
+
     if (pages.empty()) {
         LogTrace(fmt::format("Unsupported mode page ${:02x}", page));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);

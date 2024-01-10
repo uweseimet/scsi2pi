@@ -75,8 +75,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     assert((dt.sectors > 0) && (dt.sectors <= 0x100));
 
     // Allocate buffer memory
-    if (!dt.buffer) {
-        (void)posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512);
+    if (!dt.buffer && !posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
         dt.length = length;
     }
 
@@ -84,8 +83,9 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     if (dt.buffer && dt.length != static_cast<uint32_t>(length)) {
         free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
         dt.buffer = nullptr;
-        (void)posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512);
-        dt.length = length;
+        if (!posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
+            dt.length = length;
+        }
     }
 
     if (!dt.buffer) {

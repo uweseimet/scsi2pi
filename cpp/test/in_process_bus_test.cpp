@@ -12,10 +12,9 @@ TEST(InProcessBusTest, IsTarget)
 {
     MockInProcessBus bus;
 
-    EXPECT_TRUE(bus.IsTarget());
-    bus.Init(Bus::mode_e::INITIATOR);
+    bus.Init(false);
     EXPECT_FALSE(bus.IsTarget());
-    bus.Init(Bus::mode_e::TARGET);
+    bus.Init(true);
     EXPECT_TRUE(bus.IsTarget());
 }
 

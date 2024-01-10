@@ -4,7 +4,7 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,16 +16,16 @@
 
 using namespace std;
 
-bool GpioBus::Init(mode_e mode)
+bool GpioBus::Init(bool b)
 {
-    operation_mode = mode;
+    target_mode = b;
 
     return true;
 }
 
 int GpioBus::CommandHandShake(vector<uint8_t> &buf)
 {
-    assert(operation_mode == mode_e::TARGET);
+    assert(target_mode);
 
     DisableIRQ();
 
@@ -109,7 +109,7 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 
     DisableIRQ();
 
-    if (operation_mode == mode_e::TARGET) {
+    if (target_mode) {
         for (bytes_received = 0; bytes_received < count; bytes_received++) {
             SetREQ(true);
 
@@ -170,7 +170,7 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
 
     DisableIRQ();
 
-    if (operation_mode == mode_e::TARGET) {
+    if (target_mode) {
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
             if (bytes_sent == daynaport_delay_after_bytes) {
                 EnableIRQ();

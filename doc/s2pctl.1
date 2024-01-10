@@ -39,13 +39,13 @@ s2pctl \- Sends management commands to s2p
 [\fB\-z\fR \fILOCALE\fR]
 .SH DESCRIPTION
 .B s2pctl
-sends commands to the s2p in order to make configuration adjustments at runtime or to check the device status.
+sends commands to s2p in order to make configuration adjustments at runtime or to check the device status.
 
 Either the -i or -l option should be specified at one time. Not both. 
 
-You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms.
+You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -h option to specify the s2p host s2pctl shall connect to.
 
-Note: The command and type arguments are case insensitive. Only the first letter of the command/type is evaluated by the tool.
+Note: The command and type arguments are case insensitive. Only the first letter of the command/type is evaluated.
 
 .SH OPTIONS
 .TP
@@ -168,13 +168,13 @@ Specifies the device type. This type overrides the type derived from the file ex
    services: Host services device
 .TP 
 .BR \-n\fI " " \fIVENDOR:PRODUCT:REVISION
-The vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP 
 .BR \-u\fI " " \fIUNIT
-Unit number (0-31 for SCSI, 0-1 for SASI). This will default to 0. This option is only used when there are multiple SCSI/SCSI devices for a controller.
+Unit number (0-31 for SCSI, 0-1 for SASI). This defaults to 0. This option is only used when there are multiple SCSI/SASI devices for the same SCSI ID.
 
 .SH EXAMPLES
-Show a listing of all of the SCSI devices and their current status.
+Show a listing of all devices and their current status.
    s2pctl -l
 
 

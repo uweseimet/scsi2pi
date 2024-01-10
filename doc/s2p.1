@@ -14,7 +14,6 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\-r\fR \fIRESERVED_IDS\fR]
 [\fB\-n\fR \fITYPE\fR]
 [\fB\-v\fR]
-[\fB\-V\fR]
 [\fB\-z\fR \fILOCALE\fR]
 [\fB\-hd n[:u]\fR \fIFILE\fR]
 [\fB\-id n[:u]\fR \fIFILE\fR]
@@ -22,7 +21,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
-In the arguments to s2p one or more SCSI (-id n[:u]) or SASI (-hdn[:u]) devices can be specified.
+In the arguments to s2p one or more SCSI (-id n[:u]) or SASI (-hdn[:u]) devices can be specified. SCSI and SASI devices cannot be mixed.
 The number (n) after the ID or HD identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
 The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
 .PP
@@ -33,14 +32,14 @@ If no explicit device type is provided, s2p determines the type based upon the f
     hda: SCSI Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
     mos: SCSI Magneto-Optical image (MO/MOD, SCSI-2)
     is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1)
-    iso: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
+    iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
   
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
-    sudo s2p -id 0 /path/to/drive/hdimage.hda
+    s2p -id 0 /path/to/drive/hdimage.hda
 
 When s2p starts it opens a socket (default port is 6868) to allow external management commands. Examples for management tools are s2pctl or the SCSI Control app.
 
-To quit s2p press Control-C. If it is running in the background, you can kill it using an INT signal.
+To quit s2p press Control-C. If it is running in the background, you can kill it using an INT signal. When terminating s2p automatically flushes all cached data.
 
 .SH OPTIONS
 .TP
@@ -76,9 +75,6 @@ The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, S
 .TP
 .BR \-v\fI " " \fI
 Displays the s2p version.
-.TP
-.BR \-V\fI " " \fI
-Displays usage information.
 .TP
 .BR \-z\fI " "\fILOCALE
 Overrides the default locale for client-facing error messages. The client can override the locale.

@@ -90,7 +90,7 @@ bool S2pDump::Init(bool in_process)
 
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(Bus::mode_e::INITIATOR, in_process);
+    bus = bus_factory->CreateBus(false, in_process);
     if (bus != nullptr) {
         scsi_executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }

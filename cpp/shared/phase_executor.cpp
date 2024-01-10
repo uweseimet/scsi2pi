@@ -2,14 +2,12 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-24 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
 #include <iostream>
-#include <array>
-#include <string>
 #include <chrono>
 #include "buses/bus.h"
 #include "shared/phase_executor.h"

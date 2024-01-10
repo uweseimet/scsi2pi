@@ -32,35 +32,39 @@ using namespace s2p_util;
 using namespace protobuf_util;
 using namespace scsi_defs;
 
-void S2p::Banner(span<char*> args) const
+void S2p::Banner(span<char*> args, bool usage) const
 {
-    cout << s2p_util::Banner("(Target Emulation Service)")
-        << "\nUsage: " << args[0] << " [-id|hd ID[:LUN]] FILE] ...\n\n"
-        << " id|ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
-        << " hd|HD is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
-        << " LUN is the optional logical unit, 0 is the default"
-        << " (SCSI: 0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")"
-        << ", SASI: 0-" << (ControllerFactory::GetSasiLunMax() - 1) << ").\n"
-        << " Attaching a SASI drive (-hd instead of -id) selects SASI compatibility.\n"
-        << " FILE is either a disk image file, \"daynaport\", \"printer\" or \"services\".\n"
-        << " The image type is derived from the extension when no type is specified:\n"
-        << "  hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
-        << "  hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
-        << "  hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
-        << "  hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
-        << "  mos: SCSI MO image (SCSI-2 MO image)\n"
-        << "  iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-        << "  is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
-        << " Run 'man " << args[0] << "' for other options.\n" << flush;
+    if (usage) {
+        cout << "\nUsage: " << args[0] << " [-id|hd ID[:LUN]] FILE] ...\n\n"
+            << " id|ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
+            << " hd|HD is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
+            << " LUN is the optional logical unit, 0 is the default"
+            << " (SCSI: 0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")"
+            << ", SASI: 0-" << (ControllerFactory::GetSasiLunMax() - 1) << ").\n"
+            << " Attaching a SASI drive (-hd instead of -id) selects SASI compatibility.\n"
+            << " FILE is either a disk image file, \"daynaport\", \"printer\" or \"services\".\n"
+            << " The image type is derived from the extension when no type is specified:\n"
+            << "  hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
+            << "  hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
+            << "  hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
+            << "  hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
+            << "  mos: SCSI MO image (SCSI-2 MO image)\n"
+            << "  iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
+            << "  is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
+            << " Run 'man s2p' for other options.\n" << flush;
 
-    exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
+    }
+    else {
+        cout << s2p_util::Banner("(Target Emulation)") << flush;
+    }
 }
 
 bool S2p::InitBus(bool in_process)
 {
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(Bus::mode_e::TARGET, in_process);
+    bus = bus_factory->CreateBus(true, in_process);
     if (!bus) {
         return false;
     }
@@ -153,7 +157,7 @@ string S2p::ParseArguments(span<char*> args, PbCommand &command, int &port, stri
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "-Ii-Hhb:d:n:p:r:t:z:C:D:F:L:P:R:vV")) != -1) {
+    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "-Ii-Hhb:d:n:p:r:t:z:C:D:F:L:P:R:v")) != -1) {
         switch (opt) {
         // The two option pairs below are kind of a compound option with two letters
         case 'i':
@@ -198,10 +202,6 @@ string S2p::ParseArguments(span<char*> args, PbCommand &command, int &port, stri
             s2p_image.SetDepth(depth);
             continue;
 
-        case 'V':
-            Banner(args);
-            break;
-
         case 'n':
             name = optarg;
             continue;
@@ -229,12 +229,12 @@ string S2p::ParseArguments(span<char*> args, PbCommand &command, int &port, stri
             break;
 
         default:
-            Banner(args);
+            Banner(args, true);
             break;
         }
 
         if (optopt) {
-            Banner(args);
+            Banner(args, false);
             break;
         }
 
@@ -305,15 +305,13 @@ int S2p::run(span<char*> args, bool in_process)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    if (!args.size()) {
-        Banner(args);
-    }
-
-    // The -v option shall result in no other action except displaying the version, -V display more information
+    // The -v option shall result in no other action except displaying the version
     if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v");}) != args.end()) {
         cout << GetVersionString() << '\n';
         return EXIT_SUCCESS;
     }
+
+    Banner(args, false);
 
     PbCommand command;
     string locale;

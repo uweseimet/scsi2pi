@@ -21,8 +21,8 @@ const std::string CONNECT_DESC = "AIBOM PRODUCTS version"; // Startup message
 const static int SIGNAL_CONTROL_MODE = 2; // SCSI positive logic specification
 
 // Control signal output logic
-#define ACT_ON ON  // ACTIVE SIGNAL ON
-#define ENB_ON ON  // ENABLE SIGNAL ON
+#define ACT_ON ON // ACTIVE SIGNAL ON
+#define ENB_ON ON // ENABLE SIGNAL ON
 #define IND_IN OFF // INITIATOR SIGNAL INPUT
 #define TAD_IN OFF // TARGET SIGNAL INPUT
 #define DTD_IN OFF // DATA SIGNAL INPUT

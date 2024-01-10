@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-unique_ptr<Bus> BusFactory::CreateBus(Bus::mode_e mode, bool in_process)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 {
     unique_ptr<Bus> bus;
 
@@ -34,7 +34,7 @@ unique_ptr<Bus> BusFactory::CreateBus(Bus::mode_e mode, bool in_process)
         }
     }
 
-    if (bus && bus->Init(mode)) {
+    if (bus && bus->Init(target)) {
         bus->Reset();
     }
 

@@ -1,6 +1,6 @@
-.TH s2odump 1
+.TH s2pdump 1
 .SH NAME
-s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
+s2pdump \- Hard drive dump/restore tool for SCSI2Pi
 .SH SYNOPSIS
 .B s2pdump
 \fB\-i\fR \fIID[:LUN]\fR
@@ -16,38 +16,38 @@ s2pdump \- SCSI disk dump/restore tool for SCSI2Pi
 [\fB\-C\fR \fICOUNT\fR]
 .SH DESCRIPTION
 .B s2pdump
-has two modes of operation: dump and restore. These can be used with physical storage media, including hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
+has two modes of operation: dump and restore. These can be used with physical storage media like hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
 
-When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. If enabled, it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
+When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
 
-In restore mode s2pdump copies the data from a local binary image to a remote physical drive. The remote drive must be writable. 
+In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable. 
 
 .SH NOTES
 
 .B s2pdump
-requires either a direct connection (one without transceivers) or a FULLSPEC PiSCSI/RaSCSI board.
+requires either a FULLSPEC PiSCSI/RaSCSI board.
 
-If the generated drive image is intended to be used with SCSI2Pi, the drive image should be moved by the user to ~/images (or the location specified to the s2p service).
+If the generated drive image is intended to be used with SCSI2Pi, the drive image should be moved to the ~/images folder (or the location specified to s2p).
 
 .SH OPTIONS
 .TP
 .BR \-i\fI " "\fIID[:LUN]
-SCSI ID and optional LUN of the remote SCSI device. The remote SCSI device will be functioning as the "Target" device.
+SCSI ID and optional LUN of the SCSI drive. This device will be functioning as the "Target" device.
 .TP
 .BR \-B\fI " "\fIBID
-SCSI ID of the SCSI2Pi board. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the "initiator" device.
+SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device.
 .TP
 .BR \-f\fI " "\fIFILE
 Path to the dump file.
 .TP
 .BR \-b\fI " "\fIBUFFER_SIZE
-The transfer buffer size in bytes. Default is 1 MiB. This is specified in bytes with a minimum value of 65536 (64 KiB).
+The transfer buffer size in bytes. The default size is 1 MiB. The buffer size is specified in bytes with a minimum value of 65536 bytes (64 KiB).
 .TP
 .BR \-r\fI
 Run in restore mode. Default is dump mode.
 .TP
 .BR \-p\fI
-Generate a .properties file that is compatible with the SCSI2Pi web interface. The output filename will match the image filename with ".properties" appended. The generated file should be moved to ~/.config/s2p.
+Generate a .properties file that is compatible with the PiSCSI web interface. The output filename will match the image filename with ".properties" appended. The generated file should be moved to ~/.config/piscsi.
 .TP
 .BR \-I\fI " "\fIID[:LUN]
 Display INQUIRY data of ID[:LUN].
@@ -56,22 +56,22 @@ Display INQUIRY data of ID[:LUN].
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \-s\fI
-Scan SCSI bus for devices.
+Scan the bus for devices and display their properties.
 .TP
 .BR \-S\fI "  " \fISTART
-Start sector, default is 0.
+Start sector for the dump/restore operation, default is 0.
 .TP
 .BR \-C\fI "  " \fICOUNT
 Sector count, default is the drive capacity.
 
 .SH EXAMPLES
 Dump Mode: [SCSI Drive] ---> [SCSI2Pi host]
-Launch s2pdump to dump all data from SCSI ID 3 with block size 64 KiB, store it on the local filesystem as a drive image named outimage.hds, and generate the outimage.hds.properties file with the drive's INQUIRY information:
-   s2pdump -i 3 -f outimage.hds -s 65536 -p
+Launch s2pdump to dump all data from SCSI ID 3 with a dump buffer size of 128 KiB, store it on the local filesystem as a drive image named outimage.hds, and generate the outimage.hds.properties file with the drive's INQUIRY information:
+   s2pdump -i 3 -f outimage.hds -b 131072 -p
 
 Restore Mode: [SCSI2Pi host] ---> [SCSI Drive]
-Launch s2pdump to restore/upload a drive image from the local file system to SCSI ID 0 with block size 1MiB:
-   s2pdump -r -i 0 -f outimage.hda -s 1048576
+Launch s2pdump to restore/upload a drive image from the local file system to SCSI ID 0 with a restore buffer size 1 MiB:
+   s2pdump -r -i 0 -f outimage.hds -b 1048576
 
 .SH SEE ALSO
 s2pctl(1), s2p(1), s2pexec(1)

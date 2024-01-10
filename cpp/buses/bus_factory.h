@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ class BusFactory
 
 public:
 
-    unique_ptr<Bus> CreateBus(Bus::mode_e, bool = false);
+    unique_ptr<Bus> CreateBus(bool, bool = false);
 
     bool IsRaspberryPi() const
     {

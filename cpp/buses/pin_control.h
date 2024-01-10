@@ -3,6 +3,9 @@
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022 akuker
+// Copyright (C) 2023-2024 Uwe Seimet
+//
+// Virtual base class with methods to control the GPIO pins
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +13,6 @@
 
 #pragma once
 
-// Methods that must be implemented by the derived gpiobus classes to control the GPIO pins
 class PinControl
 {
 
@@ -57,5 +59,6 @@ public:
 
     virtual void SetControl(int, bool) = 0;
 
+    // Sets signal direction (in/out) depending on initiator/target mode
     virtual void SetMode(int, int) = 0;
 };

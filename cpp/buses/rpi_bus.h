@@ -4,7 +4,7 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ public:
     RpiBus() = default;
     ~RpiBus() override = default;
 
-    bool Init(mode_e mode = mode_e::TARGET) override;
+    bool Init(bool = true) override;
 
     void Reset() override;
     void CleanUp() override;

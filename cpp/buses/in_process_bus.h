@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "buses/gpio_bus.h"
 #include <cassert>
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
+#include "buses/gpio_bus.h"
 
 class InProcessBus : public GpioBus
 {
