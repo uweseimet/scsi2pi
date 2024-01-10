@@ -33,7 +33,7 @@ ifeq ("$(shell uname -s)", "FreeBSD")
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
-	CXXFLAGS += -fexperimental-library -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ## EXTRA_FLAGS Can be used to pass special purpose flag
@@ -137,7 +137,8 @@ SRC_DISK = \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
 	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/mode_page_device.cpp
+	$(DIR_DEVICES)/mode_page_device.cpp \
+	$(DIR_DEVICES)/mode_page_util.cpp
 
 ifdef BUILD_SCHD
 SRC_SCHD = \
@@ -249,7 +250,7 @@ GENERATED_DIR := generated
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
 ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
-	$(OBJ_S2PEXEC) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUS) \
+	$(OBJ_S2PEXEC) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) \
 	$(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST) $(OBJ_IN_PROCESS_TEST))
 -include $(ALL_DEPS)
 
@@ -283,8 +284,7 @@ $(SRC_GENERATED): $(SRC_PROTOC) | $(GENERATED_DIR)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:
-##   all             Rebuild all of the executable files and re-generate 
-##                   the text versions of the manpages
+##   all             Rebuild all of the executable files (default target)
 ##   test            Build and run unit tests
 ##   in_process_test Build the in-process test
 ##   coverage        Build and run unit tests and create coverage files

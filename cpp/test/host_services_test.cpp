@@ -8,7 +8,6 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "devices/host_services.h"
 
 using namespace std;
 
@@ -38,8 +37,8 @@ TEST(HostServicesTest, DeviceDefaults)
 
 void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(1, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(10, pages[32].size());
+    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(10U, pages[32].size());
 }
 
 TEST(HostServicesTest, TestUnitReady)
@@ -152,6 +151,15 @@ TEST(HostServicesTest, ReceiveOperationResults)
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+
+    // No matching initiator ID, command must be aborted
+    controller->SetCmdByte(1, 0b010);
+    EXPECT_THAT([&]
+        {
+            s->Dispatch(scsi_command::cmd_receive_operation_results)
+            ;
+        }, Throws<scsi_exception>(AllOf(
+            Property(&scsi_exception::get_sense_key, sense_key::aborted_command))));
 }
 
 TEST(HostServicesTest, ModeSense6)

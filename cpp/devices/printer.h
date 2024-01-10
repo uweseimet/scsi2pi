@@ -10,7 +10,6 @@
 #pragma once
 
 #include <fstream>
-#include <string>
 #include <unordered_map>
 #include <span>
 #include "base/interfaces/scsi_printer_commands.h"
@@ -44,7 +43,7 @@ public:
 
     param_map GetDefaultParams() const override;
 
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
 
     bool WriteByteSequence(span<const uint8_t>) override;
 

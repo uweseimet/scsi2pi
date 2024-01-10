@@ -2,14 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <span>
-#include <string>
 #include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "shared_protobuf/command_context.h"
@@ -35,7 +34,7 @@ public:
 
 private:
 
-    __attribute__((noreturn)) void Banner(span<char*>) const;
+    void Banner(span<char*>, bool) const;
     bool InitBus(bool);
     void CleanUp();
     void ReadAccessToken(const path&);
@@ -45,7 +44,6 @@ private:
     void SetUpEnvironment();
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
-    bool WaitForSelection();
 
     bool ExecuteCommand(CommandContext&);
     bool ExecuteWithLock(const CommandContext&);

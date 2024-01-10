@@ -6,14 +6,12 @@
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <vector>
-#include <string>
 #include <span>
 #include "base/device.h"
 
@@ -28,9 +26,13 @@ using namespace std;
 
 class CTapDriver
 {
-    static const string BRIDGE_NAME;
+    const inline static string BRIDGE_NAME = "piscsi_bridge";
 
     const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
+
+    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
+
+    const inline static string DEFAULT_BRIDGE_IF = "piscsi0";
 
 public:
 
@@ -47,12 +49,19 @@ public:
     int Receive(uint8_t*) const;
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
+
     // Enable/Disable the piscsi0 interface
     string IpLink(bool) const;
+
     // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
     static uint32_t Crc32(span<const uint8_t>);
+
+    static string GetBridgeName()
+    {
+        return BRIDGE_NAME;
+    }
 
 private:
 
@@ -61,7 +70,7 @@ private:
     static pair<string, string> ExtractAddressAndMask(const string&);
 
     // File handle
-    int m_hTAP = -1;
+    int tap_fd = -1;
 
     // Prioritized comma-separated list of interfaces to create the bridge for
     vector<string> interfaces;

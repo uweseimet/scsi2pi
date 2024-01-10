@@ -12,7 +12,7 @@
 
 using namespace std;
 
-TEST(ScsiPrinterTest, Device_Defaults)
+TEST(PrinterTest, Device_Defaults)
 {
     DeviceFactory device_factory;
 
@@ -36,14 +36,14 @@ TEST(ScsiPrinterTest, Device_Defaults)
     EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
 }
 
-TEST(ScsiPrinterTest, GetDefaultParams)
+TEST(PrinterTest, GetDefaultParams)
 {
     const auto [controller, printer] = CreateDevice(SCLP);
     const auto params = printer->GetDefaultParams();
-    EXPECT_EQ(1, params.size());
+    EXPECT_EQ(1U, params.size());
 }
 
-TEST(ScsiPrinterTest, Init)
+TEST(PrinterTest, Init)
 {
     auto [controller, printer] = CreateDevice(SCLP);
     EXPECT_TRUE(printer->Init( { }));
@@ -56,7 +56,7 @@ TEST(ScsiPrinterTest, Init)
     EXPECT_TRUE(printer->Init(params));
 }
 
-TEST(ScsiPrinterTest, TestUnitReady)
+TEST(PrinterTest, TestUnitReady)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -65,12 +65,12 @@ TEST(ScsiPrinterTest, TestUnitReady)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(ScsiPrinterTest, Inquiry)
+TEST(PrinterTest, Inquiry)
 {
     TestShared::Inquiry(SCLP, device_type::printer, scsi_level::scsi_2, "SCSI2Pi SCSI PRINTER    ", 0x1f, false);
 }
 
-TEST(ScsiPrinterTest, ReserveUnit)
+TEST(PrinterTest, ReserveUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -79,7 +79,7 @@ TEST(ScsiPrinterTest, ReserveUnit)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(ScsiPrinterTest, ReleaseUnit)
+TEST(PrinterTest, ReleaseUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -88,7 +88,7 @@ TEST(ScsiPrinterTest, ReleaseUnit)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(ScsiPrinterTest, SendDiagnostic)
+TEST(PrinterTest, SendDiagnostic)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -97,7 +97,7 @@ TEST(ScsiPrinterTest, SendDiagnostic)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(ScsiPrinterTest, Print)
+TEST(PrinterTest, Print)
 {
     auto [controller, printer] = CreateDevice(SCLP);
     // Required by the bullseye clang++ compiler
@@ -113,7 +113,7 @@ TEST(ScsiPrinterTest, Print)
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Buffer overflow was not reported";
 }
 
-TEST(ScsiPrinterTest, StopPrint)
+TEST(PrinterTest, StopPrint)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -122,7 +122,7 @@ TEST(ScsiPrinterTest, StopPrint)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(ScsiPrinterTest, Synchronize_buffer)
+TEST(PrinterTest, Synchronize_buffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
     // Required by the bullseye clang++ compiler
@@ -135,10 +135,18 @@ TEST(ScsiPrinterTest, Synchronize_buffer)
     // Further testing would use the printing system
 }
 
-TEST(ScsiPrinterTest, WriteByteSequence)
+TEST(PrinterTest, WriteByteSequence)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
     const vector<uint8_t> buf(1);
     EXPECT_TRUE(printer->WriteByteSequence(buf));
 }
+
+TEST(PrinterTest, GetStatistics)
+{
+    Printer printer(0);
+
+    EXPECT_EQ(4U, printer.GetStatistics().size());
+}
+

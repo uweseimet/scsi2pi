@@ -11,6 +11,22 @@
 
 using namespace scsi_defs;
 
+TEST(ScsiControllerTest, Reset)
+{
+    const int ID = 5;
+
+    NiceMock<MockBus> bus;
+    auto controller = make_shared<ScsiController>(bus, ID, 32);
+    auto device = make_shared<MockPrimaryDevice>(0);
+
+    controller->AddDevice(device);
+
+    controller->Process(ID);
+    EXPECT_EQ(ID, controller->GetInitiatorId());
+    controller->Reset();
+    EXPECT_EQ(-1, controller->GetInitiatorId());
+}
+
 TEST(ScsiControllerTest, GetInitiatorId)
 {
     const int ID = 2;
@@ -24,8 +40,8 @@ TEST(ScsiControllerTest, GetInitiatorId)
     EXPECT_CALL(controller, Status).Times(2);
     controller.Process(ID);
     EXPECT_EQ(ID, controller.GetInitiatorId());
-    controller.Process(-1);
-    EXPECT_EQ(-1, controller.GetInitiatorId());
+    controller.Process(1234);
+    EXPECT_EQ(1234, controller.GetInitiatorId());
 }
 
 TEST(ScsiControllerTest, Process)
@@ -193,7 +209,7 @@ TEST(ScsiControllerTest, MsgOut)
     EXPECT_CALL(*bus, SetIO(false));
     controller.MsgOut();
     EXPECT_EQ(phase_t::msgout, controller.GetPhase());
-    EXPECT_EQ(1, controller.GetLength());
+    EXPECT_EQ(1U, controller.GetLength());
     EXPECT_EQ(0, controller.GetOffset());
 }
 

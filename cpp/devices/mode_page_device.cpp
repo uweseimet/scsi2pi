@@ -11,12 +11,14 @@
 #include <spdlog/spdlog.h>
 #include <cstddef>
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
+#include "mode_page_util.h"
 #include "mode_page_device.h"
 
 using namespace std;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
+using namespace mode_page_util;
 
 bool ModePageDevice::Init(const param_map &params)
 {
@@ -59,6 +61,8 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     SetUpModePages(pages, page, changeable);
+
+    // TODO Add user-defined mode pages, which may override the default ones
 
     if (pages.empty()) {
         LogTrace(fmt::format("Unsupported mode page ${:02x}", page));
@@ -123,8 +127,10 @@ void ModePageDevice::ModeSense10() const
 
 void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int) const
 {
-    // There is no default implementation of MODE SELECT
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    // There is no default implementation of MODE SELECT.
+    // An ASC of invalid_field_in_cdb might be more compatible with some computers
+    // than invalid_command_operation_code.
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
 void ModePageDevice::ModeSelect6() const

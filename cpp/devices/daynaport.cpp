@@ -16,16 +16,18 @@
 // following link:
 //    - https://github.com/PiSCSI/piscsi/wiki/Dayna-Port-SCSI-Link
 //
-// Note: This requires a DaynaPort SCSI Link driver.
+// Note: This requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
 //
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "base/scsi_command_util.h"
+#include "shared/network_util.h"
+#include "base/memory_util.h"
 #include "daynaport.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
+using namespace network_util;
 
 DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
 {
@@ -35,9 +37,6 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
     SetRevision("1.4a");
 
     SupportsParams(true);
-
-    // The MacOS Daynaport driver needs to have a delay after the size/flags field of the read response
-    SetSendDelay(DAYNAPORT_READ_HEADER_SZ);
 }
 
 bool DaynaPort::Init(const param_map &params)
@@ -95,14 +94,18 @@ void DaynaPort::CleanUp()
     tap.CleanUp();
 }
 
-vector<uint8_t> DaynaPort::InquiryInternal() const
+vector<uint8_t> DaynaPort::InquiryInternal()
 {
     vector<uint8_t> buf = HandleInquiry(device_type::processor, scsi_level::scsi_2, false);
 
-    // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
-    // add a vendor-specific byte in order to satisfy this driver.
-    buf[4]++;
-    buf.push_back(0);
+    if (GetController()->GetCmdByte(4) == 37) {
+        macos_seen = true;
+
+        // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
+        // add a vendor-specific byte in order to satisfy this driver.
+        buf[4]++;
+        buf.push_back(0);
+    }
 
     return buf;
 }
@@ -165,9 +168,6 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
     }
 
     byte_read_count += rx_packet_size;
-
-    // TODO: We should check to see if this message is in the multicast
-    // configuration from SCSI command 0x0D
 
     int size = rx_packet_size;
     if (size < 128) {
@@ -250,6 +250,17 @@ bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
 int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
 {
     memcpy(buf.data(), &m_scsi_link_stats, sizeof(m_scsi_link_stats));
+
+    // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
+    // on different Pis in the same network do not have identical MAC addresses.
+    if (const auto &mac = GetMacAddress(CTapDriver::GetBridgeName()); mac.size() >= 6) {
+        buf.data()[3] = mac[3];
+        buf.data()[4] = mac[4];
+        buf.data()[5] = mac[5];
+    }
+
+    LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
+        buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
     return static_cast<int>(min(sizeof(m_scsi_link_stats), static_cast<size_t>(GetInt16(cdb, 3))));
 }
@@ -357,13 +368,14 @@ void DaynaPort::SetInterfaceMode() const
         break;
 
     case CMD_SCSILINK_SETMAC:
+        // Currently the MAC address passed is ignored
         GetController()->SetLength(6);
         EnterDataOutPhase();
         break;
 
     default:
-        LogWarn(fmt::format("Unsupported SetInterface command: ${}", GetController()->GetCmdByte(5)));
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        LogWarn(fmt::format("Unknown SetInterfaceMode mode: ${:02x}", GetController()->GetCmdByte(5)));
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         break;
     }
 }
@@ -375,8 +387,8 @@ void DaynaPort::SetMcastAddr() const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
+    // Currently the multicast address passed is ignored
     GetController()->SetLength(length);
-
     EnterDataOutPhase();
 }
 
@@ -392,27 +404,38 @@ void DaynaPort::SetMcastAddr() const
 //            seconds
 //
 //---------------------------------------------------------------------------
-void DaynaPort::EnableInterface() const
+void DaynaPort::EnableInterface()
 {
     if (GetController()->GetCmdByte(5) & 0x80) {
         if (const string error = tap.IpLink(true); !error.empty()) {
             LogWarn("Unable to enable the DaynaPort Interface: " + error);
-
             throw scsi_exception(sense_key::aborted_command);
         }
 
         tap.Flush();
 
-        LogInfo("The DaynaPort interface has been enabled");
+        // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
+        // The NetBSD drivers for the Mac fail when there is a delay.
+        // The Atari drivers (STiNG and MiNT) work with and without a delay.
+        // In order to work with all drivers the delay depends on the last INQUIRY received. A peculiarity of
+        // the MacOS DaynaPort helps to identify which driver is being used and which delay is the working one.
+        if (macos_seen) {
+            macos_seen = false;
+            SetDelayAfterBytes(DAYNAPORT_READ_HEADER_SZ);
+            LogDebug("The DaynaPort interface has been enabled for MacOS");
+        }
+        else {
+            SetDelayAfterBytes(Bus::SEND_NO_DELAY);
+            LogDebug("The DaynaPort interface has been enabled");
+        }
     }
     else {
         if (const string error = tap.IpLink(false); !error.empty()) {
             LogWarn("Unable to disable the DaynaPort Interface: " + error);
-
             throw scsi_exception(sense_key::aborted_command);
         }
 
-        LogInfo("The DaynaPort interface has been disabled");
+        LogDebug("The DaynaPort interface has been disabled");
     }
 
     EnterStatusPhase();

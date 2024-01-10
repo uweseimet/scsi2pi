@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <cstring>
+
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
@@ -33,6 +34,24 @@ bool network_util::IsInterfaceUp(const string &interface)
     return false;
 }
 
+vector<uint8_t> network_util::GetMacAddress(const string &interface)
+{
+#ifdef __linux__
+    ifreq ifr = { };
+    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+
+    if (!ioctl(fd, SIOCGIFHWADDR, &ifr)) {
+        close(fd);
+        return vector<uint8_t>(ifr.ifr_hwaddr.sa_data, ifr.ifr_hwaddr.sa_data + 6);
+    }
+
+    close(fd);
+#endif
+
+    return vector<uint8_t>();
+}
+
 set<string, less<>> network_util::GetNetworkInterfaces()
 {
     set<string, less<>> network_interfaces;
@@ -44,7 +63,9 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 
     while (tmp) {
         if (const string name = tmp->ifa_name; tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_PACKET &&
-            name != "lo" && name != "piscsi_bridge" && !name.starts_with("dummy") && IsInterfaceUp(name)) {
+            !(tmp->ifa_flags & IFF_LOOPBACK)
+            && (name.starts_with("eth") || name.starts_with("en") || name.starts_with("wlan"))
+            && IsInterfaceUp(name)) {
             // Only list interfaces that are up
             network_interfaces.insert(name);
         }

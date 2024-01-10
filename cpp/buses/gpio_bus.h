@@ -4,15 +4,13 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <memory>
-#include <vector>
 #include "buses/bus.h"
 
 //---------------------------------------------------------------------------
@@ -133,10 +131,7 @@ class GpioBus : public Bus
 
 public:
 
-    GpioBus() = default;
-    ~GpioBus() override = default;
-
-    bool Init(mode_e mode = mode_e::TARGET) override;
+    bool Init(bool = true) override;
 
     int CommandHandShake(vector<uint8_t>&) override;
     int ReceiveHandShake(uint8_t*, int) override;
@@ -146,7 +141,7 @@ protected:
 
     bool IsTarget() const
     {
-        return operation_mode == mode_e::TARGET;
+        return target_mode;
     }
 
     virtual bool WaitSignal(int, bool);
@@ -162,11 +157,10 @@ protected:
 
 private:
 
-    mode_e operation_mode = mode_e::TARGET;
+    bool target_mode;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of uS that will be delayed between the
+    // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    // TODO Should be verified
     inline const static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 };

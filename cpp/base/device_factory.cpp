@@ -42,64 +42,55 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
         }
     }
 
-    shared_ptr<PrimaryDevice> device;
     switch (type) {
 
 #if defined BUILD_SCHD || defined BUILD_SCRM
     case SCHD: {
         const string ext = GetExtensionLowerCase(filename);
-        device = make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");
-        break;
+        return make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");
     }
 
     case SCRM:
-        device = make_shared<ScsiHd>(lun, true, false, false);
-        break;
+        return make_shared<ScsiHd>(lun, true, false, false);
 #endif
 
 #ifdef BUILD_SCMO
     case SCMO:
-        device = make_shared<OpticalMemory>(lun);
-        break;
+        return make_shared<OpticalMemory>(lun);
 #endif
 
 #ifdef BUILD_SCCD
     case SCCD: {
         const string ext = GetExtensionLowerCase(filename);
-        device = make_shared<ScsiCd>(lun, ext == "is1");
-        break;
+        return make_shared<ScsiCd>(lun, ext == "is1");
     }
 #endif
 
 #ifdef BUILD_SCDP
     case SCDP:
-        device = make_shared<DaynaPort>(lun);
-        break;
+        return make_shared<DaynaPort>(lun);
 #endif
 
 #ifdef BUILD_SCHS
     case SCHS:
-        device = make_shared<HostServices>(lun);
-        break;
+        return make_shared<HostServices>(lun);
 #endif
 
 #ifdef BUILD_SCLP
     case SCLP:
-        device = make_shared<Printer>(lun);
-        break;
+        return make_shared<Printer>(lun);
 #endif
 
 #ifdef BUILD_SAHD
     case SAHD:
-        device = make_shared<SasiHd>(lun);
-        break;
+        return make_shared<SasiHd>(lun);
 #endif
 
     default:
         break;
     }
 
-    return device;
+    return nullptr;
 }
 
 PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
@@ -120,7 +111,7 @@ unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DeviceFact
 {
     unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> mapping;
 
-#if defined BUILD_SCHD | defined BUILD_SCRM
+#if defined BUILD_SCHD || defined BUILD_SCRM
     mapping["hd1"] = SCHD;
     mapping["hds"] = SCHD;
     mapping["hda"] = SCHD;
@@ -132,6 +123,8 @@ unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DeviceFact
 #ifdef BUILD_SCCD
     mapping["is1"] = SCCD;
     mapping["iso"] = SCCD;
+    mapping["cdr"] = SCCD;
+    mapping["toast"] = SCCD;
 #endif
 
     return mapping;

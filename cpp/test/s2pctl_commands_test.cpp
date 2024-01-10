@@ -2,13 +2,15 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
 //---------------------------------------------------------------------------
 
+#include <filesystem>
 #include <gtest/gtest.h>
+#include "test/test_shared.h"
 #include "shared/shared_exceptions.h"
 #include "shared_protobuf/protobuf_util.h"
 #include "s2pctl/s2pctl_commands.h"
@@ -86,6 +88,9 @@ TEST(S2pCtlCommandsTest, Execute)
     command.set_operation(MAPPING_INFO);
     EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
 
+    command.set_operation(STATISTICS_INFO);
+    EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
+
     command.set_operation(OPERATION_INFO);
     EXPECT_THROW(commands.Execute("", "", "", "", ""), io_exception);
 
@@ -106,3 +111,28 @@ TEST(S2pCtlCommandsTest, CommandDevicesInfo)
     S2pCtlCommands commands2(command, "localhost", 0, "", "", "");
     EXPECT_THROW(commands2.CommandDevicesInfo(), io_exception);
 }
+
+TEST(S2pCtlCommandsTest, Export)
+{
+    PbCommand command;
+    command.set_operation(OPERATION_INFO);
+
+    auto [fd_bin, filename_bin] = OpenTempFile();
+    S2pCtlCommands commands1(command, "localhost", 0, filename_bin, "", "");
+    EXPECT_TRUE(commands1.Execute("", "", "", "", ""));
+    EXPECT_EQ(2U, file_size(filename_bin));
+    remove(filename_bin);
+
+    auto [fd_json, filename_json] = OpenTempFile();
+    S2pCtlCommands commands2(command, "localhost", 0, "", filename_json, "");
+    EXPECT_TRUE(commands2.Execute("", "", "", "", ""));
+    EXPECT_NE(string::npos, ReadTempFileToString(filename_json).find(PbOperation_Name(OPERATION_INFO)));
+    remove(filename_json);
+
+    auto [fd_txt, filename_txt] = OpenTempFile();
+    S2pCtlCommands commands3(command, "localhost", 0, "", "", filename_txt);
+    EXPECT_TRUE(commands3.Execute("", "", "", "", ""));
+    EXPECT_NE(string::npos, ReadTempFileToString(filename_txt).find(PbOperation_Name(OPERATION_INFO)));
+    remove(filename_txt);
+}
+

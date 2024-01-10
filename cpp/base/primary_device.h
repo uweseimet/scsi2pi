@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <string>
 #include <unordered_map>
 #include <span>
 #include <functional>
@@ -40,7 +39,6 @@ public:
     {
         // Override if cleanup work is required for a derived device
     }
-    ;
 
     virtual void Dispatch(scsi_command);
 
@@ -48,9 +46,9 @@ public:
 
     virtual bool WriteByteSequence(span<const uint8_t>);
 
-    int GetSendDelay() const
+    int GetDelayAfterBytes() const
     {
-        return send_delay;
+        return delay_after_bytes;
     }
 
     bool CheckReservation(int, scsi_command, bool) const;
@@ -74,7 +72,7 @@ protected:
     void AddCommand(scsi_command, const operation&);
 
     vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
-    virtual vector<uint8_t> InquiryInternal() const = 0;
+    virtual vector<uint8_t> InquiryInternal() = 0;
     void CheckReady();
 
     void Inquiry() override;
@@ -123,9 +121,9 @@ protected:
         device_logger.Error(s);
     }
 
-    void SetSendDelay(int delay)
+    void SetDelayAfterBytes(int delay)
     {
-        send_delay = delay;
+        delay_after_bytes = delay;
     }
 
 private:
@@ -146,7 +144,8 @@ private:
 
     unordered_map<scsi_command, operation> commands;
 
-    int send_delay = Bus::SEND_NO_DELAY;
+    // Number of bytes during a transfer after which to delay for the DaynaPort driver
+    int delay_after_bytes = Bus::SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
 };

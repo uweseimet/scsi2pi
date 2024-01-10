@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <string>
 #include <unordered_map>
 #include "generated/s2p_interface.pb.h"
 

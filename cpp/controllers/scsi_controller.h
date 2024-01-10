@@ -18,29 +18,6 @@ using namespace std;
 
 class ScsiController : public GenericController
 {
-    // Transfer period factor (limited to 50 x 4 = 200ns)
-    static const int MAX_SYNC_PERIOD = 50;
-
-    // REQ/ACK offset(limited to 16)
-    static const uint8_t MAX_SYNC_OFFSET = 16;
-
-    // TODO Are data for synchronous transfers required at all?
-    // The Pi does not support this. Consider rejecting related messages and removing this structure.
-    using scsi_t = struct _scsi_t {
-        // Synchronous transfer possible
-        bool syncenable;
-        // Synchronous transfer period
-        uint8_t syncperiod = MAX_SYNC_PERIOD;
-        // Synchronous transfer offset
-        uint8_t syncoffset;
-        // Number of synchronous transfer ACKs
-        int syncack;
-
-        bool atnmsg;
-
-        int msc;
-        array<uint8_t, 256> msb;
-    };
 
 public:
 
@@ -56,7 +33,7 @@ public:
 
 private:
 
-    bool XferMsg(int) override;
+    void XferMsg(int) override;
 
     void ParseMessage() override;
     void ProcessMessage() override;
@@ -65,6 +42,10 @@ private:
     // The LUN from the IDENTIFY message
     int identified_lun = -1;
 
-    scsi_t scsi = { };
+    bool atn_msg = false;
+
+    // Message bytes and counter
+    array<uint8_t, 256> msb = { };
+    int msc = 0;
 };
 

@@ -11,7 +11,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <string>
 #include <filesystem>
 #include "shared/s2p_util.h"
 #include "mode_page_device.h"
@@ -42,8 +41,6 @@ public:
 
     void ReserveFile() const;
     void UnreserveFile();
-    // TODO Remove this method, it is only used by the unit tests
-    static void UnreserveAll();
 
     static bool FileExists(string_view);
 

@@ -28,8 +28,6 @@
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif
-#include <string>
-#include <span>
 #include <unordered_map>
 #include <array>
 #include "base/primary_device.h"
@@ -57,7 +55,7 @@ public:
     }
 
     // Commands
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> InquiryInternal() override;
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     bool Write(cdb_t, span<const uint8_t>);
 
@@ -69,7 +67,7 @@ public:
     void RetrieveStatistics() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
-    void EnableInterface() const;
+    void EnableInterface();
 
     vector<PbStatistics> GetStatistics() const override;
 
@@ -91,11 +89,6 @@ public:
     static const uint32_t DAYNAPORT_READ_HEADER_SZ = 2 + 4;
 
 private:
-
-    // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of uS that will be delayed between the
-    // header and the actual data.
-    static const int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 
     enum class read_data_flags_t : uint32_t
     {
@@ -119,7 +112,7 @@ private:
     };
 
     scsi_resp_link_stats_t m_scsi_link_stats = {
-        // TODO Remove this hard-coded MAC address, see https://github.com/PiSCSI/piscsi/issues/598
+        // The last 3 bytes of this MAC address are replaced by those of the bridge interface
         .mac_address = { byte { 0x00 }, byte { 0x80 }, byte { 0x19 }, byte { 0x10 }, byte { 0x98 }, byte { 0xe3 } },
         .frame_alignment_errors = 0,
         .crc_errors = 0,
@@ -129,4 +122,6 @@ private:
     CTapDriver tap;
 
     bool tap_enabled = false;
+
+    bool macos_seen = false;
 };

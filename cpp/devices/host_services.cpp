@@ -87,7 +87,7 @@
 #include "shared/shared_exceptions.h"
 #include "shared_protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 #include "host_services.h"
 #include "generated/s2p_interface.pb.h"
 
@@ -96,7 +96,7 @@ using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_interface;
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 using namespace protobuf_util;
 
 HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun)
@@ -136,7 +136,7 @@ void HostServices::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> HostServices::InquiryInternal() const
+vector<uint8_t> HostServices::InquiryInternal()
 {
     return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
 }
@@ -200,7 +200,7 @@ void HostServices::ReceiveOperationResults()
     case protobuf_format::json: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
-        MessageToJsonString(result, &data).ok();
+        (void)MessageToJsonString(result, &data).ok();
         break;
     }
 

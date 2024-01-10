@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,7 +14,6 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
-#include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "shared/s2p_util.h"
 #include "s2pexec_core.h"
@@ -56,7 +55,7 @@ bool ScsiExec::Banner(span<char*> args) const
             << " BID is the board ID (0-7). Default is 7.\n"
             << " INPUT_FILE is the protobuf data input file, by default in JSON format.\n"
             << " OUTPUT_FILE is the protobuf data output file, by default in JSON format.\n"
-            << " LOG_LEVEL is the log level {trace|debug|info|warn|err|off}, default is 'info'.\n"
+            << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
             << " -b Signals that the input file is in protobuf binary format.\n"
             << " -F Signals that the input file is in protobuf text format.\n"
             << " -B Generate a protobuf binary format file.\n"
@@ -84,7 +83,7 @@ bool ScsiExec::Init(bool)
 
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(Bus::mode_e::INITIATOR);
+    bus = bus_factory->CreateBus(false);
     if (bus) {
         scsi_executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }
@@ -224,7 +223,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
 
     if (output_filename.empty()) {
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         cout << json << '\n';
 
         CleanUp();
@@ -251,7 +250,7 @@ int ScsiExec::run(span<char*> args, bool in_process)
         }
 
         string json;
-        MessageToJsonString(result, &json);
+        (void)MessageToJsonString(result, &json);
         out << json << '\n';
         break;
     }

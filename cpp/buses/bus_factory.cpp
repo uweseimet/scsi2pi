@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-unique_ptr<Bus> BusFactory::CreateBus(Bus::mode_e mode, bool in_process)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 {
     unique_ptr<Bus> bus;
 
@@ -34,7 +34,7 @@ unique_ptr<Bus> BusFactory::CreateBus(Bus::mode_e mode, bool in_process)
         }
     }
 
-    if (bus && bus->Init(mode)) {
+    if (bus && bus->Init(target)) {
         bus->Reset();
     }
 
@@ -54,12 +54,12 @@ bool BusFactory::CheckForPi()
     const string model = s.str();
 
     if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
-        spdlog::info("Detected {}", model);
+        spdlog::info("Detected '{}'", model);
         is_raspberry_pi = true;
         return true;
     }
 
-    spdlog::error("Unsupported Raspberry Pi model '{}', functionality may be limited", model);
+    spdlog::error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
 
     return false;
 }

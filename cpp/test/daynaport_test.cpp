@@ -38,12 +38,12 @@ TEST(ScsiDaynaportTest, GetDefaultParams)
 {
     const auto [controller, daynaport] = CreateDevice(SCDP);
     const auto params = daynaport->GetDefaultParams();
-    EXPECT_EQ(2, params.size());
+    EXPECT_EQ(2U, params.size());
 }
 
 TEST(ScsiDaynaportTest, Inquiry)
 {
-    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x20, false);
+    TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
 TEST(ScsiDaynaportTest, TestUnitReady)
@@ -141,7 +141,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented, do nothing
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
@@ -161,7 +161,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_ENABLE);
@@ -171,7 +171,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 
     // Not implemented
     controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SET);
@@ -181,7 +181,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_command_operation_code))));
+            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
 }
 
 TEST(ScsiDaynaportTest, SetMcastAddr)
@@ -207,6 +207,7 @@ TEST(ScsiDaynaportTest, EnableInterface)
     auto d = daynaport;
 
     // Enable
+    controller->SetCmdByte(5, 0x80);
     EXPECT_THAT([&]
         {
             d->Dispatch(scsi_command::cmd_enable_interface)
@@ -226,10 +227,9 @@ TEST(ScsiDaynaportTest, EnableInterface)
             Property(&scsi_exception::get_asc, asc::no_additional_sense_information))));
 }
 
-TEST(ScsiDaynaportTest, GetSendDelay)
+TEST(ScsiDaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);
-    daynaport.Init( { });
 
-    EXPECT_EQ(6, daynaport.GetSendDelay());
+    EXPECT_EQ(2U, daynaport.GetStatistics().size());
 }

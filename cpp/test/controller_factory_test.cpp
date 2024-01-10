@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -83,4 +83,28 @@ TEST(ControllerFactory, ProcessOnController)
     ControllerFactory controller_factory;
 
     EXPECT_EQ(AbstractController::shutdown_mode::NONE, controller_factory.ProcessOnController(0));
+}
+
+TEST(ControllerFactory, GetIdMax)
+{
+    EXPECT_EQ(8, ControllerFactory::GetIdMax());
+}
+
+TEST(ControllerFactory, GetLunMax)
+{
+    ControllerFactory controller_factory1(false);
+    EXPECT_EQ(32, ControllerFactory::GetLunMax());
+
+    ControllerFactory controller_factory2(true);
+    EXPECT_EQ(2, ControllerFactory::GetLunMax());
+}
+
+TEST(ControllerFactory, GetScsiLunMax)
+{
+    EXPECT_EQ(32, ControllerFactory::GetScsiLunMax());
+}
+
+TEST(ControllerFactory, GetSasiLunMax)
+{
+    EXPECT_EQ(2, ControllerFactory::GetSasiLunMax());
 }

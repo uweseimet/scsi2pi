@@ -11,10 +11,10 @@
 #include "shared/shared_exceptions.h"
 #include "base/primary_device.h"
 #include "base/device_factory.h"
-#include "base/scsi_command_util.h"
+#include "base/memory_util.h"
 
 using namespace scsi_defs;
-using namespace scsi_command_util;
+using namespace memory_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePrimaryDevice(int id = 0)
 {
@@ -254,7 +254,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     device->Dispatch(scsi_command::cmd_inquiry);
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
-    EXPECT_EQ(1, controller->GetLength()) << "Wrong ALLOCATION LENGTH handling";
+    EXPECT_EQ(1U, controller->GetLength()) << "Wrong ALLOCATION LENGTH handling";
 }
 
 TEST(PrimaryDeviceTest, RequestSense)
@@ -332,7 +332,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     controller->SetCmdByte(9, 255);
 
     EXPECT_CALL(*controller, DataIn);
-    device1->Dispatch(scsi_command::cmd_reportLuns);
+    device1->Dispatch(scsi_command::cmd_report_luns);
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";
@@ -346,7 +346,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_EQ(LUN2, GetInt16(buffer, 22)) << "Wrong LUN2 number";
 
     controller->SetCmdByte(2, 0x01);
-    EXPECT_THAT([&] {device1->Dispatch(scsi_command::cmd_reportLuns);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {device1->Dispatch(scsi_command::cmd_report_luns);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Only SELECT REPORT mode 0 is supported";
@@ -372,6 +372,15 @@ TEST(PrimaryDeviceTest, Init)
     MockPrimaryDevice device(0);
 
     EXPECT_TRUE(device.Init(params)) << "Initialization of primary device must not fail";
+}
+
+TEST(PrimaryDeviceTest, DelayAfterBytes)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_EQ(-1, device.GetDelayAfterBytes());
+    device.SetDelayAfterBytes(1234);
+    EXPECT_EQ(1234, device.GetDelayAfterBytes());
 }
 
 TEST(PrimaryDeviceTest, GetStatistics)

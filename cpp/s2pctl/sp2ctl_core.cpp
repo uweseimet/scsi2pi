@@ -5,7 +5,7 @@
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -38,19 +38,19 @@ void ScsiCtl::Banner(const vector<char*> &args) const
             << "[-C FILENAME:FILESIZE] [-d FILENAME] [-B FILENAME] [-J FILENAME] [-T FILENAME] [-R CURRENT_NAME:NEW_NAME] "
             << "[-x CURRENT_NAME:NEW_NAME] [-z LOCALE] "
             << "[-e] [-E FILENAME] [-D] [-I] [-l] [-m] [o] [-O] [-P] [-s] [-S] [-v] [-V] [-y] [-X]\n"
-            << " where  ID[:LUN] ID := {0-" << (ControllerFactory::GetIdMax() - 1) << "},"
-            << " SCSI LUN := {0-" << (ControllerFactory::GetScsiLunMax() - 1) << "}, default is 0\n"
-            << " SASI LUN := {0-" << (ControllerFactory::GetSasiLunMax() - 1) << "}, default is 0\n"
-            << "        CMD := {attach|detach|insert|eject|protect|unprotect|show}\n"
-            << "        TYPE := {schd|scrm|sccd|scmo|scbr|scdp} or convenience type {hd|rm|mo|cd|bridge|daynaport}\n"
-            << "        BLOCK_SIZE := {512|1024|2048|4096) bytes per hard disk drive block\n"
-            << "        NAME := name of device to attach (VENDOR:PRODUCT:REVISION)\n"
-            << "        FILE|PARAM := image file path or device-specific parameter\n"
-            << "        IMAGE_FOLDER := default location for image files, default is '~/images'\n"
-            << "        HOST := s2p host to connect to, default is 'localhost'\n"
-            << "        PORT := s2p port to connect to, default is 6868\n"
-            << "        RESERVED_IDS := comma-separated list of IDs to reserve\n"
-            << "        LOG_LEVEL := log level {trace|debug|info|warn|err|off}, default is 'info'\n"
+            << " where ID[:LUN] ID: <0-" << (ControllerFactory::GetIdMax() - 1) << ">,"
+            << " SCSI LUN: <0-" << (ControllerFactory::GetScsiLunMax() - 1) << ">, default is 0\n"
+            << " SASI LUN: <0-" << (ControllerFactory::GetSasiLunMax() - 1) << ">, default is 0\n"
+            << "        CMD: <attach|detach|insert|eject|protect|unprotect|show>\n"
+            << "        TYPE: <schd|scrm|sccd|scmo|scdp|sclp|schs|sahd> or convenience type {hd|rm|mo|cd|daynaport|printer|services}\n"
+            << "        BLOCK_SIZE: <256|512|1024|2048|4096> bytes per hard disk drive block\n"
+            << "        NAME: Name of device to attach (VENDOR:PRODUCT:REVISION)\n"
+            << "        FILE|PARAM: Image file path or device-specific parameter\n"
+            << "        IMAGE_FOLDER: Default location for image files, default is '~/images'\n"
+            << "        HOST: s2p host to connect to, default is 'localhost'\n"
+            << "        PORT: s2p port to connect to, default is 6868\n"
+            << "        RESERVED_IDS: Comma-separated list of IDs to reserve\n"
+            << "        LOG_LEVEL: Log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
             << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n"
             << "Usage: " << args[0] << " -l\n"
             << "       Print device list.\n" << flush;

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // These tests only test key aspects of the expected output, because the output may change over time.
 //
@@ -79,6 +79,8 @@ TEST(S2pCtlDisplayTest, DisplayVersionInfo)
     string s = display.DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("1.2.3"));
+    EXPECT_NE(string::npos, s.find("identifier"));
+    EXPECT_EQ(string::npos, s.find("development"));
 
     info.set_patch_version(-1);
     s = display.DisplayVersionInfo(info);
@@ -89,6 +91,25 @@ TEST(S2pCtlDisplayTest, DisplayVersionInfo)
     s = display.DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("rc"));
+
+    info.set_major_version(21);
+    info.set_minor_version(11);
+    info.set_identifier("");
+    s = display.DisplayVersionInfo(info);
+    EXPECT_NE(string::npos, s.find("RaSCSI"));
+    EXPECT_NE(string::npos, s.find("development"));
+
+    info.set_major_version(22);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_NE(string::npos, s.find("PiSCSI"));
+    EXPECT_NE(string::npos, s.find("development"));
+
+    info.set_patch_version(0);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_EQ(string::npos, s.find("development"));
+    info.set_patch_version(1);
+    s = display.DisplayVersionInfo(info);
+    EXPECT_EQ(string::npos, s.find("development"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayLogLevelInfo)
@@ -110,8 +131,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
     S2pCtlDisplay display;
     PbDeviceTypesInfo info;
 
-    // Start with 2 instead of 1. 1 was the removed SASI drive type.
-    int ordinal = 2;
+    int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
         PbDeviceType type = UNDEFINED;
         PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
@@ -168,7 +188,7 @@ TEST(S2pCtlDisplayTest, DisplayReservedIdsInfo)
     EXPECT_NE(string::npos, s.find("5, 6"));
 }
 
-TEST(S2pCtlDisplayTest, DisplayNetworkInterfacesInfo)
+TEST(S2pCtlDisplayTest, DisplayNetworkInterfaces)
 {
     S2pCtlDisplay display;
     PbNetworkInterfacesInfo info;
@@ -185,6 +205,58 @@ TEST(S2pCtlDisplayTest, DisplayNetworkInterfacesInfo)
     s = display.DisplayNetworkInterfaces(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("eth0, wlan0"));
+}
+
+TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
+{
+    S2pCtlDisplay display;
+    PbStatisticsInfo info;
+
+    string s = display.DisplayStatisticsInfo(info);
+    EXPECT_NE(string::npos, s.find("Statistics:"));
+    EXPECT_EQ(string::npos, s.find("INFO"));
+    EXPECT_EQ(string::npos, s.find("WARNING"));
+    EXPECT_EQ(string::npos, s.find("ERROR"));
+    EXPECT_EQ(string::npos, s.find("info"));
+    EXPECT_EQ(string::npos, s.find("warning"));
+    EXPECT_EQ(string::npos, s.find("error"));
+
+    auto st1 = info.add_statistics();
+    st1->set_category(PbStatisticsCategory::CATEGORY_INFO);
+    st1->set_key("info");
+    st1->set_value(1);
+    s = display.DisplayStatisticsInfo(info);
+    EXPECT_NE(string::npos, s.find("Statistics:"));
+    EXPECT_NE(string::npos, s.find("INFO"));
+    EXPECT_EQ(string::npos, s.find("WARNING"));
+    EXPECT_EQ(string::npos, s.find("ERROR"));
+    EXPECT_NE(string::npos, s.find("info"));
+    EXPECT_EQ(string::npos, s.find("warning"));
+    EXPECT_EQ(string::npos, s.find("error"));
+    auto st2 = info.add_statistics();
+    st2->set_category(PbStatisticsCategory::CATEGORY_WARNING);
+    st2->set_key("warning");
+    st2->set_value(2);
+    s = display.DisplayStatisticsInfo(info);
+    EXPECT_NE(string::npos, s.find("Statistics:"));
+    EXPECT_NE(string::npos, s.find("INFO"));
+    EXPECT_NE(string::npos, s.find("WARNING"));
+    EXPECT_EQ(string::npos, s.find("ERROR"));
+    EXPECT_NE(string::npos, s.find("info"));
+    EXPECT_NE(string::npos, s.find("warning"));
+    EXPECT_EQ(string::npos, s.find("error"));
+    auto st3 = info.add_statistics();
+    st3->set_category(PbStatisticsCategory::CATEGORY_ERROR);
+    st3->set_key("error");
+    st3->set_value(3);
+    s = display.DisplayStatisticsInfo(info);
+    EXPECT_NE(string::npos, s.find("Statistics:"));
+    EXPECT_NE(string::npos, s.find("INFO"));
+    EXPECT_NE(string::npos, s.find("WARNING"));
+    EXPECT_NE(string::npos, s.find("ERROR"));
+    EXPECT_NE(string::npos, s.find("info"));
+    EXPECT_NE(string::npos, s.find("warning"));
+    EXPECT_NE(string::npos, s.find("error"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayImageFile)

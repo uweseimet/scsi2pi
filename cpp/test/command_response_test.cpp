@@ -26,7 +26,7 @@ TEST(CommandResponseTest, Operation_Count)
     EXPECT_EQ(PbOperation_ARRAYSIZE - 1, info.operations_size());
 }
 
-void TestNonDiskDevice(PbDeviceType type, int default_param_count)
+void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
@@ -51,7 +51,7 @@ void TestNonDiskDevice(PbDeviceType type, int default_param_count)
     EXPECT_FALSE(device.properties().lockable());
     EXPECT_EQ(32, device.properties().luns());
     EXPECT_EQ(0, device.block_size());
-    EXPECT_EQ(0, device.block_count());
+    EXPECT_EQ(0U, device.block_count());
     EXPECT_EQ(default_param_count, device.properties().default_params().size());
     EXPECT_FALSE(device.properties().supports_file());
     if (default_param_count) {
@@ -254,5 +254,5 @@ TEST(CommandResponseTest, GetMappingInfo)
 
     PbMappingInfo info;
     response.GetMappingInfo(info);
-    EXPECT_EQ(7, info.mapping().size());
+    EXPECT_EQ(9U, info.mapping().size());
 }

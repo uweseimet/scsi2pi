@@ -4,7 +4,7 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -48,9 +48,9 @@ uint32_t RpiBus::bcm_host_get_peripheral_address()
 #endif
 }
 
-bool RpiBus::Init(mode_e mode)
+bool RpiBus::Init(bool target)
 {
-    GpioBus::Init(mode);
+    GpioBus::Init(target);
 
     // Get the base address
     baseaddr = bcm_host_get_peripheral_address();
@@ -736,7 +736,6 @@ void RpiBus::SetSignal(int pin, bool ast)
 #endif
 }
 
-// TODO This could be faster. Use a function pointer based on the Pi type, which you determine only once
 void RpiBus::DisableIRQ()
 {
 #ifndef NO_IRQ_DISABLE

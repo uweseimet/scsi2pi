@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <string>
 #include <span>
 #include <vector>
 #include "generated/s2p_interface.pb.h"

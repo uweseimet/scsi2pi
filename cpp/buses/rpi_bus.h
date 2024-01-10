@@ -4,7 +4,7 @@
 //
 // Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,8 +15,12 @@
 // Check SEL signal by event instead of polling
 #define USE_SEL_EVENT_ENABLE
 #endif
-// Do not disable IRQs
-#define NO_IRQ_DISABLE
+
+// Currently IRQs during SCSI transfers are disabled because enabling them does not work in all scenarios.
+// It appears to work for block devices but does not work for the DaynaPort and NetBSD for MacOS,
+// see https://github.com/uweseimet/scsi2pi/issues/5.
+// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5.
+//#define NO_IRQ_DISABLE
 
 #ifndef __linux__
 #define NO_IRQ_DISABLE
@@ -60,7 +64,7 @@ public:
     RpiBus() = default;
     ~RpiBus() override = default;
 
-    bool Init(mode_e mode = mode_e::TARGET) override;
+    bool Init(bool = true) override;
 
     void Reset() override;
     void CleanUp() override;
@@ -150,16 +154,16 @@ private:
 
 #ifndef NO_IRQ_DISABLE
     // Interrupt enabled state
-    volatile uint32_t irptenb;
+    volatile uint32_t irptenb; // NOSONAR volatile is correct here
 
     // Interupt control target CPU
-    volatile int tintcore;
+    volatile int tintcore; // NOSONAR volatile is correct here
 
     // Interupt control
-    volatile uint32_t tintctl;
+    volatile uint32_t tintctl; // NOSONAR volatile is correct here
 
     // GICC priority setting
-    volatile uint32_t giccpmr;
+    volatile uint32_t giccpmr; // NOSONAR volatile is correct here
 #endif
 
     // GIC Interrupt distributor register

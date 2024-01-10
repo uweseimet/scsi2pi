@@ -1,8 +1,8 @@
-.TH scsiexec 1
+.TH s2pexec 1
 .SH NAME
 s2pexec \- SCSI command execution tool for SCSI2Pi
 .SH SYNOPSIS
-.B scsiexec
+.B s2pexec
 \fB\-t\fR \fIID[:LUN]\fR
 [\fB\-i\fR \fIBID\fR]
 \fB\-f\fR \fIFILENAME\fR
@@ -20,7 +20,7 @@ wraps protobuf input data into a custom SCSI2Pi SCSI command. s2p executes this 
 .SH NOTES
 
 .B s2pexec
-helps with advanced testing. It requires two connected SCSI2Pi boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator mode support.
+helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator mode support.
 
 .SH OPTIONS
 .TP
@@ -28,7 +28,7 @@ helps with advanced testing. It requires two connected SCSI2Pi boards. The board
 SCSI ID and optional LUN of the second PiSCSI/RaSCSI board. The remote device will be functioning as the target device.
 .TP
 .BR \-i\fI " "\fIBID
-SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the "Initiator" device.
+SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the initiator device.
 .TP
 .BR \-f\fI " "\fIFILE
 The protobuf data input file, by default in JSON format.
