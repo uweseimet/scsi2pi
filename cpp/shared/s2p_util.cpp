@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,6 +12,8 @@
 #include <sstream>
 #include <filesystem>
 #include <algorithm>
+#include <unistd.h>
+#include <pwd.h>
 #include "controllers/controller_factory.h"
 #include "s2p_version.h"
 #include "s2p_util.h"
@@ -23,6 +25,41 @@ string s2p_util::GetVersionString()
 {
     return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version,
         s2p_revision <= 0 ? "" : "." + to_string(s2p_revision), s2p_suffix);
+}
+
+string s2p_util::GetHomeDir()
+{
+    const auto [uid, gid] = GetUidAndGid();
+
+    passwd pwd = { };
+    passwd *p_pwd;
+    array<char, 256> pwbuf;
+
+    if (uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+        return pwd.pw_dir;
+    }
+    else {
+        return "/home/pi";
+    }
+}
+
+pair<int, int> s2p_util::GetUidAndGid()
+{
+    int uid = getuid();
+    if (const char *sudo_user = getenv("SUDO_UID"); sudo_user) {
+        uid = stoi(sudo_user);
+    }
+
+    passwd pwd = { };
+    passwd *p_pwd;
+    array<char, 256> pwbuf;
+
+    int gid = -1;
+    if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+        gid = pwd.pw_gid;
+    }
+
+    return {uid, gid};
 }
 
 vector<string> s2p_util::Split(const string &s, char separator, int limit)

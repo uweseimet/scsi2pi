@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -47,6 +47,8 @@ string Join(const auto &collection, const string_view separator = ", ")
 }
 
 string GetVersionString();
+string GetHomeDir();
+pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = INT_MAX);
 string GetLocale();
 bool GetAsUnsignedInt(const string&, int&);

@@ -2,22 +2,22 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
-#include <unistd.h>
-#include <pwd.h>
 #include <fstream>
 #include <array>
 #include "devices/disk.h"
+#include "shared/s2p_util.h"
 #include "shared_protobuf/protobuf_util.h"
 #include "image_support.h"
 
 using namespace std;
 using namespace filesystem;
 using namespace s2p_interface;
+using namespace s2p_util;
 using namespace protobuf_util;
 
 S2pImage::S2pImage()
@@ -395,39 +395,4 @@ bool S2pImage::ChangeOwner(const CommandContext &context, const path &filename, 
                                           perms::owner_write | perms::group_write);
 
     return true;
-}
-
-string S2pImage::GetHomeDir()
-{
-    const auto [uid, gid] = GetUidAndGid();
-
-    passwd pwd = { };
-    passwd *p_pwd;
-    array<char, 256> pwbuf;
-
-    if (uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        return pwd.pw_dir;
-    }
-    else {
-        return "/home/pi";
-    }
-}
-
-pair<int, int> S2pImage::GetUidAndGid()
-{
-    int uid = getuid();
-    if (const char *sudo_user = getenv("SUDO_UID"); sudo_user) {
-        uid = stoi(sudo_user);
-    }
-
-    passwd pwd = { };
-    passwd *p_pwd;
-    array<char, 256> pwbuf;
-
-    int gid = -1;
-    if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        gid = pwd.pw_gid;
-    }
-
-    return {uid, gid};
 }

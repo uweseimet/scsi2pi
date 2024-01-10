@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <map>
+#include "base/property_handler.h"
 #include "base/primary_device.h"
 
 class ModePageDevice : public PrimaryDevice
@@ -41,8 +42,6 @@ protected:
 
 private:
 
-    bool supports_save_parameters = false;
-
     virtual int ModeSense6(cdb_t, vector<uint8_t>&) const = 0;
     virtual int ModeSense10(cdb_t, vector<uint8_t>&) const = 0;
 
@@ -52,4 +51,8 @@ private:
     void ModeSelect10() const;
 
     void SaveParametersCheck(int) const;
+
+    bool supports_save_parameters = false;
+
+    PropertyHandler &property_handler = PropertyHandler::Instance();
 };

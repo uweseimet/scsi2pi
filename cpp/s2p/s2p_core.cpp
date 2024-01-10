@@ -16,6 +16,7 @@
 #include <fstream>
 #include <vector>
 #include <chrono>
+#include "base/property_handler.h"
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
@@ -129,7 +130,7 @@ void S2p::LogDevices(string_view devices) const
     stringstream ss(devices.data());
     string line;
 
-    while (getline(ss, line, '\n')) {
+    while (getline(ss, line)) {
         spdlog::info(line);
     }
 }
@@ -365,6 +366,8 @@ int S2p::run(span<char*> args, bool in_process)
         }
 #endif
     }
+
+    PropertyHandler::Instance().Init("");
 
     // Display and log the device list
     PbServerInfo server_info;

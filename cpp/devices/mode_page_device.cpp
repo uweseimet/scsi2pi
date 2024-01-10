@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // A basic device with mode page support, to be used for subclassing
 //
@@ -12,6 +12,7 @@
 #include <cstddef>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
+#include "../base/property_handler.h"
 #include "mode_page_util.h"
 #include "mode_page_device.h"
 
@@ -61,6 +62,14 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     SetUpModePages(pages, page, changeable);
+    for (const auto& [page, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
+        if (data.empty()) {
+            pages.erase(page);
+        }
+        else {
+            pages[page] = data;
+        }
+    }
 
     // TODO Add user-defined mode pages, which may override the default ones
 
