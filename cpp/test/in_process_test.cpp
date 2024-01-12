@@ -16,7 +16,7 @@ using namespace s2p_util;
 
 void add_arg(vector<char*> &args, const string &arg)
 {
-    args.push_back(strdup(arg.c_str()));
+    args.emplace_back(strdup(arg.c_str()));
 }
 
 int main(int argc, char *argv[])

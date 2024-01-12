@@ -37,23 +37,23 @@ void ScsiCtl::Banner(const vector<char*> &args) const
             << "[-F IMAGE_FOLDER] [-L LOG_LEVEL] [-h HOST] [-p PORT] [-r RESERVED_IDS] "
             << "[-C FILENAME:FILESIZE] [-d FILENAME] [-B FILENAME] [-J FILENAME] [-T FILENAME] [-R CURRENT_NAME:NEW_NAME] "
             << "[-x CURRENT_NAME:NEW_NAME] [-z LOCALE] "
-            << "[-e] [-E FILENAME] [-D] [-I] [-l] [-m] [o] [-O] [-P] [-s] [-S] [-v] [-V] [-y] [-X]\n"
+            << "[-e] [-E FILENAME] [-D] [-I] [-l] [-m] [-o] [-q] [-O] [-P] [-s] [-S] [-v] [-V] [-y] [-X]\n"
             << " where ID[:LUN] ID: <0-" << (ControllerFactory::GetIdMax() - 1) << ">,"
             << " SCSI LUN: <0-" << (ControllerFactory::GetScsiLunMax() - 1) << ">, default is 0\n"
             << " SASI LUN: <0-" << (ControllerFactory::GetSasiLunMax() - 1) << ">, default is 0\n"
-            << "        CMD: <attach|detach|insert|eject|protect|unprotect|show>\n"
-            << "        TYPE: <schd|scrm|sccd|scmo|scdp|sclp|schs|sahd> or convenience type {hd|rm|mo|cd|daynaport|printer|services}\n"
-            << "        BLOCK_SIZE: <256|512|1024|2048|4096> bytes per hard disk drive block\n"
-            << "        NAME: Name of device to attach (VENDOR:PRODUCT:REVISION)\n"
-            << "        FILE|PARAM: Image file path or device-specific parameter\n"
-            << "        IMAGE_FOLDER: Default location for image files, default is '~/images'\n"
-            << "        HOST: s2p host to connect to, default is 'localhost'\n"
-            << "        PORT: s2p port to connect to, default is 6868\n"
-            << "        RESERVED_IDS: Comma-separated list of IDs to reserve\n"
-            << "        LOG_LEVEL: Log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
+            << "   CMD: <attach|detach|insert|eject|protect|unprotect|show>\n"
+            << "   TYPE: <schd|scrm|sccd|scmo|scdp|sclp|schs|sahd> or convenience type {hd|rm|mo|cd|daynaport|printer|services}\n"
+            << "   BLOCK_SIZE: <256|512|1024|2048|4096> bytes per hard disk drive block\n"
+            << "   NAME: Name of device to attach (VENDOR:PRODUCT:REVISION)\n"
+            << "   FILE|PARAM: Image file path or device-specific parameter\n"
+            << "   IMAGE_FOLDER: Default location for image files, default is '~/images'\n"
+            << "   HOST: s2p host to connect to, default is 'localhost'\n"
+            << "   PORT: s2p port to connect to, default is 6868\n"
+            << "   RESERVED_IDS: Comma-separated list of IDs to reserve\n"
+            << "   LOG_LEVEL: Log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
             << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n"
             << "Usage: " << args[0] << " -l\n"
-            << "       Print device list.\n" << flush;
+            << " Print device list.\n" << flush;
 
         exit(EXIT_SUCCESS);
     }
@@ -89,7 +89,7 @@ int ScsiCtl::run(const vector<char*> &args) const
     opterr = 0;
     int opt;
     while ((opt = getopt(static_cast<int>(args.size()), args.data(),
-        "e::lmos::vDINOSTVXa:b:c:d:f:h:i:n:p:r:t:x:z:B:C:E:F:J:L:P::R:Z:")) != -1) {
+        "e::lmoqs::vDINOSTVXa:b:c:d:f:h:i:n:p:r:t:x:z:B:C:E:F:J:L:P::R:Z:")) != -1) {
         switch (opt) {
         case 'i':
             if (const string error = SetIdAndLun(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
@@ -214,6 +214,10 @@ int ScsiCtl::run(const vector<char*> &args) const
 
         case 'o':
             command.set_operation(OPERATION_INFO);
+            break;
+
+        case 'q':
+            command.set_operation(PROPERTIES_INFO);
             break;
 
         case 't':

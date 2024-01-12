@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -27,10 +27,9 @@ void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &pa
         return;
     }
 
-    // Old style parameter (filename), for backwards compatibility only
+    // Old style parameter (filename only), for backwards compatibility and convenience
     if (params.find(KEY_VALUE_SEPARATOR) == string::npos) {
         SetParam(device, "file", params);
-
         return;
     }
 

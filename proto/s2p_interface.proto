@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI initiator tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,7 +13,7 @@
 // All operations accept an optional access token, specified by the "token" parameter.
 // All operations also accept an optional locale, specified with the "locale" parameter. If there is
 // a localized error message it is returned, with English being the fallback language.
-// Field numbers 1000 and higher are used for fields that are not present in the PISCSI 23.11.01 release.
+// Numbers 100 and higher are used for messages and fields not supported by PISCSI 23.11.01 and newer.
 //
 
 syntax = "proto3";
@@ -195,6 +195,9 @@ enum PbOperation {
 
     // Get statistics (PbStatisticsInfo)
     STATISTICS_INFO = 32;
+
+    // Get properties (PbPropertiesInfo)
+    PROPERTIES_INFO = 100;
 }
 
 // The operation parameter meta data. The parameter data type is provided by the protobuf API.
@@ -351,6 +354,10 @@ message PbStatisticsInfo {
     repeated PbStatistics statistics = 1;
 }
 
+message PbPropertiesInfo {
+    map<string, string> s2p_properties = 1;
+};
+
 // The device definition, sent from the client to the server
 message PbDeviceDefinition {
     int32 id = 1;
@@ -453,6 +460,8 @@ message PbResult {
         PbOperationInfo operation_info = 13;
         // The result of a STATISTICS_INFO command
         PbStatisticsInfo statistics_info = 15;
+        // The result of a PROPERTIES command
+        PbPropertiesInfo properties_info = 100;
     }
 }
 
@@ -478,4 +487,6 @@ message PbServerInfo {
     PbOperationInfo operation_info = 9;
     // The statistics
     PbStatisticsInfo statistics_info = 10;
+    // The properties on startup
+    PbPropertiesInfo properties_info = 100;
 }

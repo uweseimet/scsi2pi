@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ TEST(CommandResponseTest, Operation_Count)
 
     PbOperationInfo info;
     response.GetOperationInfo(info, 0);
-    EXPECT_EQ(PbOperation_ARRAYSIZE - 1, info.operations_size());
+    EXPECT_EQ(33, info.operations_size());
 }
 
 void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)

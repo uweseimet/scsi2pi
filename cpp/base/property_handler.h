@@ -10,34 +10,50 @@
 
 #include <unordered_map>
 #include <map>
-#include "shared/s2p_util.h"
 
 using namespace std;
+
+using property_map = map<string, string>;
 
 class PropertyHandler
 {
 
 public:
 
+    // Supported property keys
+    inline static const string IMAGE_FOLDER = "image_folder";
+    inline static const string LOCALE = "locale";
+    inline static const string LOG_LEVEL = "log_level";
+    inline static const string MODE_PAGE = "mode_page";
+    inline static const string PORT = "port";
+    inline static const string PROPERTY_FILE = "property_file";
+    inline static const string RESERVED_IDS = "reserved_ids";
+    inline static const string SASI = "sasi";
+    inline static const string SCAN_DEPTH = "scan_depth";
+    inline static const string SCSI = "scsi";
+    inline static const string TOKEN_FILE = "token_file";
+
     static PropertyHandler& Instance()
     {
-        static PropertyHandler instance;
+        static PropertyHandler instance; // NOSONAR instance cannot be inlined
         return instance;
     }
 
-    string Init(const string&);
-
+    void Init(const string&, const property_map&);
+    property_map GetProperties() const
+    {
+        return property_cache;
+    }
+    string GetProperty(const string&) const;
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 
 private:
 
     PropertyHandler() = default;
 
-    vector<string> GetProperties(const string&) const;
-
     static vector<byte> HexToBytes(const string&);
 
-    unordered_map<string, vector<string>, s2p_util::StringHash, equal_to<>> property_cache;
+    property_map property_cache;
 
     inline static const unordered_map<char, uint8_t> HEX_TO_DEC = {
         { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },

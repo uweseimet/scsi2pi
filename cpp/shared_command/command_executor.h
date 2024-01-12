@@ -61,7 +61,7 @@ public:
         return execution_locker;
     }
 
-    auto Get_allDevices() const
+    auto GetAllDevices() const
     {
         return controller_factory->GetAllDevices();
     }

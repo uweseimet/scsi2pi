@@ -22,9 +22,6 @@ class S2pThread
 
 public:
 
-    S2pThread() = default;
-    ~S2pThread() = default;
-
     string Init(const callback&, int);
     void Start();
     void Stop();

@@ -2,12 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
 #include <filesystem>
+#include "base/property_handler.h"
 #include "controllers/controller_factory.h"
 #include "shared_protobuf/protobuf_util.h"
 #include "shared/network_util.h"
@@ -286,6 +287,10 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
         GetStatisticsInfo(*server_info.mutable_statistics_info(), devices);
     }
 
+    if (HasOperation(operations, PbOperation::PROPERTIES_INFO)) {
+        GetPropertiesInfo(*server_info.mutable_properties_info());
+    }
+
     if (HasOperation(operations, PbOperation::DEVICES_INFO)) {
         GetDevices(devices, server_info, default_folder);
     }
@@ -346,6 +351,13 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
     }
 }
 
+void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
+{
+    for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
+        (*properties_info.mutable_s2p_properties())[key] = value;
+    }
+}
+
 void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int depth) const
 {
     auto operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
@@ -399,6 +411,8 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
     CreateOperation(operation_info, MAPPING_INFO, "Get mapping of extensions to device types");
 
     CreateOperation(operation_info, STATISTICS_INFO, "Get statistics");
+
+    CreateOperation(operation_info, PROPERTIES_INFO, "Get properties");
 
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
@@ -456,9 +470,9 @@ PbOperationMetaData* CommandResponse::CreateOperation(PbOperationInfo &operation
     PbOperationMetaData meta_data;
     meta_data.set_server_side_name(PbOperation_Name(operation));
     meta_data.set_description(description);
-    int ordinal = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->index();
-    (*operation_info.mutable_operations())[ordinal] = meta_data;
-    return &(*operation_info.mutable_operations())[ordinal];
+    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
+    (*operation_info.mutable_operations())[number] = meta_data;
+    return &(*operation_info.mutable_operations())[number];
 }
 
 void CommandResponse::AddOperationParameter(PbOperationMetaData &meta_data, const string &name,

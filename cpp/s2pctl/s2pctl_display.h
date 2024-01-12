@@ -33,6 +33,7 @@ public:
     string DisplayMappingInfo(const PbMappingInfo&) const;
     string DisplayStatisticsInfo(const PbStatisticsInfo&) const;
     string DisplayOperationInfo(const PbOperationInfo&) const;
+    string DisplayPropertiesInfo(const PbPropertiesInfo&) const;
 
 private:
 

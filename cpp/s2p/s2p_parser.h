@@ -1,0 +1,31 @@
+//---------------------------------------------------------------------------
+//
+// SCSI target emulator and SCSI tools for the Raspberry Pi
+//
+// Copyright (C) 2024 Uwe Seimet
+//
+//---------------------------------------------------------------------------
+
+#pragma once
+
+#include <span>
+#include <vector>
+#include "generated/s2p_interface.pb.h"
+#include "base/property_handler.h"
+
+using namespace std;
+using namespace filesystem;
+using namespace s2p_interface;
+
+class S2pParser
+{
+
+public:
+
+    void Banner(span<char*>, bool) const;
+    property_map ParseArguments(span<char*>, bool&);
+
+private:
+
+    static vector<char*> ConvertLegacyOptions(const span<char*>&);
+};

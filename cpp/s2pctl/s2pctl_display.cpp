@@ -320,6 +320,21 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
     return s.str();
 }
 
+string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_info) const
+{
+    ostringstream s;
+
+    const map<string, string> sorted_properties(properties_info.s2p_properties().begin(),
+        properties_info.s2p_properties().end());
+
+    s << "Property settings on s2p startup:\n";
+    for (const auto& [key, value] : sorted_properties) {
+        s << "  " << key << "=" << value << "\n";
+    }
+
+    return s.str();
+}
+
 string S2pCtlDisplay::DisplayParams(const PbDevice &pb_device) const
 {
     ostringstream s;

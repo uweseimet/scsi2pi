@@ -51,6 +51,7 @@ private:
     bool CommandMappingInfo();
     bool CommandStatisticsInfo();
     bool CommandOperationInfo();
+    bool CommandPropertiesInfo();
     bool SendCommand();
     bool EvaluateParams(string_view, const string&, const string&);
 

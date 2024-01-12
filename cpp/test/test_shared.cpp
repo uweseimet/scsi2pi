@@ -95,7 +95,7 @@ pair<int, path> testing::OpenTempFile()
 {
     const string filename = string(test_data_temp_path) + "/scsi2pi_test-XXXXXX"; // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.begin(), filename.end());
-    f.push_back(0);
+    f.emplace_back(0);
 
     create_directories(path(filename).parent_path());
 

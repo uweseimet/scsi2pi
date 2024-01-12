@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -42,6 +42,7 @@ public:
     void GetMappingInfo(PbMappingInfo&) const;
     void GetLogLevelInfo(PbLogLevelInfo&) const;
     void GetStatisticsInfo(PbStatisticsInfo&, const unordered_set<shared_ptr<PrimaryDevice>>&) const;
+    void GetPropertiesInfo(PbPropertiesInfo&) const;
     void GetOperationInfo(PbOperationInfo&, int) const;
 
 private:

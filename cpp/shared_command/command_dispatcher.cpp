@@ -51,7 +51,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.Get_allDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -59,7 +59,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
-        response.GetServerInfo(*result.mutable_server_info(), command, executor.Get_allDevices(),
+        response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
             executor.GetReservedIds(), s2p_image.GetDefaultFolder(), s2p_image.GetDepth());
         return context.WriteSuccessResult(result);
 
@@ -104,7 +104,11 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case STATISTICS_INFO:
-        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.Get_allDevices());
+        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.GetAllDevices());
+        return context.WriteSuccessResult(result);
+
+    case PROPERTIES_INFO:
+        response.GetPropertiesInfo(*result.mutable_properties_info());
         return context.WriteSuccessResult(result);
 
     case OPERATION_INFO:
@@ -165,7 +169,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context, Pb
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;
-        response.GetDevicesInfo(executor.Get_allDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
         context.WriteResult(result);
         return result.status();
     }

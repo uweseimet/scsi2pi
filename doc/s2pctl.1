@@ -7,6 +7,7 @@ s2pctl \- Sends management commands to s2p
 \fB\-l\fR |
 \fB\-m\fR |
 \fB\-o\fR |
+\fB\-q\fR |
 \fB\-v\fR |
 \fB\-D\fR |
 \fB\-I\fR |
@@ -97,11 +98,14 @@ Rename an image file in the default image folder.
 .BR \-p\fI " " \fIPORT
 The s2p port to connect to, default is 6868.
 .TP
+.BR \-q\fI " " \fIPORT
+Display s2p startup properties.
+.TP
 .BR \-r\fI " " \fIRESERVED_IDS
 Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
 .TP
 .BR \-s\fI " " \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]
-Display server-side settings like available images or supported device types.
+Display s2p settings like available images or supported device types.
 .TP
 .BR \-S\fI
 Display statistics.
@@ -182,7 +186,7 @@ Example output:
    +----+-----+------+-------------------------------------
    | ID | LUN | TYPE | IMAGE FILE
    +----+-----+------+-------------------------------------
-   |  0 |   1 | SCHD | /home/pi/harddisk.hda
+   |  0 |   1 | SCHD | /home/pi/images/harddisk.hds
    +----+-----+------+-------------------------------------
 
 Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "HDIIMAGE0.HDS".

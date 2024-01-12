@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -461,7 +461,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     s << "operation=" << PbOperation_Name(command.operation());
 
     if (!params.empty()) {
-        s << ", command params=";
+        s << ", command parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : params) {
             if (!isFirst) {
@@ -476,7 +476,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     s << ", device=" << pb_device.id() << ":" << pb_device.unit() << ", type=" << PbDeviceType_Name(pb_device.type());
 
     if (pb_device.params_size()) {
-        s << ", device params=";
+        s << ", device parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : pb_device.params()) {
             if (!isFirst) {
@@ -504,7 +504,7 @@ string CommandExecutor::EnsureLun0(const PbCommand &command) const
     }
 
     // Collect LUN bit vectors of existing devices
-    for (const auto &device : Get_allDevices()) {
+    for (const auto &device : GetAllDevices()) {
         luns[device->GetId()] |= 1 << device->GetLun();
     }
 
@@ -542,7 +542,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
 
     // Some device types must be unique
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
-        for (const auto &d : Get_allDevices()) {
+        for (const auto &d : GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
                 context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE,
                     PbDeviceType_Name(device->GetType()));

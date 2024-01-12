@@ -88,6 +88,9 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
     case STATISTICS_INFO:
         return CommandStatisticsInfo();
 
+    case PROPERTIES_INFO:
+        return CommandPropertiesInfo();
+
     case OPERATION_INFO:
         return CommandOperationInfo();
 
@@ -299,6 +302,10 @@ bool S2pCtlCommands::CommandServerInfo()
         cout << s2pctl_display.DisplayStatisticsInfo(server_info.statistics_info());
     }
 
+    if (server_info.has_properties_info()) {
+        cout << s2pctl_display.DisplayPropertiesInfo(server_info.properties_info());
+    }
+
     if (server_info.has_operation_info()) {
         cout << s2pctl_display.DisplayOperationInfo(server_info.operation_info());
     }
@@ -381,6 +388,15 @@ bool S2pCtlCommands::CommandStatisticsInfo()
     SendCommand();
 
     cout << s2pctl_display.DisplayStatisticsInfo(result.statistics_info()) << flush;
+
+    return true;
+}
+
+bool S2pCtlCommands::CommandPropertiesInfo()
+{
+    SendCommand();
+
+    cout << s2pctl_display.DisplayPropertiesInfo(result.properties_info()) << flush;
 
     return true;
 }

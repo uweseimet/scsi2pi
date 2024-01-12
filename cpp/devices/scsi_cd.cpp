@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -161,15 +161,15 @@ void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     Disk::SetUpModePages(pages, page, changeable);
 
     if (page == 0x0d || page == 0x3f) {
-        AddCDROMPage(pages, changeable);
+        AddDeviceParametersPage(pages, changeable);
     }
 
     if (page == 0x0e || page == 0x3f) {
-        AddCDDAPage(pages, changeable);
+        AddAudioControlPage(pages, changeable);
     }
 }
 
-void ScsiCd::AddCDROMPage(map<int, vector<byte>> &pages, bool changeable) const
+void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(8);
 
@@ -186,7 +186,7 @@ void ScsiCd::AddCDROMPage(map<int, vector<byte>> &pages, bool changeable) const
     pages[13] = buf;
 }
 
-void ScsiCd::AddCDDAPage(map<int, vector<byte>> &pages, bool) const
+void ScsiCd::AddAudioControlPage(map<int, vector<byte>> &pages, bool) const
 {
     vector<byte> buf(16);
 

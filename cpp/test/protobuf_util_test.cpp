@@ -118,13 +118,13 @@ TEST(ProtobufUtil, ListDevices)
 
     PbDevice device;
     device.set_type(SCHD);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCDP);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCHS);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCLP);
-    devices.push_back(device);
+    devices.emplace_back(device);
     const string device_list = ListDevices(devices);
     EXPECT_FALSE(device_list.empty());
     EXPECT_NE(string::npos, device_list.find("DaynaPort SCSI/Link"));

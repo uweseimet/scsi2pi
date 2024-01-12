@@ -3,6 +3,7 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
+[\fB\-C\fR \fIPROPERTY_FILE\fR]
 [\fB\-F\fR \fIFOLDER\fR]
 [\fB\-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
 [\fB\-P\fR \fIACCESS_TOKEN_FILE\fR]
@@ -21,7 +22,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
-In the arguments to s2p one or more SCSI (-id n[:u]) or SASI (-hdn[:u]) devices can be specified. SCSI and SASI devices cannot be mixed.
+In the arguments to s2p one or more SCSI (-i n[:u]) or SASI (-h n[:u]) devices can be specified. SCSI and SASI devices cannot be mixed.
 The number (n) after the ID or HD identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
 The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
 .PP
@@ -42,6 +43,9 @@ When s2p starts it opens a socket (default port is 6868) to allow external manag
 To quit s2p press Control-C. If it is running in the background, you can kill it using an INT signal. When terminating s2p automatically flushes all cached data.
 
 .SH OPTIONS
+.TP
+.BR \-C\fI " " \fIPROPERTY_FILE
+The optional property file with s2p configuration data. The default property file is ~/.config/s2p.properties.
 .TP
 .BR \-b\fI " " \fIBLOCK_SIZE
 The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.

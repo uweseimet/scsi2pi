@@ -62,16 +62,14 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     SetUpModePages(pages, page, changeable);
-    for (const auto& [page, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
+    for (const auto& [p, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
         if (data.empty()) {
-            pages.erase(page);
+            pages.erase(p);
         }
         else {
-            pages[page] = data;
+            pages[p] = data;
         }
     }
-
-    // TODO Add user-defined mode pages, which may override the default ones
 
     if (pages.empty()) {
         LogTrace(fmt::format("Unsupported mode page ${:02x}", page));
