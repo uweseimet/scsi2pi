@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -30,6 +30,7 @@ public:
     bool Inquiry(span<uint8_t>);
     pair<uint64_t, uint32_t> ReadCapacity();
     bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
+    bool ModeSense6(span<uint8_t>);
     void SynchronizeCache();
     set<int> ReportLuns();
 

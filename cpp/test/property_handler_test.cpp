@@ -75,25 +75,30 @@ mode_page.1._:PRODUCT2=
 #mode_page.4.VENDOR=040101
 )";
 
-    const string &properties2 =
+    const string &properties_savable =
+        R"(mode_page.1.VENDOR:PRODUCT=81:02:ef:ff
+)";
+
+    const string &properties_codes_inconsistent =
         R"(mode_page.1.VENDOR:PRODUCT=03:02:ef:ff
 )";
 
-    const string &properties3 =
+    const string &properties_length_wrong =
         R"(mode_page.1.VENDOR:PRODUCT=01:03:fe:ff
 )";
 
-    const string &properties4 =
+    const string &properties_code_invalid =
         R"(mode_page.63.VENDOR:PRODUCT=3f:01:ff
 )";
 
-    const string &properties5 =
+    const string &properties_format_invalid =
         R"(mode_page.2.VENDOR:PRODUCT=02:1:ff
 )";
 
+
     auto property_handler = SetUpProperties(properties1);
 
-    const auto &mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
+    auto mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
     EXPECT_EQ(3, mode_pages.size());
     auto value = mode_pages.at(0);
     EXPECT_EQ(6, value.size());
@@ -111,17 +116,25 @@ mode_page.1._:PRODUCT2=
     value = mode_pages.at(3);
     EXPECT_TRUE(value.empty());
 
-    property_handler = SetUpProperties(properties2);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty())
-    << "Mode page codes are inconsistent";
+    property_handler = SetUpProperties(properties_savable);
+    mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
+    EXPECT_EQ(1, mode_pages.size());
+    value = mode_pages.at(1);
+    EXPECT_EQ(4, value.size());
+    EXPECT_EQ(byte { 0x81 }, value[0]);
+    EXPECT_EQ(byte { 0x02 }, value[1]);
+    EXPECT_EQ(byte { 0xef }, value[2]);
+    EXPECT_EQ(byte { 0xff }, value[3]);
 
-    property_handler = SetUpProperties(properties3);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty())
-    << "Mode page length field is wrong";
+    property_handler = SetUpProperties(properties_codes_inconsistent);
+    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
 
-    property_handler = SetUpProperties(properties4);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty()) << "Mode page code is invalid";
+    property_handler = SetUpProperties(properties_length_wrong);
+    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
 
-    property_handler = SetUpProperties(properties5);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty()) << "Mode page data format is invalid";
+    property_handler = SetUpProperties(properties_code_invalid);
+    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
+
+    property_handler = SetUpProperties(properties_format_invalid);
+    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
 }

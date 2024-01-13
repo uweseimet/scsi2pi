@@ -65,9 +65,10 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
             // drives support this, e.g FUJITSU M2624S
             // We are fine as long as the current sector size remains unchanged
             if (GetInt16(buf, offset + 12) != sector_size) {
-                // With SCSI2Pi it is not possible to permanently (e.g. by formatting) change the sector size.
+                // It is not possible to permanently (e.g. by formatting) change the sector size.
                 // The sector size is an externally configurable setting only.
-                spdlog::warn("In order to change the sector size use the -b option when launching s2p");
+                spdlog::warn(
+                    "Configure the sector size with the '-b' command line option or the 'block_size' device property");
                 throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
             }
 

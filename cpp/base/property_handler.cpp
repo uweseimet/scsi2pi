@@ -103,7 +103,7 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (static_cast<byte>(page) != data[0]) {
+            if (page != (static_cast<int>(data[0]) & 0x3f)) {
                 spdlog::warn(
                     fmt::format("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]));
                 continue;

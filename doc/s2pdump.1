@@ -8,7 +8,6 @@ s2pdump \- Hard drive dump/restore tool for SCSI2Pi
 \fB\-f\fR \fIFILE\fR
 [\fB\-b\fR \fIBUFFER_SIZE\fR]
 [\fB\-r\fR]
-[\fB\-p\fR]
 [\fB\-I\fR] \fID[:LUN]\fR
 [\fB\-L\fR \fILOG_LEVEL\fR]
 [\fB\-s\fR]
@@ -46,11 +45,8 @@ The transfer buffer size in bytes. The default size is 1 MiB. The buffer size is
 .BR \-r\fI
 Run in restore mode. Default is dump mode.
 .TP
-.BR \-p\fI
-Generate a .properties file that is compatible with the PiSCSI web interface. The output filename will match the image filename with ".properties" appended. The generated file should be moved to ~/.config/piscsi.
-.TP
 .BR \-I\fI " "\fIID[:LUN]
-Display INQUIRY data of ID[:LUN].
+Display INQUIRY data of ID[:LUN] and device properties to be used with s2p property files.
 .TP
 .BR \-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.

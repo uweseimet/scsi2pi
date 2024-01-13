@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -74,6 +74,16 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t 
     cdb[8] = static_cast<uint8_t>(blength);
 
     return phase_executor->Execute(isWrite ? scsi_command::cmd_write10 : scsi_command::cmd_read10, cdb, buffer, length);
+}
+
+bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
+{
+    vector<uint8_t> cdb(6);
+    cdb[1] = 0x08;
+    cdb[2] = 0x3f;
+    cdb[4] = static_cast<uint8_t>(buffer.size());
+
+    return phase_executor->Execute(scsi_command::cmd_mode_sense6, cdb, buffer, static_cast<int>(buffer.size()));
 }
 
 void S2pDumpExecutor::SynchronizeCache()

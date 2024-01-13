@@ -2,13 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022 akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <unistd.h>
 #include <spdlog/spdlog.h>
+#include <regex>
 #include <filesystem>
 #include <chrono>
 #include <csignal>
@@ -50,7 +50,7 @@ bool S2pDump::Banner(span<char*> args) const
     if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
         cout << s2p_util::Banner("(SCSI Hard Disk Dump/Restore Utility)")
             << "Usage: " << args[0] << " -i ID[:LUN] [-B BID] [-f FILE] [-a] [-r] [-b BUFFER_SIZE]"
-            << " [-L LOG_LEVEL] [-p] [-I] [-s] [-S START] [-C COUNT]\n"
+            << " [-L LOG_LEVEL] [-I] [-s] [-S START] [-C COUNT]\n"
             << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
             << " Default is 0.\n"
@@ -62,9 +62,8 @@ bool S2pDump::Banner(span<char*> args) const
             << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
             << " -a Scan all potential LUNs during bus scan, default is LUN 0 only.\n"
             << " -r Restore instead of dump.\n"
-            << " -p Generate .properties file to be used with the PiSCSI web interface."
             << " Only valid for dump and inquiry mode.\n"
-            << " -I Display INQUIRY data of ID[:LUN].\n"
+            << " -I Display INQUIRY data of ID[:LUN] and device properties to be used with s2p property files.\n"
             << " -s Scan SCSI bus for devices.\n"
             << " -S Start sector, default is 0.\n"
             << " -C Sector count, default is the drive capacity."
@@ -105,7 +104,7 @@ void S2pDump::ParseArguments(span<char*> args)
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:C:S:arspI")) != -1) {
+    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:b:t:L:C:S:arsI")) != -1) {
         switch (opt) {
         case 'a':
             scan_all_luns = true;
@@ -128,10 +127,6 @@ void S2pDump::ParseArguments(span<char*> args)
                 optarg, target_id, target_lun); !error.empty()) {
                 throw parser_exception(error);
             }
-            break;
-
-        case 'p':
-            create_properties_file = true;
             break;
 
         case 'r':
@@ -215,7 +210,7 @@ int S2pDump::run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if ((filename.empty() && !run_bus_scan && !run_inquiry && !to_stdout) || create_properties_file) {
+    if ((filename.empty() && !run_bus_scan && !run_inquiry && !to_stdout)) {
         cerr << "Missing filename" << endl;
         return EXIT_FAILURE;
     }
@@ -246,9 +241,9 @@ int S2pDump::run(span<char*> args, bool in_process)
     else if (run_inquiry) {
         DisplayBoardId();
 
-        if (DisplayInquiry(false) && create_properties_file && !filename.empty()) {
-            inq_info.GeneratePropertiesFile(filename + ".properties");
-        }
+        DisplayInquiry(false);
+
+        DisplayProperties(target_id, target_lun);
     }
     else {
         if (const string error = DumpRestore(); !error.empty()) {
@@ -300,7 +295,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
 {
     cout << DIVIDER << "\nScanning target ID:LUN " << target_id << ":" << target_lun << "\n" << flush;
 
-    inq_info = { };
+    device_info = { };
 
     scsi_executor->SetTarget(target_id, target_lun);
 
@@ -310,40 +305,84 @@ bool S2pDump::DisplayInquiry(bool check_type)
         return false;
     }
 
-    const auto type = static_cast<byte>(buf[0]);
-    if ((type & byte { 0x1f }) == byte { 0x1f }) {
+    device_info.type = static_cast<byte>(buf[0]);
+    if ((device_info.type & byte { 0x1f }) == byte { 0x1f }) {
         // Requested LUN is not available
         return false;
     }
 
     array<char, 17> str = { };
     memcpy(str.data(), &buf[8], 8);
-    inq_info.vendor = string(str.data());
-    cout << "Vendor:      " << inq_info.vendor << "\n";
+    device_info.vendor = string(str.data());
+    cout << "Vendor:               '" << device_info.vendor << "'\n";
 
     str.fill(0);
     memcpy(str.data(), &buf[16], 16);
-    inq_info.product = string(str.data());
-    cout << "Product:     " << inq_info.product << "\n";
+    device_info.product = string(str.data());
+    cout << "Product:              '" << device_info.product << "'\n";
 
     str.fill(0);
     memcpy(str.data(), &buf[32], 4);
-    inq_info.revision = string(str.data());
-    cout << "Revision:    " << inq_info.revision << "\n" << flush;
+    device_info.revision = string(str.data());
+    cout << "Revision:             '" << device_info.revision << "'\n" << flush;
 
-    if (const auto &t = DEVICE_TYPES.find(type & byte { 0x1f }); t != DEVICE_TYPES.end()) {
-        cout << "Device Type: " << (*t).second << "\n";
+    if (const auto &type = SCSI_DEVICE_TYPES.find(device_info.type & byte { 0x1f }); type != SCSI_DEVICE_TYPES.end()) {
+        cout << "Device Type:          " << (*type).second << "\n";
     }
     else {
-        cout << "Device Type: Unknown\n";
+        cout << "Device Type:          Unknown\n";
     }
 
-    cout << "Removable:   " << (((static_cast<byte>(buf[1]) & byte { 0x80 }) == byte { 0x80 }) ? "Yes" : "No")
+    if (buf[2]) {
+        cout << "SCSI Level:           ";
+        switch (buf[2]) {
+        case 1:
+            cout << "SCSI-1-CCS";
+            break;
+
+        case 2:
+            cout << "SCSI-2";
+            break;
+
+        case 3:
+            cout << "SCSI-3 (SPC)";
+            break;
+
+        default:
+            cout << "SPC-" << buf[2] - 2;
+            break;
+        }
+        cout << "\n";
+    }
+
+    cout << "Response Data Format: ";
+    switch (buf[3]) {
+    case 0:
+        cout << "SCSI-1";
+        break;
+
+    case 1:
+        cout << "SCSI-1-CCS";
+        break;
+
+    case 2:
+        cout << "SCSI-2";
+        break;
+
+    default:
+        cout << fmt::format("{:02x}", buf[3]);
+        break;
+    }
+    cout << "\n";
+
+    device_info.removable = (static_cast<byte>(buf[1]) & byte { 0x80 }) == byte { 0x80 };
+    cout << "Removable:            " << (device_info.removable ? "Yes" : "No")
         << "\n";
 
-    if (check_type && type != static_cast<byte>(device_type::direct_access) &&
-        type != static_cast<byte>(device_type::cd_rom) && type != static_cast<byte>(device_type::optical_memory)) {
-        cerr << "Error: Invalid device type, supported types for dump/restore are DIRECT ACCESS,"
+    if (check_type && device_info.type != static_cast<byte>(device_type::direct_access) &&
+        device_info.type != static_cast<byte>(device_type::cd_rom)
+        && device_info.type != static_cast<byte>(device_type::optical_memory)) {
+        cerr << "Error: Invalid device type for dump/restore, supported types are DIRECT ACCESS,"
             << " CD-ROM/DVD/BD and OPTICAL MEMORY" << endl;
         return false;
     }
@@ -394,15 +433,15 @@ string S2pDump::DumpRestore()
 
     while (remaining) {
         const auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
-        auto sector_count = byte_count / inq_info.sector_size;
-        if (byte_count % inq_info.sector_size) {
+        auto sector_count = byte_count / device_info.sector_size;
+        if (byte_count % device_info.sector_size) {
             ++sector_count;
         }
 
         spdlog::debug("Remaining bytes: " + to_string(remaining));
         spdlog::debug("Next sector: " + to_string(sector_offset));
         spdlog::debug("Sector count: " + to_string(sector_count));
-        spdlog::debug("SCSI transfer size: " + to_string(sector_count * inq_info.sector_size));
+        spdlog::debug("SCSI transfer size: " + to_string(sector_count * device_info.sector_size));
         spdlog::debug("File chunk size: " + to_string(byte_count));
 
         if (const string error = ReadWrite(out, fs, sector_offset, sector_count, byte_count); !error.empty()) {
@@ -439,10 +478,6 @@ string S2pDump::DumpRestore()
             << DIVIDER << "\n" << flush;
     }
 
-    if (create_properties_file && !restore) {
-        inq_info.GeneratePropertiesFile(filename + ".properties");
-    }
-
     return "";
 }
 
@@ -455,12 +490,12 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
         }
 
         if (!scsi_executor->ReadWrite(buffer, sector_offset, sector_count,
-            sector_count * inq_info.sector_size, true)) {
+            sector_count * device_info.sector_size, true)) {
             return "Error/interrupted while writing to device";
         }
     } else {
         if (!scsi_executor->ReadWrite(buffer, sector_offset,
-            sector_count, sector_count * inq_info.sector_size, false)) {
+            sector_count, sector_count * device_info.sector_size, false)) {
             return "Error/interrupted while reading from device";
         }
 
@@ -475,21 +510,21 @@ string S2pDump::ReadWrite(ostream &out, fstream &fs, int sector_offset, uint32_t
 
 long S2pDump::CalculateEffectiveSize()
 {
-    if (inq_info.capacity <= static_cast<uint64_t>(start)) {
-        cerr << "Start sector " << start << " is out of range (" << inq_info.capacity - 1 << ")" << endl;
+    if (device_info.capacity <= static_cast<uint64_t>(start)) {
+        cerr << "Start sector " << start << " is out of range (" << device_info.capacity - 1 << ")" << endl;
         return -1;
     }
 
     if (!count) {
-        count = inq_info.capacity - start;
+        count = device_info.capacity - start;
     }
 
-    if (inq_info.capacity < static_cast<uint64_t>(start + count)) {
-        cerr << "Sector count " << count << " is out of range (" << inq_info.capacity - start << ")" << endl;
+    if (device_info.capacity < static_cast<uint64_t>(start + count)) {
+        cerr << "Sector count " << count << " is out of range (" << device_info.capacity - start << ")" << endl;
         return -1;
     }
 
-    const off_t disk_size_in_bytes = count * inq_info.sector_size;
+    const off_t disk_size_in_bytes = count * device_info.sector_size;
 
     size_t effective_size;
     if (restore) {
@@ -540,8 +575,8 @@ bool S2pDump::GetDeviceInfo()
         return false;
     }
 
-    inq_info.capacity = capacity;
-    inq_info.sector_size = sector_size;
+    device_info.capacity = capacity;
+    device_info.sector_size = sector_size;
 
     if (!to_stdout) {
         cout << "Sectors:     " << capacity << "\n"
@@ -555,25 +590,68 @@ bool S2pDump::GetDeviceInfo()
     return true;
 }
 
-void S2pDump::inquiry_info::GeneratePropertiesFile(const string &properties_file) const
+void S2pDump::DisplayProperties(int id, int lun) const
 {
-    ofstream prop(properties_file);
+    cout << "\nDevice properties for s2p properties file:\n";
 
-    prop << "{\n"
-        << "    \"vendor\": \"" << vendor << "\",\n"
-        << "    \"product\": \"" << product << "\",\n"
-        << "    \"revision\": \"" << revision << "\"";
-    if (sector_size) {
-        prop << ",\n    \"block_size\": \"" << sector_size << "\"";
+    string id_and_lun = "device." + to_string(id);
+    if (lun > 0) {
+        id_and_lun += ":" + to_string(lun);
     }
-    prop << "\n}\n";
+    id_and_lun += ".";
 
-    if (prop.fail()) {
-        cerr << "Error: Can't create properties file '" + properties_file + "': " << strerror(errno) << endl;
+    cout << id_and_lun << "type=";
+    if (const auto &type = S2P_DEVICE_TYPES.find(device_info.type & byte { 0x1f }); type != S2P_DEVICE_TYPES.end()) {
+        if ((*type).second != "SCHD") {
+            cout << (*type).second << "\n";
+        }
+        else {
+            cout << (device_info.removable ? "SCRM" : "SCHD") << "\n";
+        }
     }
     else {
-        cout << "Created properties file '" + properties_file + "'\n" << flush;
+        cout << "UNDEFINED\n";
     }
+
+    if (device_info.sector_size) {
+        cout << id_and_lun << "block_size=" << device_info.sector_size << "\n";
+    }
+
+    cout << id_and_lun << "product_name=" << regex_replace(device_info.vendor, regex(" +$"), "") << ":"
+        << regex_replace(device_info.product, regex(" +$"), "") << ":"
+        << regex_replace(device_info.revision, regex(" +$"), "") << "\n" << flush;
+
+    scsi_executor->SetTarget(target_id, target_lun);
+
+    vector<uint8_t> buf(255);
+
+    if (!scsi_executor->ModeSense6(buf)) {
+        cout << "Warning: Can't get mode page data, medium may be missing\n" << flush;
+        return;
+    }
+
+    const int length = buf[0] + 1;
+    int offset = 4;
+    while (offset < length) {
+        const int page_code = buf[offset++];
+
+        // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
+        const int page_length = page_code ? buf[offset++] : length - offset - 1;
+
+        cout << fmt::format("{0}mode_page.{1}={2:02x}", id_and_lun, page_code & 0x3f, page_code);
+
+        if (page_code) {
+            cout << fmt::format(":{:02x}", page_length);
+        }
+
+        for (int i = 0; i < page_length && offset < length; i++) {
+            cout << fmt::format(":{:02x}", buf[offset++]);
+        }
+
+        cout << "\n";
+    }
+
+    cout << flush;
 }
 
 bool S2pDump::SetLogLevel() const
