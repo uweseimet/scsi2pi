@@ -29,7 +29,7 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
     byte_count = 0;
 
     spdlog::trace(
-        fmt::format("Executing {0} for target {1}:{2}", command_mapping.find(cmd)->second.second, target_id,
+        fmt::format("Executing {0} for target {1}:{2}", COMMAND_MAPPING.find(cmd)->second.second, target_id,
             target_lun));
 
     // There is no arbitration phase with SASI
@@ -179,7 +179,7 @@ void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
 
     if (static_cast<int>(cdb.size()) !=
         bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
-        throw phase_exception(command_mapping.find(cmd)->second.second + string(" failed"));
+        throw phase_exception(COMMAND_MAPPING.find(cmd)->second.second + string(" failed"));
     }
 }
 

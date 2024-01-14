@@ -61,13 +61,13 @@ void PrimaryDevice::AddCommand(scsi_command cmd, const operation &execute)
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     if (const auto &it = commands.find(cmd); it != commands.end()) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", command_mapping.find(cmd)->second.second,
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", COMMAND_MAPPING.find(cmd)->second.second,
             static_cast<int>(cmd)));
 
         it->second();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: {:02x}", static_cast<int>(cmd)));
+        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
 
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }

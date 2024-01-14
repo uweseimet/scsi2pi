@@ -58,43 +58,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &is_sasi)
     opterr = 0;
     int opt;
     while ((opt = getopt(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:v")) != -1) {
+        if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
+            properties[property->second] = optarg;
+            continue;
+        }
+
+        // The remaining options are device-related
         switch (opt) {
-        // General options with corresponding properties
-
-        case 'p':
-            properties[PropertyHandler::PORT] = optarg;
-            continue;
-
-        case 'r':
-            properties[PropertyHandler::RESERVED_IDS] = optarg;
-            continue;
-
-        case 'z':
-            properties[PropertyHandler::LOCALE] = optarg;
-            continue;
-
-        case 'C':
-            properties[PropertyHandler::PROPERTY_FILE] = optarg;
-            continue;
-
-        case 'F':
-            properties[PropertyHandler::IMAGE_FOLDER] = optarg;
-            continue;
-
-        case 'L':
-            properties[PropertyHandler::LOG_LEVEL] = optarg;
-            continue;
-
-        case 'P':
-            properties[PropertyHandler::TOKEN_FILE] = optarg;
-            continue;
-
-        case 'R':
-            properties[PropertyHandler::SCAN_DEPTH] = optarg;
-            continue;
-
-        // Device options
-
         case 'b':
             block_size = optarg;
             continue;
@@ -134,21 +104,25 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &is_sasi)
         const string params = optarg;
 
         if (is_sasi) {
+            if (!type.empty() && type != "sahd") {
+                has_scsi = true;
+            }
+
             type = "sahd";
         }
 
-        const string key = fmt::format("device.{}.", id_and_lun);
+        const string device_key = fmt::format("device.{}.", id_and_lun);
         if (!block_size.empty()) {
-            properties[key + "block_size"] = block_size;
+            properties[device_key + "block_size"] = block_size;
         }
         if (!type.empty()) {
-            properties[key + "type"] = type;
+            properties[device_key + "type"] = type;
         }
         if (!params.empty()) {
-            properties[key + "params"] = params;
+            properties[device_key + "params"] = params;
         }
         if (!product_data.empty()) {
-            properties[key + "product_data"] = product_data;
+            properties[device_key + "product_data"] = product_data;
         }
 
         id_and_lun = "";

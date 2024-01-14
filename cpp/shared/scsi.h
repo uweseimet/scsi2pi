@@ -135,6 +135,16 @@ enum class sense_key
     aborted_command = 0x0b
 };
 
+static const unordered_map<sense_key, string> SENSE_KEY_MAPPING = {
+    { sense_key::no_sense, "NO SENSE" },
+    { sense_key::not_ready, "NOT READY" },
+    { sense_key::medium_error, "MEDIUM ERROR" },
+    { sense_key::illegal_request, "ILLEGAL REQUEST" },
+    { sense_key::unit_attention, "UNIT ATTENTION" },
+    { sense_key::data_protect, "DATA_PROTECT" },
+    { sense_key::aborted_command, "ABORTED COMMAND" }
+};
+
 enum class asc
 {
     no_additional_sense_information = 0x00,
@@ -151,6 +161,7 @@ enum class asc
     power_on_or_reset = 0x29,
     medium_not_present = 0x3a,
     load_or_eject_failed = 0x53,
+
     // SCSI2Pi-specific
     controller_process_phase = 0x80,
     controller_send_handshake = 0x84,
@@ -165,7 +176,24 @@ enum class asc
     host_services_receive_operation_results = 0xf8
 };
 
-static const unordered_map<scsi_command, pair<int, string>> command_mapping = {
+static const unordered_map<asc, string> ASC_MAPPING = {
+    { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
+    { asc::write_fault, " WRITE FAULT" },
+    { asc::read_fault, "READ FAULT" },
+    { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
+    { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
+    { asc::lba_out_of_range, "LBA OUT OF RANGE" },
+    { asc::invalid_field_in_cdb, "INVALID FIELD In CDB" },
+    { asc::invalid_lun, "INVALID LUN" },
+    { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
+    { asc::write_protected, "WRITE PROTECTED" },
+    { asc::not_ready_to_ready_change, "NOT READY TO READY CHANGE" },
+    { asc::power_on_or_reset, "POWER ON OR RESET" },
+    { asc::medium_not_present, "MEDIUM NOT PRESENT" },
+    { asc::load_or_eject_failed, "LOAD OR EJECT FAILED" }
+};
+
+static const unordered_map<scsi_command, pair<int, string>> COMMAND_MAPPING = {
     { scsi_command::cmd_test_unit_ready, make_pair(6, "TestUnitReady") },
     { scsi_command::cmd_rezero, make_pair(6, "Rezero") },
     { scsi_command::cmd_request_sense, make_pair(6, "RequestSense") },

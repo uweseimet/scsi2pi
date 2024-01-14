@@ -39,7 +39,7 @@ bool GenericController::Process(int id)
     initiator_id = id;
 
     if (!ProcessPhase()) {
-        Abort(asc::controller_process_phase);
+        Error(sense_key::aborted_command, asc::controller_process_phase);
         return false;
     }
 
@@ -121,7 +121,7 @@ void GenericController::Command()
 
         if (spdlog::get_level() <= spdlog::level::debug) {
             string s = fmt::format("Controller is executing {}, CDB $",
-                command_mapping.find(GetOpcode())->second.second);
+                COMMAND_MAPPING.find(GetOpcode())->second.second);
             for (int i = 0; i < Bus::GetCommandByteCount(static_cast<uint8_t>(GetOpcode())); i++) {
                 s += fmt::format("{:02x}", GetCmdByte(i));
             }
@@ -303,9 +303,23 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
-        LogDebug(
-            fmt::format("Error status: Sense Key ${0:02x}, ASC ${1:02x}", static_cast<int>(sense_key),
-                static_cast<int>(asc)));
+        string s_sense_key;
+        if (const auto &it_sense_key = SENSE_KEY_MAPPING.find(sense_key); it_sense_key != SENSE_KEY_MAPPING.end()) {
+            s_sense_key = fmt::format("{0} (Sense Key ${1:02x})", it_sense_key->second, static_cast<int>(sense_key));
+        }
+        else {
+            s_sense_key = fmt::format("Sense Key ${:02x}", static_cast<int>(sense_key));
+        }
+
+        string s_asc;
+        if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
+            s_asc = fmt::format("{0} (ASC ${1:02x})", it_asc->second, static_cast<int>(asc));
+        }
+        else {
+            s_asc = fmt::format("ASC ${:02x}", static_cast<int>(asc));
+        }
+
+        LogDebug(fmt::format("Error status: {0}, {1}", s_sense_key, s_asc));
 
         // Set Sense Key and ASC for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
@@ -315,12 +329,6 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     SetMessage(0x00);
 
     Status();
-}
-
-void GenericController::Abort(asc asc)
-{
-    // The vendor-specific ASC and ASCQ help to locate where ABORTED_COMMAND has been raised
-    Error(sense_key::aborted_command, asc);
 }
 
 void GenericController::Send()
@@ -337,7 +345,7 @@ void GenericController::Send()
         // for LUNs other than 0 this work-around works.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            Abort(asc::controller_send_handshake);
+            Error(sense_key::aborted_command, asc::controller_send_handshake);
         }
         else {
             UpdateOffsetAndLength();
@@ -352,7 +360,7 @@ void GenericController::Send()
     if (IsDataIn() && HasBlocks()) {
         // Set next buffer (set offset, length)
         if (!XferIn(GetBuffer())) {
-            Abort(asc::controller_send_xfer_in);
+            Error(sense_key::aborted_command, asc::controller_send_xfer_in);
             return;
         }
 
@@ -404,7 +412,7 @@ void GenericController::Receive()
         if (uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
             LogError(fmt::format("Not able to receive {0} byte(s), only received {1}", GetLength(), len));
-            Abort(asc::controller_receive_handshake);
+            Error(sense_key::aborted_command, asc::controller_receive_handshake);
             return;
         }
     }
@@ -448,7 +456,7 @@ void GenericController::Receive()
     }
 
     if (!result) {
-        Abort(asc::controller_receive_result);
+        Error(sense_key::aborted_command, asc::controller_receive_result);
         return;
     }
 
@@ -512,7 +520,7 @@ void GenericController::ReceiveBytes()
     }
 
     if (!result) {
-        Abort(asc::controller_receive_bytes_result);
+        Error(sense_key::aborted_command, asc::controller_receive_bytes_result);
         return;
     }
 
