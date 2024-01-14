@@ -34,7 +34,7 @@ protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
     void AddFormatPage(map<int, vector<byte>>&, bool) const override;
-    void AddVendorPage(map<int, vector<byte>>&, int, bool) const override;
+    void AddVendorModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 

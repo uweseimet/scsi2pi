@@ -32,7 +32,9 @@ public:
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const override;
-    void AddVendorPage(map<int, vector<byte>>&, int, bool) const override;
+
+    void AddVendorModePages(map<int, vector<byte>>&, int, bool) const override;
+    void AddDecVendorModePage(map<int, vector<byte>>&, bool) const;
 
 private:
 

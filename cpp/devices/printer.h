@@ -65,7 +65,7 @@ private:
         PrimaryDevice::SendDiagnostic();
     }
     void Print() override;
-    void Synchronize_buffer();
+    void SynchronizeBuffer();
 
     string file_template;
 

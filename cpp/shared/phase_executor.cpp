@@ -23,7 +23,7 @@ void PhaseExecutor::Reset() const
     bus.SetATN(false);
 }
 
-bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
+bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, bool sasi)
 {
     status = 0;
     byte_count = 0;
@@ -32,12 +32,13 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
         fmt::format("Executing {0} for target {1}:{2}", command_mapping.find(cmd)->second.second, target_id,
             target_lun));
 
-    if (!Arbitration()) {
+    // There is no arbitration phase with SASI
+    if (!sasi && !Arbitration()) {
         bus.Reset();
         return false;
     }
 
-    if (!Selection()) {
+    if (!Selection(sasi)) {
         Reset();
         return false;
     }
@@ -136,21 +137,24 @@ bool PhaseExecutor::Arbitration() const
     return true;
 }
 
-bool PhaseExecutor::Selection() const
+bool PhaseExecutor::Selection(bool sasi) const
 {
-    bus.SetDAT(static_cast<uint8_t>((1 << initiator_id) + (1 << target_id)));
+    // There is no initiator ID with SASI
+    bus.SetDAT(static_cast<uint8_t>((sasi ? 0 : 1 << initiator_id) + (1 << target_id)));
 
     bus.SetSEL(true);
 
-    // Request MESSAGE OUT for IDENTIFY
-    bus.SetATN(true);
+    if (!sasi) {
+        // Request MESSAGE OUT for IDENTIFY
+        bus.SetATN(true);
 
-    Sleep(DESKEW_DELAY);
-    Sleep(DESKEW_DELAY);
+        Sleep(DESKEW_DELAY);
+        Sleep(DESKEW_DELAY);
 
-    bus.SetBSY(false);
+        bus.SetBSY(false);
 
-    Sleep(BUS_SETTLE_DELAY);
+        Sleep(BUS_SETTLE_DELAY);
+    }
 
     if (!WaitForBusy()) {
         spdlog::trace("SELECTION failed");

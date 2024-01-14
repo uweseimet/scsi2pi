@@ -54,14 +54,18 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
     const bool changeable = (cdb[2] & 0xc0) == 0x40;
 
-    // Get page code (0x3f means all pages)
-    const int page = cdb[2] & 0x3f;
+    const int page_code = cdb[2] & 0x3f;
 
-    LogTrace(fmt::format("Requesting mode page ${:02x}", page));
+    if (page_code == 0x3f) {
+        LogTrace("Requesting all mode pages");
+    }
+    else {
+        LogTrace(fmt::format("Requesting mode page ${:02x}", page_code));
+    }
 
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
-    SetUpModePages(pages, page, changeable);
+    SetUpModePages(pages, page_code, changeable);
     for (const auto& [p, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
         if (data.empty()) {
             pages.erase(p);
@@ -72,7 +76,7 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     }
 
     if (pages.empty()) {
-        LogTrace(fmt::format("Unsupported mode page ${:02x}", page));
+        LogTrace(fmt::format("Unsupported mode page ${:02x}", page_code));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

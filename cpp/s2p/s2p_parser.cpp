@@ -20,9 +20,9 @@ void S2pParser::Banner(span<char*> args, bool usage) const
             << " -h ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " -i ID is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional logical unit, 0 is the default"
-            << " (SCSI: 0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")"
+            << " (SCSI: 0-" << (ControllerFactory::GetScsiLunMax() - 1)
             << ", SASI: 0-" << (ControllerFactory::GetSasiLunMax() - 1) << ").\n"
-            << " Attaching a SASI drive (-hd instead of -id) selects SASI compatibility.\n"
+            << " Attaching a SASI drive (-h instead of -i) selects SASI compatibility.\n"
             << " FILE is either a disk image file, \"daynaport\", \"printer\" or \"services\".\n"
             << " The image type is derived from the extension when no type is specified:\n"
             << "  hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -132,6 +132,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &is_sasi)
         }
 
         const string params = optarg;
+
+        if (is_sasi) {
+            type = "sahd";
+        }
 
         const string key = fmt::format("device.{}.", id_and_lun);
         if (!block_size.empty()) {

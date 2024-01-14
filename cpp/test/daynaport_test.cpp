@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -214,7 +214,7 @@ TEST(ScsiDaynaportTest, EnableInterface)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-            Property(&scsi_exception::get_asc, asc::no_additional_sense_information))));
+            Property(&scsi_exception::get_asc, asc::daynaport_enable_interface))));
 
     // Disable
     controller->SetCmdByte(5, 0x00);
@@ -224,7 +224,7 @@ TEST(ScsiDaynaportTest, EnableInterface)
             ;
         }, Throws<scsi_exception>(AllOf(
             Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-            Property(&scsi_exception::get_asc, asc::no_additional_sense_information))));
+            Property(&scsi_exception::get_asc, asc::daynaport_disable_interface))));
 }
 
 TEST(ScsiDaynaportTest, GetStatistics)

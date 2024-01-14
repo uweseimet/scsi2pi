@@ -45,7 +45,7 @@ TEST(ScsiHdTest, SCRM_DeviceDefaults)
 
 void ScsiHdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(9U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(10U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
     EXPECT_EQ(24U, pages[3].size());
@@ -54,6 +54,7 @@ void ScsiHdTest_SetUpModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(12U, pages[8].size());
     EXPECT_EQ(8U, pages[10].size());
     EXPECT_EQ(24U, pages[12].size());
+    EXPECT_EQ(25U, pages[37].size());
     EXPECT_EQ(30U, pages[48].size());
 }
 

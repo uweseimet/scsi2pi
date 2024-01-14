@@ -286,7 +286,7 @@ class MockModePageDevice : public ModePageDevice
 {
     FRIEND_TEST(ModePageDeviceTest, SupportsSaveParameters);
     FRIEND_TEST(ModePageDeviceTest, AddModePages);
-    FRIEND_TEST(ModePageDeviceTest, AddVendorPage);
+    FRIEND_TEST(ModePageDeviceTest, AddVendorModePages);
 
 public:
 
@@ -445,7 +445,7 @@ class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hie
 {
     FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
     FRIEND_TEST(OpticalMemoryTest, SetUpModePages);
-    FRIEND_TEST(OpticalMemoryTest, TestAddVendorPage);
+    FRIEND_TEST(OpticalMemoryTest, AddVendorModePages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
     using OpticalMemory::OpticalMemory;

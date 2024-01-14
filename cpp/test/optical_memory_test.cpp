@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ TEST(OpticalMemoryTest, SetUpModePages)
     ScsiMo_SetUpModePages(pages);
 }
 
-TEST(OpticalMemoryTest, TestAddVendorPage)
+TEST(OpticalMemoryTest, AddVendorModePages)
 {
     map<int, vector<byte>> pages;
     MockOpticalMemory mo(0);

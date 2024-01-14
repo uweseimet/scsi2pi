@@ -1,6 +1,6 @@
 .TH s2pdump 1
 .SH NAME
-s2pdump \- Hard drive dump/restore tool for SCSI2Pi
+s2pdump \- SCSI/SASI drive dump/restore tool for SCSI2Pi
 .SH SYNOPSIS
 .B s2pdump
 \fB\-i\fR \fIID[:LUN]\fR
@@ -13,6 +13,8 @@ s2pdump \- Hard drive dump/restore tool for SCSI2Pi
 [\fB\-s\fR]
 [\fB\-S\fR \fISTART\fR]
 [\fB\-C\fR \fICOUNT\fR]
+[\fB\-b\fR \fISASI_CAPACITY\fR]
+[\fB\-z\fR \fISASI_SECTOR_SIZE\fR]
 .SH DESCRIPTION
 .B s2pdump
 has two modes of operation: dump and restore. These can be used with physical storage media like hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
@@ -24,14 +26,17 @@ In restore mode s2pdump copies the data from a local image to a remote physical 
 .SH NOTES
 
 .B s2pdump
-requires either a FULLSPEC PiSCSI/RaSCSI board.
+requires a FULLSPEC PiSCSI/RaSCSI board.
 
-If the generated drive image is intended to be used with SCSI2Pi, the drive image should be moved to the ~/images folder (or the location specified to s2p).
+Usually in order to use the generated drive image with SCSI2Pi, it should be moved to the ~/images folder (or the location specified to s2p).
 
 .SH OPTIONS
 .TP
 .BR \-i\fI " "\fIID[:LUN]
-SCSI ID and optional LUN of the SCSI drive. This device will be functioning as the "Target" device.
+ID and optional LUN (0-31) of the SCSI target drive.
+.TP
+.BR \-h\fI " "\fIID[:LUN]
+ID and optional LUN (-01) of the SASI target drive.
 .TP
 .BR \-B\fI " "\fIBID
 SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device.
@@ -40,25 +45,34 @@ SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host wi
 Path to the dump file.
 .TP
 .BR \-b\fI " "\fIBUFFER_SIZE
-The transfer buffer size in bytes. The default size is 1 MiB. The buffer size is specified in bytes with a minimum value of 65536 bytes (64 KiB).
+The transfer buffer size in bytes. The default size is 1 MiB, the minimum size is 65536 bytes (64 KiB).
 .TP
 .BR \-r\fI
 Run in restore mode. Default is dump mode.
 .TP
 .BR \-I\fI " "\fIID[:LUN]
-Display INQUIRY data of ID[:LUN] and device properties to be used with s2p property files.
+Display INQUIRY data of ID[:LUN] and (SCSI only) device properties to be used with s2p properties files.
 .TP
 .BR \-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \-s\fI
-Scan the bus for devices and display their properties.
+Scan the bus for SCSI devices and display their properties.
+.TP
+.BR \-t\fI
+Scan the bus for SASI devices and display their properties.
 .TP
 .BR \-S\fI "  " \fISTART
 Start sector for the dump/restore operation, default is 0.
 .TP
 .BR \-C\fI "  " \fICOUNT
 Sector count, default is the drive capacity.
+.TP
+.BR \-c\fI " "\fISASI_CAPACITY
+The capacity of the SASI hard drive in sectors. This parameter only has a meaning for SASI drives.
+.TP
+.BR \-z\fI " "\fISASI_SECTOR_SIZE
+The sector size of the SASI hard drive in sectors (256|512|1024) in bytes. This parameter only has a meaning for SASI drives.
 
 .SH EXAMPLES
 Dump Mode: [SCSI Drive] ---> [SCSI2Pi host]

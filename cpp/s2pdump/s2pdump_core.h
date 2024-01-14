@@ -22,7 +22,7 @@ public:
 
     int run(span<char*>, bool = false);
 
-    struct device_info
+    struct scsi_device_info
     {
         bool removable;
         byte type;
@@ -33,7 +33,7 @@ public:
         uint32_t sector_size;
         uint64_t capacity;
     };
-    using device_info_t = struct device_info;
+    using scsi_device_info_t = struct scsi_device_info;
 
 private:
 
@@ -41,10 +41,12 @@ private:
     bool Init(bool);
     void ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWrite(ostream&, fstream&, int, uint32_t, int);
+    string ReadWrite(ostream&, fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
+    bool DisplayScsiInquiry(vector<uint8_t>&, bool);
+    bool DisplaySasiInquiry(vector<uint8_t>&, bool);
     void DisplayProperties(int, int) const;
     string DumpRestore();
     bool GetDeviceInfo();
@@ -62,13 +64,18 @@ private:
 
     unique_ptr<S2pDumpExecutor> scsi_executor;
 
-    device_info_t device_info;
+    scsi_device_info_t scsi_device_info;
+
+    int sasi_capacity = 0;
+    int sasi_sector_size = 0;
 
     vector<uint8_t> buffer;
 
     int initiator_id = 7;
     int target_id = -1;
     int target_lun = 0;
+
+    bool sasi = false;
 
     string filename;
 

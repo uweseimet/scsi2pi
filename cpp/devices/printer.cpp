@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -58,7 +58,7 @@ bool Printer::Init(const param_map &params)
         });
     AddCommand(scsi_command::cmd_synchronize_buffer, [this]
         {
-            Synchronize_buffer();
+            SynchronizeBuffer();
         });
     // STOP PRINT is identical with TEST UNIT READY, it just returns the status
     AddCommand(scsi_command::cmd_stop_print, [this]
@@ -147,14 +147,14 @@ void Printer::Print()
     EnterDataOutPhase();
 }
 
-void Printer::Synchronize_buffer()
+void Printer::SynchronizeBuffer()
 {
     if (!out.is_open()) {
         LogWarn("Nothing to print");
 
         ++print_warning_count;
 
-        throw scsi_exception(sense_key::aborted_command);
+        throw scsi_exception(sense_key::aborted_command, asc::printer_nothing_to_print);
     }
 
     string cmd = GetParam("cmd");
@@ -174,7 +174,7 @@ void Printer::Synchronize_buffer()
 
         CleanUp();
 
-        throw scsi_exception(sense_key::aborted_command);
+        throw scsi_exception(sense_key::aborted_command, asc::printer_printing_failed);
     }
 
     CleanUp();

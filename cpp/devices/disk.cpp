@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -380,7 +380,8 @@ int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
     size = AddModePages(cdb, buf, size, length, 255);
 
-    buf[0] = (uint8_t)size;
+    // The size field does not count itself
+    buf[0] = (uint8_t)(size - 1);
 
     return size;
 }
@@ -432,7 +433,8 @@ int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 
     size = AddModePages(cdb, buf, size, length, 65535);
 
-    SetInt16(buf, 0, size);
+    // The size fields do not count themselves
+    SetInt16(buf, 0, size - 2);
 
     return size;
 }
@@ -479,8 +481,8 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddNotchPage(pages, changeable);
     }
 
-    // Page (vendor special)
-    AddVendorPage(pages, page, changeable);
+    // Page (vendor-specific)
+    AddVendorModePages(pages, page, changeable);
 }
 
 void Disk::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages, bool) const
@@ -795,7 +797,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
         }
     }
 
-    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: ${0:x}, sector count: {1}", start, count));
+    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {0}, sector count: {1}", start, count));
 
     // Check capacity
     if (uint64_t capacity = GetBlockCount(); !capacity || start > capacity || start + count > capacity) {

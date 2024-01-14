@@ -203,7 +203,7 @@ void ScsiCd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
 }
 
-void ScsiCd::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const
+void ScsiCd::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     // Page code 48
     if (page == 0x30 || page == 0x3f) {

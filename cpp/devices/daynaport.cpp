@@ -409,7 +409,7 @@ void DaynaPort::EnableInterface()
     if (GetController()->GetCmdByte(5) & 0x80) {
         if (const string error = tap.IpLink(true); !error.empty()) {
             LogWarn("Unable to enable the DaynaPort Interface: " + error);
-            throw scsi_exception(sense_key::aborted_command);
+            throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
 
         tap.Flush();
@@ -432,7 +432,7 @@ void DaynaPort::EnableInterface()
     else {
         if (const string error = tap.IpLink(false); !error.empty()) {
             LogWarn("Unable to disable the DaynaPort Interface: " + error);
-            throw scsi_exception(sense_key::aborted_command);
+            throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }
 
         LogDebug("The DaynaPort interface has been disabled");

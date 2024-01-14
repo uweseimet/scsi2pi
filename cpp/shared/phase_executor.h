@@ -31,7 +31,7 @@ public:
     ~PhaseExecutor() = default;
 
     void SetTarget(int, int);
-    bool Execute(scsi_command, span<uint8_t>, span<uint8_t>, int);
+    bool Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, bool = false);
 
     int GetByteCount() const
     {
@@ -45,7 +45,7 @@ private:
     void Reset() const;
 
     bool Arbitration() const;
-    bool Selection() const;
+    bool Selection(bool) const;
     void Command(scsi_command, span<uint8_t>) const;
     void Status();
     void DataIn(span<uint8_t>, int);

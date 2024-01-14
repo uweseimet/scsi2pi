@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 // Abstract base class for SCSI-like controllers
 //
@@ -25,7 +25,9 @@ public:
     bool Process(int) override;
 
     void Error(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information,
-        scsi_defs::status status = scsi_defs::status::check_condition) override;
+        scsi_defs::status status = scsi_defs::status::check_condition)
+            override;
+    void Abort(scsi_defs::asc);
 
     int GetInitiatorId() const override
     {

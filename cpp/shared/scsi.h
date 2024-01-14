@@ -150,7 +150,19 @@ enum class asc
     not_ready_to_ready_change = 0x28,
     power_on_or_reset = 0x29,
     medium_not_present = 0x3a,
-    load_or_eject_failed = 0x53
+    load_or_eject_failed = 0x53,
+    // SCSI2Pi-specific
+    controller_process_phase = 0x80,
+    controller_send_handshake = 0x84,
+    controller_send_xfer_in = 0x88,
+    controller_receive_handshake = 0x8c,
+    controller_receive_result = 0x90,
+    controller_receive_bytes_result = 0x94,
+    daynaport_enable_interface = 0xf0,
+    daynaport_disable_interface = 0xf1,
+    printer_nothing_to_print = 0xf4,
+    printer_printing_failed = 0xf5,
+    host_services_receive_operation_results = 0xf8
 };
 
 static const unordered_map<scsi_command, pair<int, string>> command_mapping = {

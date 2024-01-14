@@ -97,10 +97,25 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
 }
 
-void ScsiHd::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const
+void ScsiHd::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
+    // Page code 37
+    if (page == 0x25 || page == 0x3f) {
+        AddDecVendorModePage(pages, changeable);
+    }
+
     // Page code 48
     if (page == 0x30 || page == 0x3f) {
         AddAppleVendorModePage(pages, changeable);
     }
+}
+
+// See https://manx-docs.org/collections/antonio/dec/dec-scsi.pdf
+void ScsiHd::AddDecVendorModePage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(25);
+
+    // buf[2] bit 0 is the Spin-up Disable (SPD) bit, if 1 the drive will not spin up on initial power up
+
+    pages[0x25] = buf;
 }

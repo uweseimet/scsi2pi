@@ -116,7 +116,7 @@ void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> 
 //
 // Further information: http://r2089.blog36.fc2.com/blog-entry-177.html
 //
-void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const
+void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     if (page != 0x20 && page != 0x3f) {
         return;

@@ -64,15 +64,15 @@ TEST(ModePageDeviceTest, Page0)
     EXPECT_EQ(1, device.AddModePages(cdb, buf, 0, 1, 255));
 }
 
-TEST(ModePageDeviceTest, AddVendorPage)
+TEST(ModePageDeviceTest, AddVendorModePages)
 {
     map<int, vector<byte>> pages;
     MockModePageDevice device;
 
-    device.AddVendorPage(pages, 0x3f, false);
-    EXPECT_TRUE(pages.empty()) << "There must not be any default vendor page";
-    device.AddVendorPage(pages, 0x3f, true);
-    EXPECT_TRUE(pages.empty()) << "There must not be any default vendor page";
+    device.AddVendorModePages(pages, 0x3f, false);
+    EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
+    device.AddVendorModePages(pages, 0x3f, true);
+    EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
 }
 
 TEST(ModePageDeviceTest, ModeSense6)

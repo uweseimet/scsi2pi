@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -159,7 +159,8 @@ TEST(HostServicesTest, ReceiveOperationResults)
             s->Dispatch(scsi_command::cmd_receive_operation_results)
             ;
         }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::aborted_command))));
+            Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
+            Property(&scsi_exception::get_asc, asc::host_services_receive_operation_results))));
 }
 
 TEST(HostServicesTest, ModeSense6)
@@ -201,7 +202,7 @@ TEST(HostServicesTest, ModeSense6)
     EXPECT_CALL(*controller, DataIn());
     services->Dispatch(scsi_command::cmd_mode_sense6);
     buffer = controller->GetBuffer();
-    EXPECT_EQ(0x02, buffer[0]);
+    EXPECT_EQ(0x01, buffer[0]);
 }
 
 TEST(HostServicesTest, ModeSense10)
@@ -239,7 +240,7 @@ TEST(HostServicesTest, ModeSense10)
     EXPECT_NE(0x00, buffer[14]);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(8, 2);
+    controller->SetCmdByte(8, 4);
     EXPECT_CALL(*controller, DataIn());
     services->Dispatch(scsi_command::cmd_mode_sense10);
     buffer = controller->GetBuffer();

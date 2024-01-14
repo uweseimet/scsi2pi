@@ -84,7 +84,7 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             continue;
         }
 
-        const string identifier = vendor + ":" + product;
+        const string identifier = vendor + COMPONENT_SEPARATOR + product;
         if (!identifier.starts_with(key_components[2])) {
             continue;
         }

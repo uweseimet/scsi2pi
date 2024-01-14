@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -129,8 +129,8 @@ TEST(PrinterTest, Synchronize_buffer)
     auto p = printer;
 
     EXPECT_THAT([&] {p->Dispatch(scsi_command::cmd_synchronize_buffer);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-                Property(&scsi_exception::get_asc, asc::no_additional_sense_information)))) << "Nothing to print";
+        Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
+        Property(&scsi_exception::get_asc, asc::printer_nothing_to_print))));
 
     // Further testing would use the printing system
 }

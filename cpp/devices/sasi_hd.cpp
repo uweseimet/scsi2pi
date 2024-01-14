@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,8 +29,8 @@ void SasiHd::Open()
 
     const off_t size = GetFileSize();
 
-    // Sector size (default 512 bytes) and number of blocks
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512);
+    // Sector size (default 256 bytes) and number of blocks
+    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 256);
     SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
 
     FinalizeSetup(0);

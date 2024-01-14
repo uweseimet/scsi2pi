@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -187,7 +187,7 @@ void HostServices::ReceiveOperationResults()
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw scsi_exception(sense_key::aborted_command);
+        throw scsi_exception(sense_key::aborted_command, asc::host_services_receive_operation_results);
     }
     const string &execution_result = it->second;
 
@@ -243,7 +243,8 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     // 4 bytes basic information
     const int size = AddModePages(cdb, buf, 4, length, 255);
 
-    buf[0] = (uint8_t)size;
+    // The size field does not count itself
+    buf[0] = (uint8_t)(size - 1);
 
     return size;
 }
@@ -261,7 +262,8 @@ int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     // 8 bytes basic information
     const int size = AddModePages(cdb, buf, 8, length, 65535);
 
-    SetInt16(buf, 0, size);
+    // The size fields do not count themselves
+    SetInt16(buf, 0, size - 2);
 
     return size;
 }

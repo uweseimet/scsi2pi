@@ -137,7 +137,7 @@ private:
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
     static inline const unordered_map<uint32_t, uint32_t> shift_counts =
-        { { 512, 9 }, { 1024, 10 }, { 2048, 11 }, { 4096, 12 } };
+        { { 256, 8 }, { 512, 9 }, { 1024, 10 }, { 2048, 11 }, { 4096, 12 } };
 
 protected:
 

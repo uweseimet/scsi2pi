@@ -98,13 +98,22 @@ TEST(S2pParserTest, ParseArguments)
     EXPECT_EQ("4096", properties.at("device.0.block_size"));
     EXPECT_EQ("test.hds", properties.at("device.0.params"));
 
-    SetUpArgs(args, "-i1:2", "-t", "sccd", "test");
+    SetUpArgs(args, "-i1:2", "-t", "schd", "test");
+    is_sasi = false;
     properties = parser.ParseArguments(args, is_sasi);
     EXPECT_EQ(3, properties.size());
-    EXPECT_EQ("sccd", properties.at("device.1:2.type"));
+    EXPECT_EQ("schd", properties.at("device.1:2.type"));
     EXPECT_EQ("test", properties.at("device.1:2.params"));
 
+    SetUpArgs(args, "-h2", "test");
+    is_sasi = false;
+    properties = parser.ParseArguments(args, is_sasi);
+    EXPECT_EQ(3, properties.size());
+    EXPECT_EQ("sahd", properties.at("device.2.type"));
+    EXPECT_EQ("test", properties.at("device.2.params"));
+
     SetUpArgs(args, "-i1", "-n", "a:b:c", "test");
+    is_sasi = false;
     properties = parser.ParseArguments(args, is_sasi);
     EXPECT_EQ(3, properties.size());
     EXPECT_EQ("a:b:c", properties.at("device.1.product_data"));

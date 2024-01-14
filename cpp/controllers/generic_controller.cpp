@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ bool GenericController::Process(int id)
     initiator_id = id;
 
     if (!ProcessPhase()) {
-        Error(sense_key::aborted_command);
+        Abort(asc::controller_process_phase);
         return false;
     }
 
@@ -303,8 +303,9 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
-        LogDebug(fmt::format("Error status: Sense Key ${0:02x}, ASC ${1:02x}", static_cast<int>(sense_key),
-            static_cast<int>(asc)));
+        LogDebug(
+            fmt::format("Error status: Sense Key ${0:02x}, ASC ${1:02x}", static_cast<int>(sense_key),
+                static_cast<int>(asc)));
 
         // Set Sense Key and ASC for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
@@ -314,6 +315,12 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     SetMessage(0x00);
 
     Status();
+}
+
+void GenericController::Abort(asc asc)
+{
+    // The vendor-specific ASC and ASCQ help to locate where ABORTED_COMMAND has been raised
+    Error(sense_key::aborted_command, asc);
 }
 
 void GenericController::Send()
@@ -330,7 +337,7 @@ void GenericController::Send()
         // for LUNs other than 0 this work-around works.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            Error(sense_key::aborted_command);
+            Abort(asc::controller_send_handshake);
         }
         else {
             UpdateOffsetAndLength();
@@ -345,7 +352,7 @@ void GenericController::Send()
     if (IsDataIn() && HasBlocks()) {
         // Set next buffer (set offset, length)
         if (!XferIn(GetBuffer())) {
-            Error(sense_key::aborted_command);
+            Abort(asc::controller_send_xfer_in);
             return;
         }
 
@@ -397,7 +404,7 @@ void GenericController::Receive()
         if (uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
             LogError(fmt::format("Not able to receive {0} byte(s), only received {1}", GetLength(), len));
-            Error(sense_key::aborted_command);
+            Abort(asc::controller_receive_handshake);
             return;
         }
     }
@@ -441,7 +448,7 @@ void GenericController::Receive()
     }
 
     if (!result) {
-        Error(sense_key::aborted_command);
+        Abort(asc::controller_receive_result);
         return;
     }
 
@@ -505,7 +512,7 @@ void GenericController::ReceiveBytes()
     }
 
     if (!result) {
-        Error(sense_key::aborted_command);
+        Abort(asc::controller_receive_bytes_result);
         return;
     }
 
