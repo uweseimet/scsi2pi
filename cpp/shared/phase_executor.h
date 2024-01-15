@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -50,8 +50,8 @@ private:
     void Status();
     void DataIn(span<uint8_t>, int);
     void DataOut(span<uint8_t>, int);
-    void MsgIn() const;
-    void MsgOut() const;
+    void MsgIn();
+    void MsgOut();
 
     bool WaitForFree() const;
     bool WaitForBusy() const;
@@ -76,6 +76,8 @@ private:
     int status = -1;
 
     int byte_count = 0;
+
+    bool reject = false;
 
     // Timeout values see bus.h
 

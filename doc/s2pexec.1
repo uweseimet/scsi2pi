@@ -6,6 +6,7 @@ s2pexec \- SCSI command execution tool for SCSI2Pi
 \fB\-t\fR \fIID[:LUN]\fR
 [\fB\-i\fR \fIBID\fR]
 \fB\-f\fR \fIFILENAME\fR
+\fB\-o\fR \fIFILENAME\fR
 [\fB\-b\fR]
 [\fB\-F\fR]
 [\fB\-B\fR]
@@ -25,25 +26,28 @@ helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The
 .SH OPTIONS
 .TP
 .BR \-t\fI " "\fIID[:LUN]
-SCSI ID and optional LUN of the second PiSCSI/RaSCSI board. The remote device will be functioning as the target device.
+SCSI ID and optional LUN of the second PiSCSI/RaSCSI board, which is the target device.
 .TP
 .BR \-i\fI " "\fIBID
-SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the initiator device.
+SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use the initiator ID 7.
 .TP
 .BR \-f\fI " "\fIFILE
 The protobuf data input file, by default in JSON format.
 .TP
 .BR \-b\fI
-Signals that the input file is in protobuf binary format.
+Signals that the input file is in protobuf binary format instead of JSON.
 .TP
 .BR \-F\fI
-Signals that the input file is in protobuf text format.
+Signals that the input file is in protobuf text format instead of JSON.
+.TP
+.BR \-o\fI " "\fIFILE
+The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
 .BR \-B\fI
-Generate a protobuf binary format file.
+Generate a protobuf binary format file instead of JSON.
 .TP
 .BR \-T\fI
-Generate a protobuf text format file.
+Generate a protobuf text format file instead of JSON.
 .TP
 .BR \-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.

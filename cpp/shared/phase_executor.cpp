@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-24 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -209,7 +209,7 @@ void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
     }
 }
 
-void PhaseExecutor::MsgIn() const
+void PhaseExecutor::MsgIn()
 {
     array<uint8_t, 1> buf = { };
 
@@ -218,16 +218,25 @@ void PhaseExecutor::MsgIn() const
     }
 
     if (buf[0]) {
-        throw phase_exception("MESSAGE IN did not report COMMAND COMPLETE");
+        spdlog::warn(
+            fmt::format("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]));
+
+        reject = true;
+
+        // Request MESSAGE OUT for REJECT MESSAGE
+        bus.SetATN(true);
     }
 }
 
-void PhaseExecutor::MsgOut() const
+void PhaseExecutor::MsgOut()
 {
     array<uint8_t, 1> buf;
 
-    // IDENTIFY
-    buf[0] = static_cast<uint8_t>(target_lun | 0x80);
+    // IDENTIFY or MESSAGE REJECT
+    buf[0] = static_cast<uint8_t>(target_lun | (reject ? 0x07 : 0x80));
+
+    // Reset default to IDENTIFY
+    reject = false;
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
         throw phase_exception("MESSAGE OUT for IDENTIFY failed");

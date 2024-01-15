@@ -57,12 +57,11 @@ bool S2pDump::Banner(span<char*> args) const
             << ", SASI: 0-" << (ControllerFactory::GetSasiLunMax() - 1) << ").\n"
             << " The target device can be a SCSI (-i) drive or a SASI (-h) hard drive.\n"
             << " BID is the board ID (0-7). Default is 7.\n"
-            << " FILE is the image file path. Only needed when not dumping to stdout and no property file is"
-            << " requested.\n"
+            << " FILE is the image file path. Only needed when not dumping to stdout.\n"
             << " BUFFER_SIZE is the transfer buffer size in bytes, at least " << MINIMUM_BUFFER_SIZE
             << " bytes. Default is 1 MiB.\n"
-            << " SASI_CAPACITY is the capacity of the SASI hard drive in sectors (256|512|1024).\n"
-            << " SASI_SECTOR_SIZE is the sector size of the SASI hard drive in bytes.\n"
+            << " SASI_CAPACITY is the capacity of the SASI hard drive in sectors.\n"
+            << " SASI_SECTOR_SIZE is the sector size of the SASI hard drive in bytes (256|512|1024).\n"
             << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
             << " -a Scan all potential LUNs during bus scan, default is LUN 0 only.\n"
             << " -r Restore instead of dump.\n"
@@ -110,7 +109,7 @@ void S2pDump::ParseArguments(span<char*> args)
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "h:i:f:b:c:t:z:L:C:S:arstI")) != -1) {
+    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "b:c:h:i:f:t:z:B:C:L:S:arstI")) != -1) {
         switch (opt) {
         case 'a':
             scan_all_luns = true;
@@ -276,9 +275,7 @@ int S2pDump::run(span<char*> args, bool in_process)
     else if (run_inquiry) {
         DisplayBoardId();
 
-        DisplayInquiry(false);
-
-        if (!sasi) {
+        if (DisplayInquiry(false) && !sasi) {
             DisplayProperties(target_id, target_lun);
         }
     }
