@@ -114,12 +114,6 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-bool S2p::ExecuteWithLock(const CommandContext &context)
-{
-    scoped_lock<mutex> lock(executor->GetExecutionLocker());
-    return executor->ProcessCmd(context);
-}
-
 bool S2p::HandleDeviceListChange(const CommandContext &context, PbOperation operation) const
 {
     // ATTACH and DETACH return the resulting device list

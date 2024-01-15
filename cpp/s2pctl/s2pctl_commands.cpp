@@ -139,7 +139,7 @@ bool S2pCtlCommands::SendCommand()
             + ": " + strerror(errno));
     }
 
-    if (write(fd, "RASCSI", 6) != 6) {
+    if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
         close(fd);
 
         throw io_exception("Can't write magic");

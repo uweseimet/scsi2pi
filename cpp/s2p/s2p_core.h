@@ -43,7 +43,6 @@ private:
     bool WaitForNotBusy() const;
 
     bool ExecuteCommand(CommandContext&);
-    bool ExecuteWithLock(const CommandContext&);
     bool HandleDeviceListChange(const CommandContext&, PbOperation) const;
 
     static PbDeviceType ParseDeviceType(const string&);
