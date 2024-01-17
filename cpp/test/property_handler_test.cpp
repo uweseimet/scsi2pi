@@ -13,14 +13,26 @@
 
 using namespace testing;
 
-PropertyHandler SetUpProperties(const string &properties, const property_map &cmd_properties = { })
+PropertyHandler SetUpProperties(const string &properties1, const string &properties2 = "",
+    const property_map &cmd_properties = { })
 {
     auto &property_handler = PropertyHandler::Instance();
-    auto [fd, filename] = OpenTempFile();
-    write(fd, properties.data(), properties.size());
-    close(fd);
-    property_handler.Init(filename, cmd_properties);
-    remove(filename);
+    string filenames;
+    auto [fd1, filename1] = OpenTempFile();
+    filenames = filename1;
+    write(fd1, properties1.data(), properties1.size());
+    close(fd1);
+    if (!properties2.empty()) {
+        auto [fd2, filename2] = OpenTempFile();
+        filenames += ",";
+        filenames += filename2;
+        write(fd2, properties2.data(), properties2.size());
+        close(fd2);
+    }
+    property_handler.Init(filenames, cmd_properties);
+    for (const string &filename : s2p_util::Split(filenames, ',')) {
+        remove(filename);
+    }
 
     return property_handler;
 }
@@ -32,6 +44,9 @@ TEST(PropertyHandlerTest, Init)
 key2=value2
 )";
     const string &properties2 =
+        R"(key3=value3
+)";
+    const string &properties3 =
         R"(key
 )";
 
@@ -41,11 +56,12 @@ key2=value2
 
     property_map cmd_properties;
     cmd_properties["key1"] = "value2";
-    property_handler = SetUpProperties(properties1, cmd_properties);
+    property_handler = SetUpProperties(properties1, properties2, cmd_properties);
     EXPECT_EQ("value2", property_handler.GetProperty("key1"));
     EXPECT_EQ("value2", property_handler.GetProperty("key2"));
+    EXPECT_EQ("value3", property_handler.GetProperty("key3"));
 
-    EXPECT_THROW(SetUpProperties(properties2), parser_exception);
+    EXPECT_THROW(SetUpProperties(properties3), parser_exception);
 }
 
 TEST(PropertyHandlerTest, GetProperty)
@@ -99,9 +115,9 @@ mode_page.1._:PRODUCT2=
     auto property_handler = SetUpProperties(properties1);
 
     auto mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
-    EXPECT_EQ(3, mode_pages.size());
+    EXPECT_EQ(3UL, mode_pages.size());
     auto value = mode_pages.at(0);
-    EXPECT_EQ(6, value.size());
+    EXPECT_EQ(6UL, value.size());
     EXPECT_EQ(byte { 0x00 }, value[0]);
     EXPECT_EQ(byte { 0x10 }, value[1]);
     EXPECT_EQ(byte { 0x02 }, value[2]);
@@ -109,7 +125,7 @@ mode_page.1._:PRODUCT2=
     EXPECT_EQ(byte { 0x04 }, value[4]);
     EXPECT_EQ(byte { 0xff }, value[5]);
     value = mode_pages.at(2);
-    EXPECT_EQ(3, value.size());
+    EXPECT_EQ(3UL, value.size());
     EXPECT_EQ(byte { 0x02 }, value[0]);
     EXPECT_EQ(byte { 0x01 }, value[1]);
     EXPECT_EQ(byte { 0xb0 }, value[2]);
@@ -118,9 +134,9 @@ mode_page.1._:PRODUCT2=
 
     property_handler = SetUpProperties(properties_savable);
     mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
-    EXPECT_EQ(1, mode_pages.size());
+    EXPECT_EQ(1UL, mode_pages.size());
     value = mode_pages.at(1);
-    EXPECT_EQ(4, value.size());
+    EXPECT_EQ(4UL, value.size());
     EXPECT_EQ(byte { 0x81 }, value[0]);
     EXPECT_EQ(byte { 0x02 }, value[1]);
     EXPECT_EQ(byte { 0xef }, value[2]);

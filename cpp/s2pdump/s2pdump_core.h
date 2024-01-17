@@ -20,7 +20,7 @@ class S2pDump
 
 public:
 
-    int run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false);
 
     struct scsi_device_info
     {

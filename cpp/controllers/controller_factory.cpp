@@ -58,8 +58,10 @@ bool ControllerFactory::DeleteController(const AbstractController &controller)
     return controllers.erase(controller.GetTargetId()) == 1;
 }
 
-void ControllerFactory::DeleteAllControllers()
+bool ControllerFactory::DeleteAllControllers()
 {
+    bool has_controller = false;
+
     unordered_set<shared_ptr<AbstractController>> values;
     ranges::transform(controllers, inserter(values, values.begin()), [](const auto &controller) {
             return controller.second;
@@ -67,9 +69,12 @@ void ControllerFactory::DeleteAllControllers()
 
     for (const auto &controller : values) {
         DeleteController(*controller);
+        has_controller = true;
     }
 
     assert(controllers.empty());
+
+    return has_controller;
 }
 
 AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int id_data) const

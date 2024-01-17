@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -43,8 +43,7 @@ string testing::TestShared::GetVersion()
 }
 
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
-    int additional_length,
-    bool removable, const string &extension)
+    int additional_length, bool removable, const string &extension)
 {
     auto [controller, device] = CreateDevice(type, 0, extension);
 

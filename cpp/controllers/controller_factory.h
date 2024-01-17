@@ -32,7 +32,7 @@ public:
 
     bool AttachToController(Bus&, int, shared_ptr<PrimaryDevice>);
     bool DeleteController(const AbstractController&);
-    void DeleteAllControllers();
+    bool DeleteAllControllers();
     AbstractController::shutdown_mode ProcessOnController(int) const;
     shared_ptr<AbstractController> FindController(int) const;
     bool HasController(int) const;

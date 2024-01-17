@@ -365,9 +365,9 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
 void CommandExecutor::DetachAll() const
 {
-    controller_factory->DeleteAllControllers();
-
-    spdlog::info("Detached all devices");
+    if (controller_factory->DeleteAllControllers()) {
+        spdlog::info("Detached all devices");
+    }
 }
 
 string CommandExecutor::SetReservedIds(string_view ids)

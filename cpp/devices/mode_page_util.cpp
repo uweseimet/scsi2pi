@@ -120,14 +120,12 @@ void mode_page_util::EnrichFormatPage(map<int, vector<byte>> &pages, bool change
 
 void mode_page_util::AddAppleVendorModePage(map<int, vector<byte>> &pages, bool changeable)
 {
-    // Page code 48 (30h) - Apple Vendor Mode Page
-    // Needed for SCCD for stock Apple driver support
-    // Needed for SCHD for stock Apple HD SC Setup
-    pages[48] = vector<byte>(30);
+    // Needed for SCCD for stock Apple driver support and stock Apple HD SC Setup
+    pages[48] = vector<byte>(24);
 
     // No changeable area
     if (!changeable) {
         constexpr const char APPLE_DATA[] = "APPLE COMPUTER, INC   ";
-        memcpy(&pages[48].data()[2], APPLE_DATA, sizeof(APPLE_DATA));
+        memcpy(&pages[48][2], APPLE_DATA, sizeof(APPLE_DATA) - 1);
     }
 }

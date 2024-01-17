@@ -3,7 +3,8 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\-C\fR \fIPROPERTY_FILE\fR]
+[\fB\-B\fR]
+[\fB\-C\fR \fIPROPERTY_FILES\fR]
 [\fB\-F\fR \fIFOLDER\fR]
 [\fB\-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
 [\fB\-P\fR \fIACCESS_TOKEN_FILE\fR]
@@ -44,8 +45,15 @@ To quit s2p press Control-C. If it is running in the background, you can kill it
 
 .SH OPTIONS
 .TP
-.BR \-C\fI " " \fIPROPERTY_FILE
-The optional property file with s2p configuration data. The default property file is ~/.config/s2p.properties.
+.BR \-B\fI " " \fI
+Enable BlueSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI parsing rules.
+This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
+If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
+If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
+See the BlueSCSI documentation for details on the BlueSCSI filename convention.
+.TP
+.BR \-C\fI " " \fIPROPERTY_FILES
+An optional comma-separated list of property files with s2p configuration data. The default property file is ~/.config/s2p.properties.
 .TP
 .BR \-b\fI " " \fIBLOCK_SIZE
 The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ public:
     ScsiCtl() = default;
     ~ScsiCtl() = default;
 
-    int run(const vector<char*>&) const;
+    int Run(const vector<char*>&) const;
 
 private:
 

@@ -129,7 +129,7 @@ bool S2p::HandleDeviceListChange(const CommandContext &context, PbOperation oper
     return true;
 }
 
-int S2p::run(span<char*> args, bool in_process)
+int S2p::Run(span<char*> args, bool in_process)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -145,7 +145,7 @@ int S2p::run(span<char*> args, bool in_process)
     int port;
     try {
         const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
-        property_handler.Init(properties.at(PropertyHandler::PROPERTY_FILE), properties);
+        property_handler.Init(properties.at(PropertyHandler::PROPERTY_FILES), properties);
 
         if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
         !CommandDispatcher::SetLogLevel(log_level)) {
@@ -324,7 +324,7 @@ void S2p::CreateDevices()
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
         for (auto d : controller_factory->GetAllDevices()) {
-            if (auto host_services = dynamic_pointer_cast<HostServices>(d); host_services != nullptr) {
+            if (auto host_services = dynamic_pointer_cast<HostServices>(d); host_services) {
                 host_services->SetDispatcher(dispatcher);
             }
         }

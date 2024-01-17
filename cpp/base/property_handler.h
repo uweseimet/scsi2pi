@@ -26,7 +26,7 @@ public:
     inline static const string LOG_LEVEL = "log_level";
     inline static const string MODE_PAGE = "mode_page";
     inline static const string PORT = "port";
-    inline static const string PROPERTY_FILE = "property_file";
+    inline static const string PROPERTY_FILES = "property_files";
     inline static const string RESERVED_IDS = "reserved_ids";
     inline static const string SASI = "sasi";
     inline static const string SCAN_DEPTH = "scan_depth";
@@ -44,6 +44,7 @@ public:
     {
         return property_cache;
     }
+    void ParsePropertyFile(const string&, bool);
     string GetProperty(const string&) const;
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 
@@ -60,5 +61,5 @@ private:
         { '9', 9 }, { 'a', 10 }, { 'b', 11 }, { 'c', 12 }, { 'd', 13 }, { 'e', 14 }, { 'f', 15 }
     };
 
-    inline static const string DEFAULT_PROPERTIES_FILE = ".config/s2p.properties";
+    inline static const string DEFAULT_PROPERTY_FILE = ".config/s2p.properties";
 };

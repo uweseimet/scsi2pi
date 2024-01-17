@@ -59,7 +59,7 @@ void ScsiCtl::Banner(const vector<char*> &args) const
     }
 }
 
-int ScsiCtl::run(const vector<char*> &args) const
+int ScsiCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 

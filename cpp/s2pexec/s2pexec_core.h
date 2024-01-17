@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -23,13 +23,15 @@ public:
     ScsiExec() = default;
     ~ScsiExec() = default;
 
-    int run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false);
 
 private:
 
     bool Banner(span<char*>) const;
     bool Init(bool);
     void ParseArguments(span<char*>);
+    int GenerateOutput(S2pDumpExecutor::protobuf_format, const string&, S2pDumpExecutor::protobuf_format,
+        const string&);
 
     bool SetLogLevel() const;
 

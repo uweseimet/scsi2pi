@@ -218,7 +218,7 @@ void S2pDump::ParseArguments(span<char*> args)
     buffer = vector<uint8_t>(buffer_size);
 }
 
-int S2pDump::run(span<char*> args, bool in_process)
+int S2pDump::Run(span<char*> args, bool in_process)
 {
     to_stdout = !isatty(STDOUT_FILENO);
 
@@ -266,8 +266,6 @@ int S2pDump::run(span<char*> args, bool in_process)
         cerr << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
-
-    scsi_executor->SetTarget(target_id, target_lun);
 
     if (run_bus_scan) {
         ScanBus();
@@ -320,6 +318,7 @@ void S2pDump::ScanBus()
 
         for (const auto lun : luns) {
             target_lun = lun;
+
             DisplayInquiry(false);
         }
     }
@@ -330,8 +329,9 @@ bool S2pDump::DisplayInquiry(bool check_type)
     cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
         << target_lun << "\n" << flush;
 
-    vector<uint8_t> buf(36);
+    scsi_executor->SetTarget(target_id, target_lun);
 
+    vector<uint8_t> buf(36);
     if (!scsi_executor->Inquiry(buf, sasi)) {
         return false;
     }

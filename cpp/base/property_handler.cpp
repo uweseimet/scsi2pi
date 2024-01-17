@@ -15,7 +15,7 @@
 using namespace std;
 using namespace s2p_util;
 
-void PropertyHandler::Init(const string &f, const property_map &cmd_properties)
+void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties)
 {
     // Clearing the property cache helps with testing because Init() can be called for different files
     property_cache.clear();
@@ -26,18 +26,33 @@ void PropertyHandler::Init(const string &f, const property_map &cmd_properties)
     property_cache[PropertyHandler::SCAN_DEPTH] = "1";
     property_cache[PropertyHandler::TOKEN_FILE] = "";
 
-    const string filename = f.empty() ? GetHomeDir() + "/" + DEFAULT_PROPERTIES_FILE : f;
+    if (filenames.empty()) {
+        ParsePropertyFile(GetHomeDir() + "/" + DEFAULT_PROPERTY_FILE, true);
+    }
+    else {
+        for (const auto &filename : Split(filenames, ',')) {
+            ParsePropertyFile(filename, false);
+        }
+    }
 
+    // Merge properties from property files and from the command line
+    for (const auto& [k, v] : cmd_properties) {
+        property_cache[k] = v;
+    }
+}
+
+void PropertyHandler::ParsePropertyFile(const string &filename, bool default_file)
+{
     ifstream property_file(filename);
-    // Only report an error if an explicitly specified file is missing
-    if (property_file.fail() && !f.empty()) {
-        throw parser_exception(fmt::format("No properties file '{}'", filename));
+    if (property_file.fail() && !default_file) {
+        // Only report an error if an explicitly specified file is missing
+        throw parser_exception(fmt::format("No property file '{}'", filename));
     }
 
     string property;
     while (getline(property_file, property)) {
         if (property_file.fail()) {
-            throw parser_exception(fmt::format("Error reading from properties file '{}'", filename));
+            throw parser_exception(fmt::format("Error reading from property file '{}'", filename));
         }
 
         if (!property.empty() && !property.starts_with("#")) {
@@ -48,11 +63,6 @@ void PropertyHandler::Init(const string &f, const property_map &cmd_properties)
 
             property_cache[kv[0]] = kv[1];
         }
-    }
-
-    // Merge properties from property file and from command line
-    for (const auto& [k, v] : cmd_properties) {
-        property_cache[k] = v;
     }
 }
 

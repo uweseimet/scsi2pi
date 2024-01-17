@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,5 +14,5 @@ int main(int argc, char *argv[])
 {
     vector<char*> args(argv, argv + argc);
 
-    return S2p().run(args);
+    return S2p().Run(args);
 }

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -60,14 +60,14 @@ int main(int argc, char *argv[])
         auto target_thread = thread([&target_args]() {
 #endif
         auto s2p = make_unique<S2p>();
-        s2p->run(target_args, true);
+        s2p->Run(target_args, true);
     });
 
     // Give s2p time to initialize
     sleep(1);
 
     auto s2pdump = make_unique<S2pDump>();
-    s2pdump->run(initiator_args, true);
+    s2pdump->Run(initiator_args, true);
 
     exit(EXIT_SUCCESS);
 }

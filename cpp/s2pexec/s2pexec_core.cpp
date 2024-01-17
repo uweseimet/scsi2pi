@@ -168,7 +168,7 @@ void ScsiExec::ParseArguments(span<char*> args)
     }
 }
 
-int ScsiExec::run(span<char*> args, bool in_process)
+int ScsiExec::Run(span<char*> args, bool in_process)
 {
     if (!Banner(args)) {
         return EXIT_SUCCESS;
@@ -212,11 +212,19 @@ int ScsiExec::run(span<char*> args, bool in_process)
         return status ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
+    const int result = GenerateOutput(input_format, input_filename, output_format, output_filename);
+
+    CleanUp();
+
+    return result;
+}
+
+int ScsiExec::GenerateOutput(S2pDumpExecutor::protobuf_format input_format, const string &input_filename,
+    S2pDumpExecutor::protobuf_format output_format, const string &output_filename)
+{
     PbResult result;
     if (string error = scsi_executor->Execute(input_filename, input_format, result); !error.empty()) {
         cerr << "Error: " << error << endl;
-
-        CleanUp();
 
         return EXIT_FAILURE;
     }
@@ -225,8 +233,6 @@ int ScsiExec::run(span<char*> args, bool in_process)
         string json;
         (void)MessageToJsonString(result, &json);
         cout << json << '\n';
-
-        CleanUp();
 
         return EXIT_SUCCESS;
     }
@@ -271,8 +277,6 @@ int ScsiExec::run(span<char*> args, bool in_process)
         assert(false);
         break;
     }
-
-    CleanUp();
 
     return EXIT_SUCCESS;
 }

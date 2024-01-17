@@ -51,7 +51,7 @@ void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(24U, pages[12].size());
     EXPECT_EQ(8U, pages[13].size());
     EXPECT_EQ(16U, pages[14].size());
-    EXPECT_EQ(30U, pages[48].size());
+    EXPECT_EQ(24U, pages[48].size());
 }
 
 TEST(ScsiCdTest, Inquiry)

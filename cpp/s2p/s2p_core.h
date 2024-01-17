@@ -27,7 +27,7 @@ class S2p
 
 public:
 
-    int run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false);
 
 private:
 
