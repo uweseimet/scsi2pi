@@ -372,7 +372,7 @@ bool S2p::ExecuteCommand(CommandContext &context)
     const bool status = dispatcher->DispatchCommand(context, result, "");
     if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
-        return false;
+        exit(EXIT_SUCCESS);
     }
 
     return status;

@@ -20,7 +20,7 @@ using namespace google::protobuf::util;
 using namespace scsi_defs;
 using namespace s2p_interface;
 
-string S2pDumpExecutor::Execute(const string &filename, protobuf_format input_format, PbResult &result)
+string S2pExecExecutor::Execute(const string &filename, protobuf_format input_format, PbResult &result)
 {
     int length = 0;
 
@@ -106,11 +106,9 @@ string S2pDumpExecutor::Execute(const string &filename, protobuf_format input_fo
     return "";
 }
 
-bool S2pDumpExecutor::ShutDown()
+bool S2pExecExecutor::ShutDown()
 {
     array<uint8_t, 6> cdb = { };
 
-    phase_executor->Execute(scsi_command::cmd_start_stop, cdb, buffer, 0);
-
-    return true;
+    return phase_executor->Execute(scsi_command::cmd_start_stop, cdb, buffer, 0);
 }

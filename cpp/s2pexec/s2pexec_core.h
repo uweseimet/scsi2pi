@@ -15,22 +15,23 @@
 
 using namespace std;
 
-class ScsiExec
+class S2pExec
 {
 
 public:
 
-    ScsiExec() = default;
-    ~ScsiExec() = default;
+    S2pExec() = default;
+    ~S2pExec() = default;
 
     int Run(span<char*>, bool = false);
 
 private:
 
-    bool Banner(span<char*>) const;
+    static void Banner(span<char*>, bool);
+
     bool Init(bool);
-    void ParseArguments(span<char*>);
-    int GenerateOutput(S2pDumpExecutor::protobuf_format, const string&, S2pDumpExecutor::protobuf_format,
+    bool ParseArguments(span<char*>);
+    int GenerateOutput(S2pExecExecutor::protobuf_format, const string&, S2pExecExecutor::protobuf_format,
         const string&);
 
     bool SetLogLevel() const;
@@ -42,22 +43,25 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> scsi_executor;
+    unique_ptr<S2pExecExecutor> scsi_executor;
 
-    int initiator_id = 7;
+    bool version = false;
+    bool help = false;
+
+    int initiator_id = -1;
     int target_id = -1;
     int target_lun = 0;
 
     string input_filename;
     string output_filename;
 
-    S2pDumpExecutor::protobuf_format input_format = S2pDumpExecutor::protobuf_format::json;
-    S2pDumpExecutor::protobuf_format output_format = S2pDumpExecutor::protobuf_format::json;
+    S2pExecExecutor::protobuf_format input_format = S2pExecExecutor::protobuf_format::json;
+    S2pExecExecutor::protobuf_format output_format = S2pExecExecutor::protobuf_format::json;
 
     bool shut_down = false;
 
     string log_level = "info";
 
     // Required for the termination handler
-    static inline ScsiExec *instance;
+    static inline S2pExec *instance;
 };

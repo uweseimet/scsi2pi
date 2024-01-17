@@ -9,6 +9,7 @@
 #include "shared/s2p_util.h"
 #include "s2p/s2p_core.h"
 #include "s2pdump/s2pdump_core.h"
+#include "s2pexec/s2pexec_core.h"
 #include <thread>
 
 using namespace std;
@@ -21,12 +22,24 @@ void add_arg(vector<char*> &args, const string &arg)
 
 int main(int argc, char *argv[])
 {
+    if (argc < 2) {
+        cerr << "Error: Target and initiator arguments are mandatory" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    string client = "s2pdump";
     string t_args;
     string i_args;
 
+    optind = 1;
+    opterr = 0;
     int opt;
-    while ((opt = getopt(argc, argv, "-i:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "-i:c:t:")) != -1) {
         switch (opt) {
+        case 'c':
+            client = optarg;
+            break;
+
         case 'i':
             i_args = optarg;
             break;
@@ -40,6 +53,11 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
             break;
         }
+    }
+
+    if (client != "s2pdump" && client != "s2pexec") {
+        cerr << "Invalid client: '" << client << "', client must be s2pdump or s2pexec" << endl;
+        exit(EXIT_FAILURE);
     }
 
     vector<char*> initiator_args;
@@ -66,8 +84,14 @@ int main(int argc, char *argv[])
     // Give s2p time to initialize
     sleep(1);
 
-    auto s2pdump = make_unique<S2pDump>();
-    s2pdump->Run(initiator_args, true);
+    if (client == "s2pdump") {
+        auto s2pdump = make_unique<S2pDump>();
+        s2pdump->Run(initiator_args, true);
+    }
+    else {
+        auto s2pexec = make_unique<S2pExec>();
+        s2pexec->Run(initiator_args, true);
+    }
 
     exit(EXIT_SUCCESS);
 }

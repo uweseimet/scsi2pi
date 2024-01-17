@@ -3,17 +3,16 @@
 s2pexec \- SCSI command execution tool for SCSI2Pi
 .SH SYNOPSIS
 .B s2pexec
-\fB\-t\fR \fIID[:LUN]\fR
-[\fB\-i\fR \fIBID\fR]
-\fB\-f\fR \fIFILENAME\fR
-\fB\-o\fR \fIFILENAME\fR
-[\fB\-b\fR]
-[\fB\-F\fR]
-[\fB\-B\fR]
-[\fB\-T\fR]
-[\fB\-t\tR] ID[:LUN]
-[\fB\-L\fR \fILOG_LEVEL\fR]
-[\fB\-X\fR]
+\fB\--scsi-target/-s\fR \fITARGET_ID[:LUN]\fR
+[\fB\--initiator-id/-i\fR \fIINITIATOR_ID\fR]
+\fB\--input-file/-f\fR \fIINPUT_FILE\fR
+[\fB\--output-file/-F\fR \fIOUTPUT_FILE\fR]
+[\fB\--binary-input/-b\fR]
+[\fB\--binary-output/-B\fR]
+[\fB\--text-input/-t\fR]
+[\fB\--text-output/-T\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--shutdown/-X\fR]
 .SH DESCRIPTION
 .B s2pexec
 wraps protobuf input data into a custom SCSI2Pi SCSI command. s2p executes this command and displays the results. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
@@ -21,39 +20,39 @@ wraps protobuf input data into a custom SCSI2Pi SCSI command. s2p executes this 
 .SH NOTES
 
 .B s2pexec
-helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator mode support.
+helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
 
 .SH OPTIONS
 .TP
-.BR \-t\fI " "\fIID[:LUN]
+.BR \--scsi-target/-s\fI " "\fIID[:LUN]
 SCSI ID and optional LUN of the second PiSCSI/RaSCSI board, which is the target device.
 .TP
-.BR \-i\fI " "\fIBID
-SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use the initiator ID 7.
+.BR \--initiator-id/-i\fI " "\fIBID
+SCSI ID used by s2pexec. If not specified, s2pexec will use the initiator ID 7.
 .TP
-.BR \-f\fI " "\fIFILE
+.BR \--input-file/-f\fI " "\fIINPUT_FILE
 The protobuf data input file, by default in JSON format.
 .TP
-.BR \-b\fI
-Signals that the input file is in protobuf binary format instead of JSON.
-.TP
-.BR \-F\fI
-Signals that the input file is in protobuf text format instead of JSON.
-.TP
-.BR \-o\fI " "\fIFILE
+.BR \--output-file/-F\fI " "\fIOUTPUT_FILE
 The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
-.BR \-B\fI
+.BR \--binary-input/-b\fI
+Signals that the input file is in protobuf binary format instead of JSON.
+.TP
+.BR \--binary-output/-B\fI
 Generate a protobuf binary format file instead of JSON.
 .TP
-.BR \-T\fI
+.BR \--text-input/-t\fI
+Signals that the input file is in protobuf text format instead of JSON.
+.TP
+.BR \--text-output/-T\fI
 Generate a protobuf text format file instead of JSON.
 .TP
-.BR \-L\fI " " \fILOG_LEVEL
+.BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
-.BR \-X\fI
-Shut down s2p with a SCSI command.
+.BR \--shutdown/-X\fI
+Shut down s2p running on the second board by sending a SCSI command.
 
 .SH SEE ALSO
 s2pctl(1), s2p(1), s2pdump(1)

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@
 using namespace std;
 using namespace s2p_interface;
 
-class S2pDumpExecutor
+class S2pExecExecutor
 {
 
     // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
@@ -31,11 +31,11 @@ public:
         text = 0b100
     };
 
-    S2pDumpExecutor(Bus &bus, int id)
+    S2pExecExecutor(Bus &bus, int id)
     {
         phase_executor = make_unique<PhaseExecutor>(bus, id);
     }
-    ~S2pDumpExecutor() = default;
+    ~S2pExecExecutor() = default;
 
     string Execute(const string&, protobuf_format, PbResult&);
     bool ShutDown();

@@ -23,7 +23,6 @@ bool Disk::Init(const param_map &params)
 {
     StorageDevice::Init(params);
 
-    // TODO CD/DVD should not inherit write methods
     // REZERO implementation is identical with Seek
     AddCommand(scsi_command::cmd_rezero, [this]
         {

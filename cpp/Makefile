@@ -198,6 +198,7 @@ SRC_S2P_TEST += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
 
 SRC_IN_PROCESS_TEST = test/in_process_test.cpp
 SRC_IN_PROCESS_TEST += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
+SRC_IN_PROCESS_TEST += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) $(DIR_CONTROLLERS) \
 	$(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec
