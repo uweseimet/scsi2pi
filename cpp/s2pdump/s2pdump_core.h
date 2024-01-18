@@ -37,11 +37,11 @@ public:
 
 private:
 
-    bool Banner(span<char*>) const;
+    void Banner(bool) const;
     bool Init(bool);
-    void ParseArguments(span<char*>);
+    bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWrite(ostream&, fstream&, int, uint32_t, int, int);
+    string ReadWrite(fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
@@ -83,8 +83,6 @@ private:
 
     int start = 0;
     int count = 0;
-
-    bool to_stdout = false;
 
     bool run_inquiry = false;
 

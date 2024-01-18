@@ -22,7 +22,7 @@ class S2pParser
 
 public:
 
-    void Banner(span<char*>, bool) const;
+    void Banner(bool) const;
     property_map ParseArguments(span<char*>, bool&);
 
 private:

@@ -27,7 +27,7 @@ public:
 
 private:
 
-    static void Banner(span<char*>, bool);
+    static void Banner(bool);
 
     bool Init(bool);
     bool ParseArguments(span<char*>);

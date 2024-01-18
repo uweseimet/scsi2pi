@@ -15,10 +15,10 @@
 using namespace std;
 using namespace s2p_util;
 
-void S2pParser::Banner(span<char*> args, bool usage) const
+void S2pParser::Banner(bool usage) const
 {
     if (usage) {
-        cout << "\nUsage: " << args[0] << " [-i|-h ID[:LUN]] FILE] ...\n\n"
+        cout << "\nUsage: s2p [-i|-h ID[:LUN]] FILE] ...\n\n"
             << " -h ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " -i ID is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
             << " LUN is the optional logical unit, 0 is the default"
@@ -39,7 +39,7 @@ void S2pParser::Banner(span<char*> args, bool usage) const
         exit(EXIT_SUCCESS);
     }
     else {
-        cout << s2p_util::Banner("(Device Emulation)") << flush;
+        cout << s2p_util::Banner("(Device Emulation)", false) << flush;
     }
 }
 
@@ -100,12 +100,12 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             break;
 
         default:
-            Banner(args, true);
+            Banner(true);
             break;
         }
 
         if (optopt) {
-            Banner(args, false);
+            Banner(false);
             break;
         }
 

@@ -13,7 +13,6 @@
 #include <clocale>
 #include <iostream>
 #include <fstream>
-#include "controllers/controller_factory.h"
 #include "controllers/scsi_controller.h"
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
@@ -31,29 +30,55 @@ using namespace protobuf_util;
 void ScsiCtl::Banner(const vector<char*> &args) const
 {
     if (args.size() < 2) {
-        cout << s2p_util::Banner("(Controller App)")
-            << "\nUsage: " << args[0]
-            << " -i ID[:LUN] [-c CMD] [-C FILE] [-t TYPE] [-b BLOCK_SIZE] [-n NAME] [-f FILE|PARAM] "
-            << "[-F IMAGE_FOLDER] [-L LOG_LEVEL] [-h HOST] [-p PORT] [-r RESERVED_IDS] "
-            << "[-C FILENAME:FILESIZE] [-d FILENAME] [-B FILENAME] [-J FILENAME] [-T FILENAME] [-R CURRENT_NAME:NEW_NAME] "
-            << "[-x CURRENT_NAME:NEW_NAME] [-z LOCALE] "
-            << "[-e] [-E FILENAME] [-D] [-I] [-l] [-m] [-o] [-q] [-O] [-P] [-s] [-S] [-v] [-V] [-y] [-X]\n"
-            << " where ID[:LUN] ID: <0-" << (ControllerFactory::GetIdMax() - 1) << ">,"
-            << " SCSI LUN: <0-" << (ControllerFactory::GetScsiLunMax() - 1) << ">, default is 0\n"
-            << " SASI LUN: <0-" << (ControllerFactory::GetSasiLunMax() - 1) << ">, default is 0\n"
-            << "   CMD: <attach|detach|insert|eject|protect|unprotect|show>\n"
-            << "   TYPE: <schd|scrm|sccd|scmo|scdp|sclp|schs|sahd> or convenience type {hd|rm|mo|cd|daynaport|printer|services}\n"
-            << "   BLOCK_SIZE: <256|512|1024|2048|4096> bytes per hard disk drive block\n"
-            << "   NAME: Name of device to attach (VENDOR:PRODUCT:REVISION)\n"
-            << "   FILE|PARAM: Image file path or device-specific parameter\n"
-            << "   IMAGE_FOLDER: Default location for image files, default is '~/images'\n"
-            << "   HOST: s2p host to connect to, default is 'localhost'\n"
-            << "   PORT: s2p port to connect to, default is 6868\n"
-            << "   RESERVED_IDS: Comma-separated list of IDs to reserve\n"
-            << "   LOG_LEVEL: Log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
-            << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n"
-            << "Usage: " << args[0] << " -l\n"
-            << " Print device list.\n" << flush;
+        cout << s2p_util::Banner("(Server Controller Tool)", false)
+            << "\nUsage: s2pctl [options]\n"
+            << "  -i ID[:LUN]               Target device ID (0-7) and LUN\n"
+            << "                            (SCSI: 0-31, SASI: 0-1).\n"
+            << "  -c CMD                    Command (attach|detach|insert|eject|protect\n"
+            << "                            |unprotect|show).\n"
+            << "  -t TYPE                   Optional device type\n"
+            << "                            (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
+            << "  -b BLOCK_SIZE             Optional block size\n"
+            << "                            (256|512|1024|2048|4096).\n"
+            << "  -n NAME]                  Product data (VENDOR:PRODUCT:REVISION).\n"
+            << "  -f FILE|PARAM             Image file path or device-specific parameter.\n"
+            << "  -F IMAGE_FOLDER           Default location for image files,\n"
+            << "                            default is '~/images'.\n"
+            << "  -L LOG_LEVEL              Log level (trace|debug|info|warning|\n"
+            << "                            error|off), default is 'info'.\n"
+            << "  -h HOST                   s2p host to connect to, default is 'localhost'.\n"
+            << "  -p PORT                   s2p port to connect to, default is 6868.\n"
+            << "  -r RESERVED_IDS           Comma-separated list of IDs to reserve.\n"
+            << "  -C FILENAME:FILESIZE      Create an empty image file.\n"
+            << "  -d FILENAME               Delete an image file.\n"
+            << "  -B FILENAME               Do not send command to s2p\n"
+            << "                            but write it to a protobuf binary file.\n"
+            << "  -J FILENAME               Do not send command to s2p\n"
+            << "                            but write it to a protobuf JSON file.\n"
+            << "  -T FILENAME               Do not send command to s2p\n"
+            << "                            but write it to a protobuf text file.\n"
+            << "  -R CURRENT_NAME:NEW_NAME  Rename an image file.\n"
+            << "  -x CURRENT_NAME:NEW_NAME  Copy an image file.\n"
+            << "  -z LOCALE                 Select response locale/language.\n"
+            << "  -e                        List all images files in the default image folder.\n"
+            << "  -E FILENAME               Display image file information.\n"
+            << "  -D                        Detach all devices.\n"
+            << "  -I                        Display reserved device IDs.\n"
+            << "  -l                        Display device list.\n"
+            << "  -m                        List all supported file extensions\n"
+            << "                            and the device types they map to.\n"
+            << "  -o                        Display operation meta data.\n"
+            << "  -q                        Display s2p startup properties.\n"
+            << "  -O                        Display the available s2p log levels\n"
+            << "                            and the current log level.\n"
+            << "  -P                        Prompt for the access token in case\n"
+            << "                            s2p requires authentication.\n"
+            << "  -s                        Display all s2p settings.\n"
+            << "  -S                        Display s2p statistics.\n"
+            << "  -V                        Display the s2p server version.\n"
+            << "  -v                        Display the s2pctl version.\n"
+            << "  -X                        Shut down s2p.\n"
+            << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n";
 
         exit(EXIT_SUCCESS);
     }
@@ -71,6 +96,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
     device->set_id(-1);
     string hostname = "localhost";
     int port = 6868;
+    string id_and_lun;
     string param;
     string log_level;
     string default_folder;
@@ -92,11 +118,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
         "e::lmoqs::vDINOSTVXa:b:c:d:f:h:i:n:p:r:t:x:z:B:C:E:F:J:L:P::R:Z:")) != -1) {
         switch (opt) {
         case 'i':
-            if (const string error = SetIdAndLun(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-                *device, optarg); !error.empty()) {
-                cerr << "Error: " << error << endl;
-                exit(EXIT_FAILURE);
-            }
+            id_and_lun = optarg;
             break;
 
         case 'C':
@@ -305,6 +327,13 @@ int ScsiCtl::Run(const vector<char*> &args) const
         exit(EXIT_FAILURE);
     }
 #endif
+
+    if (!id_and_lun.empty()) {
+        if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
 
     SetParam(command, "token", token);
     SetParam(command, "locale", locale);

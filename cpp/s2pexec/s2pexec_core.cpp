@@ -43,30 +43,27 @@ void S2pExec::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-void S2pExec::Banner(span<char*> args, bool header)
+void S2pExec::Banner(bool header)
 {
     if (header) {
         cout << s2p_util::Banner("(SCSI Command Execution Tool)");
     }
 
-    cout << "Usage: " << args[0]
-        << " <--scsi-target/-s TARGET_ID>"
-        << " <--input-file/-f INPUT_FILE> [--output-file/-F OUTPUT_FILE]"
-        << " [--initiator-id/-i INITIATOR_ID]"
-        << " [--log-level/-L LOG_LEVEL]"
-        << " [--binary-input/-b] [--binary-output/-B] [--text-input/-t] [--text-output/-T]"
-        << " [-X]\n"
-        << " INITIATOR_ID is the s2pexec board ID (0-7). Default is 7.\n"
-        << " TARGET_ID is the target device ID (0-7).\n"
-        << " LUN is the optional target device LUN (0-31). Default is 0.\n"
-        << " INPUT_FILE is the protobuf data input file, by default in JSON format.\n"
-        << " OUTPUT_FILE is the protobuf data output file, by default in JSON format.\n"
-        << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
-        << " --binary-input/-b Signals that the input file is in protobuf binary format instead of JSON format.\n"
-        << " --text-intput/-t Signals that the input file is in protobuf text format instead of JSON format.\n"
-        << " --binary-output/-B Generate a protobuf binary format file instead of a JSON file.\n"
-        << " --text-output/-T Generate a protobuf text format file instead of a JSON file.\n"
-        << " --shutdown/-X Shut down s2p running on the second board by sending a SCSI command.\n";
+    cout << "Usage: s2pexec [options] scsi-target\n"
+        << "  --scsi-target/-s ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31).\n"
+        << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
+        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|\n"
+        << "                                error|off), default is 'info'.\n"
+        << "  --input-file/-f INPUT_FILE    Protobuf data input file,\n"
+        << "                                by default in JSON format.\n"
+        << "  --output-file/-F OUTPUT_FILE  Protobuf data output file,\n"
+        << "                                by default in JSON format.\n"
+        << "  --binary-input                Input file has protobuf binary format.\n"
+        << "  --binary-output               Generate protobuf binary format file.\n"
+        << "  --text-input                  Input file has protobuf tet format.\n"
+        << "  --text-output                 Generate protobuf text format file.\n"
+        << "  --shutdown/-X                 Shut down s2p running on the target board\n"
+        << "                                with a SCSI command.\n";
 }
 
 bool S2pExec::Init(bool)
@@ -93,17 +90,17 @@ bool S2pExec::Init(bool)
 
 bool S2pExec::ParseArguments(span<char*> args)
 {
-    static const struct option options[] = {
-        { "binary-input", no_argument, nullptr, 'b' },
-        { "binary-output", no_argument, nullptr, 'B' },
+    const vector<option> options = {
+        { "binary-input", no_argument, nullptr, 1 },
+        { "binary-output", no_argument, nullptr, 2 },
+        { "board-id", required_argument, nullptr, 'B' },
         { "input-file", required_argument, nullptr, 'f' },
         { "output-file", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'h' },
-        { "initiator-id", required_argument, nullptr, 'i' },
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 's' },
-        { "text-input", no_argument, nullptr, 't' },
-        { "text-output", no_argument, nullptr, 'T' },
+        { "text-input", no_argument, nullptr, 3 },
+        { "text-output", no_argument, nullptr, 4 },
         { "version", no_argument, nullptr, 'v' },
         { "shutdown", no_argument, nullptr, 'X' },
         { nullptr, 0, nullptr, 0 }
@@ -115,13 +112,14 @@ bool S2pExec::ParseArguments(span<char*> args)
     optind = 1;
     opterr = 0;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "bBf:F:hi:L:s:tTvX", options, nullptr)) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "bf:F:hi:L:s:vX", options.data(), nullptr))
+        != -1) {
         switch (opt) {
-        case 'b':
+        case 1:
             input_format = S2pExecExecutor::protobuf_format::binary;
             break;
 
-        case 'B':
+        case 2:
             output_format = S2pExecExecutor::protobuf_format::binary;
             break;
 
@@ -149,11 +147,11 @@ bool S2pExec::ParseArguments(span<char*> args)
             target = optarg;
             break;
 
-        case 't':
+        case 3:
             input_format = S2pExecExecutor::protobuf_format::text;
             break;
 
-        case 'T':
+        case 4:
             output_format = S2pExecExecutor::protobuf_format::text;
             break;
 
@@ -166,13 +164,13 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         default:
-            Banner(args, false);
+            Banner(false);
             return false;
         }
     }
 
     if (help) {
-        Banner(args, true);
+        Banner(true);
         return true;
     }
 
@@ -189,7 +187,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string error = ProcessId(8, 31, target, target_id, target_lun); !error.empty()) {
+    if (const string error = ProcessId(8, 32, target, target_id, target_lun); !error.empty()) {
         throw parser_exception(error);
     }
 
@@ -220,7 +218,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 int S2pExec::Run(span<char*> args, bool in_process)
 {
     if (args.size() < 2) {
-        Banner(args, true);
+        Banner(true);
         return EXIT_FAILURE;
     }
 

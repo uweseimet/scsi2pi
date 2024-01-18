@@ -144,18 +144,17 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
     return "";
 }
 
-string s2p_util::Banner(string_view app)
+string s2p_util::Banner(string_view app, bool scsi2pi)
 {
     stringstream s;
 
-    s << "SCSI Target Emulator and SCSI Initiator Tools SCSI2Pi " << app << "\n"
-        << "Version " << GetVersionString();
-    if (!s2p_suffix.empty()) {
-        s << " (" << __DATE__ << ' ' << __TIME__ << ")";
+    s << "SCSI Target Emulator and SCSI Tools SCSI2Pi " << app << "\n"
+        << "Version " << GetVersionString() << "\n";
+    if (!scsi2pi) {
+        s << "Copyright (C) 2016-2020 GIMONS\n"
+            << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n";
     }
-    s << "\nCopyright (C) 2016-2020 GIMONS\n"
-        << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
-        << "Copyright (C) 2021-2024 Uwe Seimet\n";
+    s << "Copyright (C) 2021-2024 Uwe Seimet\n";
 
     return s.str();
 }

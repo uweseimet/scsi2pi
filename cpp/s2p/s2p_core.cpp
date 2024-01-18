@@ -139,7 +139,7 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_SUCCESS;
     }
 
-    s2p_parser.Banner(args, false);
+    s2p_parser.Banner(false);
 
     bool is_sasi = false;
     int port;

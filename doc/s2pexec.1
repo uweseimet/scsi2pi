@@ -3,15 +3,15 @@
 s2pexec \- SCSI command execution tool for SCSI2Pi
 .SH SYNOPSIS
 .B s2pexec
-\fB\--scsi-target/-s\fR \fITARGET_ID[:LUN]\fR
-[\fB\--initiator-id/-i\fR \fIINITIATOR_ID\fR]
+\fB\--scsi-target/-s\fR \fIID[:LUN]\fR
+[\fB\--board-id/-B\fR \fIBOARD_ID\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 \fB\--input-file/-f\fR \fIINPUT_FILE\fR
 [\fB\--output-file/-F\fR \fIOUTPUT_FILE\fR]
-[\fB\--binary-input/-b\fR]
-[\fB\--binary-output/-B\fR]
-[\fB\--text-input/-t\fR]
-[\fB\--text-output/-T\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--binary-input\fR]
+[\fB\--binary-output\fR]
+[\fB\--text-input\fR]
+[\fB\--text-output\fR]
 [\fB\--shutdown/-X\fR]
 .SH DESCRIPTION
 .B s2pexec
@@ -27,8 +27,11 @@ helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The
 .BR \--scsi-target/-s\fI " "\fIID[:LUN]
 SCSI ID and optional LUN of the second PiSCSI/RaSCSI board, which is the target device.
 .TP
-.BR \--initiator-id/-i\fI " "\fIBID
-SCSI ID used by s2pexec. If not specified, s2pexec will use the initiator ID 7.
+.BR \--board-id/-B\fI " "\fIBOARD_ID
+SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
+.TP
+.BR \--log-level/-L\fI " " \fILOG_LEVEL
+Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \--input-file/-f\fI " "\fIINPUT_FILE
 The protobuf data input file, by default in JSON format.
@@ -36,20 +39,17 @@ The protobuf data input file, by default in JSON format.
 .BR \--output-file/-F\fI " "\fIOUTPUT_FILE
 The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
-.BR \--binary-input/-b\fI
+.BR \--binary-input\fI
 Signals that the input file is in protobuf binary format instead of JSON.
 .TP
-.BR \--binary-output/-B\fI
+.BR \--binary-output\fI
 Generate a protobuf binary format file instead of JSON.
 .TP
-.BR \--text-input/-t\fI
+.BR \--text-input\fI
 Signals that the input file is in protobuf text format instead of JSON.
 .TP
-.BR \--text-output/-T\fI
+.BR \--text-output\fI
 Generate a protobuf text format file instead of JSON.
-.TP
-.BR \--log-level/-L\fI " " \fILOG_LEVEL
-Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \--shutdown/-X\fI
 Shut down s2p running on the second board by sending a SCSI command.

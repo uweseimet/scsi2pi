@@ -53,7 +53,7 @@ vector<string> Split(const string&, char, int = INT_MAX);
 string GetLocale();
 bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(int, int, const string&, int&, int&);
-string Banner(string_view);
+string Banner(string_view, bool = true);
 
 string GetExtensionLowerCase(string_view);
 
