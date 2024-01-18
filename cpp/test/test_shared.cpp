@@ -18,7 +18,7 @@
 using namespace std;
 using namespace filesystem;
 
-// Inlude the process id in the temp file path so that multiple instances of the test procedures
+// Include the process id in the temp file path so that multiple instances of the test procedures
 // could run on the same host.
 const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publicly writable directory is fine here
     path(fmt::format("scsi2pi-test-{}", getpid())));

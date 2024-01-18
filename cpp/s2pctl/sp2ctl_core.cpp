@@ -13,7 +13,6 @@
 #include <clocale>
 #include <iostream>
 #include <fstream>
-#include "controllers/scsi_controller.h"
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
@@ -27,11 +26,12 @@ using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-void ScsiCtl::Banner(const vector<char*> &args) const
+void ScsiCtl::Banner(bool usage) const
 {
-    if (args.size() < 2) {
-        cout << s2p_util::Banner("(Server Controller Tool)", false)
-            << "\nUsage: s2pctl [options]\n"
+    cout << s2p_util::Banner("(Server Controller Tool)", false);
+
+    if (usage) {
+        cout << "Usage: s2pctl [options]\n"
             << "  -i ID[:LUN]               Target device ID (0-7) and LUN\n"
             << "                            (SCSI: 0-31, SASI: 0-1).\n"
             << "  -c CMD                    Command (attach|detach|insert|eject|protect\n"
@@ -46,7 +46,8 @@ void ScsiCtl::Banner(const vector<char*> &args) const
             << "                            default is '~/images'.\n"
             << "  -L LOG_LEVEL              Log level (trace|debug|info|warning|\n"
             << "                            error|off), default is 'info'.\n"
-            << "  -h HOST                   s2p host to connect to, default is 'localhost'.\n"
+            << "  -h                        Display usage information.\n"
+            << "  -H HOST                   s2p host to connect to, default is 'localhost'.\n"
             << "  -p PORT                   s2p port to connect to, default is 6868.\n"
             << "  -r RESERVED_IDS           Comma-separated list of IDs to reserve.\n"
             << "  -C FILENAME:FILESIZE      Create an empty image file.\n"
@@ -79,8 +80,6 @@ void ScsiCtl::Banner(const vector<char*> &args) const
             << "  -v                        Display the s2pctl version.\n"
             << "  -X                        Shut down s2p.\n"
             << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n";
-
-        exit(EXIT_SUCCESS);
     }
 }
 
@@ -88,8 +87,39 @@ int ScsiCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    Banner(args);
+    return args.size() < 2 ? RunInteractive() : RunNonInteractive(args);
+}
 
+int ScsiCtl::RunInteractive() const
+{
+    Banner(false);
+
+    cout << "Entering interactive mode, quit with Ctrl-D\n";
+
+    while (true) {
+        cout << "s2pctl>";
+
+        string line;
+        if (!getline(cin, line)) {
+            break;
+        }
+
+        vector<char*> args;
+        args.emplace_back(strdup("arg0"));
+        for (const string &arg : Split(line, ' ')) {
+            args.emplace_back(strdup(arg.c_str()));
+        }
+
+        RunNonInteractive(args);
+    }
+
+    cout << "\n";
+
+    return EXIT_SUCCESS;
+}
+
+int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
+{
     S2pCtlParser parser;
     PbCommand command;
     PbDeviceDefinition *device = command.add_devices();
@@ -115,7 +145,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
     opterr = 0;
     int opt;
     while ((opt = getopt(static_cast<int>(args.size()), args.data(),
-        "e::lmoqs::vDINOSTVXa:b:c:d:f:h:i:n:p:r:t:x:z:B:C:E:F:J:L:P::R:Z:")) != -1) {
+        "e::hlmoqs::vDINOSTVXa:b:c:d:f:i:n:p:r:t:x:z:B:C:E:F:H:J:L:P::R:Z:")) != -1) {
         switch (opt) {
         case 'i':
             id_and_lun = optarg;
@@ -130,7 +160,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             int block_size;
             if (!GetAsUnsignedInt(optarg, block_size)) {
                 cerr << "Error: Invalid block size " << optarg << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             device->set_block_size(block_size);
             break;
@@ -139,7 +169,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             command.set_operation(parser.ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
                 cerr << "Error: Unknown operation '" << optarg << "'" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -156,7 +186,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             filename = optarg;
             if (filename.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             command.set_operation(IMAGE_FILE_INFO);
             break;
@@ -178,10 +208,15 @@ int ScsiCtl::Run(const vector<char*> &args) const
             break;
 
         case 'h':
+            Banner(true);
+            return EXIT_SUCCESS;
+            break;
+
+        case 'H':
             hostname = optarg;
             if (hostname.empty()) {
                 cerr << "Error: Missing hostname" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -189,7 +224,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             filename_binary = optarg;
             if (filename_binary.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -197,7 +232,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             filename_json = optarg;
             if (filename_json.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -205,7 +240,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             filename_text = optarg;
             if (filename_text.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -246,7 +281,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             device->set_type(parser.ParseType(optarg));
             if (device->type() == UNDEFINED) {
                 cerr << "Error: Unknown device type '" << optarg << "'" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -267,7 +302,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
         case 'p':
             if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
                 cerr << "Error: Invalid port " << optarg << ", port must be between 1 and 65535" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -276,7 +311,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
             if (optarg) {
                 if (const string error = SetCommandParams(command, optarg); !error.empty()) {
                     cerr << "Error: " << error << endl;
-                    exit(EXIT_FAILURE);
+                    return EXIT_FAILURE;
                 }
             }
             break;
@@ -285,17 +320,8 @@ int ScsiCtl::Run(const vector<char*> &args) const
             command.set_operation(STATISTICS_INFO);
             break;
 
-        case 'v':
-            cout << "s2pctl version: " << GetVersionString() << '\n';
-            exit(EXIT_SUCCESS);
-            break;
-
         case 'P':
             token = optarg ? optarg : getpass("Password: ");
-            break;
-
-        case 'V':
-            command.set_operation(VERSION_INFO);
             break;
 
         case 'x':
@@ -305,6 +331,15 @@ int ScsiCtl::Run(const vector<char*> &args) const
 
         case 'T':
             command.set_operation(DEVICE_TYPES_INFO);
+            break;
+
+        case 'v':
+            cout << "s2pctl version: " << GetVersionString() << '\n';
+            return EXIT_SUCCESS;
+            break;
+
+        case 'V':
+            command.set_operation(VERSION_INFO);
             break;
 
         case 'X':
@@ -331,7 +366,7 @@ int ScsiCtl::Run(const vector<char*> &args) const
     if (!id_and_lun.empty()) {
         if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {
             cerr << "Error: " << error << endl;
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
     }
 

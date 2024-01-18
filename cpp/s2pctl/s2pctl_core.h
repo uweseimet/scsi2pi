@@ -25,5 +25,7 @@ public:
 
 private:
 
-    void Banner(const vector<char*>&) const;
+    void Banner(bool) const;
+    int RunInteractive() const;
+    int RunNonInteractive(const vector<char*>&) const;
 };

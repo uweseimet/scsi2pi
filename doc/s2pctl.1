@@ -8,6 +8,7 @@ s2pctl \- Sends management commands to s2p
 \fB\-m\fR |
 \fB\-o\fR |
 \fB\-q\fR |
+\fB\-h\fR |
 \fB\-v\fR |
 \fB\-D\fR |
 \fB\-I\fR |
@@ -16,6 +17,7 @@ s2pctl \- Sends management commands to s2p
 \fB\-P\fR |
 \fB\-S\fR |
 \fB\-T\fR |
+\fB\-v\fR |
 \fB\-V\fR |
 \fB\-X\fR |
 \fB\-Z\fR |
@@ -29,7 +31,7 @@ s2pctl \- Sends management commands to s2p
 [\fB\-c\fR \fICMD\fR] |
 [\fB\-f\fR \fIFILE|PARAM\fR] |
 [\fB\-L\fR \fILOG_LEVEL\fR] |
-[\fB\-h\fR \fIHOST\fR] |
+[\fB\-H\fR \fIHOST\fR] |
 [\fB\-i\fR \fIID[:LUN]\fR] |
 [\fB\-n\fR \fINAME\fR] |
 [\fB\-p\fR \fIPORT\fR] |
@@ -42,11 +44,9 @@ s2pctl \- Sends management commands to s2p
 .B s2pctl
 sends commands to s2p in order to make configuration adjustments at runtime or to check the device status.
 
-Either the -i or -l option should be specified at one time. Not both. 
-
 You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -h option to specify the s2p host s2pctl shall connect to.
 
-Note: The command and type arguments are case insensitive. Only the first letter of the command/type is evaluated.
+When launched without arguments s2pctl enters interactive mode where you can enter commands on the command line.
 
 .SH OPTIONS
 .TP
@@ -113,11 +113,14 @@ Display s2p statistics.
 .BR \-T\fI
 Display all device types and their properties.
 .TP
-.BR \-V\fI " " \fI
-Display the s2p server version.
+.BR \-h\fI " " \fI
+Display usage information.
 .TP
 .BR \-v\fI " " \fI
 Display the s2pctl version.
+.TP
+.BR \-V\fI " " \fI
+Display the s2p server version.
 .TP
 .BR \-X\fI " " \fI
 Shut down the s2p process.
