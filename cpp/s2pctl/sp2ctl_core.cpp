@@ -9,10 +9,11 @@
 //
 //---------------------------------------------------------------------------
 
-#include <unistd.h>
 #include <clocale>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
+#include <getopt.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
@@ -26,71 +27,74 @@ using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-void ScsiCtl::Banner(bool usage) const
+void S2pCtl::Banner(bool usage) const
 {
     cout << s2p_util::Banner("(Server Controller Tool)", false);
 
     if (usage) {
         cout << "Usage: s2pctl [options]\n"
-            << "  -i ID[:LUN]               Target device ID (0-7) and LUN\n"
-            << "                            (SCSI: 0-31, SASI: 0-1).\n"
-            << "  -c CMD                    Command (attach|detach|insert|eject|protect\n"
-            << "                            |unprotect|show).\n"
-            << "  -t TYPE                   Optional device type\n"
-            << "                            (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
-            << "  -b BLOCK_SIZE             Optional block size\n"
-            << "                            (256|512|1024|2048|4096).\n"
-            << "  -n NAME]                  Product data (VENDOR:PRODUCT:REVISION).\n"
-            << "  -f FILE|PARAM             Image file path or device-specific parameter.\n"
-            << "  -F IMAGE_FOLDER           Default location for image files,\n"
-            << "                            default is '~/images'.\n"
-            << "  -L LOG_LEVEL              Log level (trace|debug|info|warning|\n"
-            << "                            error|off), default is 'info'.\n"
-            << "  -h                        Display usage information.\n"
-            << "  -H HOST                   s2p host to connect to, default is 'localhost'.\n"
-            << "  -p PORT                   s2p port to connect to, default is 6868.\n"
-            << "  -r RESERVED_IDS           Comma-separated list of IDs to reserve.\n"
-            << "  -C FILENAME:FILESIZE      Create an empty image file.\n"
-            << "  -d FILENAME               Delete an image file.\n"
-            << "  -B FILENAME               Do not send command to s2p\n"
-            << "                            but write it to a protobuf binary file.\n"
-            << "  -J FILENAME               Do not send command to s2p\n"
-            << "                            but write it to a protobuf JSON file.\n"
-            << "  -T FILENAME               Do not send command to s2p\n"
-            << "                            but write it to a protobuf text file.\n"
-            << "  -R CURRENT_NAME:NEW_NAME  Rename an image file.\n"
-            << "  -x CURRENT_NAME:NEW_NAME  Copy an image file.\n"
-            << "  -z LOCALE                 Select response locale/language.\n"
-            << "  -e                        List all images files in the default image folder.\n"
-            << "  -E FILENAME               Display image file information.\n"
-            << "  -D                        Detach all devices.\n"
-            << "  -I                        Display reserved device IDs.\n"
-            << "  -l                        Display device list.\n"
-            << "  -m                        List all supported file extensions\n"
-            << "                            and the device types they map to.\n"
-            << "  -o                        Display operation meta data.\n"
-            << "  -q                        Display s2p startup properties.\n"
-            << "  -O                        Display the available s2p log levels\n"
-            << "                            and the current log level.\n"
-            << "  -P                        Prompt for the access token in case\n"
-            << "                            s2p requires authentication.\n"
-            << "  -s                        Display all s2p settings.\n"
-            << "  -S                        Display s2p statistics.\n"
-            << "  -V                        Display the s2p server version.\n"
-            << "  -v                        Display the s2pctl version.\n"
-            << "  -X                        Shut down s2p.\n"
-            << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n";
+            << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
+            << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
+            << "  --command/-c CMD               Command (attach|detach|insert|eject|protect\n"
+            << "                                 |unprotect).\n"
+            << "  --type/-t TYPE                 Optional device type\n"
+            << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
+            << "                                 (256|512|1024|2048|4096).\n"
+            << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
+            << "                                 (VENDOR:PRODUCT:REVISION).\n"
+            << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
+            << "  --image-folder/-F FOLDER       Default location for image files,\n"
+            << "                                 default is '~/images'.\n"
+            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|\n"
+            << "                                 error|off), default is 'info'.\n"
+            << "  --help/-h                      Display usage information.\n"
+            << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
+            << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
+            << "  --reserve-ids/-r IDS           Comma-separated list of IDs to reserve.\n"
+            << "  --create/-C FILENAME:SIZE      Create an empty image file.\n"
+            << "  --delete/-d FILENAME           Delete an image file.\n"
+            << "  --binary-protobuf FILENAME     Do not send command to s2p\n"
+            << "                                 but write it to a protobuf binary file.\n"
+            << "  --json-protobuf FILENAME       Do not send command to s2p\n"
+            << "                                 but write it to a protobuf JSON file.\n"
+            << "  --text-protobuf FILENAME       Do not send command to s2p\n"
+            << "                                 but write it to a protobuf text file.\n"
+            << "  --rename/-R CURRENT:NEW        Rename an image file.\n"
+            << "  --copy/-x CURRENT:NEW          Copy an image file.\n"
+            << "  --locale LOCALE                Default locale (language)\n"
+            << "                                 for client-facing messages.\n"
+            << "  --list-images/-e               List images files in the default image folder.\n"
+            << "  --list-image-info/-E FILENAME  Display image file information.\n"
+            << "  --detach-all/-D                Detach all devices.\n"
+            << "  --list-reserved-ids/-I         List reserved device IDs.\n"
+            << "  --list-devices/-l              Display device list.\n"
+            << "  --list-device-types/-T         List available device types.\n"
+            << "  --list-extensions/-m           List supported file extensions\n"
+            << "                                 and the device types they map to.\n"
+            << "  --list-interfaces/-N           List network interfaces that are up.\n"
+            << "  --list-operations/-o           List available remote interface operations.\n"
+            << "  --list-properties/-P           List s2p startup properties.\n"
+            << "  --list-log-levels              List the available s2p log levels\n"
+            << "                                 and the current log level.\n"
+            << "  --prompt                       Prompt for the access token in case\n"
+            << "                                 s2p requires authentication.\n"
+            << "  --list-settings/-s             List s2p settings.\n"
+            << "  --list-statistics/-S           List s2p statistics.\n"
+            << "  --version/-v                   Display the s2pctl version.\n"
+            << "  --server-version/-V            Display the s2p server version.\n"
+            << "  --shut-down/-X                 Shut down s2p.\n";
     }
 }
 
-int ScsiCtl::Run(const vector<char*> &args) const
+int S2pCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     return args.size() < 2 ? RunInteractive() : RunNonInteractive(args);
 }
 
-int ScsiCtl::RunInteractive() const
+int S2pCtl::RunInteractive() const
 {
     Banner(false);
 
@@ -105,7 +109,7 @@ int ScsiCtl::RunInteractive() const
         }
 
         vector<char*> args;
-        args.emplace_back(strdup("arg0"));
+        args.emplace_back(strdup("s2pctl"));
         for (const string &arg : Split(line, ' ')) {
             args.emplace_back(strdup(arg.c_str()));
         }
@@ -118,8 +122,49 @@ int ScsiCtl::RunInteractive() const
     return EXIT_SUCCESS;
 }
 
-int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
+int S2pCtl::RunNonInteractive(const vector<char*> &args) const
 {
+    const vector<option> options = {
+        { "prompt", no_argument, nullptr, 6 },
+        { "binary-protobuf", required_argument, nullptr, 1 },
+        { "block-size", required_argument, nullptr, 'b' },
+        { "command", required_argument, nullptr, 'c' },
+        { "copy", required_argument, nullptr, 'x' },
+        { "create", required_argument, nullptr, 'C' },
+        { "delete", required_argument, nullptr, 'd' },
+        { "detach-all", no_argument, nullptr, 'D' },
+        { "file", required_argument, nullptr, 'f' },
+        { "help", no_argument, nullptr, 'h' },
+        { "host", required_argument, nullptr, 'H' },
+        { "id", required_argument, nullptr, 'i' },
+        { "image-folder", required_argument, nullptr, 'F' },
+        { "json-protobuf", required_argument, nullptr, 2 },
+        { "list-devices", no_argument, nullptr, 'l' },
+        { "list-device-types", no_argument, nullptr, 'T' },
+        { "list-extensions", no_argument, nullptr, 'm' },
+        { "list-images", no_argument, nullptr, 'e' },
+        { "list-image-info", required_argument, nullptr, 'E' },
+        { "list-interfaces", required_argument, nullptr, 'N' },
+        { "list-log-levels", no_argument, nullptr, 5 },
+        { "list-operations", no_argument, nullptr, 'o' },
+        { "list-properties", no_argument, nullptr, 'P' },
+        { "list-reserved-ids", no_argument, nullptr, 'I' },
+        { "list-settings", no_argument, nullptr, 's' },
+        { "list-statistics", no_argument, nullptr, 'S' },
+        { "locale", required_argument, nullptr, 3 },
+        { "log-level", required_argument, nullptr, 'L' },
+        { "name", required_argument, nullptr, 'n' },
+        { "port", required_argument, nullptr, 'p' },
+        { "rename", required_argument, nullptr, 'R' },
+        { "reserve-ids", optional_argument, nullptr, 'r' },
+        { "server-version", no_argument, nullptr, 'V' },
+        { "shut-down", no_argument, nullptr, 'X' },
+        { "text-protobuf", required_argument, nullptr, 4 },
+        { "type", required_argument, nullptr, 't' },
+        { "version", no_argument, nullptr, 'v' },
+        { nullptr, 0, nullptr, 0 }
+    };
+
     S2pCtlParser parser;
     PbCommand command;
     PbDeviceDefinition *device = command.add_devices();
@@ -142,10 +187,9 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
     string locale = GetLocale();
 
     optind = 1;
-    opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(),
-        "e::hlmoqs::vDINOSTVXa:b:c:d:f:i:n:p:r:t:x:z:B:C:E:F:H:J:L:P::R:Z:")) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
+        "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'i':
             id_and_lun = optarg;
@@ -220,7 +264,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             }
             break;
 
-        case 'B':
+        case 1:
             filename_binary = optarg;
             if (filename_binary.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -228,7 +272,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             }
             break;
 
-        case 'J':
+        case 2:
             filename_json = optarg;
             if (filename_json.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -236,7 +280,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             }
             break;
 
-        case 'Z':
+        case 4:
             filename_text = optarg;
             if (filename_text.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -265,7 +309,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             command.set_operation(NETWORK_INTERFACES_INFO);
             break;
 
-        case 'O':
+        case 5:
             command.set_operation(LOG_LEVEL_INFO);
             break;
 
@@ -273,7 +317,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             command.set_operation(OPERATION_INFO);
             break;
 
-        case 'q':
+        case 'P':
             command.set_operation(PROPERTIES_INFO);
             break;
 
@@ -287,7 +331,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
 
         case 'r':
             command.set_operation(RESERVE_IDS);
-            reserved_ids = optarg;
+            reserved_ids = string(optarg) != "\"\"" ? optarg : "";
             break;
 
         case 'R':
@@ -320,7 +364,7 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             command.set_operation(STATISTICS_INFO);
             break;
 
-        case 'P':
+        case 6:
             token = optarg ? optarg : getpass("Password: ");
             break;
 
@@ -347,21 +391,15 @@ int ScsiCtl::RunNonInteractive(const vector<char*> &args) const
             SetParam(command, "mode", "rascsi");
             break;
 
-        case 'z':
+        case 3:
             locale = optarg;
             break;
 
         default:
-            break;
+            Banner(true);
+            return EXIT_FAILURE;
         }
     }
-
-    // BSD getopt stops after the first free argument. Thie work-around below cannot really address this.
-#ifdef __linux__
-    if (optopt) {
-        exit(EXIT_FAILURE);
-    }
-#endif
 
     if (!id_and_lun.empty()) {
         if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {

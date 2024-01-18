@@ -14,5 +14,5 @@ int main(int argc, char *argv[])
 {
     const vector<char*> args(argv, argv + argc);
 
-    return ScsiCtl().Run(args);
+    return S2pCtl().Run(args);
 }

@@ -50,7 +50,8 @@ void S2pExec::Banner(bool header)
     }
 
     cout << "Usage: s2pexec [options] scsi-target\n"
-        << "  --scsi-target/-s ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31).\n"
+        << "  --scsi-target/-s ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
         << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|\n"
         << "                                error|off), default is 'info'.\n"
@@ -110,7 +111,6 @@ bool S2pExec::ParseArguments(span<char*> args)
     string target;
 
     optind = 1;
-    opterr = 0;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "bf:F:hi:L:s:vX", options.data(), nullptr))
         != -1) {

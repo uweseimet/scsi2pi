@@ -13,13 +13,13 @@
 
 using namespace std;
 
-class ScsiCtl
+class S2pCtl
 {
 
 public:
 
-    ScsiCtl() = default;
-    ~ScsiCtl() = default;
+    S2pCtl() = default;
+    ~S2pCtl() = default;
 
     int Run(const vector<char*>&) const;
 

@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
     string i_args;
 
     optind = 1;
-    opterr = 0;
     int opt;
     while ((opt = getopt(argc, argv, "-i:c:t:")) != -1) {
         switch (opt) {
@@ -56,18 +55,18 @@ int main(int argc, char *argv[])
     }
 
     if (client != "s2pdump" && client != "s2pexec") {
-        cerr << "Invalid client: '" << client << "', client must be s2pdump or s2pexec" << endl;
+        cerr << "Invalid test client: '" << client << "', client must be s2pdump or s2pexec" << endl;
         exit(EXIT_FAILURE);
     }
 
     vector<char*> initiator_args;
-    add_arg(initiator_args, "initiator");
+    add_arg(initiator_args, client);
     for (const auto &arg : Split(i_args, ' ')) {
         add_arg(initiator_args, arg);
     }
 
     vector<char*> target_args;
-    add_arg(target_args, "target");
+    add_arg(target_args, "s2p");
     for (const auto &arg : Split(t_args, ' ')) {
         add_arg(target_args, arg);
     }

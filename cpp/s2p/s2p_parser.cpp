@@ -58,7 +58,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     properties[PropertyHandler::PROPERTY_FILES] = "";
 
     optind = 1;
-    opterr = 0;
     int opt;
     while ((opt = getopt(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:vB")) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {

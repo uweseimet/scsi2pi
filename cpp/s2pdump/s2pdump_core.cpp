@@ -51,8 +51,10 @@ void S2pDump::Banner(bool header) const
     }
 
     cout << "Usage: s2pdump [options]\n"
-        << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31).\n"
-        << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1).\n"
+        << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                     default LUN is 0.\n"
+        << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
+        << "                                     default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
         << "  --image-file/-f IMAGE_FILE         Image file path.\n"
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
@@ -129,11 +131,9 @@ bool S2pDump::ParseArguments(span<char*> args)
     bool help = false;
 
     optind = 1;
-    opterr = 0;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:h:Hi:If:L:rsS:tvz:", options.data(),
-        nullptr))
-        != -1) {
+        nullptr)) != -1) {
         switch (opt) {
         case 'a':
             scan_all_luns = true;
@@ -208,7 +208,8 @@ bool S2pDump::ParseArguments(span<char*> args)
             break;
 
         default:
-            break;
+            Banner(true);
+            return false;
         }
     }
 
