@@ -125,8 +125,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    // Commands returning the current device list are a special case
-    return command.devices().empty() ? context.ReturnSuccessStatus() : true;
+    // ATTACH and DETACH are special cases because they return the current device list
+    return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
 }
 
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const

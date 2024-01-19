@@ -27,5 +27,5 @@ private:
 
     void Banner(bool) const;
     int RunInteractive() const;
-    int RunNonInteractive(const vector<char*>&) const;
+    int ParseArguments(const vector<char*>&, bool) const;
 };

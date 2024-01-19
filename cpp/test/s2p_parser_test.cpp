@@ -16,7 +16,7 @@ void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const ch
     nullptr)
 {
     args.clear();
-    args.emplace_back(strdup("arg0"));
+    args.emplace_back(strdup("s2p"));
     args.emplace_back(strdup(arg1));
     args.emplace_back(strdup(arg2));
     if (arg3) {
@@ -33,7 +33,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     S2pParser parser;
 
     vector<char*> args;
-    args.emplace_back(strdup("arg0"));
+    args.emplace_back(strdup("s2p"));
     auto properties = parser.ParseArguments(args, is_sasi);
     EXPECT_EQ(1UL, properties.size());
     EXPECT_TRUE(properties[PropertyHandler::PROPERTY_FILES].empty());
@@ -49,7 +49,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(2UL, properties.size());
     EXPECT_EQ("ids", properties[PropertyHandler::RESERVED_IDS]);
 
-    SetUpArgs(args, "-z", "locale");
+    SetUpArgs(args, "--locale", "locale");
     properties = parser.ParseArguments(args, is_sasi);
     EXPECT_EQ(2UL, properties.size());
     EXPECT_EQ("locale", properties[PropertyHandler::LOCALE]);

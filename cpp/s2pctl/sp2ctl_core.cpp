@@ -91,38 +91,51 @@ int S2pCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    return args.size() < 2 ? RunInteractive() : RunNonInteractive(args);
+    return args.size() < 2 ? RunInteractive() : ParseArguments(args, false);
 }
 
 int S2pCtl::RunInteractive() const
 {
-    Banner(false);
+    if (isatty(STDIN_FILENO)) {
+        Banner(false);
 
-    cout << "Entering interactive mode, quit with Ctrl-D\n";
+        cout << "Entering interactive mode, Ctrl-D or \"exit\" to quit\n";
+    }
 
     while (true) {
-        cout << "s2pctl>";
+        if (isatty(STDIN_FILENO)) {
+            cout << "s2pctl>";
+        }
 
         string line;
-        if (!getline(cin, line)) {
+        if (!getline(cin, line) || line == "exit") {
+            if (line.empty() && isatty(STDIN_FILENO)) {
+                cout << "\n";
+            }
             break;
         }
 
-        vector<char*> args;
-        args.emplace_back(strdup("s2pctl"));
-        for (const string &arg : Split(line, ' ')) {
-            args.emplace_back(strdup(arg.c_str()));
+        if (!line.starts_with("#")) {
+            const auto &args = Split(line, ' ');
+
+            vector<char*> interactive_args;
+            interactive_args.emplace_back(strdup("s2pctl"));
+
+            // In interactive mode no explict input of "-" or "--" is required before a command
+            interactive_args.emplace_back(strdup(("-" + args[0]).c_str()));
+
+            for (size_t i = 1; i < args.size(); i++) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
+
+            ParseArguments(interactive_args, true);
         }
-
-        RunNonInteractive(args);
     }
-
-    cout << "\n";
 
     return EXIT_SUCCESS;
 }
 
-int S2pCtl::RunNonInteractive(const vector<char*> &args) const
+int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
 {
     const vector<option> options = {
         { "prompt", no_argument, nullptr, 6 },
@@ -186,9 +199,11 @@ int S2pCtl::RunNonInteractive(const vector<char*> &args) const
 
     string locale = GetLocale();
 
+    const auto &get_opt = interactive ? getopt_long_only : getopt_long;
+
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
+    while ((opt = get_opt(static_cast<int>(args.size()), args.data(),
         "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'i':

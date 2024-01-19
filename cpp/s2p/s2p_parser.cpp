@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <fstream>
+#include <getopt.h>
 #include "shared/shared_exceptions.h"
 #include "controllers/controller_factory.h"
 #include "shared/s2p_util.h"
@@ -17,34 +18,81 @@ using namespace s2p_util;
 
 void S2pParser::Banner(bool usage) const
 {
-    if (usage) {
-        cout << "\nUsage: s2p [-i|-h ID[:LUN]] FILE] ...\n\n"
-            << " -h ID is a SCSI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
-            << " -i ID is a SASI device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
-            << " LUN is the optional logical unit, 0 is the default"
-            << " (SCSI: 0-" << (ControllerFactory::GetScsiLunMax() - 1)
-            << ", SASI: 0-" << (ControllerFactory::GetSasiLunMax() - 1) << ").\n"
-            << " Attaching a SASI drive (-h instead of -i) selects SASI compatibility.\n"
-            << " FILE is either a disk image file, \"daynaport\", \"printer\" or \"services\".\n"
-            << " The image type is derived from the extension when no type is specified:\n"
-            << "  hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
-            << "  hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
-            << "  hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
-            << "  hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
-            << "  mos: SCSI MO image (SCSI-2 MO image)\n"
-            << "  iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-            << "  is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
-            << " Run 'man s2p' for other options.\n" << flush;
-
-        exit(EXIT_SUCCESS);
+    if (!usage) {
+        cout << s2p_util::Banner("(Device Emulation)", false) << flush;
     }
     else {
-        cout << s2p_util::Banner("(Device Emulation)", false) << flush;
+        const int id_max = ControllerFactory::GetIdMax() - 1;
+
+        cout << "Usage: s2p options ... FILE\n"
+            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
+            << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
+            << "), default LUN is 0.\n"
+            << "  --sssi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
+            << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
+            << "), default LUN is 0.\n"
+            << "  --type/-t TYPE              Device type.\n"
+            << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
+            << "                              format is VENDOR:PRODUCT:REVISION.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional block size.\n"
+            << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
+            << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
+            << "  --image-folder/-F FOLDER    Default folder with image files.\n"
+            << "  --scan-depth/-R SCAN_DEPTH  Scan depth for image file folder.\n"
+            << "  --property-files/-C         List of property files.\n"
+            << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|off),\n"
+            << "                              default is 'info'.\n"
+            << "  --token-file/-P TOKEN_FILE  Access token file.\n"
+            << "  --port/-p PORT              s2p server port, default is 6868.\n"
+            << "  --locale                    Locale (language) for client-facing messages.\n"
+            << "  --version/-v                Display s2p version.\n"
+            << "  --help/-H                   Display this help.\n"
+            << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
+            << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
+            << "  If no type is specific the image type is derived from the extension:\n"
+            << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
+            << "    hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
+            << "    hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
+            << "    hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
+            << "    mos: SCSI MO image (SCSI-2 MO image)\n"
+            << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
+            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n";
     }
 }
 
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 {
+    const vector<option> options = {
+        { "block-size", required_argument, nullptr, 'b' },
+        { "blue-scsi-mode", no_argument, nullptr, 'B' },
+        { "image-folder", required_argument, nullptr, 'F' },
+        { "help", required_argument, nullptr, 'H' },
+        { "locale", required_argument, nullptr, 2 },
+        { "log-level", required_argument, nullptr, 'L' },
+        { "name", required_argument, nullptr, 'n' },
+        { "port", required_argument, nullptr, 'p' },
+        { "property-files", required_argument, nullptr, 'C' },
+        { "reserved-ids", optional_argument, nullptr, 'r' },
+        { "sasi-id", required_argument, nullptr, 'h' },
+        { "scan-depth", required_argument, nullptr, 'R' },
+        { "scsi-id", required_argument, nullptr, 'i' },
+        { "token-file", required_argument, nullptr, 'P' },
+        { "type", required_argument, nullptr, 't' },
+        { "version", no_argument, nullptr, 'v' },
+        { nullptr, 0, nullptr, 0 }
+    };
+
+    const unordered_map<int, string> OPTIONS_TO_PROPERTIES = {
+        { 'p', PropertyHandler::PORT },
+        { 'r', PropertyHandler::RESERVED_IDS },
+        { 2, PropertyHandler::LOCALE },
+        { 'C', PropertyHandler::PROPERTY_FILES },
+        { 'F', PropertyHandler::IMAGE_FOLDER },
+        { 'L', PropertyHandler::LOG_LEVEL },
+        { 'P', PropertyHandler::TOKEN_FILE },
+        { 'R', PropertyHandler::SCAN_DEPTH }
+    };
+
     vector<char*> args = ConvertLegacyOptions(initial_args);
 
     string id_lun;
@@ -59,7 +107,8 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:vB")) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:vBH",
+        options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
             continue;
@@ -82,6 +131,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             has_scsi = true;
             continue;
 
+        case 'H':
+            Banner(true);
+            exit(EXIT_SUCCESS);
+
         case 'n':
             product_data = optarg;
             continue;
@@ -100,12 +153,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         default:
             Banner(true);
+            exit(EXIT_FAILURE);
             break;
         }
 
         if (optopt) {
-            Banner(false);
-            break;
+            Banner(true);
+            exit(EXIT_FAILURE);
         }
 
         if ((has_scsi && type == "sahd") || (has_sasi && (type.empty() || type != "sahd"))) {
@@ -146,6 +200,15 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename, bool is_sasi)
 {
+    const unordered_map<string, string, s2p_util::StringHash, equal_to<>> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", "sccd" },
+        { "FD", "schd" },
+        { "HD", "schd" },
+        { "MO", "scmo" },
+        { "RE", "scrm" },
+        { "TP", "" }
+    };
+
     const auto index = filename.find(".");
     const string &specifier = index == string::npos ? filename : filename.substr(0, index);
     const auto &components = Split(specifier, '_');

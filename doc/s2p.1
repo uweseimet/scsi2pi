@@ -3,22 +3,22 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\-B\fR]
-[\fB\-C\fR \fIPROPERTY_FILES\fR]
-[\fB\-F\fR \fIFOLDER\fR]
-[\fB\-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
-[\fB\-P\fR \fIACCESS_TOKEN_FILE\fR]
-[\fB\-R\fR \fISCAN_DEPTH\fR]
-[\fB\-h\fR]
-[\fB\-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
-[\fB\-p\fR \fIPORT\fR]
-[\fB\-t\fR \fITYPE\fR]
-[\fB\-r\fR \fIRESERVED_IDS\fR]
-[\fB\-n\fR \fITYPE\fR]
-[\fB\-v\fR]
-[\fB\-z\fR \fILOCALE\fR]
-[\fB\-hd n[:u]\fR \fIFILE\fR]
-[\fB\-id n[:u]\fR \fIFILE\fR]
+[\fB\--scsi-id/-i n[:u]\fR \fISCSI_IMAGE_FILE\fR]
+[\fB\--sasi-id/-h n[:u]\fR \fISASI_IMAGE_FILE\fR]
+[\fB\--type/-t\fR \fITYPE\fR]
+[\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
+[\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
+[\fB\--blue-scsi-mode/-B\fR]
+[\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
+[\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
+[\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
+[\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
+[\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
+[\fB\--port/-p\fR \fIPORT\fR]
+[\fB\--locale\fR \fILOCALE\fR]
+[\fB\--version/-v\fR]
+[\fB\--help/-H\fR]
 .SH DESCRIPTION
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
@@ -45,63 +45,63 @@ To quit s2p press Control-C. If it is running in the background, you can kill it
 
 .SH OPTIONS
 .TP
-.BR \-B\fI " " \fI
+.BR \--blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI parsing rules.
 This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
-See the BlueSCSI documentation for details on the BlueSCSI filename convention.
 .TP
-.BR \-C\fI " " \fIPROPERTY_FILES
-An optional comma-separated list of property files with s2p configuration data. The default property file is ~/.config/s2p.properties.
+.BR \--scsi-id/-i \fI " "\fIn[:u] " " \fIFILE
+n is the SCSI ID number (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
+.IP
+FILE is the name of the image file to use for the SCSI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60".
 .TP
-.BR \-b\fI " " \fIBLOCK_SIZE
-The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
-.TP
-.BR \-F\fI " " \fIFOLDER
-The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images'.
-.TP
-.BR \-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN was provided when setting the level.
-.TP
-.BR \-P\fI " " \fIACCESS_TOKEN_FILE
-Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
-.TP
-.BR \-R\fI " " \fISCAN_DEPTH
-Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
-.TP
-.BR \-h\fI " " \fI
-Show a help page.
-.TP
-.BR \-n\fI " " \fIVENDOR:PRODUCT:REVISION
-Set the vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
-.TP
-.BR \-p\fI " " \fIPORT
-The s2p client service port, default is 6868.
-.TP
-.BR \-r\fI " " \fIRESERVED_IDS
-Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
-.TP
-.BR \-t\fI " " \fITYPE
-The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
-.TP
-.BR \-v\fI " " \fI
-Displays the s2p version.
-.TP
-.BR \-z\fI " "\fILOCALE
-Overrides the default locale for client-facing error messages. The client can override the locale.
-.TP
-.BR \-hd\fI " "\fIn[:u] " " \fIFILE
+.BR \--sasi-id/-h\fI " "\fIn[:u] " " \fIFILE
 n is the SASI ID number (0-7). u (0-1) is the optional LUN (logical unit). The default LUN is 0.
 .IP
 FILE is the name of the image file to use for the SASI hard drive.
 .TP
-.BR \-id \fI " "\fIn[:u] " " \fIFILE
-n is the SCSI ID number (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
-.IP
-FILE is the name of the image file to use for the SCSI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60".
-.IP
-FILE is the name of the image file to use for the SCSI device.
+.BR \--type/-t\fI " " \fITYPE
+The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
+.TP
+.BR \--name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
+Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+.TP
+.BR \--block-size/-b\fI " " \fIBLOCK_SIZE
+The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
+.TP
+.BR \--blue-scsi-mode/-B\fI " " \fI
+Enable BlueSCSI filename compatibility mode. See the BlueSCSI documentation for details on the BlueSCSI filename convention.
+.TP
+.BR \--reserved-ids/-r\fI " " \fIRESERVED_IDS
+An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
+.TP
+.BR \--image-folder/-F\fI " " \fIFOLDER
+The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images'.
+.TP
+.BR \--scan-depth/-R\fI " " \fISCAN_DEPTH
+Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
+.TP
+.BR \--property-files/-C\fI " " \fIPROPERTY_FILES
+An optional comma-separated list of property files with s2p configuration data. The default property file is ~/.config/s2p.properties.
+.TP
+.BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
+The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN was provided when setting the level.
+.TP
+.BR \--token-file/-P\fI " " \fIACCESS_TOKEN_FILE
+Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
+.TP
+.BR \--port/-p\fI " " \fIPORT
+The s2p client service port, default is 6868.
+.TP
+.BR \--locale\fI " "\fILOCALE
+Overrides the default locale (language) for client-facing error messages. The client can override the locale.
+.TP
+.BR \--version/-v\fI " " \fI
+Displays the s2p version.
+.TP
+.BR \--help/.H\fI " " \fI
+Display a help page.
 .IP
 
 .SH EXAMPLES
@@ -109,10 +109,13 @@ Launch s2p with no devices attached:
    s2p
 
 Launch s2p with an Apple hard drive image as ID 0 and a CD-ROM as ID 2
-   s2p -id 0 /path/to/harddrive.hda -id 2 /path/to/cdimage.iso
+   s2p -i 0 /path/to/harddrive.hda -i 2 /path/to/cdimage.iso
 
 Launch s2p with a removable SCSI drive image as ID 0 and the raw device file /dev/hdb (e.g. a USB stick) and a DaynaPort network adapter as ID 6:
-   s2p -id 0 -t scrm /dev/hdb -id 6 daynaport
+   s2p -i 0 -t scrm /dev/hdb -i 6 daynaport
+
+Launch s2p with a SASI hard drive image as ID 1
+   s2p -h 1 /path/to/harddrive.hds
 
 To create an empty 100 MiB drive image, use the following command:
    dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800
