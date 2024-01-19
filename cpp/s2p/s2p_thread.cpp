@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -24,17 +24,17 @@ string S2pThread::Init(const callback &cb, int port)
     assert(service_socket == -1);
 
     if (port <= 0 || port > 65535) {
-        return "Invalid port number " + to_string(port);
+        return "Invalid port number: " + to_string(port);
     }
 
     service_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (service_socket == -1) {
-        return "Unable to create service socket: " + string(strerror(errno));
+        return "Unable to create s2p service socket: " + string(strerror(errno));
     }
 
-    if (const int yes = 1; setsockopt(service_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
+    if (const int enable = 1; setsockopt(service_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         Stop();
-        return "Can't reuse address";
+        return "Can't reuse socket: " + string(strerror(errno));
     }
 
     sockaddr_in server = { };

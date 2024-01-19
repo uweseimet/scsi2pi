@@ -28,7 +28,7 @@ void S2pParser::Banner(bool usage) const
             << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
             << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
             << "), default LUN is 0.\n"
-            << "  --sssi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
+            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-" << id_max << ") and\n"
             << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
             << "), default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
@@ -46,7 +46,7 @@ void S2pParser::Banner(bool usage) const
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --locale                    Locale (language) for client-facing messages.\n"
             << "  --version/-v                Display s2p version.\n"
-            << "  --help/-H                   Display this help.\n"
+            << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
@@ -62,12 +62,15 @@ void S2pParser::Banner(bool usage) const
 
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 {
+    const int OPT_HELP = 2;
+    const int OPT_LOCALE = 3;
+
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "image-folder", required_argument, nullptr, 'F' },
-        { "help", required_argument, nullptr, 'H' },
-        { "locale", required_argument, nullptr, 2 },
+        { "help", no_argument, nullptr, OPT_HELP },
+        { "locale", required_argument, nullptr, OPT_LOCALE },
         { "log-level", required_argument, nullptr, 'L' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
@@ -85,7 +88,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     const unordered_map<int, string> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
-        { 2, PropertyHandler::LOCALE },
+        { OPT_LOCALE, PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
@@ -126,14 +129,15 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             type = "sahd";
             continue;
 
+        case OPT_HELP:
+            Banner(true);
+            exit(EXIT_SUCCESS);
+            break;
+
         case 'i':
             id_lun = optarg;
             has_scsi = true;
             continue;
-
-        case 'H':
-            Banner(true);
-            exit(EXIT_SUCCESS);
 
         case 'n':
             product_data = optarg;
@@ -155,11 +159,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             Banner(true);
             exit(EXIT_FAILURE);
             break;
-        }
-
-        if (optopt) {
-            Banner(true);
-            exit(EXIT_FAILURE);
         }
 
         if ((has_scsi && type == "sahd") || (has_sasi && (type.empty() || type != "sahd"))) {
@@ -271,7 +270,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string &arg : initial_args) {
+    for (const string arg : initial_args) {
         int start_of_ids = -1;
         for (int i = 0; i < static_cast<int>(arg.length()); i++) {
             if (isdigit(arg[i])) {

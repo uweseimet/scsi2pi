@@ -12,7 +12,7 @@ s2pexec \- SCSI command execution tool for SCSI2Pi
 [\fB\--binary-output\fR]
 [\fB\--text-input\fR]
 [\fB\--text-output\fR]
-[\fB\--shutdown/-X\fR]
+[\fB\--shut-down/-X\fR]
 .SH DESCRIPTION
 .B s2pexec
 wraps protobuf input data into a custom SCSI2Pi SCSI command. s2p executes this command and displays the results. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
@@ -51,7 +51,7 @@ Signals that the input file is in protobuf text format instead of JSON.
 .BR \--text-output\fI
 Generate a protobuf text format file instead of JSON.
 .TP
-.BR \--shutdown/-X\fI
+.BR \--shut-down/-X\fI
 Shut down s2p running on the second board by sending a SCSI command.
 
 .SH SEE ALSO

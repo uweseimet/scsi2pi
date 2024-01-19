@@ -133,8 +133,9 @@ int S2p::Run(span<char*> args, bool in_process)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    // The -v option shall result in no other action except displaying the version
-    if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v");}) != args.end()) {
+    // The --version/-v option shall result in no other action except displaying the version
+    if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v") || !strcmp(arg, "--version");})
+        != args.end()) {
         cout << GetVersionString() << '\n';
         return EXIT_SUCCESS;
     }
@@ -149,7 +150,7 @@ int S2p::Run(span<char*> args, bool in_process)
 
         if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
         !CommandDispatcher::SetLogLevel(log_level)) {
-            throw parser_exception("Invalid log level '" + log_level + "'");
+            throw parser_exception("Invalid log level: '" + log_level + "'");
         }
 
         // Log the properties (on trace level) *after* the log level has been set
@@ -173,7 +174,7 @@ int S2p::Run(span<char*> args, bool in_process)
 
         if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
             || port <= 0 || port > 65535) {
-            throw parser_exception("Invalid port " + p + ", port must be between 1 and 65535");
+            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
         }
     }
     catch (const parser_exception &e) {
@@ -186,10 +187,12 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (const string error = executor->SetReservedIds(property_handler.GetProperty(PropertyHandler::RESERVED_IDS)); !error.empty()) {
-        cerr << "Error: " << error << endl;
-        CleanUp();
-        return EXIT_FAILURE;
+    if (const string &reserved_ids = property_handler.GetProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
+        if (const string error = executor->SetReservedIds(reserved_ids); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            CleanUp();
+            return EXIT_FAILURE;
+        }
     }
 
     if (const string &token_file = property_handler.GetProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {

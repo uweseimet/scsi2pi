@@ -121,8 +121,10 @@ int S2pCtl::RunInteractive() const
             vector<char*> interactive_args;
             interactive_args.emplace_back(strdup("s2pctl"));
 
-            // In interactive mode no explict input of "-" or "--" is required before a command
-            interactive_args.emplace_back(strdup(("-" + args[0]).c_str()));
+            // The command must have exactly one leading hyphen because it will be parsed with getopt_long_only()
+            string command = args[0];
+            command = "-" + command.erase(0, command.find_first_not_of('-'));
+            interactive_args.emplace_back(strdup(command.c_str()));
 
             for (size_t i = 1; i < args.size(); i++) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
@@ -137,9 +139,16 @@ int S2pCtl::RunInteractive() const
 
 int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
 {
+    const int OPT_PROMPT = 2;
+    const int OPT_BINARY_PROTOBUF = 3;
+    const int OPT_JSON_PROTOBUF = 4;
+    const int OPT_TEXT_PROTOBUF = 5;
+    const int OPT_LIST_LOG_LEVELS = 6;
+    const int OPT_LOCALE = 7;
+
     const vector<option> options = {
-        { "prompt", no_argument, nullptr, 6 },
-        { "binary-protobuf", required_argument, nullptr, 1 },
+        { "prompt", no_argument, nullptr, OPT_PROMPT },
+        { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "block-size", required_argument, nullptr, 'b' },
         { "command", required_argument, nullptr, 'c' },
         { "copy", required_argument, nullptr, 'x' },
@@ -151,20 +160,20 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
         { "host", required_argument, nullptr, 'H' },
         { "id", required_argument, nullptr, 'i' },
         { "image-folder", required_argument, nullptr, 'F' },
-        { "json-protobuf", required_argument, nullptr, 2 },
+        { "json-protobuf", required_argument, nullptr, OPT_JSON_PROTOBUF },
         { "list-devices", no_argument, nullptr, 'l' },
         { "list-device-types", no_argument, nullptr, 'T' },
         { "list-extensions", no_argument, nullptr, 'm' },
         { "list-images", no_argument, nullptr, 'e' },
         { "list-image-info", required_argument, nullptr, 'E' },
         { "list-interfaces", required_argument, nullptr, 'N' },
-        { "list-log-levels", no_argument, nullptr, 5 },
+        { "list-log-levels", no_argument, nullptr, OPT_LIST_LOG_LEVELS },
         { "list-operations", no_argument, nullptr, 'o' },
         { "list-properties", no_argument, nullptr, 'P' },
         { "list-reserved-ids", no_argument, nullptr, 'I' },
         { "list-settings", no_argument, nullptr, 's' },
         { "list-statistics", no_argument, nullptr, 'S' },
-        { "locale", required_argument, nullptr, 3 },
+        { "locale", required_argument, nullptr, OPT_LOCALE },
         { "log-level", required_argument, nullptr, 'L' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
@@ -172,7 +181,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
         { "reserve-ids", optional_argument, nullptr, 'r' },
         { "server-version", no_argument, nullptr, 'V' },
         { "shut-down", no_argument, nullptr, 'X' },
-        { "text-protobuf", required_argument, nullptr, 4 },
+        { "text-protobuf", required_argument, nullptr, OPT_TEXT_PROTOBUF },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
@@ -195,7 +204,6 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
     string filename_binary;
     string filename_text;
     string token;
-    bool list = false;
 
     string locale = GetLocale();
 
@@ -279,7 +287,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             }
             break;
 
-        case 1:
+        case OPT_BINARY_PROTOBUF:
             filename_binary = optarg;
             if (filename_binary.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -287,7 +295,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             }
             break;
 
-        case 2:
+        case OPT_JSON_PROTOBUF:
             filename_json = optarg;
             if (filename_json.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -295,7 +303,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             }
             break;
 
-        case 4:
+        case OPT_TEXT_PROTOBUF:
             filename_text = optarg;
             if (filename_text.empty()) {
                 cerr << "Error: Missing filename" << endl;
@@ -313,7 +321,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             break;
 
         case 'l':
-            list = true;
+            command.set_operation(DEVICES_INFO);
             break;
 
         case 'm':
@@ -324,7 +332,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             command.set_operation(NETWORK_INTERFACES_INFO);
             break;
 
-        case 5:
+        case OPT_LIST_LOG_LEVELS:
             command.set_operation(LOG_LEVEL_INFO);
             break;
 
@@ -379,7 +387,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             command.set_operation(STATISTICS_INFO);
             break;
 
-        case 6:
+        case OPT_PROMPT:
             token = optarg ? optarg : getpass("Password: ");
             break;
 
@@ -393,7 +401,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             break;
 
         case 'v':
-            cout << "s2pctl version: " << GetVersionString() << '\n';
+            cout << GetVersionString() << '\n';
             return EXIT_SUCCESS;
             break;
 
@@ -406,7 +414,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
             SetParam(command, "mode", "rascsi");
             break;
 
-        case 3:
+        case OPT_LOCALE:
             locale = optarg;
             break;
 
@@ -430,10 +438,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
 
     bool status;
     try {
-        // Listing devices is a special case (legacy rasctl backwards compatibility)
-        if (list) {
+        // Listing devices is a special case
+        if (command.operation() == DEVICES_INFO) {
             command.clear_devices();
-            command.set_operation(DEVICES_INFO);
 
             status = s2pctl_commands.CommandDevicesInfo();
         }

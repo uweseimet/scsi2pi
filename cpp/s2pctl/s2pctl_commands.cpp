@@ -132,7 +132,7 @@ bool S2pCtlCommands::SendCommand()
     }
 
     server_addr.sin_port = htons(uint16_t(port));
-    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         close(fd);
 
         throw io_exception("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)

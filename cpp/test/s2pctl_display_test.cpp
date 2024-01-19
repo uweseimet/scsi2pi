@@ -318,6 +318,16 @@ TEST(S2pCtlDisplayTest, DisplayMappingInfo)
     EXPECT_NE(string::npos, s.find("key->SCHD"));
 }
 
+TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
+{
+    S2pCtlDisplay display;
+    PbPropertiesInfo info;
+
+    const string s = display.DisplayPropertiesInfo(info);
+    EXPECT_FALSE(s.empty());
+    EXPECT_NE(string::npos, s.find("settings"));
+}
+
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)
 {
     S2pCtlDisplay display;

@@ -20,9 +20,6 @@ class S2pExec
 
 public:
 
-    S2pExec() = default;
-    ~S2pExec() = default;
-
     int Run(span<char*>, bool = false);
 
 private:

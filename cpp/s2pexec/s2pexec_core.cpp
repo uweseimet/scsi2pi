@@ -63,7 +63,7 @@ void S2pExec::Banner(bool header)
         << "  --binary-output               Generate protobuf binary format file.\n"
         << "  --text-input                  Input file has protobuf tet format.\n"
         << "  --text-output                 Generate protobuf text format file.\n"
-        << "  --shutdown/-X                 Shut down s2p running on the target board\n"
+        << "  --shut-down/-X                Shut down s2p running on the target board\n"
         << "                                with a SCSI command.\n";
 }
 
@@ -91,19 +91,24 @@ bool S2pExec::Init(bool)
 
 bool S2pExec::ParseArguments(span<char*> args)
 {
+    const int OPT_BINARY_INPUT = 2;
+    const int OPT_BINARY_OUTPUT = 3;
+    const int OPT_TEXT_INPUT = 4;
+    const int OPT_TEXT_OUTPUT = 5;
+
     const vector<option> options = {
-        { "binary-input", no_argument, nullptr, 1 },
-        { "binary-output", no_argument, nullptr, 2 },
+        { "binary-input", no_argument, nullptr, OPT_BINARY_INPUT },
+        { "binary-output", no_argument, nullptr, OPT_BINARY_OUTPUT },
         { "board-id", required_argument, nullptr, 'B' },
         { "input-file", required_argument, nullptr, 'f' },
         { "output-file", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'h' },
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 's' },
-        { "text-input", no_argument, nullptr, 3 },
-        { "text-output", no_argument, nullptr, 4 },
+        { "text-input", no_argument, nullptr, OPT_TEXT_INPUT },
+        { "text-output", no_argument, nullptr, OPT_TEXT_OUTPUT },
         { "version", no_argument, nullptr, 'v' },
-        { "shutdown", no_argument, nullptr, 'X' },
+        { "shut-down", no_argument, nullptr, 'X' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -115,11 +120,11 @@ bool S2pExec::ParseArguments(span<char*> args)
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "bf:F:hi:L:s:vX", options.data(), nullptr))
         != -1) {
         switch (opt) {
-        case 1:
+        case OPT_BINARY_INPUT:
             input_format = S2pExecExecutor::protobuf_format::binary;
             break;
 
-        case 2:
+        case OPT_BINARY_OUTPUT:
             output_format = S2pExecExecutor::protobuf_format::binary;
             break;
 
@@ -147,11 +152,11 @@ bool S2pExec::ParseArguments(span<char*> args)
             target = optarg;
             break;
 
-        case 3:
+        case OPT_TEXT_INPUT:
             input_format = S2pExecExecutor::protobuf_format::text;
             break;
 
-        case 4:
+        case OPT_TEXT_OUTPUT:
             output_format = S2pExecExecutor::protobuf_format::text;
             break;
 
@@ -175,7 +180,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (version) {
-        cout << "s2pexec " << GetVersionString() << '\n';
+        cout << GetVersionString() << '\n';
         return true;
     }
 

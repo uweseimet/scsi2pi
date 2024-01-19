@@ -219,7 +219,7 @@ bool S2pDump::ParseArguments(span<char*> args)
     }
 
     if (version) {
-        cout << "s2dump " << GetVersionString() << '\n';
+        cout << GetVersionString() << '\n';
         return false;
     }
 

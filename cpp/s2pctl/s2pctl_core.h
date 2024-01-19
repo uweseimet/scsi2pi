@@ -18,9 +18,6 @@ class S2pCtl
 
 public:
 
-    S2pCtl() = default;
-    ~S2pCtl() = default;
-
     int Run(const vector<char*>&) const;
 
 private:
