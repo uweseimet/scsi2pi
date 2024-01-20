@@ -46,7 +46,7 @@ void SasiHd::Inquiry()
     EnterDataInPhase();
 }
 
-vector<uint8_t> SasiHd::InquiryInternal()
+vector<uint8_t> SasiHd::InquiryInternal() const
 {
     assert(false);
     return vector<uint8_t>();

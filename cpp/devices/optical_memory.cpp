@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 // Coypright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ void OpticalMemory::Open()
     }
 }
 
-vector<uint8_t> OpticalMemory::InquiryInternal()
+vector<uint8_t> OpticalMemory::InquiryInternal() const
 {
     return HandleInquiry(device_type::optical_memory, scsi_level::scsi_2, true);
 }

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ public:
 
     void Open() override;
 
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const override;

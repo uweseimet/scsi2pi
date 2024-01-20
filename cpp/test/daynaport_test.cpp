@@ -227,6 +227,14 @@ TEST(ScsiDaynaportTest, EnableInterface)
             Property(&scsi_exception::get_asc, asc::daynaport_disable_interface))));
 }
 
+TEST(ScsiDaynaportTest, GetDelayAfterBytes)
+{
+    DaynaPort daynaport(0);
+    daynaport.Init( { });
+
+    EXPECT_EQ(6, daynaport.GetDelayAfterBytes());
+}
+
 TEST(ScsiDaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -24,6 +24,6 @@ public:
     void Open() override;
 
     void Inquiry() override;
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
     void RequestSense() override;
 };

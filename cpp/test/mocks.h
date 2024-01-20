@@ -268,7 +268,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
+    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
     explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
@@ -290,7 +290,7 @@ class MockModePageDevice : public ModePageDevice
 
 public:
 
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
+    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
 
@@ -336,7 +336,7 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
+    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
     MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
@@ -384,7 +384,7 @@ class MockDisk : public Disk
 
 public:
 
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (override));
+    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 

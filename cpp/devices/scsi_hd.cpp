@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -77,7 +77,7 @@ void ScsiHd::Open()
     FinalizeSetup(0);
 }
 
-vector<uint8_t> ScsiHd::InquiryInternal()
+vector<uint8_t> ScsiHd::InquiryInternal() const
 {
     return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
 }

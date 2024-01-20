@@ -121,7 +121,7 @@ void Printer::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> Printer::InquiryInternal()
+vector<uint8_t> Printer::InquiryInternal() const
 {
     return HandleInquiry(device_type::printer, scsi_level::scsi_2, false);
 }

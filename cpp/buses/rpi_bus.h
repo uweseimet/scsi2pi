@@ -16,10 +16,7 @@
 #define USE_SEL_EVENT_ENABLE
 #endif
 
-// Currently IRQs during SCSI transfers are disabled because enabling them does not work in all scenarios.
-// It appears to work for block devices but does not work for the DaynaPort and NetBSD for MacOS,
-// see https://github.com/uweseimet/scsi2pi/issues/5.
-// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5.
+// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5
 //#define NO_IRQ_DISABLE
 
 #ifndef __linux__

@@ -19,7 +19,7 @@
 // This does NOT include the file system functionality that is present
 // in the Sharp X68000 host bridge.
 //
-// Note: This requires a DaynaPort SCSI Link driver.
+// Note: This requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
 //
 //---------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ public:
     }
 
     // Commands
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     bool Write(cdb_t, span<const uint8_t>);
 
@@ -67,7 +67,7 @@ public:
     void RetrieveStatistics() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
-    void EnableInterface();
+    void EnableInterface() const;
 
     vector<PbStatistics> GetStatistics() const override;
 
@@ -122,6 +122,4 @@ private:
     CTapDriver tap;
 
     bool tap_enabled = false;
-
-    bool macos_seen = false;
 };

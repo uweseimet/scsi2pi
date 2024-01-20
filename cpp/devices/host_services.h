@@ -32,7 +32,7 @@ public:
 
     bool Init(const param_map&) override;
 
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
