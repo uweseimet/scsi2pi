@@ -46,7 +46,7 @@ private:
     void ScanBus();
     bool DisplayInquiry(bool);
     bool DisplayScsiInquiry(vector<uint8_t>&, bool);
-    bool DisplaySasiInquiry(vector<uint8_t>&, bool);
+    bool DisplaySasiInquiry(vector<uint8_t>&, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
     bool GetDeviceInfo();

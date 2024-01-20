@@ -8,12 +8,11 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <map>
 
 using namespace std;
 
-using property_map = map<string, string>;
+using property_map = map<string, string, less<>>;
 
 class PropertyHandler
 {
@@ -45,21 +44,14 @@ public:
         return property_cache;
     }
     void ParsePropertyFile(const string&, bool);
-    string GetProperty(const string&) const;
+    string GetProperty(string_view) const;
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 
 private:
 
     PropertyHandler() = default;
 
-    static vector<byte> HexToBytes(const string&);
-
     property_map property_cache;
-
-    inline static const unordered_map<char, uint8_t> HEX_TO_DEC = {
-        { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },
-        { '9', 9 }, { 'a', 10 }, { 'b', 11 }, { 'c', 12 }, { 'd', 13 }, { 'e', 14 }, { 'f', 15 }
-    };
 
     inline static const string DEFAULT_PROPERTY_FILE = ".config/s2p.properties";
 };

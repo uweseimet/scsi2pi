@@ -43,7 +43,7 @@ class Bus : public PinControl
 
 public:
 
-    static int GetCommandByteCount(uint8_t);
+    static int GetCommandByteCount(int);
 
     virtual bool Init(bool) = 0;
     virtual void Reset() = 0;

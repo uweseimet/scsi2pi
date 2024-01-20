@@ -28,9 +28,14 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
     status = 0;
     byte_count = 0;
 
-    spdlog::trace(
-        fmt::format("Executing {0} for target {1}:{2}", COMMAND_MAPPING.find(cmd)->second.second, target_id,
-            target_lun));
+    if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
+        spdlog::trace(
+            fmt::format("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun));
+    }
+    else {
+        spdlog::trace(
+            fmt::format("Executing command ${0:02x} for target {1}:{2}", static_cast<int>(cmd), target_id, target_lun));
+    }
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
@@ -55,11 +60,11 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
                 }
                 else {
                     bus.Reset();
-                    return !GetStatus();
+                    return !status;
                 }
             }
             catch (const phase_exception &e) {
-                cerr << "Error: " << e.what() << endl;
+                spdlog::error(e.what());
                 bus.Reset();
                 return false;
             }
@@ -157,7 +162,7 @@ bool PhaseExecutor::Selection(bool sasi) const
     }
 
     if (!WaitForBusy()) {
-        spdlog::trace("SELECTION failed");
+        spdlog::trace("SELECTION phase failed");
         return false;
     }
 
@@ -177,9 +182,14 @@ void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
         cdb[1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
     }
 
-    if (static_cast<int>(cdb.size()) !=
-        bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
-        throw phase_exception(COMMAND_MAPPING.find(cmd)->second.second + string(" failed"));
+    if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
+        const auto &command = COMMAND_MAPPING.find(cmd);
+        if (command != COMMAND_MAPPING.end()) {
+            throw phase_exception(fmt::format("Command {} failed", command->second.second));
+        }
+        else {
+            throw phase_exception(fmt::format("Command ${:02x} failed", static_cast<int>(cmd)));
+        }
     }
 }
 
@@ -188,7 +198,7 @@ void PhaseExecutor::Status()
     array<uint8_t, 1> buf;
 
     if (bus.ReceiveHandShake(buf.data(), 1) != static_cast<int>(buf.size())) {
-        throw phase_exception("STATUS failed");
+        throw phase_exception("STATUS phase failed");
     }
 
     status = buf[0];
@@ -198,14 +208,14 @@ void PhaseExecutor::DataIn(span<uint8_t> buffer, int length)
 {
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
     if (!byte_count) {
-        throw phase_exception("DATA IN failed");
+        throw phase_exception("DATA IN phase failed");
     }
 }
 
 void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
 {
     if (bus.SendHandShake(buffer.data(), length) != length) {
-        throw phase_exception("DATA OUT failed");
+        throw phase_exception("DATA OUT phase failed");
     }
 }
 
@@ -214,7 +224,7 @@ void PhaseExecutor::MsgIn()
     array<uint8_t, 1> buf = { };
 
     if (bus.ReceiveHandShake(buf.data(), buf.size()) != buf.size()) {
-        throw phase_exception("MESSAGE IN failed");
+        throw phase_exception("MESSAGE IN phase failed");
     }
 
     if (buf[0]) {
@@ -239,7 +249,7 @@ void PhaseExecutor::MsgOut()
     reject = false;
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
-        throw phase_exception("MESSAGE OUT for IDENTIFY failed");
+        throw phase_exception("MESSAGE OUT phase for IDENTIFY failed");
     }
 }
 

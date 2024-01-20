@@ -35,7 +35,7 @@ void S2pCtl::Banner(bool usage) const
         cout << "Usage: s2pctl [options]\n"
             << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
             << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
-            << "  --command/-c CMD               Command (attach|detach|insert|eject|protect\n"
+            << "  --command/-c COMMAND           Command (attach|detach|insert|eject|protect\n"
             << "                                 |unprotect).\n"
             << "  --type/-t TYPE                 Optional device type\n"
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"

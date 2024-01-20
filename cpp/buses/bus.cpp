@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,7 +13,7 @@
 using namespace std;
 using namespace scsi_defs;
 
-int Bus::GetCommandByteCount(uint8_t opcode)
+int Bus::GetCommandByteCount(int opcode)
 {
     const auto &mapping = COMMAND_MAPPING.find(static_cast<scsi_command>(opcode));
 

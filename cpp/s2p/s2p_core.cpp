@@ -264,7 +264,7 @@ void S2p::CreateDevices()
 {
     PbCommand command;
     PbDeviceDefinition device_definition;
-    PbDeviceDefinition *device;
+    PbDeviceDefinition *device = nullptr;
 
     // The properties are sorted, i.e. there is a contiguous block for each device
     int id = -1;
@@ -302,13 +302,16 @@ void S2p::CreateDevices()
                 throw parser_exception(fmt::format("Invalid block size: {}", value));
             }
             else {
+                assert(device);
                 device->set_block_size(block_size);
             }
         }
         else if (key_components[2] == "product_data") {
+            assert(device);
             SetProductData(*device, value);
         }
         else if (key_components[2] == "params") {
+            assert(device);
             ParseParameters(*device, value);
         }
         else {

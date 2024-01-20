@@ -46,15 +46,20 @@ void S2pExec::TerminationHandler(int)
 void S2pExec::Banner(bool header)
 {
     if (header) {
-        cout << s2p_util::Banner("(SCSI Command Execution Tool)");
+        cout << s2p_util::Banner("(SCSI/SASI Command Execution Tool)");
     }
 
-    cout << "Usage: s2pexec [options] scsi-target\n"
-        << "  --scsi-target/-s ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+    cout << "Usage: s2pexec [options]\n"
+        << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                default LUN is 0.\n"
+        << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
         << "                                default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|\n"
-        << "                                error|off), default is 'info'.\n"
+        << "  --cdb/-c CDB                  SCSI command to send in hexadecimal format.\n"
+        << "  --buffer-size/-b BUFFER_SIZE  Buffer size for receiving data.\n"
+        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error|off),\n"
+        << "                                default is 'info'.\n"
+        << "  --data-file/-d DATA_FILE      Optional file for any data received/to be sent.\n"
         << "  --input-file/-f INPUT_FILE    Protobuf data input file,\n"
         << "                                by default in JSON format.\n"
         << "  --output-file/-F OUTPUT_FILE  Protobuf data output file,\n"
@@ -63,8 +68,8 @@ void S2pExec::Banner(bool header)
         << "  --binary-output               Generate protobuf binary format file.\n"
         << "  --text-input                  Input file has protobuf tet format.\n"
         << "  --text-output                 Generate protobuf text format file.\n"
-        << "  --shut-down/-X                Shut down s2p running on the target board\n"
-        << "                                with a SCSI command.\n";
+        << "  --version/-v                  Display s2pexec version.\n"
+        << "  --help/-H                     Display this help.\n";
 }
 
 bool S2pExec::Init(bool)
@@ -99,25 +104,30 @@ bool S2pExec::ParseArguments(span<char*> args)
     const vector<option> options = {
         { "binary-input", no_argument, nullptr, OPT_BINARY_INPUT },
         { "binary-output", no_argument, nullptr, OPT_BINARY_OUTPUT },
+        { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
+        { "cdb", required_argument, nullptr, 'c' },
+        { "data-file", required_argument, nullptr, 'd' },
         { "input-file", required_argument, nullptr, 'f' },
         { "output-file", required_argument, nullptr, 'F' },
-        { "help", no_argument, nullptr, 'h' },
+        { "help", no_argument, nullptr, 'H' },
         { "log-level", required_argument, nullptr, 'L' },
-        { "scsi-target", required_argument, nullptr, 's' },
+        { "scsi-target", required_argument, nullptr, 'i' },
+        { "sasi-target", required_argument, nullptr, 'h' },
         { "text-input", no_argument, nullptr, OPT_TEXT_INPUT },
         { "text-output", no_argument, nullptr, OPT_TEXT_OUTPUT },
         { "version", no_argument, nullptr, 'v' },
-        { "shut-down", no_argument, nullptr, 'X' },
         { nullptr, 0, nullptr, 0 }
     };
 
     string initiator = "7";
     string target;
+    string buf;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "bf:F:hi:L:s:vX", options.data(), nullptr))
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:c:d:f:F:h:i:L:vH", options.data(),
+        nullptr))
         != -1) {
         switch (opt) {
         case OPT_BINARY_INPUT:
@@ -128,16 +138,37 @@ bool S2pExec::ParseArguments(span<char*> args)
             output_format = S2pExecExecutor::protobuf_format::binary;
             break;
 
-        case 'f':
-            input_filename = optarg;
+        case 'b':
+            buf = optarg;
             break;
 
-        case 'h':
+        case 'B':
+            initiator = optarg;
+            break;
+
+        case 'c':
+            command = optarg;
+            break;
+
+        case 'd':
+            data_filename = optarg;
+            break;
+
+        case 'f':
+            protobuf_input_filename = optarg;
+            break;
+
+        case 'H':
             help = true;
             break;
 
+        case 'h':
+            target = optarg;
+            sasi = true;
+            break;
+
         case 'i':
-            initiator = optarg;
+            target = optarg;
             break;
 
         case 'L':
@@ -145,11 +176,7 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         case 'o':
-            output_filename = optarg;
-            break;
-
-        case 's':
-            target = optarg;
+            protobuf_output_filename = optarg;
             break;
 
         case OPT_TEXT_INPUT:
@@ -162,10 +189,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'v':
             version = true;
-            break;
-
-        case 'X':
-            shut_down = true;
             break;
 
         default:
@@ -192,7 +215,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string error = ProcessId(8, 32, target, target_id, target_lun); !error.empty()) {
+    if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
         throw parser_exception(error);
     }
 
@@ -208,12 +231,14 @@ bool S2pExec::ParseArguments(span<char*> args)
         target_lun = 0;
     }
 
-    // A shutdown does not require an input file
-    if (shut_down) {
-        return true;
+    if (!command.empty()) {
+        int buffer_size = 0;
+        if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
+            throw parser_exception("Invalid receive buffer size: '" + buf + "'");
+        }
+        buffer.resize(buffer_size);
     }
-
-    if (input_filename.empty()) {
+    else if (protobuf_input_filename.empty()) {
         throw parser_exception("Missing input filename");
     }
 
@@ -252,22 +277,82 @@ int S2pExec::Run(span<char*> args, bool in_process)
 
     scsi_executor->SetTarget(target_id, target_lun);
 
-    if (shut_down) {
-        const bool status = scsi_executor->ShutDown();
-        if (!status) {
-            cerr << "Error: Can't shut down SCSI2Pi instance " << target_id << ":" << target_lun << endl;
+    int result = EXIT_SUCCESS;
+    if (!command.empty()) {
+        if (const string error = ExecuteCommand(); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            result = EXIT_FAILURE;
         }
-
-        CleanUp();
-
-        return status ? EXIT_SUCCESS : EXIT_FAILURE;
     }
-
-    const int result = GenerateOutput(input_format, input_filename, output_format, output_filename);
+    else {
+        result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
+    }
 
     CleanUp();
 
     return result;
+}
+
+string S2pExec::ExecuteCommand()
+{
+    vector<byte> cmd_bytes;
+
+    try {
+        cmd_bytes = HexToBytes(command);
+    }
+    catch (const parser_exception&)
+    {
+        return "Error: Invalid CDB: '" + command + "'";
+    }
+
+    vector<uint8_t> cdb;
+    for (byte b : cmd_bytes) {
+        cdb.emplace_back(static_cast<uint8_t>(b) & 0xff);
+    }
+
+    // Only send data when there is a data file and no receive buffer size has been specified
+    if (!data_filename.empty() && !buffer.size()) {
+        ifstream in(data_filename, ios::binary);
+        if (in.fail()) {
+            return fmt::format("Can't open data input file '{}': {}", data_filename, strerror(errno));
+        }
+
+        const auto size = file_size(path(data_filename));
+        if (buffer.size() < size) {
+            buffer.resize(size);
+        }
+
+        in.read((char*)buffer.data(), size);
+        if (in.fail()) {
+            return fmt::format("Can't read from file '{}': {}", data_filename, strerror(errno));
+        }
+    }
+
+    const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
+    if (!status) {
+        return scsi_executor->GetSenseData(sasi);
+    }
+
+    const int count = scsi_executor->GetByteCount();
+
+    spdlog::debug(fmt::format("Received {} data bytes", count));
+
+    if (data_filename.empty()) {
+        cout << FormatBytes(buffer, count);
+    }
+    else {
+        ofstream out(data_filename, ios::binary);
+        if (out.fail()) {
+            return fmt::format("Can't open data output file '{}': {}", data_filename, strerror(errno));
+        }
+
+        out.write((const char*)buffer.data(), count);
+        if (out.fail()) {
+            return fmt::format("Can't write to file '{}': {}", data_filename, strerror(errno));
+        }
+    }
+
+    return "";
 }
 
 int S2pExec::GenerateOutput(S2pExecExecutor::protobuf_format input_format, const string &input_filename,

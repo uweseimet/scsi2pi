@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -50,7 +50,6 @@ TEST(ProtobufUtil, ParseParameters)
     PbDeviceDefinition device3;
     ParseParameters(device3, "");
 
-    TestSpecialDevice("bridge");
     TestSpecialDevice("daynaport");
     TestSpecialDevice("printer");
     TestSpecialDevice("services");

@@ -10,6 +10,7 @@
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
+#include "shared/s2p_util.h"
 #include "buses/gpio_bus.h"
 #include "devices/disk.h"
 #ifdef BUILD_SCDP
@@ -18,6 +19,7 @@
 #include "generic_controller.h"
 
 using namespace scsi_defs;
+using namespace s2p_util;
 
 void GenericController::Reset()
 {
@@ -119,20 +121,15 @@ void GenericController::Command()
             SetCmdByte(i, GetBuffer()[i]);
         }
 
+        // Check the log level first in order to avoid a time-consuming string construction
         if (spdlog::get_level() <= spdlog::level::debug) {
-            string s = fmt::format("Controller is executing {}, CDB $",
-                COMMAND_MAPPING.find(GetOpcode())->second.second);
-            for (int i = 0; i < Bus::GetCommandByteCount(static_cast<uint8_t>(GetOpcode())); i++) {
-                s += fmt::format("{:02x}", GetCmdByte(i));
-            }
-            LogDebug(s);
+            LogCdb();
         }
 
         if (actual_count != command_byte_count) {
-            LogError(fmt::format(
-                "Command byte count mismatch for command ${0:02x}: expected {1} bytes, received {2} byte(s)",
-                static_cast<int>(GetOpcode()), command_byte_count, actual_count));
-            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, expected to receive {2}",
+                command_byte_count, GetCmdByte(0), actual_count));
+            Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
 
@@ -303,23 +300,7 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
-        string s_sense_key;
-        if (const auto &it_sense_key = SENSE_KEY_MAPPING.find(sense_key); it_sense_key != SENSE_KEY_MAPPING.end()) {
-            s_sense_key = fmt::format("{0} (Sense Key ${1:02x})", it_sense_key->second, static_cast<int>(sense_key));
-        }
-        else {
-            s_sense_key = fmt::format("Sense Key ${:02x}", static_cast<int>(sense_key));
-        }
-
-        string s_asc;
-        if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-            s_asc = fmt::format("{0} (ASC ${1:02x})", it_asc->second, static_cast<int>(asc));
-        }
-        else {
-            s_asc = fmt::format("ASC ${:02x}", static_cast<int>(asc));
-        }
-
-        LogDebug(fmt::format("Error status: {0}, {1}", s_sense_key, s_asc));
+        LogDebug("CHECK CONDITION: " + FormatSenseData(sense_key, asc));
 
         // Set Sense Key and ASC for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
@@ -345,7 +326,8 @@ void GenericController::Send()
         // for LUNs other than 0 this work-around works.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            Error(sense_key::aborted_command, asc::controller_send_handshake);
+            LogWarn(fmt::format("Sent {0} bytes(s) in DATA IN phase, expected to send {1}", len, GetLength()));
+            Error(sense_key::aborted_command, asc::data_phase_error);
         }
         else {
             UpdateOffsetAndLength();
@@ -406,13 +388,10 @@ void GenericController::Receive()
     assert(!GetBus().GetIO());
 
     if (HasValidLength()) {
-        LogTrace(fmt::format("Receiving {} byte(s)", GetLength()));
-
-        // If not able to receive all, move to status phase
-        if (uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
+        if (const uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
-            LogError(fmt::format("Not able to receive {0} byte(s), only received {1}", GetLength(), len));
-            Error(sense_key::aborted_command, asc::controller_receive_handshake);
+            LogWarn(fmt::format("Received {0} bytes(s) in DATA OUT phase, expected to receive {1}", len, GetLength()));
+            Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }
     }
@@ -749,4 +728,18 @@ void GenericController::ProcessCommand()
     LogTrace(s);
 
     Execute();
+}
+
+void GenericController::LogCdb() const
+{
+    const auto &cmd = COMMAND_MAPPING.find(GetOpcode());
+    string s = fmt::format("Controller is executing {}, CDB $",
+        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCmdByte(0)));
+    for (int i = 0; i < Bus::GetCommandByteCount(GetCmdByte(0)); i++) {
+        if (i) {
+            s += ":";
+        }
+        s += fmt::format("{:02x}", GetCmdByte(i));
+    }
+    LogDebug(s);
 }

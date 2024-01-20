@@ -39,12 +39,13 @@ void S2pParser::Banner(bool usage) const
             << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
             << "  --scan-depth/-R SCAN_DEPTH  Scan depth for image file folder.\n"
+            << "  --property/-c KEY=VALUE     Sets a property.\n"
             << "  --property-files/-C         List of property files.\n"
             << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|off),\n"
             << "                              default is 'info'.\n"
             << "  --token-file/-P TOKEN_FILE  Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --locale                    Locale (language) for client-facing messages.\n"
+            << "  --locale,-z                 Locale (language) for client-facing messages.\n"
             << "  --version/-v                Display s2p version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
@@ -60,20 +61,20 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const
 {
     const int OPT_HELP = 2;
-    const int OPT_LOCALE = 3;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
-        { "locale", required_argument, nullptr, OPT_LOCALE },
+        { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
+        { "property", required_argument, nullptr, 'c' },
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", optional_argument, nullptr, 'r' },
         { "sasi-id", required_argument, nullptr, 'h' },
@@ -88,7 +89,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     const unordered_map<int, string> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
-        { OPT_LOCALE, PropertyHandler::LOCALE },
+        { 'z', PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
@@ -121,6 +122,15 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         switch (opt) {
         case 'b':
             block_size = optarg;
+            continue;
+
+        case 'c':
+            if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2) {
+                throw parser_exception("Invalid property '" + string(optarg) + "'");
+            }
+            else {
+                properties[key_value[0]] = key_value[1];
+            }
             continue;
 
         case 'h':
@@ -307,13 +317,13 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
 string S2pParser::ParseNumber(const string &s)
 {
     string result;
-    size_t i = 0;
-    while (s.size() > i) {
+    size_t i = -1;
+    while (s.size() > ++i) {
         if (!isdigit(s[i])) {
             break;
         }
 
-        result += s[i++];
+        result += s[i];
     }
 
     return result;

@@ -262,8 +262,9 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     buf[12] = (byte)(GetStatusCode() >> 8);
     buf[13] = (byte)GetStatusCode();
 
-    LogTrace(fmt::format("Status ${0:x}, Sense Key ${1:x}, ASC ${2:x}", static_cast<int>(GetController()->GetStatus()),
-        static_cast<int>(buf[2]), static_cast<int>(buf[12])));
+    LogTrace(
+        fmt::format("Status ${0:02x}, Sense Key ${1:02x}, ASC ${2:02x}", static_cast<int>(GetController()->GetStatus()),
+            static_cast<int>(buf[2]), static_cast<int>(buf[12])));
 
     return buf;
 }

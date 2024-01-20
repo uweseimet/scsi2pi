@@ -49,7 +49,7 @@ private:
 
     string access_token;
 
-    S2pParser s2p_parser;
+    [[no_unique_address]] S2pParser s2p_parser;
 
     S2pImage s2p_image;
 

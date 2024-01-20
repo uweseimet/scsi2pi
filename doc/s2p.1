@@ -12,11 +12,12 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
+[\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
-[\fB\--locale\fR \fILOCALE\fR]
+[\fB\--locale,-z\fR \fILOCALE\fR]
 [\fB\--version/-v\fR]
 [\fB\--help\fR]
 .SH DESCRIPTION
@@ -82,6 +83,9 @@ The default folder for image files. For files in this folder no absolute path ne
 .BR \--scan-depth/-R\fI " " \fISCAN_DEPTH
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
+.BR \--property-\fI " " \fIKEY=VALUE
+Sets the property with the name KEY to the value VALUE.
+.TP
 .BR \--property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The default property file is ~/.config/s2p.properties.
 .TP
@@ -94,8 +98,8 @@ Enable authentication and read the access token from the specified file. The acc
 .BR \--port/-p\fI " " \fIPORT
 The s2p client service port, default is 6868.
 .TP
-.BR \--locale\fI " "\fILOCALE
-Overrides the default locale (language) for client-facing error messages. The client can override the locale.
+.BR \--locale,-z\fI " "\fILOCALE
+Overrides the default locale (language) for client-facing error messages. A client can override this setting.
 .TP
 .BR \--version/-v\fI " " \fI
 Displays the s2p version.

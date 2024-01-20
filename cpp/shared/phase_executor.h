@@ -56,11 +56,6 @@ private:
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
-    int GetStatus() const
-    {
-        return status;
-    }
-
     inline void Sleep(const timespec &ns) const
     {
         nanosleep(&ns, nullptr);

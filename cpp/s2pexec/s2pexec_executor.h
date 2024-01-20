@@ -38,11 +38,17 @@ public:
     ~S2pExecExecutor() = default;
 
     string Execute(const string&, protobuf_format, PbResult&);
-    bool ShutDown();
+    bool ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, bool);
+    string GetSenseData(bool);
 
     void SetTarget(int id, int lun)
     {
         phase_executor->SetTarget(id, lun);
+    }
+
+    int GetByteCount() const
+    {
+        return phase_executor->GetByteCount();
     }
 
 private:

@@ -188,9 +188,9 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &me
     vector<uint8_t> data(s.begin(), s.end());
 
     // Write the size of the protobuf data as a header
-    array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
+    if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
         static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
-    if (WriteBytes(fd, header) != header.size()) {
+    WriteBytes(fd, header) != header.size()) {
         throw io_exception("Can't write message size: " + string(strerror(errno)));
     }
 

@@ -87,8 +87,7 @@ bool CTapDriver::Init(const param_map &const_params)
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, DEFAULT_BRIDGE_IF.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
 
-    const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr);
-    if (ret < 0) {
+    if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret < 0) {
         LogErrno("Can't ioctl TUNSETIFF");
         close(tap_fd);
         return false;

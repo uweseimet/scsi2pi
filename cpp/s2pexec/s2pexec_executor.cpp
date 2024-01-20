@@ -2,15 +2,17 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+#include <spdlog/spdlog.h>
+#include <google/protobuf/util/json_util.h>
+#include <google/protobuf/text_format.h>
+#include "shared/s2p_util.h"
 #include "s2pexec_executor.h"
 
 using namespace std;
@@ -18,6 +20,7 @@ using namespace filesystem;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace scsi_defs;
+using namespace s2p_util;
 using namespace s2p_interface;
 
 string S2pExecExecutor::Execute(const string &filename, protobuf_format input_format, PbResult &result)
@@ -106,9 +109,25 @@ string S2pExecExecutor::Execute(const string &filename, protobuf_format input_fo
     return "";
 }
 
-bool S2pExecExecutor::ShutDown()
+bool S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer, bool sasi)
 {
-    array<uint8_t, 6> cdb = { };
+    return phase_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
+}
 
-    return phase_executor->Execute(scsi_command::cmd_start_stop, cdb, buffer, 0);
+string S2pExecExecutor::GetSenseData(bool sasi)
+{
+    vector<uint8_t> buf(13);
+    array<uint8_t, 6> cdb = { };
+    cdb[4] = buf.size();
+
+    if (!phase_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, buf.size(), sasi)) {
+        return "Can't execute REQUEST SENSE";
+    }
+
+    if (phase_executor->GetByteCount() < static_cast<int>(buf.size())) {
+        return "Device reported an error";
+    }
+    else {
+        return FormatSenseData(static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]));
+    }
 }

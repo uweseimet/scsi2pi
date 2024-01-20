@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -67,13 +67,9 @@ enum class scsi_command
     cmd_format_unit = 0x04,
     cmd_reassign_blocks = 0x07,
     cmd_read6 = 0x08,
-    // Bridge specific command
-    cmd_getMessage10 = 0x08,
     // DaynaPort specific command
     cmd_retrieve_stats = 0x09,
     cmd_write6 = 0x0a,
-    // Bridge specific ommand
-    cmd_sendMessage10 = 0x0a,
     cmd_print = 0x0a,
     cmd_seek6 = 0x0b,
     // DaynaPort specific command
@@ -127,22 +123,40 @@ enum class status
 enum class sense_key
 {
     no_sense = 0x00,
+    recovered_error = 0x01,
     not_ready = 0x02,
     medium_error = 0x03,
+    hardware_error = 0x04,
     illegal_request = 0x05,
     unit_attention = 0x06,
     data_protect = 0x07,
-    aborted_command = 0x0b
+    blank_check = 0x08,
+    vendor_specific = 0x09,
+    copy_aborted = 0x0a,
+    aborted_command = 0x0b,
+    equal = 0x0c,
+    volume_overflow = 0x0d,
+    miscompare = 0x0e,
+    reserved = 0x0f
 };
 
 static const unordered_map<sense_key, string> SENSE_KEY_MAPPING = {
     { sense_key::no_sense, "NO SENSE" },
+    { sense_key::recovered_error, "RECOVERED ERROR" },
     { sense_key::not_ready, "NOT READY" },
     { sense_key::medium_error, "MEDIUM ERROR" },
+    { sense_key::hardware_error, "HARDWARE ERROR" },
     { sense_key::illegal_request, "ILLEGAL REQUEST" },
     { sense_key::unit_attention, "UNIT ATTENTION" },
     { sense_key::data_protect, "DATA_PROTECT" },
-    { sense_key::aborted_command, "ABORTED COMMAND" }
+    { sense_key::blank_check, "BLANK CHECK" },
+    { sense_key::vendor_specific, "VENDOR SPECIFIC" },
+    { sense_key::copy_aborted, "COPY ABORTED" },
+    { sense_key::aborted_command, "ABORTED COMMAND" },
+    { sense_key::equal, "EQUAL" },
+    { sense_key::volume_overflow, "VOLUME OVERFLOW" },
+    { sense_key::miscompare, "MISCOMPARE" },
+    { sense_key::reserved, "RESERVED" }
 };
 
 enum class asc
@@ -160,13 +174,13 @@ enum class asc
     not_ready_to_ready_change = 0x28,
     power_on_or_reset = 0x29,
     medium_not_present = 0x3a,
+    command_phase_error = 0x4a,
+    data_phase_error = 0x4b,
     load_or_eject_failed = 0x53,
 
     // SCSI2Pi-specific
     controller_process_phase = 0x80,
-    controller_send_handshake = 0x84,
     controller_send_xfer_in = 0x88,
-    controller_receive_handshake = 0x8c,
     controller_receive_result = 0x90,
     controller_receive_bytes_result = 0x94,
     daynaport_enable_interface = 0xf0,
@@ -183,13 +197,15 @@ static const unordered_map<asc, string> ASC_MAPPING = {
     { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
     { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
     { asc::lba_out_of_range, "LBA OUT OF RANGE" },
-    { asc::invalid_field_in_cdb, "INVALID FIELD In CDB" },
+    { asc::invalid_field_in_cdb, "INVALID FIELD IN CDB" },
     { asc::invalid_lun, "INVALID LUN" },
     { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
     { asc::write_protected, "WRITE PROTECTED" },
     { asc::not_ready_to_ready_change, "NOT READY TO READY CHANGE" },
     { asc::power_on_or_reset, "POWER ON OR RESET" },
     { asc::medium_not_present, "MEDIUM NOT PRESENT" },
+    { asc::command_phase_error, "COMMAND PHASE ERROR" },
+    { asc::data_phase_error, "DATA PHASE ERROR" },
     { asc::load_or_eject_failed, "LOAD OR EJECT FAILED" }
 };
 

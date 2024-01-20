@@ -66,7 +66,7 @@ void PropertyHandler::ParsePropertyFile(const string &filename, bool default_fil
     }
 }
 
-string PropertyHandler::GetProperty(const string &key) const
+string PropertyHandler::GetProperty(string_view key) const
 {
     for (const auto& [k, v] : property_cache) {
         if (k == key) {
@@ -94,8 +94,8 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             continue;
         }
 
-        const string identifier = vendor + COMPONENT_SEPARATOR + product;
-        if (!identifier.starts_with(key_components[2])) {
+        if (const string identifier = vendor + COMPONENT_SEPARATOR + product; !identifier.starts_with(
+            key_components[2])) {
             continue;
         }
 
@@ -133,28 +133,4 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
     }
 
     return pages;
-}
-
-vector<byte> PropertyHandler::HexToBytes(const string &data)
-{
-    vector<byte> bytes;
-
-    string data_lower;
-    ranges::transform(data, back_inserter(data_lower), ::tolower);
-
-    for (size_t i = 0; i < data_lower.length(); i += 2) {
-        if (data_lower[i] == ':' && i + 2 < data_lower.length()) {
-            i++;
-        }
-
-        try {
-            bytes.push_back(
-                static_cast<byte>(((HEX_TO_DEC.at(data_lower[i]) << 4) + HEX_TO_DEC.at(data_lower[i + 1]))));
-        }
-        catch (const out_of_range&) {
-            throw parser_exception("");
-        }
-    }
-
-    return bytes;
 }

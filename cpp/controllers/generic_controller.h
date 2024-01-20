@@ -61,6 +61,8 @@ private:
     bool XferOutBlockOriented(bool);
     void ReceiveBytes();
 
+    void LogCdb() const;
+
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;
 };

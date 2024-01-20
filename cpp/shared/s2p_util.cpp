@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <cassert>
 #include <cstring>
 #include <sstream>
@@ -14,12 +13,14 @@
 #include <algorithm>
 #include <unistd.h>
 #include <pwd.h>
+#include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "s2p_version.h"
 #include "s2p_util.h"
 
 using namespace std;
 using namespace filesystem;
+using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
 {
@@ -171,4 +172,80 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
 void s2p_util::LogErrno(const string &msg)
 {
     spdlog::error(errno ? msg + ": " + string(strerror(errno)) : msg);
+}
+
+string s2p_util::FormatSenseData(sense_key sense_key, asc asc)
+{
+    string s_asc;
+    if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
+        s_asc = fmt::format("{0} (ASC ${1:02x})", it_asc->second, static_cast<int>(asc));
+    }
+    else {
+        s_asc = fmt::format("ASC ${:02x}", static_cast<int>(asc));
+    }
+
+    // All sense keys are mapped
+    assert(SENSE_KEY_MAPPING.find(sense_key) != SENSE_KEY_MAPPING.end());
+
+    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEY_MAPPING.find(sense_key)->second,
+        static_cast<int>(sense_key), s_asc);
+}
+
+vector<byte> s2p_util::HexToBytes(const string &data)
+{
+    if (data.starts_with(":") || data.ends_with(":")) {
+        throw parser_exception("");
+    }
+
+    string data_lower;
+    ranges::transform(data, back_inserter(data_lower), ::tolower);
+
+    vector<byte> bytes;
+    size_t i = 0;
+    while (i < data_lower.length()) {
+        if (data_lower[i] == ':' && i + 2 < data_lower.length()) {
+            i++;
+        }
+
+        try {
+            bytes.push_back((HEX_TO_DEC.at(data_lower[i]) << 4) | HEX_TO_DEC.at(data_lower[i + 1]));
+        }
+        catch (const out_of_range&) {
+            throw parser_exception("");
+        }
+
+        i += 2;
+    }
+
+    return bytes;
+}
+
+string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count)
+{
+    string str;
+
+    int offset = 0;
+    while (offset < count) {
+        string output_hex;
+        string output_asc;
+
+        if (!(offset % 16)) {
+            output_hex += fmt::format("{:08x} ", offset);
+        }
+
+        for (int i = 0; i < 16 && offset < count; i++) {
+            if (i) {
+                output_hex += ":";
+            }
+            output_hex += fmt::format("{:02x}", bytes[offset]);
+
+            output_asc += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
+
+            ++offset;
+        }
+
+        str += fmt::format("{0:56}  '{1}'", output_hex, output_asc) + "\n";
+    }
+
+    return str;
 }

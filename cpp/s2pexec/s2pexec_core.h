@@ -28,6 +28,7 @@ private:
 
     bool Init(bool);
     bool ParseArguments(span<char*>);
+    string ExecuteCommand();
     int GenerateOutput(S2pExecExecutor::protobuf_format, const string&, S2pExecExecutor::protobuf_format,
         const string&);
 
@@ -49,13 +50,19 @@ private:
     int target_id = -1;
     int target_lun = 0;
 
-    string input_filename;
-    string output_filename;
+    bool sasi = false;
+
+    vector<uint8_t> buffer;
+
+    string data_filename;
+
+    string protobuf_input_filename;
+    string protobuf_output_filename;
 
     S2pExecExecutor::protobuf_format input_format = S2pExecExecutor::protobuf_format::json;
     S2pExecExecutor::protobuf_format output_format = S2pExecExecutor::protobuf_format::json;
 
-    bool shut_down = false;
+    string command;
 
     string log_level = "info";
 

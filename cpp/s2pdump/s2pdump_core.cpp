@@ -240,23 +240,17 @@ bool S2pDump::ParseArguments(span<char*> args)
             throw parser_exception(error);
         }
 
-        if (!buf.empty()) {
-            if (!GetAsUnsignedInt(buf, buffer_size) || buffer_size < MINIMUM_BUFFER_SIZE) {
-                throw parser_exception(
-                    "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
-            }
+        if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || buffer_size < MINIMUM_BUFFER_SIZE)) {
+            throw parser_exception(
+                "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
         }
 
-        if (!sector_count.empty()) {
-            if (!GetAsUnsignedInt(sector_count, count) || !count) {
-                throw parser_exception("Invalid sector count: '" + sector_count + "'");
-            }
+        if (!sector_count.empty() && (!GetAsUnsignedInt(sector_count, count) || !count)) {
+            throw parser_exception("Invalid sector count: '" + sector_count + "'");
         }
 
-        if (!start_sector.empty()) {
-            if (!GetAsUnsignedInt(start_sector, start)) {
-                throw parser_exception("Invalid start sector: " + string(optarg));
-            }
+        if (!start_sector.empty() && !!GetAsUnsignedInt(start_sector, start)) {
+            throw parser_exception("Invalid start sector: " + string(optarg));
         }
 
         if (sasi) {
@@ -483,7 +477,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     return true;
 }
 
-bool S2pDump::DisplaySasiInquiry(vector<uint8_t> &buf, bool check_type)
+bool S2pDump::DisplaySasiInquiry(vector<uint8_t> &buf, bool check_type) const
 {
     const auto type = buf[0];
     if (!type) {
@@ -619,7 +613,7 @@ long S2pDump::CalculateEffectiveSize()
     }
 
     if (!count) {
-        count = capacity - start;
+        count = static_cast<int>(capacity - start);
     }
 
     if (capacity < static_cast<uint64_t>(start + count)) {
@@ -743,10 +737,12 @@ void S2pDump::DisplayProperties(int id, int lun) const
     const int length = buf[0] + 1;
     int offset = 4;
     while (offset < length) {
-        const int page_code = buf[offset++];
+        const int page_code = buf[offset];
+        ++offset;
 
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
-        const int page_length = page_code ? buf[offset++] : length - offset;
+        const int page_length = page_code ? buf[offset] : length - offset;
+        ++offset;
 
         cout << fmt::format("{0}mode_page.{1}={2:02x}", id_and_lun, page_code & 0x3f, page_code);
 
@@ -754,8 +750,8 @@ void S2pDump::DisplayProperties(int id, int lun) const
             cout << fmt::format(":{:02x}", page_length);
         }
 
-        for (int i = 0; i < page_length && offset < length; i++) {
-            cout << fmt::format(":{:02x}", buf[offset++]);
+        for (int i = 0; i < page_length && offset < length; i++, offset++) {
+            cout << fmt::format(":{:02x}", buf[offset]);
         }
 
         cout << "\n";

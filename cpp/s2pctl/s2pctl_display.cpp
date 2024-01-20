@@ -324,7 +324,7 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
 {
     ostringstream s;
 
-    const map<string, string> sorted_properties(properties_info.s2p_properties().begin(),
+    const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().begin(),
         properties_info.s2p_properties().end());
 
     s << "Property settings on s2p startup:\n";

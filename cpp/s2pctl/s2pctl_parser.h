@@ -17,9 +17,6 @@ class S2pCtlParser
 
 public:
 
-    S2pCtlParser() = default;
-    ~S2pCtlParser() = default;
-
     PbOperation ParseOperation(string_view) const;
     PbDeviceType ParseType(const string&) const;
 
