@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-204 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -29,7 +29,8 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 
 public:
 
-    PrimaryDevice(PbDeviceType type, int lun) : Device(type, lun)
+    PrimaryDevice(PbDeviceType type, int lun, int delay = Bus::SEND_NO_DELAY) : Device(type, lun), delay_after_bytes(
+        delay)
     {
     }
     ~PrimaryDevice() override = default;
@@ -119,11 +120,6 @@ protected:
     void LogError(const string &s) const
     {
         device_logger.Error(s);
-    }
-
-    void SetDelayAfterBytes(int delay)
-    {
-        delay_after_bytes = delay;
     }
 
 private:

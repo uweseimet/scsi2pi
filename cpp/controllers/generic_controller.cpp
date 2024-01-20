@@ -4,7 +4,6 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -108,7 +107,7 @@ void GenericController::Command()
 
         const int actual_count = GetBus().CommandHandShake(GetBuffer());
         if (!actual_count) {
-            LogTrace(fmt::format("Received unknown command: ${:02x}", static_cast<int>(GetBuffer()[0])));
+            LogTrace(fmt::format("Received unknown command: ${:02x}", GetBuffer()[0]));
 
             Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
@@ -393,6 +392,10 @@ void GenericController::Receive()
             LogWarn(fmt::format("Received {0} bytes(s) in DATA OUT phase, expected to receive {1}", len, GetLength()));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
+        }
+        // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
+        else if (IsDataOut() && !GetOffset() && len < 256 && spdlog::get_level() == spdlog::level::trace) {
+            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", len, FormatBytes(GetBuffer(), len)));
         }
     }
 

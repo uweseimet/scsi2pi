@@ -318,14 +318,14 @@ string S2pExec::ExecuteCommand()
         }
 
         const auto size = file_size(path(data_filename));
-        if (buffer.size() < size) {
-            buffer.resize(size);
-        }
+        buffer.resize(size);
 
         in.read((char*)buffer.data(), size);
         if (in.fail()) {
             return fmt::format("Can't read from file '{}': {}", data_filename, strerror(errno));
         }
+
+        spdlog::debug(fmt::format("Sending {} data bytes", size));
     }
 
     const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
@@ -334,11 +334,10 @@ string S2pExec::ExecuteCommand()
     }
 
     const int count = scsi_executor->GetByteCount();
-
     spdlog::debug(fmt::format("Received {} data bytes", count));
 
     if (data_filename.empty()) {
-        cout << FormatBytes(buffer, count);
+        cout << FormatBytes(buffer, count) << '\n';
     }
     else {
         ofstream out(data_filename, ios::binary);

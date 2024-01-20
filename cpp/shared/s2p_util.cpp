@@ -233,8 +233,9 @@ string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count)
             output_hex += fmt::format("{:08x} ", offset);
         }
 
-        for (int i = 0; i < 16 && offset < count; i++) {
-            if (i) {
+        int index = -1;
+        while (++index < 16 && offset < count) {
+            if (index) {
                 output_hex += ":";
             }
             output_hex += fmt::format("{:02x}", bytes[offset]);
@@ -244,7 +245,10 @@ string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count)
             ++offset;
         }
 
-        str += fmt::format("{0:56}  '{1}'", output_hex, output_asc) + "\n";
+        str += fmt::format("{0:56}  '{1}'", output_hex, output_asc);
+        if (offset < count) {
+            str += "\n";
+        }
     }
 
     return str;

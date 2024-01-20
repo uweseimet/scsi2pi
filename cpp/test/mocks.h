@@ -275,11 +275,6 @@ public:
     {
     }
     ~MockPrimaryDevice() override = default;
-
-    void SetDelayAfterBytes(int delay_after_bytes)
-    {
-        PrimaryDevice::SetDelayAfterBytes(delay_after_bytes);
-    }
 };
 
 class MockModePageDevice : public ModePageDevice

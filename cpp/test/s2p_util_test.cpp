@@ -181,11 +181,10 @@ TEST(S2pUtilTest, FormatBytes)
 000000c0 c0:c1:c2:c3:c4:c5:c6:c7:c8:c9:ca:cb:cc:cd:ce:cf  '................'
 000000d0 d0:d1:d2:d3:d4:d5:d6:d7:d8:d9:da:db:dc:dd:de:df  '................'
 000000e0 e0:e1:e2:e3:e4:e5:e6:e7:e8:e9:ea:eb:ec:ed:ee:ef  '................'
-000000f0 f0:f1:f2:f3:f4:f5:f6:f7:f8:f9:fa:fb:fc:fd:fe:ff  '................'
-)";
+000000f0 f0:f1:f2:f3:f4:f5:f6:f7:f8:f9:fa:fb:fc:fd:fe:ff  '................')";
+
     const string &str2 =
-        R"(00000000 40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e     '@ABCDEFGHIJKLMN'
-)";
+        R"(00000000 40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e     '@ABCDEFGHIJKLMN')";
 
     vector<uint8_t> bytes;
     for (int i = 0; i < 256; i++) {

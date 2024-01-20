@@ -29,7 +29,9 @@ using namespace scsi_defs;
 using namespace memory_util;
 using namespace network_util;
 
-DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
+// The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
+// It appears as if the real DaynaPort hardware indeed has this delay.
+DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
     SetVendor("Dayna");
@@ -37,10 +39,6 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
     SetRevision("1.4a");
 
     SupportsParams(true);
-
-    // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
-    // It appears as if the real DaynaPort hardware indeed has this delay.
-    SetDelayAfterBytes(DAYNAPORT_READ_HEADER_SZ);
 }
 
 bool DaynaPort::Init(const param_map &params)
