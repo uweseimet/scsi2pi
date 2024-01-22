@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <spdlog/spdlog.h>
-#include "controllers/controller_factory.h"
+#include "shared/shared_exceptions.h"
 #include "s2p_version.h"
 #include "s2p_util.h"
 

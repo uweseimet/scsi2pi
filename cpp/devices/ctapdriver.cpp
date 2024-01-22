@@ -305,7 +305,6 @@ bool CTapDriver::HasPendingPackets() const
     fds.events = POLLIN | POLLERR;
     fds.revents = 0;
     poll(&fds, 1, 0);
-    spdlog::trace(to_string(fds.revents) + " revents");
     return fds.revents & POLLIN;
 }
 
@@ -332,7 +331,7 @@ int CTapDriver::Receive(uint8_t *buf) const
 
     auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf, ETH_FRAME_LEN));
     if (bytes_received == static_cast<uint32_t>(-1)) {
-        spdlog::warn("Error occured while receiving a packet");
+        spdlog::warn("Error while receiving a network packet");
         return 0;
     }
 
