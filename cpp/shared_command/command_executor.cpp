@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -125,7 +125,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    return context.ReturnSuccessStatus();
+    // ATTACH and DETACH are special cases because they return the current device list
+    return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
 }
 
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
