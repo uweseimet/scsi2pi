@@ -126,7 +126,7 @@ void GenericController::Command()
         }
 
         if (actual_count != command_byte_count) {
-            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, expected to receive {2}",
+            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, command requires {2}",
                 command_byte_count, GetCmdByte(0), actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
@@ -325,7 +325,7 @@ void GenericController::Send()
         // for LUNs other than 0 this work-around works.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            LogWarn(fmt::format("Sent {0} bytes(s) in DATA IN phase, expected to send {1}", len, GetLength()));
+            LogWarn(fmt::format("Sent {0} bytes(s) in DATA IN phase, command requires {1}", len, GetLength()));
             Error(sense_key::aborted_command, asc::data_phase_error);
         }
         else {
@@ -389,7 +389,7 @@ void GenericController::Receive()
     if (HasValidLength()) {
         if (const uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
-            LogWarn(fmt::format("Received {0} bytes(s) in DATA OUT phase, expected to receive {1}", len, GetLength()));
+            LogWarn(fmt::format("Received {0} bytes(s) in DATA OUT phase, command requires {1}", len, GetLength()));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }

@@ -147,11 +147,9 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 {
     const auto response = (scsi_resp_read_t*)buf.data();
 
-    const int requested_length = cdb[4];
-
     // At startup the host may send a READ(6) command with a sector count of 1 to read the root sector.
-    // We should respond by going into the status mode with a code of 0x02.
-    if (requested_length == 1) {
+    // This will trigger a SCSI error message.
+    if (cdb[4] == 1) {
         return 0;
     }
 

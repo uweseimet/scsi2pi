@@ -155,6 +155,9 @@ TEST(S2pUtilTest, GetHexBytes)
     bytes = HexToBytes("ab:cd12");
     EXPECT_EQ(result, bytes);
 
+    bytes = HexToBytes("ab:cd\n12");
+    EXPECT_EQ(result, bytes);
+
     EXPECT_THROW(HexToBytes("ab:cd12xx"), parser_exception);
     EXPECT_THROW(HexToBytes(":abcd12"), parser_exception);
     EXPECT_THROW(HexToBytes("abcd12:"), parser_exception);

@@ -67,10 +67,8 @@ string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc);
 vector<byte> HexToBytes(const string&);
 string FormatBytes(vector<uint8_t>&, int);
 
-const unordered_map<char, byte> HEX_TO_DEC = {
-    { '0', byte { 0 } }, { '1', byte { 1 } }, { '2', byte { 2 } }, { '3', byte { 3 } }, { '4', byte { 4 } }, { '5',
-        byte { 5 } }, { '6', byte { 6 } }, { '7', byte { 7 } }, { '8', byte { 8 } },
-    { '9', byte { 9 } }, { 'a', byte { 10 } }, { 'b', byte { 11 } }, { 'c', byte { 12 } }, { 'd', byte { 13 } }, { 'e',
-        byte { 14 } }, { 'f', byte { 15 } }
+const unordered_map<char, int> HEX_TO_DEC = {
+    { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },
+    { '9', 9 }, { 'a', 10 }, { 'b', 11 }, { 'c', 12 }, { 'd', 13 }, { 'e', 14 }, { 'f', 15 }
 };
 }

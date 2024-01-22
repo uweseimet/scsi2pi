@@ -9,8 +9,11 @@ s2pexec \- SCSI2Pi SCSI/SASI command execution
 [\fB\--cdb/-c\fR \fICDB\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
-{\fB\--input-file/-f\fR \fIINPUT_FILE\fR]
-[\fB\--output-file/-F\fR \fIOUTPUT_FILE\fR]
+{\fB\--binary-data-file/-d\fR \fIFILE\fR]
+{\fB\--text-data-file/-D\fR \fIFILE\fR]
+{\fB\--input-file/-f\fR \fIFILE\fR]
+{\fB\--input-file/-f\fR \fIFILE\fR]
+[\fB\--output-file/-F\fR \fIFIL\fR]
 [\fB\--binary-input\fR]
 [\fB\--binary-output\fR]
 [\fB\--text-input\fR]
@@ -46,15 +49,19 @@ TrBuffer size for receiving data. When sending data the buffer is automatically 
 .BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
-.BR \--input-file/-f\fI " "\fIINPUT_FILE
+.BR \--input-file/-f\fI " "\fIFILE
 The protobuf data input file, by default in JSON format.
 .TP
-.BR \--output-file/-F\fI " "\fIOUTPUT_FILE
+.BR \--output-file/-F\fI " "\fIFILE
 The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
-.BR \--data-file/-d\fI " "\fIDATA_FILE
+.BR \--binary-data-file/-d\fI " "\fIFILE
 The file to store the data received (in a DATA IN phase) in or a file with the data to be sent (in a DATA OUT phase).
-When not specified data received are displayed in a human-readable format.
+The data are in binary (non human-readable) format. When no data file is specified any data received are displayed in a human-readable format.
+.TP
+.BR \--text-data-file/-D\fI " "\fIFILE
+The file to store the data received (in a DATA IN phase) in or a file with the data to be sent (in a DATA OUT phase).
+The data are in text (hexadecimal values) format. When no data file is specified any data received are displayed in a human-readable format.
 .TP
 .BR \--binary-input\fI
 Signals that the input file is in protobuf binary format instead of JSON.

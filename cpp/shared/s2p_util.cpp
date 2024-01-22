@@ -191,30 +191,36 @@ string s2p_util::FormatSenseData(sense_key sense_key, asc asc)
         static_cast<int>(sense_key), s_asc);
 }
 
-vector<byte> s2p_util::HexToBytes(const string &data)
+vector<byte> s2p_util::HexToBytes(const string &hex)
 {
-    if (data.starts_with(":") || data.ends_with(":")) {
-        throw parser_exception("");
-    }
-
-    string data_lower;
-    ranges::transform(data, back_inserter(data_lower), ::tolower);
-
     vector<byte> bytes;
-    size_t i = 0;
-    while (i < data_lower.length()) {
-        if (data_lower[i] == ':' && i + 2 < data_lower.length()) {
-            i++;
-        }
 
-        try {
-            bytes.push_back((HEX_TO_DEC.at(data_lower[i]) << 4) | HEX_TO_DEC.at(data_lower[i + 1]));
-        }
-        catch (const out_of_range&) {
+    stringstream ss(hex);
+    string line;
+    while (getline(ss, line)) {
+        if (line.starts_with(":") || line.ends_with(":")) {
             throw parser_exception("");
         }
 
-        i += 2;
+        string line_lower;
+        ranges::transform(line, back_inserter(line_lower), ::tolower);
+
+        size_t i = 0;
+        while (i < line_lower.length()) {
+            if (line_lower[i] == ':' && i + 2 < line_lower.length()) {
+                i++;
+            }
+
+            try {
+                bytes.push_back(
+                    static_cast<byte>((HEX_TO_DEC.at(line_lower[i]) << 4) + HEX_TO_DEC.at(line_lower[i + 1])));
+            }
+            catch (const out_of_range&) {
+                throw parser_exception("");
+            }
+
+            i += 2;
+        }
     }
 
     return bytes;

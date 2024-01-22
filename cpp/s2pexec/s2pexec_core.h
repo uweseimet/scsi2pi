@@ -32,6 +32,9 @@ private:
     int GenerateOutput(S2pExecExecutor::protobuf_format, const string&, S2pExecExecutor::protobuf_format,
         const string&);
 
+    string ReadData();
+    string WriteData(int);
+
     bool SetLogLevel() const;
 
     void CleanUp() const;
@@ -51,6 +54,8 @@ private:
     int target_lun = 0;
 
     bool sasi = false;
+
+    bool text_data = false;
 
     vector<uint8_t> buffer;
 

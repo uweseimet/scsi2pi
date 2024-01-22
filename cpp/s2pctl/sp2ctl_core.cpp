@@ -115,7 +115,7 @@ int S2pCtl::RunInteractive() const
             break;
         }
 
-        if (!line.starts_with("#")) {
+        if (!line.empty() && !line.starts_with("#")) {
             const auto &args = Split(line, ' ');
 
             vector<char*> interactive_args;
