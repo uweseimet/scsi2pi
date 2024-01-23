@@ -116,7 +116,7 @@ bool S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vec
 
 string S2pExecExecutor::GetSenseData(bool sasi)
 {
-    vector<uint8_t> buf(13);
+    vector<uint8_t> buf(14);
     array<uint8_t, 6> cdb = { };
     cdb[4] = buf.size();
 
@@ -125,9 +125,9 @@ string S2pExecExecutor::GetSenseData(bool sasi)
     }
 
     if (phase_executor->GetByteCount() < static_cast<int>(buf.size())) {
-        return "Device reported an error";
+        return "Device reported an unknown error";
     }
     else {
-        return FormatSenseData(static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]));
+        return FormatSenseData(static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]);
     }
 }

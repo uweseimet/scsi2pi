@@ -329,7 +329,7 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
 
     s << "Property settings on s2p startup:\n";
     for (const auto& [key, value] : sorted_properties) {
-        s << "  " << key << "=" << value << "\n";
+        s << key << "=" << value << "\n";
     }
 
     return s.str();

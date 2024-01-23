@@ -10,7 +10,7 @@
 
 #include <cstdint>
 #include <array>
-#include "shared/phase_executor.h"
+#include "shared_initiator/phase_executor.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

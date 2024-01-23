@@ -126,7 +126,7 @@ void GenericController::Command()
         }
 
         if (actual_count != command_byte_count) {
-            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, command requires {2}",
+            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_byte_count, GetCmdByte(0), actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
@@ -196,7 +196,14 @@ void GenericController::Execute()
 void GenericController::Status()
 {
     if (!IsStatus()) {
-        LogTrace(fmt::format("Status phase, status is ${:02x}", static_cast<int>(GetStatus())));
+        if (const auto &it_status = STATUS_MAPPING.find(GetStatus()); it_status != STATUS_MAPPING.end()) {
+            LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", it_status->second,
+                static_cast<int>(GetStatus())));
+        }
+        else {
+            LogTrace(fmt::format("Status phase, status code is ${0:02x}", static_cast<int>(GetStatus())));
+        }
+
         SetPhase(phase_t::status);
 
         // Signal line operated by the target
@@ -299,7 +306,7 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
-        LogDebug("CHECK CONDITION: " + FormatSenseData(sense_key, asc));
+        LogDebug(FormatSenseData(sense_key, asc));
 
         // Set Sense Key and ASC for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
@@ -321,8 +328,8 @@ void GenericController::Send()
 
         assert(HasDeviceForLun(0));
 
-        // The delay should be taken from the respective LUN, but as there are no Mac Daynaport drivers
-        // for LUNs other than 0 this work-around works.
+        // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
+        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
             LogWarn(fmt::format("Sent {0} bytes(s) in DATA IN phase, command requires {1}", len, GetLength()));

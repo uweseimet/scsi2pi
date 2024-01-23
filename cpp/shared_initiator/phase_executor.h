@@ -40,9 +40,9 @@ public:
 
 private:
 
-    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int);
-
     void Reset() const;
+
+    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int);
 
     bool Arbitration() const;
     bool Selection(bool) const;

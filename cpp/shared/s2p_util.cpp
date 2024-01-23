@@ -126,8 +126,7 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
         if (components.size() == 1) {
             if (!GetAsUnsignedInt(components[0], id) || id >= id_max) {
                 id = -1;
-
-                return "Invalid device ID (0-" + to_string(id_max - 1) + ")";
+                return fmt::format("Invalid device ID: '{0}' (0-{1})", components[0], id_max - 1);
             }
 
             return "";
@@ -137,7 +136,6 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
             || lun >= lun_max) {
             id = -1;
             lun = -1;
-
             return "Invalid LUN (0-" + to_string(lun_max - 1) + ")";
         }
     }
@@ -174,14 +172,14 @@ void s2p_util::LogErrno(const string &msg)
     spdlog::error(errno ? msg + ": " + string(strerror(errno)) : msg);
 }
 
-string s2p_util::FormatSenseData(sense_key sense_key, asc asc)
+string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
 {
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-        s_asc = fmt::format("{0} (ASC ${1:02x})", it_asc->second, static_cast<int>(asc));
+        s_asc = fmt::format("{0} (ASC ${1:02x}), ASCQ ${2:02x}", it_asc->second, static_cast<int>(asc), ascq);
     }
     else {
-        s_asc = fmt::format("ASC ${:02x}", static_cast<int>(asc));
+        s_asc = fmt::format("ASC ${0:02x}, ASCQ ${1:02x}", static_cast<int>(asc), ascq);
     }
 
     // All sense keys are mapped

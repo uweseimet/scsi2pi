@@ -409,7 +409,7 @@ string S2pExec::ReadData()
 {
     fstream in(data_filename, text_data ? ios::in : ios::in | ios::binary);
     if (in.fail()) {
-        return fmt::format("Can't open data input file '{}': {}", data_filename, strerror(errno));
+        return fmt::format("Can't open data input file '{0}': {1}", data_filename, strerror(errno));
     }
 
     size_t size;
@@ -437,7 +437,7 @@ string S2pExec::ReadData()
         in.read((char*)buffer.data(), size);
     }
 
-    return in.fail() ? fmt::format("Can't read from file '{}': {}", data_filename, strerror(errno)) : "";
+    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", data_filename, strerror(errno)) : "";
 }
 
 string S2pExec::WriteData(int count)
@@ -445,18 +445,22 @@ string S2pExec::WriteData(int count)
     string hex = FormatBytes(buffer, count);
 
     if (data_filename.empty()) {
-        cout << hex << '\n';
+        if (count) {
+            cout << hex << '\n';
+        }
     }
     else {
         fstream out(data_filename, text_data ? ios::out : ios::out | ios::binary);
         if (out.fail()) {
-            return fmt::format("Can't open data output file '{}': {}", data_filename, strerror(errno));
+            return fmt::format("Can't open data output file '{0}': {1}", data_filename, strerror(errno));
         }
 
-        hex += "\n";
-        out.write(text_data ? hex.data() : (const char*)buffer.data(), hex.size());
-        if (out.fail()) {
-            return fmt::format("Can't write to file '{}': {}", data_filename, strerror(errno));
+        if (count) {
+            hex += "\n";
+            out.write(text_data ? hex.data() : (const char*)buffer.data(), hex.size());
+            if (out.fail()) {
+                return fmt::format("Can't write to file '{0}': {1}", data_filename, strerror(errno));
+            }
         }
     }
 

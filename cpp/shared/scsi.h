@@ -120,6 +120,13 @@ enum class status
     reservation_conflict = 0x18
 };
 
+// This map only contains status codes used by s2p
+static const unordered_map<status, string> STATUS_MAPPING = {
+    { status::good, "GOOD" },
+    { status::check_condition, "CHECK CONDITION" },
+    { status::reservation_conflict, "RESERVATION CONFLICT" }
+};
+
 enum class sense_key
 {
     no_sense = 0x00,
@@ -190,25 +197,27 @@ enum class asc
     host_services_receive_operation_results = 0xf8
 };
 
+// This map only contains mappings for ASCs used by s2p
 static const unordered_map<asc, string> ASC_MAPPING = {
     { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
-    { asc::write_fault, " WRITE FAULT" },
-    { asc::read_fault, "READ FAULT" },
+    { asc::write_fault, "WRITE FAULT" },
+    { asc::read_fault, "READ ERROR" },
     { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
     { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
     { asc::lba_out_of_range, "LBA OUT OF RANGE" },
     { asc::invalid_field_in_cdb, "INVALID FIELD IN CDB" },
-    { asc::invalid_lun, "INVALID LUN" },
+    { asc::invalid_lun, "LOGICAL UNIT NOT SUPPORTED" },
     { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
     { asc::write_protected, "WRITE PROTECTED" },
-    { asc::not_ready_to_ready_change, "NOT READY TO READY CHANGE" },
-    { asc::power_on_or_reset, "POWER ON OR RESET" },
+    { asc::not_ready_to_ready_change, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
+    { asc::power_on_or_reset, "POWER ON, RESET, OR BUS DEVICE RESET OCCURRED" },
     { asc::medium_not_present, "MEDIUM NOT PRESENT" },
     { asc::command_phase_error, "COMMAND PHASE ERROR" },
     { asc::data_phase_error, "DATA PHASE ERROR" },
-    { asc::load_or_eject_failed, "LOAD OR EJECT FAILED" }
+    { asc::load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
 };
 
+// This map only contains mappings for commands supported by s2p
 static const unordered_map<scsi_command, pair<int, string>> COMMAND_MAPPING = {
     { scsi_command::cmd_test_unit_ready, make_pair(6, "TestUnitReady") },
     { scsi_command::cmd_rezero, make_pair(6, "Rezero") },
