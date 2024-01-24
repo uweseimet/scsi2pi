@@ -11,7 +11,6 @@
 #include <array>
 #include <vector>
 #include <iomanip>
-#include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "protobuf_util.h"

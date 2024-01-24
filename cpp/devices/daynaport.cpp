@@ -26,6 +26,7 @@
 #include "base/memory_util.h"
 #include "daynaport.h"
 
+using namespace spdlog;
 using namespace scsi_defs;
 using namespace memory_util;
 using namespace network_util;
@@ -164,7 +165,7 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
         response->flags = read_data_flags_t::e_no_more_data;
         return DAYNAPORT_READ_HEADER_SZ;
     }
-    else if (spdlog::get_level() == spdlog::level::trace) {
+    else if (get_level() == level::trace) {
         LogTrace(
             fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size, FormatBytes(buf, rx_packet_size)));
     }
@@ -227,7 +228,7 @@ bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
         LogWarn(fmt::format("Unknown data format: ${:02x}", data_format));
     }
 
-    if (spdlog::get_level() == spdlog::level::trace) {
+    if (get_level() == level::trace) {
         vector<uint8_t> data;
         for (uint8_t b : buf) {
             data.emplace_back(b);

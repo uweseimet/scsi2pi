@@ -17,6 +17,7 @@
 #endif
 #include "generic_controller.h"
 
+using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
@@ -50,7 +51,7 @@ bool GenericController::Process(int id)
 void GenericController::BusFree()
 {
     if (!IsBusFree()) {
-        LogTrace("Bus Free phase");
+        LogTrace("BUS FREE phase");
         SetPhase(phase_t::busfree);
 
         GetBus().SetREQ(false);
@@ -76,7 +77,7 @@ void GenericController::BusFree()
 void GenericController::Selection()
 {
     if (!IsSelection()) {
-        LogTrace("Selection phase");
+        LogTrace("SELECTION phase");
         SetPhase(phase_t::selection);
 
         GetBus().SetBSY(true);
@@ -98,7 +99,7 @@ void GenericController::Selection()
 void GenericController::Command()
 {
     if (!IsCommand()) {
-        LogTrace("Command phase");
+        LogTrace("COMMAND phase");
         SetPhase(phase_t::command);
 
         GetBus().SetMSG(false);
@@ -121,12 +122,12 @@ void GenericController::Command()
         }
 
         // Check the log level first in order to avoid a time-consuming string construction
-        if (spdlog::get_level() <= spdlog::level::debug) {
+        if (get_level() <= level::debug) {
             LogCdb();
         }
 
         if (actual_count != command_byte_count) {
-            LogWarn(fmt::format("Received {0} bytes(s) in COMMAND phase for command ${1:02x}, {2} required",
+            LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_byte_count, GetCmdByte(0), actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
@@ -143,11 +144,6 @@ void GenericController::Execute()
     // Initialization for data transfer
     ResetOffset();
     SetBlocks(1);
-
-    // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (GetOpcode() != scsi_command::cmd_request_sense) {
-        SetStatus(status::good);
-    }
 
     int lun = GetEffectiveLun();
     if (!HasDeviceForLun(lun)) {
@@ -177,6 +173,7 @@ void GenericController::Execute()
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (GetOpcode() != scsi_command::cmd_request_sense) {
+        SetStatus(status::good);
         device->SetStatusCode(0);
     }
 
@@ -226,7 +223,7 @@ void GenericController::Status()
 void GenericController::MsgIn()
 {
     if (!IsMsgIn()) {
-        LogTrace("Message In phase");
+        LogTrace("MESSAGE IN phase");
         SetPhase(phase_t::msgin);
 
         GetBus().SetMSG(true);
@@ -248,7 +245,7 @@ void GenericController::DataIn()
             return;
         }
 
-        LogTrace("Data In phase");
+        LogTrace("DATA IN phase");
         SetPhase(phase_t::datain);
 
         GetBus().SetMSG(false);
@@ -271,7 +268,7 @@ void GenericController::DataOut()
             return;
         }
 
-        LogTrace("Data Out phase");
+        LogTrace("DATA OUT phase");
         SetPhase(phase_t::dataout);
 
         GetBus().SetMSG(false);
@@ -332,7 +329,12 @@ void GenericController::Send()
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            LogWarn(fmt::format("Sent {0} bytes(s) in DATA IN phase, command requires {1}", len, GetLength()));
+            if (IsDataIn()) {
+                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", len, GetLength()));
+            }
+            else {
+                LogWarn(fmt::format("Sent {0} byte(s) in STATUS phase, {1} is required", len, GetLength()));
+            }
             Error(sense_key::aborted_command, asc::data_phase_error);
         }
         else {
@@ -396,12 +398,12 @@ void GenericController::Receive()
     if (HasValidLength()) {
         if (const uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
-            LogWarn(fmt::format("Received {0} bytes(s) in DATA OUT phase, command requires {1}", len, GetLength()));
+            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", len, GetLength()));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }
         // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
-        else if (IsDataOut() && !GetOffset() && len < 256 && spdlog::get_level() == spdlog::level::trace) {
+        else if (IsDataOut() && !GetOffset() && len < 256 && get_level() == level::trace) {
             LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", len, FormatBytes(GetBuffer(), len)));
         }
     }

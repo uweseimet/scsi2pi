@@ -9,15 +9,17 @@ s2pexec \- SCSI2Pi SCSI/SASI command execution
 [\fB\--cdb/-c\fR \fICDB\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
-{\fB\--binary-data-file/-d\fR \fIFILE\fR]
-{\fB\--text-data-file/-D\fR \fIFILE\fR]
-{\fB\--input-file/-f\fR \fIFILE\fR]
-{\fB\--input-file/-f\fR \fIFILE\fR]
-[\fB\--output-file/-F\fR \fIFIL\fR]
+{\fB\--binary-input-file/-d\fR \fIFILE\fR]
+{\fB\--binary-output-file/-D\fR \fIFILE\fR]
+{\fB\--hex-input-file/-t\fR \fIFILE\fR]
+{\fB\--hex-output-file/-T\fR \fIFILE\fR]
+{\fB\--protobuf-input-file/-p\fR \fIFILE\fR]
+[\fB\--protobuf-output-file/-P\fR \fIFIL\fR]
 [\fB\--binary-input\fR]
 [\fB\--binary-output\fR]
 [\fB\--text-input\fR]
 [\fB\--text-output\fR]
+[\fB\--no-request-sense/-n\fR] |
 [\fB\--help/-H\fR] |
 [\fB\--version/-v\fR] |
 .SH DESCRIPTION
@@ -44,33 +46,37 @@ SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator
 SCSI command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
 .TP
 .BR \--buffer-size/-b\fI " "\fIBUFFER_SIZE
-TrBuffer size for receiving data. When sending data the buffer is automatically sized to match the size of the data to be sent.
+TrBuffer size for receiving data, default is 4096 bytes. When sending data the buffer is automatically sized to match the size of the data to be sent.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
-.BR \--input-file/-f\fI " "\fIFILE
+.BR \--binary-input-file/-f\fI " "\fIFILE
+Optional file with binary data to be sent in the DATA OUT phase.
+.TP
+.BR \--binary-output-file/-F\fI " "\fIFILE
+Optional file for binary data received in the DATA IN phase.
+.TP
+.BR \--hex-input-file/-t\fI " "\fIFILE
+Optional file with data in hexadecimal (human-readable) format to be sent in the DATA OUT phase.
+.TP
+.BR \--hex-output-file/-T\fI " "\fIFILE
+Optional file for data received in the DATA IN phase. This data in this file are coded in hexadecimal (human-readable) format.
+.TP
+.BR \--protobuf-input-file/-p\fI " "\fIFILE
 The protobuf data input file, by default in JSON format.
 .TP
-.BR \--output-file/-F\fI " "\fIFILE
+.BR \--protobuf-output-file/-P\fI " "\fIFILE
 The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
-.BR \--binary-data-file/-d\fI " "\fIFILE
-The file to store the data received (in a DATA IN phase) in or a file with the data to be sent (in a DATA OUT phase).
-The data are in binary (non human-readable) format. When no data file is specified any data received are displayed in a human-readable format.
-.TP
-.BR \--text-data-file/-D\fI " "\fIFILE
-The file to store the data received (in a DATA IN phase) in or a file with the data to be sent (in a DATA OUT phase).
-The data are in text (hexadecimal values) format. When no data file is specified any data received are displayed in a human-readable format.
-.TP
 .BR \--binary-input\fI
-Signals that the input file is in protobuf binary format instead of JSON.
+Signals that the protobuf input file is in protobuf binary format instead of JSON.
 .TP
 .BR \--binary-output\fI
 Generate a protobuf binary format file instead of JSON.
 .TP
 .BR \--text-input\fI
-Signals that the input file is in protobuf text format instead of JSON.
+Signals that the protobuf input file is in protobuf text format instead of JSON.
 .TP
 .BR \--text-output\fI
 Generate a protobuf text format file instead of JSON.

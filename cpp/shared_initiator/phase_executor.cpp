@@ -7,9 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
-#include <iostream>
 #include <chrono>
-#include "buses/bus.h"
 #include "phase_executor.h"
 
 using namespace std;
@@ -29,11 +27,10 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
     byte_count = 0;
 
     if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
-        spdlog::trace(
-            fmt::format("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun));
+        trace(fmt::format("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun));
     }
     else {
-        spdlog::trace(
+        trace(
             fmt::format("Executing command ${0:02x} for target {1}:{2}", static_cast<int>(cmd), target_id, target_lun));
     }
 
@@ -64,7 +61,7 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
                 }
             }
             catch (const phase_exception &e) {
-                spdlog::error(e.what());
+                error(e.what());
                 bus.Reset();
                 return false;
             }
@@ -78,7 +75,7 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
 {
     const phase_t phase = bus.GetPhase();
 
-    spdlog::trace(string("Handling ") + Bus::GetPhaseName(phase) + " phase");
+    trace(fmt::format("Handling {} phase", Bus::GetPhaseName(phase)));
 
     switch (phase) {
     case phase_t::command:
@@ -107,7 +104,8 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
         break;
 
     default:
-        throw phase_exception(string("Ignoring ") + Bus::GetPhaseName(phase) + " phase");
+        warn(fmt::format("Ignoring {} phase", Bus::GetPhaseName(phase)));
+        return false;
     }
 
     return true;
@@ -116,7 +114,7 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
 bool PhaseExecutor::Arbitration() const
 {
     if (!WaitForFree()) {
-        spdlog::trace("Bus is not free");
+        trace("Bus is not free");
         return false;
     }
 
@@ -129,8 +127,7 @@ bool PhaseExecutor::Arbitration() const
     Sleep(ARBITRATION_DELAY);
 
     if (bus.GetDAT() > (1 << initiator_id)) {
-        spdlog::trace(
-            fmt::format("Lost ARBITRATION, competing initiator ID is {}", bus.GetDAT() - (1 << initiator_id)));
+        trace(fmt::format("Lost ARBITRATION, competing initiator ID is {}", bus.GetDAT() - (1 << initiator_id)));
         return false;
     }
 
@@ -162,7 +159,7 @@ bool PhaseExecutor::Selection(bool sasi) const
     }
 
     if (!WaitForBusy()) {
-        spdlog::trace("SELECTION phase failed");
+        trace("SELECTION phase failed");
         return false;
     }
 
@@ -185,10 +182,10 @@ void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
         const auto &command = COMMAND_MAPPING.find(cmd);
         if (command != COMMAND_MAPPING.end()) {
-            throw phase_exception(fmt::format("Command {} failed", command->second.second));
+            error(fmt::format("Command {} failed", command->second.second));
         }
         else {
-            throw phase_exception(fmt::format("Command ${:02x} failed", static_cast<int>(cmd)));
+            error(fmt::format("Command ${:02x} failed", static_cast<int>(cmd)));
         }
     }
 }
@@ -198,24 +195,32 @@ void PhaseExecutor::Status()
     array<uint8_t, 1> buf;
 
     if (bus.ReceiveHandShake(buf.data(), 1) != static_cast<int>(buf.size())) {
-        throw phase_exception("STATUS phase failed");
+        error("STATUS phase failed");
     }
-
-    status = buf[0];
+    else {
+        status = buf[0];
+    }
 }
 
 void PhaseExecutor::DataIn(span<uint8_t> buffer, int length)
 {
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
-    if (!byte_count) {
-        throw phase_exception("DATA IN phase failed");
+    if (byte_count > length) {
+        warn(fmt::format("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length));
+    }
+    else {
+        trace(fmt::format("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length));
     }
 }
 
 void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
 {
-    if (bus.SendHandShake(buffer.data(), length) != length) {
-        throw phase_exception("DATA OUT phase failed");
+    byte_count = bus.SendHandShake(buffer.data(), length);
+    if (byte_count > length) {
+        warn(fmt::format("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length));
+    }
+    else {
+        trace(fmt::format("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length));
     }
 }
 
@@ -224,12 +229,10 @@ void PhaseExecutor::MsgIn()
     array<uint8_t, 1> buf = { };
 
     if (bus.ReceiveHandShake(buf.data(), buf.size()) != buf.size()) {
-        throw phase_exception("MESSAGE IN phase failed");
+        error("MESSAGE IN phase failed");
     }
-
-    if (buf[0]) {
-        spdlog::warn(
-            fmt::format("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]));
+    else if (buf[0]) {
+        warn(fmt::format("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]));
 
         reject = true;
 
@@ -249,7 +252,7 @@ void PhaseExecutor::MsgOut()
     reject = false;
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
-        throw phase_exception("MESSAGE OUT phase for IDENTIFY failed");
+        error("MESSAGE OUT phase for IDENTIFY failed");
     }
 }
 

@@ -2,12 +2,14 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
 #include "in_process_bus.h"
+
+using namespace spdlog;
 
 void InProcessBus::Reset()
 {
@@ -55,7 +57,7 @@ bool InProcessBus::WaitForSelection()
 
 void DelegatingInProcessBus::Reset()
 {
-    spdlog::trace(GetMode() + ": Resetting bus");
+    trace(GetMode() + ": Resetting bus");
 
     bus.Reset();
 }
@@ -64,8 +66,8 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 {
     const bool state = bus.GetSignal(pin);
 
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && spdlog::get_level() == spdlog::level::trace) {
-        spdlog::trace(GetMode() + ": Getting " + GetSignalName(pin) + (state ? ": true" : ": false"));
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
+        trace(GetMode() + ": Getting " + GetSignalName(pin) + (state ? ": true" : ": false"));
     }
 
     return state;
@@ -73,8 +75,8 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 
 void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && spdlog::get_level() == spdlog::level::trace) {
-        spdlog::trace(GetMode() + ": Setting " + GetSignalName(pin) + " to " + (state ? "true" : "false"));
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
+        trace(GetMode() + ": Setting " + GetSignalName(pin) + " to " + (state ? "true" : "false"));
     }
 
     bus.SetSignal(pin, state);
@@ -82,8 +84,8 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
 
 bool DelegatingInProcessBus::WaitSignal(int pin, bool state)
 {
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && spdlog::get_level() == spdlog::level::trace) {
-        spdlog::trace(GetMode() + ": Waiting for " + GetSignalName(pin) + " to become " + (state ? "true" : "false"));
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
+        trace(GetMode() + ": Waiting for " + GetSignalName(pin) + " to become " + (state ? "true" : "false"));
     }
 
     return bus.WaitSignal(pin, state);

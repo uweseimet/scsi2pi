@@ -7,7 +7,7 @@
 //
 // XMi:
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -47,8 +47,8 @@ class Disk : public StorageDevice, private ScsiBlockCommands
 
 public:
 
-    Disk(PbDeviceType type, int lun, const unordered_set<uint32_t> &s)
-    : StorageDevice(type, lun), supported_sector_sizes(s)
+    Disk(PbDeviceType type, int lun, bool supports_mode_pages, const unordered_set<uint32_t> &s)
+    : StorageDevice(type, lun, supports_mode_pages), supported_sector_sizes(s)
     {
     }
     ~Disk() override = default;

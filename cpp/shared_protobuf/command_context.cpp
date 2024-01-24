@@ -2,17 +2,18 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <iostream>
+#include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "protobuf_util.h"
 #include "command_context.h"
 
 using namespace std;
+using namespace spdlog;
 using namespace s2p_interface;
 using namespace protobuf_util;
 
@@ -61,10 +62,10 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error
     // For the logfile always use English
     // Do not log unknown operations as an error for backward/foward compatibility with old/new clients
     if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
-        spdlog::trace(localizer.Localize(key, "en", arg1, arg2, arg3));
+        trace(localizer.Localize(key, "en", arg1, arg2, arg3));
     }
     else {
-        spdlog::error(localizer.Localize(key, "en", arg1, arg2, arg3));
+        error(localizer.Localize(key, "en", arg1, arg2, arg3));
     }
 
     return ReturnStatus(false, localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
@@ -74,7 +75,7 @@ bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode er
 {
     // Do not log twice if logging has already been done in the localized error handling above
     if (log && !status && !msg.empty()) {
-        spdlog::error(msg);
+        error(msg);
     }
 
     if (fd == -1) {

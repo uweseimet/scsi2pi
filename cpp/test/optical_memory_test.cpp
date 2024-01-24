@@ -132,7 +132,7 @@ TEST(OpticalMemoryTest, ModeSelect)
 {
     MockOpticalMemory mo(0);
     vector<int> cmd(10);
-    vector<uint8_t> buf(30);
+    vector<uint8_t> buf(32);
 
     mo.SetSectorSizeInBytes(2048);
 
@@ -144,7 +144,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[5] = 0x16;
     // 2048 bytes per sector
     buf[16] = 0x08;
-    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, buf.size()))<< "MODE SELECT(6) is supported";
+    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, 28))<< "MODE SELECT(6) is supported";
     buf[4] = 0;
     buf[5] = 0;
     buf[16] = 0;

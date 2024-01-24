@@ -540,11 +540,11 @@ string S2pDump::DumpRestore()
             sector_count = 256;
         }
 
-        spdlog::debug("Remaining bytes: " + to_string(remaining));
-        spdlog::debug("Current sector: " + to_string(sector_offset));
-        spdlog::debug("Sector count: " + to_string(sector_count));
-        spdlog::debug("Data transfer size: " + to_string(sector_count * sector_size));
-        spdlog::debug("Image file chunk size: " + to_string(byte_count));
+        debug("Remaining bytes: " + to_string(remaining));
+        debug("Current sector: " + to_string(sector_offset));
+        debug("Sector count: " + to_string(sector_count));
+        debug("Data transfer size: " + to_string(sector_count * sector_size));
+        debug("Image file chunk size: " + to_string(byte_count));
 
         if (const string error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
@@ -667,7 +667,7 @@ bool S2pDump::GetDeviceInfo()
     if (!sasi) {
         const auto [capacity, sector_size] = scsi_executor->ReadCapacity();
         if (!capacity || !sector_size) {
-            spdlog::trace("Can't read device capacity");
+            trace("Can't read device capacity");
             return false;
         }
 

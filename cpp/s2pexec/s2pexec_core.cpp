@@ -50,27 +50,30 @@ void S2pExec::Banner(bool header)
     }
 
     cout << "Usage: s2pexec [options]\n"
-        << "  --scsi-target/-i ID:[LUN]    SCSI target device ID (0-7) and LUN (0-31),\n"
-        << "                               default LUN is 0.\n"
-        << "  --sasi-target/-h ID:[LUN]    SASI target device ID (0-7) and LUN (0-1),\n"
-        << "                               default LUN is 0.\n"
-        << "  --board-id/-B BOARD_ID       Board (initiator) ID (0-7), default is 7.\n"
-        << "  --cdb/-c CDB                 SCSI command to send in hexadecimal format.\n"
-        << "  --buffer-size/-b SIZE        Buffer size for receiving data.\n"
-        << "  --log-level/-L LOG_LEVEL     Log level (trace|debug|info|warning|error|off),\n"
-        << "                               default is 'info'.\n"
-        << "  --binary-data-file/-d FILE   Optional binary file with data received/to be sent.\n"
-        << "  --text-data-file/-D FILE     Optional text file with data received/to be sent.\n"
-        << "  --input-file/-f FILE         Protobuf data input file,\n"
-        << "                               by default in JSON format.\n"
-        << "  --output-file/-F FILE        Protobuf data output file,\n"
-        << "                               by default in JSON format.\n"
-        << "  --binary-protobuf-input      Input file has protobuf binary format.\n"
-        << "  --binary-protobuf-output     Generate protobuf binary format file.\n"
-        << "  --text-protobuf-input        Input file has protobuf tet format.\n"
-        << "  --text-protobuf-output       Generate protobuf text format file.\n"
-        << "  --version/-v                 Display s2pexec version.\n"
-        << "  --help/-H                    Display this help.\n";
+        << "  --scsi-target/-i ID:[LUN]       SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                  default LUN is 0.\n"
+        << "  --sasi-target/-h ID:[LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
+        << "                                  default LUN is 0.\n"
+        << "  --board-id/-B BOARD_ID          Board (initiator) ID (0-7), default is 7.\n"
+        << "  --cdb/-c CDB                    SCSI command to send in hexadecimal format.\n"
+        << "  --buffer-size/-b SIZE           Buffer size for receiving data.\n"
+        << "  --log-level/-L LOG_LEVEL        Log level (trace|debug|info|warning|error\n"
+        << "                                  |off), default is 'info'.\n"
+        << "  --binary-input-file/-f FILE     Optional binary input file with data to send.\n"
+        << "  --binary-output-file/-F FILE    Optional binary output file for data received.\n"
+        << "  --hex-input-file/-t FILE        Optional text input file with data to send.\n"
+        << "  --hex-input-file/-T FILE        Optional text output file for data received.\n"
+        << "  --protobuf-input-file/-p FILE   Protobuf data input file,\n"
+        << "                                  by default in JSON format.\n"
+        << "  --protobuf-output-file/-P FILE  Protobuf data output file,\n"
+        << "                                  by default in JSON format.\n"
+        << "  --binary-protobuf-input         Input file has protobuf binary format.\n"
+        << "  --binary-protobuf-output        Generate protobuf binary format file.\n"
+        << "  --text-protobuf-input           Input file has protobuf tet format.\n"
+        << "  --text-protobuf-output          Generate protobuf text format file.\n"
+        << "  --no-request-sense              Do not run REQUEST SENSE on error.\n"
+        << "  --version/-v                    Display s2pexec version.\n"
+        << "  --help/-H                       Display this help.\n";
 }
 
 bool S2pExec::Init(bool)
@@ -108,11 +111,14 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
         { "cdb", required_argument, nullptr, 'c' },
-        { "binary-data-file", required_argument, nullptr, 'd' },
-        { "text-data-file", required_argument, nullptr, 'D' },
-        { "input-file", required_argument, nullptr, 'f' },
-        { "output-file", required_argument, nullptr, 'F' },
+        { "binary-input-file", required_argument, nullptr, 'f' },
+        { "binary-output-file", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'H' },
+        { "hex-input-file", required_argument, nullptr, 't' },
+        { "hex-output-file", required_argument, nullptr, 'T' },
+        { "no-request-sense", no_argument, nullptr, 'n' },
+        { "protobuf-input-file", required_argument, nullptr, 'p' },
+        { "protobuf-output-file", required_argument, nullptr, 'P' },
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
@@ -128,7 +134,8 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:c:d:D:f:F:h:i:L:vH", options.data(),
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:c:f:f:F:h:i:L:p:P:t:T:nvBH",
+        options.data(),
         nullptr))
         != -1) {
         switch (opt) {
@@ -152,17 +159,19 @@ bool S2pExec::ParseArguments(span<char*> args)
             command = optarg;
             break;
 
-        case 'd':
-            data_filename = optarg;
-            text_data = false;
-            break;
-
-        case 'D':
-            data_filename = optarg;
-            text_data = true;
-            break;
-
         case 'f':
+            binary_input_filename = optarg;
+            break;
+
+        case 'F':
+            binary_output_filename = optarg;
+            break;
+
+        case 'n':
+            request_sense = false;
+            break;
+
+        case 'p':
             protobuf_input_filename = optarg;
             break;
 
@@ -183,8 +192,16 @@ bool S2pExec::ParseArguments(span<char*> args)
             log_level = optarg;
             break;
 
-        case 'o':
+        case 'P':
             protobuf_output_filename = optarg;
+            break;
+
+        case 't':
+            hex_input_filename = optarg;
+            break;
+
+        case 'T':
+            hex_output_filename = optarg;
             break;
 
         case OPT_TEXT_PROTOBUF_INPUT:
@@ -240,7 +257,15 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!command.empty()) {
-        int buffer_size = 0;
+        if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
+            throw parser_exception("There can only be a single input file");
+        }
+
+        if (!binary_output_filename.empty() && !binary_output_filename.empty()) {
+            throw parser_exception("There can only be a single output file");
+        }
+
+        int buffer_size = DEFAULT_BUFFER_SIZE;
         if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
             throw parser_exception("Invalid receive buffer size: '" + buf + "'");
         }
@@ -318,23 +343,30 @@ string S2pExec::ExecuteCommand()
         cdb.emplace_back(static_cast<uint8_t>(b) & 0xff);
     }
 
-    // Only send data when there is a data file and no receive buffer size has been specified
-    if (!data_filename.empty() && !buffer.size()) {
+    // Only send data if there is a data file
+    if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
         if (const string &error = ReadData(); !error.empty()) {
             return error;
         }
 
-        spdlog::debug(fmt::format("Sending {} data bytes", buffer.size()));
+        debug(fmt::format("Sending {} data bytes", buffer.size()));
     }
 
     const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
     if (!status) {
-        return scsi_executor->GetSenseData(sasi);
+        if (request_sense) {
+            warn("Received an error status, running REQUEST SENSE");
+            return scsi_executor->GetSenseData(sasi);
+        }
+        else {
+            warn("Received an error status");
+            return "";
+        }
     }
 
     const int count = scsi_executor->GetByteCount();
 
-    spdlog::debug(fmt::format("Received {} data bytes", count));
+    debug(fmt::format("Received {} data bytes", count));
 
     if (const string &error = WriteData(count); !error.empty()) {
         return error;
@@ -407,13 +439,16 @@ int S2pExec::GenerateOutput(S2pExecExecutor::protobuf_format input_format, const
 
 string S2pExec::ReadData()
 {
-    fstream in(data_filename, text_data ? ios::in : ios::in | ios::binary);
+    const string &filename = binary_input_filename.empty() ? hex_input_filename : binary_input_filename;
+    const bool text = binary_input_filename.empty();
+
+    fstream in(filename, text ? ios::in : ios::in | ios::binary);
     if (in.fail()) {
-        return fmt::format("Can't open data input file '{0}': {1}", data_filename, strerror(errno));
+        return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
     }
 
     size_t size;
-    if (text_data) {
+    if (text) {
         stringstream ss;
         ss << in.rdbuf();
         if (!in.fail()) {
@@ -425,41 +460,44 @@ string S2pExec::ReadData()
                 return "Invalid data input format";
             }
 
+            buffer.clear();
             for (const byte b : bytes) {
                 buffer.emplace_back(static_cast<uint8_t>(b));
             }
         }
     }
     else {
-        size = file_size(path(data_filename));
+        size = file_size(path(filename));
         buffer.resize(size);
-
         in.read((char*)buffer.data(), size);
     }
 
-    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", data_filename, strerror(errno)) : "";
+    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
 }
 
 string S2pExec::WriteData(int count)
 {
+    const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
+    const bool text = binary_output_filename.empty();
+
     string hex = FormatBytes(buffer, count);
 
-    if (data_filename.empty()) {
+    if (filename.empty()) {
         if (count) {
             cout << hex << '\n';
         }
     }
     else {
-        fstream out(data_filename, text_data ? ios::out : ios::out | ios::binary);
+        fstream out(filename, text ? ios::out : ios::out | ios::binary);
         if (out.fail()) {
-            return fmt::format("Can't open data output file '{0}': {1}", data_filename, strerror(errno));
+            return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
         }
 
         if (count) {
             hex += "\n";
-            out.write(text_data ? hex.data() : (const char*)buffer.data(), hex.size());
+            out.write(text ? hex.data() : (const char*)buffer.data(), hex.size());
             if (out.fail()) {
-                return fmt::format("Can't write to file '{0}': {1}", data_filename, strerror(errno));
+                return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
             }
         }
     }

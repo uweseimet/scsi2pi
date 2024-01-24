@@ -13,7 +13,8 @@
 using namespace mode_page_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, lun, sector_sizes), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(removable ? SCRM : SCHD, lun, true, sector_sizes), scsi_level(
+    scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -84,9 +85,14 @@ vector<uint8_t> ScsiHd::InquiryInternal() const
 
 void ScsiHd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-    !result.empty()) {
-        LogWarn(result);
+    try {
+        if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+        !result.empty()) {
+            LogWarn(result);
+        }
+    }
+    catch (const scsi_exception &e) {
+        GetController()->Error(e.get_sense_key(), e.get_asc());
     }
 }
 

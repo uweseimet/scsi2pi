@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
 
 using namespace std;
@@ -115,12 +115,12 @@ set<int> S2pDumpExecutor::ReportLuns()
 
     // Assume 8 LUNs in case REPORT LUNS is not available
     if (!phase_executor->Execute(scsi_command::cmd_report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
-        spdlog::trace("Target does not support REPORT LUNS");
+        trace("Target does not support REPORT LUNS");
         return {0, 1, 2, 3, 4, 5, 6, 7};
     }
 
     const auto lun_count = (static_cast<size_t>(buffer[2]) << 8) | static_cast<size_t>(buffer[3]) / 8;
-    spdlog::trace("Target reported LUN count of " + to_string(lun_count));
+    trace("Target reported LUN count of " + to_string(lun_count));
 
     set<int> luns;
     int offset = 8;
@@ -130,7 +130,7 @@ set<int> S2pDumpExecutor::ReportLuns()
             luns.insert(static_cast<int>(lun));
         }
         else {
-            spdlog::trace("Target reported invalid LUN " + to_string(lun));
+            trace("Target reported invalid LUN " + to_string(lun));
         }
     }
 

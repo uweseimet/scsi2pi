@@ -45,6 +45,7 @@ private:
     bool ExecuteCommand(CommandContext&);
     bool HandleDeviceListChange(const CommandContext&, PbOperation) const;
 
+    static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
     static PbDeviceType ParseDeviceType(const string&);
 
     string access_token;

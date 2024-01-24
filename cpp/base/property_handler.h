@@ -53,5 +53,6 @@ private:
 
     property_map property_cache;
 
-    inline static const string DEFAULT_PROPERTY_FILE = ".config/s2p.properties";
+    inline static const string GLOBAL_CONFIGURATION = "/etc/s2p.conf";
+    inline static const string LOCAL_CONFIGURATION = ".config/s2p.conf";
 };

@@ -16,6 +16,7 @@
 
 using namespace std;
 using namespace filesystem;
+using namespace spdlog;
 using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
@@ -79,7 +80,7 @@ string S2pImage::SetDefaultFolder(string_view f)
 
     default_folder = folder.string();
 
-    spdlog::info("Default image folder set to '" + default_folder + "'");
+    info("Default image folder set to '" + default_folder + "'");
 
     return "";
 }
@@ -143,7 +144,7 @@ bool S2pImage::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    spdlog::info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -190,7 +191,7 @@ bool S2pImage::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    spdlog::info("Deleted image file '" + full_filename.string() + "'");
+    info("Deleted image file '" + full_filename.string() + "'");
 
     return context.ReturnSuccessStatus();
 }
@@ -210,7 +211,7 @@ bool S2pImage::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    spdlog::info("Renamed/Moved image file '" + from + "' to '" + to + "'");
+    info("Renamed/Moved image file '" + from + "' to '" + to + "'");
 
     return context.ReturnSuccessStatus();
 }
@@ -235,7 +236,7 @@ bool S2pImage::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        spdlog::info("Copied image file symlink '" + from + "' to '" + to + "'");
+        info("Copied image file symlink '" + from + "' to '" + to + "'");
 
         return context.ReturnSuccessStatus();
     }
@@ -253,7 +254,7 @@ bool S2pImage::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    spdlog::info("Copied image file '" + from + "' to '" + to + "'");
+    info("Copied image file '" + from + "' to '" + to + "'");
 
     return context.ReturnSuccessStatus();
 }
@@ -291,7 +292,7 @@ bool S2pImage::SetImagePermissions(const CommandContext &context) const
             full_filename + "': " + e.what());
     }
 
-    spdlog::info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }

@@ -13,6 +13,7 @@
 #include "rpi_bus.h"
 
 using namespace std;
+using namespace spdlog;
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 {
@@ -24,7 +25,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
     else {
         if (CheckForPi()) {
             if (getuid()) {
-                spdlog::error("GPIO bus access requires root permissions");
+                error("GPIO bus access requires root permissions");
                 return nullptr;
             }
 
@@ -45,7 +46,7 @@ bool BusFactory::CheckForPi()
 {
     ifstream in(DEVICE_TREE_MODEL_PATH);
     if (in.fail()) {
-        spdlog::info("This platform does not appear to be a Raspberry Pi, functionality is limited");
+        info("This platform does not appear to be a Raspberry Pi, functionality is limited");
         return false;
     }
 
@@ -54,12 +55,12 @@ bool BusFactory::CheckForPi()
     const string model = s.str();
 
     if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
-        spdlog::debug("Detected '{}'", model);
+        trace("Detected '{}'", model);
         is_raspberry_pi = true;
         return true;
     }
 
-    spdlog::error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
+    error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
 
     return false;
 }

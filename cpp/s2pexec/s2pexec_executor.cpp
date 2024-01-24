@@ -9,7 +9,6 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
-#include <spdlog/spdlog.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
 #include "shared/s2p_util.h"

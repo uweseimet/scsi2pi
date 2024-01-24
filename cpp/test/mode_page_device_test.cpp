@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -97,56 +97,4 @@ TEST(ModePageDeviceTest, ModeSense10)
 
     EXPECT_CALL(*controller, DataIn());
     device->Dispatch(scsi_command::cmd_mode_sense10);
-}
-
-TEST(ModePageDeviceTest, ModeSelect)
-{
-    MockModePageDevice device;
-    vector<int> cmd;
-    vector<uint8_t> buf;
-
-    EXPECT_THAT([&] {device.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, 0);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Unexpected MODE SELECT(6) default implementation";
-    EXPECT_THAT([&] {device.ModeSelect(scsi_command::cmd_mode_select10, cmd, buf, 0);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Unexpected MODE SELECT(10) default implementation";
-}
-
-TEST(ModePageDeviceTest, ModeSelect6)
-{
-    auto controller = make_shared<MockAbstractController>(0);
-    auto device = make_shared<MockModePageDevice>();
-    EXPECT_TRUE(device->Init( { }));
-
-    controller->AddDevice(device);
-
-    EXPECT_CALL(*controller, DataOut());
-    device->Dispatch(scsi_command::cmd_mode_select6);
-
-    controller->SetCmdByte(1, 0x01);
-    EXPECT_THAT([&] {device->Dispatch(scsi_command::cmd_mode_select6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Saving parameters is not supported by base class";
-}
-
-TEST(ModePageDeviceTest, ModeSelect10)
-{
-    auto controller = make_shared<MockAbstractController>(0);
-    auto device = make_shared<MockModePageDevice>();
-    EXPECT_TRUE(device->Init( { }));
-
-    controller->AddDevice(device);
-
-    EXPECT_CALL(*controller, DataOut());
-    device->Dispatch(scsi_command::cmd_mode_select10);
-
-    controller->SetCmdByte(1, 0x01);
-    EXPECT_THAT([&] {device->Dispatch(scsi_command::cmd_mode_select10);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Saving parameters is not supported for by base class";
 }

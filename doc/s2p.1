@@ -84,10 +84,11 @@ The default folder for image files. For files in this folder no absolute path ne
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR \--property-\fI " " \fIKEY=VALUE
-Sets the property with the name KEY to the value VALUE.
+Sets the property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
 .BR \--property-files/-C\fI " " \fIPROPERTY_FILES
-An optional comma-separated list of property files with s2p configuration data. The default property file is ~/.config/s2p.properties.
+An optional comma-separated list of property files with s2p configuration data. The optional default global property file is /etc/s2p.conf. This file is parsed first.
+The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN was provided when setting the level.

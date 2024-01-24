@@ -103,7 +103,7 @@ void S2p::LogDevices(string_view devices) const
     string line;
 
     while (getline(ss, line)) {
-        spdlog::info(line);
+        info(line);
     }
 }
 
@@ -254,9 +254,9 @@ void S2p::SetUpEnvironment()
 
 void S2p::LogProperties() const
 {
-    spdlog::trace("Effective properties:");
+    trace("Effective startup properties:");
     for (const auto& [k, v] : property_handler.GetProperties()) {
-        spdlog::trace(fmt::format("  {0}={1}", k, v));
+        trace(fmt::format("  {0}={1}", k, v));
     }
 }
 
@@ -269,7 +269,8 @@ void S2p::CreateDevices()
     // The properties are sorted, i.e. there is a contiguous block for each device
     int id = -1;
     int lun = -1;
-    for (const auto& [key, value] : property_handler.GetProperties()) {
+    bool is_active = false;
+    for (const auto &properties = property_handler.GetProperties(); const auto& [key, value] : properties) {
         if (!key.starts_with("device.")) {
             continue;
         }
@@ -285,7 +286,26 @@ void S2p::CreateDevices()
             throw parser_exception(error);
         }
 
-        // Create a new device at the start of a new device block
+        // Check whether the device is active at the start of a new device block
+        if (id != device_definition.id() || lun != device_definition.unit()) {
+            is_active = true;
+
+            // The "active" property has to be evaluated first
+            const auto &it = properties.find("device." + id_and_lun + ".active");
+            if (it != properties.end()) {
+                const string &active = it->second;
+                if (active != "true" && active != "false") {
+                    throw parser_exception(fmt::format("Invalid boolean: '{}'", active));
+                }
+                is_active = active == "true";
+            }
+        }
+
+        if (!is_active) {
+            continue;
+        }
+
+        // Create a new device at the start of a new active device block
         if (id != device_definition.id() || lun != device_definition.unit()) {
             device = command.add_devices();
             id = device_definition.id();
@@ -294,29 +314,8 @@ void S2p::CreateDevices()
             device->set_unit(lun);
         }
 
-        if (key_components[2] == "type") {
-            device->set_type(ParseDeviceType(value));
-        }
-        else if (key_components[2] == "block_size") {
-            if (int block_size; !GetAsUnsignedInt(value, block_size)) {
-                throw parser_exception(fmt::format("Invalid block size: {}", value));
-            }
-            else {
-                assert(device);
-                device->set_block_size(block_size);
-            }
-        }
-        else if (key_components[2] == "product_data") {
-            assert(device);
-            SetProductData(*device, value);
-        }
-        else if (key_components[2] == "params") {
-            assert(device);
-            ParseParameters(*device, value);
-        }
-        else {
-            throw parser_exception(fmt::format("Unknown device definition key: '{}'", key_components[2]));
-        }
+        assert(device);
+        SetDeviceProperties(*device, key_components[2], value);
     }
 
     if (command.devices_size()) {
@@ -335,6 +334,34 @@ void S2p::CreateDevices()
             }
         }
 #endif
+    }
+}
+
+void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, const string &value)
+{
+    if (key == "active") {
+        // "active" has already been handled separately
+        return;
+    }
+    else if (key == "type") {
+        device.set_type(ParseDeviceType(value));
+    }
+    else if (key == "block_size") {
+        if (int block_size; !GetAsUnsignedInt(value, block_size)) {
+            throw parser_exception(fmt::format("Invalid block size: {}", value));
+        }
+        else {
+            device.set_block_size(block_size);
+        }
+    }
+    else if (key == "product_data") {
+        SetProductData(device, value);
+    }
+    else if (key == "params") {
+        ParseParameters(device, value);
+    }
+    else {
+        throw parser_exception(fmt::format("Unknown device definition key: '{}'", key));
     }
 }
 

@@ -7,12 +7,15 @@
 //---------------------------------------------------------------------------
 
 #include <fstream>
+#include <filesystem>
 #include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "property_handler.h"
 
 using namespace std;
+using namespace filesystem;
+using namespace spdlog;
 using namespace s2p_util;
 
 void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties)
@@ -26,8 +29,14 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     property_cache[PropertyHandler::SCAN_DEPTH] = "1";
     property_cache[PropertyHandler::TOKEN_FILE] = "";
 
+    // Always parse the optional global property file
+    if (exists(path(GLOBAL_CONFIGURATION))) {
+        ParsePropertyFile(GLOBAL_CONFIGURATION, true);
+    }
+
+    // When there is no explicit property file list parse the local property file
     if (filenames.empty()) {
-        ParsePropertyFile(GetHomeDir() + "/" + DEFAULT_PROPERTY_FILE, true);
+        ParsePropertyFile(GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
     }
     else {
         for (const auto &filename : Split(filenames, ',')) {
@@ -90,7 +99,7 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
 
         int page;
         if (!GetAsUnsignedInt(key_components[1], page) || page > 0x3e) {
-            spdlog::warn(fmt::format("Ignored invalid mode page property '{}'", key));
+            warn(fmt::format("Ignored invalid mode page property '{}'", key));
             continue;
         }
 
@@ -104,29 +113,27 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             data = HexToBytes(value);
         }
         catch (const parser_exception&) {
-            spdlog::warn(fmt::format("Ignored invalid mode page definition for page {0}: {1}", page, value));
+            warn(fmt::format("Ignored invalid mode page definition for page {0}: {1}", page, value));
             continue;
         }
 
         if (data.empty()) {
-            spdlog::trace(fmt::format("Removing default mode page {}", page));
+            trace(fmt::format("Removing default mode page {}", page));
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
             if (page != (static_cast<int>(data[0]) & 0x3f)) {
-                spdlog::warn(
-                    fmt::format("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]));
+                warn(fmt::format("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]));
                 continue;
 
             }
 
             if (page && static_cast<byte>(data.size() - 2) != data[1]) {
-                spdlog::warn(
-                    fmt::format("Ignored mode page definition with wrong page size {0}: {1}", page, data[1]));
+                warn(fmt::format("Ignored mode page definition with wrong page size {0}: {1}", page, data[1]));
                 continue;
             }
 
-            spdlog::trace(fmt::format("Adding/replacing mode page {0}: {1}", page, key_components[2]));
+            trace(fmt::format("Adding/replacing mode page {0}: {1}", page, key_components[2]));
         }
 
         pages[page] = data;

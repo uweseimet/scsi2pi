@@ -6,17 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <csignal>
 #include <cassert>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared_protobuf/command_context.h"
 #include "s2p_thread.h"
 
+using namespace spdlog;
 using namespace s2p_util;
 
 string S2pThread::Init(const callback &cb, int port)
@@ -99,7 +100,7 @@ void S2pThread::ExecuteCommand(int fd) const
         }
     }
     catch (const io_exception &e) {
-        spdlog::warn(e.what());
+        warn(e.what());
 
         // Try to return an error message (this may fail if the exception was caused when returning the actual result)
         PbResult result;

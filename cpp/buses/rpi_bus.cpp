@@ -16,6 +16,8 @@
 #include <spdlog/spdlog.h>
 #include "rpi_bus.h"
 
+using namespace spdlog;
+
 //---------------------------------------------------------------------------
 //
 //	imported from bcm_host.c
@@ -57,14 +59,14 @@ bool RpiBus::Init(bool target)
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        spdlog::error("Error: Unable to open /dev/mem");
+        error("Error: Unable to open /dev/mem");
         return false;
     }
 
     // Map peripheral region memory
     void *map = mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr);
     if (map == MAP_FAILED) {
-        spdlog::error("Error: Unable to map memory: " + string(strerror(errno)));
+        error("Error: Unable to map memory: " + string(strerror(errno)));
         close(fd);
         return false;
     }
@@ -155,7 +157,7 @@ bool RpiBus::Init(bool target)
 #ifdef USE_SEL_EVENT_ENABLE
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
-        spdlog::error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
+        error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
         return false;
     }
 
@@ -170,7 +172,7 @@ bool RpiBus::Init(bool target)
 #endif
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        spdlog::error("Unable to register event request. If s2p is running, please shut it down first.");
+        error("Unable to register event request. If s2p is running, please shut it down first.");
         close(fd);
         return false;
     }
@@ -349,14 +351,14 @@ bool RpiBus::WaitForSelection()
 
     if (epoll_event epev; epoll_wait(epfd, &epev, 1, -1) <= 0) {
         if (errno != EINTR) {
-            spdlog::warn("epoll_wait failed");
+            warn("epoll_wait failed");
         }
         return false;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {
         if (errno != EINTR) {
-            spdlog::warn("read failed");
+            warn("read failed");
         }
         return false;
     }

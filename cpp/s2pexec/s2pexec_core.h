@@ -53,14 +53,16 @@ private:
     int target_id = -1;
     int target_lun = 0;
 
-    bool sasi = false;
+    bool request_sense = true;
 
-    bool text_data = false;
+    bool sasi = false;
 
     vector<uint8_t> buffer;
 
-    string data_filename;
-
+    string binary_input_filename;
+    string binary_output_filename;
+    string hex_input_filename;
+    string hex_output_filename;
     string protobuf_input_filename;
     string protobuf_output_filename;
 
@@ -73,4 +75,6 @@ private:
 
     // Required for the termination handler
     static inline S2pExec *instance;
+
+    inline static const int DEFAULT_BUFFER_SIZE = 4096;
 };

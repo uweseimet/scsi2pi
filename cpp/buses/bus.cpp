@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <cassert>
 #include "bus.h"
 
 using namespace std;
@@ -41,8 +42,8 @@ phase_t Bus::GetPhase()
 
 string Bus::GetPhaseName(phase_t phase)
 {
-    const auto &it = phase_names.find(phase);
-    return it != phase_names.end() ? it->second : "????";
+    assert(phase_names.find(phase) != phase_names.end());
+    return phase_names.at(phase);
 }
 
 // Phase Table
@@ -71,15 +72,15 @@ const array<phase_t, 8> Bus::phases = {
 };
 
 const unordered_map<phase_t, string> Bus::phase_names = {
-    { phase_t::busfree, "busfree" },
-    { phase_t::arbitration, "arbitration" },
-    { phase_t::selection, "selection" },
-    { phase_t::reselection, "reselection" },
-    { phase_t::command, "command" },
-    { phase_t::datain, "datain" },
-    { phase_t::dataout, "dataout" },
-    { phase_t::status, "status" },
-    { phase_t::msgin, "msgin" },
-    { phase_t::msgout, "msgout" },
+    { phase_t::busfree, "BUS FREE" },
+    { phase_t::arbitration, "ARBITRATION" },
+    { phase_t::selection, "SELECTION" },
+    { phase_t::reselection, "RESELECTION" },
+    { phase_t::command, "COMMAND" },
+    { phase_t::datain, "DATA IN" },
+    { phase_t::dataout, "DATA OUT" },
+    { phase_t::status, "STATUS" },
+    { phase_t::msgin, "MESSAGE IN" },
+    { phase_t::msgout, "MESSAGE OUT" },
     { phase_t::reserved, "reserved" }
 };

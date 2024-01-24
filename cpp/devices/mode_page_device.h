@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,7 +17,10 @@ class ModePageDevice : public PrimaryDevice
 {
 public:
 
-    using PrimaryDevice::PrimaryDevice;
+    ModePageDevice(PbDeviceType type, int lun, bool m) : PrimaryDevice(type, lun), supports_mode_pages(m)
+    {
+    }
+    ~ModePageDevice() override = default;
 
     bool Init(const param_map&) override;
 
@@ -51,6 +54,8 @@ private:
     void ModeSelect10() const;
 
     void SaveParametersCheck(int) const;
+
+    bool supports_mode_pages;
 
     bool supports_save_parameters = false;
 

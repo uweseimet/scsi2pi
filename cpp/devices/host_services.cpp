@@ -99,7 +99,7 @@ using namespace scsi_defs;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun, false)
 {
     SetProduct("Host Services");
 }

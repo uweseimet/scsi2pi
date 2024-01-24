@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace filesystem;
+using namespace spdlog;
 using namespace s2p_interface;
 using namespace s2p_util;
 using namespace network_util;
@@ -256,7 +257,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        spdlog::trace("Requested operation(s): " + Join(operations, ","));
+        trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {
@@ -316,11 +317,11 @@ void CommandResponse::GetVersionInfo(PbVersionInfo &version_info) const
 
 void CommandResponse::GetLogLevelInfo(PbLogLevelInfo &log_level_info) const
 {
-    for (const auto &log_level : spdlog::level::level_string_views) {
+    for (const auto &log_level : level::level_string_views) {
         log_level_info.add_log_levels(log_level.data());
     }
 
-    log_level_info.set_current_log_level(spdlog::level::level_string_views[spdlog::get_level()].data());
+    log_level_info.set_current_log_level(level::level_string_views[get_level()].data());
 }
 
 void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info) const
@@ -530,7 +531,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            spdlog::warn("Image file symlink '" + path.string() + "' is broken");
+            warn("Image file symlink '" + path.string() + "' is broken");
             return false;
         }
     }
@@ -540,7 +541,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        spdlog::warn("Image file '" + p.string() + "' is invalid");
+        warn("Image file '" + p.string() + "' is invalid");
         return false;
     }
 

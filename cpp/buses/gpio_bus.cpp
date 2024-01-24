@@ -50,7 +50,6 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
     // Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.
     // UltraSatan or GigaFile) that can directly be connected to the Atari's ACSI port also support ICD
     // semantics. In fact, these semantics have become a standard in the Atari world.
-
     // SCSi2Pi becomes ICD compatible by ignoring the prepended $1F byte before processing the CDB.
     if (buf[0] == 0x1f) {
         SetREQ(true);
@@ -107,9 +106,9 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 {
     int bytes_received;
 
-    DisableIRQ();
-
     if (target_mode) {
+        DisableIRQ();
+
         for (bytes_received = 0; bytes_received < count; bytes_received++) {
             SetREQ(true);
 
@@ -126,6 +125,8 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 
             buf++;
         }
+
+        EnableIRQ();
     } else {
         const phase_t phase = GetPhase();
 
@@ -158,8 +159,6 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
         }
     }
 
-    EnableIRQ();
-
     return bytes_received;
 }
 
@@ -168,9 +167,9 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
 {
     int bytes_sent;
 
-    DisableIRQ();
-
     if (target_mode) {
+        DisableIRQ();
+
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
             if (bytes_sent == daynaport_delay_after_bytes) {
                 EnableIRQ();
@@ -202,6 +201,8 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
         }
 
         WaitACK(false);
+
+        EnableIRQ();
     } else {
         const phase_t phase = GetPhase();
 
@@ -238,8 +239,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             buf++;
         }
     }
-
-    EnableIRQ();
 
     return bytes_sent;
 }

@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace filesystem;
+using namespace spdlog;
 using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
@@ -169,7 +170,7 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
 
 void s2p_util::LogErrno(const string &msg)
 {
-    spdlog::error(errno ? msg + ": " + string(strerror(errno)) : msg);
+    error(errno ? msg + ": " + string(strerror(errno)) : msg);
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)

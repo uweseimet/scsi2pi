@@ -17,7 +17,7 @@
 using namespace memory_util;
 using namespace mode_page_util;
 
-OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, { 512, 1024, 2048, 4096 })
+OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, { 512, 1024, 2048, 4096 })
 {
     // 128 MB, 512 bytes per sector, 248826 sectors
     geometries[512 * 248826] = { 512, 248826 };
@@ -88,9 +88,14 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
 
 void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-    !result.empty()) {
-        LogWarn(result);
+    try {
+        if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+        !result.empty()) {
+            LogWarn(result);
+        }
+    }
+    catch (const scsi_exception &e) {
+        GetController()->Error(e.get_sense_key(), e.get_asc());
     }
 }
 

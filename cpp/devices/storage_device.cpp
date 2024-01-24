@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,7 +13,8 @@
 using namespace std;
 using namespace filesystem;
 
-StorageDevice::StorageDevice(PbDeviceType type, int lun) : ModePageDevice(type, lun)
+StorageDevice::StorageDevice(PbDeviceType type, int lun, bool supports_mode_pages)
+: ModePageDevice(type, lun, supports_mode_pages)
 {
     SupportsFile(true);
     SetStoppable(true);

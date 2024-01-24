@@ -8,11 +8,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <cstddef>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "../base/property_handler.h"
+#include "base/property_handler.h"
 #include "mode_page_util.h"
 #include "mode_page_device.h"
 
@@ -33,14 +32,17 @@ bool ModePageDevice::Init(const param_map &params)
         {
             ModeSense10();
         });
-    AddCommand(scsi_command::cmd_mode_select6, [this]
-        {
-            ModeSelect6();
-        });
-    AddCommand(scsi_command::cmd_mode_select10, [this]
-        {
-            ModeSelect10();
-        });
+
+    if (supports_mode_pages) {
+        AddCommand(scsi_command::cmd_mode_select6, [this]
+            {
+                ModeSelect6();
+            });
+        AddCommand(scsi_command::cmd_mode_select10, [this]
+            {
+                ModeSelect10();
+            });
+    }
 
     return true;
 }
@@ -138,10 +140,10 @@ void ModePageDevice::ModeSense10() const
 
 void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int) const
 {
-    // There is no default implementation of MODE SELECT.
-    // An ASC of invalid_field_in_cdb might be more compatible with some computers
-    // than invalid_command_operation_code.
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    // There is no default implementation of MODE SELECT
+    assert(false);
+
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
 }
 
 void ModePageDevice::ModeSelect6() const

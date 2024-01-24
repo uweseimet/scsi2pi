@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,6 +12,7 @@
 #include "shared/s2p_version.h"
 #include "device.h"
 
+using namespace spdlog;
 using namespace std;
 
 Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
@@ -91,7 +92,7 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            spdlog::warn("Ignored unknown parameter '" + key + "'");
+            warn("Ignored unknown parameter '" + key + "'");
         }
     }
 }

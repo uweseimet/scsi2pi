@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 TEST(BusTest, GetCommandByteCount)
 {
-    EXPECT_EQ(43U, scsi_defs::COMMAND_MAPPING.size());
+    EXPECT_EQ(42U, scsi_defs::COMMAND_MAPPING.size());
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x00));
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x01));
     EXPECT_EQ(6, Bus::GetCommandByteCount(0x03));
@@ -42,7 +42,6 @@ TEST(BusTest, GetCommandByteCount)
     EXPECT_EQ(10, Bus::GetCommandByteCount(0x3e));
     EXPECT_EQ(10, Bus::GetCommandByteCount(0x3f));
     EXPECT_EQ(10, Bus::GetCommandByteCount(0x43));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x4a));
     EXPECT_EQ(10, Bus::GetCommandByteCount(0x55));
     EXPECT_EQ(10, Bus::GetCommandByteCount(0x5a));
     EXPECT_EQ(16, Bus::GetCommandByteCount(0x88));
@@ -114,15 +113,15 @@ TEST(BusTest, GetPhase)
 
 TEST(BusTest, GetPhaseName)
 {
-    EXPECT_EQ("busfree", Bus::GetPhaseName(phase_t::busfree));
-    EXPECT_EQ("arbitration", Bus::GetPhaseName(phase_t::arbitration));
-    EXPECT_EQ("selection", Bus::GetPhaseName(phase_t::selection));
-    EXPECT_EQ("reselection", Bus::GetPhaseName(phase_t::reselection));
-    EXPECT_EQ("command", Bus::GetPhaseName(phase_t::command));
-    EXPECT_EQ("datain", Bus::GetPhaseName(phase_t::datain));
-    EXPECT_EQ("dataout", Bus::GetPhaseName(phase_t::dataout));
-    EXPECT_EQ("status", Bus::GetPhaseName(phase_t::status));
-    EXPECT_EQ("msgin", Bus::GetPhaseName(phase_t::msgin));
-    EXPECT_EQ("msgout", Bus::GetPhaseName(phase_t::msgout));
+    EXPECT_EQ("BUS FREE", Bus::GetPhaseName(phase_t::busfree));
+    EXPECT_EQ("ARBITRATION", Bus::GetPhaseName(phase_t::arbitration));
+    EXPECT_EQ("SELECTION", Bus::GetPhaseName(phase_t::selection));
+    EXPECT_EQ("RESELECTION", Bus::GetPhaseName(phase_t::reselection));
+    EXPECT_EQ("COMMAND", Bus::GetPhaseName(phase_t::command));
+    EXPECT_EQ("DATA IN", Bus::GetPhaseName(phase_t::datain));
+    EXPECT_EQ("DATA OUT", Bus::GetPhaseName(phase_t::dataout));
+    EXPECT_EQ("STATUS", Bus::GetPhaseName(phase_t::status));
+    EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(phase_t::msgin));
+    EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(phase_t::msgout));
     EXPECT_EQ("reserved", Bus::GetPhaseName(phase_t::reserved));
 }

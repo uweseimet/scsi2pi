@@ -16,7 +16,8 @@
 #define USE_SEL_EVENT_ENABLE
 #endif
 
-// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5
+// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5.
+// Currently IRQs are disabled in target mode but enabled in initiator mode.
 //#define NO_IRQ_DISABLE
 
 #ifndef __linux__

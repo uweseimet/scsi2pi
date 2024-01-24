@@ -176,6 +176,9 @@ void PrimaryDevice::RequestSense()
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
+    // Clear the previous status
+    SetStatusCode(0);
+
     EnterDataInPhase();
 }
 

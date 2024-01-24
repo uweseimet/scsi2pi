@@ -6,6 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
+// Note that this test depends on no conflicting global properties being defined in /etc/s2p.conf
+
 #include <filesystem>
 #include <gtest/gtest.h>
 #include "test/test_shared.h"

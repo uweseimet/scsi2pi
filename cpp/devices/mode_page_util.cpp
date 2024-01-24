@@ -2,45 +2,40 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <cstring>
+#include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "mode_page_util.h"
 
+using namespace spdlog;
 using namespace scsi_defs;
 using namespace memory_util;
 
 string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length, int sector_size)
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
-    assert(length >= 0);
-
-    string result;
 
     // PF
     if (!(cdb[1] & 0x10)) {
         // Vendor-specific parameters (SCSI-1) are not supported.
         // Do not report an error in order to support Apple's HD SC Setup.
-        return result;
+        return "";
     }
 
-    // Skip block descriptors
-    int offset;
-    if (cmd == scsi_command::cmd_mode_select10) {
-        offset = 8 + GetInt16(buf, 6);
+    // The page data are optional
+    if (!length) {
+        return "";
     }
-    else {
-        offset = 4 + buf[3];
-    }
+
+    int offset = EvaluateBlockDescriptors(cmd, buf, length, sector_size);
     length -= offset;
 
-    // According to the specification the pages data are optional
-    bool has_valid_page_code = !length;
+    string result;
 
     // Parse the pages
     while (length > 0) {
@@ -52,7 +47,6 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
             }
 
             // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
-            has_valid_page_code = true;
             break;
 
         // Format device page
@@ -67,12 +61,12 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
             if (GetInt16(buf, offset + 12) != sector_size) {
                 // It is not possible to permanently (e.g. by formatting) change the sector size.
                 // The sector size is an externally configurable setting only.
-                spdlog::warn(
-                    "Configure the sector size with the '-b' command line option or the 'block_size' device property");
+                warn(
+                    "Sector size change from {} to {} bytes per sector requested. Configure the requested sector size in the s2p settings.",
+                    sector_size, GetInt16(buf, offset + 12));
                 throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
             }
 
-            has_valid_page_code = true;
             break;
         }
 
@@ -83,31 +77,65 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
             }
 
             // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
-            has_valid_page_code = true;
             break;
 
         default:
-            // Remember that there was an unsupported page but continue with the remaining pages
-            result = fmt::format("Unsupported MODE SELECT page code: ${:02x}", page_code);
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
             break;
         }
 
-        // Advance to the next page
-        if (length < 2) {
-            break;
-        }
         const int size = buf[offset + 1] + 2;
-
         length -= size;
         offset += size;
     }
 
-    // Only report an error if none of the referenced pages are supported
-    if (!has_valid_page_code) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    return result;
+}
+
+int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int sector_size)
+{
+    // Check for temporary sector size change in first block descriptor
+    int offset;
+    if (cmd == scsi_command::cmd_mode_select10) {
+        if (length < 8) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        const int block_descriptor_length = GetInt16(buf, 6);
+        if (length < block_descriptor_length + 8) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        if (block_descriptor_length && length >= 16 && GetInt16(buf, 14) != sector_size) {
+            warn(
+                "Sector size change from {} to {} bytes per sector requested. Configure the requested sector size in the s2p settings.",
+                sector_size, GetInt16(buf, 14));
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        offset = 8 + block_descriptor_length;
+    }
+    else {
+        if (length < 4) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        const int block_descriptor_length = buf[3];
+        if (length < block_descriptor_length + 4) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        if (block_descriptor_length && length >= 12 && GetInt16(buf, 10) != sector_size) {
+            warn(
+                "Sector size change from {} to {} bytes per sector requested. Configure the requested sector size in the s2p settings.",
+                sector_size, GetInt16(buf, 10));
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        offset = 4 + block_descriptor_length;
     }
 
-    return result;
+    return offset;
 }
 
 void mode_page_util::EnrichFormatPage(map<int, vector<byte>> &pages, bool changeable, int sector_size)

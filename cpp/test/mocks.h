@@ -289,7 +289,7 @@ public:
     MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
 
-    MockModePageDevice() : ModePageDevice(UNDEFINED, 0)
+    MockModePageDevice() : ModePageDevice(UNDEFINED, 0, false)
     {
     }
     ~MockModePageDevice() override = default;
@@ -337,7 +337,7 @@ public:
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, 0)
+    MockStorageDevice() : StorageDevice(UNDEFINED, 0, false)
     {
     }
     ~MockStorageDevice() override = default;
@@ -383,7 +383,7 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, 0, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, false, 0, { 512, 1024, 2048, 4096 })
     {
     }
     ~MockDisk() override = default;

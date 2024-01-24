@@ -21,7 +21,7 @@ using namespace memory_util;
 using namespace mode_page_util;
 
 ScsiCd::ScsiCd(int lun, bool scsi1)
-: Disk(SCCD, lun, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(SCCD, lun, true, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
 {
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
@@ -150,9 +150,14 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
 
 void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-    !result.empty()) {
-        LogWarn(result);
+    try {
+        if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+        !result.empty()) {
+            LogWarn(result);
+        }
+    }
+    catch (const scsi_exception &e) {
+        GetController()->Error(e.get_sense_key(), e.get_asc());
     }
 }
 
