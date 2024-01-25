@@ -46,7 +46,7 @@ private:
     void ScanBus();
     bool DisplayInquiry(bool);
     bool DisplayScsiInquiry(vector<uint8_t>&, bool);
-    bool DisplaySasiInquiry(vector<uint8_t>&, bool) const;
+    bool DisplaySasiInquiry(const vector<uint8_t>&, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
     bool GetDeviceInfo();
@@ -64,7 +64,7 @@ private:
 
     unique_ptr<S2pDumpExecutor> scsi_executor;
 
-    scsi_device_info_t scsi_device_info;
+    scsi_device_info_t scsi_device_info = { };
 
     int sasi_capacity = 0;
     int sasi_sector_size = 0;

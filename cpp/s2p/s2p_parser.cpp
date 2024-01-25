@@ -107,7 +107,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     bool has_scsi = false;
 
     property_map properties;
-    properties[PropertyHandler::PROPERTY_FILES] = "";
 
     optind = 1;
     int opt;

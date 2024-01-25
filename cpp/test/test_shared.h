@@ -33,8 +33,6 @@ pair<int, path> OpenTempFile();
 path CreateTempFile(int);
 path CreateTempFileWithData(span<const byte>);
 
-void DeleteTempFile(const string&);
-
 string ReadTempFileToString(const string &filename);
 
 int GetInt16(const vector<byte>&, int);

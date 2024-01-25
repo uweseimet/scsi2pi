@@ -72,6 +72,7 @@ void S2pExec::Banner(bool header)
         << "  --text-protobuf-input           Input file has protobuf tet format.\n"
         << "  --text-protobuf-output          Generate protobuf text format file.\n"
         << "  --no-request-sense              Do not run REQUEST SENSE on error.\n"
+        << "  --hex-only                      Do not display/save the offset and ASCI data.\n"
         << "  --version/-v                    Display s2pexec version.\n"
         << "  --help/-H                       Display this help.\n";
 }
@@ -104,6 +105,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     const int OPT_BINARY_PROTOBUF_OUTPUT = 3;
     const int OPT_TEXT_PROTOBUF_INPUT = 4;
     const int OPT_TEXT_PROTOBUF_OUTPUT = 5;
+    const int OPT_HEX_ONLY = 6;
 
     const vector<option> options = {
         { "binary-protobuf-input", no_argument, nullptr, OPT_BINARY_PROTOBUF_INPUT },
@@ -115,6 +117,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "binary-output-file", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'H' },
         { "hex-input-file", required_argument, nullptr, 't' },
+        { "hex-only", no_argument, nullptr, OPT_HEX_ONLY },
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "no-request-sense", no_argument, nullptr, 'n' },
         { "protobuf-input-file", required_argument, nullptr, 'p' },
@@ -135,18 +138,8 @@ bool S2pExec::ParseArguments(span<char*> args)
     optind = 1;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:c:f:f:F:h:i:L:p:P:t:T:nvBH",
-        options.data(),
-        nullptr))
-        != -1) {
+        options.data(), nullptr)) != -1) {
         switch (opt) {
-        case OPT_BINARY_PROTOBUF_INPUT:
-            input_format = S2pExecExecutor::protobuf_format::binary;
-            break;
-
-        case OPT_BINARY_PROTOBUF_OUTPUT:
-            output_format = S2pExecExecutor::protobuf_format::binary;
-            break;
-
         case 'b':
             buf = optarg;
             break;
@@ -204,6 +197,18 @@ bool S2pExec::ParseArguments(span<char*> args)
             hex_output_filename = optarg;
             break;
 
+        case 'v':
+            version = true;
+            break;
+
+        case OPT_BINARY_PROTOBUF_INPUT:
+            input_format = S2pExecExecutor::protobuf_format::binary;
+            break;
+
+        case OPT_BINARY_PROTOBUF_OUTPUT:
+            output_format = S2pExecExecutor::protobuf_format::binary;
+            break;
+
         case OPT_TEXT_PROTOBUF_INPUT:
             input_format = S2pExecExecutor::protobuf_format::text;
             break;
@@ -212,8 +217,8 @@ bool S2pExec::ParseArguments(span<char*> args)
             output_format = S2pExecExecutor::protobuf_format::text;
             break;
 
-        case 'v':
-            version = true;
+        case OPT_HEX_ONLY:
+            hex_only = true;
             break;
 
         default:
@@ -261,7 +266,7 @@ bool S2pExec::ParseArguments(span<char*> args)
             throw parser_exception("There can only be a single input file");
         }
 
-        if (!binary_output_filename.empty() && !binary_output_filename.empty()) {
+        if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
             throw parser_exception("There can only be a single output file");
         }
 
@@ -355,21 +360,25 @@ string S2pExec::ExecuteCommand()
     const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
     if (!status) {
         if (request_sense) {
-            warn("Received an error status, running REQUEST SENSE");
+            warn("Device reported an error, running REQUEST SENSE");
             return scsi_executor->GetSenseData(sasi);
         }
         else {
-            warn("Received an error status");
+            warn("Device reported an error");
             return "";
         }
     }
 
-    const int count = scsi_executor->GetByteCount();
+    if (binary_input_filename.empty() && hex_input_filename.empty()) {
+        const int count = scsi_executor->GetByteCount();
 
-    debug(fmt::format("Received {} data bytes", count));
+        debug(fmt::format("Received {} data bytes", count));
 
-    if (const string &error = WriteData(count); !error.empty()) {
-        return error;
+        if (count) {
+            if (const string &error = WriteData(count); !error.empty()) {
+                return error;
+            }
+        }
     }
 
     return "";
@@ -447,7 +456,6 @@ string S2pExec::ReadData()
         return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
     }
 
-    size_t size;
     if (text) {
         stringstream ss;
         ss << in.rdbuf();
@@ -467,7 +475,7 @@ string S2pExec::ReadData()
         }
     }
     else {
-        size = file_size(path(filename));
+        const size_t size = file_size(path(filename));
         buffer.resize(size);
         in.read((char*)buffer.data(), size);
     }
@@ -480,7 +488,7 @@ string S2pExec::WriteData(int count)
     const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
     const bool text = binary_output_filename.empty();
 
-    string hex = FormatBytes(buffer, count);
+    string hex = FormatBytes(buffer, count, hex_only);
 
     if (filename.empty()) {
         if (count) {

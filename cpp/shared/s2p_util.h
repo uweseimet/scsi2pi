@@ -65,7 +65,7 @@ void LogErrno(const string&);
 string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-string FormatBytes(vector<uint8_t>&, int);
+string FormatBytes(vector<uint8_t>&, int, bool = false);
 
 const unordered_map<char, int> HEX_TO_DEC = {
     { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },

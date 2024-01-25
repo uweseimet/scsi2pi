@@ -477,7 +477,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     return true;
 }
 
-bool S2pDump::DisplaySasiInquiry(vector<uint8_t> &buf, bool check_type) const
+bool S2pDump::DisplaySasiInquiry(const vector<uint8_t> &buf, bool check_type) const
 {
     const auto type = buf[0];
     if (!type) {

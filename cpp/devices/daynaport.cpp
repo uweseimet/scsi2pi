@@ -230,9 +230,7 @@ bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
 
     if (get_level() == level::trace) {
         vector<uint8_t> data;
-        for (uint8_t b : buf) {
-            data.emplace_back(b);
-        }
+        copy(buf.begin(), buf.end(), back_inserter(data));
         LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length, FormatBytes(data, data_length)));
     }
 
@@ -411,7 +409,7 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetController()->GetCmdByte(5) & 0x80) {
-        if (const string error = tap.IpLink(true); !error.empty()) {
+        if (const string error = CTapDriver::IpLink(true); !error.empty()) {
             LogWarn("Unable to enable the DaynaPort Interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
@@ -421,7 +419,7 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string error = tap.IpLink(false); !error.empty()) {
+        if (const string error = CTapDriver::IpLink(false); !error.empty()) {
             LogWarn("Unable to disable the DaynaPort Interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }

@@ -157,7 +157,7 @@ protected:
 
 private:
 
-    bool target_mode;
+    bool target_mode = true;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the

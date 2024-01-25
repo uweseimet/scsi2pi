@@ -24,10 +24,8 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     property_cache.clear();
     property_cache[PropertyHandler::LOCALE] = GetLocale();
     property_cache[PropertyHandler::LOG_LEVEL] = "info";
-    property_cache[PropertyHandler::RESERVED_IDS] = "";
     property_cache[PropertyHandler::PORT] = "6868";
     property_cache[PropertyHandler::SCAN_DEPTH] = "1";
-    property_cache[PropertyHandler::TOKEN_FILE] = "";
 
     // Always parse the optional global property file
     if (exists(path(GLOBAL_CONFIGURATION))) {

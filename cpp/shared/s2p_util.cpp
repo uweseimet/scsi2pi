@@ -225,17 +225,18 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     return bytes;
 }
 
-string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count)
+string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count, bool hex_only)
 {
     string str;
 
     int offset = 0;
     while (offset < count) {
+        string output_offset;
         string output_hex;
-        string output_asc;
+        string output_ascii;
 
-        if (!(offset % 16)) {
-            output_hex += fmt::format("{:08x} ", offset);
+        if (!hex_only && !(offset % 16)) {
+            output_offset += fmt::format("{:08x}  ", offset);
         }
 
         int index = -1;
@@ -245,12 +246,19 @@ string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count)
             }
             output_hex += fmt::format("{:02x}", bytes[offset]);
 
-            output_asc += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
+            output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
 
             ++offset;
         }
 
-        str += fmt::format("{0:56}  '{1}'", output_hex, output_asc);
+        str += output_offset;
+        str += fmt::format("{:47}", output_hex);
+        str += hex_only ? "" : fmt::format("  '{}'", output_ascii);
+
+        if (hex_only) {
+            str.erase(str.find_last_not_of(' ') + 1);
+        }
+
         if (offset < count) {
             str += "\n";
         }

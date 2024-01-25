@@ -88,15 +88,7 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
 
 void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
 {
-    try {
-        if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-        !result.empty()) {
-            LogWarn(result);
-        }
-    }
-    catch (const scsi_exception &e) {
-        GetController()->Error(e.get_sense_key(), e.get_asc());
-    }
+    mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
 }
 
 //

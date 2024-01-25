@@ -645,7 +645,6 @@ bool GenericController::XferOutBlockOriented(bool cont)
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
-            return false;
         }
 #endif
         break;

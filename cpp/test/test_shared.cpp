@@ -121,13 +121,6 @@ path testing::CreateTempFileWithData(const span<const byte> data)
     return path(filename);
 }
 
-void testing::DeleteTempFile(const string &filename)
-{
-    path temp_file = test_data_temp_path;
-    temp_file += path(filename);
-    remove(temp_file);
-}
-
 string testing::ReadTempFileToString(const string &filename)
 {
     const path temp_file = test_data_temp_path / path(filename);

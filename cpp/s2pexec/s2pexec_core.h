@@ -55,6 +55,8 @@ private:
 
     bool request_sense = true;
 
+    bool hex_only = false;
+
     bool sasi = false;
 
     vector<uint8_t> buffer;

@@ -19,12 +19,14 @@ s2pexec \- SCSI2Pi SCSI/SASI command execution
 [\fB\--binary-output\fR]
 [\fB\--text-input\fR]
 [\fB\--text-output\fR]
-[\fB\--no-request-sense/-n\fR] |
-[\fB\--help/-H\fR] |
-[\fB\--version/-v\fR] |
+[\fB\--no-request-sense/-n\fR]
+[\fB\--hex-only/\fR]
+[\fB\--help/-H\fR]
+[\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pexec
-wraps protobuf input data into a custom SCSI2Pi SCSI or SASI command. s2p executes this command and displays the results. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
+Sends SCSI or SASI commands to a device and displays the results.
+Additonally, s2pexec can wrap protobuf input data into a custom SCSI2Pi SCSI command. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
 
 .SH NOTES
 
@@ -34,19 +36,19 @@ helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The
 .SH OPTIONS
 .TP
 .BR \--scsi-target/-i\fI " "\fIID[:LUN]
-SCSI ID and optional LUN (0-31) of the second PiSCSI/RaSCSI board, which is the target SCSI device.
+ID and optional LUN (0-31) of the SCSI target device.
 .TP
-.BR \--scsi-target/-h\fI " "\fIID[:LUN]
-SASI ID and optional LUN (0-1) of the second PiSCSI/RaSCSI board, which is the target SASI device.
+.BR \--sasi-target/-h\fI " "\fIID[:LUN]
+ID and optional LUN (0-1) of the SASI target device.
 .TP
 .BR \--board-id/-B\fI " "\fIBOARD_ID
 SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
 .TP
 .BR \--cdb/-c\fI " "\fICDB
-SCSI command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
+Command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
 .TP
 .BR \--buffer-size/-b\fI " "\fIBUFFER_SIZE
-TrBuffer size for receiving data, default is 4096 bytes. When sending data the buffer is automatically sized to match the size of the data to be sent.
+Buffer size for receiving data, default is 4096 bytes. When sending data the buffer is automatically sized to match the size of the data to be sent.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
@@ -64,22 +66,28 @@ Optional file with data in hexadecimal (human-readable) format to be sent in the
 Optional file for data received in the DATA IN phase. This data in this file are coded in hexadecimal (human-readable) format.
 .TP
 .BR \--protobuf-input-file/-p\fI " "\fIFILE
-The protobuf data input file, by default in JSON format.
+The protobuf data input file when using s2pexec for sending a custom SCSI2Pi SCSI command, by default in JSON format.
 .TP
 .BR \--protobuf-output-file/-P\fI " "\fIFILE
-The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
+The protobuf data output file when using s2pexec for sending a custom SCSI2Pi SCSI command, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
 .BR \--binary-input\fI
-Signals that the protobuf input file is in protobuf binary format instead of JSON.
+Signals that the protobuf input file for the custom SCSI2Pi SCSI command is in protobuf binary format instead of JSON.
 .TP
 .BR \--binary-output\fI
-Generate a protobuf binary format file instead of JSON.
+Generate a protobuf binary format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
 .TP
 .BR \--text-input\fI
-Signals that the protobuf input file is in protobuf text format instead of JSON.
+Signals that the protobuf input file for the custom SCSI2Pi SCSI command is in protobuf text format instead of JSON.
 .TP
 .BR \--text-output\fI
-Generate a protobuf text format file instead of JSON.
+Generate a protobuf text format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
+.TP
+.BR \--no-request-sense\fI
+Do not automatically send REQUEST SENSE after an error to get the sense data.
+.TP
+.BR \--hex-only\fI
+Do not display/save the offsets and the ASCI representantion of received data.
 .TP
 .BR \--help/-H\fI
 Show a help text.
@@ -88,8 +96,11 @@ Show a help text.
 Show the s2pexec version.
 
 .SH EXAMPLE
-s2pexec -i 0 -b 65536 -c c0:01:00:00:00:00:00:ff:ff:00"
-Send a command to the target device with SCSI ID 0.
+s2pexec -i 0 -c 12:00:00:00:20:00
+Send an INQUIRY command to the device with SCSI ID 0 and display the results.
+
+s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
+Send a MODE SELECT to the device with SCSI ID 5, with the hexadecimally code data in data.dat as parameters.
 
 .SH SEE ALSO
 s2pctl(1), s2p(1), s2pdump(1)

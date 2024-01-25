@@ -21,7 +21,7 @@ TEST(ModePageUtilTest, ModeSelect6)
 
     // PF (vendor-specific parameter format) must not fail but be ignored
     cdb[1] = 0x00;
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 0).empty());
+    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 0);
 
     // PF (standard parameter format)
     cdb[1] = 0x10;
@@ -43,7 +43,7 @@ TEST(ModePageUtilTest, ModeSelect6)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16, 512);
 
     // Page 7 (Verify error recovery page)
     buf[4] = 0x07;
@@ -54,7 +54,7 @@ TEST(ModePageUtilTest, ModeSelect6)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 10, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 10, 512);
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
@@ -74,7 +74,7 @@ TEST(ModePageUtilTest, ModeSelect6)
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
 
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 512);
 }
 
 TEST(ModePageUtilTest, ModeSelect10)
@@ -108,7 +108,7 @@ TEST(ModePageUtilTest, ModeSelect10)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20, 512);
 
     // Page 7 (Verify error recovery page)
     buf[8] = 0x07;
@@ -119,7 +119,7 @@ TEST(ModePageUtilTest, ModeSelect10)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 14, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 14, 512);
 
     // Page 3 (Format device page)
     buf[8] = 0x03;
@@ -139,7 +139,7 @@ TEST(ModePageUtilTest, ModeSelect10)
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
 
-    EXPECT_TRUE(ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 512).empty());
+    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 512);
 }
 
 TEST(ModePageUtilTest, EnrichFormatPage)

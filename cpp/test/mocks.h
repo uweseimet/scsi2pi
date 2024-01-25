@@ -395,7 +395,7 @@ class MockSasiHd : public SasiHd // NOSONAR Ignore inheritance hierarchy depth i
 
 public:
 
-    MockSasiHd(int lun) : SasiHd(lun)
+    explicit MockSasiHd(int lun) : SasiHd(lun)
     {
     }
     explicit MockSasiHd(const unordered_set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)

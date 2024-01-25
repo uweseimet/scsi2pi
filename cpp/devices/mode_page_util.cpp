@@ -16,7 +16,7 @@ using namespace spdlog;
 using namespace scsi_defs;
 using namespace memory_util;
 
-string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length, int sector_size)
+void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length, int sector_size)
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
@@ -24,18 +24,16 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
     if (!(cdb[1] & 0x10)) {
         // Vendor-specific parameters (SCSI-1) are not supported.
         // Do not report an error in order to support Apple's HD SC Setup.
-        return "";
+        return;
     }
 
     // The page data are optional
     if (!length) {
-        return "";
+        return;
     }
 
     int offset = EvaluateBlockDescriptors(cmd, buf, length, sector_size);
     length -= offset;
-
-    string result;
 
     // Parse the pages
     while (length > 0) {
@@ -88,8 +86,6 @@ string mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_
         length -= size;
         offset += size;
     }
-
-    return result;
 }
 
 int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int sector_size)

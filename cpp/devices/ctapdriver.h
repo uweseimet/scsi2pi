@@ -50,9 +50,6 @@ public:
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
 
-    // Enable/Disable the piscsi0 interface
-    string IpLink(bool) const;
-
     // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
@@ -62,6 +59,12 @@ public:
     {
         return BRIDGE_NAME;
     }
+
+    // Add the piscsi_bridge bridge
+    static string AddBridge(int);
+
+    // Enable/Disable the piscsi0 interface
+    static string IpLink(bool);
 
 private:
 

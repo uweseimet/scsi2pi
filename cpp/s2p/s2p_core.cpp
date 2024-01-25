@@ -114,21 +114,6 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-bool S2p::HandleDeviceListChange(const CommandContext &context, PbOperation operation) const
-{
-    // ATTACH and DETACH return the resulting device list
-    if (operation == ATTACH || operation == DETACH) {
-        // A command with an empty device list is required here in order to return data for all devices
-        PbCommand command;
-        PbResult result;
-        response.GetDevicesInfo(executor->GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
-        context.WriteResult(result);
-        return result.status();
-    }
-
-    return true;
-}
-
 int S2p::Run(span<char*> args, bool in_process)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -146,7 +131,8 @@ int S2p::Run(span<char*> args, bool in_process)
     int port;
     try {
         const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
-        property_handler.Init(properties.at(PropertyHandler::PROPERTY_FILES), properties);
+        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
+        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
 
         if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
         !CommandDispatcher::SetLogLevel(log_level)) {
