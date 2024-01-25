@@ -62,27 +62,27 @@ string S2pProtoExecutor::Execute(const string &filename, protobuf_format input_f
     cdb[7] = static_cast<uint8_t>(length >> 8);
     cdb[8] = static_cast<uint8_t>(length);
 
-    if (!phase_executor->Execute(scsi_command::cmd_execute_operation, cdb, buffer, length)) {
+    if (!initiator_executor->Execute(scsi_command::cmd_execute_operation, cdb, buffer, length)) {
         return "Can't execute operation";
     }
 
     cdb[7] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[8] = static_cast<uint8_t>(buffer.size());
 
-    if (!phase_executor->Execute(scsi_command::cmd_receive_operation_results, cdb, buffer, buffer.size())) {
+    if (!initiator_executor->Execute(scsi_command::cmd_receive_operation_results, cdb, buffer, buffer.size())) {
         return "Can't read operation result";
     }
 
     switch (input_format) {
     case protobuf_format::binary: {
-        if (!result.ParseFromArray(buffer.data(), phase_executor->GetByteCount())) {
+        if (!result.ParseFromArray(buffer.data(), initiator_executor->GetByteCount())) {
             return "Can't parse binary protobuf data";
         }
         break;
     }
 
     case protobuf_format::json: {
-        const string json((const char*)buffer.data(), phase_executor->GetByteCount());
+        const string json((const char*)buffer.data(), initiator_executor->GetByteCount());
         if (!JsonStringToMessage(json, &result).ok()) {
             return "Can't parse JSON protobuf data";
         }
@@ -90,7 +90,7 @@ string S2pProtoExecutor::Execute(const string &filename, protobuf_format input_f
     }
 
     case protobuf_format::text: {
-        const string text((const char*)buffer.data(), phase_executor->GetByteCount());
+        const string text((const char*)buffer.data(), initiator_executor->GetByteCount());
         if (!TextFormat::ParseFromString(text, &result)) {
             return "Can't parse text format protobuf data";
         }
@@ -107,5 +107,5 @@ string S2pProtoExecutor::Execute(const string &filename, protobuf_format input_f
 
 bool S2pProtoExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer, bool sasi)
 {
-    return phase_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
+    return initiator_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
 }

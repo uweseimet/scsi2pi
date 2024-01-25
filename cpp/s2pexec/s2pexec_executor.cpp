@@ -15,7 +15,7 @@ using namespace s2p_util;
 
 bool S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer, bool sasi)
 {
-    return phase_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
+    return initiator_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
 }
 
 string S2pExecExecutor::GetSenseData(bool sasi)
@@ -24,11 +24,11 @@ string S2pExecExecutor::GetSenseData(bool sasi)
     array<uint8_t, 6> cdb = { };
     cdb[4] = buf.size();
 
-    if (!phase_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, buf.size(), sasi)) {
+    if (!initiator_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, buf.size(), sasi)) {
         return "Can't execute REQUEST SENSE";
     }
 
-    if (phase_executor->GetByteCount() < static_cast<int>(buf.size())) {
+    if (initiator_executor->GetByteCount() < static_cast<int>(buf.size())) {
         return "Device reported an unknown error";
     }
     else {

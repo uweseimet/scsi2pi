@@ -184,10 +184,12 @@ void CTapDriver::CleanUp() const
                 warn(error);
             }
 
+#ifdef __linux__
             trace(">brctl delbr " + BRIDGE_NAME);
             if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
                 warn("Removing " + BRIDGE_NAME + " failed: " + strerror(errno));
             }
+#endif
 
             close(fd);
         }
@@ -287,11 +289,12 @@ string CTapDriver::SetUpNonEth0(int socket_fd, int ip_fd, const string &s)
 
 string CTapDriver::AddBridge(int fd)
 {
+#ifdef __linux__
     trace(">brctl addbr " + BRIDGE_NAME);
-
     if (ioctl(fd, SIOCBRADDBR, BRIDGE_NAME.c_str()) == -1) {
         return "Can't ioctl SIOCBRADDBR";
     }
+#endif
 
     return "";
 }

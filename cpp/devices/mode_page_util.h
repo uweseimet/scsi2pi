@@ -21,6 +21,7 @@ namespace mode_page_util
 {
 void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int, int);
 int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int, int);
+void HandleSectorSizeChange(span<const uint8_t>, int, int);
 void EnrichFormatPage(map<int, vector<byte>>&, bool, int);
 void AddAppleVendorModePage(map<int, vector<byte>>&, bool);
 }

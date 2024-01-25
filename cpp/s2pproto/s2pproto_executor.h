@@ -10,7 +10,7 @@
 
 #include <cstdint>
 #include <array>
-#include "shared_initiator/phase_executor.h"
+#include "shared_initiator/initiator_executor.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
@@ -33,7 +33,7 @@ public:
 
     S2pProtoExecutor(Bus &bus, int id)
     {
-        phase_executor = make_unique<PhaseExecutor>(bus, id);
+        initiator_executor = make_unique<InitiatorExecutor>(bus, id);
     }
     ~S2pProtoExecutor() = default;
 
@@ -42,17 +42,17 @@ public:
 
     void SetTarget(int id, int lun)
     {
-        phase_executor->SetTarget(id, lun);
+        initiator_executor->SetTarget(id, lun);
     }
 
     int GetByteCount() const
     {
-        return phase_executor->GetByteCount();
+        return initiator_executor->GetByteCount();
     }
 
 private:
 
     array<uint8_t, BUFFER_SIZE> buffer;
 
-    unique_ptr<PhaseExecutor> phase_executor;
+    unique_ptr<InitiatorExecutor> initiator_executor;
 };

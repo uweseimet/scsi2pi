@@ -8,12 +8,12 @@
 
 #include <spdlog/spdlog.h>
 #include <chrono>
-#include "phase_executor.h"
+#include "initiator_executor.h"
 
 using namespace std;
 using namespace spdlog;
 
-void PhaseExecutor::Reset() const
+void InitiatorExecutor::Reset() const
 {
     bus.SetDAT(0);
     bus.SetBSY(false);
@@ -21,7 +21,7 @@ void PhaseExecutor::Reset() const
     bus.SetATN(false);
 }
 
-bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, bool sasi)
+bool InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, bool sasi)
 {
     status = 0;
     byte_count = 0;
@@ -70,7 +70,7 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
     return false;
 }
 
-bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
+bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
 {
     const phase_t phase = bus.GetPhase();
 
@@ -110,7 +110,7 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
     return true;
 }
 
-bool PhaseExecutor::Arbitration() const
+bool InitiatorExecutor::Arbitration() const
 {
     if (!WaitForFree()) {
         trace("Bus is not free");
@@ -138,7 +138,7 @@ bool PhaseExecutor::Arbitration() const
     return true;
 }
 
-bool PhaseExecutor::Selection(bool sasi) const
+bool InitiatorExecutor::Selection(bool sasi) const
 {
     // There is no initiator ID with SASI
     bus.SetDAT(static_cast<uint8_t>((sasi ? 0 : 1 << initiator_id) + (1 << target_id)));
@@ -170,7 +170,7 @@ bool PhaseExecutor::Selection(bool sasi) const
     return true;
 }
 
-void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
+void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
 {
     cdb[0] = static_cast<uint8_t>(cmd);
     if (target_lun < 8) {
@@ -189,7 +189,7 @@ void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     }
 }
 
-void PhaseExecutor::Status()
+void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf;
 
@@ -201,7 +201,7 @@ void PhaseExecutor::Status()
     }
 }
 
-void PhaseExecutor::DataIn(span<uint8_t> buffer, int length)
+void InitiatorExecutor::DataIn(span<uint8_t> buffer, int length)
 {
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
     if (byte_count > length) {
@@ -212,7 +212,7 @@ void PhaseExecutor::DataIn(span<uint8_t> buffer, int length)
     }
 }
 
-void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
+void InitiatorExecutor::DataOut(span<uint8_t> buffer, int length)
 {
     byte_count = bus.SendHandShake(buffer.data(), length);
     if (byte_count > length) {
@@ -223,7 +223,7 @@ void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
     }
 }
 
-void PhaseExecutor::MsgIn()
+void InitiatorExecutor::MsgIn()
 {
     array<uint8_t, 1> buf = { };
 
@@ -240,7 +240,7 @@ void PhaseExecutor::MsgIn()
     }
 }
 
-void PhaseExecutor::MsgOut()
+void InitiatorExecutor::MsgOut()
 {
     array<uint8_t, 1> buf;
 
@@ -255,7 +255,7 @@ void PhaseExecutor::MsgOut()
     }
 }
 
-bool PhaseExecutor::WaitForFree() const
+bool InitiatorExecutor::WaitForFree() const
 {
     // Wait for up to 2 s
     int count = 10'000;
@@ -271,7 +271,7 @@ bool PhaseExecutor::WaitForFree() const
     return false;
 }
 
-bool PhaseExecutor::WaitForBusy() const
+bool InitiatorExecutor::WaitForBusy() const
 {
     // Wait for up to 2 s
     int count = 10'000;
@@ -287,7 +287,7 @@ bool PhaseExecutor::WaitForBusy() const
     return false;
 }
 
-void PhaseExecutor::SetTarget(int id, int lun)
+void InitiatorExecutor::SetTarget(int id, int lun)
 {
     target_id = id;
     target_lun = lun;

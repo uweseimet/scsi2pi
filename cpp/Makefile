@@ -94,7 +94,7 @@ S2P = s2p
 S2PCTL = s2pctl
 S2PDUMP = s2pdump
 S2PEXEC = s2pexec
-S2PPROTO = s22proto
+S2PPROTO = s2pproto
 S2P_TEST = s2p_test
 IN_PROCESS_TEST = in_process_test
 

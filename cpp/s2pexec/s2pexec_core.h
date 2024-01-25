@@ -33,8 +33,6 @@ private:
     string ReadData();
     string WriteData(int);
 
-    bool SetLogLevel() const;
-
     void CleanUp() const;
     static void TerminationHandler(int);
 

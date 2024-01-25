@@ -12,7 +12,6 @@ s2pexec \- SCSI2Pi custom SCSI command executor
 [\fB\--binary-output\fR]
 [\fB\--text-input\fR]
 [\fB\--text-output\fR]
-[\fB\--no-request-sense/-n\fR]
 [\fB\--help/-H\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
@@ -22,12 +21,12 @@ wraps protobuf input data into a custom SCSI2Pi SCSI command. The input data mus
 .SH NOTES
 
 .B s2pproto
-helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
+helps with advanced testing. It requires either two connected PiSCSI/RaSCSI boards or an in-process bus. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
 
 .SH OPTIONS
 .TP
 .BR \--scsi-target/-i\fI " "\fIID[:LUN]
-ID and optional LUN (0-31) of the SCSI target device.
+SCSI ID and optional LUN (0-31) of the target device.
 .TP
 .BR \--board-id/-B\fI " "\fIBOARD_ID
 SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
@@ -51,10 +50,7 @@ Generate a protobuf binary format output file instead of JSON for the results.
 Signals that the input file is in protobuf text format instead of JSON.
 .TP
 .BR \--text-output\fI
-Generate a protobuf text format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
-.TP
-.BR \--no-request-sense\fI
-Do not automatically send REQUEST SENSE after an error to get the sense data.
+Generate a protobuf text format file instead of JSON for the results.
 .TP
 .BR \--help/-H\fI
 Show a help text.

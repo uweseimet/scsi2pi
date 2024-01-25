@@ -42,11 +42,11 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--locale\fR \fILOCALE\fR]
 .SH DESCRIPTION
 .B s2pctl
-sends commands to s2p in order to make configuration adjustments at runtime or to check the device status.
+sends commands to s2p in order to apply configuration changes at runtime or to check a device status.
 
-You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -h option to specify the s2p host s2pctl shall connect to.
+You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
 
-When launched without arguments s2pctl enters interactive mode where you can enter commands on the command line.
+When launched without arguments s2pctl enters interactive mode, where you can enter commands on the command line.
 
 .SH OPTIONS
 .TP
@@ -74,9 +74,6 @@ Set the s2p log level (trace, debug, info, warning, error, off).
 .BR \--host/-H\fI " " \fIHOST
 The s2p host to connect to, default is 'localhost'.
 .TP
-.BR \--list-images/-e\fI
-List all images files in the default image folder.
-.TP
 .BR \--list-interfaces/-N\fI
 Lists all network interfaces that are up and available for setting up a DaynaPort emulation.
 .TP
@@ -92,8 +89,8 @@ List all of the devices that are currently being emulated, as well as their curr
 .BR \--list-extensions/-m\fI
 List all supported file extensions and the device types they map to.
 .TP
-.BR \--list-images/-m\fI
-List images files in the default image folder.
+.BR \--list-images/-e\fI
+List all images files in the default image folder.
 .TP
 .BR \--list-operations/-o\fI
 List available remote interface operations.
@@ -135,17 +132,17 @@ Shut down the s2p process.
 .BR \--delete/-d\fI " "\fIFILENAME
 Delete an image file in the default image folder.
 .TP
-.BR \--binary-protobuf\fI " "\fIFILENAME
-Do not send command to s2p but write it to a protobuf binary file.
-.TP
-.BR \--json-protobuf\fI " "\fIFILENAME
-Do not send command to s2p but write it to a protobuf JSON file.
-.TP
-.BR \--text-protobuf\fI " "\fIFILENAME
-Do not send command to s2p but write it to a protobuf text format file.
-.TP
 .BR \--copy/-x\fI " "\fICURRENT_NAME:NEW_NAME
 Copy an image file in the default image folder.
+.TP
+.BR \--binary-protobuf\fI " "\fIFILENAME
+Do not send the command to s2p but write it to a protobuf binary file.
+.TP
+.BR \--json-protobuf\fI " "\fIFILENAME
+Do not send the command to s2p but write it to a protobuf JSON file.
+.TP
+.BR \--text-protobuf\fI " "\fIFILENAME
+Do not send the command to s2p but write it to a protobuf text format file.
 .TP
 .BR \--locale\fI " "\fILOCALE
 Overrides the default locale (language) for client-facing error messages.
@@ -154,48 +151,41 @@ Overrides the default locale (language) for client-facing error messages.
 Command is the operation being requested. Options are:
    a(ttach): Attach device
    d(etach): Detach device
-   i(nsert): Insert medium (removable media devices only)
-   e(ject): Eject medium (removable media devices only)
+   i(nsert): Insert medium (removable media devices only, i.e. SCRM, SCMO, SCCD)
+   e(ject): Eject medium (removable media devices only, i.e. SCRM, SCMO, SCCD)
    p(rotect): Write protect the medium (not for CD-ROMs, which are always read-only)
    u(nprotect): Remove write protection from the medium (not for CD-ROMs, which are always read-only)
 .IP
 eject, protect and unprotect are idempotent.
 .TP 
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional block size, either 256, 512, 1024, 2048 or 4096 bytes. The default size is 512 bytes.
+The optional block size, either 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size is 512 bytes.
 .TP
 .BR \--file/-f\fI " " \fIFILE|PARAM
 Device-specific: Either a path to a disk image file, or a parameter for a non-disk device. See the s2p(1) man page for permitted file types.
 .TP 
 .BR \--type/-t\fI " " \fITYPE
 Specifies the device type. This type overrides the type derived from the file extension of the specified image. See the s2p(1) man page for the available device types. For some types there are shortcuts (only the first letter is required):
-   hd: SCSI hard disk drive
-   rm: SCSI removable media drive
-   cd: CD-ROM
-   mo: Magneto-Optical disk
-   lp: SCSI printer
-   daynaport: DaynaPort network adapter
-   services: Host services device
+   sahd: SASI hard drive
+   schd: SCSI hard drive
+   scrm: SCSI removable media drive
+   sccd: CD-ROM drive
+   scmo: Magneto-optical disk
+   scdp: DaynaPort network adapter
+   sclp: SCSI printer
+   schs: Host services device
 .TP 
 .BR \--name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP 
 .BR \-u\fI " " \fIUNIT
-Unit number (0-31 for SCSI, 0-1 for SASI). This defaults to 0. This option is only used when there are multiple SCSI/SASI devices for the same SCSI ID.
+Logical unit number (0-31 for SCSI, 0-1 for SASI). The LUN defaults to 0. This option is used when there are multiple SCSI/SASI devices for the same SCSI ID.
 
 .SH EXAMPLES
-Show a listing of all devices and their current status.
-   s2pctl -l
+Show the completer remote service information.
+   s2pctl -s
 
-
-Example output:
-   +----+-----+------+-------------------------------------
-   | ID | LUN | TYPE | IMAGE FILE
-   +----+-----+------+-------------------------------------
-   |  0 |   1 | SCHD | /home/pi/images/harddisk.hds
-   +----+-----+------+-------------------------------------
-
-Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "HDIIMAGE0.HDS".
+Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "hdimage0.hds".
    s2pctl -i 0 -f hdimage0.hds
 
 .SH SEE ALSO

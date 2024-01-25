@@ -46,7 +46,7 @@ void S2pParser::Banner(bool usage) const
             << "  --token-file/-P TOKEN_FILE  Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --locale,-z                 Locale (language) for client-facing messages.\n"
-            << "  --version/-v                Display s2p version.\n"
+            << "  --version/-v                Display the s2p version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"

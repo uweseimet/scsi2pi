@@ -48,7 +48,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 default is '~/images'.\n"
             << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|\n"
             << "                                 error|off), default is 'info'.\n"
-            << "  --help/-h                      Display usage information.\n"
+            << "  --help/-h                      Display this help.\n"
             << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
             << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
             << "  --reserve-ids/-r IDS           Comma-separated list of IDs to reserve.\n"
@@ -91,7 +91,7 @@ int S2pCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    return args.size() < 2 ? RunInteractive() : ParseArguments(args, false);
+    return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
 
 int S2pCtl::RunInteractive() const
@@ -121,23 +121,30 @@ int S2pCtl::RunInteractive() const
             vector<char*> interactive_args;
             interactive_args.emplace_back(strdup("s2pctl"));
 
-            // The command must have exactly one leading hyphen because it will be parsed with getopt_long_only()
+            // Try to guess whether the command is short or long if there is no dash at the beginning
             string command = args[0];
-            command = "-" + command.erase(0, command.find_first_not_of('-'));
+            if (!command.starts_with("-")) {
+                if (command.size() < 2) {
+                    command = "-" + command;
+                }
+                else {
+                    command = "--" + command;
+                }
+            }
             interactive_args.emplace_back(strdup(command.c_str()));
 
             for (size_t i = 1; i < args.size(); i++) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
             }
 
-            ParseArguments(interactive_args, true);
+            ParseArguments(interactive_args);
         }
     }
 
     return EXIT_SUCCESS;
 }
 
-int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
+int S2pCtl::ParseArguments(const vector<char*> &args) const
 {
     const int OPT_PROMPT = 2;
     const int OPT_BINARY_PROTOBUF = 3;
@@ -207,11 +214,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args, bool interactive) const
 
     string locale = GetLocale();
 
-    const auto &get_opt = interactive ? getopt_long_only : getopt_long;
-
     optind = 1;
     int opt;
-    while ((opt = get_opt(static_cast<int>(args.size()), args.data(),
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
         "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'i':

@@ -35,34 +35,34 @@ ID and optional LUN (0-31) of the SCSI target device.
 ID and optional LUN (0-1) of the SASI target device.
 .TP
 .BR \--board-id/-B\fI " "\fIBOARD_ID
-SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
+SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7. Not relevant for SASI.
 .TP
 .BR \--cdb/-c\fI " "\fICDB
 Command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
 .TP
 .BR \--buffer-size/-b\fI " "\fIBUFFER_SIZE
-Buffer size for receiving data, default is 4096 bytes. When sending data the buffer is automatically sized to match the size of the data to be sent.
+Buffer size for receiving data, the default is 4096 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
 .BR \--binary-input-file/-f\fI " "\fIFILE
-Optional file with binary data to be sent in the DATA OUT phase.
+Optional file with binary data to send in the DATA OUT phase.
 .TP
 .BR \--binary-output-file/-F\fI " "\fIFILE
 Optional file for binary data received in the DATA IN phase.
 .TP
 .BR \--hex-input-file/-t\fI " "\fIFILE
-Optional file with data in hexadecimal (human-readable) format to be sent in the DATA OUT phase.
+Optional file with data in hexadecimal (human-readable) format to send in the DATA OUT phase.
 .TP
 .BR \--hex-output-file/-T\fI " "\fIFILE
-Optional file for data received in the DATA IN phase. This data in this file are coded in hexadecimal (human-readable) format.
+Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
 .TP
 .BR \--no-request-sense\fI
 Do not automatically send REQUEST SENSE after an error to get the sense data.
 .TP
 .BR \--hex-only\fI
-Do not display/save the offsets and the ASCI representantion of received data.
+Do not display/save the offsets and the ASCI representantion of the received data.
 .TP
 .BR \--help/-H\fI
 Show a help text.
@@ -75,7 +75,7 @@ s2pexec -i 0 -c 12:00:00:00:20:00
 Send an INQUIRY command to the device with SCSI ID 0 and display the results.
 
 s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
-Send a MODE SELECT to the device with SCSI ID 5, with the hexadecimally code data in data.dat as parameters.
+Send a MODE SELECT command to the device with SCSI ID 5, with the hexadecimally coded data in data.dat as parameters.
 
 .SH SEE ALSO
 s2p(1), s2pctl(1), s2pdump(1), s2pproto(1)

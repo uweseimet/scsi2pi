@@ -97,7 +97,7 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
 
         int page;
         if (!GetAsUnsignedInt(key_components[1], page) || page > 0x3e) {
-            warn(fmt::format("Ignored invalid mode page property '{}'", key));
+            warn("Ignored invalid mode page property '{}'", key);
             continue;
         }
 
@@ -111,27 +111,27 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             data = HexToBytes(value);
         }
         catch (const parser_exception&) {
-            warn(fmt::format("Ignored invalid mode page definition for page {0}: {1}", page, value));
+            warn("Ignored invalid mode page definition for page {0}: {1}", page, value);
             continue;
         }
 
         if (data.empty()) {
-            trace(fmt::format("Removing default mode page {}", page));
+            trace("Removing default mode page {}", page);
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
             if (page != (static_cast<int>(data[0]) & 0x3f)) {
-                warn(fmt::format("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]));
+                warn("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]);
                 continue;
 
             }
 
             if (page && static_cast<byte>(data.size() - 2) != data[1]) {
-                warn(fmt::format("Ignored mode page definition with wrong page size {0}: {1}", page, data[1]));
+                warn("Ignored mode page definition with wrong page size {0}: {1}", page, data[1]);
                 continue;
             }
 
-            trace(fmt::format("Adding/replacing mode page {0}: {1}", page, key_components[2]));
+            trace("Adding/replacing mode page {0}: {1}", page, key_components[2]);
         }
 
         pages[page] = data;

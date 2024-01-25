@@ -12,9 +12,9 @@
 #include <csignal>
 #include <cstring>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
+#include "shared_initiator/initiator_util.h"
 #include "s2pexec_core.h"
 
 using namespace std;
@@ -22,6 +22,7 @@ using namespace filesystem;
 using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
+using namespace initiator_util;
 
 void S2pExec::CleanUp() const
 {
@@ -61,7 +62,7 @@ void S2pExec::Banner(bool header)
         << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
         << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
         << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
-        << "  --version/-v                  Display s2pexec version.\n"
+        << "  --version/-v                  Display the s2pexec version.\n"
         << "  --help/-H                     Display this help.\n";
 }
 
@@ -189,7 +190,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel()) {
+    if (!SetLogLevel(log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
@@ -398,17 +399,3 @@ string S2pExec::WriteData(int count)
 
     return "";
 }
-
-bool S2pExec::SetLogLevel() const
-{
-    const level::level_enum l = level::from_str(log_level);
-    // Compensate for spdlog using 'off' for unknown levels
-    if (to_string_view(l) != log_level) {
-        return false;
-    }
-
-    set_level(l);
-
-    return true;
-}
-

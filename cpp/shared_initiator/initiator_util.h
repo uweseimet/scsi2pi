@@ -2,27 +2,17 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <vector>
 #include <string>
 
 using namespace std;
 
-class S2pCtl
+namespace initiator_util
 {
-
-public:
-
-    int Run(const vector<char*>&) const;
-
-private:
-
-    void Banner(bool) const;
-    int RunInteractive() const;
-    int ParseArguments(const vector<char*>&) const;
-};
+bool SetLogLevel(const string&);
+}

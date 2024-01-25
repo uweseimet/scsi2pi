@@ -56,19 +56,7 @@ void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t>
             // With this page the sector size for a subsequent FORMAT can be selected, but only very few
             // drives support this, e.g FUJITSU M2624S.
             // We are fine as long as the current sector size remains unchanged.
-            if (const int requested_size = GetInt16(buf, offset + 12); requested_size != sector_size) {
-                if (requested_size != sector_size) {
-                    // Simple consistency check
-                    if (!(requested_size & 0xe1ff)) {
-                        // It is not possible to permanently (e.g. by formatting) change the sector size.
-                        // The sector size is an externally configurable setting only.
-                        warn(
-                            "Sector size change from {} to {} bytes per sector requested. Configure the requested sector size in the s2p settings.",
-                            sector_size, requested_size);
-                    }
-                    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
-                }
-            }
+            HandleSectorSizeChange(buf, offset + 12, sector_size);
 
             break;
         }
@@ -114,20 +102,24 @@ int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_
 
     // Check for temporary sector size change in first block descriptor
     if (block_descriptor_length && length >= required_length + 8) {
-        if (const int requested_size = GetInt16(buf, required_length + 6); requested_size != sector_size) {
-            if (requested_size != sector_size) {
-                // Simple consistency check
-                if (!(requested_size & 0xe1ff)) {
-                    warn(
-                        "Sector size change from {} to {} bytes per sector requested. Configure the requested sector size in the s2p settings.",
-                        sector_size, requested_size);
-                }
-                throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
-            }
-        }
+        HandleSectorSizeChange(buf, required_length + 6, sector_size);
     }
 
     return block_descriptor_length + required_length;
+}
+
+void mode_page_util::HandleSectorSizeChange(span<const uint8_t> buf, int offset, int sector_size)
+{
+    if (const int requested_size = GetInt16(buf, offset); requested_size != sector_size) {
+        // Simple consistency check
+        if (!(requested_size & 0xe1ff)) {
+            warn(
+                "Sector size change from {} to {} bytes requested. Configure the requested sector size in the s2p settings.",
+                sector_size, requested_size);
+        }
+
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    }
 }
 
 void mode_page_util::EnrichFormatPage(map<int, vector<byte>> &pages, bool changeable, int sector_size)

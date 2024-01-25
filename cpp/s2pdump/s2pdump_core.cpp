@@ -17,9 +17,9 @@
 #include <array>
 #include <regex>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
+#include "shared_initiator/initiator_util.h"
 #include "s2pdump_core.h"
 
 using namespace std;
@@ -27,6 +27,7 @@ using namespace filesystem;
 using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
+using namespace initiator_util;
 
 void S2pDump::CleanUp() const
 {
@@ -71,7 +72,9 @@ void S2pDump::Banner(bool header) const
         << "  --sector-count/-C COUNT            Sector count, default is the capacity.\n"
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
-        << "  --restore/-r                       Restore instead of dump.\n";
+        << "  --restore/-r                       Restore instead of dump.\n"
+        << "  --version/-v                       Display the s2pdump version.\n"
+        << "  --help/-H                          Display this help.\n";
 }
 
 bool S2pDump::Init(bool in_process)
@@ -115,6 +118,8 @@ bool S2pDump::ParseArguments(span<char*> args)
         { "start-sector", required_argument, nullptr, 'S' },
         { "sasi-scan", no_argument, nullptr, 't' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
+        { "version", no_argument, nullptr, 'v' },
+        { "help", no_argument, nullptr, 'H' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -223,7 +228,7 @@ bool S2pDump::ParseArguments(span<char*> args)
         return false;
     }
 
-    if (!SetLogLevel()) {
+    if (!SetLogLevel(log_level)) {
         throw parser_exception("Invalid log level '" + log_level + "'");
     }
 
@@ -759,17 +764,3 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     cout << flush;
 }
-
-bool S2pDump::SetLogLevel() const
-{
-    const level::level_enum l = level::from_str(log_level);
-    // Compensate for spdlog using 'off' for unknown levels
-    if (to_string_view(l) != log_level) {
-        return false;
-    }
-
-    set_level(l);
-
-    return true;
-}
-

@@ -53,12 +53,12 @@ If there are SCSI2Pi command line options for the respective device they will ov
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP
 .BR \--scsi-id/-i \fI " "\fIn[:u] " " \fIFILE
-n is the SCSI ID number (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
+n is the SCSI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
 .IP
 FILE is the name of the image file to use for the SCSI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60".
 .TP
 .BR \--sasi-id/-h\fI " "\fIn[:u] " " \fIFILE
-n is the SASI ID number (0-7). u (0-1) is the optional LUN (logical unit). The default LUN is 0.
+n is the SASI ID (0-7). u (0-1) is the optional LUN (logical unit). The default LUN is 0.
 .IP
 FILE is the name of the image file to use for the SASI hard drive.
 .TP
@@ -69,13 +69,13 @@ The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, S
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, either 256, 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
+The optional sector size, either 256 (SASI only), 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
 .TP
 .BR \--blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename compatibility mode. See the BlueSCSI documentation for details on the BlueSCSI filename convention.
 .TP
 .BR \--reserved-ids/-r\fI " " \fIRESERVED_IDS
-An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
+An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR \--image-folder/-F\fI " " \fIFOLDER
 The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images' except for the root user. In this case, for backwards compatibility with PiSCSI the default is '/home/pi/images'.
@@ -84,14 +84,14 @@ The default folder for image files. For files in this folder no absolute path ne
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR \--property-\fI " " \fIKEY=VALUE
-Sets the property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
+Set the s2p property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
 .BR \--property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The optional default global property file is /etc/s2p.conf. This file is parsed first.
 The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN was provided when setting the level.
+The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
 .TP
 .BR \--token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

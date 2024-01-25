@@ -292,13 +292,6 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
     device->Dispatch(scsi_command::cmd_send_diagnostic);
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    controller->SetCmdByte(1, 0x10);
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_send_diagnostic);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "SEND DIAGNOSTIC must fail because PF bit is not supported";
-    controller->SetCmdByte(1, 0);
-
     controller->SetCmdByte(3, 1);
     EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_send_diagnostic);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),

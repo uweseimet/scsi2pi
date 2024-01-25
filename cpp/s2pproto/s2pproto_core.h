@@ -31,8 +31,6 @@ private:
     int GenerateOutput(S2pProtoExecutor::protobuf_format, const string&, S2pProtoExecutor::protobuf_format,
         const string&);
 
-    bool SetLogLevel() const;
-
     void CleanUp() const;
     static void TerminationHandler(int);
 

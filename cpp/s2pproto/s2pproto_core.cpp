@@ -13,9 +13,9 @@
 #include <getopt.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
-#include <spdlog/spdlog.h>
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
+#include "shared/s2p_util.h"
+#include "shared_initiator/initiator_util.h"
 #include "s2pproto_core.h"
 
 using namespace std;
@@ -23,6 +23,7 @@ using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace spdlog;
 using namespace s2p_util;
+using namespace initiator_util;
 
 void S2pProto::CleanUp() const
 {
@@ -46,11 +47,11 @@ void S2pProto::Banner(bool header)
         cout << s2p_util::Banner("(Custom SCSI Command Execution Tool)");
     }
 
-    cout << "Usage: s2pexec [options]\n"
+    cout << "Usage: s2pproto [options]\n"
         << "  --scsi-target/-i ID:[LUN] SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                            default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID    Board (initiator) ID (0-7), default is 7.\n"
-        << "  --log-level/-L LOG_LEVEL  Log level (trace|debug|info|warning|error|off,\n"
+        << "  --log-level/-L LOG_LEVEL  Log level (trace|debug|info|warning|error|off),\n"
         << "                            default is 'info'.\n"
         << "  --input-file/-f FILE      Protobuf data input file,\n"
         << "                            by default in JSON format.\n"
@@ -58,9 +59,9 @@ void S2pProto::Banner(bool header)
         << "                            by default in JSON format.\n"
         << "  --binary-input            Input file has protobuf binary format.\n"
         << "  --binary-output           Generate protobuf binary format file.\n"
-        << "  --text-input              Input file has protobuf tet format.\n"
+        << "  --text-input              Input file has protobuf text format.\n"
         << "  --text-output             Generate protobuf text format file.\n"
-        << "  --version/-v              Display s2pexec version.\n"
+        << "  --version/-v              Display the s2pproto version.\n"
         << "  --help/-h                 Display this help.\n";
 }
 
@@ -110,17 +111,12 @@ bool S2pProto::ParseArguments(span<char*> args)
 
     string initiator = "7";
     string target;
-    string buf;
 
     optind = 1;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "B:f:F:i:L:hnv",
         options.data(), nullptr)) != -1) {
         switch (opt) {
-        case 'b':
-            buf = optarg;
-            break;
-
         case 'B':
             initiator = optarg;
             break;
@@ -181,7 +177,7 @@ bool S2pProto::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel()) {
+    if (!SetLogLevel(log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
@@ -249,19 +245,6 @@ int S2pProto::Run(span<char*> args, bool in_process)
     CleanUp();
 
     return result;
-}
-
-bool S2pProto::SetLogLevel() const
-{
-    const level::level_enum l = level::from_str(log_level);
-    // Compensate for spdlog using 'off' for unknown levels
-    if (to_string_view(l) != log_level) {
-        return false;
-    }
-
-    set_level(l);
-
-    return true;
 }
 
 int S2pProto::GenerateOutput(S2pProtoExecutor::protobuf_format input_format, const string &input_filename,

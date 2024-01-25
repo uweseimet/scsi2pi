@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <set>
 #include <span>
-#include "shared_initiator/phase_executor.h"
+#include "shared_initiator/initiator_executor.h"
 
 using namespace std;
 
@@ -22,7 +22,7 @@ public:
 
     S2pDumpExecutor(Bus &bus, int id)
     {
-        phase_executor = make_unique<PhaseExecutor>(bus, id);
+        phase_executor = make_unique<InitiatorExecutor>(bus, id);
     }
     ~S2pDumpExecutor() = default;
 
@@ -44,5 +44,5 @@ private:
     static uint32_t GetInt32(span<uint8_t>, int = 0);
     static uint64_t GetInt64(span<uint8_t>, int = 0);
 
-    unique_ptr<PhaseExecutor> phase_executor;
+    unique_ptr<InitiatorExecutor> phase_executor;
 };

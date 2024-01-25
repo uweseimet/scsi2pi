@@ -51,8 +51,6 @@ private:
     string DumpRestore();
     bool GetDeviceInfo();
 
-    bool SetLogLevel() const;
-
     void Reset() const;
 
     void CleanUp() const;

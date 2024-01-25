@@ -184,13 +184,8 @@ void PrimaryDevice::RequestSense()
 
 void PrimaryDevice::SendDiagnostic()
 {
-    // Do not support PF bit
-    if (GetController()->GetCmdByte(1) & 0x10) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
     // Do not support parameter list
-    if ((GetController()->GetCmdByte(3) != 0) || (GetController()->GetCmdByte(4) != 0)) {
+    if (GetController()->GetCmdByte(3) || GetController()->GetCmdByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

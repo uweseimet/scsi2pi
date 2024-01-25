@@ -16,7 +16,7 @@
 using namespace std;
 using namespace scsi_defs;
 
-class PhaseExecutor
+class InitiatorExecutor
 {
     class phase_exception : public runtime_error
     {
@@ -25,10 +25,10 @@ class PhaseExecutor
 
 public:
 
-    PhaseExecutor(Bus &b, int id) : bus(b), initiator_id(id)
+    InitiatorExecutor(Bus &b, int id) : bus(b), initiator_id(id)
     {
     }
-    ~PhaseExecutor() = default;
+    ~InitiatorExecutor() = default;
 
     void SetTarget(int, int);
     bool Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, bool = false);

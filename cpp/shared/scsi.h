@@ -116,14 +116,26 @@ enum class status
 {
     good = 0x00,
     check_condition = 0x02,
-    reservation_conflict = 0x18
+    condition_met = 0x04,
+    busy = 0x08,
+    intermediate = 0x10,
+    intermediate_condition_met = 0x14,
+    reservation_conflict = 0x18,
+    command_terminated = 0x22,
+    queue_full = 0x28
 };
 
-// This map only contains status codes used by s2p
 static const unordered_map<status, string> STATUS_MAPPING = {
     { status::good, "GOOD" },
     { status::check_condition, "CHECK CONDITION" },
-    { status::reservation_conflict, "RESERVATION CONFLICT" }
+    { status::condition_met, "CONDITION MET" },
+    { status::busy, "CONDITION MET" },
+    { status::intermediate, "INTERMEDIATE" },
+    { status::condition_met, "CONDITION MET" },
+    { status::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
+    { status::reservation_conflict, "RESERVATION CONFLICT" },
+    { status::command_terminated, "COMMAND TERMINATED" },
+    { status::queue_full, "QUEUE FULL" }
 };
 
 enum class sense_key

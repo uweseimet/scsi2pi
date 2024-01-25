@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -25,6 +25,9 @@ TEST(ModePageUtilTest, ModeSelect6)
 
     // PF (standard parameter format)
     cdb[1] = 0x10;
+
+    // A length of 0 is valid, the page data are optional
+    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 0, 0);
 
     // Page 0
     buf[4] = 0x00;
@@ -91,6 +94,9 @@ TEST(ModePageUtilTest, ModeSelect10)
     // PF (standard parameter format)
     cdb[1] = 0x10;
 
+    // A length of 0 is valid, the page data are optional
+    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 0, 0);
+
     // Page 0
     buf[8] = 0x00;
     EXPECT_THAT([&] {ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 512);},
@@ -140,6 +146,41 @@ TEST(ModePageUtilTest, ModeSelect10)
     << "Not enough command parameters";
 
     ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 512);
+}
+
+TEST(ModePageUtilTest, EvaluateBlockDescriptors)
+{
+    vector<uint8_t> buf(8);
+
+    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, 0, 512);},
+        Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
+
+    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, 0, 512);},
+        Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
+}
+
+TEST(ModePageUtilTest, HandleSectorSizeChange)
+{
+    vector<uint8_t> buf = { 0x02, 0x00 };
+
+    HandleSectorSizeChange(buf, 0, 512);
+
+    buf[0] = 0x04;
+    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512);},
+         Throws<scsi_exception>(AllOf(
+                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
+
+    buf[0] = 0x02;
+    buf[1] = 0x01;
+    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512);},
+         Throws<scsi_exception>(AllOf(
+                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
 }
 
 TEST(ModePageUtilTest, EnrichFormatPage)
