@@ -27,11 +27,10 @@ bool PhaseExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> b
     byte_count = 0;
 
     if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
-        trace(fmt::format("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun));
+        trace("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun);
     }
     else {
-        trace(
-            fmt::format("Executing command ${0:02x} for target {1}:{2}", static_cast<int>(cmd), target_id, target_lun));
+        trace("Executing command ${0:02x} for target {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
     }
 
     // There is no arbitration phase with SASI
@@ -75,7 +74,7 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
 {
     const phase_t phase = bus.GetPhase();
 
-    trace(fmt::format("Handling {} phase", Bus::GetPhaseName(phase)));
+    trace("Handling {} phase", Bus::GetPhaseName(phase));
 
     switch (phase) {
     case phase_t::command:
@@ -104,7 +103,7 @@ bool PhaseExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> 
         break;
 
     default:
-        warn(fmt::format("Ignoring {} phase", Bus::GetPhaseName(phase)));
+        warn("Ignoring {} phase", Bus::GetPhaseName(phase));
         return false;
     }
 
@@ -127,7 +126,7 @@ bool PhaseExecutor::Arbitration() const
     Sleep(ARBITRATION_DELAY);
 
     if (bus.GetDAT() > (1 << initiator_id)) {
-        trace(fmt::format("Lost ARBITRATION, competing initiator ID is {}", bus.GetDAT() - (1 << initiator_id)));
+        trace("Lost arbitration, winning initiator ID is {}", bus.GetDAT() - (1 << initiator_id));
         return false;
     }
 
@@ -182,10 +181,10 @@ void PhaseExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
         const auto &command = COMMAND_MAPPING.find(cmd);
         if (command != COMMAND_MAPPING.end()) {
-            error(fmt::format("Command {} failed", command->second.second));
+            error("Command {} failed", command->second.second);
         }
         else {
-            error(fmt::format("Command ${:02x} failed", static_cast<int>(cmd)));
+            error("Command ${:02x} failed", static_cast<int>(cmd));
         }
     }
 }
@@ -206,10 +205,10 @@ void PhaseExecutor::DataIn(span<uint8_t> buffer, int length)
 {
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
     if (byte_count > length) {
-        warn(fmt::format("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length));
+        warn("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length);
     }
     else {
-        trace(fmt::format("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length));
+        trace("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length);
     }
 }
 
@@ -217,10 +216,10 @@ void PhaseExecutor::DataOut(span<uint8_t> buffer, int length)
 {
     byte_count = bus.SendHandShake(buffer.data(), length);
     if (byte_count > length) {
-        warn(fmt::format("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length));
+        warn("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length);
     }
     else {
-        trace(fmt::format("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length));
+        trace("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length);
     }
 }
 
@@ -232,7 +231,7 @@ void PhaseExecutor::MsgIn()
         error("MESSAGE IN phase failed");
     }
     else if (buf[0]) {
-        warn(fmt::format("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]));
+        warn("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]);
 
         reject = true;
 

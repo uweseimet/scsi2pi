@@ -242,7 +242,7 @@ void S2p::LogProperties() const
 {
     trace("Effective startup properties:");
     for (const auto& [k, v] : property_handler.GetProperties()) {
-        trace(fmt::format("  {0}={1}", k, v));
+        trace("  {0}={1}", k, v);
     }
 }
 

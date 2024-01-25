@@ -230,7 +230,7 @@ bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
 
     if (get_level() == level::trace) {
         vector<uint8_t> data;
-        copy(buf.begin(), buf.end(), back_inserter(data));
+        ranges::copy(buf.begin(), buf.end(), back_inserter(data));
         LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length, FormatBytes(data, data_length)));
     }
 

@@ -12,8 +12,6 @@
 #include <csignal>
 #include <cstring>
 #include <getopt.h>
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
@@ -21,8 +19,6 @@
 
 using namespace std;
 using namespace filesystem;
-using namespace google::protobuf;
-using namespace google::protobuf::util;
 using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
@@ -50,31 +46,23 @@ void S2pExec::Banner(bool header)
     }
 
     cout << "Usage: s2pexec [options]\n"
-        << "  --scsi-target/-i ID:[LUN]       SCSI target device ID (0-7) and LUN (0-31),\n"
-        << "                                  default LUN is 0.\n"
-        << "  --sasi-target/-h ID:[LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
-        << "                                  default LUN is 0.\n"
-        << "  --board-id/-B BOARD_ID          Board (initiator) ID (0-7), default is 7.\n"
-        << "  --cdb/-c CDB                    SCSI command to send in hexadecimal format.\n"
-        << "  --buffer-size/-b SIZE           Buffer size for receiving data.\n"
-        << "  --log-level/-L LOG_LEVEL        Log level (trace|debug|info|warning|error\n"
-        << "                                  |off), default is 'info'.\n"
-        << "  --binary-input-file/-f FILE     Optional binary input file with data to send.\n"
-        << "  --binary-output-file/-F FILE    Optional binary output file for data received.\n"
-        << "  --hex-input-file/-t FILE        Optional text input file with data to send.\n"
-        << "  --hex-input-file/-T FILE        Optional text output file for data received.\n"
-        << "  --protobuf-input-file/-p FILE   Protobuf data input file,\n"
-        << "                                  by default in JSON format.\n"
-        << "  --protobuf-output-file/-P FILE  Protobuf data output file,\n"
-        << "                                  by default in JSON format.\n"
-        << "  --binary-protobuf-input         Input file has protobuf binary format.\n"
-        << "  --binary-protobuf-output        Generate protobuf binary format file.\n"
-        << "  --text-protobuf-input           Input file has protobuf tet format.\n"
-        << "  --text-protobuf-output          Generate protobuf text format file.\n"
-        << "  --no-request-sense              Do not run REQUEST SENSE on error.\n"
-        << "  --hex-only                      Do not display/save the offset and ASCI data.\n"
-        << "  --version/-v                    Display s2pexec version.\n"
-        << "  --help/-H                       Display this help.\n";
+        << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                default LUN is 0.\n"
+        << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
+        << "                                default LUN is 0.\n"
+        << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
+        << "  --cdb/-c CDB                  SCSI command to send in hexadecimal format.\n"
+        << "  --buffer-size/-b SIZE         Buffer size for receiving data.\n"
+        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error\n"
+        << "                                |off), default is 'info'.\n"
+        << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
+        << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
+        << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
+        << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
+        << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
+        << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
+        << "  --version/-v                  Display s2pexec version.\n"
+        << "  --help/-H                     Display this help.\n";
 }
 
 bool S2pExec::Init(bool)
@@ -101,15 +89,7 @@ bool S2pExec::Init(bool)
 
 bool S2pExec::ParseArguments(span<char*> args)
 {
-    const int OPT_BINARY_PROTOBUF_INPUT = 2;
-    const int OPT_BINARY_PROTOBUF_OUTPUT = 3;
-    const int OPT_TEXT_PROTOBUF_INPUT = 4;
-    const int OPT_TEXT_PROTOBUF_OUTPUT = 5;
-    const int OPT_HEX_ONLY = 6;
-
     const vector<option> options = {
-        { "binary-protobuf-input", no_argument, nullptr, OPT_BINARY_PROTOBUF_INPUT },
-        { "binary-protobuf-output", no_argument, nullptr, OPT_BINARY_PROTOBUF_OUTPUT },
         { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
         { "cdb", required_argument, nullptr, 'c' },
@@ -117,16 +97,12 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "binary-output-file", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'H' },
         { "hex-input-file", required_argument, nullptr, 't' },
-        { "hex-only", no_argument, nullptr, OPT_HEX_ONLY },
+        { "hex-only", no_argument, nullptr, 'x' },
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "no-request-sense", no_argument, nullptr, 'n' },
-        { "protobuf-input-file", required_argument, nullptr, 'p' },
-        { "protobuf-output-file", required_argument, nullptr, 'P' },
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
-        { "text-input", no_argument, nullptr, OPT_TEXT_PROTOBUF_INPUT },
-        { "text-output", no_argument, nullptr, OPT_TEXT_PROTOBUF_OUTPUT },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -137,7 +113,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:c:f:f:F:h:i:L:p:P:t:T:nvBH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:f:F:h:i:L:t:T:Hnvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -160,21 +136,13 @@ bool S2pExec::ParseArguments(span<char*> args)
             binary_output_filename = optarg;
             break;
 
-        case 'n':
-            request_sense = false;
-            break;
-
-        case 'p':
-            protobuf_input_filename = optarg;
+        case 'h':
+            target = optarg;
+            sasi = true;
             break;
 
         case 'H':
             help = true;
-            break;
-
-        case 'h':
-            target = optarg;
-            sasi = true;
             break;
 
         case 'i':
@@ -185,8 +153,8 @@ bool S2pExec::ParseArguments(span<char*> args)
             log_level = optarg;
             break;
 
-        case 'P':
-            protobuf_output_filename = optarg;
+        case 'n':
+            request_sense = false;
             break;
 
         case 't':
@@ -201,23 +169,7 @@ bool S2pExec::ParseArguments(span<char*> args)
             version = true;
             break;
 
-        case OPT_BINARY_PROTOBUF_INPUT:
-            input_format = S2pExecExecutor::protobuf_format::binary;
-            break;
-
-        case OPT_BINARY_PROTOBUF_OUTPUT:
-            output_format = S2pExecExecutor::protobuf_format::binary;
-            break;
-
-        case OPT_TEXT_PROTOBUF_INPUT:
-            input_format = S2pExecExecutor::protobuf_format::text;
-            break;
-
-        case OPT_TEXT_PROTOBUF_OUTPUT:
-            output_format = S2pExecExecutor::protobuf_format::text;
-            break;
-
-        case OPT_HEX_ONLY:
+        case 'x':
             hex_only = true;
             break;
 
@@ -261,24 +213,23 @@ bool S2pExec::ParseArguments(span<char*> args)
         target_lun = 0;
     }
 
-    if (!command.empty()) {
-        if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
-            throw parser_exception("There can only be a single input file");
-        }
-
-        if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
-            throw parser_exception("There can only be a single output file");
-        }
-
-        int buffer_size = DEFAULT_BUFFER_SIZE;
-        if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
-            throw parser_exception("Invalid receive buffer size: '" + buf + "'");
-        }
-        buffer.resize(buffer_size);
+    if (command.empty()) {
+        throw parser_exception("Missing command block");
     }
-    else if (protobuf_input_filename.empty()) {
-        throw parser_exception("Missing input filename");
+
+    if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
+        throw parser_exception("There can only be a single input file");
     }
+
+    if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
+        throw parser_exception("There can only be a single output file");
+    }
+
+    int buffer_size = DEFAULT_BUFFER_SIZE;
+    if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
+        throw parser_exception("Invalid receive buffer size: '" + buf + "'");
+    }
+    buffer.resize(buffer_size);
 
     return true;
 }
@@ -322,9 +273,6 @@ int S2pExec::Run(span<char*> args, bool in_process)
             result = EXIT_FAILURE;
         }
     }
-    else {
-        result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
-    }
 
     CleanUp();
 
@@ -354,7 +302,7 @@ string S2pExec::ExecuteCommand()
             return error;
         }
 
-        debug(fmt::format("Sending {} data bytes", buffer.size()));
+        debug("Sending {} data bytes", buffer.size());
     }
 
     const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
@@ -372,7 +320,7 @@ string S2pExec::ExecuteCommand()
     if (binary_input_filename.empty() && hex_input_filename.empty()) {
         const int count = scsi_executor->GetByteCount();
 
-        debug(fmt::format("Received {} data bytes", count));
+        debug("Received {} data bytes", count);
 
         if (count) {
             if (const string &error = WriteData(count); !error.empty()) {
@@ -382,68 +330,6 @@ string S2pExec::ExecuteCommand()
     }
 
     return "";
-}
-
-int S2pExec::GenerateOutput(S2pExecExecutor::protobuf_format input_format, const string &input_filename,
-    S2pExecExecutor::protobuf_format output_format, const string &output_filename)
-{
-    PbResult result;
-    if (string error = scsi_executor->Execute(input_filename, input_format, result); !error.empty()) {
-        cerr << "Error: " << error << endl;
-
-        return EXIT_FAILURE;
-    }
-
-    if (output_filename.empty()) {
-        string json;
-        (void)MessageToJsonString(result, &json);
-        cout << json << '\n';
-
-        return EXIT_SUCCESS;
-    }
-
-    switch (output_format) {
-    case S2pExecExecutor::protobuf_format::binary: {
-        ofstream out(output_filename, ios::binary);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf binary output file '" << output_filename << "'" << endl;
-        }
-
-        const string data = result.SerializeAsString();
-        out.write(data.data(), data.size());
-        break;
-    }
-
-    case S2pExecExecutor::protobuf_format::json: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf JSON output file '" << output_filename << "'" << endl;
-        }
-
-        string json;
-        (void)MessageToJsonString(result, &json);
-        out << json << '\n';
-        break;
-    }
-
-    case S2pExecExecutor::protobuf_format::text: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf text format output file '" << output_filename << "'" << endl;
-        }
-
-        string text;
-        TextFormat::PrintToString(result, &text);
-        out << text << '\n';
-        break;
-    }
-
-    default:
-        assert(false);
-        break;
-    }
-
-    return EXIT_SUCCESS;
 }
 
 string S2pExec::ReadData()

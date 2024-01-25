@@ -13,6 +13,7 @@
 #include "s2pctl/s2pctl_core.h"
 #include "s2pdump/s2pdump_core.h"
 #include "s2pexec/s2pexec_core.h"
+#include "s2pproto/s2pproto_core.h"
 
 using namespace std;
 using namespace s2p_util;
@@ -20,7 +21,7 @@ using namespace s2p_util;
 void usage()
 {
     cout << "Usage: in_process_test [options]\n"
-        << "  --client/-c       Client to run against s2p (s2pctl|s2pdump|s2pexec),\n"
+        << "  --client/-c       Client to run against s2p (s2pctl|s2pdump|s2pexec»s2pproto),\n"
         << "                    default is s2pctl.\n"
         << "  --client-args/-a  Arguments to run client with, optional for s2pctl.\n"
         << "  --s2p-args/-s     Arguments to run s2p with.\n"
@@ -74,8 +75,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec") {
-        cerr << "Invalid in-process test client: '" << client << "', client must be s2pctl, s2pdump or s2pexec" << endl;
+    if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
+        cerr << "Invalid in-process test client: '" << client
+            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -120,6 +122,10 @@ int main(int argc, char *argv[])
     else if (client == "s2pexec") {
         auto s2pexec = make_unique<S2pExec>();
         s2pexec->Run(client_args, true);
+    }
+    else if (client == "s2pproto") {
+        auto s22proto = make_unique<S2pProto>();
+        s22proto->Run(client_args, true);
     }
     else {
         assert(false);

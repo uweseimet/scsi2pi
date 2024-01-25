@@ -1,0 +1,68 @@
+.TH s2pexec 1
+.SH NAME
+s2pexec \- SCSI2Pi custom SCSI command executor
+.SH SYNOPSIS
+.B s2pexec
+[\fB\--scsi-target/-i\fR \fIID[:LUN]\fR]
+[\fB\--board-id/-B\fR \fIBOARD_ID\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+{\fB\--input-file/-f\fR \fIFILE\fR]
+{\fB\--output-file/-F\fR \fIFILE\fR]
+[\fB\--binary-input\fR]
+[\fB\--binary-output\fR]
+[\fB\--text-input\fR]
+[\fB\--text-output\fR]
+[\fB\--no-request-sense/-n\fR]
+[\fB\--help/-H\fR]
+[\fB\--version/-v\fR]
+.SH DESCRIPTION
+.B s2pproto
+wraps protobuf input data into a custom SCSI2Pi SCSI command. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
+
+.SH NOTES
+
+.B s2pproto
+helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
+
+.SH OPTIONS
+.TP
+.BR \--scsi-target/-i\fI " "\fIID[:LUN]
+ID and optional LUN (0-31) of the SCSI target device.
+.TP
+.BR \--board-id/-B\fI " "\fIBOARD_ID
+SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
+.TP
+.BR \--log-level/-L\fI " " \fILOG_LEVEL
+Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
+.TP
+.BR \--input-file/-f\fI " "\fIFILE
+The protobuf data input file, by default in JSON format.
+.TP
+.BR \--output-file/-F\fI " "\fIFILE
+The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
+.TP
+.BR \--binary-input\fI
+Signals that the input file is in protobuf binary format instead of JSON.
+.TP
+.BR \--binary-output\fI
+Generate a protobuf binary format output file instead of JSON for the results.
+.TP
+.BR \--text-input\fI
+Signals that the input file is in protobuf text format instead of JSON.
+.TP
+.BR \--text-output\fI
+Generate a protobuf text format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
+.TP
+.BR \--no-request-sense\fI
+Do not automatically send REQUEST SENSE after an error to get the sense data.
+.TP
+.BR \--help/-H\fI
+Show a help text.
+.TP
+.BR \--version/-v\fI
+Show the s2pproto version.
+
+.SH SEE ALSO
+s2p(1), s2pctl(1), s2pdump(1), s2pexec(1)
+ 
+Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

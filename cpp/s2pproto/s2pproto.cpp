@@ -6,9 +6,13 @@
 //
 //---------------------------------------------------------------------------
 
-#include "s2p_version.h"
+#include "s2pproto_core.h"
 
-const int s2p_major_version = 2;
-const int s2p_minor_version = 0;
-const int s2p_revision = 0;
-const std::string s2p_suffix = "-devel";
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    vector<char*> args(argv, argv + argc);
+
+    return S2pProto().Run(args);
+}

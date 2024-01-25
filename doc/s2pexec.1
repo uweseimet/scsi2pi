@@ -1,6 +1,6 @@
 .TH s2pexec 1
 .SH NAME
-s2pexec \- SCSI2Pi SCSI/SASI command execution
+s2pexec \- SCSI2Pi SCSI/SASI command executor
 .SH SYNOPSIS
 .B s2pexec
 [\fB\--scsi-target/-i\fR \fIID[:LUN]\fR]
@@ -9,29 +9,22 @@ s2pexec \- SCSI2Pi SCSI/SASI command execution
 [\fB\--cdb/-c\fR \fICDB\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
-{\fB\--binary-input-file/-d\fR \fIFILE\fR]
-{\fB\--binary-output-file/-D\fR \fIFILE\fR]
+{\fB\--binary-input-file/-f\fR \fIFILE\fR]
+{\fB\--binary-output-file/-F\fR \fIFILE\fR]
 {\fB\--hex-input-file/-t\fR \fIFILE\fR]
 {\fB\--hex-output-file/-T\fR \fIFILE\fR]
-{\fB\--protobuf-input-file/-p\fR \fIFILE\fR]
-[\fB\--protobuf-output-file/-P\fR \fIFIL\fR]
-[\fB\--binary-input\fR]
-[\fB\--binary-output\fR]
-[\fB\--text-input\fR]
-[\fB\--text-output\fR]
 [\fB\--no-request-sense/-n\fR]
 [\fB\--hex-only/\fR]
 [\fB\--help/-H\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pexec
-Sends SCSI or SASI commands to a device and displays the results.
-Additonally, s2pexec can wrap protobuf input data into a custom SCSI2Pi SCSI command. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
+sends SCSI or SASI commands to a device and displays the results.
 
 .SH NOTES
 
 .B s2pexec
-helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
+helps with advanced testing. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
 
 .SH OPTIONS
 .TP
@@ -65,24 +58,6 @@ Optional file with data in hexadecimal (human-readable) format to be sent in the
 .BR \--hex-output-file/-T\fI " "\fIFILE
 Optional file for data received in the DATA IN phase. This data in this file are coded in hexadecimal (human-readable) format.
 .TP
-.BR \--protobuf-input-file/-p\fI " "\fIFILE
-The protobuf data input file when using s2pexec for sending a custom SCSI2Pi SCSI command, by default in JSON format.
-.TP
-.BR \--protobuf-output-file/-P\fI " "\fIFILE
-The protobuf data output file when using s2pexec for sending a custom SCSI2Pi SCSI command, by default in JSON format. If not specified JSON data will be displayed on stdout.
-.TP
-.BR \--binary-input\fI
-Signals that the protobuf input file for the custom SCSI2Pi SCSI command is in protobuf binary format instead of JSON.
-.TP
-.BR \--binary-output\fI
-Generate a protobuf binary format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
-.TP
-.BR \--text-input\fI
-Signals that the protobuf input file for the custom SCSI2Pi SCSI command is in protobuf text format instead of JSON.
-.TP
-.BR \--text-output\fI
-Generate a protobuf text format file instead of JSON for the results of the custom SCSI2Pi SCSI command.
-.TP
 .BR \--no-request-sense\fI
 Do not automatically send REQUEST SENSE after an error to get the sense data.
 .TP
@@ -103,6 +78,6 @@ s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
 Send a MODE SELECT to the device with SCSI ID 5, with the hexadecimally code data in data.dat as parameters.
 
 .SH SEE ALSO
-s2pctl(1), s2p(1), s2pdump(1)
+s2p(1), s2pctl(1), s2pdump(1), s2pproto(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

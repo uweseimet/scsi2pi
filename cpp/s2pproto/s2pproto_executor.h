@@ -11,10 +11,12 @@
 #include <cstdint>
 #include <array>
 #include "shared_initiator/phase_executor.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace std;
+using namespace s2p_interface;
 
-class S2pExecExecutor
+class S2pProtoExecutor
 {
 
     // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
@@ -29,14 +31,14 @@ public:
         text = 0b100
     };
 
-    S2pExecExecutor(Bus &bus, int id)
+    S2pProtoExecutor(Bus &bus, int id)
     {
         phase_executor = make_unique<PhaseExecutor>(bus, id);
     }
-    ~S2pExecExecutor() = default;
+    ~S2pProtoExecutor() = default;
 
+    string Execute(const string&, protobuf_format, PbResult&);
     bool ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, bool);
-    string GetSenseData(bool);
 
     void SetTarget(int id, int lun)
     {
@@ -49,6 +51,8 @@ public:
     }
 
 private:
+
+    array<uint8_t, BUFFER_SIZE> buffer;
 
     unique_ptr<PhaseExecutor> phase_executor;
 };
