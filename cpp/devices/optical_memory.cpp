@@ -48,7 +48,7 @@ void OpticalMemory::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache(0);
+    SetUpCache();
 
     // Attention if ready
     if (IsReady()) {
@@ -86,9 +86,17 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
     // Do not report update blocks
 }
 
-void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    const auto current_sector_size = static_cast<int>(GetSectorSizeInBytes());
+    const auto new_sector_size = mode_page_util::ModeSelect(cmd, cdb, buf, length, current_sector_size);
+    if (new_sector_size != current_sector_size) {
+        const uint64_t capacity = current_sector_size * GetBlockCount();
+        SetSectorSizeInBytes(new_sector_size);
+        SetBlockCount(static_cast<uint32_t>(capacity >> GetSectorSizeShiftCount()));
+
+        SetUpCache();
+    }
 }
 
 //

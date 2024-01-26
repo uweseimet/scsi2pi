@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -24,11 +24,10 @@ DiskTrack::~DiskTrack()
     free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
 }
 
-void DiskTrack::Init(int track, int size, int sectors, bool raw, off_t imgoff)
+void DiskTrack::Init(int track, int size, int sectors, bool raw)
 {
     assert(track >= 0);
     assert((sectors > 0) && (sectors <= 0x100));
-    assert(imgoff >= 0);
 
     // Set Parameters
     dt.track = track;
@@ -41,9 +40,6 @@ void DiskTrack::Init(int track, int size, int sectors, bool raw, off_t imgoff)
 
     // Not Changed
     dt.changed = false;
-
-    // Offset to actual data
-    dt.imgoffset = imgoff;
 }
 
 bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
@@ -65,9 +61,6 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     } else {
         offset <<= dt.size;
     }
-
-    // Add offset to real image
-    offset += dt.imgoffset;
 
     // Calculate length (data size of this track)
     const int length = dt.sectors << dt.size;
@@ -157,9 +150,6 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     // Calculate offset (previous tracks are considered to hold 256 sectors)
     off_t offset = ((off_t)dt.track << 8);
     offset <<= dt.size;
-
-    // Add offset to real image
-    offset += dt.imgoffset;
 
     // Calculate length per sector
     const int length = 1 << dt.size;

@@ -143,14 +143,13 @@ void Disk::Dispatch(scsi_command cmd)
     }
 }
 
-void Disk::SetUpCache(off_t image_offset, bool raw)
+void Disk::SetUpCache(bool raw)
 {
-    cache = make_unique<DiskCache>(GetFilename(), size_shift_count, static_cast<uint32_t>(GetBlockCount()),
-        image_offset);
+    cache = make_unique<DiskCache>(GetFilename(), size_shift_count, static_cast<uint32_t>(GetBlockCount()));
     cache->SetRawMode(raw);
 }
 
-void Disk::Resize_cache(const string &path, bool raw)
+void Disk::ResizeCache(const string &path, bool raw)
 {
     cache.reset(new DiskCache(path, size_shift_count, static_cast<uint32_t>(GetBlockCount())));
     cache->SetRawMode(raw);

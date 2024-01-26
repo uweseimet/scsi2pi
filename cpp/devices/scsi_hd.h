@@ -24,12 +24,12 @@ public:
     ScsiHd(int, bool, bool, bool, const unordered_set<uint32_t>& = { 512, 1024, 2048, 4096 });
     ~ScsiHd() override = default;
 
-    void FinalizeSetup(off_t);
+    void FinalizeSetup();
 
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
+    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const override;
 

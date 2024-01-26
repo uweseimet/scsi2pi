@@ -47,7 +47,7 @@ void ScsiCd::Open()
 
     // Initialization, track clear
     SetBlockCount(0);
-    rawfile = false;
+    raw_file = false;
     ClearTrack();
 
     // Default sector size is 2048 bytes
@@ -70,7 +70,7 @@ void ScsiCd::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache(0, rawfile);
+    SetUpCache(raw_file);
 
     SetReadOnly(true);
     SetProtectable(false);
@@ -99,7 +99,7 @@ void ScsiCd::OpenIso()
     array<char, 12> sync = { };
     // 00,FFx10,00 is presumed to be RAW format
     fill_n(sync.begin() + 1, 10, 0xff);
-    rawfile = false;
+    raw_file = false;
 
     if (memcmp(header.data(), sync.data(), sync.size()) == 0) {
         // Supports MODE1/2048 or MODE1/2352 only
@@ -108,10 +108,10 @@ void ScsiCd::OpenIso()
             throw io_exception("Illegal raw ISO CD-ROM file header");
         }
 
-        rawfile = true;
+        raw_file = true;
     }
 
-    if (rawfile) {
+    if (raw_file) {
         if (size % 2536) {
             LogWarn(fmt::format("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is {} byte(s)", size));
         }
@@ -147,9 +147,17 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
     return HandleInquiry(device_type::cd_rom, scsi_level, true);
 }
 
-void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    const auto current_sector_size = static_cast<int>(GetSectorSizeInBytes());
+    const auto new_sector_size = mode_page_util::ModeSelect(cmd, cdb, buf, length, current_sector_size);
+    if (new_sector_size != current_sector_size) {
+        const uint64_t capacity = current_sector_size * GetBlockCount();
+        SetSectorSizeInBytes(new_sector_size);
+        SetBlockCount(static_cast<uint32_t>(capacity >> GetSectorSizeShiftCount()));
+
+        SetUpCache();
+    }
 }
 
 void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -225,7 +233,7 @@ int ScsiCd::Read(span<uint8_t> buf, uint64_t block)
         assert(GetBlockCount() > 0);
 
         // Re-assign disk cache (no need to save)
-        Resize_cache(tracks[index]->GetPath(), rawfile);
+        ResizeCache(tracks[index]->GetPath(), raw_file);
 
         // Reset data index
         dataindex = index;

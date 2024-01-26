@@ -30,7 +30,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION, to_string(operation));
     }
 
-    trace("Executing {0} command", identifier, PbOperation_Name(operation));
+    trace("{0}Executing {1} command", identifier, PbOperation_Name(operation));
 
     switch (operation) {
     case LOG_LEVEL:

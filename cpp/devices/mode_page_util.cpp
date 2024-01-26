@@ -16,7 +16,7 @@ using namespace spdlog;
 using namespace scsi_defs;
 using namespace memory_util;
 
-void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length, int sector_size)
+int mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length, int sector_size)
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
@@ -24,12 +24,12 @@ void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t>
     if (!(cdb[1] & 0x10)) {
         // Vendor-specific parameters (SCSI-1) are not supported.
         // Do not report an error in order to support Apple's HD SC Setup.
-        return;
+        return sector_size;
     }
 
     // The page data are optional
     if (!length) {
-        return;
+        return sector_size;
     }
 
     int offset = EvaluateBlockDescriptors(cmd, buf, length, sector_size);
@@ -53,10 +53,10 @@ void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t>
                 throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
             }
 
-            // With this page the sector size for a subsequent FORMAT can be selected, but only very few
-            // drives support this, e.g FUJITSU M2624S.
-            // We are fine as long as the current sector size remains unchanged.
-            HandleSectorSizeChange(buf, offset + 12, sector_size);
+            // With this page the sector size for a subsequent FORMAT can be selected, but only a few drives
+            // support this, e.g FUJITSU M2624S.
+            // We are fine as long as the permanent current sector size remains unchanged.
+            HandleSectorSizeChange(buf, offset + 12, sector_size, false);
 
             break;
         }
@@ -79,9 +79,11 @@ void mode_page_util::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t>
         length -= size;
         offset += size;
     }
+
+    return sector_size;
 }
 
-int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int sector_size)
+int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int &sector_size)
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
@@ -102,24 +104,32 @@ int mode_page_util::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_
 
     // Check for temporary sector size change in first block descriptor
     if (block_descriptor_length && length >= required_length + 8) {
-        HandleSectorSizeChange(buf, required_length + 6, sector_size);
+        sector_size = HandleSectorSizeChange(buf, required_length + 6, sector_size, true);
     }
 
     return block_descriptor_length + required_length;
 }
 
-void mode_page_util::HandleSectorSizeChange(span<const uint8_t> buf, int offset, int sector_size)
+int mode_page_util::HandleSectorSizeChange(span<const uint8_t> buf, int offset, int sector_size, bool temporary)
 {
     if (const int requested_size = GetInt16(buf, offset); requested_size != sector_size) {
         // Simple consistency check
         if (!(requested_size & 0xe1ff)) {
-            warn(
-                "Sector size change from {} to {} bytes requested. Configure the requested sector size in the s2p settings.",
-                sector_size, requested_size);
+            if (temporary) {
+                trace("Temporarily changing sector size from {0} to {1} bytes", sector_size, requested_size);
+                return requested_size;
+            }
+            else {
+                warn(
+                    "Sector size change from {0} to {1} bytes requested. Configure the requested sector size in the s2p settings.",
+                    sector_size, requested_size);
+            }
         }
 
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
     }
+
+    return sector_size;
 }
 
 void mode_page_util::EnrichFormatPage(map<int, vector<byte>> &pages, bool changeable, int sector_size)

@@ -337,19 +337,15 @@ void GenericController::Send()
 
     DecrementBlocks();
 
-    // Processing after data collection (read/data-in only)
-    if (IsDataIn() && HasBlocks()) {
-        // Set next buffer (set offset, length)
-        if (!XferIn(GetBuffer())) {
-            Error(sense_key::aborted_command, asc::controller_send_xfer_in);
-            return;
-        }
+    if (IsDataIn() && HasBlocks() && !XferIn(GetBuffer())) {
+        Error(sense_key::aborted_command, asc::controller_send_xfer_in);
+        return;
     }
 
     // Continue sending if blocks != 0
     if (HasBlocks()) {
         assert(HasValidLength());
-        assert(GetOffset() == 0);
+        assert(!GetOffset());
         return;
     }
 
@@ -442,7 +438,7 @@ void GenericController::Receive()
     // Continue to receive if blocks != 0
     if (HasBlocks()) {
         assert(HasValidLength());
-        assert(GetOffset() == 0);
+        assert(!GetOffset());
         return;
     }
 

@@ -8,6 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,11 +18,10 @@
 #include "disk_track.h"
 #include "disk_cache.h"
 
-DiskCache::DiskCache(const string &path, int size, uint32_t blocks, off_t imgoff)
-: sec_path(path), sec_size(size), sec_blocks(blocks), imgoffset(imgoff)
+DiskCache::DiskCache(const string &path, int size, uint32_t blocks)
+: sec_path(path), sec_size(size), sec_blocks(blocks)
 {
     assert(blocks > 0);
-    assert(imgoff >= 0);
 }
 
 bool DiskCache::Save()
@@ -157,7 +157,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, sec_size, sectors, cd_raw, imgoffset);
+    disktrk->Init(track, sec_size, sectors, cd_raw);
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {

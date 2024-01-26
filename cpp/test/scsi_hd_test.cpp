@@ -78,7 +78,7 @@ TEST(ScsiHdTest, FinalizeSetup)
     MockScsiHd hd(0, false);
 
     hd.SetSectorSizeInBytes(1024);
-    EXPECT_THROW(hd.FinalizeSetup(0), io_exception)<< "Device has 0 blocks";
+    EXPECT_THROW(hd.FinalizeSetup(), io_exception)<< "Device has 0 blocks";
 }
 
 TEST(ScsiHdTest, GetProductData)
@@ -91,21 +91,21 @@ TEST(ScsiHdTest, GetProductData)
     hd_kb.SetFilename(string(filename));
     hd_kb.SetSectorSizeInBytes(1024);
     hd_kb.SetBlockCount(1);
-    hd_kb.FinalizeSetup(0);
+    hd_kb.FinalizeSetup();
     string s = hd_kb.GetProduct();
     EXPECT_NE(string::npos, s.find("1 KiB"));
 
     hd_mb.SetFilename(string(filename));
     hd_mb.SetSectorSizeInBytes(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
-    hd_mb.FinalizeSetup(0);
+    hd_mb.FinalizeSetup();
     s = hd_mb.GetProduct();
     EXPECT_NE(string::npos, s.find("1 MiB"));
 
     hd_gb.SetFilename(string(filename));
     hd_gb.SetSectorSizeInBytes(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
-    hd_gb.FinalizeSetup(0);
+    hd_gb.FinalizeSetup();
     s = hd_gb.GetProduct();
     EXPECT_NE(string::npos, s.find("10 GiB"));
     remove(filename);

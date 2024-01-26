@@ -21,13 +21,13 @@ TEST(ModePageUtilTest, ModeSelect6)
 
     // PF (vendor-specific parameter format) must not fail but be ignored
     cdb[1] = 0x00;
-    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 0);
+    EXPECT_EQ(1024, ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 1024));
 
     // PF (standard parameter format)
     cdb[1] = 0x10;
 
     // A length of 0 is valid, the page data are optional
-    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 0, 0);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 0, 512));
 
     // Page 0
     buf[4] = 0x00;
@@ -46,7 +46,7 @@ TEST(ModePageUtilTest, ModeSelect6)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16, 512);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16, 512));
 
     // Page 7 (Verify error recovery page)
     buf[4] = 0x07;
@@ -57,7 +57,7 @@ TEST(ModePageUtilTest, ModeSelect6)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 10, 512);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 10, 512));
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
@@ -70,14 +70,14 @@ TEST(ModePageUtilTest, ModeSelect6)
     << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
-    buf[16] = 0x02;
-    EXPECT_THAT([&] {ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH - 10, 512);},
+    buf[16] = 0x08;
+    EXPECT_THAT([&] {ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH - 10, 2048);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
 
-    ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 512);
+    EXPECT_EQ(2048, ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, LENGTH, 2048));
 }
 
 TEST(ModePageUtilTest, ModeSelect10)
@@ -89,13 +89,13 @@ TEST(ModePageUtilTest, ModeSelect10)
 
     // PF (vendor-specific parameter format) must not fail but be ignored
     cdb[1] = 0x00;
-    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 0);
+    EXPECT_EQ(1024, ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 1024));
 
     // PF (standard parameter format)
     cdb[1] = 0x10;
 
     // A length of 0 is valid, the page data are optional
-    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 0, 0);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 0, 512));
 
     // Page 0
     buf[8] = 0x00;
@@ -114,7 +114,7 @@ TEST(ModePageUtilTest, ModeSelect10)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20, 512);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20, 512));
 
     // Page 7 (Verify error recovery page)
     buf[8] = 0x07;
@@ -125,7 +125,7 @@ TEST(ModePageUtilTest, ModeSelect10)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
-    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 14, 512);
+    EXPECT_EQ(512, ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 14, 512));
 
     // Page 3 (Format device page)
     buf[8] = 0x03;
@@ -138,26 +138,27 @@ TEST(ModePageUtilTest, ModeSelect10)
         << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
-    buf[20] = 0x02;
-    EXPECT_THAT([&] {ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH - 10, 512);},
+    buf[20] = 0x08;
+    EXPECT_THAT([&] {ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH - 10, 2048);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
     << "Not enough command parameters";
 
-    ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 512);
+    EXPECT_EQ(2048, ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, LENGTH, 2048));
 }
 
 TEST(ModePageUtilTest, EvaluateBlockDescriptors)
 {
     vector<uint8_t> buf(8);
+    int sector_size = 512;
 
-    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, 0, 512);},
+    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, 0, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, 0, 512);},
+    EXPECT_THAT([&] {EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, 0, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
@@ -167,17 +168,27 @@ TEST(ModePageUtilTest, HandleSectorSizeChange)
 {
     vector<uint8_t> buf = { 0x02, 0x00 };
 
-    HandleSectorSizeChange(buf, 0, 512);
+    EXPECT_EQ(512, HandleSectorSizeChange(buf, 0, 512, false));
 
     buf[0] = 0x04;
-    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512);},
+
+    // Temporary change
+    EXPECT_EQ(1024, HandleSectorSizeChange(buf, 0, 512, true));
+
+    // Permanent change
+    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512, false);},
          Throws<scsi_exception>(AllOf(
                  Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                  Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
 
+    // Sector size 513 is always invalid
     buf[0] = 0x02;
     buf[1] = 0x01;
-    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512);},
+    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512, false);},
+         Throws<scsi_exception>(AllOf(
+                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
+    EXPECT_THAT([&] {HandleSectorSizeChange(buf, 0, 512, true);},
          Throws<scsi_exception>(AllOf(
                  Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                  Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));

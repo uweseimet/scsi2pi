@@ -31,7 +31,7 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
+    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
     int Read(span<uint8_t>, uint64_t) override;
 
 protected:
@@ -57,7 +57,7 @@ private:
 
     scsi_defs::scsi_level scsi_level;
 
-    bool rawfile = false; // RAW flag
+    bool raw_file = false; // RAW flag
 
     // Track management
     void ClearTrack(); // Clear the track

@@ -141,8 +141,8 @@ private:
 
 protected:
 
-    void SetUpCache(off_t, bool = false);
-    void Resize_cache(const string&, bool);
+    void SetUpCache(bool = false);
+    void ResizeCache(const string&, bool);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;

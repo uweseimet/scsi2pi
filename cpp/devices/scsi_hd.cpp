@@ -53,7 +53,7 @@ string ScsiHd::GetProductData() const
     return DEFAULT_PRODUCT + " " + to_string(capacity) + " " + unit;
 }
 
-void ScsiHd::FinalizeSetup(off_t image_offset)
+void ScsiHd::FinalizeSetup()
 {
     Disk::ValidateFile();
 
@@ -62,7 +62,7 @@ void ScsiHd::FinalizeSetup(off_t image_offset)
         SetProduct(GetProductData(), false);
     }
 
-    SetUpCache(image_offset);
+    SetUpCache();
 }
 
 void ScsiHd::Open()
@@ -75,7 +75,7 @@ void ScsiHd::Open()
     SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512);
     SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
 
-    FinalizeSetup(0);
+    FinalizeSetup();
 }
 
 vector<uint8_t> ScsiHd::InquiryInternal() const
@@ -83,9 +83,17 @@ vector<uint8_t> ScsiHd::InquiryInternal() const
     return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
 }
 
-void ScsiHd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+void ScsiHd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
+    const auto current_sector_size = static_cast<int>(GetSectorSizeInBytes());
+    const auto new_sector_size = mode_page_util::ModeSelect(cmd, cdb, buf, length, current_sector_size);
+    if (new_sector_size != current_sector_size) {
+        const uint64_t capacity = current_sector_size * GetBlockCount();
+        SetSectorSizeInBytes(new_sector_size);
+        SetBlockCount(static_cast<uint32_t>(capacity >> GetSectorSizeShiftCount()));
+
+        SetUpCache();
+    }
 }
 
 void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
