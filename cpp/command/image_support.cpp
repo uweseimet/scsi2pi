@@ -191,7 +191,7 @@ bool S2pImage::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    info("Deleted image file '" + full_filename.string() + "'");
+    info("Deleted image file '{}'", full_filename.string());
 
     return context.ReturnSuccessStatus();
 }
@@ -211,7 +211,7 @@ bool S2pImage::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    info("Renamed/Moved image file '" + from + "' to '" + to + "'");
+    info("Renamed/Moved image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -236,7 +236,7 @@ bool S2pImage::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        info("Copied image file symlink '" + from + "' to '" + to + "'");
+        info("Copied image file symlink '{0}' to '{1}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -254,7 +254,7 @@ bool S2pImage::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    info("Copied image file '" + from + "' to '" + to + "'");
+    info("Copied image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -390,10 +390,10 @@ bool S2pImage::ChangeOwner(const CommandContext &context, const path &filename, 
         return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(e));
     }
 
-    permissions(filename, read_only ?
-                                      perms::owner_read | perms::group_read | perms::others_read :
-                                      perms::owner_read | perms::group_read | perms::others_read |
-                                          perms::owner_write | perms::group_write);
+    permissions(filename,
+        read_only ?
+            perms::owner_read | perms::group_read | perms::others_read :
+            perms::owner_read | perms::group_read | perms::others_read | perms::owner_write | perms::group_write);
 
     return true;
 }

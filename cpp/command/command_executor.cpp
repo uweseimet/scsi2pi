@@ -132,10 +132,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Start requested for " + device.GetIdentifier());
+        info("Start requested for {}", device.GetIdentifier());
 
         if (!device.Start()) {
-            warn("Starting " + device.GetIdentifier() + " failed");
+            warn("Starting {} failed", device.GetIdentifier());
         }
     }
 
@@ -145,7 +145,7 @@ bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Stop requested for " + device.GetIdentifier());
+        info("Stop requested for {}", device.GetIdentifier());
 
         device.Stop();
     }
@@ -156,10 +156,10 @@ bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Eject requested for " + device.GetIdentifier());
+        info("Eject requested for {}", device.GetIdentifier());
 
         if (!device.Eject(true)) {
-            warn("Ejecting " + device.GetIdentifier() + " failed");
+            warn("Ejecting {} failed", device.GetIdentifier());
         }
     }
 
@@ -169,7 +169,7 @@ bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write protection requested for " + device.GetIdentifier());
+        info("Write protection requested for {}", device.GetIdentifier());
 
         device.SetProtected(true);
     }
@@ -180,7 +180,7 @@ bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write unprotection requested for " + device.GetIdentifier());
+        info("Write unprotection requested for {}", device.GetIdentifier());
 
         device.SetProtected(false);
     }
@@ -391,7 +391,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
     reserved_ids = { ids_to_reserve.begin(), ids_to_reserve.end() };
 
     if (!ids_to_reserve.empty()) {
-        info("Reserved ID(s) set to " + Join(ids_to_reserve));
+        info("Reserved ID(s) set to {}", Join(ids_to_reserve));
     }
     else {
         info("Cleared reserved ID(s)");

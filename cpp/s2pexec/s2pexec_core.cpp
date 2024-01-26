@@ -12,6 +12,7 @@
 #include <csignal>
 #include <cstring>
 #include <getopt.h>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "initiator/initiator_util.h"
@@ -265,8 +266,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    executor->Sasi(sasi);
-    executor->SetTarget(target_id, target_lun);
+    executor->SetTarget(target_id, target_lun, sasi);
 
     int result = EXIT_SUCCESS;
     if (!command.empty()) {
@@ -307,8 +307,11 @@ string S2pExec::ExecuteCommand()
         debug("Sending {} data bytes", buffer.size());
     }
 
-    if (executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer)) {
-        return request_sense ? executor->GetSenseData() : "";
+    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer);
+    if (status) {
+        return
+            status != 0xff && request_sense ?
+                executor->GetSenseData() : fmt::format("Can't execute command ${:02x}", cdb[0]);
     }
 
     if (binary_input_filename.empty() && hex_input_filename.empty()) {

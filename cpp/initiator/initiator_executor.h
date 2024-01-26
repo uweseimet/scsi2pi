@@ -30,13 +30,8 @@ public:
     }
     ~InitiatorExecutor() = default;
 
-    void SetTarget(int, int);
+    void SetTarget(int, int, bool);
     int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int);
-
-    void Sasi(bool b)
-    {
-        sasi = b;
-    }
 
     int GetByteCount() const
     {
@@ -59,6 +54,8 @@ private:
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
+    void LogStatus() const;
+
     void Sleep(const timespec &ns) const
     {
         nanosleep(&ns, nullptr);
@@ -71,7 +68,7 @@ private:
     int target_id = -1;
     int target_lun = -1;
 
-    int status = -1;
+    int status = 0xff;
 
     int byte_count = 0;
 

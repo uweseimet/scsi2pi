@@ -38,9 +38,9 @@ public:
 
     string Execute(const string&, protobuf_format, PbResult&);
 
-    void SetTarget(int id, int lun)
+    void SetTarget(int id, int lun, bool sasi)
     {
-        initiator_executor->SetTarget(id, lun);
+        initiator_executor->SetTarget(id, lun, sasi);
     }
 
     int GetByteCount() const

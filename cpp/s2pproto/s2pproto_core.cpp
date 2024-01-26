@@ -11,6 +11,7 @@
 #include <csignal>
 #include <cstring>
 #include <getopt.h>
+#include <spdlog/spdlog.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
@@ -238,7 +239,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    executor->SetTarget(target_id, target_lun);
+    executor->SetTarget(target_id, target_lun, false);
 
     int result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
 

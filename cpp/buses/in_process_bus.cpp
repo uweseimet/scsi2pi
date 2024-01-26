@@ -29,23 +29,6 @@ void InProcessBus::SetSignal(int pin, bool state)
     signals[pin] = state;
 }
 
-bool InProcessBus::WaitSignal(int pin, bool state)
-{
-    const auto now = chrono::steady_clock::now();
-
-    do {
-        if (signals[pin] == state) {
-            return true;
-        }
-
-        if (signals[PIN_RST]) {
-            return false;
-        }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
-
-    return false;
-}
-
 bool InProcessBus::WaitForSelection()
 {
     // Busy waiting cannot be avoided
@@ -80,15 +63,6 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
     }
 
     bus.SetSignal(pin, state);
-}
-
-bool DelegatingInProcessBus::WaitSignal(int pin, bool state)
-{
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
-        trace(GetMode() + ": Waiting for " + GetSignalName(pin) + " to become " + (state ? "true" : "false"));
-    }
-
-    return bus.WaitSignal(pin, state);
 }
 
 string DelegatingInProcessBus::GetSignalName(int pin) const

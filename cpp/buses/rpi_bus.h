@@ -136,7 +136,7 @@ private:
 
     uint32_t baseaddr = 0;
 
-    int rpitype = 0;
+    int pi_type = 0;
 
     // GPIO register
     volatile uint32_t *gpio = nullptr;

@@ -111,7 +111,7 @@ void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> 
 // Size of spare band   0400h    0401h   08CAh   08C4h
 // Number of bands      0001h    000Ah   0012h   000Bh
 //
-// Further information: http://r2089.blog36.fc2.com/blog-entry-177.html
+// Further information: https://r2089.blog36.fc2.com/blog-entry-177.html
 //
 void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {

@@ -15,6 +15,5 @@ using namespace std;
 namespace initiator_util
 {
 string GetSenseData(InitiatorExecutor&);
-void LogStatus(int);
 bool SetLogLevel(const string&);
 }

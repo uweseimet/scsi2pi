@@ -73,7 +73,6 @@ public:
 
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, Reset, (), (override));
-    MOCK_METHOD(bool, WaitSignal, (int, bool), (override));
 
     using InProcessBus::InProcessBus;
 };

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -256,6 +256,10 @@ Localizer::Localizer()
 
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "en", "There can only be a single %1 device");
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "de", "Es kann nur ein einziges %1-Gerät geben");
+    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "sv", "Det kan bara finnas en enda %1-enhet");
+    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "fr", "Il ne peut y avoir qu'un seul périphérique %1");
+    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "es", "Sólo puede haber un único dispositivo %1");
+    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "zh", "只能有一个%1设备");
 }
 
 void Localizer::Add(LocalizationKey key, const string &locale, string_view value)

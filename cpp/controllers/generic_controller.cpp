@@ -85,8 +85,6 @@ void GenericController::Selection()
     }
 
     if (!GetBus().GetSEL() && GetBus().GetBSY()) {
-        LogTrace("Selection completed");
-
         // Message out phase if ATN=1, otherwise command phase
         if (GetBus().GetATN()) {
             MsgOut();
@@ -109,7 +107,6 @@ void GenericController::Command()
         const int actual_count = GetBus().CommandHandShake(GetBuffer());
         if (!actual_count) {
             LogTrace(fmt::format("Received unknown command: ${:02x}", GetBuffer()[0]));
-
             Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
         }
@@ -148,10 +145,7 @@ void GenericController::Execute()
     int lun = GetEffectiveLun();
     if (!HasDeviceForLun(lun)) {
         if (GetOpcode() != scsi_command::cmd_inquiry && GetOpcode() != scsi_command::cmd_request_sense) {
-            LogTrace(fmt::format("Invalid LUN {}", lun));
-
             Error(sense_key::illegal_request, asc::invalid_lun);
-
             return;
         }
 
@@ -162,10 +156,7 @@ void GenericController::Execute()
 
     // SCSI-2 4.4.3 Incorrect logical unit handling
     if (GetOpcode() == scsi_command::cmd_inquiry && !HasDeviceForLun(lun)) {
-        LogTrace(fmt::format("Reporting LUN {} as not supported", GetEffectiveLun()));
-
         GetBuffer().data()[0] = 0x7f;
-
         return;
     }
 
@@ -353,13 +344,10 @@ void GenericController::Send()
             Error(sense_key::aborted_command, asc::controller_send_xfer_in);
             return;
         }
-
-        LogTrace("Processing after data collection");
     }
 
     // Continue sending if blocks != 0
     if (HasBlocks()) {
-        LogTrace("Continuing to send");
         assert(HasValidLength());
         assert(GetOffset() == 0);
         return;
@@ -585,8 +573,6 @@ void GenericController::DataOutNonBlockOriented() const
 bool GenericController::XferIn(vector<uint8_t> &buf)
 {
     assert(IsDataIn());
-
-    LogTrace(fmt::format("Command: ${:02x}", static_cast<int>(GetOpcode())));
 
     const int lun = GetEffectiveLun();
     if (!HasDeviceForLun(lun)) {

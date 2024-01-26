@@ -6,19 +6,26 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <chrono>
+#include <spdlog/spdlog.h>
+#include "initiator_util.h"
 #include "initiator_executor.h"
 
 using namespace std;
 using namespace spdlog;
+using namespace initiator_util;
 
 int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
 {
     bus.Reset();
 
-    status = -1;
+    status = 0xff;
     byte_count = 0;
+
+    if (const int count = Bus::GetCommandByteCount(static_cast<int>(cmd)); count
+        && count != static_cast<int>(cdb.size())) {
+        warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
+    }
 
     if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
         trace("Executing command {0} for device {1}:{2}", command->second.second, target_id, target_lun);
@@ -30,12 +37,12 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
         bus.Reset();
-        return -1;
+        return 0xff;
     }
 
     if (!Selection()) {
         bus.Reset();
-        return -1;
+        return 0xff;
     }
 
     // Timeout 3 s
@@ -49,18 +56,19 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
                     now = chrono::steady_clock::now();
                 }
                 else {
+                    LogStatus();
                     return status;
                 }
             }
             catch (const phase_exception &e) {
                 error(e.what());
                 bus.Reset();
-                return -1;
+                return 0xff;
             }
         }
     }
 
-    return -1;
+    return 0xff;
 }
 
 bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
@@ -284,8 +292,26 @@ bool InitiatorExecutor::WaitForBusy() const
     return false;
 }
 
-void InitiatorExecutor::SetTarget(int id, int lun)
+void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 {
     target_id = id;
     target_lun = lun;
+    sasi = s;
 }
+
+void InitiatorExecutor::LogStatus() const
+{
+    if (status) {
+        if (const auto &it_status = STATUS_MAPPING.find(static_cast<scsi_defs::status>(status)); it_status
+            != STATUS_MAPPING.end()) {
+            warn("Device reported {0} (status code ${1:02x})", it_status->second, status);
+        }
+        else if (status != 0xff) {
+            warn("Device reported an unknown status (status code ${0:02x})", status);
+        }
+        else {
+            warn("Device did not respond");
+        }
+    }
+}
+

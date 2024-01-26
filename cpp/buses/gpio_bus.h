@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include "buses/bus.h"
 
 //---------------------------------------------------------------------------
@@ -137,14 +136,14 @@ public:
     int ReceiveHandShake(uint8_t*, int) override;
     int SendHandShake(uint8_t*, int, int = SEND_NO_DELAY) override;
 
+    bool WaitSignal(int, bool);
+
 protected:
 
-    bool IsTarget() const
+    inline bool IsTarget() const
     {
         return target_mode;
     }
-
-    virtual bool WaitSignal(int, bool);
 
     virtual bool WaitREQ(bool) = 0;
     virtual bool WaitACK(bool) = 0;

@@ -113,8 +113,7 @@ void ScsiCd::OpenIso()
 
     if (rawfile) {
         if (size % 2536) {
-            LogWarn("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is "
-                + to_string(size) + " bytes");
+            LogWarn(fmt::format("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is {} byte(s)", size));
         }
 
         SetBlockCount(static_cast<uint32_t>(size / 2352));

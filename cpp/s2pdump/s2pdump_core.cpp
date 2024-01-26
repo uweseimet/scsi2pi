@@ -17,6 +17,7 @@
 #include <array>
 #include <regex>
 #include <getopt.h>
+#include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "initiator/initiator_util.h"
@@ -323,8 +324,6 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    executor->Sasi(sasi);
-
     if (run_bus_scan) {
         ScanBus();
     }
@@ -385,7 +384,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
     cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
         << target_lun << "\n" << flush;
 
-    executor->SetTarget(target_id, target_lun);
+    executor->SetTarget(target_id, target_lun, sasi);
 
     vector<uint8_t> buf(36);
     if (!executor->Inquiry(buf)) {

@@ -8,9 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
-#ifdef __linux__
-#include <sys/epoll.h>
-#endif
+#include <cassert>
 #include <chrono>
 #include "gpio_bus.h"
 

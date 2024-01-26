@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -93,7 +93,7 @@ void AbstractController::ProcessOnController(int id_data)
 
     const int initiator_id = ExtractInitiatorId(id_data);
     if (initiator_id != UNKNOWN_INITIATOR_ID) {
-        LogTrace("++++ Starting processing for initiator ID " + to_string(initiator_id));
+        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
     }
     else {
         LogTrace("++++ Starting processing for unknown initiator ID");

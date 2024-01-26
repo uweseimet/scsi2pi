@@ -33,14 +33,9 @@ public:
     void SynchronizeCache();
     set<int> ReportLuns();
 
-    void Sasi(bool sasi)
+    void SetTarget(int id, int lun, bool sasi)
     {
-        initiator_executor->Sasi(sasi);
-    }
-
-    void SetTarget(int id, int lun)
-    {
-        initiator_executor->SetTarget(id, lun);
+        initiator_executor->SetTarget(id, lun, sasi);
     }
 
 private:

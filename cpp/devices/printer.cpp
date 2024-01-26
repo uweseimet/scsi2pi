@@ -130,11 +130,12 @@ void Printer::Print()
 {
     const uint32_t length = GetInt24(GetController()->GetCmd(), 2);
 
-    LogTrace("Expecting to receive " + to_string(length) + " byte(s) to be printed");
+    LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError("Transfer buffer overflow: Buffer size is " + to_string(GetController()->GetBuffer().size()) +
-            " bytes, " + to_string(length) + " bytes expected");
+        LogError(
+            fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} bytes expected",
+                GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
 
@@ -163,12 +164,12 @@ void Printer::SynchronizeBuffer()
     cmd.replace(file_position, 2, filename);
 
     error_code error;
-    LogTrace("Printing file '" + filename + "' with " + to_string(file_size(path(filename), error)) + " byte(s)");
+    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s)", filename, file_size(path(filename), error)));
 
-    LogDebug("Executing print command '" + cmd + "'");
+    LogDebug(fmt::format("Executing print command '{}'", cmd));
 
     if (system(cmd.c_str())) {
-        LogError("Printing file '" + filename + "' failed, the printing system might not be configured");
+        LogError(fmt::format("Printing file '{}' failed, the printing system might not be configured", filename));
 
         ++print_error_count;
 
@@ -193,7 +194,7 @@ bool Printer::WriteByteSequence(span<const uint8_t> buf)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError("Can't create printer output file for pattern '" + filename + "': " + strerror(errno));
+            LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
             ++print_error_count;
             return false;
         }
@@ -210,7 +211,7 @@ bool Printer::WriteByteSequence(span<const uint8_t> buf)
         LogTrace("Created printer output file '" + filename + "'");
     }
 
-    LogTrace("Appending " + to_string(buf.size()) + " byte(s) to printer output file ''" + filename + "'");
+    LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", buf.size(), filename));
 
     out.write((const char*)buf.data(), buf.size());
 

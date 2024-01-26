@@ -181,9 +181,7 @@ void Disk::Read(access_mode mode)
     if (valid) {
         GetController()->SetBlocks(blocks);
 
-        const int length = Read(GetController()->GetBuffer(), start);
-        LogTrace("Length is " + to_string(length));
-        GetController()->SetLength(length);
+        GetController()->SetLength(Read(GetController()->GetBuffer(), start));
 
         // Set next block
         GetController()->SetNext(start + 1);
@@ -763,8 +761,7 @@ void Disk::ValidateBlockAddress(access_mode mode) const
         mode == RW16 ? GetInt64(GetController()->GetCmd(), 2) : GetInt32(GetController()->GetCmd(), 2);
 
     if (block > GetBlockCount()) {
-        LogTrace("Capacity of " + to_string(GetBlockCount()) + " block(s) exceeded: Trying to access block "
-            + to_string(block));
+        LogTrace(fmt::format("Capacity of {0} block(s) exceeded: Trying to access block {1}", GetBlockCount(), block));
         throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
     }
 }
@@ -800,8 +797,9 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
     // Check capacity
     if (uint64_t capacity = GetBlockCount(); !capacity || start > capacity || start + count > capacity) {
-        LogTrace("Capacity of " + to_string(capacity) + " sector(s) exceeded: Trying to access sector "
-            + to_string(start) + ", sector count " + to_string(count));
+        LogTrace(
+            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
+                start, count));
         throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
     }
 
@@ -827,7 +825,7 @@ uint32_t Disk::GetSectorSizeInBytes() const
 void Disk::SetSectorSizeInBytes(uint32_t size_in_bytes)
 {
     if (!GetSupportedSectorSizes().contains(size_in_bytes)) {
-        throw io_exception("Invalid sector size of " + to_string(size_in_bytes) + " byte(s)");
+        throw io_exception(fmt::format("Invalid sector size of {} byte(s)", size_in_bytes));
     }
 
     size_shift_count = CalculateShiftCount(size_in_bytes);

@@ -42,7 +42,7 @@ void ScsiController::MsgOut()
             msb = { };
         }
 
-        LogTrace("Message Out phase");
+        LogTrace("MESSAGE OUT phase");
         SetPhase(phase_t::msgout);
 
         GetBus().SetMSG(true);

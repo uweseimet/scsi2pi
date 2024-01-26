@@ -34,11 +34,6 @@ public:
     }
     ~S2pExecExecutor() = default;
 
-    void Sasi(bool sasi)
-    {
-        initiator_executor->Sasi(sasi);
-    }
-
     int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&);
 
     string GetSenseData() const
@@ -46,9 +41,9 @@ public:
         return initiator_util::GetSenseData(*initiator_executor);
     }
 
-    void SetTarget(int id, int lun)
+    void SetTarget(int id, int lun, bool sasi)
     {
-        initiator_executor->SetTarget(id, lun);
+        initiator_executor->SetTarget(id, lun, sasi);
     }
 
     int GetByteCount() const
