@@ -9,9 +9,9 @@
 #include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/command_context.h"
-#include "shared_protobuf/protobuf_util.h"
-#include "shared_command/command_response.h"
+#include "protobuf/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "command/command_response.h"
 #include "controllers/controller_factory.h"
 #include "base/device_factory.h"
 

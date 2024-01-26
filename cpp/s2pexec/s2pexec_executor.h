@@ -10,14 +10,14 @@
 
 #include <cstdint>
 #include <array>
-#include "shared_initiator/initiator_executor.h"
+#include "initiator/initiator_util.h"
+#include "initiator/initiator_executor.h"
 
 using namespace std;
 
 class S2pExecExecutor
 {
-
-    // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
+    // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     inline static const int BUFFER_SIZE = 65535;
 
 public:
@@ -29,14 +29,22 @@ public:
         text = 0b100
     };
 
-    S2pExecExecutor(Bus &bus, int id)
+    S2pExecExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
     {
-        initiator_executor = make_unique<InitiatorExecutor>(bus, id);
     }
     ~S2pExecExecutor() = default;
 
-    bool ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, bool);
-    string GetSenseData(bool);
+    void Sasi(bool sasi)
+    {
+        initiator_executor->Sasi(sasi);
+    }
+
+    int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&);
+
+    string GetSenseData() const
+    {
+        return initiator_util::GetSenseData(*initiator_executor);
+    }
 
     void SetTarget(int id, int lun)
     {

@@ -9,7 +9,7 @@
 #include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace s2p_interface;

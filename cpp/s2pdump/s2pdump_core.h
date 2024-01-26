@@ -60,7 +60,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> scsi_executor;
+    unique_ptr<S2pDumpExecutor> executor;
 
     scsi_device_info_t scsi_device_info = { };
 

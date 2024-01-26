@@ -31,7 +31,12 @@ public:
     ~InitiatorExecutor() = default;
 
     void SetTarget(int, int);
-    bool Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, bool = false);
+    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int);
+
+    void Sasi(bool b)
+    {
+        sasi = b;
+    }
 
     int GetByteCount() const
     {
@@ -40,12 +45,10 @@ public:
 
 private:
 
-    void Reset() const;
-
     bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int);
 
     bool Arbitration() const;
-    bool Selection(bool) const;
+    bool Selection() const;
     void Command(scsi_command, span<uint8_t>) const;
     void Status();
     void DataIn(span<uint8_t>, int);
@@ -56,7 +59,7 @@ private:
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
-    inline void Sleep(const timespec &ns) const
+    void Sleep(const timespec &ns) const
     {
         nanosleep(&ns, nullptr);
     }
@@ -71,6 +74,8 @@ private:
     int status = -1;
 
     int byte_count = 0;
+
+    bool sasi = false;
 
     bool reject = false;
 

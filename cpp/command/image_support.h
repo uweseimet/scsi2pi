@@ -10,7 +10,7 @@
 
 #include <filesystem>
 // TODO Try to get rid of this dependency
-#include "shared_protobuf/command_context.h"
+#include "protobuf/command_context.h"
 
 using namespace std;
 using namespace filesystem;

@@ -15,7 +15,7 @@
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
-#include "shared_initiator/initiator_util.h"
+#include "initiator/initiator_util.h"
 #include "s2pproto_core.h"
 
 using namespace std;
@@ -81,7 +81,7 @@ bool S2pProto::Init(bool)
 
     bus = bus_factory->CreateBus(false);
     if (bus) {
-        scsi_executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
+        executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
     }
 
     return bus != nullptr;
@@ -238,7 +238,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    scsi_executor->SetTarget(target_id, target_lun);
+    executor->SetTarget(target_id, target_lun);
 
     int result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
 
@@ -251,7 +251,7 @@ int S2pProto::GenerateOutput(S2pProtoExecutor::protobuf_format input_format, con
     S2pProtoExecutor::protobuf_format output_format, const string &output_filename)
 {
     PbResult result;
-    if (string error = scsi_executor->Execute(input_filename, input_format, result); !error.empty()) {
+    if (string error = executor->Execute(input_filename, input_format, result); !error.empty()) {
         cerr << "Error: " << error << endl;
 
         return EXIT_FAILURE;

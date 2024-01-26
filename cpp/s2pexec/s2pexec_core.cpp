@@ -14,7 +14,7 @@
 #include <getopt.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
-#include "shared_initiator/initiator_util.h"
+#include "initiator/initiator_util.h"
 #include "s2pexec_core.h"
 
 using namespace std;
@@ -82,7 +82,7 @@ bool S2pExec::Init(bool)
 
     bus = bus_factory->CreateBus(false);
     if (bus) {
-        scsi_executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
+        executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
     }
 
     return bus != nullptr;
@@ -265,7 +265,8 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    scsi_executor->SetTarget(target_id, target_lun);
+    executor->Sasi(sasi);
+    executor->SetTarget(target_id, target_lun);
 
     int result = EXIT_SUCCESS;
     if (!command.empty()) {
@@ -306,20 +307,12 @@ string S2pExec::ExecuteCommand()
         debug("Sending {} data bytes", buffer.size());
     }
 
-    const bool status = scsi_executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, sasi);
-    if (!status) {
-        if (request_sense) {
-            warn("Device reported an error, running REQUEST SENSE");
-            return scsi_executor->GetSenseData(sasi);
-        }
-        else {
-            warn("Device reported an error");
-            return "";
-        }
+    if (executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer)) {
+        return request_sense ? executor->GetSenseData() : "";
     }
 
     if (binary_input_filename.empty() && hex_input_filename.empty()) {
-        const int count = scsi_executor->GetByteCount();
+        const int count = executor->GetByteCount();
 
         debug("Received {} data bytes", count);
 

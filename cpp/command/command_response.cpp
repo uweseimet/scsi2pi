@@ -10,7 +10,7 @@
 #include <filesystem>
 #include "base/property_handler.h"
 #include "controllers/controller_factory.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"

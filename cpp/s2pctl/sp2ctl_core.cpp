@@ -17,7 +17,7 @@
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl_parser.h"
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"

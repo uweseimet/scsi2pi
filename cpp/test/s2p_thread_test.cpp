@@ -16,8 +16,8 @@
 #include <gtest/gtest.h>
 #include "shared/network_util.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
-#include "shared_protobuf/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "protobuf/command_context.h"
 #include "s2p/s2p_thread.h"
 
 using namespace s2p_interface;

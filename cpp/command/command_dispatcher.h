@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "shared_protobuf/command_context.h"
+#include "protobuf/command_context.h"
 #include "command_executor.h"
 #include "image_support.h"
 #include "command_response.h"

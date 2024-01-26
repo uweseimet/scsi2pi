@@ -13,35 +13,29 @@
 using namespace std;
 using namespace spdlog;
 
-void InitiatorExecutor::Reset() const
+int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
 {
-    bus.SetDAT(0);
-    bus.SetBSY(false);
-    bus.SetSEL(false);
-    bus.SetATN(false);
-}
+    bus.Reset();
 
-bool InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, bool sasi)
-{
-    status = 0;
+    status = -1;
     byte_count = 0;
 
     if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
-        trace("Executing command {0} for target {1}:{2}", command->second.second, target_id, target_lun);
+        trace("Executing command {0} for device {1}:{2}", command->second.second, target_id, target_lun);
     }
     else {
-        trace("Executing command ${0:02x} for target {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
+        trace("Executing command ${0:02x} for device {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
     }
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
         bus.Reset();
-        return false;
+        return -1;
     }
 
-    if (!Selection(sasi)) {
-        Reset();
-        return false;
+    if (!Selection()) {
+        bus.Reset();
+        return -1;
     }
 
     // Timeout 3 s
@@ -55,19 +49,18 @@ bool InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_
                     now = chrono::steady_clock::now();
                 }
                 else {
-                    bus.Reset();
-                    return !status;
+                    return status;
                 }
             }
             catch (const phase_exception &e) {
                 error(e.what());
                 bus.Reset();
-                return false;
+                return -1;
             }
         }
     }
 
-    return false;
+    return -1;
 }
 
 bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
@@ -112,6 +105,8 @@ bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8
 
 bool InitiatorExecutor::Arbitration() const
 {
+    trace("Arbitration with initiator ID {}", initiator_id);
+
     if (!WaitForFree()) {
         trace("Bus is not free");
         return false;
@@ -138,8 +133,10 @@ bool InitiatorExecutor::Arbitration() const
     return true;
 }
 
-bool InitiatorExecutor::Selection(bool sasi) const
+bool InitiatorExecutor::Selection() const
 {
+    trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
+
     // There is no initiator ID with SASI
     bus.SetDAT(static_cast<uint8_t>((sasi ? 0 : 1 << initiator_id) + (1 << target_id)));
 
@@ -158,7 +155,7 @@ bool InitiatorExecutor::Selection(bool sasi) const
     }
 
     if (!WaitForBusy()) {
-        trace("SELECTION phase failed");
+        trace("Selection failed");
         return false;
     }
 

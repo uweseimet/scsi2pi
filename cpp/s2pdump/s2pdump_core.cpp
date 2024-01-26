@@ -19,7 +19,7 @@
 #include <getopt.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
-#include "shared_initiator/initiator_util.h"
+#include "initiator/initiator_util.h"
 #include "s2pdump_core.h"
 
 using namespace std;
@@ -93,7 +93,7 @@ bool S2pDump::Init(bool in_process)
 
     bus = bus_factory->CreateBus(false, in_process);
     if (bus != nullptr) {
-        scsi_executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
+        executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }
 
     return bus != nullptr;
@@ -323,6 +323,8 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
+    executor->Sasi(sasi);
+
     if (run_bus_scan) {
         ScanBus();
     }
@@ -366,7 +368,7 @@ void S2pDump::ScanBus()
             continue;
         }
 
-        auto luns = scsi_executor->ReportLuns();
+        auto luns = executor->ReportLuns();
         // LUN 0 has already been dealt with
         luns.erase(0);
 
@@ -383,10 +385,10 @@ bool S2pDump::DisplayInquiry(bool check_type)
     cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
         << target_lun << "\n" << flush;
 
-    scsi_executor->SetTarget(target_id, target_lun);
+    executor->SetTarget(target_id, target_lun);
 
     vector<uint8_t> buf(36);
-    if (!scsi_executor->Inquiry(buf, sasi)) {
+    if (!executor->Inquiry(buf)) {
         return false;
     }
 
@@ -571,7 +573,7 @@ string S2pDump::DumpRestore()
 
     if (restore) {
         // Ensure that if the target device is also a SCSI2Pi instance its image file becomes complete immediately
-        scsi_executor->SynchronizeCache();
+        executor->SynchronizeCache();
     }
 
     cout << DIVIDER
@@ -592,11 +594,11 @@ string S2pDump::ReadWrite(fstream &fs, int sector_offset, uint32_t sector_count,
             return "Error reading from file '" + filename + "'";
         }
 
-        if (!scsi_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
             return "Error/interrupted while writing to device";
         }
     } else {
-        if (!scsi_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
             return "Error/interrupted while reading from device";
         }
 
@@ -667,10 +669,10 @@ bool S2pDump::GetDeviceInfo()
     }
 
     // Clear any pending condition, e.g. a medium just having being inserted
-    scsi_executor->TestUnitReady();
+    executor->TestUnitReady();
 
     if (!sasi) {
-        const auto [capacity, sector_size] = scsi_executor->ReadCapacity();
+        const auto [capacity, sector_size] = executor->ReadCapacity();
         if (!capacity || !sector_size) {
             trace("Can't read device capacity");
             return false;
@@ -734,7 +736,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     vector<uint8_t> buf(255);
 
-    if (!scsi_executor->ModeSense6(buf)) {
+    if (!executor->ModeSense6(buf)) {
         cout << "Warning: Can't get mode page data, medium may be missing\n" << flush;
         return;
     }

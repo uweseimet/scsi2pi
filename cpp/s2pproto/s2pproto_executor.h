@@ -10,7 +10,7 @@
 
 #include <cstdint>
 #include <array>
-#include "shared_initiator/initiator_executor.h"
+#include "initiator/initiator_executor.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
@@ -31,14 +31,12 @@ public:
         text = 0b100
     };
 
-    S2pProtoExecutor(Bus &bus, int id)
+    S2pProtoExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
     {
-        initiator_executor = make_unique<InitiatorExecutor>(bus, id);
     }
     ~S2pProtoExecutor() = default;
 
     string Execute(const string&, protobuf_format, PbResult&);
-    bool ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, bool);
 
     void SetTarget(int id, int lun)
     {

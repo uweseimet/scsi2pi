@@ -40,7 +40,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pExecExecutor> scsi_executor;
+    unique_ptr<S2pExecExecutor> executor;
 
     bool version = false;
     bool help = false;

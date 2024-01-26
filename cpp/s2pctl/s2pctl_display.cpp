@@ -13,7 +13,7 @@
 #include <map>
 #include <iomanip>
 #include "shared/s2p_util.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl_display.h"
 
 using namespace std;

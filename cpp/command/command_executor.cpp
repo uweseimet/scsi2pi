@@ -11,8 +11,8 @@
 #include "shared/s2p_util.h"
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
-#include "shared_protobuf/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "protobuf/command_context.h"
 #include "devices/disk.h"
 #include "command_executor.h"
 

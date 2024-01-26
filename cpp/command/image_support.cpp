@@ -11,7 +11,7 @@
 #include <array>
 #include "devices/disk.h"
 #include "shared/s2p_util.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "image_support.h"
 
 using namespace std;

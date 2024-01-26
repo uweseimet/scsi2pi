@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "shared_command/command_executor.h"
+#include "command/command_executor.h"
 #include "buses/in_process_bus.h"
 #include "controllers/scsi_controller.h"
 #include "devices/sasi_hd.h"

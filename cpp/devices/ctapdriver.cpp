@@ -86,7 +86,7 @@ bool CTapDriver::Init(const param_map &const_params)
     // IFF_NO_PI for no extra packet information
     ifreq ifr = { };
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-    strncpy(ifr.ifr_name, DEFAULT_BRIDGE_IF.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
 
     if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
         LogErrno("Can't ioctl TUNSETIFF");
@@ -117,9 +117,9 @@ bool CTapDriver::Init(const param_map &const_params)
         return false;
     };
 
-    // Check if the bridge has already been created by checking whether there is a MAC address for the bridge.
+    // Check if the bridge has already been created by checking whether there is a MAC address for it
     if (GetMacAddress(BRIDGE_NAME).empty()) {
-        trace("Checking which interface is available for creating the bridge " + BRIDGE_NAME);
+        trace("Checking which interface is available for creating bridge " + BRIDGE_NAME);
 
         const auto &it = ranges::find_if(interfaces, [](const string &iface) {return IsInterfaceUp(iface);});
         if (it == interfaces.end()) {
@@ -143,25 +143,27 @@ bool CTapDriver::Init(const param_map &const_params)
         if (const string error = ip_link(ip_fd, BRIDGE_NAME.c_str(), true); !error.empty()) {
             return cleanUp(error);
         }
+
+        bridge_created = true;
     }
     else {
-        info(BRIDGE_NAME + " is already available");
+        info(BRIDGE_NAME + " already exists");
     }
 
-    trace(">ip link set " + DEFAULT_BRIDGE_IF + " up");
-    if (const string error = ip_link(ip_fd, DEFAULT_BRIDGE_IF.c_str(), true); !error.empty()) {
+    trace(">ip link set " + BRIDGE_INTERFACE_NAME + " up");
+    if (const string error = ip_link(ip_fd, BRIDGE_INTERFACE_NAME.c_str(), true); !error.empty()) {
         return cleanUp(error);
     }
 
-    trace(">brctl addif " + BRIDGE_NAME + " " + DEFAULT_BRIDGE_IF);
-    if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, DEFAULT_BRIDGE_IF, true); !error.empty()) {
+    trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+    if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, true); !error.empty()) {
         return cleanUp(error);
     }
 
     close(ip_fd);
     close(br_socket_fd);
 
-    info("Tap device " + DEFAULT_BRIDGE_IF + " created");
+    info("Tap device " + BRIDGE_INTERFACE_NAME + " created");
 
     return true;
 #endif
@@ -169,33 +171,32 @@ bool CTapDriver::Init(const param_map &const_params)
 
 void CTapDriver::CleanUp() const
 {
-    if (tap_fd != -1) {
-        if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            LogErrno("Can't open bridge socket");
-        } else {
-            trace(">brctl delif " + BRIDGE_NAME + " " + DEFAULT_BRIDGE_IF);
-            if (const string error = br_setif(fd, BRIDGE_NAME, DEFAULT_BRIDGE_IF, false); !error.empty()) {
-                warn("Removing " + DEFAULT_BRIDGE_IF + " from the bridge failed: " + error);
-                warn("You may need to manually remove the tap device");
-            }
+    if (tap_fd == -1) {
+        return;
+    }
 
-            trace(">ip link set dev " + BRIDGE_NAME + " down");
-            if (const string error = ip_link(fd, BRIDGE_NAME.c_str(), false); !error.empty()) {
-                warn(error);
-            }
-
-#ifdef __linux__
-            trace(">brctl delbr " + BRIDGE_NAME);
-            if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
-                warn("Removing " + BRIDGE_NAME + " failed: " + strerror(errno));
-            }
-#endif
-
-            close(fd);
+    if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
+        LogErrno("Can't open bridge socket");
+    } else {
+        trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+        if (const string error = br_setif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
+            warn("Removing " + BRIDGE_INTERFACE_NAME + " from the bridge failed: " + error);
+            warn("You may need to manually remove the tap device");
         }
 
-        close(tap_fd);
+        trace(">ip link set dev " + BRIDGE_NAME + " down");
+        if (const string error = ip_link(fd, BRIDGE_NAME.c_str(), false); !error.empty()) {
+            warn(error);
+        }
+
+        if (const string error = DeleteBridge(fd); !error.empty()) {
+            warn(error);
+        }
+
+        close(fd);
     }
+
+    close(tap_fd);
 }
 
 param_map CTapDriver::GetDefaultParams() const
@@ -299,11 +300,25 @@ string CTapDriver::AddBridge(int fd)
     return "";
 }
 
+string CTapDriver::DeleteBridge(int fd) const
+{
+#ifdef __linux__
+    if (bridge_created) {
+        trace(">brctl delbr " + BRIDGE_NAME);
+        if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
+            return "Removing " + BRIDGE_NAME + " failed: " + strerror(errno);
+        }
+    }
+#endif
+
+    return "";
+}
+
 string CTapDriver::IpLink(bool enable)
 {
     const int fd = socket(PF_INET, SOCK_DGRAM, 0);
-    trace(string(">ip link set " + DEFAULT_BRIDGE_IF + " ") + (enable ? "up" : "down"));
-    const string result = ip_link(fd, DEFAULT_BRIDGE_IF.c_str(), enable);
+    trace(string(">ip link set " + BRIDGE_INTERFACE_NAME + " ") + (enable ? "up" : "down"));
+    const string result = ip_link(fd, BRIDGE_INTERFACE_NAME.c_str(), enable);
     close(fd);
 
     return result;

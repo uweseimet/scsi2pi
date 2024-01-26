@@ -85,7 +85,7 @@
 #include <algorithm>
 #include <chrono>
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"

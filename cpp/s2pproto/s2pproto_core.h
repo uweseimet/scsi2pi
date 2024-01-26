@@ -38,7 +38,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pProtoExecutor> scsi_executor;
+    unique_ptr<S2pProtoExecutor> executor;
 
     bool version = false;
     bool help = false;

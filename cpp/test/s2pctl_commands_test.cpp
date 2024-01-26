@@ -12,7 +12,7 @@
 #include <gtest/gtest.h>
 #include "test/test_shared.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl/s2pctl_commands.h"
 
 using namespace testing;

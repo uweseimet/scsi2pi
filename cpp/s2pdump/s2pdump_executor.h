@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <set>
 #include <span>
-#include "shared_initiator/initiator_executor.h"
+#include "initiator/initiator_executor.h"
 
 using namespace std;
 
@@ -20,23 +20,27 @@ class S2pDumpExecutor
 
 public:
 
-    S2pDumpExecutor(Bus &bus, int id)
+    S2pDumpExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
     {
-        phase_executor = make_unique<InitiatorExecutor>(bus, id);
     }
     ~S2pDumpExecutor() = default;
 
     void TestUnitReady() const;
-    bool Inquiry(span<uint8_t>, bool);
+    bool Inquiry(span<uint8_t>);
     pair<uint64_t, uint32_t> ReadCapacity();
     bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
     bool ModeSense6(span<uint8_t>);
     void SynchronizeCache();
     set<int> ReportLuns();
 
+    void Sasi(bool sasi)
+    {
+        initiator_executor->Sasi(sasi);
+    }
+
     void SetTarget(int id, int lun)
     {
-        phase_executor->SetTarget(id, lun);
+        initiator_executor->SetTarget(id, lun);
     }
 
 private:
@@ -44,5 +48,5 @@ private:
     static uint32_t GetInt32(span<uint8_t>, int = 0);
     static uint64_t GetInt64(span<uint8_t>, int = 0);
 
-    unique_ptr<InitiatorExecutor> phase_executor;
+    unique_ptr<InitiatorExecutor> initiator_executor;
 };

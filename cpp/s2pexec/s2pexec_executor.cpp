@@ -6,32 +6,17 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/s2p_util.h"
+#include "initiator/initiator_util.h"
 #include "s2pexec_executor.h"
 
 using namespace std;
-using namespace scsi_defs;
-using namespace s2p_util;
+using namespace initiator_util;
 
-bool S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer, bool sasi)
+int S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer)
 {
-    return initiator_executor->Execute(cmd, cdb, buffer, buffer.size(), sasi);
-}
+    const int status = initiator_executor->Execute(cmd, cdb, buffer, buffer.size());
 
-string S2pExecExecutor::GetSenseData(bool sasi)
-{
-    vector<uint8_t> buf(14);
-    array<uint8_t, 6> cdb = { };
-    cdb[4] = buf.size();
+    LogStatus(status);
 
-    if (!initiator_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, buf.size(), sasi)) {
-        return "Can't execute REQUEST SENSE";
-    }
-
-    if (initiator_executor->GetByteCount() < static_cast<int>(buf.size())) {
-        return "Device reported an unknown error";
-    }
-    else {
-        return FormatSenseData(static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]);
-    }
+    return status;
 }

@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared_protobuf/protobuf_util.h"
-#include "shared_command/image_support.h"
+#include "protobuf/protobuf_util.h"
+#include "command/image_support.h"
 
 using namespace s2p_interface;
 using namespace protobuf_util;
