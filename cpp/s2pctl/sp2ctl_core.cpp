@@ -22,7 +22,6 @@
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"
 
-using namespace std;
 using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
@@ -120,19 +119,7 @@ int S2pCtl::RunInteractive() const
 
             vector<char*> interactive_args;
             interactive_args.emplace_back(strdup("s2pctl"));
-
-            // Try to guess whether the command is short or long if there is no dash at the beginning
-            string command = args[0];
-            if (!command.starts_with("-")) {
-                if (command.size() < 2) {
-                    command = "-" + command;
-                }
-                else {
-                    command = "--" + command;
-                }
-            }
-            interactive_args.emplace_back(strdup(command.c_str()));
-
+            interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
             for (size_t i = 1; i < args.size(); i++) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
             }
@@ -144,7 +131,17 @@ int S2pCtl::RunInteractive() const
     return EXIT_SUCCESS;
 }
 
-int S2pCtl::ParseArguments(const vector<char*> &args) const
+string S2pCtl::ConvertCommand(const string &command)
+{
+    // Try to guess whether the command is short or long if there is no dash at the beginning
+    if (!command.starts_with("-")) {
+        return command.size() < 2 ? "-" + command : "--" + command;
+    }
+
+    return command;
+}
+
+int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable for parsing
 {
     const int OPT_PROMPT = 2;
     const int OPT_BINARY_PROTOBUF = 3;

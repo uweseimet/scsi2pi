@@ -9,15 +9,12 @@
 #include <unistd.h>
 #include <sstream>
 #include <array>
-#include <vector>
 #include <iomanip>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "protobuf_util.h"
 
-using namespace std;
 using namespace s2p_util;
-using namespace s2p_interface;
 
 #define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
 

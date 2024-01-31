@@ -16,8 +16,6 @@
 #include <fstream>
 #include <vector>
 #include <chrono>
-#include "shared/s2p_util.h"
-#include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
@@ -211,7 +209,7 @@ int S2p::Run(span<char*> args, bool in_process)
     LogDevices(device_list);
     cout << device_list << flush;
 
-    if (!bus_factory->IsRaspberryPi()) {
+    if (!in_process && !bus_factory->IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
     }
 
@@ -256,7 +254,7 @@ void S2p::CreateDevices()
     int id = -1;
     int lun = -1;
     bool is_active = false;
-    for (const auto &properties = property_handler.GetProperties(); const auto& [key, value] : properties) {
+    for (const property_map &properties = property_handler.GetProperties(); const auto& [key, value] : properties) {
         if (!key.starts_with("device.")) {
             continue;
         }
@@ -274,17 +272,7 @@ void S2p::CreateDevices()
 
         // Check whether the device is active at the start of a new device block
         if (id != device_definition.id() || lun != device_definition.unit()) {
-            is_active = true;
-
-            // The "active" property has to be evaluated first
-            const auto &it = properties.find("device." + id_and_lun + ".active");
-            if (it != properties.end()) {
-                const string &active = it->second;
-                if (active != "true" && active != "false") {
-                    throw parser_exception(fmt::format("Invalid boolean: '{}'", active));
-                }
-                is_active = active == "true";
-            }
+            is_active = CheckActive(properties, id_and_lun);
         }
 
         if (!is_active) {
@@ -304,11 +292,16 @@ void S2p::CreateDevices()
         SetDeviceProperties(*device, key_components[2], value);
     }
 
+    AttachDevices(command);
+}
+
+void S2p::AttachDevices(PbCommand &command)
+{
     if (command.devices_size()) {
         command.set_operation(ATTACH);
 
         if (const CommandContext context(command, s2p_image.GetDefaultFolder(),
-            property_handler.GetProperty(PropertyHandler::LOCALE)); !executor->ProcessCmd(context)) {
+                property_handler.GetProperty(PropertyHandler::LOCALE)); !executor->ProcessCmd(context)) {
             throw parser_exception("Error: Can't attach devices");
         }
 
@@ -321,6 +314,19 @@ void S2p::CreateDevices()
         }
 #endif
     }
+}
+
+bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
+{
+    if (const auto &it = properties.find("device." + id_and_lun + ".active"); it != properties.end()) {
+        const string &active = it->second;
+        if (active != "true" && active != "false") {
+            throw parser_exception(fmt::format("Invalid boolean: '{}'", active));
+        }
+        return active == "true";
+    }
+
+    return true;
 }
 
 void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, const string &value)

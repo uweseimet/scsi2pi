@@ -12,13 +12,9 @@
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "base/property_handler.h"
-#include "mode_page_util.h"
 #include "mode_page_device.h"
 
-using namespace std;
-using namespace scsi_defs;
 using namespace memory_util;
-using namespace mode_page_util;
 
 bool ModePageDevice::Init(const param_map &params)
 {
@@ -33,7 +29,7 @@ bool ModePageDevice::Init(const param_map &params)
             ModeSense10();
         });
 
-    if (supports_mode_pages) {
+    if (supports_mode_select) {
         AddCommand(scsi_command::cmd_mode_select6, [this]
             {
                 ModeSelect6();
@@ -58,13 +54,6 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
     const int page_code = cdb[2] & 0x3f;
 
-    if (page_code == 0x3f) {
-        LogTrace("Requesting all mode pages");
-    }
-    else {
-        LogTrace(fmt::format("Requesting mode page ${:02x}", page_code));
-    }
-
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     SetUpModePages(pages, page_code, changeable);
@@ -78,7 +67,6 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     }
 
     if (pages.empty()) {
-        LogTrace(fmt::format("Unsupported mode page ${:02x}", page_code));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -126,14 +114,14 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
 void ModePageDevice::ModeSense6() const
 {
-    GetController()->SetLength(ModeSense6(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
 
 void ModePageDevice::ModeSense10() const
 {
-    GetController()->SetLength(ModeSense10(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
@@ -148,20 +136,17 @@ void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int)
 
 void ModePageDevice::ModeSelect6() const
 {
-    SaveParametersCheck(GetController()->GetCmdByte(4));
+    SaveParametersCheck(GetController()->GetCdbByte(4));
 }
 
 void ModePageDevice::ModeSelect10() const
 {
-    const auto length = min(GetController()->GetBuffer().size(),
-        static_cast<size_t>(GetInt16(GetController()->GetCmd(), 7)));
-
-    SaveParametersCheck(static_cast<uint32_t>(length));
+    SaveParametersCheck(GetInt16(GetController()->GetCdb(), 7));
 }
 
 void ModePageDevice::SaveParametersCheck(int length) const
 {
-    if (!SupportsSaveParameters() && (GetController()->GetCmdByte(1) & 0x01)) {
+    if (!SupportsSaveParameters() && (GetController()->GetCdbByte(1) & 0x01)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

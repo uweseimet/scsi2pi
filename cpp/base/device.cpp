@@ -7,13 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
-#include <cassert>
 #include <stdexcept>
 #include "shared/s2p_version.h"
 #include "device.h"
 
 using namespace spdlog;
-using namespace std;
 
 Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
 {

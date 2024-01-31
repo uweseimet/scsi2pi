@@ -191,7 +191,7 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ("2048", properties["device.7:31.block_size"]);
     EXPECT_EQ("RE731_2048.mos", properties["device.7:31.params"]);
 
-    SetUpArgs(args, "-b" "512", "-B", "RE731_2048.mos");
+    SetUpArgs(args, "-b", "512", "-B", "RE731_2048.mos");
     properties = parser.ParseArguments(args, is_sasi);
     EXPECT_EQ(3UL, properties.size());
     EXPECT_EQ("scrm", properties["device.7:31.type"]);

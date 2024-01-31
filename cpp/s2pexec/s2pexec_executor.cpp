@@ -8,9 +8,7 @@
 
 #include "s2pexec_executor.h"
 
-using namespace std;
-
-int S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer)
+int S2pExecExecutor::ExecuteCommand(scsi_command cmd, vector<uint8_t> &cdb, vector<uint8_t> &buffer, int timeout)
 {
-    return initiator_executor->Execute(cmd, cdb, buffer, buffer.size());
+    return initiator_executor->Execute(cmd, cdb, buffer, buffer.size(), timeout);
 }

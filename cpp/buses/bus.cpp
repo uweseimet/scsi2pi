@@ -14,7 +14,7 @@
 using namespace std;
 using namespace scsi_defs;
 
-int Bus::GetCommandByteCount(int opcode)
+int Bus::GetCommandBytesCount(int opcode)
 {
     const auto &mapping = COMMAND_MAPPING.find(static_cast<scsi_command>(opcode));
 

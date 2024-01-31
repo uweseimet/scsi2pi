@@ -10,8 +10,6 @@
 #include "memory_util.h"
 #include "primary_device.h"
 
-using namespace std;
-using namespace scsi_defs;
 using namespace memory_util;
 
 bool PrimaryDevice::Init(const param_map &params)
@@ -53,11 +51,6 @@ bool PrimaryDevice::Init(const param_map &params)
     return true;
 }
 
-void PrimaryDevice::AddCommand(scsi_command cmd, const operation &execute)
-{
-    commands[cmd] = execute;
-}
-
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     if (const auto &it = commands.find(cmd); it != commands.end()) {
@@ -68,7 +61,6 @@ void PrimaryDevice::Dispatch(scsi_command cmd)
     }
     else {
         LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
-
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
@@ -82,7 +74,7 @@ void PrimaryDevice::Reset()
 
 int PrimaryDevice::GetId() const
 {
-    return GetController() != nullptr ? GetController()->GetTargetId() : -1;
+    return GetController() ? GetController()->GetTargetId() : -1;
 }
 
 void PrimaryDevice::SetController(AbstractController *c)
@@ -102,13 +94,13 @@ void PrimaryDevice::TestUnitReady()
 void PrimaryDevice::Inquiry()
 {
     // EVPD and page code check
-    if ((GetController()->GetCmdByte(1) & 0x01) || GetController()->GetCmdByte(2)) {
+    if ((GetController()->GetCdbByte(1) & 0x01) || GetController()->GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     const vector<uint8_t> buf = InquiryInternal();
 
-    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCmd(), 3)));
+    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3)));
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
@@ -126,11 +118,11 @@ void PrimaryDevice::Inquiry()
 void PrimaryDevice::ReportLuns()
 {
     // Only SELECT REPORT mode 0 is supported
-    if (GetController()->GetCmdByte(2)) {
+    if (GetController()->GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint32_t allocation_length = GetInt32(GetController()->GetCmd(), 6);
+    const uint32_t allocation_length = GetInt32(GetController()->GetCdb(), 6);
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
@@ -172,7 +164,7 @@ void PrimaryDevice::RequestSense()
 
     vector<byte> buf = GetController()->GetDeviceForLun(lun)->HandleRequestSense();
 
-    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetController()->GetCmdByte(4)));
+    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4)));
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
@@ -185,7 +177,7 @@ void PrimaryDevice::RequestSense()
 void PrimaryDevice::SendDiagnostic()
 {
     // Do not support parameter list
-    if (GetController()->GetCmdByte(3) || GetController()->GetCmdByte(4)) {
+    if (GetController()->GetCdbByte(3) || GetController()->GetCdbByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -197,24 +189,19 @@ void PrimaryDevice::CheckReady()
     // Not ready if reset
     if (IsReset()) {
         SetReset(false);
-        LogTrace("Device in reset");
         throw scsi_exception(sense_key::unit_attention, asc::power_on_or_reset);
     }
 
     // Not ready if it needs attention
     if (IsAttn()) {
         SetAttn(false);
-        LogTrace("Device in needs attention");
         throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
     }
 
     // Return status if not ready
     if (!IsReady()) {
-        LogTrace("Device not ready");
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
-
-    LogTrace("Device is ready");
 }
 
 vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, scsi_level level, bool is_removable) const
@@ -231,8 +218,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, scsi_level level,
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= scsi_level::scsi_2 ?
-                                           static_cast<uint8_t>(scsi_level::scsi_2) :
-                                           static_cast<uint8_t>(scsi_level::scsi_1_ccs);
+            static_cast<uint8_t>(scsi_level::scsi_2) : static_cast<uint8_t>(scsi_level::scsi_1_ccs);
     buf[4] = 0x1F;
 
     // Padded vendor, product, revision
@@ -269,7 +255,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
 bool PrimaryDevice::WriteByteSequence(span<const uint8_t>)
 {
-    LogError("Writing bytes is not supported by this device");
+    assert(false);
 
     return false;
 }

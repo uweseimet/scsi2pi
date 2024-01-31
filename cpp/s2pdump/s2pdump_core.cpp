@@ -23,10 +23,8 @@
 #include "initiator/initiator_util.h"
 #include "s2pdump_core.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -100,7 +98,7 @@ bool S2pDump::Init(bool in_process)
     return bus != nullptr;
 }
 
-bool S2pDump::ParseArguments(span<char*> args)
+bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable for parsing
 {
     const vector<option> options = {
         { "all-luns", no_argument, nullptr, 'a' },
@@ -396,13 +394,15 @@ bool S2pDump::DisplayInquiry(bool check_type)
 
 bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
 {
-    scsi_device_info = {};
+    scsi_device_info = { };
 
     scsi_device_info.type = static_cast<byte>(buf[0]);
     if ((scsi_device_info.type & byte { 0x1f }) == byte { 0x1f }) {
         // Requested LUN is not available
         return false;
     }
+
+    cout << "\nINQUIRY product data:\n";
 
     array<char, 17> str = { };
     memcpy(str.data(), &buf[8], 8);
@@ -417,7 +417,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     str.fill(0);
     memcpy(str.data(), &buf[32], 4);
     scsi_device_info.revision = string(str.data());
-    cout << "Revision:             '" << scsi_device_info.revision << "'\n" << flush;
+    cout << "Revision:             '" << scsi_device_info.revision << "'\n";
 
     if (const auto &type = SCSI_DEVICE_TYPES.find(scsi_device_info.type & byte { 0x1f }); type != SCSI_DEVICE_TYPES.end()) {
         cout << "Device Type:          " << (*type).second << "\n";
@@ -667,8 +667,8 @@ bool S2pDump::GetDeviceInfo()
         return false;
     }
 
-    // Clear any pending condition, e.g. a medium just having being inserted
-    executor->TestUnitReady();
+    // Clear any pending error condition, e.g. a medium just having being inserted
+    executor->RequestSense();
 
     if (!sasi) {
         const auto [capacity, sector_size] = executor->ReadCapacity();
@@ -704,6 +704,9 @@ bool S2pDump::GetDeviceInfo()
 
 void S2pDump::DisplayProperties(int id, int lun) const
 {
+    // Clear any pending error condition, e.g. a medium just having being inserted
+    executor->RequestSense();
+
     cout << "\nDevice properties for s2p property file:\n";
 
     string id_and_lun = "device." + to_string(id);
@@ -736,7 +739,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     vector<uint8_t> buf(255);
 
     if (!executor->ModeSense6(buf)) {
-        cout << "Warning: Can't get mode page data, medium may be missing\n" << flush;
+        cout << "Warning: Can't get mode page data, medium may be missing or drive was not ready, try again\n" << flush;
         return;
     }
 

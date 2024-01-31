@@ -20,7 +20,7 @@ class S2pProto
 
 public:
 
-    int Run(span<char*>, bool = false);
+    int Run(span<char*>, bool);
 
 private:
 

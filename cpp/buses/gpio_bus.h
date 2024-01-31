@@ -133,6 +133,7 @@ public:
     bool Init(bool = true) override;
 
     int CommandHandShake(vector<uint8_t>&) override;
+    int MsgInHandShake() override;
     int ReceiveHandShake(uint8_t*, int) override;
     int SendHandShake(uint8_t*, int, int = SEND_NO_DELAY) override;
 
@@ -144,9 +145,6 @@ protected:
     {
         return target_mode;
     }
-
-    virtual bool WaitREQ(bool) = 0;
-    virtual bool WaitACK(bool) = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;

@@ -9,7 +9,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <unordered_set>
 #include <memory>
 #include "buses/bus.h"
 #include "base/primary_device.h"

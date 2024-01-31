@@ -70,12 +70,6 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return Unprotect(*device, dryRun);
         break;
 
-    case CHECK_AUTHENTICATION:
-        case NO_OPERATION:
-        // Do nothing, just log
-        trace("Received " + PbOperation_Name(operation) + " command");
-        break;
-
     default:
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
     }
@@ -100,6 +94,12 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 
         return context.ReturnSuccessStatus();
     }
+
+    case CHECK_AUTHENTICATION:
+    case NO_OPERATION:
+        // Do nothing, just log
+        trace("Received %s command", PbOperation_Name(command.operation()));
+        return context.ReturnSuccessStatus();
 
     default:
         // This is a device-specific command handled below

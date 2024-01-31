@@ -14,5 +14,5 @@ int main(int argc, char *argv[])
 {
     vector<char*> args(argv, argv + argc);
 
-    return S2pExec().Run(args);
+    return S2pExec().Run(args, false);
 }

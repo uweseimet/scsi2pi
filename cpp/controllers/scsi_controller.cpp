@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -35,6 +35,8 @@ void ScsiController::BusFree()
 void ScsiController::MsgOut()
 {
     if (!IsMsgOut()) {
+        LogTrace("MESSAGE OUT phase");
+
         // Process the IDENTIFY message
         if (IsSelection()) {
             atn_msg = true;
@@ -42,7 +44,6 @@ void ScsiController::MsgOut()
             msb = { };
         }
 
-        LogTrace("MESSAGE OUT phase");
         SetPhase(phase_t::msgout);
 
         GetBus().SetMSG(true);

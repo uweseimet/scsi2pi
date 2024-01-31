@@ -13,7 +13,6 @@
 #include <google/protobuf/text_format.h>
 #include "s2pproto_executor.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace google::protobuf;
 using namespace google::protobuf::util;

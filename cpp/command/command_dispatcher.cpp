@@ -13,7 +13,6 @@
 #include "protobuf/protobuf_util.h"
 #include "command_dispatcher.h"
 
-using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 using namespace s2p_util;

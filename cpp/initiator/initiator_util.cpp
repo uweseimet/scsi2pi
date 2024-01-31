@@ -16,7 +16,7 @@ using namespace s2p_util;
 
 string initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
-    array<uint8_t, 14> buf;
+    array<uint8_t, 14> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 

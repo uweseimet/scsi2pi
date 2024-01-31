@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,15 +22,6 @@ TEST(AbstractControllerTest, ShutdownMode)
     EXPECT_EQ(AbstractController::shutdown_mode::STOP_PI, controller.GetShutdownMode());
     controller.ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
     EXPECT_EQ(AbstractController::shutdown_mode::RESTART_PI, controller.GetShutdownMode());
-}
-
-TEST(AbstractControllerTest, AllocateCmd)
-{
-    MockAbstractController controller;
-
-    EXPECT_EQ(16U, controller.GetCmd().size());
-    controller.AllocateCmd(1234);
-    EXPECT_EQ(1234U, controller.GetCmd().size());
 }
 
 TEST(AbstractControllerTest, SetLength)
@@ -145,7 +136,7 @@ TEST(AbstractControllerTest, GetOpcode)
 {
     MockAbstractController controller;
 
-    controller.SetCmdByte(0, static_cast<int>(scsi_command::cmd_inquiry));
+    controller.SetCdbByte(0, static_cast<int>(scsi_command::cmd_inquiry));
     EXPECT_EQ(scsi_command::cmd_inquiry, controller.GetOpcode());
 }
 
@@ -155,7 +146,7 @@ TEST(AbstractControllerTest, GetLun)
 
     MockAbstractController controller;
 
-    controller.SetCmdByte(1, LUN << 5);
+    controller.SetCdbByte(1, LUN << 5);
     EXPECT_EQ(LUN, controller.GetLun());
 }
 
@@ -164,9 +155,9 @@ TEST(AbstractControllerTest, Blocks)
     MockAbstractController controller;
 
     controller.SetBlocks(1);
-    EXPECT_TRUE(controller.HasBlocks());
+    EXPECT_TRUE(controller.InTransfer());
     controller.DecrementBlocks();
-    EXPECT_FALSE(controller.HasBlocks());
+    EXPECT_FALSE(controller.InTransfer());
 }
 
 TEST(AbstractControllerTest, Length)

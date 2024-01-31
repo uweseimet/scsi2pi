@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,12 +17,10 @@
 #include <fstream>
 #include <vector>
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
 
-using namespace std;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_interface;

@@ -34,7 +34,7 @@ public:
     }
     ~S2pExecExecutor() = default;
 
-    int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&);
+    int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, int);
 
     string GetSenseData() const
     {

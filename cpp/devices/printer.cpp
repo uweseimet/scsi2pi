@@ -33,9 +33,7 @@
 #include "base/memory_util.h"
 #include "printer.h"
 
-using namespace std;
 using namespace filesystem;
-using namespace scsi_defs;
 using namespace memory_util;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
@@ -128,7 +126,7 @@ vector<uint8_t> Printer::InquiryInternal() const
 
 void Printer::Print()
 {
-    const uint32_t length = GetInt24(GetController()->GetCmd(), 2);
+    const uint32_t length = GetInt24(GetController()->GetCdb(), 2);
 
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 

@@ -15,7 +15,7 @@
 
 using namespace testing;
 
-PropertyHandler SetUpProperties(const string &properties1, const string &properties2 = "",
+PropertyHandler SetUpProperties(string_view properties1, string_view properties2 = "",
     const property_map &cmd_properties = { })
 {
     auto &property_handler = PropertyHandler::Instance();

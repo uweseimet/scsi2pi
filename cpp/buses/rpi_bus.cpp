@@ -199,7 +199,7 @@ bool RpiBus::Init(bool target)
 #endif
 
     // GPIO interrupt setting
-    if (rpitype == 4) {
+    if (pi_type == 4) {
         // GIC Invalid
         gicd[GICD_CTLR] = 0;
 

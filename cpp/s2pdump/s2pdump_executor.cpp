@@ -10,15 +10,21 @@
 #include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
 
-using namespace std;
 using namespace spdlog;
-using namespace scsi_defs;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
     vector<uint8_t> cdb(6);
 
     initiator_executor->Execute(scsi_command::cmd_test_unit_ready, cdb, { }, 0);
+}
+
+void S2pDumpExecutor::RequestSense() const
+{
+    array<uint8_t, 14> buf = { };
+    array<uint8_t, 6> cdb = { };
+    cdb[4] = static_cast<uint8_t>(buf.size());
+    initiator_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, static_cast<int>(buf.size()));
 }
 
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)

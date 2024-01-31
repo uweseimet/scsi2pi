@@ -20,7 +20,7 @@ class S2pExec
 
 public:
 
-    int Run(span<char*>, bool = false);
+    int Run(span<char*>, bool);
 
 private:
 
@@ -48,6 +48,8 @@ private:
     int initiator_id = -1;
     int target_id = -1;
     int target_lun = 0;
+
+    int timeout = 3;
 
     bool request_sense = true;
 

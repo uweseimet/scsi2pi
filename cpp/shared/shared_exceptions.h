@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdexcept>
+#include "shared/s2p_util.h"
 #include "scsi.h"
 
 using namespace std;
@@ -33,11 +34,14 @@ class scsi_exception : public exception
     scsi_defs::sense_key sense_key;
     scsi_defs::asc asc;
 
+    string message;
+
 public:
 
     scsi_exception(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
     : sense_key(sense_key), asc(asc)
     {
+        message = s2p_util::FormatSenseData(sense_key, asc);
     }
     ~scsi_exception() override = default;
 
@@ -48,5 +52,10 @@ public:
     scsi_defs::asc get_asc() const
     {
         return asc;
+    }
+
+    const char* what() const noexcept override
+    {
+        return message.c_str();
     }
 };

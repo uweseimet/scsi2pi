@@ -51,10 +51,13 @@ public:
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
     MOCK_METHOD(uint32_t, Acquire, (), (override));
     MOCK_METHOD(int, CommandHandShake, (vector<uint8_t>&), (override));
+    MOCK_METHOD(int, MsgInHandShake, (), (override));
     MOCK_METHOD(int, ReceiveHandShake, (uint8_t *, int), (override));
     MOCK_METHOD(int, SendHandShake, (uint8_t *, int, int), (override));
     MOCK_METHOD(bool, GetSignal, (int), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
+    MOCK_METHOD(bool, WaitREQ, (bool), (override));
+    MOCK_METHOD(bool, WaitACK, (bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
     MOCK_METHOD(void, PinConfig, (int, int), (override));
     MOCK_METHOD(void, PullConfig, (int, int), (override));
@@ -105,7 +108,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 
     friend shared_ptr<PrimaryDevice> CreateDevice(s2p_interface::PbDeviceType, AbstractController&, int);
 
-    FRIEND_TEST(AbstractControllerTest, AllocateCmd);
     FRIEND_TEST(AbstractControllerTest, Reset);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
@@ -156,6 +158,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, StartStopUnit);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
+    FRIEND_TEST(ScsiHdTest, ModeSense6);
+    FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiDaynaportTest, Read);
     FRIEND_TEST(ScsiDaynaportTest, Write);
     FRIEND_TEST(ScsiDaynaportTest, Read6);
@@ -280,7 +284,7 @@ class MockModePageDevice : public ModePageDevice
 {
     FRIEND_TEST(ModePageDeviceTest, SupportsSaveParameters);
     FRIEND_TEST(ModePageDeviceTest, AddModePages);
-    FRIEND_TEST(ModePageDeviceTest, AddVendorModePages);
+    FRIEND_TEST(ModePageDeviceTest, AddVendorPages);
 
 public:
 
@@ -369,12 +373,16 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, StartStopUnit);
     FRIEND_TEST(DiskTest, PreventAllowMediumRemoval);
     FRIEND_TEST(DiskTest, Eject);
+    FRIEND_TEST(DiskTest, AddAppleVendorPage);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
+    FRIEND_TEST(DiskTest, EvaluateBlockDescriptors);
+    FRIEND_TEST(DiskTest, VerifySectorSizeChange);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, SectorSize);
     FRIEND_TEST(DiskTest, BlockCount);
+    FRIEND_TEST(DiskTest, SetSectorSizeInBytes);
+    FRIEND_TEST(DiskTest, ChangeSectorSize);
 
 public:
 
@@ -382,7 +390,7 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, false, 0, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, false, false, { 512, 1024, 2048, 4096 })
     {
     }
     ~MockDisk() override = default;
@@ -411,7 +419,13 @@ class MockScsiHd : public ScsiHd // NOSONAR Ignore inheritance hierarchy depth i
     FRIEND_TEST(ScsiHdTest, GetProductData);
     FRIEND_TEST(ScsiHdTest, SetUpModePages);
     FRIEND_TEST(ScsiHdTest, GetSectorSizes);
+    FRIEND_TEST(ScsiHdTest, ModeSense6);
+    FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSelect);
+    FRIEND_TEST(ScsiHdTest, ModeSelect6_Single);
+    FRIEND_TEST(ScsiHdTest, ModeSelect6_Multiple);
+    FRIEND_TEST(ScsiHdTest, ModeSelect10_Single);
+    FRIEND_TEST(ScsiHdTest, ModeSelect10_Multiple);
     FRIEND_TEST(CommandExecutorTest, ProcessDeviceCmd);
 
 public:
@@ -439,7 +453,7 @@ class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hie
 {
     FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
     FRIEND_TEST(OpticalMemoryTest, SetUpModePages);
-    FRIEND_TEST(OpticalMemoryTest, AddVendorModePages);
+    FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
     using OpticalMemory::OpticalMemory;

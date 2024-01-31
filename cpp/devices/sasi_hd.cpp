@@ -6,8 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/scsi.h"
-#include "disk.h"
 #include "sasi_hd.h"
 
 SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, sector_sizes)
@@ -27,11 +25,11 @@ void SasiHd::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetFileSize();
-
     // Sector size (default 256 bytes) and number of blocks
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 256);
-    SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
+    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 256)) {
+        throw io_exception("Invalid sector size");
+    }
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
     FinalizeSetup(0);
 }

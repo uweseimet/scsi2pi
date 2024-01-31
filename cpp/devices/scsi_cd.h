@@ -11,9 +11,6 @@
 
 #pragma once
 
-#include <span>
-#include <vector>
-#include <map>
 #include "base/interfaces/scsi_mmc_commands.h"
 #include "cd_track.h"
 #include "disk.h"
@@ -37,8 +34,6 @@ public:
 protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddFormatPage(map<int, vector<byte>>&, bool) const override;
-    void AddVendorModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 

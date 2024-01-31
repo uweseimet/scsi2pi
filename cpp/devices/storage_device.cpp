@@ -10,7 +10,6 @@
 #include "shared/shared_exceptions.h"
 #include "storage_device.h"
 
-using namespace std;
 using namespace filesystem;
 
 StorageDevice::StorageDevice(PbDeviceType type, int lun, bool supports_mode_pages)

@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <string>
-#include <span>
 #include <vector>
 #include <map>
 #include <unordered_set>
@@ -17,7 +15,7 @@
 
 class ScsiHd : public Disk
 {
-    const string DEFAULT_PRODUCT = "SCSI HD";
+    inline static const string DEFAULT_PRODUCT = "SCSI HD";
 
 public:
 
@@ -29,16 +27,20 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
 
-    void AddFormatPage(map<int, vector<byte>>&, bool) const override;
+protected:
 
-    void AddVendorModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddDecVendorModePage(map<int, vector<byte>>&, bool) const;
+    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
+    void AddVendorPages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 
     string GetProductData() const;
+
+    void AddFormatPage(map<int, vector<byte>>&, bool) const;
+    void AddDrivePage(map<int, vector<byte>>&, bool) const;
+    void AddNotchPage(map<int, vector<byte>>&, bool) const;
+    void AddDecVendorPage(map<int, vector<byte>>&, bool) const;
 
     scsi_defs::scsi_level scsi_level;
 };

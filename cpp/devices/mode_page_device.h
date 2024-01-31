@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <vector>
 #include <map>
 #include "base/property_handler.h"
 #include "base/primary_device.h"
@@ -17,7 +16,7 @@ class ModePageDevice : public PrimaryDevice
 {
 public:
 
-    ModePageDevice(PbDeviceType type, int lun, bool m) : PrimaryDevice(type, lun), supports_mode_pages(m)
+    ModePageDevice(PbDeviceType type, int lun, bool m) : PrimaryDevice(type, lun), supports_mode_select(m)
     {
     }
     ~ModePageDevice() override = default;
@@ -38,7 +37,7 @@ protected:
     }
     int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
     virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const = 0;
-    virtual void AddVendorModePages(map<int, vector<byte>>&, int, bool) const
+    virtual void AddVendorPages(map<int, vector<byte>>&, int, bool) const
     {
         // Nothing to add by default
     }
@@ -55,7 +54,7 @@ private:
 
     void SaveParametersCheck(int) const;
 
-    bool supports_mode_pages;
+    bool supports_mode_select;
 
     bool supports_save_parameters = false;
 

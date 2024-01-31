@@ -24,7 +24,6 @@
 #include "shared/network_util.h"
 #include "ctapdriver.h"
 
-using namespace std;
 using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;

@@ -19,7 +19,6 @@
 #include "initiator/initiator_util.h"
 #include "s2pproto_core.h"
 
-using namespace std;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace spdlog;
@@ -66,7 +65,7 @@ void S2pProto::Banner(bool header)
         << "  --help/-h                 Display this help.\n";
 }
 
-bool S2pProto::Init(bool)
+bool S2pProto::Init(bool in_process)
 {
     instance = this;
     // Signal handler for cleaning up
@@ -80,7 +79,7 @@ bool S2pProto::Init(bool)
 
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(false);
+    bus = bus_factory->CreateBus(false, in_process);
     if (bus) {
         executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
     }

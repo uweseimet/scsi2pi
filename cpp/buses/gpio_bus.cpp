@@ -66,7 +66,7 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = GetCommandByteCount(buf[0]);
+    const int command_byte_count = GetCommandBytesCount(buf[0]);
     if (!command_byte_count) {
         EnableIRQ();
 
@@ -99,7 +99,39 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
     return bytes_received;
 }
 
-// Handshake for DATA IN and MESSAGE IN
+// Initiator MESSAGE IN
+int GpioBus::MsgInHandShake()
+{
+    const phase_t phase = GetPhase();
+
+    // Check for timeout waiting for REQ signal
+    if (!WaitREQ(true)) {
+        return -1;
+    }
+
+    // Phase error
+    // TODO Assumption: Phase does not change here, but only below
+    if (GetPhase() != phase) {
+        return -1;
+    }
+
+    const uint8_t msg = GetDAT();
+
+    SetACK(true);
+
+    // Request MESSAGE OUT phase for rejecting any unsupported message (only COMMAND COMPLETE is supported)
+    if (msg) {
+        SetATN(true);
+    }
+
+    WaitREQ(false);
+
+    SetACK(false);
+
+    return msg;
+}
+
+// Handshake for DATA IN and target MESSAGE IN
 int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 {
     int bytes_received;

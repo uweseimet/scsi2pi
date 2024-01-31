@@ -10,11 +10,7 @@
 
 #include <set>
 #include "base/device_factory.h"
-#include "base/primary_device.h"
-#include "shared/s2p_util.h"
-#include "generated/s2p_interface.pb.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace s2p_interface;
 

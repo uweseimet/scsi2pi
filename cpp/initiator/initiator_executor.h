@@ -31,7 +31,9 @@ public:
     ~InitiatorExecutor() = default;
 
     void SetTarget(int, int, bool);
-    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int);
+
+    // Execute command with a default timeout of 3 s
+    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int = 3);
 
     int GetByteCount() const
     {
@@ -40,14 +42,14 @@ public:
 
 private:
 
-    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int);
+    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int&);
 
     bool Arbitration() const;
     bool Selection() const;
     void Command(scsi_command, span<uint8_t>) const;
     void Status();
-    void DataIn(span<uint8_t>, int);
-    void DataOut(span<uint8_t>, int);
+    void DataIn(span<uint8_t>, int&);
+    void DataOut(span<uint8_t>, int&);
     void MsgIn();
     void MsgOut();
 
@@ -74,7 +76,7 @@ private:
 
     bool sasi = false;
 
-    bool reject = false;
+    int next_message = 0x80;
 
     // Timeout values see bus.h
 

@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: sudo apt install -y ${{ env.APT_PACKAGES }}
+        run: sudo apt install -y $APT_PACKAGES
 
       - name: Set up build-wrapper and sonar-scanner
         run: |
@@ -68,4 +68,5 @@ jobs:
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.sonarLanguages=c++ \
             --define sonar.branch.name=${{ inputs.branch }} \
+            --define sonar.exclusions="obj/**,lib/**,bin/**,generated/**" \
             --define sonar.test.inclusions=test/**

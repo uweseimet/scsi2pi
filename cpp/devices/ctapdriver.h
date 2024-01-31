@@ -78,6 +78,8 @@ private:
 
     string inet;
 
+#ifdef __linux__
     bool bridge_created = false;
+#endif
 };
 

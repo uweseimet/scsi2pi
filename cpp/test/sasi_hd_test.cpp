@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,9 +14,9 @@ TEST(SasiHdTest, Inquiry)
     auto [controller, hd] = CreateDevice(SAHD);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    hd->Dispatch(scsi_command::cmd_inquiry);
+    EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_inquiry));
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(0, buffer[1]);
@@ -28,9 +28,9 @@ TEST(SasiHdTest, RequestSense)
     auto [controller, hd] = CreateDevice(SAHD, LUN);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    hd->Dispatch(scsi_command::cmd_request_sense);
+    EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_request_sense));
     const vector<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);

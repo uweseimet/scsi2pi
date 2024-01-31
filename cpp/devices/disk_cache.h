@@ -50,6 +50,10 @@ public:
     {
         cd_raw = b;
     }
+    bool IsRawMode() const
+    {
+        return cd_raw;
+    }
 
     bool Save();
     bool ReadSector(span<uint8_t>, uint32_t);
@@ -71,5 +75,8 @@ private:
     int sec_size; // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
     int sec_blocks; // Blocks per sector
     bool cd_raw = false; // CD-ROM RAW mode
+
+    static inline const unordered_map<uint32_t, uint32_t> SHIFT_COUNTS =
+        { { 256, 8 }, { 512, 9 }, { 1024, 10 }, { 2048, 11 }, { 4096, 12 } };
 };
 

@@ -25,19 +25,18 @@ TEST(ModePageDeviceTest, SupportsSaveParameters)
 
 TEST(ModePageDeviceTest, AddModePages)
 {
-    vector<int> cdb(6);
     vector<uint8_t> buf(512);
     MockModePageDevice device;
 
     // Page 0
-    cdb[2] = 0x00;
+    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:00:00:00:00");
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, 255);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Data were returned for non-existing mode page 0";
 
     // All pages, non changeable
-    cdb[2] = 0x3f;
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f:00:00:00");
     EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
     EXPECT_EQ(3, device.AddModePages(cdb, buf, 0, 3, 255));
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, -1);}, Throws<scsi_exception>(AllOf(
@@ -45,7 +44,7 @@ TEST(ModePageDeviceTest, AddModePages)
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Maximum size was ignored";
 
     // All pages, changeable
-    cdb[2] = 0x7f;
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:7f:00:00:00");
     EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
     EXPECT_EQ(3, device.AddModePages(cdb, buf, 0, 3, 255));
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, -1);}, Throws<scsi_exception>(AllOf(
@@ -55,23 +54,22 @@ TEST(ModePageDeviceTest, AddModePages)
 
 TEST(ModePageDeviceTest, Page0)
 {
-    vector<int> cdb(6);
     vector<uint8_t> buf(512);
     MockPage0ModePageDevice device;
 
-    cdb[2] = 0x3f;
+    const vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f:00:00:00");
     EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
     EXPECT_EQ(1, device.AddModePages(cdb, buf, 0, 1, 255));
 }
 
-TEST(ModePageDeviceTest, AddVendorModePages)
+TEST(ModePageDeviceTest, AddVendorPages)
 {
     map<int, vector<byte>> pages;
     MockModePageDevice device;
 
-    device.AddVendorModePages(pages, 0x3f, false);
+    device.AddVendorPages(pages, 0x3f, false);
     EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
-    device.AddVendorModePages(pages, 0x3f, true);
+    device.AddVendorPages(pages, 0x3f, true);
     EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
 }
 
@@ -84,7 +82,7 @@ TEST(ModePageDeviceTest, ModeSense6)
     controller->AddDevice(device);
 
     EXPECT_CALL(*controller, DataIn());
-    device->Dispatch(scsi_command::cmd_mode_sense6);
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
 }
 
 TEST(ModePageDeviceTest, ModeSense10)
@@ -96,5 +94,5 @@ TEST(ModePageDeviceTest, ModeSense10)
     controller->AddDevice(device);
 
     EXPECT_CALL(*controller, DataIn());
-    device->Dispatch(scsi_command::cmd_mode_sense10);
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
 }

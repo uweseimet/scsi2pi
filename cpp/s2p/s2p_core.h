@@ -39,11 +39,13 @@ private:
     void SetUpEnvironment();
     void LogProperties() const;
     void CreateDevices();
+    void AttachDevices(PbCommand&);
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
 
     bool ExecuteCommand(CommandContext&);
 
+    static bool CheckActive(const property_map&, const string&);
     static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
     static PbDeviceType ParseDeviceType(const string&);
 

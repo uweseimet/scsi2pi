@@ -16,7 +16,6 @@
 #include "base/memory_util.h"
 #include "disk.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
 
 bool Disk::Init(const param_map &params)
@@ -145,19 +144,19 @@ void Disk::Dispatch(scsi_command cmd)
 
 void Disk::SetUpCache(bool raw)
 {
-    cache = make_unique<DiskCache>(GetFilename(), size_shift_count, static_cast<uint32_t>(GetBlockCount()));
+    cache = make_unique<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()));
     cache->SetRawMode(raw);
 }
 
 void Disk::ResizeCache(const string &path, bool raw)
 {
-    cache.reset(new DiskCache(path, size_shift_count, static_cast<uint32_t>(GetBlockCount())));
+    cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount())));
     cache->SetRawMode(raw);
 }
 
 void Disk::FlushCache()
 {
-    if (cache != nullptr && IsReady()) {
+    if (cache && IsReady()) {
         cache->Save();
     }
 }
@@ -167,7 +166,7 @@ void Disk::FormatUnit()
     CheckReady();
 
     // FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
-    if ((GetController()->GetCmdByte(1) & 0x10) != 0 && GetController()->GetCmdByte(4) != 0) {
+    if ((GetController()->GetCdbByte(1) & 0x10) && GetController()->GetCdbByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -197,7 +196,7 @@ void Disk::ReadWriteLong10() const
     ValidateBlockAddress(RW10);
 
     // Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
-    if (GetInt16(GetController()->GetCmd(), 7) != 0) {
+    if (GetInt16(GetController()->GetCdb(), 7) != 0) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -209,7 +208,7 @@ void Disk::ReadWriteLong16() const
     ValidateBlockAddress(RW16);
 
     // Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
-    if (GetInt16(GetController()->GetCmd(), 12) != 0) {
+    if (GetInt16(GetController()->GetCdb(), 12) != 0) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -242,7 +241,7 @@ void Disk::Verify(access_mode mode)
     const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
     if (valid) {
         // if BytChk=0
-        if ((GetController()->GetCmdByte(1) & 0x02) == 0) {
+        if (!(GetController()->GetCdbByte(1) & 0x02)) {
             Seek();
             return;
         }
@@ -263,8 +262,8 @@ void Disk::Verify(access_mode mode)
 
 void Disk::StartStopUnit()
 {
-    const bool start = GetController()->GetCmdByte(4) & 0x01;
-    const bool load = GetController()->GetCmdByte(4) & 0x02;
+    const bool start = GetController()->GetCdbByte(4) & 0x01;
+    const bool load = GetController()->GetCdbByte(4) & 0x02;
 
     if (load) {
         LogTrace(start ? "Loading medium" : "Ejecting medium");
@@ -300,7 +299,7 @@ void Disk::PreventAllowMediumRemoval()
 {
     CheckReady();
 
-    const bool lock = GetController()->GetCmdByte(4) & 0x01;
+    const bool lock = GetController()->GetCdbByte(4) & 0x01;
 
     LogTrace(lock ? "Locking medium" : "Unlocking medium");
 
@@ -318,7 +317,7 @@ void Disk::SynchronizeCache()
 
 void Disk::ReadDefectData10() const
 {
-    const size_t allocation_length = min(static_cast<size_t>(GetInt16(GetController()->GetCmd(), 7)),
+    const size_t allocation_length = min(static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7)),
         static_cast<size_t>(4));
 
     // The defect list is empty
@@ -360,7 +359,7 @@ int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     int size = 4;
 
     // Add block descriptor if DBD is 0
-    if ((cdb[1] & 0x08) == 0) {
+    if (!(cdb[1] & 0x08)) {
         // Mode parameter header, block descriptor length
         buf[3] = 0x08;
 
@@ -397,12 +396,12 @@ int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     int size = 8;
 
     // Add block descriptor if DBD is 0, only if ready
-    if ((cdb[1] & 0x08) == 0 && IsReady()) {
-        uint64_t disk_blocks = GetBlockCount();
-        uint32_t disk_size = GetSectorSizeInBytes();
+    if (!(cdb[1] & 0x08) && IsReady()) {
+        const uint64_t disk_blocks = GetBlockCount();
+        const uint32_t disk_size = GetSectorSizeInBytes();
 
         // Check LLBAA for short or long block descriptor
-        if ((cdb[1] & 0x10) == 0 || disk_blocks <= 0xFFFFFFFF) {
+        if (!(cdb[1] & 0x10) || disk_blocks <= 0xFFFFFFFF) {
             // Mode parameter header, block descriptor length
             buf[7] = 0x08;
 
@@ -447,16 +446,6 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddDisconnectReconnectPage(pages, changeable);
     }
 
-    // Page 3 (format device)
-    if (page == 0x03 || page == 0x3f) {
-        AddFormatPage(pages, changeable);
-    }
-
-    // Page 4 (rigid drive page)
-    if (page == 0x04 || page == 0x3f) {
-        AddDrivePage(pages, changeable);
-    }
-
     // Page 7 (verify error recovery)
     if (page == 0x07 || page == 0x3f) {
         AddVerifyErrorRecoveryPage(pages, changeable);
@@ -464,7 +453,7 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
 
     // Page 8 (caching)
     if (page == 0x08 || page == 0x3f) {
-        AddCachePage(pages, changeable);
+        AddCachingPage(pages, changeable);
     }
 
     // Page 10 (control mode)
@@ -472,13 +461,13 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddControlModePage(pages, changeable);
     }
 
-    // Page 12 (notch)
-    if (page == 0x0c || page == 0x3f) {
-        AddNotchPage(pages, changeable);
+    // Page code 48
+    if (page == 0x30 || page == 0x3f) {
+        AddAppleVendorPage(pages, changeable);
     }
 
     // Page (vendor-specific)
-    AddVendorModePages(pages, page, changeable);
+    AddVendorPages(pages, page, changeable);
 }
 
 void Disk::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages, bool) const
@@ -517,75 +506,7 @@ void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages, bool) const
     pages[7] = buf;
 }
 
-void Disk::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
-{
-    vector<byte> buf(24);
-
-    // No changeable area
-    if (changeable) {
-        pages[3] = buf;
-
-        return;
-    }
-
-    if (IsReady()) {
-        // Set the number of tracks in one zone to 8
-        buf[0x03] = (byte)0x08;
-
-        // Set sector/track to 25
-        SetInt16(buf, 0x0a, 25);
-
-        // Set the number of bytes in the physical sector
-        SetInt16(buf, 0x0c, 1 << size_shift_count);
-
-        // Interleave 1
-        SetInt16(buf, 0x0e, 1);
-
-        // Track skew factor 11
-        SetInt16(buf, 0x10, 11);
-
-        // Cylinder skew factor 20
-        SetInt16(buf, 0x12, 20);
-    }
-
-    buf[20] = IsRemovable() ? (byte)0x20 : (byte)0x00;
-
-    // Hard-sectored
-    buf[20] |= (byte)0x40;
-
-    pages[3] = buf;
-}
-
-void Disk::AddDrivePage(map<int, vector<byte>> &pages, bool changeable) const
-{
-    vector<byte> buf(24);
-
-    // No changeable area
-    if (changeable) {
-        pages[4] = buf;
-
-        return;
-    }
-
-    if (IsReady()) {
-        // Set the number of cylinders (total number of blocks
-        // divided by 25 sectors/track and 8 heads)
-        uint64_t cylinders = GetBlockCount();
-        cylinders >>= 3;
-        cylinders /= 25;
-        SetInt32(buf, 0x01, static_cast<uint32_t>(cylinders));
-
-        // Fix the head at 8
-        buf[0x05] = (byte)0x8;
-
-        // Medium rotation rate 7200
-        SetInt16(buf, 0x14, 7200);
-    }
-
-    pages[4] = buf;
-}
-
-void Disk::AddCachePage(map<int, vector<byte>> &pages, bool changeable) const
+void Disk::AddCachingPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(12);
 
@@ -619,13 +540,140 @@ void Disk::AddControlModePage(map<int, vector<byte>> &pages, bool) const
     pages[10] = buf;
 }
 
-void Disk::AddNotchPage(map<int, vector<byte>> &pages, bool) const
+void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    vector<byte> buf(24);
+    // Needed for SCCD for stock Apple driver support and stock Apple HD SC Setup
+    pages[48] = vector<byte>(24);
 
-    // Not having a notched drive (i.e. not setting anything) probably provides the best compatibility
+    // No changeable area
+    if (!changeable) {
+        constexpr const char APPLE_DATA[] = "APPLE COMPUTER, INC   ";
+        memcpy(&pages[48][2], APPLE_DATA, sizeof(APPLE_DATA) - 1);
+    }
+}
 
-    pages[12] = buf;
+void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
+{
+    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
+
+    // PF
+    if (!(cdb[1] & 0x10)) {
+        // Vendor-specific parameters (SCSI-1) are not supported.
+        // Do not report an error in order to support Apple's HD SC Setup.
+        return;
+    }
+
+    // The page data are optional
+    if (!length) {
+        return;
+    }
+
+    int size = GetSectorSizeInBytes();
+
+    int offset = EvaluateBlockDescriptors(cmd, buf, length, size);
+    length -= offset;
+
+    map<int, vector<byte>> pages;
+    SetUpModePages(pages, 0x3f, true);
+
+    // Parse the pages
+    while (length > 0) {
+        const int page_code = buf[offset];
+
+        const auto &it = pages.find(page_code);
+        if (it == pages.end()) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        if (length < 2) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+        const size_t page_size = buf[offset + 1];
+
+        // The page size in the parameters must match the actual page size
+        if (it->second.size() - 2 != page_size || page_size + 2 > static_cast<size_t>(length)) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        switch (page_code) {
+        // Read-write error recovery page
+        case 0x01:
+            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
+            break;
+
+        // Format device page
+        case 0x03: {
+            // With this page the sector size for a subsequent FORMAT can be selected, but only a few drives
+            // support this, e.g. FUJITSU M2624S.
+            // We are fine as long as the permanent current sector size remains unchanged.
+            VerifySectorSizeChange(GetInt16(buf, offset + 12), false);
+            break;
+        }
+
+        // Verify error recovery page
+        case 0x07:
+            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
+            break;
+
+        default:
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+            break;
+        }
+
+        // The page size field does not count itself and the page code field
+        length -= page_size + 2;
+        offset += page_size + 2;
+    }
+
+    ChangeSectorSize(size);
+}
+
+int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int &size) const
+{
+    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
+
+    int required_length;
+    int block_descriptor_length;
+    if (cmd == scsi_command::cmd_mode_select10) {
+        block_descriptor_length = GetInt16(buf, 6);
+        required_length = 8;
+    }
+    else {
+        block_descriptor_length = buf[3];
+        required_length = 4;
+    }
+
+    if (length < block_descriptor_length + required_length) {
+        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+    }
+
+    // Check for temporary sector size change in first block descriptor
+    if (block_descriptor_length && length >= required_length + 8) {
+        size = VerifySectorSizeChange(GetInt16(buf, required_length + 6), true);
+    }
+
+    return block_descriptor_length + required_length;
+}
+
+int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
+{
+    if (requested_size == static_cast<int>(GetSectorSizeInBytes())) {
+        return requested_size;
+    }
+
+    // Simple consistency check
+    if (requested_size && !(requested_size & 0xe1ff)) {
+        if (temporary) {
+            return requested_size;
+        }
+        else {
+            LogWarn(fmt::format(
+                "Sector size change from {0} to {1} bytes requested. Configure the sector size in the s2p settings.",
+                GetSectorSizeInBytes(), requested_size));
+        }
+    }
+
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
 }
 
 int Disk::Read(span<uint8_t> buf, uint64_t block)
@@ -702,8 +750,7 @@ void Disk::ReadCapacity10()
     }
     SetInt32(buf, 0, static_cast<uint32_t>(capacity));
 
-    // Create block length (1 << size)
-    SetInt32(buf, 4, 1 << size_shift_count);
+    SetInt32(buf, 4, sector_size);
 
     GetController()->SetLength(8);
 
@@ -724,7 +771,7 @@ void Disk::ReadCapacity16()
     SetInt64(buf, 0, GetBlockCount() - 1);
 
     // Create block length (1 << size)
-    SetInt32(buf, 8, 1 << size_shift_count);
+    SetInt32(buf, 8, sector_size);
 
     buf[12] = 0;
 
@@ -739,7 +786,7 @@ void Disk::ReadCapacity16()
 void Disk::ReadCapacity16_read_long16()
 {
     // The service action determines the actual command
-    switch (GetController()->GetCmdByte(1) & 0x1f) {
+    switch (GetController()->GetCdbByte(1) & 0x1f) {
     case 0x10:
         ReadCapacity16();
         break;
@@ -757,7 +804,7 @@ void Disk::ReadCapacity16_read_long16()
 void Disk::ValidateBlockAddress(access_mode mode) const
 {
     const uint64_t block =
-        mode == RW16 ? GetInt64(GetController()->GetCmd(), 2) : GetInt32(GetController()->GetCmd(), 2);
+        mode == RW16 ? GetInt64(GetController()->GetCdb(), 2) : GetInt32(GetController()->GetCdb(), 2);
 
     if (block > GetBlockCount()) {
         LogTrace(fmt::format("Capacity of {0} block(s) exceeded: Trying to access block {1}", GetBlockCount(), block));
@@ -771,21 +818,21 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     uint32_t count;
 
     if (mode == RW6 || mode == SEEK6) {
-        start = GetInt24(GetController()->GetCmd(), 1);
+        start = GetInt24(GetController()->GetCdb(), 1);
 
-        count = GetController()->GetCmdByte(4);
+        count = GetController()->GetCdbByte(4);
         if (!count) {
             count = 0x100;
         }
     }
     else {
-        start = mode == RW16 ? GetInt64(GetController()->GetCmd(), 2) : GetInt32(GetController()->GetCmd(), 2);
+        start = mode == RW16 ? GetInt64(GetController()->GetCdb(), 2) : GetInt32(GetController()->GetCdb(), 2);
 
         if (mode == RW16) {
-            count = GetInt32(GetController()->GetCmd(), 10);
+            count = GetInt32(GetController()->GetCdb(), 10);
         }
         else if (mode != SEEK10) {
-            count = GetInt16(GetController()->GetCmd(), 7);
+            count = GetInt16(GetController()->GetCdb(), 7);
         }
         else {
             count = 0;
@@ -810,25 +857,41 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     return tuple(true, start, count);
 }
 
-uint32_t Disk::CalculateShiftCount(uint32_t size_in_bytes)
+void Disk::ChangeSectorSize(uint32_t new_size)
 {
-    const auto &it = shift_counts.find(size_in_bytes);
-    return it != shift_counts.end() ? it->second : 0;
+    if (!supported_sector_sizes.contains(new_size)) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    }
+
+    const auto current_size = GetSectorSizeInBytes();
+    if (new_size != current_size) {
+        const uint64_t capacity = current_size * GetBlockCount();
+        SetSectorSizeInBytes(new_size);
+        SetBlockCount(static_cast<uint32_t>(capacity / new_size));
+
+        FlushCache();
+        if (cache) {
+            SetUpCache(cache->IsRawMode());
+        }
+
+        LogTrace(fmt::format("Changed sector size from {0} to {1} bytes", current_size, new_size));
+    }
 }
 
 uint32_t Disk::GetSectorSizeInBytes() const
 {
-    return size_shift_count ? 1 << size_shift_count : 0;
+    return sector_size;
 }
 
-void Disk::SetSectorSizeInBytes(uint32_t size_in_bytes)
+bool Disk::SetSectorSizeInBytes(uint32_t size)
 {
-    if (!GetSupportedSectorSizes().contains(size_in_bytes)) {
-        throw io_exception(fmt::format("Invalid sector size of {} byte(s)", size_in_bytes));
+    if (!GetSupportedSectorSizes().contains(size)) {
+        return false;
     }
 
-    size_shift_count = CalculateShiftCount(size_in_bytes);
-    assert(size_shift_count);
+    sector_size = size;
+
+    return true;
 }
 
 uint32_t Disk::GetConfiguredSectorSize() const

@@ -7,9 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <cstring>
-#include "shared/shared_exceptions.h"
 #include "base/primary_device.h"
-#include "abstract_controller.h"
 
 using namespace scsi_defs;
 
@@ -20,14 +18,6 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     ctrl.buffer.resize(4096);
 
     device_logger.SetIdAndLun(target_id, -1);
-}
-
-void AbstractController::AllocateCmd(size_t size)
-{
-    if (size > ctrl.cmd.size()) {
-        LogTrace(fmt::format("Resizing transfer buffer to {} bytes", size));
-        ctrl.cmd.resize(size);
-    }
 }
 
 void AbstractController::SetLength(size_t length)

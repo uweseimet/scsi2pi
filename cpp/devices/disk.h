@@ -26,24 +26,6 @@ using namespace std;
 
 class Disk : public StorageDevice, private ScsiBlockCommands
 {
-    enum access_mode
-    {
-        RW6, RW10, RW16, SEEK6, SEEK10
-    };
-
-    unique_ptr<DiskCache> cache;
-
-    unordered_set<uint32_t> supported_sector_sizes;
-    uint32_t configured_sector_size = 0;
-
-    // Sector size shift count (9=512, 10=1024, 11=2048, 12=4096)
-    uint32_t size_shift_count = 0;
-
-    uint64_t sector_read_count = 0;
-    uint64_t sector_write_count = 0;
-
-    inline static const string SECTOR_READ_COUNT = "sector_read_count";
-    inline static const string SECTOR_WRITE_COUNT = "sector_write_count";
 
 public:
 
@@ -78,7 +60,38 @@ public:
 
     vector<PbStatistics> GetStatistics() const override;
 
+protected:
+
+    void SetUpCache(bool = false);
+    void ResizeCache(const string&, bool);
+
+    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
+    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
+    void AddDisconnectReconnectPage(map<int, vector<byte>>&, bool) const;
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
+    void AddCachingPage(map<int, vector<byte>>&, bool) const;
+    void AddControlModePage(map<int, vector<byte>>&, bool) const;
+    void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
+
+    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
+    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int, int&) const;
+    int VerifySectorSizeChange(int, bool) const;
+
+    void ChangeSectorSize(uint32_t);
+    unordered_set<uint32_t> GetSectorSizes() const;
+    bool SetSectorSizeInBytes(uint32_t);
+    void SetSectorSizeShiftCount(uint32_t count)
+    {
+        sector_size = 1 << count;
+    }
+    uint32_t GetConfiguredSectorSize() const;
+
 private:
+
+    enum access_mode
+    {
+        RW6, RW10, RW16, SEEK6, SEEK10
+    };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
     void StartStopUnit();
@@ -136,34 +149,16 @@ private:
     int ModeSense6(cdb_t, vector<uint8_t>&) const override;
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
-    static inline const unordered_map<uint32_t, uint32_t> shift_counts =
-        { { 256, 8 }, { 512, 9 }, { 1024, 10 }, { 2048, 11 }, { 4096, 12 } };
+    unique_ptr<DiskCache> cache;
 
-protected:
+    unordered_set<uint32_t> supported_sector_sizes;
+    uint32_t configured_sector_size = 0;
 
-    void SetUpCache(bool = false);
-    void ResizeCache(const string&, bool);
+    uint32_t sector_size = 0;
 
-    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
-    void AddDisconnectReconnectPage(map<int, vector<byte>>&, bool) const;
-    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
-    virtual void AddFormatPage(map<int, vector<byte>>&, bool) const;
-    virtual void AddDrivePage(map<int, vector<byte>>&, bool) const;
-    void AddCachePage(map<int, vector<byte>>&, bool) const;
-    void AddControlModePage(map<int, vector<byte>>&, bool) const;
-    void AddNotchPage(map<int, vector<byte>>&, bool) const;
+    uint64_t sector_read_count = 0;
+    uint64_t sector_write_count = 0;
 
-    unordered_set<uint32_t> GetSectorSizes() const;
-    void SetSectorSizeInBytes(uint32_t);
-    uint32_t GetSectorSizeShiftCount() const
-    {
-        return size_shift_count;
-    }
-    void SetSectorSizeShiftCount(uint32_t count)
-    {
-        size_shift_count = count;
-    }
-    uint32_t GetConfiguredSectorSize() const;
-    static uint32_t CalculateShiftCount(uint32_t);
+    inline static const string SECTOR_READ_COUNT = "sector_read_count";
+    inline static const string SECTOR_WRITE_COUNT = "sector_write_count";
 };

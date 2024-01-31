@@ -8,9 +8,7 @@
 
 #include <fstream>
 #include <getopt.h>
-#include "shared/shared_exceptions.h"
 #include "controllers/controller_factory.h"
-#include "shared/s2p_util.h"
 #include "s2p/s2p_parser.h"
 
 using namespace std;
@@ -61,7 +59,7 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable for parsing
 {
     const int OPT_HELP = 2;
 

@@ -6,13 +6,12 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <sstream>
 #include <fstream>
-#include "bus_factory.h"
+#include <spdlog/spdlog.h>
 #include "rpi_bus.h"
+#include "bus_factory.h"
 
-using namespace std;
 using namespace spdlog;
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
@@ -60,7 +59,7 @@ bool BusFactory::CheckForPi()
         return true;
     }
 
-    error("Unsupported Raspberry Pi model '{}', functionality is limited", model);
+    warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
 
     return false;
 }

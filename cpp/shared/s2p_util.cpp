@@ -86,8 +86,8 @@ vector<string> s2p_util::Split(const string &s, char separator, int limit)
 
 string s2p_util::GetLocale()
 {
-    const char *locale = setlocale(LC_MESSAGES, "");
-    if (locale == nullptr || !strcmp(locale, "C")) {
+    const char *locale = setlocale(LC_MESSAGES, nullptr);
+    if (locale == nullptr || !strcmp(locale, "C") || !strcmp(locale, "POSIX")) {
         locale = "en";
     }
 

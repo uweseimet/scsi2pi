@@ -11,11 +11,9 @@
 
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "mode_page_util.h"
 #include "optical_memory.h"
 
 using namespace memory_util;
-using namespace mode_page_util;
 
 OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, { 512, 1024, 2048, 4096 })
 {
@@ -42,15 +40,16 @@ void OpticalMemory::Open()
     // For some capacities there are hard-coded, well-defined sector sizes and block counts
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
         // Sector size (default 512 bytes) and number of blocks
-        SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512);
-        SetBlockCount(size >> GetSectorSizeShiftCount());
+        if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+            throw io_exception("Invalid sector size");
+        }
+        SetBlockCount(size / GetSectorSizeInBytes());
     }
 
     Disk::ValidateFile();
 
     SetUpCache();
 
-    // Attention if ready
     if (IsReady()) {
         SetAttn(true);
     }
@@ -71,32 +70,12 @@ void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool
     }
 }
 
-void OpticalMemory::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
-{
-    Disk::AddFormatPage(pages, changeable);
-
-    EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
-}
-
 void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
 {
     vector<byte> buf(4);
     pages[6] = buf;
 
     // Do not report update blocks
-}
-
-void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
-{
-    const auto current_sector_size = static_cast<int>(GetSectorSizeInBytes());
-    const auto new_sector_size = mode_page_util::ModeSelect(cmd, cdb, buf, length, current_sector_size);
-    if (new_sector_size != current_sector_size) {
-        const uint64_t capacity = current_sector_size * GetBlockCount();
-        SetSectorSizeInBytes(new_sector_size);
-        SetBlockCount(static_cast<uint32_t>(capacity >> GetSectorSizeShiftCount()));
-
-        SetUpCache();
-    }
 }
 
 //
@@ -121,7 +100,7 @@ void OpticalMemory::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> 
 //
 // Further information: https://r2089.blog36.fc2.com/blog-entry-177.html
 //
-void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
+void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     if (page != 0x20 && page != 0x3f) {
         return;
@@ -139,10 +118,10 @@ void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, 
     if (IsReady()) {
         unsigned spare = 0;
         unsigned bands = 0;
-        uint64_t blocks = GetBlockCount();
+        const uint64_t block_count = GetBlockCount();
 
         if (GetSectorSizeInBytes() == 512) {
-            switch (blocks) {
+            switch (block_count) {
             // 128MB
             case 248826:
                 spare = 1024;
@@ -167,7 +146,7 @@ void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, 
         }
 
         if (GetSectorSizeInBytes() == 2048) {
-            switch (blocks) {
+            switch (block_count) {
             // 640MB
             case 310352:
                 spare = 2244;
@@ -185,9 +164,11 @@ void OpticalMemory::AddVendorModePages(map<int, vector<byte>> &pages, int page, 
             }
         }
 
-        buf[2] = (byte)0; // format mode
-        buf[3] = (byte)0; // type of format
-        SetInt32(buf, 4, static_cast<uint32_t>(blocks));
+        // Format mode
+        buf[2] = (byte)0;
+        // Format type
+        buf[3] = (byte)0;
+        SetInt32(buf, 4, static_cast<uint32_t>(block_count));
         SetInt16(buf, 8, spare);
         SetInt16(buf, 10, bands);
     }

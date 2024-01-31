@@ -51,7 +51,7 @@ TEST(ScsiDaynaportTest, TestUnitReady)
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     EXPECT_CALL(*controller, Status());
-    daynaport->Dispatch(scsi_command::cmd_test_unit_ready);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_test_unit_ready));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
@@ -60,9 +60,9 @@ TEST(ScsiDaynaportTest, Read)
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 1);
+    controller->SetCdbByte(4, 1);
     vector<uint8_t> buf(0);
-    EXPECT_EQ(0, dynamic_pointer_cast<DaynaPort>(daynaport)->Read(controller->GetCmd(), buf, 0))
+    EXPECT_EQ(0, dynamic_pointer_cast<DaynaPort>(daynaport)->Read(controller->GetCdb(), buf, 0))
     << "Trying to read the root sector must fail";
 }
 
@@ -71,51 +71,39 @@ TEST(ScsiDaynaportTest, Write)
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     // Unknown data format
-    controller->SetCmdByte(5, 0xff);
+    controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_TRUE(dynamic_pointer_cast<DaynaPort>(daynaport)->Write(controller->GetCmd(), buf));
+    EXPECT_TRUE(dynamic_pointer_cast<DaynaPort>(daynaport)->Write(controller->GetCdb(), buf));
 }
 
 TEST(ScsiDaynaportTest, Read6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    // Required by the bullseye clang++ compiler
-    auto d = daynaport;
 
-    controller->SetCmdByte(5, 0xff);
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_read6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Invalid data format";
+    controller->SetCdbByte(5, 0xff);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid data format");
 }
 
 TEST(ScsiDaynaportTest, Write6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    // Required by the bullseye clang++ compiler
-    auto d = daynaport;
 
-    controller->SetCmdByte(5, 0x00);
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Invalid transfer length";
+    controller->SetCdbByte(5, 0x00);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid transfer length");
 
-    controller->SetCmdByte(3, -1);
-    controller->SetCmdByte(4, -8);
-    controller->SetCmdByte(5, 0x08);
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Invalid transfer length";
+    controller->SetCdbByte(3, -1);
+    controller->SetCdbByte(4, -8);
+    controller->SetCdbByte(5, 0x08);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid transfer length");
 
-    controller->SetCmdByte(3, 0);
-    controller->SetCmdByte(4, 0);
-    controller->SetCmdByte(5, 0xff);
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Invalid transfer length";
+    controller->SetCdbByte(3, 0);
+    controller->SetCdbByte(4, 0);
+    controller->SetCdbByte(5, 0xff);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid transfer length");
 }
 
 TEST(ScsiDaynaportTest, TestRetrieveStats)
@@ -123,108 +111,66 @@ TEST(ScsiDaynaportTest, TestRetrieveStats)
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    daynaport->Dispatch(scsi_command::cmd_retrieve_stats);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_retrieve_stats));
 }
 
 TEST(ScsiDaynaportTest, SetInterfaceMode)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    // Required by the bullseye clang++ compiler
-    auto d = daynaport;
 
-    // Unknown interface command
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_set_iface_mode)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_set_iface_mode, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Unknown interface command");
 
     // Not implemented, do nothing
-    controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
+    controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
     EXPECT_CALL(*controller, Status());
-    daynaport->Dispatch(scsi_command::cmd_set_iface_mode);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_set_iface_mode));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
+    controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
     EXPECT_CALL(*controller, DataOut());
-    daynaport->Dispatch(scsi_command::cmd_set_iface_mode);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_set_iface_mode));
 
-    // Not implemented
-    controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_STATS);
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_set_iface_mode)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_STATS);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_set_iface_mode, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Not implemented");
 
-    // Not implemented
-    controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_ENABLE);
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_set_iface_mode)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_ENABLE);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_set_iface_mode, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Not implemented");
 
-    // Not implemented
-    controller->SetCmdByte(5, DaynaPort::CMD_SCSILINK_SET);
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_set_iface_mode)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SET);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_set_iface_mode, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Not implemented");
 }
 
 TEST(ScsiDaynaportTest, SetMcastAddr)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    // Required by the bullseye clang++ compiler
-    auto d = daynaport;
 
-    EXPECT_THAT([&] {d->Dispatch(scsi_command::cmd_set_mcast_addr);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Length of 0 is not supported";
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_set_mcast_addr, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Length of 0 is not supported");
 
-    controller->SetCmdByte(4, 1);
+    controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, DataOut());
-    daynaport->Dispatch(scsi_command::cmd_set_mcast_addr);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_set_mcast_addr));
 }
 
 TEST(ScsiDaynaportTest, EnableInterface)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    // Required by the bullseye clang++ compiler
-    auto d = daynaport;
 
     // Enable
-    controller->SetCmdByte(5, 0x80);
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_enable_interface)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-            Property(&scsi_exception::get_asc, asc::daynaport_enable_interface))));
+    controller->SetCdbByte(5, 0x80);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_enable_interface, sense_key::aborted_command,
+        asc::daynaport_enable_interface);
 
     // Disable
-    controller->SetCmdByte(5, 0x00);
-    EXPECT_THAT([&]
-        {
-            d->Dispatch(scsi_command::cmd_enable_interface)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-            Property(&scsi_exception::get_asc, asc::daynaport_disable_interface))));
+    controller->SetCdbByte(5, 0x00);
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_enable_interface, sense_key::aborted_command,
+        asc::daynaport_disable_interface);
 }
 
 TEST(ScsiDaynaportTest, GetDelayAfterBytes)

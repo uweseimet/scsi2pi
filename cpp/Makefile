@@ -141,8 +141,7 @@ SRC_DISK = \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
 	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/mode_page_device.cpp \
-	$(DIR_DEVICES)/mode_page_util.cpp
+	$(DIR_DEVICES)/mode_page_device.cpp
 
 ifdef BUILD_SCHD
 SRC_SCHD = \

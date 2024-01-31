@@ -7,19 +7,21 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "base/memory_util.h"
+
+using namespace scsi_defs;
+using namespace memory_util;
+
 
 void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(10U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
-    EXPECT_EQ(24U, pages[3].size());
-    EXPECT_EQ(24U, pages[4].size());
     EXPECT_EQ(4U, pages[6].size());
     EXPECT_EQ(12U, pages[7].size());
     EXPECT_EQ(12U, pages[8].size());
     EXPECT_EQ(8U, pages[10].size());
-    EXPECT_EQ(24U, pages[12].size());
     EXPECT_EQ(12U, pages[32].size());
 }
 
@@ -63,7 +65,7 @@ TEST(OpticalMemoryTest, SetUpModePages)
     ScsiMo_SetUpModePages(pages);
 }
 
-TEST(OpticalMemoryTest, AddVendorModePages)
+TEST(OpticalMemoryTest, AddVendorPages)
 {
     map<int, vector<byte>> pages;
     MockOpticalMemory mo(0);
@@ -131,29 +133,37 @@ TEST(OpticalMemoryTest, AddVendorModePages)
 TEST(OpticalMemoryTest, ModeSelect)
 {
     MockOpticalMemory mo(0);
-    vector<int> cmd(10);
+    vector<int> cdb(10);
     vector<uint8_t> buf(32);
 
     mo.SetSectorSizeInBytes(2048);
 
     // PF
-    cmd[1] = 0x10;
+    cdb[1] = 0x10;
+
     // Page 3 (Format device page)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    // 2048 bytes per sector
-    buf[16] = 0x08;
-    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cmd, buf, 28))<< "MODE SELECT(6) is supported";
+    EXPECT_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 28), scsi_exception)<< "Page 3 is not supported";
+
+    // Page 1 (Read-write error recovery page)
+    buf[4] = 0x01;
+    // Page length
+    buf[5] = 0x0a;
+    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16));
     buf[4] = 0;
     buf[5] = 0;
-    buf[16] = 0;
 
     // Page 3 (Format device page)
-    buf[8] = 0x03;
+    buf[8] = 0x04;
     // Page length
     buf[9] = 0x16;
-    // 2048 bytes per sector
-    buf[20] = 0x08;
-    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select10, cmd, buf, buf.size()))<< "MODE SELECT(10) is supported";
+    EXPECT_THROW(mo.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 32), scsi_exception)<< "Page 3 is not supported";
+
+    // Page 1 (Read-write error recovery page)
+    buf[8] = 0x01;
+    // Page length
+    buf[9] = 0x0a;
+    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20));
 }

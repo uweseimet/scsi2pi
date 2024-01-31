@@ -8,11 +8,9 @@
 
 #include "s2pproto_core.h"
 
-using namespace std;
-
 int main(int argc, char *argv[])
 {
     vector<char*> args(argv, argv + argc);
 
-    return S2pProto().Run(args);
+    return S2pProto().Run(args, false);
 }

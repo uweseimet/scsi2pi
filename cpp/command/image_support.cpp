@@ -6,18 +6,15 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <fstream>
 #include <array>
+#include <spdlog/spdlog.h>
 #include "devices/disk.h"
 #include "shared/s2p_util.h"
 #include "protobuf/protobuf_util.h"
 #include "image_support.h"
 
-using namespace std;
-using namespace filesystem;
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 

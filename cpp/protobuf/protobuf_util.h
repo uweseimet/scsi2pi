@@ -4,8 +4,6 @@
 //
 // Copyright (C) 2021-2023 Uwe Seimet
 //
-// Helper methods for setting up/evaluating protobuf messages
-//
 //---------------------------------------------------------------------------
 
 #pragma once

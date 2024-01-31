@@ -28,13 +28,11 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
 
 protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddFormatPage(map<int, vector<byte>>&, bool) const override;
-    void AddVendorModePages(map<int, vector<byte>>&, int, bool) const override;
+    void AddVendorPages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 

@@ -10,13 +10,10 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <span>
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
 #include "device.h"
-#include "device_logger.h"
 
 using namespace std;
 using namespace scsi_defs;
@@ -25,7 +22,7 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
 
-    using operation = function<void()>;
+    using command = function<void()>;
 
 public:
 
@@ -70,7 +67,10 @@ public:
 
 protected:
 
-    void AddCommand(scsi_command, const operation&);
+    void AddCommand(scsi_command cmd, const command &c)
+    {
+        commands[cmd] = c;
+    }
 
     vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
@@ -109,10 +109,6 @@ protected:
     {
         device_logger.Debug(s);
     }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
     void LogWarn(const string &s) const
     {
         device_logger.Warn(s);
@@ -138,7 +134,7 @@ private:
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
-    unordered_map<scsi_command, operation> commands;
+    unordered_map<scsi_command, command> commands;
 
     // Number of bytes during a transfer after which to delay for the DaynaPort driver
     int delay_after_bytes = Bus::SEND_NO_DELAY;

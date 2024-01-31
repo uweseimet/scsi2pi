@@ -19,7 +19,6 @@
 #include "mode_page_device.h"
 
 using namespace std;
-using namespace s2p_interface;
 
 class HostServices : public ModePageDevice
 {

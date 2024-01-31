@@ -15,14 +15,14 @@ using namespace std;
 using namespace spdlog;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
+int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
 {
     bus.Reset();
 
     status = 0xff;
     byte_count = 0;
 
-    if (const int count = Bus::GetCommandByteCount(static_cast<int>(cmd)); count
+    if (const int count = Bus::GetCommandBytesCount(static_cast<int>(cmd)); count
         && count != static_cast<int>(cdb.size())) {
         warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
     }
@@ -45,9 +45,9 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
         return 0xff;
     }
 
-    // Timeout 3 s
+    // Wait for the command to finish
     auto now = chrono::steady_clock::now();
-    while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3) {
+    while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
 
         if (bus.GetREQ()) {
@@ -71,11 +71,11 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
     return 0xff;
 }
 
-bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length)
+bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int &length)
 {
     const phase_t phase = bus.GetPhase();
 
-    trace("Handling {} phase", Bus::GetPhaseName(phase));
+    trace("Current phase is {}", Bus::GetPhaseName(phase));
 
     switch (phase) {
     case phase_t::command:
@@ -96,8 +96,11 @@ bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8
 
     case phase_t::msgin:
         MsgIn();
-        // Done with this command cycle
-        return false;
+        if (next_message == 0x80) {
+            // Done with this command cycle unless there is a pending MESSAGE REJECT
+            return false;
+        }
+        break;
 
     case phase_t::msgout:
         MsgOut();
@@ -206,42 +209,46 @@ void InitiatorExecutor::Status()
     }
 }
 
-void InitiatorExecutor::DataIn(span<uint8_t> buffer, int length)
+void InitiatorExecutor::DataIn(span<uint8_t> buffer, int &length)
 {
+    if (!length) {
+        throw phase_exception("Buffer full in DATA IN phase");
+    }
+
+    trace("Receiving {0} byte(s) in DATA IN phase", length);
+
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
-    if (byte_count > length) {
-        warn("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length);
-    }
-    else {
-        trace("Received {0} byte(s) in DATA IN phase, provided size was {0} bytes", byte_count, length);
-    }
+
+    length -= byte_count;
 }
 
-void InitiatorExecutor::DataOut(span<uint8_t> buffer, int length)
+void InitiatorExecutor::DataOut(span<uint8_t> buffer, int &length)
 {
+    if (!length) {
+        throw phase_exception("No more data for DATA OUT phase");
+    }
+
+    trace("Sending {0} byte(s) in DATA OUT phase", length);
+
     byte_count = bus.SendHandShake(buffer.data(), length);
-    if (byte_count > length) {
-        warn("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length);
+    if (byte_count != length) {
+        error("Sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
+        throw phase_exception("DATA OUT phase failed");
     }
-    else {
-        trace("Sent {0} byte(s) in DATA OUT phase, provided size was {0} bytes", byte_count, length);
-    }
+
+    length -= byte_count;
 }
 
 void InitiatorExecutor::MsgIn()
 {
-    array<uint8_t, 1> buf = { };
-
-    if (bus.ReceiveHandShake(buf.data(), buf.size()) != buf.size()) {
+    const int msg = bus.MsgInHandShake();
+    if (msg == -1) {
         error("MESSAGE IN phase failed");
     }
-    else if (buf[0]) {
-        warn("MESSAGE IN did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", buf[0]);
+    else if (msg) {
+        trace("Device did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", msg);
 
-        reject = true;
-
-        // Request MESSAGE OUT for REJECT MESSAGE
-        bus.SetATN(true);
+        next_message = 0x07;
     }
 }
 
@@ -250,14 +257,15 @@ void InitiatorExecutor::MsgOut()
     array<uint8_t, 1> buf;
 
     // IDENTIFY or MESSAGE REJECT
-    buf[0] = static_cast<uint8_t>(target_lun | (reject ? 0x07 : 0x80));
+    buf[0] = static_cast<uint8_t>(target_lun + next_message);
 
-    // Reset default to IDENTIFY
-    reject = false;
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
-        error("MESSAGE OUT phase for IDENTIFY failed");
+        error("MESSAGE OUT phase for {} failed", next_message == 0x80 ? "IDENTIFY" : "MESSAGE REJECT");
     }
+
+    // Reset default message for MESSAGE OUT to IDENTIFY
+    next_message = 0x80;
 }
 
 bool InitiatorExecutor::WaitForFree() const

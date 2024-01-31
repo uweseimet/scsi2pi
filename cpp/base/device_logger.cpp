@@ -8,7 +8,6 @@
 
 #include "device_logger.h"
 
-using namespace std;
 using namespace spdlog;
 
 void DeviceLogger::Trace(const string &message) const
@@ -19,11 +18,6 @@ void DeviceLogger::Trace(const string &message) const
 void DeviceLogger::Debug(const string &message) const
 {
     Log(level::debug, message);
-}
-
-void DeviceLogger::Info(const string &message) const
-{
-    Log(level::info, message);
 }
 
 void DeviceLogger::Warn(const string &message) const

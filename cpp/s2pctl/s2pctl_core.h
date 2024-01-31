@@ -25,4 +25,6 @@ private:
     void Banner(bool) const;
     int RunInteractive() const;
     int ParseArguments(const vector<char*>&) const;
+
+    static string ConvertCommand(const string&);
 };

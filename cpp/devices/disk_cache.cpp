@@ -19,7 +19,7 @@
 #include "disk_cache.h"
 
 DiskCache::DiskCache(const string &path, int size, uint32_t blocks)
-: sec_path(path), sec_size(size), sec_blocks(blocks)
+: sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(blocks)
 {
     assert(blocks > 0);
 }
@@ -28,7 +28,7 @@ bool DiskCache::Save()
 {
     // Save valid tracks
     return ranges::none_of(cache.begin(), cache.end(), [this](const cache_t &c)
-        {   return c.disktrk != nullptr && !c.disktrk->Save(sec_path, cache_miss_write_count);});
+        {   return c.disktrk && !c.disktrk->Save(sec_path, cache_miss_write_count);});
 }
 
 shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
@@ -46,7 +46,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
 bool DiskCache::ReadSector(span<uint8_t> buf, uint32_t block)
 {
     shared_ptr<DiskTrack> disktrk = GetTrack(block);
-    if (disktrk == nullptr) {
+    if (!disktrk) {
         return false;
     }
 
@@ -57,7 +57,7 @@ bool DiskCache::ReadSector(span<uint8_t> buf, uint32_t block)
 bool DiskCache::WriteSector(span<const uint8_t> buf, uint32_t block)
 {
     shared_ptr<DiskTrack> disktrk = GetTrack(block);
-    if (disktrk == nullptr) {
+    if (!disktrk) {
         return false;
     }
 
@@ -86,7 +86,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
 
     // Next, check for empty
     for (size_t i = 0; i < cache.size(); i++) {
-        if (cache[i].disktrk == nullptr) {
+        if (!cache[i].disktrk) {
             // Try loading
             if (Load(static_cast<int>(i), track, nullptr)) {
                 // Success loading
@@ -144,7 +144,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
 {
     assert(index >= 0 && index < static_cast<int>(cache.size()));
     assert(track >= 0);
-    assert(cache[index].disktrk == nullptr);
+    assert(!cache[index].disktrk);
 
     // Get the number of sectors on this track
     int sectors = sec_blocks - (track << 8);
@@ -153,7 +153,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         sectors = 0x100;
     }
 
-    if (disktrk == nullptr) {
+    if (!disktrk) {
         disktrk = make_shared<DiskTrack>();
     }
 

@@ -18,10 +18,8 @@
 #include "initiator/initiator_util.h"
 #include "s2pexec_core.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -61,6 +59,7 @@ void S2pExec::Banner(bool header)
         << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
         << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
         << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
+        << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
         << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
         << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
         << "  --version/-v                  Display the s2pexec version.\n"
@@ -91,6 +90,8 @@ bool S2pExec::Init(bool)
 
 bool S2pExec::ParseArguments(span<char*> args)
 {
+    const int OPT_TIMEOUT = 2;
+
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
@@ -105,6 +106,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
+        { "timeout", required_argument, nullptr, OPT_TIMEOUT },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -112,6 +114,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     string initiator = "7";
     string target;
     string buf;
+    string tout = "3";
 
     optind = 1;
     int opt;
@@ -175,6 +178,10 @@ bool S2pExec::ParseArguments(span<char*> args)
             hex_only = true;
             break;
 
+        case OPT_TIMEOUT:
+            tout = optarg;
+            break;
+
         default:
             Banner(false);
             return false;
@@ -217,6 +224,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (command.empty()) {
         throw parser_exception("Missing command block");
+    }
+
+    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
+        throw parser_exception("Invalid command timeout value: '" + tout + "'");
     }
 
     if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
@@ -307,7 +318,7 @@ string S2pExec::ExecuteCommand()
         debug("Sending {} data bytes", buffer.size());
     }
 
-    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer);
+    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
     if (status) {
         return
             status != 0xff && request_sense ?

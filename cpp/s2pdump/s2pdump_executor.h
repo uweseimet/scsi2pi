@@ -26,6 +26,7 @@ public:
     ~S2pDumpExecutor() = default;
 
     void TestUnitReady() const;
+    void RequestSense() const;
     bool Inquiry(span<uint8_t>);
     pair<uint64_t, uint32_t> ReadCapacity();
     bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);

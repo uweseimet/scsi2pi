@@ -13,12 +13,9 @@
 #include <fstream>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "mode_page_util.h"
 #include "scsi_cd.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
-using namespace mode_page_util;
 
 ScsiCd::ScsiCd(int lun, bool scsi1)
 : Disk(SCCD, lun, true, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
@@ -51,7 +48,9 @@ void ScsiCd::Open()
     ClearTrack();
 
     // Default sector size is 2048 bytes
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048);
+    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
+        throw io_exception("Invalid sector size");
+    }
 
     // Judge whether it is a CUE sheet or an ISO file
     array<char, 4> cue;
@@ -118,7 +117,7 @@ void ScsiCd::OpenIso()
 
         SetBlockCount(static_cast<uint32_t>(size / 2352));
     } else {
-        SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
+        SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
     }
 
     CreateDataTrack();
@@ -137,7 +136,7 @@ void ScsiCd::CreateDataTrack()
 
 void ScsiCd::ReadToc()
 {
-    GetController()->SetLength(ReadTocInternal(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
@@ -149,15 +148,10 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
 
 void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    const auto current_sector_size = static_cast<int>(GetSectorSizeInBytes());
-    const auto new_sector_size = mode_page_util::ModeSelect(cmd, cdb, buf, length, current_sector_size);
-    if (new_sector_size != current_sector_size) {
-        const uint64_t capacity = current_sector_size * GetBlockCount();
-        SetSectorSizeInBytes(new_sector_size);
-        SetBlockCount(static_cast<uint32_t>(capacity >> GetSectorSizeShiftCount()));
+    Disk::ModeSelect(cmd, cdb, buf, length);
 
-        SetUpCache();
-    }
+    ClearTrack();
+    CreateDataTrack();
 }
 
 void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -198,21 +192,6 @@ void ScsiCd::AddAudioControlPage(map<int, vector<byte>> &pages, bool) const
     // PLAY across multiple tracks
 
     pages[14] = buf;
-}
-
-void ScsiCd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
-{
-    Disk::AddFormatPage(pages, changeable);
-
-    EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
-}
-
-void ScsiCd::AddVendorModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
-{
-    // Page code 48
-    if (page == 0x30 || page == 0x3f) {
-        AddAppleVendorModePage(pages, changeable);
-    }
 }
 
 int ScsiCd::Read(span<uint8_t> buf, uint64_t block)

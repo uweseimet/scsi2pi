@@ -8,7 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "buses/gpio_bus.h"
 #include "devices/disk.h"
@@ -111,11 +110,12 @@ void GenericController::Command()
             return;
         }
 
-        const int command_byte_count = Bus::GetCommandByteCount(GetBuffer()[0]);
+        const int command_bytes_count = Bus::GetCommandBytesCount(GetBuffer()[0]);
+        assert(command_bytes_count <= 16);
 
-        AllocateCmd(command_byte_count);
-        for (int i = 0; i < command_byte_count; i++) {
-            SetCmdByte(i, GetBuffer()[i]);
+        // TODO Set all bytes by copying
+        for (int i = 0; i < command_bytes_count; i++) {
+            SetCdbByte(i, GetBuffer()[i]);
         }
 
         // Check the log level first in order to avoid a time-consuming string construction
@@ -123,9 +123,9 @@ void GenericController::Command()
             LogCdb();
         }
 
-        if (actual_count != command_byte_count) {
+        if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
-                command_byte_count, GetCmdByte(0), actual_count));
+                command_bytes_count, GetCdbByte(0), actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
@@ -168,7 +168,7 @@ void GenericController::Execute()
         device->SetStatusCode(0);
     }
 
-    if (device->CheckReservation(initiator_id, GetOpcode(), GetCmdByte(4) & 0x01)) {
+    if (device->CheckReservation(initiator_id, GetOpcode(), GetCdbByte(4) & 0x01)) {
         try {
             device->Dispatch(GetOpcode());
         }
@@ -312,8 +312,6 @@ void GenericController::Send()
     assert(GetBus().GetIO());
 
     if (HasValidLength()) {
-        LogTrace(fmt::format("Sending data, offset: {0}, length: {1}", GetOffset(), GetLength()));
-
         assert(HasDeviceForLun(0));
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -337,13 +335,13 @@ void GenericController::Send()
 
     DecrementBlocks();
 
-    if (IsDataIn() && HasBlocks() && !XferIn(GetBuffer())) {
+    if (IsDataIn() && InTransfer() && !XferIn(GetBuffer())) {
         Error(sense_key::aborted_command, asc::controller_send_xfer_in);
         return;
     }
 
     // Continue sending if blocks != 0
-    if (HasBlocks()) {
+    if (InTransfer()) {
         assert(HasValidLength());
         assert(!GetOffset());
         return;
@@ -405,10 +403,10 @@ void GenericController::Receive()
     DecrementBlocks();
     bool result = true;
 
-    // Processing after receiving data (by phase)
+    // Processing after receiving data
     switch (GetPhase()) {
     case phase_t::dataout:
-        if (!HasBlocks()) {
+        if (!InTransfer()) {
             // End with this buffer
             result = XferOut(false);
         } else {
@@ -436,7 +434,7 @@ void GenericController::Receive()
     }
 
     // Continue to receive if blocks != 0
-    if (HasBlocks()) {
+    if (InTransfer()) {
         assert(HasValidLength());
         assert(!GetOffset());
         return;
@@ -445,6 +443,7 @@ void GenericController::Receive()
     // Move to next phase
     switch (GetPhase()) {
     case phase_t::command:
+        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
         ProcessCommand();
         break;
 
@@ -502,6 +501,7 @@ void GenericController::ReceiveBytes()
     // Move to next phase
     switch (GetPhase()) {
     case phase_t::command:
+        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
         ProcessCommand();
         break;
 
@@ -623,7 +623,7 @@ bool GenericController::XferOutBlockOriented(bool cont)
         }
 
         try {
-            mode_page_device->ModeSelect(GetOpcode(), GetCmd(), GetBuffer(), GetOffset());
+            mode_page_device->ModeSelect(GetOpcode(), GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
@@ -639,7 +639,7 @@ bool GenericController::XferOutBlockOriented(bool cont)
 #ifdef BUILD_SCDP
         // TODO Get rid of this special case for SCDP
         if (auto daynaport = dynamic_pointer_cast<DaynaPort>(device); daynaport) {
-            if (!daynaport->Write(GetCmd(), GetBuffer())) {
+            if (!daynaport->Write(GetCdb(), GetBuffer())) {
                 return false;
             }
 
@@ -709,16 +709,22 @@ bool GenericController::XferOutBlockOriented(bool cont)
 }
 #pragma GCC diagnostic pop
 
+// TODO This probably does not make sense
 void GenericController::ProcessCommand()
 {
-    const uint32_t len = GpioBus::GetCommandByteCount(GetBuffer()[0]);
+    const int len = GpioBus::GetCommandBytesCount(GetBuffer()[0]);
 
-    string s = "CDB=$";
-    for (uint32_t i = 0; i < len; i++) {
-        SetCmdByte(i, GetBuffer()[i]);
-        s += fmt::format("{:02x}", GetCmdByte(i));
+    for (int i = 0; i < len; i++) {
+        SetCdbByte(i, GetBuffer()[i]);
     }
-    LogTrace(s);
+
+    if (get_level() == level::trace) {
+        string s = "CDB=$";
+        for (int i = 0; i < len; i++) {
+            s += fmt::format("{:02x}", GetCdbByte(i));
+        }
+        LogTrace(s);
+    }
 
     Execute();
 }
@@ -727,12 +733,12 @@ void GenericController::LogCdb() const
 {
     const auto &cmd = COMMAND_MAPPING.find(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",
-        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCmdByte(0)));
-    for (int i = 0; i < Bus::GetCommandByteCount(GetCmdByte(0)); i++) {
+        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCdbByte(0)));
+    for (int i = 0; i < Bus::GetCommandBytesCount(GetCdbByte(0)); i++) {
         if (i) {
             s += ":";
         }
-        s += fmt::format("{:02x}", GetCmdByte(i));
+        s += fmt::format("{:02x}", GetCdbByte(i));
     }
     LogDebug(s);
 }
