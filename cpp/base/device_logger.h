@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,7 +19,6 @@ public:
 
     void Trace(const string&) const;
     void Debug(const string&) const;
-    void Info(const string&) const;
     void Warn(const string&) const;
     void Error(const string&) const;
 

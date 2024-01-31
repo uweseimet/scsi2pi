@@ -2,23 +2,29 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
 
-using namespace std;
 using namespace spdlog;
-using namespace scsi_defs;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
     vector<uint8_t> cdb(6);
 
-    phase_executor->Execute(scsi_command::cmd_test_unit_ready, cdb, { }, 0);
+    initiator_executor->Execute(scsi_command::cmd_test_unit_ready, cdb, { }, 0);
+}
+
+void S2pDumpExecutor::RequestSense() const
+{
+    array<uint8_t, 14> buf = { };
+    array<uint8_t, 6> cdb = { };
+    cdb[4] = static_cast<uint8_t>(buf.size());
+    initiator_executor->Execute(scsi_command::cmd_request_sense, cdb, buf, static_cast<int>(buf.size()));
 }
 
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
@@ -27,7 +33,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
     cdb[3] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[4] = static_cast<uint8_t>(buffer.size());
 
-    return phase_executor->Execute(scsi_command::cmd_inquiry, cdb, buffer, static_cast<int>(buffer.size()));
+    return !initiator_executor->Execute(scsi_command::cmd_inquiry, cdb, buffer, static_cast<int>(buffer.size()));
 }
 
 pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
@@ -35,7 +41,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
     vector<uint8_t> buffer(14);
     vector<uint8_t> cdb(10);
 
-    if (!phase_executor->Execute(scsi_command::cmd_read_capacity10, cdb, buffer, 8)) {
+    if (initiator_executor->Execute(scsi_command::cmd_read_capacity10, cdb, buffer, 8)) {
         return {0, 0};
     }
 
@@ -48,7 +54,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
-        if (!phase_executor->Execute(scsi_command::cmd_read_capacity16_read_long16, cdb, buffer,
+        if (initiator_executor->Execute(scsi_command::cmd_read_capacity16_read_long16, cdb, buffer,
             static_cast<int>(buffer.size()))) {
             return {0, 0};
         }
@@ -63,24 +69,48 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
     return {capacity + 1, sector_size};
 }
 
-bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool isWrite)
+bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
-    vector<uint8_t> cdb(10);
-    cdb[2] = static_cast<uint8_t>(bstart >> 24);
-    cdb[3] = static_cast<uint8_t>(bstart >> 16);
-    cdb[4] = static_cast<uint8_t>(bstart >> 8);
-    cdb[5] = static_cast<uint8_t>(bstart);
-    cdb[7] = static_cast<uint8_t>(blength >> 8);
-    cdb[8] = static_cast<uint8_t>(blength);
+    if (bstart < 16777216 && blength <= 256) {
+        vector<uint8_t> cdb(6);
+        cdb[1] = static_cast<uint8_t>(bstart >> 16);
+        cdb[2] = static_cast<uint8_t>(bstart >> 8);
+        cdb[3] = static_cast<uint8_t>(bstart);
+        cdb[4] = static_cast<uint8_t>(blength);
 
-    return phase_executor->Execute(isWrite ? scsi_command::cmd_write10 : scsi_command::cmd_read10, cdb, buffer, length);
+        return !initiator_executor->Execute(is_write ? scsi_command::cmd_write6 : scsi_command::cmd_read6, cdb, buffer,
+            length);
+    }
+    else {
+        vector<uint8_t> cdb(10);
+        cdb[2] = static_cast<uint8_t>(bstart >> 24);
+        cdb[3] = static_cast<uint8_t>(bstart >> 16);
+        cdb[4] = static_cast<uint8_t>(bstart >> 8);
+        cdb[5] = static_cast<uint8_t>(bstart);
+        cdb[7] = static_cast<uint8_t>(blength >> 8);
+        cdb[8] = static_cast<uint8_t>(blength);
+
+        return !initiator_executor->Execute(is_write ? scsi_command::cmd_write10 : scsi_command::cmd_read10, cdb,
+            buffer,
+            length);
+    }
+}
+
+bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
+{
+    vector<uint8_t> cdb(6);
+    cdb[1] = 0x08;
+    cdb[2] = 0x3f;
+    cdb[4] = static_cast<uint8_t>(buffer.size());
+
+    return !initiator_executor->Execute(scsi_command::cmd_mode_sense6, cdb, buffer, static_cast<int>(buffer.size()));
 }
 
 void S2pDumpExecutor::SynchronizeCache()
 {
     vector<uint8_t> cdb(10);
 
-    phase_executor->Execute(scsi_command::cmd_synchronize_cache10, cdb, { }, 0);
+    initiator_executor->Execute(scsi_command::cmd_synchronize_cache10, cdb, { }, 0);
 }
 
 set<int> S2pDumpExecutor::ReportLuns()
@@ -91,13 +121,13 @@ set<int> S2pDumpExecutor::ReportLuns()
     cdb[9] = static_cast<uint8_t>(buffer.size());
 
     // Assume 8 LUNs in case REPORT LUNS is not available
-    if (!phase_executor->Execute(scsi_command::cmd_report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
-        spdlog::trace("Target does not support REPORT LUNS");
+    if (initiator_executor->Execute(scsi_command::cmd_report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
+        trace("Target does not support REPORT LUNS");
         return {0, 1, 2, 3, 4, 5, 6, 7};
     }
 
     const auto lun_count = (static_cast<size_t>(buffer[2]) << 8) | static_cast<size_t>(buffer[3]) / 8;
-    spdlog::trace("Target reported LUN count of " + to_string(lun_count));
+    trace("Target reported LUN count of " + to_string(lun_count));
 
     set<int> luns;
     int offset = 8;
@@ -107,7 +137,7 @@ set<int> S2pDumpExecutor::ReportLuns()
             luns.insert(static_cast<int>(lun));
         }
         else {
-            spdlog::trace("Target reported invalid LUN " + to_string(lun));
+            trace("Target reported invalid LUN " + to_string(lun));
         }
     }
 

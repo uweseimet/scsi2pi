@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 #include <filesystem>
 // TODO Try to get rid of this dependency
-#include "shared_protobuf/command_context.h"
+#include "protobuf/command_context.h"
 
 using namespace std;
 using namespace filesystem;
@@ -57,8 +57,6 @@ private:
     static bool IsValidSrcFilename(string_view);
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
-    static string GetHomeDir();
-    static pair<int, int> GetUidAndGid();
 
     // ~/images is the default folder for device image files, for the root user it is /home/pi/images
     string default_folder;

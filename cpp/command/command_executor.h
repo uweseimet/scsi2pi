@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ public:
         return execution_locker;
     }
 
-    auto Get_allDevices() const
+    auto GetAllDevices() const
     {
         return controller_factory->GetAllDevices();
     }

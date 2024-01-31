@@ -2,22 +2,19 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <unistd.h>
 #include <sstream>
 #include <array>
-#include <vector>
 #include <iomanip>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
 #include "protobuf_util.h"
 
-using namespace std;
 using namespace s2p_util;
-using namespace s2p_interface;
 
 #define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
 
@@ -27,10 +24,9 @@ void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &pa
         return;
     }
 
-    // Old style parameter (filename), for backwards compatibility only
+    // Old style parameter (filename only), for backwards compatibility and convenience
     if (params.find(KEY_VALUE_SEPARATOR) == string::npos) {
         SetParam(device, "file", params);
-
         return;
     }
 
@@ -184,38 +180,40 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
-    const string data = message.SerializeAsString();
+    const string s = message.SerializeAsString();
+    vector<uint8_t> data(s.begin(), s.end());
 
     // Write the size of the protobuf data as a header
-    const auto size = static_cast<int32_t>(data.length());
-    if (write(fd, &size, sizeof(size)) != sizeof(size)) {
-        throw io_exception("Can't write protobuf message size");
+    if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
+        static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
+    WriteBytes(fd, header) != header.size()) {
+        throw io_exception("Can't write message size: " + string(strerror(errno)));
     }
 
     // Write the actual protobuf data
-    if (write(fd, data.data(), size) != size) {
-        throw io_exception("Can't write protobuf message data");
+    if (WriteBytes(fd, data) != data.size()) {
+        throw io_exception("Can't write message data: " + string(strerror(errno)));
     }
 }
 
 void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &message)
 {
     // Read the header with the size of the protobuf data
-    array<byte, sizeof(int32_t)> header_buf;
-    if (ReadBytes(fd, header_buf) < header_buf.size()) {
-        throw io_exception("Can't read protobuf message size");
+    array<byte, 4> header;
+    if (ReadBytes(fd, header) < header.size()) {
+        throw io_exception("Can't read message size: " + string(strerror(errno)));
     }
 
-    const int size = (static_cast<int>(header_buf[3]) << 24) + (static_cast<int>(header_buf[2]) << 16)
-        + (static_cast<int>(header_buf[1]) << 8) + static_cast<int>(header_buf[0]);
+    const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
+        + (static_cast<int>(header[1]) << 8) + static_cast<int>(header[0]);
     if (size < 0) {
-        throw io_exception("Invalid protobuf message size");
+        throw io_exception("Invalid message size: " + string(strerror(errno)));
     }
 
     // Read the binary protobuf data
     vector<byte> data_buf(size);
     if (ReadBytes(fd, data_buf) != data_buf.size()) {
-        throw io_exception("Invalid protobuf message data");
+        throw io_exception("Invalid message data: " + string(strerror(errno)));
     }
 
     message.ParseFromArray(data_buf.data(), size);
@@ -227,7 +225,7 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     while (offset < buf.size()) {
         const auto len = read(fd, &buf.data()[offset], buf.size() - offset);
         if (len == -1) {
-            throw io_exception("Read error: " + string(strerror(errno)));
+            return -1;
         }
 
         if (!len) {
@@ -235,6 +233,25 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
         }
 
         offset += len;
+    }
+
+    return offset;
+}
+
+size_t protobuf_util::WriteBytes(int fd, span<uint8_t> buf)
+{
+    size_t offset = 0;
+    while (offset < buf.size()) {
+        const auto len = write(fd, &buf.data()[offset], buf.size() - offset);
+        if (len == -1) {
+            return -1;
+        }
+
+        offset += len;
+
+        if (offset == buf.size()) {
+            break;
+        }
     }
 
     return offset;

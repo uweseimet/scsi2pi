@@ -26,13 +26,11 @@ using namespace std;
 
 class CTapDriver
 {
+    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
     const inline static string BRIDGE_NAME = "piscsi_bridge";
 
     const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
-
     const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
-
-    const inline static string DEFAULT_BRIDGE_IF = "piscsi0";
 
 public:
 
@@ -50,9 +48,6 @@ public:
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
 
-    // Enable/Disable the piscsi0 interface
-    string IpLink(bool) const;
-
     // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
@@ -62,6 +57,12 @@ public:
     {
         return BRIDGE_NAME;
     }
+
+    static string AddBridge(int);
+    string DeleteBridge(int) const;
+
+    // Enable/Disable the piscsi0 interface
+    static string IpLink(bool);
 
 private:
 
@@ -76,5 +77,9 @@ private:
     vector<string> interfaces;
 
     string inet;
+
+#ifdef __linux__
+    bool bridge_created = false;
+#endif
 };
 

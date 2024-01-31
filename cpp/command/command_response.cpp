@@ -2,14 +2,15 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <filesystem>
+#include <spdlog/spdlog.h>
+#include "base/property_handler.h"
 #include "controllers/controller_factory.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
@@ -18,6 +19,7 @@
 
 using namespace std;
 using namespace filesystem;
+using namespace spdlog;
 using namespace s2p_interface;
 using namespace s2p_util;
 using namespace network_util;
@@ -25,7 +27,8 @@ using namespace protobuf_util;
 
 void CommandResponse::GetDeviceProperties(shared_ptr<Device> device, PbDeviceProperties &properties) const
 {
-    properties.set_luns(ControllerFactory::GetScsiLunMax());
+    properties.set_luns(device->GetType() == PbDeviceType::SAHD ?
+            ControllerFactory::GetSasiLunMax() : ControllerFactory::GetScsiLunMax());
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());
     properties.set_stoppable(device->IsStoppable());
@@ -254,7 +257,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        spdlog::trace("Requested operation(s): " + Join(operations, ","));
+        trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {
@@ -286,6 +289,10 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
         GetStatisticsInfo(*server_info.mutable_statistics_info(), devices);
     }
 
+    if (HasOperation(operations, PbOperation::PROPERTIES_INFO)) {
+        GetPropertiesInfo(*server_info.mutable_properties_info());
+    }
+
     if (HasOperation(operations, PbOperation::DEVICES_INFO)) {
         GetDevices(devices, server_info, default_folder);
     }
@@ -310,11 +317,11 @@ void CommandResponse::GetVersionInfo(PbVersionInfo &version_info) const
 
 void CommandResponse::GetLogLevelInfo(PbLogLevelInfo &log_level_info) const
 {
-    for (const auto &log_level : spdlog::level::level_string_views) {
+    for (const auto &log_level : level::level_string_views) {
         log_level_info.add_log_levels(log_level.data());
     }
 
-    log_level_info.set_current_log_level(spdlog::level::level_string_views[spdlog::get_level()].data());
+    log_level_info.set_current_log_level(level::level_string_views[get_level()].data());
 }
 
 void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info) const
@@ -343,6 +350,13 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
             s->set_key(statistics.key());
             s->set_value(statistics.value());
         }
+    }
+}
+
+void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
+{
+    for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
+        (*properties_info.mutable_s2p_properties())[key] = value;
     }
 }
 
@@ -400,6 +414,8 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
 
     CreateOperation(operation_info, STATISTICS_INFO, "Get statistics");
 
+    CreateOperation(operation_info, PROPERTIES_INFO, "Get properties");
+
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
     operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set default image file folder");
@@ -456,9 +472,9 @@ PbOperationMetaData* CommandResponse::CreateOperation(PbOperationInfo &operation
     PbOperationMetaData meta_data;
     meta_data.set_server_side_name(PbOperation_Name(operation));
     meta_data.set_description(description);
-    int ordinal = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->index();
-    (*operation_info.mutable_operations())[ordinal] = meta_data;
-    return &(*operation_info.mutable_operations())[ordinal];
+    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
+    (*operation_info.mutable_operations())[number] = meta_data;
+    return &(*operation_info.mutable_operations())[number];
 }
 
 void CommandResponse::AddOperationParameter(PbOperationMetaData &meta_data, const string &name,
@@ -515,7 +531,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            spdlog::warn("Image file symlink '" + path.string() + "' is broken");
+            warn("Image file symlink '" + path.string() + "' is broken");
             return false;
         }
     }
@@ -525,7 +541,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        spdlog::warn("Image file '" + p.string() + "' is invalid");
+        warn("Image file '" + p.string() + "' is invalid");
         return false;
     }
 

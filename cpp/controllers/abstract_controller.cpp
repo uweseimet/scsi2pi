@@ -2,14 +2,12 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <cstring>
-#include "shared/shared_exceptions.h"
 #include "base/primary_device.h"
-#include "abstract_controller.h"
 
 using namespace scsi_defs;
 
@@ -20,14 +18,6 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     ctrl.buffer.resize(4096);
 
     device_logger.SetIdAndLun(target_id, -1);
-}
-
-void AbstractController::AllocateCmd(size_t size)
-{
-    if (size > ctrl.cmd.size()) {
-        LogTrace(fmt::format("Resizing transfer buffer to {} bytes", size));
-        ctrl.cmd.resize(size);
-    }
 }
 
 void AbstractController::SetLength(size_t length)
@@ -93,7 +83,7 @@ void AbstractController::ProcessOnController(int id_data)
 
     const int initiator_id = ExtractInitiatorId(id_data);
     if (initiator_id != UNKNOWN_INITIATOR_ID) {
-        LogTrace("++++ Starting processing for initiator ID " + to_string(initiator_id));
+        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
     }
     else {
         LogTrace("++++ Starting processing for unknown initiator ID");

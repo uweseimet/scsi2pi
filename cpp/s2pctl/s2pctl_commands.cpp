@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,12 +17,10 @@
 #include <fstream>
 #include <vector>
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
 
-using namespace std;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_interface;
@@ -88,6 +86,9 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
     case STATISTICS_INFO:
         return CommandStatisticsInfo();
 
+    case PROPERTIES_INFO:
+        return CommandPropertiesInfo();
+
     case OPERATION_INFO:
         return CommandOperationInfo();
 
@@ -129,14 +130,14 @@ bool S2pCtlCommands::SendCommand()
     }
 
     server_addr.sin_port = htons(uint16_t(port));
-    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         close(fd);
 
         throw io_exception("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
             + ": " + strerror(errno));
     }
 
-    if (write(fd, "RASCSI", 6) != 6) {
+    if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
         close(fd);
 
         throw io_exception("Can't write magic");
@@ -299,6 +300,10 @@ bool S2pCtlCommands::CommandServerInfo()
         cout << s2pctl_display.DisplayStatisticsInfo(server_info.statistics_info());
     }
 
+    if (server_info.has_properties_info()) {
+        cout << s2pctl_display.DisplayPropertiesInfo(server_info.properties_info());
+    }
+
     if (server_info.has_operation_info()) {
         cout << s2pctl_display.DisplayOperationInfo(server_info.operation_info());
     }
@@ -381,6 +386,15 @@ bool S2pCtlCommands::CommandStatisticsInfo()
     SendCommand();
 
     cout << s2pctl_display.DisplayStatisticsInfo(result.statistics_info()) << flush;
+
+    return true;
+}
+
+bool S2pCtlCommands::CommandPropertiesInfo()
+{
+    SendCommand();
+
+    cout << s2pctl_display.DisplayPropertiesInfo(result.properties_info()) << flush;
 
     return true;
 }

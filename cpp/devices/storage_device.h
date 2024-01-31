@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // The base class for all mass storage devices with image file support
 //
@@ -21,7 +21,7 @@ class StorageDevice : public ModePageDevice
 {
 public:
 
-    StorageDevice(PbDeviceType, int);
+    StorageDevice(PbDeviceType, int, bool);
     ~StorageDevice() override = default;
 
     void CleanUp() override;

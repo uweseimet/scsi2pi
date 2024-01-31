@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,17 +13,18 @@
 
 using namespace std;
 
-class ScsiCtl
+class S2pCtl
 {
 
 public:
 
-    ScsiCtl() = default;
-    ~ScsiCtl() = default;
-
-    int run(const vector<char*>&) const;
+    int Run(const vector<char*>&) const;
 
 private:
 
-    void Banner(const vector<char*>&) const;
+    void Banner(bool) const;
+    int RunInteractive() const;
+    int ParseArguments(const vector<char*>&) const;
+
+    static string ConvertCommand(const string&);
 };

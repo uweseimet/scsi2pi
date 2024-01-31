@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,13 +29,13 @@ extern const path test_data_temp_path;
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
+vector<int> CreateCdb(scsi_command, const string&);
+vector<uint8_t> CreateParameters(const string&);
+
 pair<int, path> OpenTempFile();
 path CreateTempFile(int);
 path CreateTempFileWithData(span<const byte>);
-
-void DeleteTempFile(const string&);
-
-string ReadTempFileToString(const string &filename);
+string ReadTempFileToString(const string&);
 
 int GetInt16(const vector<byte>&, int);
 uint32_t GetInt32(const vector<byte>&, int);
@@ -46,8 +46,8 @@ class TestShared
 public:
 
     static string GetVersion();
-    static void Inquiry(PbDeviceType, scsi_defs::device_type, scsi_defs::scsi_level, const string&, int, bool,
-        const string& = "");
+    static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
+    static void Dispatch(PrimaryDevice&, scsi_command, sense_key, asc, const string& = "");
 };
 }

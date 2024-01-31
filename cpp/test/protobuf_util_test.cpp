@@ -2,14 +2,14 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace s2p_interface;
@@ -50,7 +50,6 @@ TEST(ProtobufUtil, ParseParameters)
     PbDeviceDefinition device3;
     ParseParameters(device3, "");
 
-    TestSpecialDevice("bridge");
     TestSpecialDevice("daynaport");
     TestSpecialDevice("printer");
     TestSpecialDevice("services");
@@ -118,13 +117,13 @@ TEST(ProtobufUtil, ListDevices)
 
     PbDevice device;
     device.set_type(SCHD);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCDP);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCHS);
-    devices.push_back(device);
+    devices.emplace_back(device);
     device.set_type(SCLP);
-    devices.push_back(device);
+    devices.emplace_back(device);
     const string device_list = ListDevices(devices);
     EXPECT_FALSE(device_list.empty());
     EXPECT_NE(string::npos, device_list.find("DaynaPort SCSI/Link"));

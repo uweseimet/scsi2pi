@@ -2,23 +2,19 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // A basic device with mode page support, to be used for subclassing
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <cstddef>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "mode_page_util.h"
+#include "base/property_handler.h"
 #include "mode_page_device.h"
 
-using namespace std;
-using namespace scsi_defs;
 using namespace memory_util;
-using namespace mode_page_util;
 
 bool ModePageDevice::Init(const param_map &params)
 {
@@ -32,14 +28,17 @@ bool ModePageDevice::Init(const param_map &params)
         {
             ModeSense10();
         });
-    AddCommand(scsi_command::cmd_mode_select6, [this]
-        {
-            ModeSelect6();
-        });
-    AddCommand(scsi_command::cmd_mode_select10, [this]
-        {
-            ModeSelect10();
-        });
+
+    if (supports_mode_select) {
+        AddCommand(scsi_command::cmd_mode_select6, [this]
+            {
+                ModeSelect6();
+            });
+        AddCommand(scsi_command::cmd_mode_select10, [this]
+            {
+                ModeSelect10();
+            });
+    }
 
     return true;
 }
@@ -53,19 +52,21 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
     const bool changeable = (cdb[2] & 0xc0) == 0x40;
 
-    // Get page code (0x3f means all pages)
-    const int page = cdb[2] & 0x3f;
-
-    LogTrace(fmt::format("Requesting mode page ${:02x}", page));
+    const int page_code = cdb[2] & 0x3f;
 
     // Mode page data mapped to the respective page numbers, C++ maps are ordered by key
     map<int, vector<byte>> pages;
-    SetUpModePages(pages, page, changeable);
-
-    // TODO Add user-defined mode pages, which may override the default ones
+    SetUpModePages(pages, page_code, changeable);
+    for (const auto& [p, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
+        if (data.empty()) {
+            pages.erase(p);
+        }
+        else {
+            pages[p] = data;
+        }
+    }
 
     if (pages.empty()) {
-        LogTrace(fmt::format("Unsupported mode page ${:02x}", page));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -113,42 +114,39 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
 void ModePageDevice::ModeSense6() const
 {
-    GetController()->SetLength(ModeSense6(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
 
 void ModePageDevice::ModeSense10() const
 {
-    GetController()->SetLength(ModeSense10(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
 
-void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int) const
+void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int)
 {
-    // There is no default implementation of MODE SELECT.
-    // An ASC of invalid_field_in_cdb might be more compatible with some computers
-    // than invalid_command_operation_code.
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    // There is no default implementation of MODE SELECT
+    assert(false);
+
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
 }
 
 void ModePageDevice::ModeSelect6() const
 {
-    SaveParametersCheck(GetController()->GetCmdByte(4));
+    SaveParametersCheck(GetController()->GetCdbByte(4));
 }
 
 void ModePageDevice::ModeSelect10() const
 {
-    const auto length = min(GetController()->GetBuffer().size(),
-        static_cast<size_t>(GetInt16(GetController()->GetCmd(), 7)));
-
-    SaveParametersCheck(static_cast<uint32_t>(length));
+    SaveParametersCheck(GetInt16(GetController()->GetCdb(), 7));
 }
 
 void ModePageDevice::SaveParametersCheck(int length) const
 {
-    if (!SupportsSaveParameters() && (GetController()->GetCmdByte(1) & 0x01)) {
+    if (!SupportsSaveParameters() && (GetController()->GetCdbByte(1) & 0x01)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

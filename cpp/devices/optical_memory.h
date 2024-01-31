@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -27,14 +27,12 @@ public:
 
     void Open() override;
 
-    vector<uint8_t> InquiryInternal() override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const override;
+    vector<uint8_t> InquiryInternal() const override;
 
 protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddFormatPage(map<int, vector<byte>>&, bool) const override;
-    void AddVendorPage(map<int, vector<byte>>&, int, bool) const override;
+    void AddVendorPages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 

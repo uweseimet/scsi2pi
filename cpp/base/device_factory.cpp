@@ -29,7 +29,6 @@
 #endif
 #include "device_factory.h"
 
-using namespace std;
 using namespace s2p_util;
 
 shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const string &filename) const

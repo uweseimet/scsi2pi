@@ -20,37 +20,36 @@ class S2pDump
 
 public:
 
-    S2pDump() = default;
-    ~S2pDump() = default;
+    int Run(span<char*>, bool);
 
-    int run(span<char*>, bool = false);
-
-    struct inquiry_info
+    struct scsi_device_info
     {
+        bool removable;
+        byte type;
+        byte scsi_level;
         string vendor;
         string product;
         string revision;
         uint32_t sector_size;
         uint64_t capacity;
-
-        void GeneratePropertiesFile(const string&) const;
     };
-    using inquiry_info_t = struct inquiry_info;
+    using scsi_device_info_t = struct scsi_device_info;
 
 private:
 
-    bool Banner(span<char*>) const;
+    void Banner(bool) const;
     bool Init(bool);
-    void ParseArguments(span<char*>);
+    bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWrite(ostream&, fstream&, int, uint32_t, int);
+    string ReadWrite(fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
+    bool DisplayScsiInquiry(vector<uint8_t>&, bool);
+    bool DisplaySasiInquiry(const vector<uint8_t>&, bool) const;
+    void DisplayProperties(int, int) const;
     string DumpRestore();
     bool GetDeviceInfo();
-
-    bool SetLogLevel() const;
 
     void Reset() const;
 
@@ -61,9 +60,12 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> scsi_executor;
+    unique_ptr<S2pDumpExecutor> executor;
 
-    inquiry_info_t inq_info;
+    scsi_device_info_t scsi_device_info = { };
+
+    int sasi_capacity = 0;
+    int sasi_sector_size = 0;
 
     vector<uint8_t> buffer;
 
@@ -71,14 +73,14 @@ private:
     int target_id = -1;
     int target_lun = 0;
 
+    bool sasi = false;
+
     string filename;
 
     string log_level = "info";
 
     int start = 0;
     int count = 0;
-
-    bool to_stdout = false;
 
     bool run_inquiry = false;
 
@@ -88,8 +90,6 @@ private:
 
     bool restore = false;
 
-    bool create_properties_file = false;
-
     // Required for the termination handler
     static inline S2pDump *instance;
 
@@ -98,7 +98,15 @@ private:
 
     static inline const string DIVIDER = "----------------------------------------";
 
-    static inline const unordered_map<byte, string> DEVICE_TYPES = {
+    static inline const unordered_map<byte, string> S2P_DEVICE_TYPES = {
+        { byte { 0 }, "SCHD" },
+        { byte { 2 }, "SCLP" },
+        { byte { 3 }, "SCHS" },
+        { byte { 5 }, "SCCD" },
+        { byte { 7 }, "SCMO" }
+    };
+
+    static inline const unordered_map<byte, string> SCSI_DEVICE_TYPES = {
         { byte { 0 }, "Direct Access" },
         { byte { 1 }, "Sequential Access" },
         { byte { 2 }, "Printer" },

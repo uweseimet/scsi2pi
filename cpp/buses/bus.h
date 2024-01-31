@@ -43,7 +43,7 @@ class Bus : public PinControl
 
 public:
 
-    static int GetCommandByteCount(uint8_t);
+    static int GetCommandBytesCount(int);
 
     virtual bool Init(bool) = 0;
     virtual void Reset() = 0;
@@ -58,8 +58,12 @@ public:
 
     virtual uint32_t Acquire() = 0;
     virtual int CommandHandShake(vector<uint8_t>&) = 0;
+    virtual int MsgInHandShake() = 0;
     virtual int ReceiveHandShake(uint8_t*, int) = 0;
     virtual int SendHandShake(uint8_t*, int, int = SEND_NO_DELAY) = 0;
+
+    virtual bool WaitREQ(bool) = 0;
+    virtual bool WaitACK(bool) = 0;
 
     virtual bool WaitForSelection() = 0;
 

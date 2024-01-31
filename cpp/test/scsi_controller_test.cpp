@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -305,12 +305,12 @@ TEST(ScsiControllerTest, RequestSense)
     controller->AddDevice(device);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     // Non-existing LUN
-    controller->SetCmdByte(1, 0x20);
+    controller->SetCdbByte(1, 0x20);
 
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    device->Dispatch(scsi_command::cmd_request_sense);
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
     EXPECT_EQ(status::good, controller->GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }

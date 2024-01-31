@@ -6,34 +6,31 @@
 //
 //---------------------------------------------------------------------------
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
-#include <spdlog/spdlog.h>
+#include <iostream>
+#include <fstream>
 #include <filesystem>
 #include <csignal>
 #include <cstring>
-#include <iostream>
-#include <fstream>
-#include "controllers/controller_factory.h"
+#include <getopt.h>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
+#include "shared/shared_exceptions.h"
+#include "initiator/initiator_util.h"
 #include "s2pexec_core.h"
 
-using namespace std;
 using namespace filesystem;
-using namespace google::protobuf;
-using namespace google::protobuf::util;
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
+using namespace initiator_util;
 
-void ScsiExec::CleanUp() const
+void S2pExec::CleanUp() const
 {
     if (bus) {
         bus->CleanUp();
     }
 }
 
-void ScsiExec::TerminationHandler(int)
+void S2pExec::TerminationHandler(int)
 {
     instance->bus->SetRST(true);
 
@@ -42,34 +39,34 @@ void ScsiExec::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-bool ScsiExec::Banner(span<char*> args) const
+void S2pExec::Banner(bool header)
 {
-    cout << s2p_util::Banner("(SCSI Command Execution Tool)");
-
-    if (args.size() > 1 && (string(args[1]) == "-h" || string(args[1]) == "--help")) {
-        cout << "Usage: " << args[0] << " -t ID[:LUN] [-i BID] [-f INPUT_FILE] [-o OUTPUT_FILE]"
-            << " [-L LOG_LEVEL] [-b] [-B] [-F] [-T] [-X]\n"
-            << " ID is the target device ID (0-" << (ControllerFactory::GetIdMax() - 1) << ").\n"
-            << " LUN is the optional target device LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1) << ")."
-            << " Default is 0.\n"
-            << " BID is the board ID (0-7). Default is 7.\n"
-            << " INPUT_FILE is the protobuf data input file, by default in JSON format.\n"
-            << " OUTPUT_FILE is the protobuf data output file, by default in JSON format.\n"
-            << " LOG_LEVEL is the log level (trace|debug|info|warning|error|off), default is 'info'.\n"
-            << " -b Signals that the input file is in protobuf binary format.\n"
-            << " -F Signals that the input file is in protobuf text format.\n"
-            << " -B Generate a protobuf binary format file.\n"
-            << " -T Generate a protobuf text format file.\n"
-            << " -X Shut down s2p.\n"
-            << flush;
-
-        return false;
+    if (header) {
+        cout << s2p_util::Banner("(SCSI/SASI Command Execution Tool)");
     }
 
-    return true;
+    cout << "Usage: s2pexec [options]\n"
+        << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                default LUN is 0.\n"
+        << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
+        << "                                default LUN is 0.\n"
+        << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
+        << "  --cdb/-c CDB                  SCSI command to send in hexadecimal format.\n"
+        << "  --buffer-size/-b SIZE         Buffer size for receiving data.\n"
+        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error\n"
+        << "                                |off), default is 'info'.\n"
+        << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
+        << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
+        << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
+        << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
+        << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
+        << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
+        << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
+        << "  --version/-v                  Display the s2pexec version.\n"
+        << "  --help/-H                     Display this help.\n";
 }
 
-bool ScsiExec::Init(bool)
+bool S2pExec::Init(bool)
 {
     instance = this;
     // Signal handler for cleaning up
@@ -85,105 +82,188 @@ bool ScsiExec::Init(bool)
 
     bus = bus_factory->CreateBus(false);
     if (bus) {
-        scsi_executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
+        executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
     }
 
     return bus != nullptr;
 }
 
-void ScsiExec::ParseArguments(span<char*> args)
+bool S2pExec::ParseArguments(span<char*> args)
 {
+    const int OPT_TIMEOUT = 2;
+
+    const vector<option> options = {
+        { "buffer-size", required_argument, nullptr, 'b' },
+        { "board-id", required_argument, nullptr, 'B' },
+        { "cdb", required_argument, nullptr, 'c' },
+        { "binary-input-file", required_argument, nullptr, 'f' },
+        { "binary-output-file", required_argument, nullptr, 'F' },
+        { "help", no_argument, nullptr, 'H' },
+        { "hex-input-file", required_argument, nullptr, 't' },
+        { "hex-only", no_argument, nullptr, 'x' },
+        { "hex-output-file", required_argument, nullptr, 'T' },
+        { "no-request-sense", no_argument, nullptr, 'n' },
+        { "log-level", required_argument, nullptr, 'L' },
+        { "scsi-target", required_argument, nullptr, 'i' },
+        { "sasi-target", required_argument, nullptr, 'h' },
+        { "timeout", required_argument, nullptr, OPT_TIMEOUT },
+        { "version", no_argument, nullptr, 'v' },
+        { nullptr, 0, nullptr, 0 }
+    };
+
+    string initiator = "7";
+    string target;
+    string buf;
+    string tout = "3";
+
     optind = 1;
-    opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(), "i:f:t:bo:L:BFTX")) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:f:F:h:i:L:t:T:Hnvx",
+        options.data(), nullptr)) != -1) {
         switch (opt) {
-        case 'i':
-            if (!GetAsUnsignedInt(optarg, initiator_id) || initiator_id > 7) {
-                throw parser_exception("Invalid board ID " + to_string(initiator_id) + " (0-7)");
-            }
-            break;
-
         case 'b':
-            input_format = S2pDumpExecutor::protobuf_format::binary;
-            break;
-
-        case 'F':
-            input_format = S2pDumpExecutor::protobuf_format::text;
+            buf = optarg;
             break;
 
         case 'B':
-            output_format = S2pDumpExecutor::protobuf_format::binary;
+            initiator = optarg;
             break;
 
-        case 'T':
-            output_format = S2pDumpExecutor::protobuf_format::text;
+        case 'c':
+            command = optarg;
             break;
 
         case 'f':
-            input_filename = optarg;
+            binary_input_filename = optarg;
             break;
 
-        case 'o':
-            output_filename = optarg;
-            if (output_filename.empty()) {
-                throw parser_exception("Missing output filename");
-            }
+        case 'F':
+            binary_output_filename = optarg;
             break;
 
-        case 't':
-            if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-                optarg, target_id, target_lun); !error.empty()) {
-                throw parser_exception(error);
-            }
+        case 'h':
+            target = optarg;
+            sasi = true;
+            break;
+
+        case 'H':
+            help = true;
+            break;
+
+        case 'i':
+            target = optarg;
             break;
 
         case 'L':
             log_level = optarg;
             break;
 
-        case 'X':
-            shut_down = true;
+        case 'n':
+            request_sense = false;
+            break;
+
+        case 't':
+            hex_input_filename = optarg;
+            break;
+
+        case 'T':
+            hex_output_filename = optarg;
+            break;
+
+        case 'v':
+            version = true;
+            break;
+
+        case 'x':
+            hex_only = true;
+            break;
+
+        case OPT_TIMEOUT:
+            tout = optarg;
             break;
 
         default:
-            break;
+            Banner(false);
+            return false;
         }
+    }
+
+    if (help) {
+        Banner(true);
+        return true;
+    }
+
+    if (version) {
+        cout << GetVersionString() << '\n';
+        return true;
+    }
+
+    if (!SetLogLevel(log_level)) {
+        throw parser_exception("Invalid log level: '" + log_level + "'");
+    }
+
+    if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
+        throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+    }
+
+    if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
+        throw parser_exception(error);
     }
 
     if (target_id == -1) {
         throw parser_exception("Missing target ID");
     }
 
+    if (target_id == initiator_id) {
+        throw parser_exception("Target ID and initiator ID must not be identical");
+    }
+
     if (target_lun == -1) {
         target_lun = 0;
     }
 
-    if (shut_down) {
-        return;
+    if (command.empty()) {
+        throw parser_exception("Missing command block");
     }
 
-    if (input_filename.empty()) {
-        throw parser_exception("Missing input filename");
+    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
+        throw parser_exception("Invalid command timeout value: '" + tout + "'");
     }
+
+    if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
+        throw parser_exception("There can only be a single input file");
+    }
+
+    if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
+        throw parser_exception("There can only be a single output file");
+    }
+
+    int buffer_size = DEFAULT_BUFFER_SIZE;
+    if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
+        throw parser_exception("Invalid receive buffer size: '" + buf + "'");
+    }
+    buffer.resize(buffer_size);
+
+    return true;
 }
 
-int ScsiExec::run(span<char*> args, bool in_process)
+int S2pExec::Run(span<char*> args, bool in_process)
 {
-    if (!Banner(args)) {
-        return EXIT_SUCCESS;
-    }
-
-    try {
-        ParseArguments(args);
-    }
-    catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+    if (args.size() < 2) {
+        Banner(true);
         return EXIT_FAILURE;
     }
 
-    if (target_id == initiator_id) {
-        cerr << "Target ID and board ID must not be identical" << endl;
+    try {
+        if (!ParseArguments(args)) {
+            return EXIT_FAILURE;
+        }
+        else if (version || help) {
+            return EXIT_SUCCESS;
+        }
+    }
+    catch (const parser_exception &e) {
+        cerr << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
 
@@ -197,96 +277,132 @@ int ScsiExec::run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!SetLogLevel()) {
-        cerr << "Error: Invalid log level '" + log_level + "'";
-        return EXIT_FAILURE;
-    }
+    executor->SetTarget(target_id, target_lun, sasi);
 
-    scsi_executor->SetTarget(target_id, target_lun);
-
-    if (shut_down) {
-        const bool status = scsi_executor->ShutDown();
-
-        CleanUp();
-
-        return status ? EXIT_SUCCESS : EXIT_FAILURE;
-    }
-
-    PbResult result;
-    if (string error = scsi_executor->Execute(input_filename, input_format, result); !error.empty()) {
-        cerr << "Error: " << error << endl;
-
-        CleanUp();
-
-        return EXIT_FAILURE;
-    }
-
-    if (output_filename.empty()) {
-        string json;
-        (void)MessageToJsonString(result, &json);
-        cout << json << '\n';
-
-        CleanUp();
-
-        return EXIT_SUCCESS;
-    }
-
-    switch (output_format) {
-    case S2pDumpExecutor::protobuf_format::binary: {
-        ofstream out(output_filename, ios::binary);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf binary output file '" << output_filename << "'" << endl;
+    int result = EXIT_SUCCESS;
+    if (!command.empty()) {
+        if (const string error = ExecuteCommand(); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            result = EXIT_FAILURE;
         }
-
-        const string data = result.SerializeAsString();
-        out.write(data.data(), data.size());
-        break;
-    }
-
-    case S2pDumpExecutor::protobuf_format::json: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf JSON output file '" << output_filename << "'" << endl;
-        }
-
-        string json;
-        (void)MessageToJsonString(result, &json);
-        out << json << '\n';
-        break;
-    }
-
-    case S2pDumpExecutor::protobuf_format::text: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf text format output file '" << output_filename << "'" << endl;
-        }
-
-        string text;
-        TextFormat::PrintToString(result, &text);
-        out << text << '\n';
-        break;
-    }
-
-    default:
-        assert(false);
-        break;
     }
 
     CleanUp();
 
-    return EXIT_SUCCESS;
+    return result;
 }
 
-bool ScsiExec::SetLogLevel() const
+string S2pExec::ExecuteCommand()
 {
-    const level::level_enum l = level::from_str(log_level);
-    // Compensate for spdlog using 'off' for unknown levels
-    if (to_string_view(l) != log_level) {
-        return false;
+    vector<byte> cmd_bytes;
+
+    try {
+        cmd_bytes = HexToBytes(command);
+    }
+    catch (const parser_exception&)
+    {
+        return "Error: Invalid CDB input format: '" + command + "'";
     }
 
-    set_level(l);
+    vector<uint8_t> cdb;
+    for (byte b : cmd_bytes) {
+        cdb.emplace_back(static_cast<uint8_t>(b) & 0xff);
+    }
 
-    return true;
+    // Only send data if there is a data file
+    if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
+        if (const string &error = ReadData(); !error.empty()) {
+            return error;
+        }
+
+        debug("Sending {} data bytes", buffer.size());
+    }
+
+    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
+    if (status) {
+        return
+            status != 0xff && request_sense ?
+                executor->GetSenseData() : fmt::format("Can't execute command ${:02x}", cdb[0]);
+    }
+
+    if (binary_input_filename.empty() && hex_input_filename.empty()) {
+        const int count = executor->GetByteCount();
+
+        debug("Received {} data bytes", count);
+
+        if (count) {
+            if (const string &error = WriteData(count); !error.empty()) {
+                return error;
+            }
+        }
+    }
+
+    return "";
 }
 
+string S2pExec::ReadData()
+{
+    const string &filename = binary_input_filename.empty() ? hex_input_filename : binary_input_filename;
+    const bool text = binary_input_filename.empty();
+
+    fstream in(filename, text ? ios::in : ios::in | ios::binary);
+    if (in.fail()) {
+        return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
+    }
+
+    if (text) {
+        stringstream ss;
+        ss << in.rdbuf();
+        if (!in.fail()) {
+            vector<byte> bytes;
+            try {
+                bytes = HexToBytes(ss.str());
+            }
+            catch (const parser_exception&) {
+                return "Invalid data input format";
+            }
+
+            buffer.clear();
+            for (const byte b : bytes) {
+                buffer.emplace_back(static_cast<uint8_t>(b));
+            }
+        }
+    }
+    else {
+        const size_t size = file_size(path(filename));
+        buffer.resize(size);
+        in.read((char*)buffer.data(), size);
+    }
+
+    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
+}
+
+string S2pExec::WriteData(int count)
+{
+    const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
+    const bool text = binary_output_filename.empty();
+
+    string hex = FormatBytes(buffer, count, hex_only);
+
+    if (filename.empty()) {
+        if (count) {
+            cout << hex << '\n';
+        }
+    }
+    else {
+        fstream out(filename, text ? ios::out : ios::out | ios::binary);
+        if (out.fail()) {
+            return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
+        }
+
+        if (count) {
+            hex += "\n";
+            out.write(text ? hex.data() : (const char*)buffer.data(), hex.size());
+            if (out.fail()) {
+                return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
+            }
+        }
+    }
+
+    return "";
+}

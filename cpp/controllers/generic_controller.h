@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 // Abstract base class for SCSI-like controllers
 //
@@ -60,6 +60,8 @@ private:
     virtual void XferMsg(int) = 0;
     bool XferOutBlockOriented(bool);
     void ReceiveBytes();
+
+    void LogCdb() const;
 
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;

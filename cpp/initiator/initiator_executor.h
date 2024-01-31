@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@
 using namespace std;
 using namespace scsi_defs;
 
-class PhaseExecutor
+class InitiatorExecutor
 {
     class phase_exception : public runtime_error
     {
@@ -25,13 +25,15 @@ class PhaseExecutor
 
 public:
 
-    PhaseExecutor(Bus &b, int id) : bus(b), initiator_id(id)
+    InitiatorExecutor(Bus &b, int id) : bus(b), initiator_id(id)
     {
     }
-    ~PhaseExecutor() = default;
+    ~InitiatorExecutor() = default;
 
-    void SetTarget(int, int);
-    bool Execute(scsi_command, span<uint8_t>, span<uint8_t>, int);
+    void SetTarget(int, int, bool);
+
+    // Execute command with a default timeout of 3 s
+    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int = 3);
 
     int GetByteCount() const
     {
@@ -40,28 +42,23 @@ public:
 
 private:
 
-    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int);
-
-    void Reset() const;
+    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int&);
 
     bool Arbitration() const;
     bool Selection() const;
     void Command(scsi_command, span<uint8_t>) const;
     void Status();
-    void DataIn(span<uint8_t>, int);
-    void DataOut(span<uint8_t>, int);
-    void MsgIn() const;
-    void MsgOut() const;
+    void DataIn(span<uint8_t>, int&);
+    void DataOut(span<uint8_t>, int&);
+    void MsgIn();
+    void MsgOut();
 
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
-    int GetStatus() const
-    {
-        return status;
-    }
+    void LogStatus() const;
 
-    inline void Sleep(const timespec &ns) const
+    void Sleep(const timespec &ns) const
     {
         nanosleep(&ns, nullptr);
     }
@@ -73,9 +70,13 @@ private:
     int target_id = -1;
     int target_lun = -1;
 
-    int status = -1;
+    int status = 0xff;
 
     int byte_count = 0;
+
+    bool sasi = false;
+
+    int next_message = 0x80;
 
     // Timeout values see bus.h
 

@@ -9,61 +9,187 @@
 //
 //---------------------------------------------------------------------------
 
-#include <unistd.h>
 #include <clocale>
 #include <iostream>
 #include <fstream>
-#include "controllers/controller_factory.h"
-#include "controllers/scsi_controller.h"
+#include <unistd.h>
+#include <getopt.h>
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl_parser.h"
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"
 
-using namespace std;
 using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-void ScsiCtl::Banner(const vector<char*> &args) const
+void S2pCtl::Banner(bool usage) const
 {
-    if (args.size() < 2) {
-        cout << s2p_util::Banner("(Controller App)")
-            << "\nUsage: " << args[0]
-            << " -i ID[:LUN] [-c CMD] [-C FILE] [-t TYPE] [-b BLOCK_SIZE] [-n NAME] [-f FILE|PARAM] "
-            << "[-F IMAGE_FOLDER] [-L LOG_LEVEL] [-h HOST] [-p PORT] [-r RESERVED_IDS] "
-            << "[-C FILENAME:FILESIZE] [-d FILENAME] [-B FILENAME] [-J FILENAME] [-T FILENAME] [-R CURRENT_NAME:NEW_NAME] "
-            << "[-x CURRENT_NAME:NEW_NAME] [-z LOCALE] "
-            << "[-e] [-E FILENAME] [-D] [-I] [-l] [-m] [o] [-O] [-P] [-s] [-S] [-v] [-V] [-y] [-X]\n"
-            << " where ID[:LUN] ID: <0-" << (ControllerFactory::GetIdMax() - 1) << ">,"
-            << " SCSI LUN: <0-" << (ControllerFactory::GetScsiLunMax() - 1) << ">, default is 0\n"
-            << " SASI LUN: <0-" << (ControllerFactory::GetSasiLunMax() - 1) << ">, default is 0\n"
-            << "        CMD: <attach|detach|insert|eject|protect|unprotect|show>\n"
-            << "        TYPE: <schd|scrm|sccd|scmo|scdp|sclp|schs|sahd> or convenience type {hd|rm|mo|cd|daynaport|printer|services}\n"
-            << "        BLOCK_SIZE: <256|512|1024|2048|4096> bytes per hard disk drive block\n"
-            << "        NAME: Name of device to attach (VENDOR:PRODUCT:REVISION)\n"
-            << "        FILE|PARAM: Image file path or device-specific parameter\n"
-            << "        IMAGE_FOLDER: Default location for image files, default is '~/images'\n"
-            << "        HOST: s2p host to connect to, default is 'localhost'\n"
-            << "        PORT: s2p port to connect to, default is 6868\n"
-            << "        RESERVED_IDS: Comma-separated list of IDs to reserve\n"
-            << "        LOG_LEVEL: Log level <trace|debug|info|warn|error|off>[:ID[:LUN]], default is 'info'\n"
-            << " If CMD is 'attach' or 'insert' the FILE parameter is required.\n"
-            << "Usage: " << args[0] << " -l\n"
-            << "       Print device list.\n" << flush;
+    cout << s2p_util::Banner("(Server Controller Tool)", false);
 
-        exit(EXIT_SUCCESS);
+    if (usage) {
+        cout << "Usage: s2pctl [options]\n"
+            << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
+            << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
+            << "  --command/-c COMMAND           Command (attach|detach|insert|eject|protect\n"
+            << "                                 |unprotect).\n"
+            << "  --type/-t TYPE                 Optional device type\n"
+            << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
+            << "                                 (256|512|1024|2048|4096).\n"
+            << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
+            << "                                 (VENDOR:PRODUCT:REVISION).\n"
+            << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
+            << "  --image-folder/-F FOLDER       Default location for image files,\n"
+            << "                                 default is '~/images'.\n"
+            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|\n"
+            << "                                 error|off), default is 'info'.\n"
+            << "  --help/-h                      Display this help.\n"
+            << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
+            << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
+            << "  --reserve-ids/-r IDS           Comma-separated list of IDs to reserve.\n"
+            << "  --create/-C FILENAME:SIZE      Create an empty image file.\n"
+            << "  --delete/-d FILENAME           Delete an image file.\n"
+            << "  --binary-protobuf FILENAME     Do not send command to s2p\n"
+            << "                                 but write it to a protobuf binary file.\n"
+            << "  --json-protobuf FILENAME       Do not send command to s2p\n"
+            << "                                 but write it to a protobuf JSON file.\n"
+            << "  --text-protobuf FILENAME       Do not send command to s2p\n"
+            << "                                 but write it to a protobuf text file.\n"
+            << "  --rename/-R CURRENT:NEW        Rename an image file.\n"
+            << "  --copy/-x CURRENT:NEW          Copy an image file.\n"
+            << "  --locale LOCALE                Default locale (language)\n"
+            << "                                 for client-facing messages.\n"
+            << "  --list-images/-e               List images files in the default image folder.\n"
+            << "  --list-image-info/-E FILENAME  Display image file information.\n"
+            << "  --detach-all/-D                Detach all devices.\n"
+            << "  --list-reserved-ids/-I         List reserved device IDs.\n"
+            << "  --list-devices/-l              Display device list.\n"
+            << "  --list-device-types/-T         List available device types.\n"
+            << "  --list-extensions/-m           List supported file extensions\n"
+            << "                                 and the device types they map to.\n"
+            << "  --list-interfaces/-N           List network interfaces that are up.\n"
+            << "  --list-operations/-o           List available remote interface operations.\n"
+            << "  --list-properties/-P           List s2p startup properties.\n"
+            << "  --list-log-levels              List the available s2p log levels\n"
+            << "                                 and the current log level.\n"
+            << "  --prompt                       Prompt for the access token in case\n"
+            << "                                 s2p requires authentication.\n"
+            << "  --list-settings/-s             List s2p settings.\n"
+            << "  --list-statistics/-S           List s2p statistics.\n"
+            << "  --version/-v                   Display the s2pctl version.\n"
+            << "  --server-version/-V            Display the s2p server version.\n"
+            << "  --shut-down/-X                 Shut down s2p.\n";
     }
 }
 
-int ScsiCtl::run(const vector<char*> &args) const
+int S2pCtl::Run(const vector<char*> &args) const
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    Banner(args);
+    return args.size() < 2 ? RunInteractive() : ParseArguments(args);
+}
+
+int S2pCtl::RunInteractive() const
+{
+    if (isatty(STDIN_FILENO)) {
+        Banner(false);
+
+        cout << "Entering interactive mode, Ctrl-D or \"exit\" to quit\n";
+    }
+
+    while (true) {
+        if (isatty(STDIN_FILENO)) {
+            cout << "s2pctl>";
+        }
+
+        string line;
+        if (!getline(cin, line) || line == "exit") {
+            if (line.empty() && isatty(STDIN_FILENO)) {
+                cout << "\n";
+            }
+            break;
+        }
+
+        if (!line.empty() && !line.starts_with("#")) {
+            const auto &args = Split(line, ' ');
+
+            vector<char*> interactive_args;
+            interactive_args.emplace_back(strdup("s2pctl"));
+            interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
+            for (size_t i = 1; i < args.size(); i++) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
+
+            ParseArguments(interactive_args);
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+string S2pCtl::ConvertCommand(const string &command)
+{
+    // Try to guess whether the command is short or long if there is no dash at the beginning
+    if (!command.starts_with("-")) {
+        return command.size() < 2 ? "-" + command : "--" + command;
+    }
+
+    return command;
+}
+
+int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable for parsing
+{
+    const int OPT_PROMPT = 2;
+    const int OPT_BINARY_PROTOBUF = 3;
+    const int OPT_JSON_PROTOBUF = 4;
+    const int OPT_TEXT_PROTOBUF = 5;
+    const int OPT_LIST_LOG_LEVELS = 6;
+    const int OPT_LOCALE = 7;
+
+    const vector<option> options = {
+        { "prompt", no_argument, nullptr, OPT_PROMPT },
+        { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
+        { "block-size", required_argument, nullptr, 'b' },
+        { "command", required_argument, nullptr, 'c' },
+        { "copy", required_argument, nullptr, 'x' },
+        { "create", required_argument, nullptr, 'C' },
+        { "delete", required_argument, nullptr, 'd' },
+        { "detach-all", no_argument, nullptr, 'D' },
+        { "file", required_argument, nullptr, 'f' },
+        { "help", no_argument, nullptr, 'h' },
+        { "host", required_argument, nullptr, 'H' },
+        { "id", required_argument, nullptr, 'i' },
+        { "image-folder", required_argument, nullptr, 'F' },
+        { "json-protobuf", required_argument, nullptr, OPT_JSON_PROTOBUF },
+        { "list-devices", no_argument, nullptr, 'l' },
+        { "list-device-types", no_argument, nullptr, 'T' },
+        { "list-extensions", no_argument, nullptr, 'm' },
+        { "list-images", no_argument, nullptr, 'e' },
+        { "list-image-info", required_argument, nullptr, 'E' },
+        { "list-interfaces", required_argument, nullptr, 'N' },
+        { "list-log-levels", no_argument, nullptr, OPT_LIST_LOG_LEVELS },
+        { "list-operations", no_argument, nullptr, 'o' },
+        { "list-properties", no_argument, nullptr, 'P' },
+        { "list-reserved-ids", no_argument, nullptr, 'I' },
+        { "list-settings", no_argument, nullptr, 's' },
+        { "list-statistics", no_argument, nullptr, 'S' },
+        { "locale", required_argument, nullptr, OPT_LOCALE },
+        { "log-level", required_argument, nullptr, 'L' },
+        { "name", required_argument, nullptr, 'n' },
+        { "port", required_argument, nullptr, 'p' },
+        { "rename", required_argument, nullptr, 'R' },
+        { "reserve-ids", optional_argument, nullptr, 'r' },
+        { "server-version", no_argument, nullptr, 'V' },
+        { "shut-down", no_argument, nullptr, 'X' },
+        { "text-protobuf", required_argument, nullptr, OPT_TEXT_PROTOBUF },
+        { "type", required_argument, nullptr, 't' },
+        { "version", no_argument, nullptr, 'v' },
+        { nullptr, 0, nullptr, 0 }
+    };
 
     S2pCtlParser parser;
     PbCommand command;
@@ -71,6 +197,7 @@ int ScsiCtl::run(const vector<char*> &args) const
     device->set_id(-1);
     string hostname = "localhost";
     int port = 6868;
+    string id_and_lun;
     string param;
     string log_level;
     string default_folder;
@@ -81,22 +208,16 @@ int ScsiCtl::run(const vector<char*> &args) const
     string filename_binary;
     string filename_text;
     string token;
-    bool list = false;
 
     string locale = GetLocale();
 
     optind = 1;
-    opterr = 0;
     int opt;
-    while ((opt = getopt(static_cast<int>(args.size()), args.data(),
-        "e::lmos::vDINOSTVXa:b:c:d:f:h:i:n:p:r:t:x:z:B:C:E:F:J:L:P::R:Z:")) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
+        "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'i':
-            if (const string error = SetIdAndLun(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-                *device, optarg); !error.empty()) {
-                cerr << "Error: " << error << endl;
-                exit(EXIT_FAILURE);
-            }
+            id_and_lun = optarg;
             break;
 
         case 'C':
@@ -108,7 +229,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             int block_size;
             if (!GetAsUnsignedInt(optarg, block_size)) {
                 cerr << "Error: Invalid block size " << optarg << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             device->set_block_size(block_size);
             break;
@@ -117,7 +238,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             command.set_operation(parser.ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
                 cerr << "Error: Unknown operation '" << optarg << "'" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -134,7 +255,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             filename = optarg;
             if (filename.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             command.set_operation(IMAGE_FILE_INFO);
             break;
@@ -156,34 +277,39 @@ int ScsiCtl::run(const vector<char*> &args) const
             break;
 
         case 'h':
+            Banner(true);
+            return EXIT_SUCCESS;
+            break;
+
+        case 'H':
             hostname = optarg;
             if (hostname.empty()) {
                 cerr << "Error: Missing hostname" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
-        case 'B':
+        case OPT_BINARY_PROTOBUF:
             filename_binary = optarg;
             if (filename_binary.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
-        case 'J':
+        case OPT_JSON_PROTOBUF:
             filename_json = optarg;
             if (filename_json.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
-        case 'Z':
+        case OPT_TEXT_PROTOBUF:
             filename_text = optarg;
             if (filename_text.empty()) {
                 cerr << "Error: Missing filename" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -197,7 +323,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             break;
 
         case 'l':
-            list = true;
+            command.set_operation(DEVICES_INFO);
             break;
 
         case 'm':
@@ -208,7 +334,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             command.set_operation(NETWORK_INTERFACES_INFO);
             break;
 
-        case 'O':
+        case OPT_LIST_LOG_LEVELS:
             command.set_operation(LOG_LEVEL_INFO);
             break;
 
@@ -216,17 +342,21 @@ int ScsiCtl::run(const vector<char*> &args) const
             command.set_operation(OPERATION_INFO);
             break;
 
+        case 'P':
+            command.set_operation(PROPERTIES_INFO);
+            break;
+
         case 't':
             device->set_type(parser.ParseType(optarg));
             if (device->type() == UNDEFINED) {
                 cerr << "Error: Unknown device type '" << optarg << "'" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
         case 'r':
             command.set_operation(RESERVE_IDS);
-            reserved_ids = optarg;
+            reserved_ids = string(optarg) != "\"\"" ? optarg : "";
             break;
 
         case 'R':
@@ -241,7 +371,7 @@ int ScsiCtl::run(const vector<char*> &args) const
         case 'p':
             if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
                 cerr << "Error: Invalid port " << optarg << ", port must be between 1 and 65535" << endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -250,7 +380,7 @@ int ScsiCtl::run(const vector<char*> &args) const
             if (optarg) {
                 if (const string error = SetCommandParams(command, optarg); !error.empty()) {
                     cerr << "Error: " << error << endl;
-                    exit(EXIT_FAILURE);
+                    return EXIT_FAILURE;
                 }
             }
             break;
@@ -259,17 +389,8 @@ int ScsiCtl::run(const vector<char*> &args) const
             command.set_operation(STATISTICS_INFO);
             break;
 
-        case 'v':
-            cout << "s2pctl version: " << GetVersionString() << '\n';
-            exit(EXIT_SUCCESS);
-            break;
-
-        case 'P':
+        case OPT_PROMPT:
             token = optarg ? optarg : getpass("Password: ");
-            break;
-
-        case 'V':
-            command.set_operation(VERSION_INFO);
             break;
 
         case 'x':
@@ -281,26 +402,36 @@ int ScsiCtl::run(const vector<char*> &args) const
             command.set_operation(DEVICE_TYPES_INFO);
             break;
 
+        case 'v':
+            cout << GetVersionString() << '\n';
+            return EXIT_SUCCESS;
+            break;
+
+        case 'V':
+            command.set_operation(VERSION_INFO);
+            break;
+
         case 'X':
             command.set_operation(SHUT_DOWN);
             SetParam(command, "mode", "rascsi");
             break;
 
-        case 'z':
+        case OPT_LOCALE:
             locale = optarg;
             break;
 
         default:
-            break;
+            Banner(true);
+            return EXIT_FAILURE;
         }
     }
 
-    // BSD getopt stops after the first free argument. Thie work-around below cannot really address this.
-#ifdef __linux__
-    if (optopt) {
-        exit(EXIT_FAILURE);
+    if (!id_and_lun.empty()) {
+        if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            return EXIT_FAILURE;
+        }
     }
-#endif
 
     SetParam(command, "token", token);
     SetParam(command, "locale", locale);
@@ -309,10 +440,9 @@ int ScsiCtl::run(const vector<char*> &args) const
 
     bool status;
     try {
-        // Listing devices is a special case (legacy rasctl backwards compatibility)
-        if (list) {
+        // Listing devices is a special case
+        if (command.operation() == DEVICES_INFO) {
             command.clear_devices();
-            command.set_operation(DEVICES_INFO);
 
             status = s2pctl_commands.CommandDevicesInfo();
         }

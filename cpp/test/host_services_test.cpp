@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ TEST(HostServicesTest, TestUnitReady)
     auto [controller, services] = CreateDevice(SCHS);
 
     EXPECT_CALL(*controller, Status());
-    services->Dispatch(scsi_command::cmd_test_unit_ready);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_test_unit_ready));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
@@ -58,134 +58,82 @@ TEST(HostServicesTest, Inquiry)
 TEST(HostServicesTest, StartStopUnit)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    // Required by the bullseye clang++ compiler
-    auto s = services;
 
     // STOP
     EXPECT_CALL(*controller, Status());
-    services->Dispatch(scsi_command::cmd_start_stop);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
     EXPECT_EQ(status::good, controller->GetStatus());
 
     // LOAD
-    controller->SetCmdByte(4, 0x02);
+    controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status());
-    services->Dispatch(scsi_command::cmd_start_stop);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
     EXPECT_EQ(status::good, controller->GetStatus());
 
     // UNLOAD
-    controller->SetCmdByte(4, 0x03);
+    controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status());
-    services->Dispatch(scsi_command::cmd_start_stop);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
     EXPECT_EQ(status::good, controller->GetStatus());
 
     // START
-    controller->SetCmdByte(4, 0x01);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_start_stop)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(4, 0x01);
+    TestShared::Dispatch(*services, scsi_command::cmd_start_stop, sense_key::illegal_request,
+        asc::invalid_field_in_cdb);
 }
 
 TEST(HostServicesTest, ExecuteOperation)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    // Required by the bullseye clang++ compiler
-    auto s = services;
 
-    // Illegal format
-    controller->SetCmdByte(1, 0b000);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_execute_operation)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(1, 0b000);
+    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Illegal format");
 
-    // Illegal format
-    controller->SetCmdByte(1, 0b111);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_execute_operation)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(1, 0b111);
+    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Illegal format");
 
-    controller->SetCmdByte(1, 0b001);
-    // Illegal length
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_execute_operation)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(1, 0b001);
+    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Illegal length");
 }
 
 TEST(HostServicesTest, ReceiveOperationResults)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    // Required by the bullseye clang++ compiler
-    auto s = services;
 
-    // Illegal format
-    controller->SetCmdByte(1, 0b000);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_receive_operation_results)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(1, 0b000);
+    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Illegal format");
 
-    // Illegal format
-    controller->SetCmdByte(1, 0b111);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_receive_operation_results)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-            Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))));
+    controller->SetCdbByte(1, 0b111);
+    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Illegal format");
 
-    // No matching initiator ID, command must be aborted
-    controller->SetCmdByte(1, 0b010);
-    EXPECT_THAT([&]
-        {
-            s->Dispatch(scsi_command::cmd_receive_operation_results)
-            ;
-        }, Throws<scsi_exception>(AllOf(
-            Property(&scsi_exception::get_sense_key, sense_key::aborted_command))));
+    controller->SetCdbByte(1, 0b010);
+    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::aborted_command,
+        asc::host_services_receive_operation_results, "No matching initiator ID");
 }
 
 TEST(HostServicesTest, ModeSense6)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    // Required by the bullseye clang++ compiler
-    auto s = services;
 
     EXPECT_TRUE(services->Init( { }));
 
-    EXPECT_THAT([&] {s->Dispatch(scsi_command::cmd_mode_sense6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Unsupported mode page was returned";
+    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
-    controller->SetCmdByte(2, 0x20);
-    EXPECT_THAT([&] {s->Dispatch(scsi_command::cmd_mode_sense6);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Block descriptors are not supported";
+    controller->SetCdbByte(2, 0x20);
+    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
-    controller->SetCmdByte(1, 0x08);
+    controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    services->Dispatch(scsi_command::cmd_mode_sense6);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense6));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -197,37 +145,31 @@ TEST(HostServicesTest, ModeSense6)
     EXPECT_NE(0x00, buffer[10]);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 2);
+    controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn());
-    services->Dispatch(scsi_command::cmd_mode_sense6);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense6));
     buffer = controller->GetBuffer();
-    EXPECT_EQ(0x02, buffer[0]);
+    EXPECT_EQ(0x01, buffer[0]);
 }
 
 TEST(HostServicesTest, ModeSense10)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    // Required by the bullseye clang++ compiler
-    auto s = services;
 
     EXPECT_TRUE(services->Init( { }));
 
-    EXPECT_THAT([&] {s->Dispatch(scsi_command::cmd_mode_sense10);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Unsupported mode page was returned";
+    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
-    controller->SetCmdByte(2, 0x20);
-    EXPECT_THAT([&] {s->Dispatch(scsi_command::cmd_mode_sense10);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
-    << "Block descriptors are not supported";
+    controller->SetCdbByte(2, 0x20);
+    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
-    controller->SetCmdByte(1, 0x08);
+    controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
-    controller->SetCmdByte(8, 255);
+    controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn());
-    services->Dispatch(scsi_command::cmd_mode_sense10);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense10));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -239,9 +181,9 @@ TEST(HostServicesTest, ModeSense10)
     EXPECT_NE(0x00, buffer[14]);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(8, 2);
+    controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn());
-    services->Dispatch(scsi_command::cmd_mode_sense10);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 }

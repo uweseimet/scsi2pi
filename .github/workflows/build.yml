@@ -1,4 +1,4 @@
-name: Build and test on code change
+name: Build and test after code change
 
 on:
   workflow_call:

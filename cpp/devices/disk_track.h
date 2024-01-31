@@ -7,7 +7,7 @@
 //
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -33,7 +33,6 @@ class DiskTrack
         bool changed; // Changed flag
         vector<bool> changemap; // Changed map
         bool raw; // RAW mode flag
-        off_t imgoffset; // Offset to actual data
     } dt = { };
 
 public:
@@ -47,9 +46,9 @@ private:
 
     friend class DiskCache;
 
-    void Init(int track, int size, int sectors, bool raw = false, off_t imgoff = 0);
-    bool Load(const string &path, uint64_t&);
-    bool Save(const string &path, uint64_t&);
+    void Init(int, int, int, bool = false);
+    bool Load(const string&, uint64_t&);
+    bool Save(const string&, uint64_t&);
 
     bool ReadSector(span<uint8_t>, int) const;
     bool WriteSector(span<const uint8_t> buf, int);

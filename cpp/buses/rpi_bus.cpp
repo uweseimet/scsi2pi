@@ -16,11 +16,9 @@
 #include <spdlog/spdlog.h>
 #include "rpi_bus.h"
 
-//---------------------------------------------------------------------------
-//
-//	imported from bcm_host.c
-//
-//---------------------------------------------------------------------------
+using namespace spdlog;
+
+// Imported from bcm_host.c
 uint32_t RpiBus::get_dt_ranges(const char *filename, uint32_t offset)
 {
     uint32_t address = ~0;
@@ -57,25 +55,25 @@ bool RpiBus::Init(bool target)
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        spdlog::error("Error: Unable to open /dev/mem");
+        error("Error: Unable to open /dev/mem");
         return false;
     }
 
     // Map peripheral region memory
     void *map = mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr);
     if (map == MAP_FAILED) {
-        spdlog::error("Error: Unable to map memory: " + string(strerror(errno)));
+        error("Error: Unable to map memory: " + string(strerror(errno)));
         close(fd);
         return false;
     }
 
-    // Determine the type of raspberry pi from the base address
+    // Determine the Raspberry Pi type from the base address
     if (baseaddr == 0xfe000000) {
-        rpitype = 4;
+        pi_type = 4;
     } else if (baseaddr == 0x3f000000) {
-        rpitype = 2;
+        pi_type = 2;
     } else {
-        rpitype = 1;
+        pi_type = 1;
     }
 
     // GPIO
@@ -96,7 +94,7 @@ bool RpiBus::Init(bool target)
     qa7regs += QA7_OFFSET / sizeof(uint32_t);
 
     // Map GIC memory
-    if (rpitype == 4) {
+    if (pi_type == 4) {
         map = mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE);
         if (map == MAP_FAILED) {
             close(fd);
@@ -155,7 +153,7 @@ bool RpiBus::Init(bool target)
 #ifdef USE_SEL_EVENT_ENABLE
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
-        spdlog::error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
+        error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
         return false;
     }
 
@@ -170,7 +168,7 @@ bool RpiBus::Init(bool target)
 #endif
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        spdlog::error("Unable to register event request. If s2p is running, please shut it down first.");
+        error("Unable to register event request. If s2p is running, please shut it down first.");
         close(fd);
         return false;
     }
@@ -201,7 +199,7 @@ bool RpiBus::Init(bool target)
 #endif
 
     // GPIO interrupt setting
-    if (rpitype == 4) {
+    if (pi_type == 4) {
         // GIC Invalid
         gicd[GICD_CTLR] = 0;
 
@@ -349,14 +347,14 @@ bool RpiBus::WaitForSelection()
 
     if (epoll_event epev; epoll_wait(epfd, &epev, 1, -1) <= 0) {
         if (errno != EINTR) {
-            spdlog::warn("epoll_wait failed");
+            warn("epoll_wait failed");
         }
         return false;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {
         if (errno != EINTR) {
-            spdlog::warn("read failed");
+            warn("read failed");
         }
         return false;
     }
@@ -690,11 +688,7 @@ void RpiBus::SetMode(int pin, int mode)
     gpfsel[index] = data;
 }
 
-//---------------------------------------------------------------------------
-//
-//	Get input signal value
-//
-//---------------------------------------------------------------------------
+// Get input signal value
 bool RpiBus::GetSignal(int pin) const
 {
     return (signals >> pin) & 1;
@@ -739,19 +733,25 @@ void RpiBus::SetSignal(int pin, bool ast)
 void RpiBus::DisableIRQ()
 {
 #ifndef NO_IRQ_DISABLE
-    if (rpitype == 4) {
-        // RPI4 is disabled by GICC
-        giccpmr = gicc[GICC_PMR];
-        gicc[GICC_PMR] = 0;
-    } else if (rpitype == 2) {
+    switch (pi_type) {
+    case 2:
         // RPI2,3 disable core timer IRQ
         tintcore = sched_getcpu() + QA7_CORE0_TINTC;
         tintctl = qa7regs[tintcore];
         qa7regs[tintcore] = 0;
-    } else {
+        break;
+
+    case 4:
+        // RPI4 is disabled by GICC
+        giccpmr = gicc[GICC_PMR];
+        gicc[GICC_PMR] = 0;
+        break;
+
+    default:
         // Stop system timer interrupt with interrupt controller
         irptenb = irpctl[IRPT_ENB_IRQ_1];
         irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
+        break;
     }
 #endif
 }
@@ -759,15 +759,21 @@ void RpiBus::DisableIRQ()
 void RpiBus::EnableIRQ()
 {
 #ifndef NO_IRQ_DISABLE
-    if (rpitype == 4) {
-        // RPI4 enables interrupts via the GICC
-        gicc[GICC_PMR] = giccpmr;
-    } else if (rpitype == 2) {
+    switch (pi_type) {
+    case 2:
         // RPI2,3 re-enable core timer IRQ
         qa7regs[tintcore] = tintctl;
-    } else {
+        break;
+
+    case 4:
+        // RPI4 enables interrupts via the GICC
+        gicc[GICC_PMR] = giccpmr;
+        break;
+
+    default:
         // Restart the system timer interrupt with the interrupt controller
         irpctl[IRPT_ENB_IRQ_1] = irptenb & 0xf;
+        break;
     }
 #endif
 }
@@ -792,11 +798,7 @@ void RpiBus::PinConfig(int pin, int mode)
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
-//---------------------------------------------------------------------------
-//
-//	Pin pull-up/pull-down setting
-//
-//---------------------------------------------------------------------------
+// Pin pull-up/pull-down setting
 void RpiBus::PullConfig(int pin, int mode)
 {
     // Check for invalid pin
@@ -804,18 +806,21 @@ void RpiBus::PullConfig(int pin, int mode)
         return;
     }
 
-    if (rpitype == 4) {
+    if (pi_type == 4) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:
             pull = 0;
             break;
+
         case GPIO_PULLUP:
             pull = 1;
             break;
+
         case GPIO_PULLDOWN:
             pull = 2;
             break;
+
         default:
             return;
         }
@@ -840,11 +845,7 @@ void RpiBus::PullConfig(int pin, int mode)
     }
 }
 
-//---------------------------------------------------------------------------
-//
-//	Set output pin
-//
-//---------------------------------------------------------------------------
+// Set output pin
 void RpiBus::PinSetSignal(int pin, bool ast)
 {
     // Check for invalid pin
@@ -859,11 +860,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
     pads[PAD_0_27] = (0xFFFFFFF8 & data) | drive | 0x5a000000;
 }
 
-//---------------------------------------------------------------------------
-//
-//	Bus signal acquisition
-//
-//---------------------------------------------------------------------------
+// Read date byte from bus
 uint32_t RpiBus::Acquire()
 {
     signals = *level;

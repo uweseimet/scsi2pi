@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -10,13 +10,10 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <span>
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
 #include "device.h"
-#include "device_logger.h"
 
 using namespace std;
 using namespace scsi_defs;
@@ -25,11 +22,12 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
 
-    using operation = function<void()>;
+    using command = function<void()>;
 
 public:
 
-    PrimaryDevice(PbDeviceType type, int lun) : Device(type, lun)
+    PrimaryDevice(PbDeviceType type, int lun, int delay = Bus::SEND_NO_DELAY) : Device(type, lun), delay_after_bytes(
+        delay)
     {
     }
     ~PrimaryDevice() override = default;
@@ -69,10 +67,13 @@ public:
 
 protected:
 
-    void AddCommand(scsi_command, const operation&);
+    void AddCommand(scsi_command cmd, const command &c)
+    {
+        commands[cmd] = c;
+    }
 
     vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
-    virtual vector<uint8_t> InquiryInternal() = 0;
+    virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
     void Inquiry() override;
@@ -108,10 +109,6 @@ protected:
     {
         device_logger.Debug(s);
     }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
     void LogWarn(const string &s) const
     {
         device_logger.Warn(s);
@@ -119,11 +116,6 @@ protected:
     void LogError(const string &s) const
     {
         device_logger.Error(s);
-    }
-
-    void SetDelayAfterBytes(int delay)
-    {
-        delay_after_bytes = delay;
     }
 
 private:
@@ -142,7 +134,7 @@ private:
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
-    unordered_map<scsi_command, operation> commands;
+    unordered_map<scsi_command, command> commands;
 
     // Number of bytes during a transfer after which to delay for the DaynaPort driver
     int delay_after_bytes = Bus::SEND_NO_DELAY;

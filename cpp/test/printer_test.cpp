@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ TEST(PrinterTest, TestUnitReady)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status());
-    printer->Dispatch(scsi_command::cmd_test_unit_ready);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_test_unit_ready));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
@@ -75,7 +75,7 @@ TEST(PrinterTest, ReserveUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status()).Times(1);
-    printer->Dispatch(scsi_command::cmd_reserve6);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
@@ -84,7 +84,7 @@ TEST(PrinterTest, ReleaseUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status()).Times(1);
-    printer->Dispatch(scsi_command::cmd_release6);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_release6));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
@@ -93,24 +93,21 @@ TEST(PrinterTest, SendDiagnostic)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status()).Times(1);
-    printer->Dispatch(scsi_command::cmd_send_diagnostic);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_send_diagnostic));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Print)
 {
     auto [controller, printer] = CreateDevice(SCLP);
-    // Required by the bullseye clang++ compiler
-    auto p = printer;
 
     EXPECT_CALL(*controller, DataOut());
-    printer->Dispatch(scsi_command::cmd_print);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_print));
 
-    controller->SetCmdByte(3, 0xff);
-    controller->SetCmdByte(4, 0xff);
-    EXPECT_THAT([&] {p->Dispatch(scsi_command::cmd_print);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Buffer overflow was not reported";
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0xff);
+    TestShared::Dispatch(*printer, scsi_command::cmd_print, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Buffer overflow was not reported");
 }
 
 TEST(PrinterTest, StopPrint)
@@ -118,19 +115,16 @@ TEST(PrinterTest, StopPrint)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status());
-    printer->Dispatch(scsi_command::cmd_stop_print);
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_stop_print));
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Synchronize_buffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
-    // Required by the bullseye clang++ compiler
-    auto p = printer;
 
-    EXPECT_THAT([&] {p->Dispatch(scsi_command::cmd_synchronize_buffer);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::aborted_command),
-                Property(&scsi_exception::get_asc, asc::no_additional_sense_information)))) << "Nothing to print";
+    TestShared::Dispatch(*printer, scsi_command::cmd_synchronize_buffer, sense_key::aborted_command,
+        asc::printer_nothing_to_print);
 
     // Further testing would use the printing system
 }

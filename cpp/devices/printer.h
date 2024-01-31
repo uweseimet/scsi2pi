@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -43,7 +43,7 @@ public:
 
     param_map GetDefaultParams() const override;
 
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
 
     bool WriteByteSequence(span<const uint8_t>) override;
 
@@ -65,7 +65,7 @@ private:
         PrimaryDevice::SendDiagnostic();
     }
     void Print() override;
-    void Synchronize_buffer();
+    void SynchronizeBuffer();
 
     string file_template;
 

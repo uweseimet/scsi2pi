@@ -1,57 +1,87 @@
 .TH s2pexec 1
 .SH NAME
-s2pexec \- SCSI command execution tool for SCSI2Pi
+s2pexec \- SCSI2Pi SCSI/SASI command executor
 .SH SYNOPSIS
 .B s2pexec
-\fB\-t\fR \fIID[:LUN]\fR
-[\fB\-i\fR \fIBID\fR]
-\fB\-f\fR \fIFILENAME\fR
-[\fB\-b\fR]
-[\fB\-F\fR]
-[\fB\-B\fR]
-[\fB\-T\fR]
-[\fB\-t\tR] ID[:LUN]
-[\fB\-L\fR \fILOG_LEVEL\fR]
-[\fB\-X\fR]
+[\fB\--scsi-target/-i\fR \fIID[:LUN]\fR]
+[\fB\--sasi-target/-h\fR \fIID[:LUN]\fR]
+[\fB\--board-id/-B\fR \fIBOARD_ID\fR]
+[\fB\--cdb/-c\fR \fICDB\fR]
+[\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+{\fB\--binary-input-file/-f\fR \fIFILE\fR]
+{\fB\--binary-output-file/-F\fR \fIFILE\fR]
+{\fB\--hex-input-file/-t\fR \fIFILE\fR]
+{\fB\--hex-output-file/-T\fR \fIFILE\fR]
+{\fB\--timeout/\fR \fITIMEOUT\fR]
+[\fB\--no-request-sense/-n\fR]
+[\fB\--hex-only/\fR]
+[\fB\--help/-H\fR]
+[\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pexec
-wraps protobuf input data into a custom SCSI2Pi SCSI command. s2p executes this command and displays the results. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
+sends SCSI or SASI commands to a device and displays the results.
 
 .SH NOTES
 
 .B s2pexec
-helps with advanced testing. It requires two connected PiSCSI/RaSCSI boards. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator mode support.
+helps with advanced testing. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
 
 .SH OPTIONS
 .TP
-.BR \-t\fI " "\fIID[:LUN]
-SCSI ID and optional LUN of the second PiSCSI/RaSCSI board. The remote device will be functioning as the target device.
+.BR \--scsi-target/-i\fI " "\fIID[:LUN]
+ID and optional LUN (0-31) of the SCSI target device.
 .TP
-.BR \-i\fI " "\fIBID
-SCSI ID of the SCSI2Pi device. If not specified, the SCSI2Pi device will use ID 7. The SCSI2Pi host will be functioning as the initiator device.
+.BR \--sasi-target/-h\fI " "\fIID[:LUN]
+ID and optional LUN (0-1) of the SASI target device.
 .TP
-.BR \-f\fI " "\fIFILE
-The protobuf data input file, by default in JSON format.
+.BR \--board-id/-B\fI " "\fIBOARD_ID
+SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7. Not relevant for SASI.
 .TP
-.BR \-b\fI
-Signals that the input file is in protobuf binary format.
+.BR \--cdb/-c\fI " "\fICDB
+Command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
 .TP
-.BR \-F\fI
-Signals that the input file is in protobuf text format.
+.BR \--buffer-size/-b\fI " "\fIBUFFER_SIZE
+Buffer size for receiving data, the default is 4096 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
-.BR \-B\fI
-Generate a protobuf binary format file.
-.TP
-.BR \-T\fI
-Generate a protobuf text format file.
-.TP
-.BR \-L\fI " " \fILOG_LEVEL
+.BR \--log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, off). The default log level is 'info'.
 .TP
-.BR \-X\fI
-Shut down s2p with a SCSI command.
+.BR \--binary-input-file/-f\fI " "\fIFILE
+Optional file with binary data to send in the DATA OUT phase.
+.TP
+.BR \--binary-output-file/-F\fI " "\fIFILE
+Optional file for binary data received in the DATA IN phase.
+.TP
+.BR \--hex-input-file/-t\fI " "\fIFILE
+Optional file with data in hexadecimal (human-readable) format to send in the DATA OUT phase.
+.TP
+.BR \--hex-output-file/-T\fI " "\fIFILE
+Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
+.TP
+.BR \--timeout/\fI " "\fITIMEOUT
+The command timeout in seconds, default is 3 seconds. Operations like formatting usually take longer.
+.TP
+.BR \--no-request-sense\fI
+Do not automatically send REQUEST SENSE after an error to get the sense data.
+.TP
+.BR \--hex-only\fI
+Do not display/save the offsets and the ASCI representantion of the received data.
+.TP
+.BR \--help/-H\fI
+Show a help text.
+.TP
+.BR \--version/-v\fI
+Show the s2pexec version.
+
+.SH EXAMPLE
+s2pexec -i 0 -c 12:00:00:00:20:00
+Send an INQUIRY command to the device with SCSI ID 0 and display the results.
+
+s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
+Send a MODE SELECT command to the device with SCSI ID 5, with the hexadecimally coded data in data.dat as parameters.
 
 .SH SEE ALSO
-s2pctl(1), s2p(1), s2pdump(1)
+s2p(1), s2pctl(1), s2pdump(1), s2pproto(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

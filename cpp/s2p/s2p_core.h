@@ -8,52 +8,50 @@
 
 #pragma once
 
-#include <span>
 #include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
-#include "shared_protobuf/command_context.h"
-#include "shared_command/command_dispatcher.h"
-#include "shared_command/image_support.h"
-#include "shared_command/command_response.h"
-#include "shared_command/command_executor.h"
+#include "base/property_handler.h"
+#include "protobuf/command_context.h"
+#include "command/command_dispatcher.h"
+#include "command/image_support.h"
+#include "command/command_response.h"
+#include "command/command_executor.h"
+#include "s2p_parser.h"
 #include "s2p_thread.h"
-#include "generated/s2p_interface.pb.h"
 
 using namespace std;
+using namespace s2p_interface;
 
 class S2p
 {
-    static const int DEFAULT_PORT = 6868;
 
 public:
 
-    S2p() = default;
-    ~S2p() = default;
-
-    int run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false);
 
 private:
 
-    void Banner(span<char*>, bool) const;
-    bool InitBus(bool);
+    bool InitBus(bool, bool);
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;
     static void TerminationHandler(int);
-    string ParseArguments(span<char*>, PbCommand&, int&, string&);
     void SetUpEnvironment();
+    void LogProperties() const;
+    void CreateDevices();
+    void AttachDevices(PbCommand&);
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
 
     bool ExecuteCommand(CommandContext&);
-    bool ExecuteWithLock(const CommandContext&);
-    bool HandleDeviceListChange(const CommandContext&, PbOperation) const;
 
+    static bool CheckActive(const property_map&, const string&);
+    static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
     static PbDeviceType ParseDeviceType(const string&);
 
-    bool is_sasi = false;
-
     string access_token;
+
+    [[no_unique_address]] S2pParser s2p_parser;
 
     S2pImage s2p_image;
 
@@ -70,6 +68,8 @@ private:
     unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
+
+    PropertyHandler &property_handler = PropertyHandler::Instance();
 
     // Required for the termination handler
     static inline S2p *instance;

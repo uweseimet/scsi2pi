@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 using namespace std;
 using namespace filesystem;
 
-// Inlude the process id in the temp file path so that multiple instances of the test procedures
+// Include the process id in the temp file path so that multiple instances of the test procedures
 // could run on the same host.
 const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publicly writable directory is fine here
     path(fmt::format("scsi2pi-test-{}", getpid())));
@@ -37,19 +37,41 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     return {controller, device};
 }
 
+vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
+{
+    vector<int> cdb;
+    cdb.emplace_back(static_cast<int>(cmd));
+    for (const auto b : s2p_util::HexToBytes(hex)) {
+        cdb.emplace_back(static_cast<int>(b));
+    }
+
+    EXPECT_EQ(Bus::GetCommandBytesCount(cdb[0]), static_cast<int>(cdb.size()));
+
+    return cdb;
+}
+
+vector<uint8_t> testing::CreateParameters(const string &hex)
+{
+    vector<uint8_t> parameters;
+    for (const auto b : s2p_util::HexToBytes(hex)) {
+        parameters.emplace_back(static_cast<uint8_t>(b));
+    }
+
+    return parameters;
+}
+
 string testing::TestShared::GetVersion()
 {
     return fmt::format("{0:02}{1:02}", s2p_major_version, s2p_minor_version);
 }
 
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
-    int additional_length,
-    bool removable, const string &extension)
+    int additional_length, bool removable, const string &extension)
 {
     auto [controller, device] = CreateDevice(type, 0, extension);
 
     // ALLOCATION LENGTH
-    controller->SetCmdByte(4, 255);
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
     device->Dispatch(scsi_command::cmd_inquiry);
     const vector<uint8_t> &buffer = controller->GetBuffer();
@@ -91,11 +113,23 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_EQ(GetVersion(), device->GetRevision());
 }
 
+void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
+{
+    try {
+        device.Dispatch(cmd);
+        FAIL() << msg;
+    }
+    catch (const scsi_exception &e) {
+        EXPECT_EQ(s, e.get_sense_key()) << msg;
+        EXPECT_EQ(a, e.get_asc()) << msg;
+    }
+}
+
 pair<int, path> testing::OpenTempFile()
 {
     const string filename = string(test_data_temp_path) + "/scsi2pi_test-XXXXXX"; // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.begin(), filename.end());
-    f.push_back(0);
+    f.emplace_back(0);
 
     create_directories(path(filename).parent_path());
 
@@ -120,13 +154,6 @@ path testing::CreateTempFileWithData(const span<const byte> data)
     close(fd);
 
     return path(filename);
-}
-
-void testing::DeleteTempFile(const string &filename)
-{
-    path temp_file = test_data_temp_path;
-    temp_file += path(filename);
-    remove(temp_file);
 }
 
 string testing::ReadTempFileToString(const string &filename)

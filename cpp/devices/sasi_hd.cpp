@@ -2,15 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "shared/scsi.h"
-#include "disk.h"
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, lun, sector_sizes)
+SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, sector_sizes)
 {
     SetProduct("SASI HD");
     SetProtectable(true);
@@ -27,11 +25,11 @@ void SasiHd::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetFileSize();
-
-    // Sector size (default 512 bytes) and number of blocks
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512);
-    SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
+    // Sector size (default 256 bytes) and number of blocks
+    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 256)) {
+        throw io_exception("Invalid sector size");
+    }
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
     FinalizeSetup(0);
 }
@@ -46,7 +44,7 @@ void SasiHd::Inquiry()
     EnterDataInPhase();
 }
 
-vector<uint8_t> SasiHd::InquiryInternal()
+vector<uint8_t> SasiHd::InquiryInternal() const
 {
     assert(false);
     return vector<uint8_t>();

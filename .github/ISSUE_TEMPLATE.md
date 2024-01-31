@@ -3,7 +3,7 @@
 - The Pi type:
 
 
-- The Pi OS version (output of 'lsb_release -a'):
+- The Pi OS version (output of 'lsb_release -a' and 'uname -a'):
 
 
 - The SCSI2Pi release or git revision:

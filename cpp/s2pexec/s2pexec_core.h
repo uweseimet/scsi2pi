@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,23 +15,23 @@
 
 using namespace std;
 
-class ScsiExec
+class S2pExec
 {
 
 public:
 
-    ScsiExec() = default;
-    ~ScsiExec() = default;
-
-    int run(span<char*>, bool = false);
+    int Run(span<char*>, bool);
 
 private:
 
-    bool Banner(span<char*>) const;
-    bool Init(bool);
-    void ParseArguments(span<char*>);
+    static void Banner(bool);
 
-    bool SetLogLevel() const;
+    bool Init(bool);
+    bool ParseArguments(span<char*>);
+    string ExecuteCommand();
+
+    string ReadData();
+    string WriteData(int);
 
     void CleanUp() const;
     static void TerminationHandler(int);
@@ -40,22 +40,36 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> scsi_executor;
+    unique_ptr<S2pExecExecutor> executor;
 
-    int initiator_id = 7;
+    bool version = false;
+    bool help = false;
+
+    int initiator_id = -1;
     int target_id = -1;
     int target_lun = 0;
 
-    string input_filename;
-    string output_filename;
+    int timeout = 3;
 
-    S2pDumpExecutor::protobuf_format input_format = S2pDumpExecutor::protobuf_format::json;
-    S2pDumpExecutor::protobuf_format output_format = S2pDumpExecutor::protobuf_format::json;
+    bool request_sense = true;
 
-    bool shut_down = false;
+    bool hex_only = false;
+
+    bool sasi = false;
+
+    vector<uint8_t> buffer;
+
+    string binary_input_filename;
+    string binary_output_filename;
+    string hex_input_filename;
+    string hex_output_filename;
+
+    string command;
 
     string log_level = "info";
 
     // Required for the termination handler
-    static inline ScsiExec *instance;
+    static inline S2pExec *instance;
+
+    inline static const int DEFAULT_BUFFER_SIZE = 4096;
 };

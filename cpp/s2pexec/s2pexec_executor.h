@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,16 +10,14 @@
 
 #include <cstdint>
 #include <array>
-#include "shared/phase_executor.h"
-#include "generated/s2p_interface.pb.h"
+#include "initiator/initiator_util.h"
+#include "initiator/initiator_executor.h"
 
 using namespace std;
-using namespace s2p_interface;
 
-class S2pDumpExecutor
+class S2pExecExecutor
 {
-
-    // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
+    // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     inline static const int BUFFER_SIZE = 65535;
 
 public:
@@ -31,23 +29,29 @@ public:
         text = 0b100
     };
 
-    S2pDumpExecutor(Bus &bus, int id)
+    S2pExecExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
     {
-        phase_executor = make_unique<PhaseExecutor>(bus, id);
     }
-    ~S2pDumpExecutor() = default;
+    ~S2pExecExecutor() = default;
 
-    string Execute(const string&, protobuf_format, PbResult&);
-    bool ShutDown();
+    int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, int);
 
-    void SetTarget(int id, int lun)
+    string GetSenseData() const
     {
-        phase_executor->SetTarget(id, lun);
+        return initiator_util::GetSenseData(*initiator_executor);
+    }
+
+    void SetTarget(int id, int lun, bool sasi)
+    {
+        initiator_executor->SetTarget(id, lun, sasi);
+    }
+
+    int GetByteCount() const
+    {
+        return initiator_executor->GetByteCount();
     }
 
 private:
 
-    array<uint8_t, BUFFER_SIZE> buffer;
-
-    unique_ptr<PhaseExecutor> phase_executor;
+    unique_ptr<InitiatorExecutor> initiator_executor;
 };

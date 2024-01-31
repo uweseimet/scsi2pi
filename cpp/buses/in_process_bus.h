@@ -110,8 +110,6 @@ public:
         SetSignal(PIN_REQ, state);
     }
 
-    bool WaitSignal(int, bool) override;
-
     bool WaitREQ(bool state) override
     {
         return WaitSignal(PIN_REQ, state);
@@ -218,7 +216,6 @@ public:
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
-    bool WaitSignal(int, bool) override;
 
 private:
 

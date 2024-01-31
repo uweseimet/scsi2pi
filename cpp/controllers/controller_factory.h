@@ -9,7 +9,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <unordered_set>
 #include <memory>
 #include "buses/bus.h"
 #include "base/primary_device.h"
@@ -32,7 +31,7 @@ public:
 
     bool AttachToController(Bus&, int, shared_ptr<PrimaryDevice>);
     bool DeleteController(const AbstractController&);
-    void DeleteAllControllers();
+    bool DeleteAllControllers();
     AbstractController::shutdown_mode ProcessOnController(int) const;
     shared_ptr<AbstractController> FindController(int) const;
     bool HasController(int) const;

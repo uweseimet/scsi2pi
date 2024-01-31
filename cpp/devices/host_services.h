@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -13,13 +13,12 @@
 #include <span>
 #include <vector>
 #include <map>
-#include "shared_protobuf/command_context.h"
-#include "shared_command/command_dispatcher.h"
-#include "shared_command/image_support.h"
+#include "protobuf/command_context.h"
+#include "command/command_dispatcher.h"
+#include "command/image_support.h"
 #include "mode_page_device.h"
 
 using namespace std;
-using namespace s2p_interface;
 
 class HostServices : public ModePageDevice
 {
@@ -32,7 +31,7 @@ public:
 
     bool Init(const param_map&) override;
 
-    vector<uint8_t> InquiryInternal() override;
+    vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)

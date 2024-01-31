@@ -40,18 +40,15 @@ TEST(ScsiCdTest, DeviceDefaults)
 
 void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(11U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
-    EXPECT_EQ(24U, pages[3].size());
-    EXPECT_EQ(24U, pages[4].size());
     EXPECT_EQ(12U, pages[7].size());
     EXPECT_EQ(12U, pages[8].size());
     EXPECT_EQ(8U, pages[10].size());
-    EXPECT_EQ(24U, pages[12].size());
     EXPECT_EQ(8U, pages[13].size());
     EXPECT_EQ(16U, pages[14].size());
-    EXPECT_EQ(30U, pages[48].size());
+    EXPECT_EQ(24U, pages[48].size());
 }
 
 TEST(ScsiCdTest, Inquiry)
@@ -142,7 +139,7 @@ TEST(ScsiCdTest, Open)
 
     filename = CreateTempFile(2 * 2048);
     cd_physical.SetFilename("\\" + string(filename));
-    // The respective code in SCSICD appears to be broken, see https://github.com/akuker/PISCSI/issues/919
+    // The respective code in ScsiCd appears to be broken, see https://github.com/akuker/PISCSI/issues/919
     EXPECT_THROW(cd_physical.Open(), io_exception)<< "Invalid physical CD-ROM file";
     remove(filename);
 }
@@ -155,14 +152,7 @@ TEST(ScsiCdTest, ReadToc)
 
     controller->AddDevice(cd);
 
-    EXPECT_THAT([&]
-        {
-            cd->Dispatch(scsi_command::cmd_read_toc)
-            ;
-        },
-        Throws<scsi_exception>(
-            AllOf(Property(&scsi_exception::get_sense_key, sense_key::not_ready),
-                Property(&scsi_exception::get_asc, asc::medium_not_present))));
+    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::not_ready, asc::medium_not_present);
 
     // Further testing requires filesystem access
 }

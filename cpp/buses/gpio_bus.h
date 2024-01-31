@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include "buses/bus.h"
 
 //---------------------------------------------------------------------------
@@ -134,20 +133,18 @@ public:
     bool Init(bool = true) override;
 
     int CommandHandShake(vector<uint8_t>&) override;
+    int MsgInHandShake() override;
     int ReceiveHandShake(uint8_t*, int) override;
     int SendHandShake(uint8_t*, int, int = SEND_NO_DELAY) override;
 
+    bool WaitSignal(int, bool);
+
 protected:
 
-    bool IsTarget() const
+    inline bool IsTarget() const
     {
         return target_mode;
     }
-
-    virtual bool WaitSignal(int, bool);
-
-    virtual bool WaitREQ(bool) = 0;
-    virtual bool WaitACK(bool) = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
@@ -157,7 +154,7 @@ protected:
 
 private:
 
-    bool target_mode;
+    bool target_mode = true;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the

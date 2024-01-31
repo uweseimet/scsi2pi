@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Base class for device controllers
 //
@@ -105,13 +105,13 @@ public:
     {
         ctrl.message = m;
     }
-    auto GetCmd() const
+    auto GetCdb() const
     {
-        return ctrl.cmd;
+        return ctrl.cdb;
     }
-    int GetCmdByte(int index) const
+    int GetCdbByte(int index) const
     {
-        return ctrl.cmd[index];
+        return ctrl.cdb[index];
     }
     void SetByteTransfer(bool);
 
@@ -124,21 +124,19 @@ protected:
 
     auto GetOpcode() const
     {
-        return static_cast<scsi_defs::scsi_command>(ctrl.cmd[0]);
+        return static_cast<scsi_defs::scsi_command>(ctrl.cdb[0]);
     }
     int GetLun() const
     {
-        return (ctrl.cmd[1] >> 5) & 0x07;
+        return (ctrl.cdb[1] >> 5) & 0x07;
     }
 
-    void AllocateCmd(size_t);
-
-    void SetCmdByte(int index, int value)
+    void SetCdbByte(int index, int value)
     {
-        ctrl.cmd[index] = value;
+        ctrl.cdb[index] = value;
     }
 
-    bool HasBlocks() const
+    bool InTransfer() const
     {
         return ctrl.blocks;
     }
@@ -198,17 +196,9 @@ protected:
     {
         device_logger.Debug(s);
     }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
     void LogWarn(const string &s) const
     {
         device_logger.Warn(s);
-    }
-    void LogError(const string &s) const
-    {
-        device_logger.Error(s);
     }
 
 private:
@@ -216,15 +206,15 @@ private:
     int ExtractInitiatorId(int) const;
 
     using ctrl_t = struct _ctrl_t {
-        // Command data, dynamically resized if required
-        vector<int> cmd = vector<int>(16);
+        // Command data
+        array<int, 16> cdb;
 
         // Status data
         scsi_defs::status status;
         // Message data
         int message;
 
-        // Transfer data buffer, dynamically resized if required
+        // Transfer data buffer, dynamically resized
         vector<uint8_t> buffer;
         // Number of transfer blocks
         uint32_t blocks;

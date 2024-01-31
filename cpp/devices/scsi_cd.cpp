@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,15 +13,12 @@
 #include <fstream>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "mode_page_util.h"
 #include "scsi_cd.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
-using namespace mode_page_util;
 
 ScsiCd::ScsiCd(int lun, bool scsi1)
-: Disk(SCCD, lun, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(SCCD, lun, true, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
 {
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
@@ -47,11 +44,13 @@ void ScsiCd::Open()
 
     // Initialization, track clear
     SetBlockCount(0);
-    rawfile = false;
+    raw_file = false;
     ClearTrack();
 
     // Default sector size is 2048 bytes
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048);
+    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
+        throw io_exception("Invalid sector size");
+    }
 
     // Judge whether it is a CUE sheet or an ISO file
     array<char, 4> cue;
@@ -70,7 +69,7 @@ void ScsiCd::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache(0, rawfile);
+    SetUpCache(raw_file);
 
     SetReadOnly(true);
     SetProtectable(false);
@@ -99,7 +98,7 @@ void ScsiCd::OpenIso()
     array<char, 12> sync = { };
     // 00,FFx10,00 is presumed to be RAW format
     fill_n(sync.begin() + 1, 10, 0xff);
-    rawfile = false;
+    raw_file = false;
 
     if (memcmp(header.data(), sync.data(), sync.size()) == 0) {
         // Supports MODE1/2048 or MODE1/2352 only
@@ -108,18 +107,17 @@ void ScsiCd::OpenIso()
             throw io_exception("Illegal raw ISO CD-ROM file header");
         }
 
-        rawfile = true;
+        raw_file = true;
     }
 
-    if (rawfile) {
+    if (raw_file) {
         if (size % 2536) {
-            LogWarn("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is "
-                + to_string(size) + " bytes");
+            LogWarn(fmt::format("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is {} byte(s)", size));
         }
 
         SetBlockCount(static_cast<uint32_t>(size / 2352));
     } else {
-        SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
+        SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
     }
 
     CreateDataTrack();
@@ -138,22 +136,22 @@ void ScsiCd::CreateDataTrack()
 
 void ScsiCd::ReadToc()
 {
-    GetController()->SetLength(ReadTocInternal(GetController()->GetCmd(), GetController()->GetBuffer()));
+    GetController()->SetLength(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
 
-vector<uint8_t> ScsiCd::InquiryInternal()
+vector<uint8_t> ScsiCd::InquiryInternal() const
 {
     return HandleInquiry(device_type::cd_rom, scsi_level, true);
 }
 
-void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-    !result.empty()) {
-        LogWarn(result);
-    }
+    Disk::ModeSelect(cmd, cdb, buf, length);
+
+    ClearTrack();
+    CreateDataTrack();
 }
 
 void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -161,15 +159,15 @@ void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     Disk::SetUpModePages(pages, page, changeable);
 
     if (page == 0x0d || page == 0x3f) {
-        AddCDROMPage(pages, changeable);
+        AddDeviceParametersPage(pages, changeable);
     }
 
     if (page == 0x0e || page == 0x3f) {
-        AddCDDAPage(pages, changeable);
+        AddAudioControlPage(pages, changeable);
     }
 }
 
-void ScsiCd::AddCDROMPage(map<int, vector<byte>> &pages, bool changeable) const
+void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(8);
 
@@ -186,7 +184,7 @@ void ScsiCd::AddCDROMPage(map<int, vector<byte>> &pages, bool changeable) const
     pages[13] = buf;
 }
 
-void ScsiCd::AddCDDAPage(map<int, vector<byte>> &pages, bool) const
+void ScsiCd::AddAudioControlPage(map<int, vector<byte>> &pages, bool) const
 {
     vector<byte> buf(16);
 
@@ -194,21 +192,6 @@ void ScsiCd::AddCDDAPage(map<int, vector<byte>> &pages, bool) const
     // PLAY across multiple tracks
 
     pages[14] = buf;
-}
-
-void ScsiCd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
-{
-    Disk::AddFormatPage(pages, changeable);
-
-    EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
-}
-
-void ScsiCd::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const
-{
-    // Page code 48
-    if (page == 0x30 || page == 0x3f) {
-        AddAppleVendorModePage(pages, changeable);
-    }
 }
 
 int ScsiCd::Read(span<uint8_t> buf, uint64_t block)
@@ -229,7 +212,7 @@ int ScsiCd::Read(span<uint8_t> buf, uint64_t block)
         assert(GetBlockCount() > 0);
 
         // Re-assign disk cache (no need to save)
-        Resize_cache(tracks[index]->GetPath(), rawfile);
+        ResizeCache(tracks[index]->GetPath(), raw_file);
 
         // Reset data index
         dataindex = index;

@@ -2,25 +2,28 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <vector>
 #include <map>
+#include "base/property_handler.h"
 #include "base/primary_device.h"
 
 class ModePageDevice : public PrimaryDevice
 {
 public:
 
-    using PrimaryDevice::PrimaryDevice;
+    ModePageDevice(PbDeviceType type, int lun, bool m) : PrimaryDevice(type, lun), supports_mode_select(m)
+    {
+    }
+    ~ModePageDevice() override = default;
 
     bool Init(const param_map&) override;
 
-    virtual void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) const;
+    virtual void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int);
 
 protected:
 
@@ -34,14 +37,12 @@ protected:
     }
     int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
     virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const = 0;
-    virtual void AddVendorPage(map<int, vector<byte>>&, int, bool) const
+    virtual void AddVendorPages(map<int, vector<byte>>&, int, bool) const
     {
         // Nothing to add by default
     }
 
 private:
-
-    bool supports_save_parameters = false;
 
     virtual int ModeSense6(cdb_t, vector<uint8_t>&) const = 0;
     virtual int ModeSense10(cdb_t, vector<uint8_t>&) const = 0;
@@ -52,4 +53,10 @@ private:
     void ModeSelect10() const;
 
     void SaveParametersCheck(int) const;
+
+    bool supports_mode_select;
+
+    bool supports_save_parameters = false;
+
+    PropertyHandler &property_handler = PropertyHandler::Instance();
 };

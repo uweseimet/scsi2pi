@@ -2,18 +2,19 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "shared/shared_exceptions.h"
-#include "mode_page_util.h"
+#include "base/memory_util.h"
 #include "scsi_hd.h"
 
-using namespace mode_page_util;
+using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, lun, sector_sizes), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(removable ? SCRM : SCHD, lun, true, sector_sizes), scsi_level(
+    scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -52,7 +53,7 @@ string ScsiHd::GetProductData() const
     return DEFAULT_PRODUCT + " " + to_string(capacity) + " " + unit;
 }
 
-void ScsiHd::FinalizeSetup(off_t image_offset)
+void ScsiHd::FinalizeSetup()
 {
     Disk::ValidateFile();
 
@@ -61,7 +62,7 @@ void ScsiHd::FinalizeSetup(off_t image_offset)
         SetProduct(GetProductData(), false);
     }
 
-    SetUpCache(image_offset);
+    SetUpCache();
 }
 
 void ScsiHd::Open()
@@ -71,36 +72,133 @@ void ScsiHd::Open()
     const off_t size = GetFileSize();
 
     // Sector size (default 512 bytes) and number of blocks
-    SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512);
-    SetBlockCount(static_cast<uint32_t>(size >> GetSectorSizeShiftCount()));
+    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+        throw io_exception("Invalid sector size");
+    }
+    SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
 
-    FinalizeSetup(0);
+    FinalizeSetup();
 }
 
-vector<uint8_t> ScsiHd::InquiryInternal()
+vector<uint8_t> ScsiHd::InquiryInternal() const
 {
     return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
 }
 
-void ScsiHd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length) const
+void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
-    if (const string result = mode_page_util::ModeSelect(cmd, cdb, buf, length, 1 << GetSectorSizeShiftCount());
-    !result.empty()) {
-        LogWarn(result);
+    Disk::SetUpModePages(pages, page, changeable);
+
+    // Page 3 (format device)
+    if (page == 0x03 || page == 0x3f) {
+        AddFormatPage(pages, changeable);
+    }
+
+    // Page 4 (rigid drive page)
+    if (page == 0x04 || page == 0x3f) {
+        AddDrivePage(pages, changeable);
+    }
+
+    // Page 12 (notch)
+    if (page == 0x0c || page == 0x3f) {
+        AddNotchPage(pages, changeable);
     }
 }
 
 void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    Disk::AddFormatPage(pages, changeable);
+    vector<byte> buf(24);
 
-    EnrichFormatPage(pages, changeable, 1 << GetSectorSizeShiftCount());
+    if (changeable) {
+        // The sector size is simulated to be changeable, see the MODE SELECT implementation for details
+        // TODO Consider all supported sector sizes
+        SetInt16(buf, 12, GetSectorSizeInBytes());
+
+        pages[3] = buf;
+
+        return;
+    }
+
+    if (IsReady()) {
+        // Set the number of tracks in one zone to 8
+        buf[0x03] = (byte)0x08;
+
+        // Set sector/track to 25
+        SetInt16(buf, 0x0a, 25);
+
+        // Set the number of bytes in a physical sector
+        SetInt16(buf, 0x0c, GetSectorSizeInBytes());
+
+        // Interleave 1
+        SetInt16(buf, 0x0e, 1);
+
+        // Track skew factor 11
+        SetInt16(buf, 0x10, 11);
+
+        // Cylinder skew factor 20
+        SetInt16(buf, 0x12, 20);
+    }
+
+    buf[20] = IsRemovable() ? (byte)0x20 : (byte)0x00;
+
+    // Hard-sectored
+    buf[20] |= (byte)0x40;
+
+    pages[3] = buf;
 }
 
-void ScsiHd::AddVendorPage(map<int, vector<byte>> &pages, int page, bool changeable) const
+void ScsiHd::AddDrivePage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    // Page code 48
-    if (page == 0x30 || page == 0x3f) {
-        AddAppleVendorModePage(pages, changeable);
+    vector<byte> buf(24);
+
+    // No changeable area
+    if (changeable) {
+        pages[4] = buf;
+
+        return;
     }
+
+    if (IsReady()) {
+        // Set the number of cylinders (total number of blocks
+        // divided by 25 sectors/track and 8 heads)
+        uint64_t cylinders = GetBlockCount();
+        cylinders >>= 3;
+        cylinders /= 25;
+        SetInt32(buf, 0x01, static_cast<uint32_t>(cylinders));
+
+        // Fix the head at 8
+        buf[0x05] = (byte)0x8;
+
+        // Medium rotation rate 7200
+        SetInt16(buf, 0x14, 7200);
+    }
+
+    pages[4] = buf;
+}
+
+void ScsiHd::AddNotchPage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(24);
+
+    // Not having a notched drive (i.e. not setting anything) probably provides the best compatibility
+
+    pages[12] = buf;
+}
+
+void ScsiHd::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
+{
+    // Page code 37
+    if (page == 0x25 || page == 0x3f) {
+        AddDecVendorPage(pages, changeable);
+    }
+}
+
+// See https://manx-docs.org/collections/antonio/dec/dec-scsi.pdf
+void ScsiHd::AddDecVendorPage(map<int, vector<byte>> &pages, bool) const
+{
+    vector<byte> buf(25);
+
+    // buf[2] bit 0 is the Spin-up Disable (SPD) bit, if 1 the drive will not spin up on initial power up
+
+    pages[0x25] = buf;
 }

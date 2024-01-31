@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -85,7 +85,7 @@
 #include <algorithm>
 #include <chrono>
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"
@@ -95,11 +95,10 @@ using namespace std::chrono;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_interface;
-using namespace scsi_defs;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun, false)
 {
     SetProduct("Host Services");
 }
@@ -136,15 +135,15 @@ void HostServices::TestUnitReady()
     EnterStatusPhase();
 }
 
-vector<uint8_t> HostServices::InquiryInternal()
+vector<uint8_t> HostServices::InquiryInternal() const
 {
     return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
 }
 
 void HostServices::StartStopUnit() const
 {
-    const bool start = GetController()->GetCmdByte(4) & 0x01;
-    const bool load = GetController()->GetCmdByte(4) & 0x02;
+    const bool start = GetController()->GetCdbByte(4) & 0x01;
+    const bool load = GetController()->GetCdbByte(4) & 0x02;
 
     if (!start) {
         if (load) {
@@ -170,7 +169,7 @@ void HostServices::ExecuteOperation()
 
     input_format = ConvertFormat();
 
-    const auto length = static_cast<size_t>(GetInt16(GetController()->GetCmd(), 7));
+    const auto length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
     if (!length) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
@@ -187,7 +186,7 @@ void HostServices::ReceiveOperationResults()
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw scsi_exception(sense_key::aborted_command);
+        throw scsi_exception(sense_key::aborted_command, asc::host_services_receive_operation_results);
     }
     const string &execution_result = it->second;
 
@@ -218,7 +217,7 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCmd(), 7));
+    const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
     const auto length = static_cast<int>(min(allocation_length, data.size()));
     if (!length) {
         EnterStatusPhase();
@@ -243,7 +242,8 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     // 4 bytes basic information
     const int size = AddModePages(cdb, buf, 4, length, 255);
 
-    buf[0] = (uint8_t)size;
+    // The size field does not count itself
+    buf[0] = (uint8_t)(size - 1);
 
     return size;
 }
@@ -261,7 +261,8 @@ int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     // 8 bytes basic information
     const int size = AddModePages(cdb, buf, 8, length, 65535);
 
-    SetInt16(buf, 0, size);
+    // The size fields do not count themselves
+    SetInt16(buf, 0, size - 2);
 
     return size;
 }
@@ -300,7 +301,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
 bool HostServices::WriteByteSequence(span<const uint8_t> buf)
 {
-    const auto length = GetInt16(GetController()->GetCmd(), 7);
+    const auto length = GetInt16(GetController()->GetCdb(), 7);
 
     PbCommand command;
     switch (input_format) {
@@ -346,7 +347,7 @@ bool HostServices::WriteByteSequence(span<const uint8_t> buf)
 
 HostServices::protobuf_format HostServices::ConvertFormat() const
 {
-    switch (GetController()->GetCmdByte(1) & 0b00000111) {
+    switch (GetController()->GetCdbByte(1) & 0b00000111) {
     case 0x001:
         return protobuf_format::binary;
         break;

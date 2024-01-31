@@ -4,8 +4,6 @@
 //
 // Copyright (C) 2021-2023 Uwe Seimet
 //
-// Helper methods for setting up/evaluating protobuf messages
-//
 //---------------------------------------------------------------------------
 
 #pragma once
@@ -45,4 +43,5 @@ string ListDevices(const vector<PbDevice>&);
 void SerializeMessage(int, const google::protobuf::Message&);
 void DeserializeMessage(int, google::protobuf::Message&);
 size_t ReadBytes(int, span<byte>);
+size_t WriteBytes(int, span<uint8_t>);
 }

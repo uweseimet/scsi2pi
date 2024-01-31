@@ -2,16 +2,19 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <cstdint>
 #include <climits>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <unordered_map>
+#include "scsi.h"
 
 using namespace std;
 
@@ -47,13 +50,25 @@ string Join(const auto &collection, const string_view separator = ", ")
 }
 
 string GetVersionString();
+string GetHomeDir();
+pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = INT_MAX);
 string GetLocale();
 bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(int, int, const string&, int&, int&);
-string Banner(string_view);
+string Banner(string_view, bool = true);
 
 string GetExtensionLowerCase(string_view);
 
 void LogErrno(const string&);
+
+string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc, int = 0);
+
+vector<byte> HexToBytes(const string&);
+string FormatBytes(vector<uint8_t>&, int, bool = false);
+
+const unordered_map<char, int> HEX_TO_DEC = {
+    { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },
+    { '9', 9 }, { 'a', 10 }, { 'b', 11 }, { 'c', 12 }, { 'd', 13 }, { 'e', 14 }, { 'f', 15 }
+};
 }

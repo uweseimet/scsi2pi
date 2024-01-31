@@ -11,8 +11,8 @@
 #include "shared/s2p_util.h"
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
-#include "shared_protobuf/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "protobuf/command_context.h"
 #include "devices/disk.h"
 #include "command_executor.h"
 
@@ -22,7 +22,7 @@ using namespace s2p_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    spdlog::info((dryRun ? "Validating: " : "Executing: ") + PrintCommand(context.GetCommand(), pb_device));
+    info((dryRun ? "Validating: " : "Executing: ") + PrintCommand(context.GetCommand(), pb_device));
 
     const int id = pb_device.id();
     const int lun = pb_device.unit();
@@ -70,12 +70,6 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return Unprotect(*device, dryRun);
         break;
 
-    case CHECK_AUTHENTICATION:
-        case NO_OPERATION:
-        // Do nothing, just log
-        spdlog::trace("Received " + PbOperation_Name(operation) + " command");
-        break;
-
     default:
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
     }
@@ -100,6 +94,12 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 
         return context.ReturnSuccessStatus();
     }
+
+    case CHECK_AUTHENTICATION:
+    case NO_OPERATION:
+        // Do nothing, just log
+        trace("Received %s command", PbOperation_Name(command.operation()));
+        return context.ReturnSuccessStatus();
 
     default:
         // This is a device-specific command handled below
@@ -132,10 +132,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        spdlog::info("Start requested for " + device.GetIdentifier());
+        info("Start requested for {}", device.GetIdentifier());
 
         if (!device.Start()) {
-            spdlog::warn("Starting " + device.GetIdentifier() + " failed");
+            warn("Starting {} failed", device.GetIdentifier());
         }
     }
 
@@ -145,7 +145,7 @@ bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        spdlog::info("Stop requested for " + device.GetIdentifier());
+        info("Stop requested for {}", device.GetIdentifier());
 
         device.Stop();
     }
@@ -156,10 +156,10 @@ bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        spdlog::info("Eject requested for " + device.GetIdentifier());
+        info("Eject requested for {}", device.GetIdentifier());
 
         if (!device.Eject(true)) {
-            spdlog::warn("Ejecting " + device.GetIdentifier() + " failed");
+            warn("Ejecting {} failed", device.GetIdentifier());
         }
     }
 
@@ -169,7 +169,7 @@ bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        spdlog::info("Write protection requested for " + device.GetIdentifier());
+        info("Write protection requested for {}", device.GetIdentifier());
 
         device.SetProtected(true);
     }
@@ -180,7 +180,7 @@ bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        spdlog::info("Write unprotection requested for " + device.GetIdentifier());
+        info("Write unprotection requested for {}", device.GetIdentifier());
 
         device.SetProtected(false);
     }
@@ -278,7 +278,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         msg += "protected ";
     }
     msg += device->GetIdentifier();
-    spdlog::info(msg);
+    info(msg);
 
     return true;
 }
@@ -310,8 +310,8 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    spdlog::info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename +
-        "' requested into " + device->GetIdentifier());
+    info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
+            + device->GetIdentifier());
 
     if (!SetSectorSize(context, device, pb_device.block_size())) {
         return false;
@@ -357,7 +357,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
         }
 
-        spdlog::info("Detached " + identifier);
+        info("Detached " + identifier);
     }
 
     return true;
@@ -365,9 +365,9 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
 void CommandExecutor::DetachAll() const
 {
-    controller_factory->DeleteAllControllers();
-
-    spdlog::info("Detached all devices");
+    if (controller_factory->DeleteAllControllers()) {
+        info("Detached all devices");
+    }
 }
 
 string CommandExecutor::SetReservedIds(string_view ids)
@@ -391,10 +391,10 @@ string CommandExecutor::SetReservedIds(string_view ids)
     reserved_ids = { ids_to_reserve.begin(), ids_to_reserve.end() };
 
     if (!ids_to_reserve.empty()) {
-        spdlog::info("Reserved ID(s) set to " + Join(ids_to_reserve));
+        info("Reserved ID(s) set to {}", Join(ids_to_reserve));
     }
     else {
-        spdlog::info("Cleared reserved ID(s)");
+        info("Cleared reserved ID(s)");
     }
 
     return "";
@@ -462,7 +462,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     s << "operation=" << PbOperation_Name(command.operation());
 
     if (!params.empty()) {
-        s << ", command params=";
+        s << ", command parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : params) {
             if (!isFirst) {
@@ -477,7 +477,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     s << ", device=" << pb_device.id() << ":" << pb_device.unit() << ", type=" << PbDeviceType_Name(pb_device.type());
 
     if (pb_device.params_size()) {
-        s << ", device params=";
+        s << ", device parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : pb_device.params()) {
             if (!isFirst) {
@@ -505,7 +505,7 @@ string CommandExecutor::EnsureLun0(const PbCommand &command) const
     }
 
     // Collect LUN bit vectors of existing devices
-    for (const auto &device : Get_allDevices()) {
+    for (const auto &device : GetAllDevices()) {
         luns[device->GetId()] |= 1 << device->GetLun();
     }
 
@@ -543,7 +543,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
 
     // Some device types must be unique
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
-        for (const auto &d : Get_allDevices()) {
+        for (const auto &d : GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
                 context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE,
                     PbDeviceType_Name(device->GetType()));

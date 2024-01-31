@@ -10,10 +10,9 @@
 #include "controllers/controller_factory.h"
 #include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "command_dispatcher.h"
 
-using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 using namespace s2p_util;
@@ -25,12 +24,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        spdlog::trace("Ignored unknown command with operation opcode " + to_string(operation));
+        trace("Ignored unknown command with operation opcode " + to_string(operation));
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION, to_string(operation));
     }
 
-    spdlog::trace(identifier + "Executing " + PbOperation_Name(operation) + " command");
+    trace("{0}Executing {1} command", identifier, PbOperation_Name(operation));
 
     switch (operation) {
     case LOG_LEVEL:
@@ -51,7 +50,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.Get_allDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -59,7 +58,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
-        response.GetServerInfo(*result.mutable_server_info(), command, executor.Get_allDevices(),
+        response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
             executor.GetReservedIds(), s2p_image.GetDefaultFolder(), s2p_image.GetDepth());
         return context.WriteSuccessResult(result);
 
@@ -104,7 +103,11 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case STATISTICS_INFO:
-        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.Get_allDevices());
+        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.GetAllDevices());
+        return context.WriteSuccessResult(result);
+
+    case PROPERTIES_INFO:
+        response.GetPropertiesInfo(*result.mutable_properties_info());
         return context.WriteSuccessResult(result);
 
     case OPERATION_INFO:
@@ -165,7 +168,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context, Pb
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;
-        response.GetDevicesInfo(executor.Get_allDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
         context.WriteResult(result);
         return result.status();
     }
@@ -211,20 +214,20 @@ bool CommandDispatcher::ShutDown(AbstractController::shutdown_mode mode) const
 {
     switch (mode) {
     case AbstractController::shutdown_mode::STOP_S2P:
-        spdlog::info("s2p shutdown requested");
+        info("s2p shutdown requested");
         return true;
 
     case AbstractController::shutdown_mode::STOP_PI:
-        spdlog::info("Raspberry Pi shutdown requested");
+        info("Raspberry Pi shutdown requested");
         if (system("init 0") == -1) {
-            spdlog::error("Raspberry Pi shutdown failed");
+            error("Raspberry Pi shutdown failed");
         }
         break;
 
     case AbstractController::shutdown_mode::RESTART_PI:
-        spdlog::info("Raspberry Pi restart requested");
+        info("Raspberry Pi restart requested");
         if (system("init 6") == -1) {
-            spdlog::error("Raspberry Pi restart failed");
+            error("Raspberry Pi restart failed");
         }
         break;
 
@@ -248,7 +251,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         if (components.size() > 1) {
             if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
                 components[1], id, lun); !error.empty()) {
-                spdlog::warn("Error setting log level: " + error);
+                warn("Error setting log level: " + error);
                 return false;
             }
         }
@@ -257,7 +260,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     const level::level_enum l = level::from_str(level);
     // Compensate for spdlog using 'off' for unknown levels
     if (to_string_view(l) != level) {
-        spdlog::warn("Invalid log level '" + level + "'");
+        warn("Invalid log level '" + level + "'");
         return false;
     }
 
@@ -276,7 +279,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     else {
         msg = fmt::format("Set log level to '{}'", level);
     }
-    spdlog::info(msg);
+    info(msg);
 
     return true;
 }

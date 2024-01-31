@@ -2,59 +2,58 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
 
-TEST(BusTest, GetCommandByteCount)
+TEST(BusTest, GetCommandBytesCount)
 {
-    EXPECT_EQ(43U, scsi_defs::command_mapping.size());
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x00));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x01));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x03));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x04));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x07));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x08));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x09));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x0a));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x0b));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x0c));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x0d));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x0e));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x10));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x12));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x15));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x16));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x17));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x1a));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x1b));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x1d));
-    EXPECT_EQ(6, Bus::GetCommandByteCount(0x1e));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x25));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x28));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x2a));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x2b));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x2f));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x35));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x37));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x3e));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x3f));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x43));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x4a));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x55));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0x5a));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x88));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x8a));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x8f));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x91));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x9e));
-    EXPECT_EQ(16, Bus::GetCommandByteCount(0x9f));
-    EXPECT_EQ(12, Bus::GetCommandByteCount(0xa0));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0xc0));
-    EXPECT_EQ(10, Bus::GetCommandByteCount(0xc1));
-    EXPECT_EQ(0, Bus::GetCommandByteCount(0x1f));
+    EXPECT_EQ(42U, scsi_defs::COMMAND_MAPPING.size());
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x00));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x01));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x03));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x04));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x07));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x08));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x09));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x0a));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x0b));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x0c));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x0d));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x0e));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x10));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x12));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x15));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x16));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x17));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x1a));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x1b));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x1d));
+    EXPECT_EQ(6, Bus::GetCommandBytesCount(0x1e));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x25));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x28));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x2a));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x2b));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x2f));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x35));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x37));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x3e));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x3f));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x43));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x55));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0x5a));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x88));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x8a));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x8f));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x91));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x9e));
+    EXPECT_EQ(16, Bus::GetCommandBytesCount(0x9f));
+    EXPECT_EQ(12, Bus::GetCommandBytesCount(0xa0));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0xc0));
+    EXPECT_EQ(10, Bus::GetCommandBytesCount(0xc1));
+    EXPECT_EQ(0, Bus::GetCommandBytesCount(0x1f));
 }
 
 TEST(BusTest, GetPhase)
@@ -114,15 +113,15 @@ TEST(BusTest, GetPhase)
 
 TEST(BusTest, GetPhaseName)
 {
-    EXPECT_EQ("busfree", Bus::GetPhaseName(phase_t::busfree));
-    EXPECT_EQ("arbitration", Bus::GetPhaseName(phase_t::arbitration));
-    EXPECT_EQ("selection", Bus::GetPhaseName(phase_t::selection));
-    EXPECT_EQ("reselection", Bus::GetPhaseName(phase_t::reselection));
-    EXPECT_EQ("command", Bus::GetPhaseName(phase_t::command));
-    EXPECT_EQ("datain", Bus::GetPhaseName(phase_t::datain));
-    EXPECT_EQ("dataout", Bus::GetPhaseName(phase_t::dataout));
-    EXPECT_EQ("status", Bus::GetPhaseName(phase_t::status));
-    EXPECT_EQ("msgin", Bus::GetPhaseName(phase_t::msgin));
-    EXPECT_EQ("msgout", Bus::GetPhaseName(phase_t::msgout));
+    EXPECT_EQ("BUS FREE", Bus::GetPhaseName(phase_t::busfree));
+    EXPECT_EQ("ARBITRATION", Bus::GetPhaseName(phase_t::arbitration));
+    EXPECT_EQ("SELECTION", Bus::GetPhaseName(phase_t::selection));
+    EXPECT_EQ("RESELECTION", Bus::GetPhaseName(phase_t::reselection));
+    EXPECT_EQ("COMMAND", Bus::GetPhaseName(phase_t::command));
+    EXPECT_EQ("DATA IN", Bus::GetPhaseName(phase_t::datain));
+    EXPECT_EQ("DATA OUT", Bus::GetPhaseName(phase_t::dataout));
+    EXPECT_EQ("STATUS", Bus::GetPhaseName(phase_t::status));
+    EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(phase_t::msgin));
+    EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(phase_t::msgout));
     EXPECT_EQ("reserved", Bus::GetPhaseName(phase_t::reserved));
 }

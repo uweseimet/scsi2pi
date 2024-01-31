@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,11 +13,9 @@
 #include <map>
 #include <iomanip>
 #include "shared/s2p_util.h"
-#include "shared_protobuf/protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "s2pctl_display.h"
 
-using namespace std;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -315,6 +313,21 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
         else {
             s << "  " << name << " (Unknown server-side operation)\n";
         }
+    }
+
+    return s.str();
+}
+
+string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_info) const
+{
+    ostringstream s;
+
+    const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().begin(),
+        properties_info.s2p_properties().end());
+
+    s << "Property settings on s2p startup:\n";
+    for (const auto& [key, value] : sorted_properties) {
+        s << "  " << key << "=" << value << "\n";
     }
 
     return s.str();

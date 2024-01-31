@@ -4,12 +4,11 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_util.h"
 #include "buses/gpio_bus.h"
 #include "devices/disk.h"
 #ifdef BUILD_SCDP
@@ -17,7 +16,9 @@
 #endif
 #include "generic_controller.h"
 
+using namespace spdlog;
 using namespace scsi_defs;
+using namespace s2p_util;
 
 void GenericController::Reset()
 {
@@ -39,7 +40,7 @@ bool GenericController::Process(int id)
     initiator_id = id;
 
     if (!ProcessPhase()) {
-        Error(sense_key::aborted_command);
+        Error(sense_key::aborted_command, asc::controller_process_phase);
         return false;
     }
 
@@ -49,7 +50,7 @@ bool GenericController::Process(int id)
 void GenericController::BusFree()
 {
     if (!IsBusFree()) {
-        LogTrace("Bus Free phase");
+        LogTrace("BUS FREE phase");
         SetPhase(phase_t::busfree);
 
         GetBus().SetREQ(false);
@@ -75,7 +76,7 @@ void GenericController::BusFree()
 void GenericController::Selection()
 {
     if (!IsSelection()) {
-        LogTrace("Selection phase");
+        LogTrace("SELECTION phase");
         SetPhase(phase_t::selection);
 
         GetBus().SetBSY(true);
@@ -83,8 +84,6 @@ void GenericController::Selection()
     }
 
     if (!GetBus().GetSEL() && GetBus().GetBSY()) {
-        LogTrace("Selection completed");
-
         // Message out phase if ATN=1, otherwise command phase
         if (GetBus().GetATN()) {
             MsgOut();
@@ -97,7 +96,7 @@ void GenericController::Selection()
 void GenericController::Command()
 {
     if (!IsCommand()) {
-        LogTrace("Command phase");
+        LogTrace("COMMAND phase");
         SetPhase(phase_t::command);
 
         GetBus().SetMSG(false);
@@ -106,33 +105,28 @@ void GenericController::Command()
 
         const int actual_count = GetBus().CommandHandShake(GetBuffer());
         if (!actual_count) {
-            LogTrace(fmt::format("Received unknown command: ${:02x}", static_cast<int>(GetBuffer()[0])));
-
+            LogTrace(fmt::format("Received unknown command: ${:02x}", GetBuffer()[0]));
             Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
         }
 
-        const int command_byte_count = Bus::GetCommandByteCount(GetBuffer()[0]);
+        const int command_bytes_count = Bus::GetCommandBytesCount(GetBuffer()[0]);
+        assert(command_bytes_count <= 16);
 
-        AllocateCmd(command_byte_count);
-        for (int i = 0; i < command_byte_count; i++) {
-            SetCmdByte(i, GetBuffer()[i]);
+        // TODO Set all bytes by copying
+        for (int i = 0; i < command_bytes_count; i++) {
+            SetCdbByte(i, GetBuffer()[i]);
         }
 
-        if (spdlog::get_level() <= spdlog::level::debug) {
-            string s = fmt::format("Controller is executing {}, CDB $",
-                command_mapping.find(GetOpcode())->second.second);
-            for (int i = 0; i < Bus::GetCommandByteCount(static_cast<uint8_t>(GetOpcode())); i++) {
-                s += fmt::format("{:02x}", GetCmdByte(i));
-            }
-            LogDebug(s);
+        // Check the log level first in order to avoid a time-consuming string construction
+        if (get_level() <= level::debug) {
+            LogCdb();
         }
 
-        if (actual_count != command_byte_count) {
-            LogError(fmt::format(
-                "Command byte count mismatch for command ${0:02x}: expected {1} bytes, received {2} byte(s)",
-                static_cast<int>(GetOpcode()), command_byte_count, actual_count));
-            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        if (actual_count != command_bytes_count) {
+            LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
+                command_bytes_count, GetCdbByte(0), actual_count));
+            Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
 
@@ -148,18 +142,10 @@ void GenericController::Execute()
     ResetOffset();
     SetBlocks(1);
 
-    // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (GetOpcode() != scsi_command::cmd_request_sense) {
-        SetStatus(status::good);
-    }
-
     int lun = GetEffectiveLun();
     if (!HasDeviceForLun(lun)) {
         if (GetOpcode() != scsi_command::cmd_inquiry && GetOpcode() != scsi_command::cmd_request_sense) {
-            LogTrace(fmt::format("Invalid LUN {}", lun));
-
             Error(sense_key::illegal_request, asc::invalid_lun);
-
             return;
         }
 
@@ -170,10 +156,7 @@ void GenericController::Execute()
 
     // SCSI-2 4.4.3 Incorrect logical unit handling
     if (GetOpcode() == scsi_command::cmd_inquiry && !HasDeviceForLun(lun)) {
-        LogTrace(fmt::format("Reporting LUN {} as not supported", GetEffectiveLun()));
-
         GetBuffer().data()[0] = 0x7f;
-
         return;
     }
 
@@ -181,10 +164,11 @@ void GenericController::Execute()
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (GetOpcode() != scsi_command::cmd_request_sense) {
+        SetStatus(status::good);
         device->SetStatusCode(0);
     }
 
-    if (device->CheckReservation(initiator_id, GetOpcode(), GetCmdByte(4) & 0x01)) {
+    if (device->CheckReservation(initiator_id, GetOpcode(), GetCdbByte(4) & 0x01)) {
         try {
             device->Dispatch(GetOpcode());
         }
@@ -200,7 +184,14 @@ void GenericController::Execute()
 void GenericController::Status()
 {
     if (!IsStatus()) {
-        LogTrace(fmt::format("Status phase, status is ${:02x}", static_cast<int>(GetStatus())));
+        if (const auto &it_status = STATUS_MAPPING.find(GetStatus()); it_status != STATUS_MAPPING.end()) {
+            LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", it_status->second,
+                static_cast<int>(GetStatus())));
+        }
+        else {
+            LogTrace(fmt::format("Status phase, status code is ${0:02x}", static_cast<int>(GetStatus())));
+        }
+
         SetPhase(phase_t::status);
 
         // Signal line operated by the target
@@ -223,7 +214,7 @@ void GenericController::Status()
 void GenericController::MsgIn()
 {
     if (!IsMsgIn()) {
-        LogTrace("Message In phase");
+        LogTrace("MESSAGE IN phase");
         SetPhase(phase_t::msgin);
 
         GetBus().SetMSG(true);
@@ -245,7 +236,7 @@ void GenericController::DataIn()
             return;
         }
 
-        LogTrace("Data In phase");
+        LogTrace("DATA IN phase");
         SetPhase(phase_t::datain);
 
         GetBus().SetMSG(false);
@@ -268,7 +259,7 @@ void GenericController::DataOut()
             return;
         }
 
-        LogTrace("Data Out phase");
+        LogTrace("DATA OUT phase");
         SetPhase(phase_t::dataout);
 
         GetBus().SetMSG(false);
@@ -303,8 +294,7 @@ void GenericController::Error(sense_key sense_key, asc asc, status status)
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
-        LogDebug(fmt::format("Error status: Sense Key ${0:02x}, ASC ${1:02x}", static_cast<int>(sense_key),
-            static_cast<int>(asc)));
+        LogDebug(FormatSenseData(sense_key, asc));
 
         // Set Sense Key and ASC for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
@@ -322,15 +312,19 @@ void GenericController::Send()
     assert(GetBus().GetIO());
 
     if (HasValidLength()) {
-        LogTrace(fmt::format("Sending data, offset: {0}, length: {1}", GetOffset(), GetLength()));
-
         assert(HasDeviceForLun(0));
 
-        // The delay should be taken from the respective LUN, but as there are no Mac Daynaport drivers
-        // for LUNs other than 0 this work-around works.
+        // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
+        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
         if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
             GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
-            Error(sense_key::aborted_command);
+            if (IsDataIn()) {
+                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", len, GetLength()));
+            }
+            else {
+                LogWarn(fmt::format("Sent {0} byte(s) in STATUS phase, {1} is required", len, GetLength()));
+            }
+            Error(sense_key::aborted_command, asc::data_phase_error);
         }
         else {
             UpdateOffsetAndLength();
@@ -341,22 +335,15 @@ void GenericController::Send()
 
     DecrementBlocks();
 
-    // Processing after data collection (read/data-in only)
-    if (IsDataIn() && HasBlocks()) {
-        // Set next buffer (set offset, length)
-        if (!XferIn(GetBuffer())) {
-            Error(sense_key::aborted_command);
-            return;
-        }
-
-        LogTrace("Processing after data collection");
+    if (IsDataIn() && InTransfer() && !XferIn(GetBuffer())) {
+        Error(sense_key::aborted_command, asc::controller_send_xfer_in);
+        return;
     }
 
     // Continue sending if blocks != 0
-    if (HasBlocks()) {
-        LogTrace("Continuing to send");
+    if (InTransfer()) {
         assert(HasValidLength());
-        assert(GetOffset() == 0);
+        assert(!GetOffset());
         return;
     }
 
@@ -391,14 +378,15 @@ void GenericController::Receive()
     assert(!GetBus().GetIO());
 
     if (HasValidLength()) {
-        LogTrace(fmt::format("Receiving {} byte(s)", GetLength()));
-
-        // If not able to receive all, move to status phase
-        if (uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
+        if (const uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
             != GetLength()) {
-            LogError(fmt::format("Not able to receive {0} byte(s), only received {1}", GetLength(), len));
-            Error(sense_key::aborted_command);
+            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", len, GetLength()));
+            Error(sense_key::aborted_command, asc::data_phase_error);
             return;
+        }
+        // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
+        else if (IsDataOut() && !GetOffset() && len < 256 && get_level() == level::trace) {
+            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", len, FormatBytes(GetBuffer(), len)));
         }
     }
 
@@ -415,10 +403,10 @@ void GenericController::Receive()
     DecrementBlocks();
     bool result = true;
 
-    // Processing after receiving data (by phase)
+    // Processing after receiving data
     switch (GetPhase()) {
     case phase_t::dataout:
-        if (!HasBlocks()) {
+        if (!InTransfer()) {
             // End with this buffer
             result = XferOut(false);
         } else {
@@ -441,20 +429,21 @@ void GenericController::Receive()
     }
 
     if (!result) {
-        Error(sense_key::aborted_command);
+        Error(sense_key::aborted_command, asc::controller_receive_result);
         return;
     }
 
     // Continue to receive if blocks != 0
-    if (HasBlocks()) {
+    if (InTransfer()) {
         assert(HasValidLength());
-        assert(GetOffset() == 0);
+        assert(!GetOffset());
         return;
     }
 
     // Move to next phase
     switch (GetPhase()) {
     case phase_t::command:
+        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
         ProcessCommand();
         break;
 
@@ -505,13 +494,14 @@ void GenericController::ReceiveBytes()
     }
 
     if (!result) {
-        Error(sense_key::aborted_command);
+        Error(sense_key::aborted_command, asc::controller_receive_bytes_result);
         return;
     }
 
     // Move to next phase
     switch (GetPhase()) {
     case phase_t::command:
+        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
         ProcessCommand();
         break;
 
@@ -580,8 +570,6 @@ bool GenericController::XferIn(vector<uint8_t> &buf)
 {
     assert(IsDataIn());
 
-    LogTrace(fmt::format("Command: ${:02x}", static_cast<int>(GetOpcode())));
-
     const int lun = GetEffectiveLun();
     if (!HasDeviceForLun(lun)) {
         return false;
@@ -635,11 +623,10 @@ bool GenericController::XferOutBlockOriented(bool cont)
         }
 
         try {
-            mode_page_device->ModeSelect(GetOpcode(), GetCmd(), GetBuffer(), GetOffset());
+            mode_page_device->ModeSelect(GetOpcode(), GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
-            return false;
         }
 #endif
         break;
@@ -652,7 +639,7 @@ bool GenericController::XferOutBlockOriented(bool cont)
 #ifdef BUILD_SCDP
         // TODO Get rid of this special case for SCDP
         if (auto daynaport = dynamic_pointer_cast<DaynaPort>(device); daynaport) {
-            if (!daynaport->Write(GetCmd(), GetBuffer())) {
+            if (!daynaport->Write(GetCdb(), GetBuffer())) {
                 return false;
             }
 
@@ -722,16 +709,36 @@ bool GenericController::XferOutBlockOriented(bool cont)
 }
 #pragma GCC diagnostic pop
 
+// TODO This probably does not make sense
 void GenericController::ProcessCommand()
 {
-    const uint32_t len = GpioBus::GetCommandByteCount(GetBuffer()[0]);
+    const int len = GpioBus::GetCommandBytesCount(GetBuffer()[0]);
 
-    string s = "CDB=$";
-    for (uint32_t i = 0; i < len; i++) {
-        SetCmdByte(i, GetBuffer()[i]);
-        s += fmt::format("{:02x}", GetCmdByte(i));
+    for (int i = 0; i < len; i++) {
+        SetCdbByte(i, GetBuffer()[i]);
     }
-    LogTrace(s);
+
+    if (get_level() == level::trace) {
+        string s = "CDB=$";
+        for (int i = 0; i < len; i++) {
+            s += fmt::format("{:02x}", GetCdbByte(i));
+        }
+        LogTrace(s);
+    }
 
     Execute();
+}
+
+void GenericController::LogCdb() const
+{
+    const auto &cmd = COMMAND_MAPPING.find(GetOpcode());
+    string s = fmt::format("Controller is executing {}, CDB $",
+        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCdbByte(0)));
+    for (int i = 0; i < Bus::GetCommandBytesCount(GetCdbByte(0)); i++) {
+        if (i) {
+            s += ":";
+        }
+        s += fmt::format("{:02x}", GetCdbByte(i));
+    }
+    LogDebug(s);
 }

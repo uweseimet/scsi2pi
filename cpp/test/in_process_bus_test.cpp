@@ -108,26 +108,6 @@ TEST(InProcessBusTest, IO)
     EXPECT_FALSE(bus.GetIO());
 }
 
-TEST(InProcessBusTest, WaitREQ)
-{
-    MockInProcessBus bus;
-
-    EXPECT_CALL(bus, WaitSignal(PIN_REQ, false));
-    EXPECT_FALSE(bus.WaitREQ(false));
-    EXPECT_CALL(bus, WaitSignal(PIN_REQ, true));
-    EXPECT_FALSE(bus.WaitREQ(true));
-}
-
-TEST(InProcessBusTest, WaitACK)
-{
-    MockInProcessBus bus;
-
-    EXPECT_CALL(bus, WaitSignal(PIN_ACK, false));
-    EXPECT_FALSE(bus.WaitACK(false));
-    EXPECT_CALL(bus, WaitSignal(PIN_ACK, true));
-    EXPECT_FALSE(bus.WaitACK(true));
-}
-
 TEST(InProcessBusTest, DAT)
 {
     InProcessBus bus;
