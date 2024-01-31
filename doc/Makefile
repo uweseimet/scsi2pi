@@ -10,7 +10,8 @@ MANPAGES = s2p.1 \
 	s2pctl.1
 ifeq ($(CONNECT_TYPE), FULLSPEC)
 	MANPAGES += s2pdump.1 \
-	s2pexec.1
+	s2pexec.1 \
+	s2pproto.1
 endif
 
 INSTALL_PAGES := $(addprefix $(INSTALL_DIR),$(MANPAGES))
