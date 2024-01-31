@@ -98,7 +98,7 @@ bool S2pDump::Init(bool in_process)
     return bus != nullptr;
 }
 
-bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable for parsing
+bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
         { "all-luns", no_argument, nullptr, 'a' },

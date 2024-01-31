@@ -262,12 +262,12 @@ int S2pExec::Run(span<char*> args, bool in_process)
 {
     if (args.size() < 2) {
         Banner(true);
-        return EXIT_FAILURE;
+        return -1;
     }
 
     try {
         if (!ParseArguments(args)) {
-            return EXIT_FAILURE;
+            return -1;
         }
         else if (version || help) {
             return EXIT_SUCCESS;
@@ -275,27 +275,38 @@ int S2pExec::Run(span<char*> args, bool in_process)
     }
     catch (const parser_exception &e) {
         cerr << "Error: " << e.what() << endl;
-        return EXIT_FAILURE;
+        return -1;
     }
 
     if (!Init(in_process)) {
         cerr << "Error: Can't initialize bus" << endl;
-        return EXIT_FAILURE;
+        return -1;
     }
 
     if (!in_process && !bus_factory->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
-        return EXIT_FAILURE;
+        return -1;
     }
 
     executor->SetTarget(target_id, target_lun, sasi);
 
     int result = EXIT_SUCCESS;
-    if (!command.empty()) {
-        if (const string error = ExecuteCommand(); !error.empty()) {
-            cerr << "Error: " << error << endl;
-            result = EXIT_FAILURE;
+    try {
+        const auto [sense_key, asc, ascq] = ExecuteCommand();
+        if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information || ascq) {
+            if (static_cast<int>(sense_key) != -1) {
+                cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << endl;
+
+                result = static_cast<int>(asc);
+            }
+            else {
+                result = -1;
+            }
         }
+    }
+    catch (const execution_exception &e) {
+        cerr << "Error: " << e.what() << endl;
+        result = -1;
     }
 
     CleanUp();
@@ -303,7 +314,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
     return result;
 }
 
-string S2pExec::ExecuteCommand()
+tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 {
     vector<byte> cmd_bytes;
 
@@ -312,7 +323,7 @@ string S2pExec::ExecuteCommand()
     }
     catch (const parser_exception&)
     {
-        return "Error: Invalid CDB input format: '" + command + "'";
+        throw execution_exception("Invalid CDB input format: '" + command + "'");
     }
 
     vector<uint8_t> cdb;
@@ -322,22 +333,25 @@ string S2pExec::ExecuteCommand()
 
     if (!data.empty()) {
         if (const string &error = ConvertData(data); !error.empty()) {
-            return error;
+            throw execution_exception(error);
         }
         debug("Sending {} data bytes", buffer.size());
     }
     else if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
         if (const string &error = ReadData(); !error.empty()) {
-            return error;
+            throw execution_exception(error);
         }
         debug("Sending {} data bytes", buffer.size());
     }
 
     const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
     if (status) {
-        return
-            status != 0xff && request_sense ?
-                executor->GetSenseData() : fmt::format("Can't execute command ${:02x}", cdb[0]);
+        if (status != 0xff && request_sense) {
+            return executor->GetSenseData();
+        }
+        else {
+            throw execution_exception(fmt::format("Can't execute command ${:02x}", cdb[0]));
+        }
     }
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
@@ -347,12 +361,12 @@ string S2pExec::ExecuteCommand()
 
         if (count) {
             if (const string &error = WriteData(count); !error.empty()) {
-                return error;
+                throw execution_exception(error);
             }
         }
     }
 
-    return "";
+    return {sense_key {0}, asc {0}, 0};
 }
 
 string S2pExec::ReadData()

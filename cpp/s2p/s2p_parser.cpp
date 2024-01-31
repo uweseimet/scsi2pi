@@ -59,7 +59,7 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable for parsing
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_HELP = 2;
 

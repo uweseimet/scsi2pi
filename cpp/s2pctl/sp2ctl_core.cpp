@@ -141,7 +141,7 @@ string S2pCtl::ConvertCommand(const string &command)
     return command;
 }
 
-int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable for parsing
+int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_PROMPT = 2;
     const int OPT_BINARY_PROTOBUF = 3;

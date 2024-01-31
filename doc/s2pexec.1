@@ -78,14 +78,21 @@ Show a help text.
 .BR \--version/-v\fI
 Show the s2pexec version.
 
+.SH EXIT STATUS
+0:  No error. -1: There was a general error and the command could not be sent.
+Any other value means the command could be sent but the target device reported an error. In this case the return status contains the additional sense code (ASC).
+
 .SH EXAMPLE
 s2pexec -i 0 -c 12:00:00:00:20:00
+.br
 Send an INQUIRY command to the device with SCSI ID 0 and display the results.
 
 s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
+.br
 Send a MODE SELECT command to the device with SCSI ID 5, with the hexadecimally coded data in data.dat as parameters.
 
 s2pexec -i 5:1 -c 15:11:00:04:0c:00 -d 00:00:00:08:00:00:00:00:00:00:02:00
+.br
 Send a MODE SELECT command to the device with SCSI ID 5 and LUN 1, with explicit parameter data.
 
 .SH SEE ALSO

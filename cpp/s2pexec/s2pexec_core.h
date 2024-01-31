@@ -18,6 +18,11 @@ using namespace std;
 class S2pExec
 {
 
+    class execution_exception : public runtime_error
+    {
+        using runtime_error::runtime_error;
+    };
+
 public:
 
     int Run(span<char*>, bool);
@@ -28,7 +33,7 @@ private:
 
     bool Init(bool);
     bool ParseArguments(span<char*>);
-    string ExecuteCommand();
+    tuple<sense_key, asc, int> ExecuteCommand();
 
     string ReadData();
     string WriteData(int);

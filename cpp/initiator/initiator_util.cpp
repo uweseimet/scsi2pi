@@ -14,21 +14,24 @@ using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
-string initiator_util::GetSenseData(InitiatorExecutor &executor)
+tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
     array<uint8_t, 14> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     if (executor.Execute(scsi_command::cmd_request_sense, cdb, buf, static_cast<int>(buf.size()))) {
-        return "Can't execute REQUEST SENSE";
+        error("Can't execute REQUEST SENSE");
+        return {sense_key {-1}, asc {-1}, -1};
     }
 
     if (executor.GetByteCount() < static_cast<int>(buf.size())) {
-        return "Device did not return standard REQUEST SENSE data";
+        warn("Device did not return standard REQUEST SENSE data");
+        return {sense_key {-1}, asc {-1}, -1};
     }
 
-    return FormatSenseData(static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]); // NOSONAR Using byte causes an issue with the bullseye compiler
+    return {static_cast<sense_key>(static_cast<byte>(buf[2]) & byte {0x0f}), static_cast<asc>(buf[12]), buf[13]};
+
 }
 
 bool initiator_util::SetLogLevel(const string &log_level)
