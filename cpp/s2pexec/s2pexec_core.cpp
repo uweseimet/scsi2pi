@@ -51,7 +51,9 @@ void S2pExec::Banner(bool header)
         << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
         << "                                default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-        << "  --cdb/-c CDB                  SCSI command to send in hexadecimal format.\n"
+        << "  --cdb/-c CDB                  Command to send in hexadecimal format.\n"
+        << "  --data/-d DATA                Data to send with the command in\n"
+        << "                                hexadecimal format.\n"
         << "  --buffer-size/-b SIZE         Buffer size for receiving data.\n"
         << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error\n"
         << "                                |off), default is 'info'.\n"
@@ -95,9 +97,10 @@ bool S2pExec::ParseArguments(span<char*> args)
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
-        { "cdb", required_argument, nullptr, 'c' },
         { "binary-input-file", required_argument, nullptr, 'f' },
         { "binary-output-file", required_argument, nullptr, 'F' },
+        { "cdb", required_argument, nullptr, 'c' },
+        { "data", required_argument, nullptr, 'd' },
         { "help", no_argument, nullptr, 'H' },
         { "hex-input-file", required_argument, nullptr, 't' },
         { "hex-only", no_argument, nullptr, 'x' },
@@ -118,7 +121,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:f:F:h:i:L:t:T:Hnvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:L:t:T:Hnvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -131,6 +134,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'c':
             command = optarg;
+            break;
+
+        case 'd':
+            data = optarg;
             break;
 
         case 'f':
@@ -226,8 +233,8 @@ bool S2pExec::ParseArguments(span<char*> args)
         throw parser_exception("Missing command block");
     }
 
-    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
-        throw parser_exception("Invalid command timeout value: '" + tout + "'");
+    if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
+        throw parser_exception("An input file is not permitted when providing explicit data");
     }
 
     if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
@@ -236,6 +243,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
         throw parser_exception("There can only be a single output file");
+    }
+
+    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
+        throw parser_exception("Invalid command timeout value: '" + tout + "'");
     }
 
     int buffer_size = DEFAULT_BUFFER_SIZE;
@@ -309,12 +320,16 @@ string S2pExec::ExecuteCommand()
         cdb.emplace_back(static_cast<uint8_t>(b) & 0xff);
     }
 
-    // Only send data if there is a data file
-    if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
+    if (!data.empty()) {
+        if (const string &error = ConvertData(data); !error.empty()) {
+            return error;
+        }
+        debug("Sending {} data bytes", buffer.size());
+    }
+    else if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
         if (const string &error = ReadData(); !error.empty()) {
             return error;
         }
-
         debug("Sending {} data bytes", buffer.size());
     }
 
@@ -325,7 +340,7 @@ string S2pExec::ExecuteCommand()
                 executor->GetSenseData() : fmt::format("Can't execute command ${:02x}", cdb[0]);
     }
 
-    if (binary_input_filename.empty() && hex_input_filename.empty()) {
+    if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         const int count = executor->GetByteCount();
 
         debug("Received {} data bytes", count);
@@ -354,17 +369,8 @@ string S2pExec::ReadData()
         stringstream ss;
         ss << in.rdbuf();
         if (!in.fail()) {
-            vector<byte> bytes;
-            try {
-                bytes = HexToBytes(ss.str());
-            }
-            catch (const parser_exception&) {
-                return "Invalid data input format";
-            }
-
-            buffer.clear();
-            for (const byte b : bytes) {
-                buffer.emplace_back(static_cast<uint8_t>(b));
+            if (const string &error = ConvertData(ss.str()); !error.empty()) {
+                return error;
             }
         }
     }
@@ -402,6 +408,24 @@ string S2pExec::WriteData(int count)
                 return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
             }
         }
+    }
+
+    return "";
+}
+
+string S2pExec::ConvertData(const string &data)
+{
+    vector<byte> bytes;
+    try {
+        bytes = HexToBytes(data);
+    }
+    catch (const parser_exception&) {
+        return "Invalid data input format";
+    }
+
+    buffer.clear();
+    for (const byte b : bytes) {
+        buffer.emplace_back(static_cast<uint8_t>(b));
     }
 
     return "";

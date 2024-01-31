@@ -32,6 +32,7 @@ private:
 
     string ReadData();
     string WriteData(int);
+    string ConvertData(const string&);
 
     void CleanUp() const;
     static void TerminationHandler(int);
@@ -65,6 +66,7 @@ private:
     string hex_output_filename;
 
     string command;
+    string data;
 
     string log_level = "info";
 
