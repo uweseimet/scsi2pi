@@ -8,14 +8,13 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
+#include "base/device_factory.h"
 
 using namespace std;
 
 TEST(HostServicesTest, DeviceDefaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "services");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "services");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHS, device->GetType());
     EXPECT_FALSE(device->SupportsFile());

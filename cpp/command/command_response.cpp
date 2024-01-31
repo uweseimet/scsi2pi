@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <spdlog/spdlog.h>
+#include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
@@ -17,7 +18,6 @@
 #include "devices/disk.h"
 #include "command_response.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace spdlog;
 using namespace s2p_interface;
@@ -58,7 +58,7 @@ void CommandResponse::GetDeviceTypeProperties(PbDeviceTypesInfo &device_types_in
 {
     auto type_properties = device_types_info.add_properties();
     type_properties->set_type(type);
-    const auto device = device_factory.CreateDevice(type, 0, "");
+    const auto device = DeviceFactory::Instance().CreateDevice(type, 0, "");
     GetDeviceProperties(device, *type_properties->mutable_properties());
 }
 
@@ -69,7 +69,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
         PbDeviceType type = UNDEFINED;
         PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
         // Only report device types actually supported by the factory
-        if (device_factory.CreateDevice(type, 0, "")) {
+        if (DeviceFactory::Instance().CreateDevice(type, 0, "")) {
             GetDeviceTypeProperties(device_types_info, type);
         }
         ordinal++;
@@ -119,7 +119,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &defaul
 {
     if (!filename.empty()) {
         image_file.set_name(filename);
-        image_file.set_type(device_factory.GetTypeForFile(filename));
+        image_file.set_type(DeviceFactory::Instance().GetTypeForFile(filename));
 
         const path p(filename[0] == '/' ? filename : default_folder + "/" + filename);
 
@@ -333,7 +333,7 @@ void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_
 
 void CommandResponse::GetMappingInfo(PbMappingInfo &mapping_info) const
 {
-    for (const auto& [name, type] : device_factory.GetExtensionMapping()) {
+    for (const auto& [name, type] : DeviceFactory::Instance().GetExtensionMapping()) {
         (*mapping_info.mutable_mapping())[name] = type;
     }
 }

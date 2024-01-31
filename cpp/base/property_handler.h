@@ -39,11 +39,8 @@ public:
     }
 
     void Init(const string&, const property_map&);
-    property_map GetProperties() const
-    {
-        return property_cache;
-    }
     void ParsePropertyFile(const string&, bool);
+    property_map GetProperties(const string& = "") const;
     string GetProperty(string_view) const;
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 

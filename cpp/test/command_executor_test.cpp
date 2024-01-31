@@ -170,7 +170,7 @@ TEST(CommandExecutorTest, Attach)
     const int ID = 3;
     const int LUN = 0;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -308,7 +308,7 @@ TEST(CommandExecutorTest, Detach)
     const int LUN1 = 0;
     const int LUN2 = 1;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -334,7 +334,7 @@ TEST(CommandExecutorTest, DetachAll)
 {
     const int ID = 4;
 
-    DeviceFactory device_factory;
+    DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -351,7 +351,7 @@ TEST(CommandExecutorTest, DetachAll)
 
 TEST(CommandExecutorTest, SetReservedIds)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -390,7 +390,7 @@ TEST(CommandExecutorTest, SetReservedIds)
 
 TEST(CommandExecutorTest, ValidateImageFile)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -430,7 +430,7 @@ TEST(CommandExecutorTest, PrintCommand)
 
 TEST(CommandExecutorTest, EnsureLun0)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -457,7 +457,7 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
     const int LUN1 = 0;
     const int LUN2 = 3;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);

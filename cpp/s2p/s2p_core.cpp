@@ -17,6 +17,7 @@
 #include <vector>
 #include <chrono>
 #include "shared/s2p_version.h"
+#include "base/device_factory.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
@@ -166,6 +167,11 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
+    if (const string &error = MapExtensions(); !error.empty()) {
+        cerr << "Error: " << error << endl;
+        return EXIT_FAILURE;
+    }
+
     if (!InitBus(in_process, is_sasi)) {
         cerr << "Error: Can't initialize bus" << endl;
         return EXIT_FAILURE;
@@ -234,6 +240,32 @@ void S2p::SetUpEnvironment()
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
+}
+
+string S2p::MapExtensions() const
+{
+    for (const auto& [key, value] : property_handler.GetProperties("extensions.")) {
+        const auto &components = Split(key, '.');
+        if (components.size() != 2) {
+            return "Invalid extension mapping: '" + key + "'";
+        }
+
+        string type_upper;
+        ranges::transform(components[1], back_inserter(type_upper), ::toupper);
+
+        PbDeviceType type = UNDEFINED;
+        if (PbDeviceType_Parse(type_upper, &type) && type == PbDeviceType::UNDEFINED) {
+            continue;
+        }
+
+        for (const string &extension : Split(value, ',')) {
+            if (!DeviceFactory::Instance().AddExtensionMapping(extension, type)) {
+                return "Duplicate extension mapping for extension '" + extension + "'";
+            }
+        }
+    }
+
+    return "";
 }
 
 void S2p::LogProperties() const

@@ -20,21 +20,30 @@ using namespace s2p_interface;
 
 class DeviceFactory
 {
+    using extension_mapping = unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>>;
 
 public:
 
-    DeviceFactory() = default;
-    ~DeviceFactory() = default;
+    static DeviceFactory& Instance();
 
     shared_ptr<PrimaryDevice> CreateDevice(PbDeviceType, int, const string&) const;
     PbDeviceType GetTypeForFile(const string&) const;
-    unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> GetExtensionMapping() const;
+
+    extension_mapping GetExtensionMapping() const
+    {
+        return mapping;
+    }
+    bool AddExtensionMapping(const string&, PbDeviceType) const;
 
 private:
+
+    DeviceFactory() = default;
 
     const inline static unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DEVICE_MAPPING = {
         { "daynaport", SCDP },
         { "printer", SCLP },
         { "services", SCHS }
     };
+
+    inline static extension_mapping mapping;
 };

@@ -8,6 +8,7 @@
 
 #include <spdlog/spdlog.h>
 #include <sstream>
+#include "base/device_factory.h"
 #include "shared/s2p_util.h"
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
@@ -529,7 +530,7 @@ bool CommandExecutor::VerifyExistingIdAndLun(const CommandContext &context, int 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context, const PbDeviceType type,
     int lun, const string &filename) const
 {
-    auto device = device_factory.CreateDevice(type, lun, filename);
+    auto device = DeviceFactory::Instance().CreateDevice(type, lun, filename);
     if (!device) {
         if (type == UNDEFINED) {
             context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, filename);

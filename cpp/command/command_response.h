@@ -9,7 +9,6 @@
 #pragma once
 
 #include <set>
-#include "base/device_factory.h"
 
 using namespace filesystem;
 using namespace s2p_interface;
@@ -44,8 +43,6 @@ public:
 private:
 
     inline static const vector<string> EMPTY_VECTOR;
-
-    [[no_unique_address]] const DeviceFactory device_factory;
 
     void GetDeviceProperties(shared_ptr<Device>, PbDeviceProperties&) const;
     void GetDevice(shared_ptr<Device>, PbDevice&, const string&) const;

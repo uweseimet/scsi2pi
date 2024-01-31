@@ -10,7 +10,6 @@
 
 #include <mutex>
 #include "controllers/controller_factory.h"
-#include "base/device_factory.h"
 #include "devices/storage_device.h"
 
 class CommandContext;
@@ -73,8 +72,6 @@ private:
     Bus &bus;
 
     shared_ptr<ControllerFactory> controller_factory;
-
-    [[no_unique_address]] const DeviceFactory device_factory;
 
     mutex execution_locker;
 

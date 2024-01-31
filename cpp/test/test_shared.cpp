@@ -14,6 +14,7 @@
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
+#include "base/device_factory.h"
 
 using namespace std;
 using namespace filesystem;
@@ -26,10 +27,8 @@ const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publi
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
-    DeviceFactory device_factory;
-
     auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
-    auto device = device_factory.CreateDevice(type, lun, extension);
+    auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
     device->Init( { });
 
     EXPECT_TRUE(controller->AddDevice(device));
@@ -91,8 +90,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    DeviceFactory device_factory;
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, filename);
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());

@@ -8,15 +8,14 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
+#include "base/device_factory.h"
 #include "devices/printer.h"
 
 using namespace std;
 
 TEST(PrinterTest, Device_Defaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "printer");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "printer");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCLP, device->GetType());
     EXPECT_FALSE(device->SupportsFile());

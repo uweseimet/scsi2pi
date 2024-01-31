@@ -8,13 +8,12 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
+#include "base/device_factory.h"
 #include "devices/daynaport.h"
 
 TEST(ScsiDaynaportTest, Device_Defaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "daynaport");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "daynaport");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCDP, device->GetType());
     EXPECT_FALSE(device->SupportsFile());

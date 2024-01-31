@@ -66,12 +66,31 @@ key2=value2
     EXPECT_THROW(SetUpProperties(properties3), parser_exception);
 }
 
+TEST(PropertyHandlerTest, GetProperties)
+{
+    const string &properties =
+        R"(key1=value1
+key2=value2
+key11=value2
+)";
+
+    const auto &property_handler = SetUpProperties(properties);
+
+    auto p = property_handler.GetProperties("key2");
+    EXPECT_EQ(1, p.size());
+    EXPECT_TRUE(p.contains("key2"));
+
+    p = property_handler.GetProperties("key1");
+    EXPECT_EQ(2, p.size());
+    EXPECT_TRUE(p.contains("key1"));
+    EXPECT_TRUE(p.contains("key11"));
+}
+
 TEST(PropertyHandlerTest, GetProperty)
 {
     const string &properties =
         R"(key1=value1
 key2=value2
-#key3=value3
 )";
 
     const auto &property_handler = SetUpProperties(properties);

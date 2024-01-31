@@ -71,6 +71,22 @@ void PropertyHandler::ParsePropertyFile(const string &filename, bool default_fil
     }
 }
 
+property_map PropertyHandler::GetProperties(const string &filter) const
+{
+    if (filter.empty()) {
+        return property_cache;
+    }
+
+    property_map filtered_properties;
+    for (const auto& [key, value] : property_cache) {
+        if (key.starts_with(filter)) {
+            filtered_properties[key] = value;
+        }
+    }
+
+    return filtered_properties;
+}
+
 string PropertyHandler::GetProperty(string_view key) const
 {
     for (const auto& [k, v] : property_cache) {

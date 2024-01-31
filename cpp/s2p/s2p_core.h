@@ -37,6 +37,7 @@ private:
     void LogDevices(string_view) const;
     static void TerminationHandler(int);
     void SetUpEnvironment();
+    string MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
     void AttachDevices(PbCommand&);

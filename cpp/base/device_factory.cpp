@@ -31,6 +31,31 @@
 
 using namespace s2p_util;
 
+DeviceFactory& DeviceFactory::Instance()
+{
+    static DeviceFactory instance; // NOSONAR instance cannot be inlined
+
+    if (mapping.empty()) {
+#if defined BUILD_SCHD || defined BUILD_SCRM
+        mapping["hd1"] = SCHD;
+        mapping["hds"] = SCHD;
+        mapping["hda"] = SCHD;
+        mapping["hdr"] = SCRM;
+#endif
+#ifdef BUILD_SCMO
+        mapping["mos"] = SCMO;
+#endif
+#ifdef BUILD_SCCD
+        mapping["is1"] = SCCD;
+        mapping["iso"] = SCCD;
+        mapping["cdr"] = SCCD;
+        mapping["toast"] = SCCD;
+#endif
+    }
+
+    return instance;
+}
+
 shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const string &filename) const
 {
     // If no type was specified try to derive the device type from the filename
@@ -94,7 +119,6 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
 PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
 {
-    const auto &mapping = GetExtensionMapping();
     if (const auto &it = mapping.find(GetExtensionLowerCase(filename)); it != mapping.end()) {
         return it->second;
     }
@@ -106,25 +130,13 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
     return UNDEFINED;
 }
 
-unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DeviceFactory::GetExtensionMapping() const
+bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type) const
 {
-    unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> mapping;
+    if (mapping.contains(extension)) {
+        return false;
+    }
 
-#if defined BUILD_SCHD || defined BUILD_SCRM
-    mapping["hd1"] = SCHD;
-    mapping["hds"] = SCHD;
-    mapping["hda"] = SCHD;
-    mapping["hdr"] = SCRM;
-#endif
-#ifdef BUILD_SCMO
-    mapping["mos"] = SCMO;
-#endif
-#ifdef BUILD_SCCD
-    mapping["is1"] = SCCD;
-    mapping["iso"] = SCCD;
-    mapping["cdr"] = SCCD;
-    mapping["toast"] = SCCD;
-#endif
+    mapping[extension] = type;
 
-    return mapping;
+    return true;
 }
