@@ -76,9 +76,11 @@ Show the s2pexec version.
 
 .SH EXAMPLE
 s2pexec -i 0 -c 12:00:00:00:20:00
+.br
 Send an INQUIRY command to the device with SCSI ID 0 and display the results.
 
 s2pexec -i 5 -c 15:11:00:04:0c:00 -t data.dat
+.br
 Send a MODE SELECT command to the device with SCSI ID 5, with the hexadecimally coded data in data.dat as parameters.
 
 .SH SEE ALSO
