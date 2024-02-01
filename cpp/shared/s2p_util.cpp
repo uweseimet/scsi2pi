@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 #include <filesystem>
 #include <algorithm>
@@ -92,6 +93,37 @@ string s2p_util::GetLocale()
     }
 
     return locale;
+}
+
+string s2p_util::GetLine(const string &prompt)
+{
+    while (true) {
+        if (isatty(STDIN_FILENO)) {
+            cout << prompt << ">";
+        }
+
+        string line;
+        if (!getline(cin, line) || line == "exit" || line == "quit") {
+            if (line.empty() && isatty(STDIN_FILENO)) {
+                cout << "\n";
+            }
+            return "";
+        }
+
+        if (!line.empty() && !line.starts_with("#")) {
+            return line;
+        }
+    }
+}
+
+string s2p_util::ConvertCommand(const string &command)
+{
+    // Try to guess whether the command is short or long if there is no dash at the beginning
+    if (!command.starts_with("-")) {
+        return command.size() < 2 ? "-" + command : "--" + command;
+    }
+
+    return command;
 }
 
 bool s2p_util::GetAsUnsignedInt(const string &value, int &result)

@@ -215,7 +215,7 @@ void InitiatorExecutor::DataIn(span<uint8_t> buffer, int &length)
         throw phase_exception("Buffer full in DATA IN phase");
     }
 
-    trace("Receiving {0} byte(s) in DATA IN phase", length);
+    trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
     byte_count = bus.ReceiveHandShake(buffer.data(), length);
 

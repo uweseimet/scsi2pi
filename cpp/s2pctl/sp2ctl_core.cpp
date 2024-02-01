@@ -86,62 +86,45 @@ void S2pCtl::Banner(bool usage) const
     }
 }
 
-int S2pCtl::Run(const vector<char*> &args) const
+int S2pCtl::Run(const vector<char*> &args)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
 
-int S2pCtl::RunInteractive() const
+int S2pCtl::RunInteractive()
 {
+    const string &prompt = "s2pctl";
+
     if (isatty(STDIN_FILENO)) {
         Banner(false);
 
-        cout << "Entering interactive mode, Ctrl-D or \"exit\" to quit\n";
+        cout << "Entering interactive mode, Ctrl-D, \"exit\" or \"quit\" to quit\n";
     }
 
     while (true) {
-        if (isatty(STDIN_FILENO)) {
-            cout << "s2pctl>";
-        }
-
-        string line;
-        if (!getline(cin, line) || line == "exit") {
-            if (line.empty() && isatty(STDIN_FILENO)) {
-                cout << "\n";
-            }
+        const string &line = GetLine(prompt);
+        if (line.empty()) {
             break;
         }
 
-        if (!line.empty() && !line.starts_with("#")) {
-            const auto &args = Split(line, ' ');
+        const auto &args = Split(line, ' ');
 
-            vector<char*> interactive_args;
-            interactive_args.emplace_back(strdup("s2pctl"));
-            interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
-            for (size_t i = 1; i < args.size(); i++) {
-                interactive_args.emplace_back(strdup(args[i].c_str()));
-            }
-
-            ParseArguments(interactive_args);
+        vector<char*> interactive_args;
+        interactive_args.emplace_back(strdup(prompt.c_str()));
+        interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
+        for (size_t i = 1; i < args.size(); i++) {
+            interactive_args.emplace_back(strdup(args[i].c_str()));
         }
+
+        ParseArguments(interactive_args);
     }
 
     return EXIT_SUCCESS;
 }
 
-string S2pCtl::ConvertCommand(const string &command)
-{
-    // Try to guess whether the command is short or long if there is no dash at the beginning
-    if (!command.starts_with("-")) {
-        return command.size() < 2 ? "-" + command : "--" + command;
-    }
-
-    return command;
-}
-
-int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable complexity for parsing
+int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_PROMPT = 2;
     const int OPT_BINARY_PROTOBUF = 3;
@@ -195,8 +178,6 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
     PbCommand command;
     PbDeviceDefinition *device = command.add_devices();
     device->set_id(-1);
-    string hostname = "localhost";
-    int port = 6868;
     string id_and_lun;
     string param;
     string log_level;

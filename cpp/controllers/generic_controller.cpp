@@ -442,11 +442,6 @@ void GenericController::Receive()
 
     // Move to next phase
     switch (GetPhase()) {
-    case phase_t::command:
-        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
-        ProcessCommand();
-        break;
-
     case phase_t::msgout:
         ProcessMessage();
         break;
@@ -454,11 +449,11 @@ void GenericController::Receive()
     case phase_t::dataout:
         // Block-oriented data have been handled above
         DataOutNonBlockOriented();
-
         Status();
         break;
 
     default:
+        error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
         assert(false);
         break;
     }
@@ -500,11 +495,6 @@ void GenericController::ReceiveBytes()
 
     // Move to next phase
     switch (GetPhase()) {
-    case phase_t::command:
-        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
-        ProcessCommand();
-        break;
-
     case phase_t::msgout:
         ProcessMessage();
         break;
@@ -514,6 +504,7 @@ void GenericController::ReceiveBytes()
         break;
 
     default:
+        error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
         assert(false);
         break;
     }
@@ -708,26 +699,6 @@ bool GenericController::XferOutBlockOriented(bool cont)
     return true;
 }
 #pragma GCC diagnostic pop
-
-// TODO This probably does not make sense
-void GenericController::ProcessCommand()
-{
-    const int len = GpioBus::GetCommandBytesCount(GetBuffer()[0]);
-
-    for (int i = 0; i < len; i++) {
-        SetCdbByte(i, GetBuffer()[i]);
-    }
-
-    if (get_level() == level::trace) {
-        string s = "CDB=$";
-        for (int i = 0; i < len; i++) {
-            s += fmt::format("{:02x}", GetCdbByte(i));
-        }
-        LogTrace(s);
-    }
-
-    Execute();
-}
 
 void GenericController::LogCdb() const
 {

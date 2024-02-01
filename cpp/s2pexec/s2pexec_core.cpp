@@ -39,36 +39,38 @@ void S2pExec::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-void S2pExec::Banner(bool header)
+void S2pExec::Banner(bool header, bool usage)
 {
     if (header) {
         cout << s2p_util::Banner("(SCSI/SASI Command Execution Tool)");
     }
 
-    cout << "Usage: s2pexec [options]\n"
-        << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
-        << "                                default LUN is 0.\n"
-        << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
-        << "                                default LUN is 0.\n"
-        << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-        << "  --cdb/-c CDB                  Command to send in hexadecimal format.\n"
-        << "  --data/-d DATA                Data to send with the command in\n"
-        << "                                hexadecimal format.\n"
-        << "  --buffer-size/-b SIZE         Buffer size for receiving data.\n"
-        << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error\n"
-        << "                                |off), default is 'info'.\n"
-        << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
-        << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
-        << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
-        << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
-        << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
-        << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
-        << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
-        << "  --version/-v                  Display the s2pexec version.\n"
-        << "  --help/-H                     Display this help.\n";
+    if (usage) {
+        cout << "Usage: s2pexec [options]\n"
+            << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
+            << "                                default LUN is 0.\n"
+            << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
+            << "                                default LUN is 0.\n"
+            << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
+            << "  --cdb/-c CDB                  Command to send in hexadecimal format.\n"
+            << "  --data/-d DATA                Data to send with the command in\n"
+            << "                                hexadecimal format.\n"
+            << "  --buffer-size/-b SIZE         Buffer size for receiving data.\n"
+            << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error\n"
+            << "                                |off), default is 'info'.\n"
+            << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
+            << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
+            << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
+            << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
+            << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
+            << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
+            << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
+            << "  --version/-v                  Display the s2pexec version.\n"
+            << "  --help/-H                     Display this help.\n";
+    }
 }
 
-bool S2pExec::Init(bool)
+bool S2pExec::Init(bool in_process)
 {
     instance = this;
     // Signal handler for cleaning up
@@ -82,7 +84,7 @@ bool S2pExec::Init(bool)
 
     bus_factory = make_unique<BusFactory>();
 
-    bus = bus_factory->CreateBus(false);
+    bus = bus_factory->CreateBus(false, in_process);
     if (bus) {
         executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
     }
@@ -190,13 +192,13 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         default:
-            Banner(false);
+            Banner(false, true);
             return false;
         }
     }
 
     if (help) {
-        Banner(true);
+        Banner(true, true);
         return true;
     }
 
@@ -206,15 +208,25 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!SetLogLevel(log_level)) {
-        throw parser_exception("Invalid log level: '" + log_level + "'");
+        // Preserve the existing log level for interactive mode
+        const string &tmp = log_level;
+        const auto &l = to_string_view(get_level());
+        log_level = string(l.data(), l.size());
+        throw parser_exception("Invalid log level: '" + tmp + "'");
     }
 
-    if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-        throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+    if (!initiator.empty()) {
+        if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
+            initiator = "";
+            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+        }
     }
 
-    if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
-        throw parser_exception(error);
+    if (!target.empty()) {
+        if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
+            target = "";
+            throw parser_exception(error);
+        }
     }
 
     if (target_id == -1) {
@@ -258,11 +270,69 @@ bool S2pExec::ParseArguments(span<char*> args)
     return true;
 }
 
+bool S2pExec::RunInteractive(bool in_process)
+{
+    const string &prompt = "s2pexec";
+
+    if (isatty(STDIN_FILENO)) {
+        Banner(true, false);
+
+        cout << "Entering interactive mode, Ctrl-D, \"exit\" or \"quit\" to quit\n";
+    }
+
+    bool initialized = false;
+
+    while (true) {
+        const string &line = GetLine(prompt);
+        if (line.empty()) {
+            break;
+        }
+
+        const auto &args = Split(line, ' ');
+
+        vector<char*> interactive_args;
+        interactive_args.emplace_back(strdup(prompt.c_str()));
+        interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
+        for (size_t i = 1; i < args.size(); i++) {
+            interactive_args.emplace_back(strdup(args[i].c_str()));
+        }
+
+        try {
+            if (!ParseArguments(interactive_args)) {
+                continue;
+            }
+        }
+        catch (const parser_exception &e) {
+            cerr << "Error: " << e.what() << endl;
+            continue;
+        }
+
+        if (!initialized) {
+            if (!Init(in_process)) {
+                cerr << "Error: Can't initialize bus" << endl;
+                return false;
+            }
+
+            if (!in_process && !bus_factory->IsRaspberryPi()) {
+                cerr << "Error: No board hardware support" << endl;
+                return false;
+            }
+
+            initialized = true;
+        }
+
+        Run();
+    }
+
+    CleanUp();
+
+    return true;
+}
+
 int S2pExec::Run(span<char*> args, bool in_process)
 {
     if (args.size() < 2) {
-        Banner(true);
-        return -1;
+        return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
     }
 
     try {
@@ -288,6 +358,15 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
+    int status = Run();
+
+    CleanUp();
+
+    return status;
+}
+
+int S2pExec::Run()
+{
     executor->SetTarget(target_id, target_lun, sasi);
 
     int result = EXIT_SUCCESS;
@@ -308,8 +387,6 @@ int S2pExec::Run(span<char*> args, bool in_process)
         cerr << "Error: " << e.what() << endl;
         result = -1;
     }
-
-    CleanUp();
 
     return result;
 }

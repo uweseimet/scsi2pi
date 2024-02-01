@@ -81,9 +81,9 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // s2pctl does not require arguments because it supports an interactive mode
-    if (client != "s2pctl" && c_args.empty()) {
-        cerr << "Test client requires client arguments" << endl;
+    // s2pctl and s2pexec do not require arguments because they support an interactive mode
+    if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
+        cerr << "Test client '" << client << "' requires arguments" << endl;
         exit(EXIT_FAILURE);
     }
 

@@ -29,10 +29,13 @@ public:
 
 private:
 
-    static void Banner(bool);
+    static void Banner(bool, bool);
 
     bool Init(bool);
     bool ParseArguments(span<char*>);
+    bool RunInteractive(bool);
+    int Run();
+
     tuple<sense_key, asc, int> ExecuteCommand();
 
     string ReadData();

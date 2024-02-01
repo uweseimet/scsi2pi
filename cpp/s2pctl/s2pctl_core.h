@@ -18,13 +18,15 @@ class S2pCtl
 
 public:
 
-    int Run(const vector<char*>&) const;
+    int Run(const vector<char*>&);
 
 private:
 
     void Banner(bool) const;
-    int RunInteractive() const;
-    int ParseArguments(const vector<char*>&) const;
+    int RunInteractive();
+    int ParseArguments(const vector<char*>&);
 
-    static string ConvertCommand(const string&);
+    // Preserve host settings during invocations in interactive mode
+    string hostname = "localhost";
+    int port = 6868;
 };

@@ -54,6 +54,8 @@ string GetHomeDir();
 pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = INT_MAX);
 string GetLocale();
+string GetLine(const string&);
+string ConvertCommand(const string&);
 bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(int, int, const string&, int&, int&);
 string Banner(string_view, bool = true);

@@ -17,7 +17,7 @@ class BusFactory
 
 public:
 
-    unique_ptr<Bus> CreateBus(bool, bool = false);
+    unique_ptr<Bus> CreateBus(bool, bool);
 
     bool IsRaspberryPi() const
     {

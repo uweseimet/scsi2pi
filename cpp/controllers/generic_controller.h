@@ -48,7 +48,6 @@ protected:
 
     void Execute();
     void DataOutNonBlockOriented() const;
-    void ProcessCommand();
 
     virtual void ParseMessage() = 0;
     virtual void ProcessMessage() = 0;
