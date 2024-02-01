@@ -10,49 +10,18 @@
 
 #pragma once
 
-// Configurable settings
-#ifdef __linux__
-// Check SEL signal by event instead of polling
-#define USE_SEL_EVENT_ENABLE
-#endif
-
 // Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5.
 // Currently IRQs are disabled in target mode but enabled in initiator mode.
 //#define NO_IRQ_DISABLE
-
 #ifndef __linux__
 #define NO_IRQ_DISABLE
 #endif
 
 #ifdef __linux__
 #include <linux/gpio.h>
-#endif
-#ifdef USE_SEL_EVENT_ENABLE
 #include <sys/epoll.h>
 #endif
 #include "gpio_bus.h"
-
-// Constant declarations (GIC)
-const static uint32_t ARM_GICD_BASE = 0xFF841000;
-const static uint32_t ARM_GICC_BASE = 0xFF842000;
-const static uint32_t ARM_GIC_END = 0xFF847FFF;
-const static int GICD_CTLR = 0x000;
-const static int GICD_IGROUPR0 = 0x020;
-const static int GICD_ISENABLER0 = 0x040;
-const static int GICD_ICENABLER0 = 0x060;
-const static int GICD_ISPENDR0 = 0x080;
-const static int GICD_ICPENDR0 = 0x0A0;
-const static int GICD_ISACTIVER0 = 0x0C0;
-const static int GICD_ICACTIVER0 = 0x0E0;
-const static int GICD_IPRIORITYR0 = 0x100;
-const static int GICD_ITARGETSR0 = 0x200;
-const static int GICD_ICFGR0 = 0x300;
-const static int GICD_SGIR = 0x3C0;
-const static int GICC_CTLR = 0x000;
-const static int GICC_PMR = 0x001;
-
-// GPIO3
-const static int GIC_GPIO_IRQ = (32 + 116);
 
 class RpiBus : public GpioBus
 {
@@ -179,7 +148,7 @@ private:
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
-#ifdef USE_SEL_EVENT_ENABLE
+#ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
     // epoll file descriptor
@@ -239,4 +208,26 @@ private:
     const static uint32_t PADS_OFFSET = 0x00100000;
     const static uint32_t GPIO_OFFSET = 0x00200000;
     const static uint32_t QA7_OFFSET = 0x01000000;
+
+    // Constant declarations (GIC)
+    const static uint32_t ARM_GICD_BASE = 0xFF841000;
+    const static uint32_t ARM_GICC_BASE = 0xFF842000;
+    const static uint32_t ARM_GIC_END = 0xFF847FFF;
+    const static int GICD_CTLR = 0x000;
+    const static int GICD_IGROUPR0 = 0x020;
+    const static int GICD_ISENABLER0 = 0x040;
+    const static int GICD_ICENABLER0 = 0x060;
+    const static int GICD_ISPENDR0 = 0x080;
+    const static int GICD_ICPENDR0 = 0x0A0;
+    const static int GICD_ISACTIVER0 = 0x0C0;
+    const static int GICD_ICACTIVER0 = 0x0E0;
+    const static int GICD_IPRIORITYR0 = 0x100;
+    const static int GICD_ITARGETSR0 = 0x200;
+    const static int GICD_ICFGR0 = 0x300;
+    const static int GICD_SGIR = 0x3C0;
+    const static int GICC_CTLR = 0x000;
+    const static int GICC_PMR = 0x001;
+
+    // GPIO3
+    const static int GIC_GPIO_IRQ = (32 + 116);
 };

@@ -73,7 +73,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 and the device types they map to.\n"
             << "  --list-interfaces/-N           List network interfaces that are up.\n"
             << "  --list-operations/-o           List available remote interface operations.\n"
-            << "  --list-properties/-P           List s2p startup properties.\n"
+            << "  --list-properties/-P           List the current s2p properties.\n"
             << "  --list-log-levels              List the available s2p log levels\n"
             << "                                 and the current log level.\n"
             << "  --prompt                       Prompt for the access token in case\n"
@@ -198,7 +198,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
         "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
-        switch (opt) {
+        switch (opt) { // NOSONAR Acceptable complexity for parsing
         case 'i':
             id_and_lun = optarg;
             break;

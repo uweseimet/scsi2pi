@@ -150,7 +150,7 @@ bool RpiBus::Init(bool target)
     gpfsel[3] = gpio[GPIO_FSEL_3];
 
     // Initialize SEL signal interrupt
-#ifdef USE_SEL_EVENT_ENABLE
+#ifdef __linux__
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
         error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
@@ -182,56 +182,6 @@ bool RpiBus::Init(bool target)
     ev.events = EPOLLIN | EPOLLPRI;
     ev.data.fd = selevreq.fd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, selevreq.fd, &ev);
-#else
-    // Edge detection setting
-#if SIGNAL_CONTROL_MODE == 2
-    gpio[GPIO_AREN_0] = 1 << PIN_SEL;
-#else
-    gpio[GPIO_AFEN_0] = 1 << PIN_SEL;
-#endif
-
-    // Clear event - GPIO Pin Event Detect Status
-    gpio[GPIO_EDS_0] = 1 << PIN_SEL;
-
-#ifdef __linux__
-    // Register interrupt handler
-    setIrqFuncAddress(IrqHandler);
-#endif
-
-    // GPIO interrupt setting
-    if (pi_type == 4) {
-        // GIC Invalid
-        gicd[GICD_CTLR] = 0;
-
-        // Route all interupts to core 0
-        for (int i = 0; i < 8; i++) {
-            gicd[GICD_ICENABLER0 + i] = 0xffffffff;
-            gicd[GICD_ICPENDR0 + i] = 0xffffffff;
-            gicd[GICD_ICACTIVER0 + i] = 0xffffffff;
-        }
-        for (int i = 0; i < 64; i++) {
-            gicd[GICD_IPRIORITYR0 + i] = 0xa0a0a0a0;
-            gicd[GICD_ITARGETSR0 + i] = 0x01010101;
-        }
-
-        // Set all interrupts as level triggers
-        for (int i = 0; i < 16; i++) {
-            gicd[GICD_ICFGR0 + i] = 0;
-        }
-
-        // GIC Invalid
-        gicd[GICD_CTLR] = 1;
-
-        // Enable CPU interface for core 0
-        gicc[GICC_PMR]  = 0xf0;
-        gicc[GICC_CTLR] = 1;
-
-        // Enable interrupts
-        gicd[GICD_ISENABLER0 + (GIC_GPIO_IRQ / 32)] = 1 << (GIC_GPIO_IRQ % 32);
-    } else {
-        // Enable interrupts
-        irpctl[IRPT_ENB_IRQ_2] = (1 << (GPIO_IRQ % 32));
-    }
 #endif
 
     // Create work table
@@ -247,7 +197,7 @@ bool RpiBus::Init(bool target)
 void RpiBus::CleanUp()
 {
     // Release SEL signal interrupt
-#ifdef USE_SEL_EVENT_ENABLE
+#ifdef __linux__
     close(selevreq.fd);
 #endif
 
@@ -335,7 +285,7 @@ void RpiBus::Reset()
 
 bool RpiBus::WaitForSelection()
 {
-#ifndef USE_SEL_EVENT_ENABLE
+#ifndef __linux__
     Acquire();
     if (!GetSEL()) {
         const timespec ts = { .tv_sec = 0, .tv_nsec = 0};
