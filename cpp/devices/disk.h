@@ -46,7 +46,10 @@ public:
 
     virtual int Read(span<uint8_t>, uint64_t);
 
-    uint32_t GetSectorSizeInBytes() const;
+    uint32_t GetSectorSizeInBytes() const
+    {
+        return sector_size;
+    }
     bool IsSectorSizeConfigurable() const
     {
         return supported_sector_sizes.size() > 1;
@@ -54,6 +57,10 @@ public:
     const auto& GetSupportedSectorSizes() const
     {
         return supported_sector_sizes;
+    }
+    uint32_t GetConfiguredSectorSize() const
+    {
+        return configured_sector_size;
     }
     bool SetConfiguredSectorSize(uint32_t);
     void FlushCache() override;
@@ -84,7 +91,6 @@ protected:
     {
         sector_size = 1 << count;
     }
-    uint32_t GetConfiguredSectorSize() const;
 
 private:
 

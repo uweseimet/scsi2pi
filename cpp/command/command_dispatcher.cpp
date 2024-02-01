@@ -37,6 +37,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
+            PropertyHandler::Instance().AddProperty("log_level", log_level);
             return context.ReturnSuccessStatus();
         }
 
@@ -46,6 +47,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return false;
         }
         else {
+            PropertyHandler::Instance().AddProperty("image_folder", GetParam(command, "folder"));
             return context.WriteSuccessResult(result);
         }
 

@@ -878,11 +878,6 @@ void Disk::ChangeSectorSize(uint32_t new_size)
     }
 }
 
-uint32_t Disk::GetSectorSizeInBytes() const
-{
-    return sector_size;
-}
-
 bool Disk::SetSectorSizeInBytes(uint32_t size)
 {
     if (!GetSupportedSectorSizes().contains(size)) {
@@ -892,11 +887,6 @@ bool Disk::SetSectorSizeInBytes(uint32_t size)
     sector_size = size;
 
     return true;
-}
-
-uint32_t Disk::GetConfiguredSectorSize() const
-{
-    return configured_sector_size;
 }
 
 bool Disk::SetConfiguredSectorSize(uint32_t configured_size)

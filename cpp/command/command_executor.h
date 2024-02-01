@@ -70,6 +70,8 @@ private:
 
     static bool CheckForReservedFile(const CommandContext&, const string&);
 
+    static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
+
     Bus &bus;
 
     shared_ptr<ControllerFactory> controller_factory;

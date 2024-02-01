@@ -39,14 +39,22 @@ public:
     }
 
     void Init(const string&, const property_map&);
-    void ParsePropertyFile(const string&, bool);
+
     property_map GetProperties(const string& = "") const;
     string GetProperty(string_view) const;
+    void AddProperty(const string &key, string_view value)
+    {
+        property_cache[key] = value;
+    }
+    void RemoveProperties(const string&);
+
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 
 private:
 
     PropertyHandler() = default;
+
+    static void ParsePropertyFile(property_map&, const string&, bool);
 
     property_map property_cache;
 

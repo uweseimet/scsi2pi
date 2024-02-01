@@ -44,6 +44,7 @@ TEST(PropertyHandlerTest, Init)
     const string &properties1 =
         R"(key1=value1
 key2=value2
+device.3.params=params3
 )";
     const string &properties2 =
         R"(key3=value3
@@ -58,10 +59,15 @@ key2=value2
 
     property_map cmd_properties;
     cmd_properties["key1"] = "value2";
+    cmd_properties["device.1.params"] = "params1";
+    cmd_properties["device.2:1.params"] = "params2";
     property_handler = SetUpProperties(properties1, properties2, cmd_properties);
     EXPECT_EQ("value2", property_handler.GetProperty("key1"));
     EXPECT_EQ("value2", property_handler.GetProperty("key2"));
     EXPECT_EQ("value3", property_handler.GetProperty("key3"));
+    EXPECT_EQ("params1", property_handler.GetProperty("device.1:0.params"));
+    EXPECT_EQ("params2", property_handler.GetProperty("device.2:1.params"));
+    EXPECT_EQ("params3", property_handler.GetProperty("device.3:0.params"));
 
     EXPECT_THROW(SetUpProperties(properties3), parser_exception);
 }

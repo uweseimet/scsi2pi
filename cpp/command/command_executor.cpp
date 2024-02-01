@@ -92,8 +92,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         if (const string error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
             return context.ReturnErrorStatus(error);
         }
-
-        return context.ReturnSuccessStatus();
+        else {
+            PropertyHandler::Instance().AddProperty("reserved_ids", Join(reserved_ids, ","));
+            return context.ReturnSuccessStatus();
+        }
     }
 
     case CHECK_AUTHENTICATION:
@@ -275,6 +277,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 #endif
 
+    SetUpDeviceProperties(context, device);
+
     string msg = "Attached ";
     if (device->IsReadOnly()) {
         msg += "read-only ";
@@ -350,8 +354,10 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
     }
 
     if (!dryRun) {
-        // Remember the device identifier for the log message before the device data become invalid on removal
+        // Remember some device data before the device data become invalid on removal
         const string identifier = device.GetIdentifier();
+        const int id = device.GetId();
+        const int lun = device.GetLun();
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
@@ -360,6 +366,12 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory->DeleteController(*controller)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
+        }
+
+        // Consider both potential identifiers if the LUN is 0
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", identifier));
+        if (!lun) {
+            PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
 
         info("Detached " + identifier);
@@ -371,7 +383,37 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 void CommandExecutor::DetachAll() const
 {
     if (controller_factory->DeleteAllControllers()) {
+        PropertyHandler::Instance().RemoveProperties("device.");
+
         info("Detached all devices");
+    }
+}
+
+void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, shared_ptr<PrimaryDevice> device)
+{
+    const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
+    PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
+    PropertyHandler::Instance().AddProperty(identifier + "product",
+        device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+    const auto disk = dynamic_pointer_cast<Disk>(device);
+    if (disk && disk->GetConfiguredSectorSize()) {
+        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
+
+    }
+    if (disk && !disk->GetFilename().empty()) {
+        if (string filename = disk->GetFilename(); filename.starts_with(context.GetDefaultFolder())) {
+            filename = filename.substr(context.GetDefaultFolder().length() + 1);
+        }
+        else {
+            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+        }
+    }
+    else if (!device->GetParams().empty()) {
+        vector<string> p;
+        for (const auto& [param, value] : device->GetParams()) {
+            p.emplace_back(param + "=" + value);
+        }
+        PropertyHandler::Instance().AddProperty(identifier + "params", Join(p, ":"));
     }
 }
 
