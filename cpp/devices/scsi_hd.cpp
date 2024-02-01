@@ -13,8 +13,7 @@
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, lun, true, sector_sizes), scsi_level(
-    scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -82,7 +81,7 @@ void ScsiHd::Open()
 
 vector<uint8_t> ScsiHd::InquiryInternal() const
 {
-    return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
+    return HandleInquiry(device_type::direct_access, IsRemovable());
 }
 
 void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const

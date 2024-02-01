@@ -2,9 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
-//
-// Message localization support. Currently only for messages with up to 3 string parameters.
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -40,6 +38,7 @@ enum class LocalizationKey
     ERROR_SHUTDOWN_MODE_INVALID,
     ERROR_SHUTDOWN_PERMISSION,
     ERROR_FILE_OPEN,
+    ERROR_SCSI_LEVEL,
     ERROR_BLOCK_SIZE,
     ERROR_BLOCK_SIZE_NOT_CONFIGURABLE,
     ERROR_SCSI_CONTROLLER,

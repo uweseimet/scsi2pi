@@ -12,8 +12,8 @@
 
 using namespace filesystem;
 
-StorageDevice::StorageDevice(PbDeviceType type, int lun, bool supports_mode_pages)
-: ModePageDevice(type, lun, supports_mode_pages)
+StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_pages)
+: ModePageDevice(type, level, lun, supports_mode_pages)
 {
     SupportsFile(true);
     SetStoppable(true);

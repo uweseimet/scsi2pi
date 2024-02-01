@@ -30,6 +30,8 @@ void S2pParser::Banner(bool usage) const
             << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
             << "), default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
+            << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
+            << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
             << "  --block-size/-b BLOCK_SIZE  Optional block size.\n"
@@ -61,7 +63,8 @@ void S2pParser::Banner(bool usage) const
 
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
 {
-    const int OPT_HELP = 2;
+    const int OPT_SCSI_LEVEL = 2;
+    const int OPT_HELP = 3;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
@@ -78,6 +81,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { "sasi-id", required_argument, nullptr, 'h' },
         { "scan-depth", required_argument, nullptr, 'R' },
         { "scsi-id", required_argument, nullptr, 'i' },
+        { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
@@ -99,6 +103,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     string id_lun;
     string type;
+    string scsi_level;
     string product_data;
     string block_size;
     bool blue_scsi_mode = false;
@@ -121,6 +126,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             block_size = optarg;
             continue;
 
+        case 'B':
+            blue_scsi_mode = true;
+            continue;
+
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2) {
                 throw parser_exception("Invalid property '" + string(optarg) + "'");
@@ -136,11 +145,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             type = "sahd";
             continue;
 
-        case OPT_HELP:
-            Banner(true);
-            exit(EXIT_SUCCESS);
-            break;
-
         case 'i':
             id_lun = optarg;
             has_scsi = true;
@@ -154,9 +158,14 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             ranges::transform(string(optarg), back_inserter(type), ::tolower);
             continue;
 
-        case 'B':
-            blue_scsi_mode = true;
+        case OPT_SCSI_LEVEL:
+            scsi_level = optarg;
             continue;
+
+        case OPT_HELP:
+            Banner(true);
+            exit(EXIT_SUCCESS);
+            break;
 
         case 1:
             // Encountered filename
@@ -188,6 +197,9 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         if (!type.empty()) {
             properties[device_key + "type"] = type;
         }
+        if (!scsi_level.empty()) {
+            properties[device_key + "scsi_level"] = scsi_level;
+        }
         if (!product_data.empty()) {
             properties[device_key + "product_data"] = product_data;
         }
@@ -197,6 +209,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         id_lun = "";
         type = "";
+        scsi_level = "";
         product_data = "";
         block_size = "";
     }

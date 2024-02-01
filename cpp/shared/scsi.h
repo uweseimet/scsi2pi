@@ -23,6 +23,7 @@ namespace scsi_defs
 {
 enum class scsi_level
 {
+    none = 0,
     scsi_1_ccs = 1,
     scsi_2 = 2,
     spc = 3,

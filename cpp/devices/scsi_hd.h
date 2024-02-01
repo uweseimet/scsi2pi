@@ -41,6 +41,4 @@ private:
     void AddDrivePage(map<int, vector<byte>>&, bool) const;
     void AddNotchPage(map<int, vector<byte>>&, bool) const;
     void AddDecVendorPage(map<int, vector<byte>>&, bool) const;
-
-    scsi_defs::scsi_level scsi_level;
 };

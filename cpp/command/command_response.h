@@ -44,8 +44,8 @@ private:
 
     inline static const vector<string> EMPTY_VECTOR;
 
-    void GetDeviceProperties(shared_ptr<Device>, PbDeviceProperties&) const;
-    void GetDevice(shared_ptr<Device>, PbDevice&, const string&) const;
+    void GetDeviceProperties(shared_ptr<PrimaryDevice>, PbDeviceProperties&) const;
+    void GetDevice(shared_ptr<PrimaryDevice>, PbDevice&, const string&) const;
     void GetDeviceTypeProperties(PbDeviceTypesInfo&, PbDeviceType) const;
     void GetAvailableImages(PbImageFilesInfo&, const string&, const string&, const string&, int) const;
     void GetAvailableImages(PbServerInfo&, const string&, const string&, const string&, int) const;

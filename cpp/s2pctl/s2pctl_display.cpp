@@ -37,6 +37,11 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << PbDeviceType_Name(pb_device.type())
         << "  " << pb_device.vendor() << ":" << pb_device.product() << ":" << pb_device.revision();
 
+    // Check for existence because PiSCSI does not support this setting
+    if (pb_device.scsi_level()) {
+        s << "  " << GetScsiLevel(pb_device.scsi_level());
+    }
+
     if (pb_device.block_size()) {
         s << "  " << pb_device.block_size() << " bytes per sector";
 

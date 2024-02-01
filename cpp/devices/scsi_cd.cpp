@@ -17,8 +17,8 @@
 
 using namespace memory_util;
 
-ScsiCd::ScsiCd(int lun, bool scsi1)
-: Disk(SCCD, lun, true, { 512, 2048 }), scsi_level(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, { 512,
+    2048 })
 {
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
@@ -143,7 +143,7 @@ void ScsiCd::ReadToc()
 
 vector<uint8_t> ScsiCd::InquiryInternal() const
 {
-    return HandleInquiry(device_type::cd_rom, scsi_level, true);
+    return HandleInquiry(device_type::cd_rom, true);
 }
 
 void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)

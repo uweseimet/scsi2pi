@@ -64,6 +64,8 @@ string GetExtensionLowerCase(string_view);
 
 void LogErrno(const string&);
 
+string GetScsiLevel(int);
+
 string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc, int = 0);
 
 vector<byte> HexToBytes(const string&);

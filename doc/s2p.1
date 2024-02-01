@@ -6,6 +6,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--scsi-id/-i n[:u]\fR \fISCSI_IMAGE_FILE\fR]
 [\fB\--sasi-id/-h n[:u]\fR \fISASI_IMAGE_FILE\fR]
 [\fB\--type/-t\fR \fITYPE\fR]
+[\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
@@ -64,6 +65,11 @@ FILE is the name of the image file to use for the SASI hard drive.
 .TP
 .BR \--type/-t\fI " " \fITYPE
 The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
+.TP
+.BR \--scsi-level\fI " " \fITYPE
+The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
+In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
 .TP
 .BR \--name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.

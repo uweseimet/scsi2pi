@@ -132,6 +132,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_TEXT_PROTOBUF = 5;
     const int OPT_LIST_LOG_LEVELS = 6;
     const int OPT_LOCALE = 7;
+    const int OPT_SCSI_LEVEL = 8;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
@@ -166,6 +167,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { "port", required_argument, nullptr, 'p' },
         { "rename", required_argument, nullptr, 'R' },
         { "reserve-ids", optional_argument, nullptr, 'r' },
+        { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "server-version", no_argument, nullptr, 'V' },
         { "shut-down", no_argument, nullptr, 'X' },
         { "text-protobuf", required_argument, nullptr, OPT_TEXT_PROTOBUF },
@@ -351,7 +353,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case 'p':
             if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
-                cerr << "Error: Invalid port " << optarg << ", port must be between 1 and 65535" << endl;
+                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535" << endl;
                 return EXIT_FAILURE;
             }
             break;
@@ -363,6 +365,16 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
                     cerr << "Error: " << error << endl;
                     return EXIT_FAILURE;
                 }
+            }
+            break;
+
+        case OPT_SCSI_LEVEL:
+            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
+                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
+                return EXIT_FAILURE;
+            }
+            else {
+                device->set_scsi_level(scsi_level);
             }
             break;
 

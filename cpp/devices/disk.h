@@ -29,8 +29,8 @@ class Disk : public StorageDevice, private ScsiBlockCommands
 
 public:
 
-    Disk(PbDeviceType type, int lun, bool supports_mode_pages, const unordered_set<uint32_t> &s)
-    : StorageDevice(type, lun, supports_mode_pages), supported_sector_sizes(s)
+    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_pages, const unordered_set<uint32_t> &s)
+    : StorageDevice(type, level, lun, supports_mode_pages), supported_sector_sizes(s)
     {
     }
     ~Disk() override = default;

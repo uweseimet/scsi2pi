@@ -370,9 +370,17 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     else if (key == "type") {
         device.set_type(ParseDeviceType(value));
     }
+    else if (key == "scsi_level") {
+        if (int scsi_level; !GetAsUnsignedInt(value, scsi_level) || !scsi_level) {
+            throw parser_exception(fmt::format("Invalid SCSI level: '{}'", value));
+        }
+        else {
+            device.set_scsi_level(scsi_level);
+        }
+    }
     else if (key == "block_size") {
         if (int block_size; !GetAsUnsignedInt(value, block_size)) {
-            throw parser_exception(fmt::format("Invalid block size: {}", value));
+            throw parser_exception(fmt::format("Invalid block size: '{}'", value));
         }
         else {
             device.set_block_size(block_size);

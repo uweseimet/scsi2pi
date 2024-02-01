@@ -50,8 +50,6 @@ private:
 
     void LBAtoMSF(uint32_t, uint8_t*) const; // LBA→MSF conversion
 
-    scsi_defs::scsi_level scsi_level;
-
     bool raw_file = false; // RAW flag
 
     // Track management

@@ -26,8 +26,8 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 
 public:
 
-    PrimaryDevice(PbDeviceType type, int lun, int delay = Bus::SEND_NO_DELAY) : Device(type, lun), delay_after_bytes(
-        delay)
+    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
+    : Device(type, lun), level(l), delay_after_bytes(delay)
     {
     }
     ~PrimaryDevice() override = default;
@@ -39,6 +39,12 @@ public:
     }
 
     virtual void Dispatch(scsi_command);
+
+    scsi_level GetScsiLevel() const
+    {
+        return level;
+    }
+    bool SetScsiLevel(scsi_level);
 
     int GetId() const override;
 
@@ -72,7 +78,7 @@ protected:
         commands[cmd] = c;
     }
 
-    vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
+    vector<uint8_t> HandleInquiry(scsi_defs::device_type, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
@@ -130,6 +136,8 @@ private:
     vector<byte> HandleRequestSense() const;
 
     DeviceLogger device_logger;
+
+    scsi_level level = scsi_level::none;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

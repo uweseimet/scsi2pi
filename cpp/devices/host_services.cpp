@@ -98,7 +98,7 @@ using namespace s2p_interface;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun, false)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false)
 {
     SetProduct("Host Services");
 }
@@ -137,7 +137,7 @@ void HostServices::TestUnitReady()
 
 vector<uint8_t> HostServices::InquiryInternal() const
 {
-    return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
+    return HandleInquiry(device_type::processor, false);
 }
 
 void HostServices::StartStopUnit() const

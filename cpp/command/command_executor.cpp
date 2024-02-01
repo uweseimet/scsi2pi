@@ -215,6 +215,10 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
+    if (!SetScsiLevel(context, device, pb_device.scsi_level())) {
+        return false;
+    }
+
     // If no filename was provided the medium is considered not inserted
     device->SetRemoved(device->SupportsFile() ? filename.empty() : false);
 
@@ -556,16 +560,26 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     return device;
 }
 
+bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<PrimaryDevice> device, int level) const
+{
+    if (level && !device->SetScsiLevel(static_cast<scsi_level>(level))) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, to_string(level));
+    }
+
+    return true;
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device, int size) const
+bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
+    int sector_size) const
 {
 #ifdef BUILD_DISK
-    if (size) {
+    if (sector_size) {
         const auto disk = dynamic_pointer_cast<Disk>(device);
         if (disk != nullptr && disk->IsSectorSizeConfigurable()) {
-            if (!disk->SetConfiguredSectorSize(size)) {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(size));
+            if (!disk->SetConfiguredSectorSize(sector_size)) {
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
             }
         }
         else {

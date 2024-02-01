@@ -77,6 +77,17 @@ int PrimaryDevice::GetId() const
     return GetController() ? GetController()->GetTargetId() : -1;
 }
 
+bool PrimaryDevice::SetScsiLevel(scsi_level l)
+{
+    if (l == scsi_level::none || l > scsi_level::spc_6) {
+        return false;
+    }
+
+    level = l;
+
+    return true;
+}
+
 void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
@@ -204,7 +215,7 @@ void PrimaryDevice::CheckReady()
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, scsi_level level, bool is_removable) const
+vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable) const
 {
     vector<uint8_t> buf(0x1F + 5);
 

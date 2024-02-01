@@ -25,10 +25,11 @@ using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
 
-void CommandResponse::GetDeviceProperties(shared_ptr<Device> device, PbDeviceProperties &properties) const
+void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
 {
     properties.set_luns(device->GetType() == PbDeviceType::SAHD ?
             ControllerFactory::GetSasiLunMax() : ControllerFactory::GetScsiLunMax());
+    properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());
     properties.set_stoppable(device->IsStoppable());
@@ -78,7 +79,8 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void CommandResponse::GetDevice(shared_ptr<Device> device, PbDevice &pb_device, const string &default_folder) const
+void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device,
+    const string &default_folder) const
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
@@ -86,6 +88,7 @@ void CommandResponse::GetDevice(shared_ptr<Device> device, PbDevice &pb_device, 
     pb_device.set_product(device->GetProduct());
     pb_device.set_revision(device->GetRevision());
     pb_device.set_type(device->GetType());
+    pb_device.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
 
     GetDeviceProperties(device, *pb_device.mutable_properties());
 

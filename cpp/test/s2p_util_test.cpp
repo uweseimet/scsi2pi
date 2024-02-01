@@ -132,6 +132,19 @@ TEST(S2pUtilTest, Banner)
     EXPECT_FALSE(Banner("Test").empty());
 }
 
+TEST(S2pUtilTest, GetScsiLevel)
+{
+    EXPECT_EQ("???", GetScsiLevel(0));
+    EXPECT_EQ("SCSI-1-CCS", GetScsiLevel(1));
+    EXPECT_EQ("SCSI-2", GetScsiLevel(2));
+    EXPECT_EQ("SCSI-3 (SPC)", GetScsiLevel(3));
+    EXPECT_EQ("SPC-2", GetScsiLevel(4));
+    EXPECT_EQ("SPC-3", GetScsiLevel(5));
+    EXPECT_EQ("SPC-4", GetScsiLevel(6));
+    EXPECT_EQ("SPC-5", GetScsiLevel(7));
+    EXPECT_EQ("SPC-6", GetScsiLevel(8));
+}
+
 TEST(S2pUtilTest, GetExtensionLowerCase)
 {
     EXPECT_EQ("", GetExtensionLowerCase(""));

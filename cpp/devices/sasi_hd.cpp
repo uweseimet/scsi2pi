@@ -8,7 +8,8 @@
 
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, sector_sizes)
+SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false,
+    sector_sizes)
 {
     SetProduct("SASI HD");
     SetProtectable(true);

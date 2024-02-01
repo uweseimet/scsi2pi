@@ -49,6 +49,7 @@ public:
     string EnsureLun0(const PbCommand&) const;
     bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
+    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
     bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);

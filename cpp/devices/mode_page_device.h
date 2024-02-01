@@ -16,7 +16,8 @@ class ModePageDevice : public PrimaryDevice
 {
 public:
 
-    ModePageDevice(PbDeviceType type, int lun, bool m) : PrimaryDevice(type, lun), supports_mode_select(m)
+    ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m)
+    : PrimaryDevice(type, level, lun), supports_mode_select(m)
     {
     }
     ~ModePageDevice() override = default;

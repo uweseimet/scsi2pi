@@ -170,11 +170,18 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_FILE_OPEN, "es", "Archivo inválido o inexistente '%1'");
     Add(LocalizationKey::ERROR_FILE_OPEN, "zh", "文件'%1'无效或不存在");
 
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "en", "Invalid block size %1 bytes");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "de", "Ungültige Blockgröße %1 Bytes");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "en", "Invalid SCSI level: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "de", "Ungültiger SCSI-Level: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "sv", "Ogiltig SCSI nivå: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "fr", "Niveau SCSI %1 invalide");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "es", "Niveau SCSI %1 invalido");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "zh", "SCSI级别 %1 字节");
+
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "en", "Invalid block size: %1 bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "de", "Ungültige Blockgröße: %1 Bytes");
     Add(LocalizationKey::ERROR_BLOCK_SIZE, "sv", "Ogiltig blockstorlek: %1 byte");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "fr", "Taille de bloc invalide %1 octets");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "es", "Tamaño de bloque inválido %1 bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "fr", "Taille de bloc %1 octets invalide");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "es", "Tamaño de bloque %1 bytes invalido");
     Add(LocalizationKey::ERROR_BLOCK_SIZE, "zh", "无效的块大小 %1 字节");
 
     Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "en", "Block size for device type %1 is not configurable");
