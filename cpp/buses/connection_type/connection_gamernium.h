@@ -9,13 +9,9 @@
 
 #pragma once
 
-#include <string>
-
 //
 // RaSCSI Adapter GAMERnium.com version
 //
-
-const std::string CONNECT_DESC = "GAMERnium.com version"; // Startup message
 
 // Select signal control mode
 const static int SIGNAL_CONTROL_MODE = 0; // SCSI logical specification

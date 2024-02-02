@@ -103,8 +103,6 @@ private:
 
     static uint32_t get_dt_ranges(const char*, uint32_t);
 
-    uint32_t baseaddr = 0;
-
     int pi_type = 0;
 
     // GPIO register
@@ -133,9 +131,6 @@ private:
     volatile uint32_t giccpmr; // NOSONAR volatile is correct here
 #endif
 
-    // GIC Interrupt distributor register
-    volatile uint32_t *gicd = nullptr;
-
     // GIC CPU interface register
     volatile uint32_t *gicc = nullptr;
 
@@ -152,7 +147,7 @@ private:
     // SEL signal event request
     struct gpioevent_request selevreq = { };
     // epoll file descriptor
-    int epfd = 0;
+    int epoll_fd = 0;
     #endif
 
 #if SIGNAL_CONTROL_MODE == 0
@@ -176,33 +171,15 @@ private:
     const static int GPIO_SET_0 = 7;
     const static int GPIO_CLR_0 = 10;
     const static int GPIO_LEV_0 = 13;
-    const static int GPIO_EDS_0 = 16;
-    const static int GPIO_REN_0 = 19;
-    const static int GPIO_FEN_0 = 22;
-    const static int GPIO_HEN_0 = 25;
-    const static int GPIO_LEN_0 = 28;
-    const static int GPIO_AREN_0 = 31;
-    const static int GPIO_AFEN_0 = 34;
     const static int GPIO_PUD = 37;
     const static int GPIO_CLK_0 = 38;
-    const static int GPIO_GPPINMUXSD = 52;
     const static int GPIO_PUPPDN0 = 57;
-    const static int GPIO_PUPPDN1 = 58;
-    const static int GPIO_PUPPDN3 = 59;
-    const static int GPIO_PUPPDN4 = 60;
     const static int PAD_0_27 = 11;
-    const static int IRPT_PND_IRQ_B = 0;
-    const static int IRPT_PND_IRQ_1 = 1;
-    const static int IRPT_PND_IRQ_2 = 2;
-    const static int IRPT_FIQ_CNTL = 3;
     const static int IRPT_ENB_IRQ_1 = 4;
-    const static int IRPT_ENB_IRQ_2 = 5;
-    const static int IRPT_ENB_IRQ_B = 6;
     const static int IRPT_DIS_IRQ_1 = 7;
-    const static int IRPT_DIS_IRQ_2 = 8;
-    const static int IRPT_DIS_IRQ_B = 9;
     const static int QA7_CORE0_TINTC = 16;
-    const static int GPIO_IRQ = (32 + 20); // GPIO3
+    // GPIO3
+    const static int GPIO_IRQ = (32 + 20);
 
     const static uint32_t IRPT_OFFSET = 0x0000B200;
     const static uint32_t PADS_OFFSET = 0x00100000;
@@ -212,22 +189,6 @@ private:
     // Constant declarations (GIC)
     const static uint32_t ARM_GICD_BASE = 0xFF841000;
     const static uint32_t ARM_GICC_BASE = 0xFF842000;
-    const static uint32_t ARM_GIC_END = 0xFF847FFF;
-    const static int GICD_CTLR = 0x000;
-    const static int GICD_IGROUPR0 = 0x020;
-    const static int GICD_ISENABLER0 = 0x040;
-    const static int GICD_ICENABLER0 = 0x060;
-    const static int GICD_ISPENDR0 = 0x080;
-    const static int GICD_ICPENDR0 = 0x0A0;
-    const static int GICD_ISACTIVER0 = 0x0C0;
-    const static int GICD_ICACTIVER0 = 0x0E0;
-    const static int GICD_IPRIORITYR0 = 0x100;
-    const static int GICD_ITARGETSR0 = 0x200;
-    const static int GICD_ICFGR0 = 0x300;
-    const static int GICD_SGIR = 0x3C0;
-    const static int GICC_CTLR = 0x000;
     const static int GICC_PMR = 0x001;
-
-    // GPIO3
     const static int GIC_GPIO_IRQ = (32 + 116);
 };

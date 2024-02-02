@@ -9,13 +9,9 @@
 
 #pragma once
 
-#include <string>
-
 //
 // RaSCSI Adapter Aibom version
 //
-
-const std::string CONNECT_DESC = "AIBOM PRODUCTS version"; // Startup message
 
 // Select signal control mode
 const static int SIGNAL_CONTROL_MODE = 2; // SCSI positive logic specification

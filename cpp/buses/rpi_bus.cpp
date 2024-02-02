@@ -51,7 +51,7 @@ bool RpiBus::Init(bool target)
     GpioBus::Init(target);
 
     // Get the base address
-    baseaddr = bcm_host_get_peripheral_address();
+    const auto baseaddr = bcm_host_get_peripheral_address();
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -100,11 +100,9 @@ bool RpiBus::Init(bool target)
             close(fd);
             return false;
         }
-        gicd = static_cast<uint32_t*>(map);
         gicc = static_cast<uint32_t*>(map);
         gicc += (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
     } else {
-        gicd = nullptr;
         gicc = nullptr;
     }
     close(fd);
@@ -177,11 +175,11 @@ bool RpiBus::Init(bool target)
     close(fd);
 
     // epoll initialization
-    epfd = epoll_create(1);
+    epoll_fd = epoll_create(1);
     epoll_event ev = { };
     ev.events = EPOLLIN | EPOLLPRI;
     ev.data.fd = selevreq.fd;
-    epoll_ctl(epfd, EPOLL_CTL_ADD, selevreq.fd, &ev);
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev);
 #endif
 
     // Create work table
@@ -295,16 +293,16 @@ bool RpiBus::WaitForSelection()
 #else
     errno = 0;
 
-    if (epoll_event epev; epoll_wait(epfd, &epev, 1, -1) <= 0) {
+    if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
-            warn("epoll_wait failed");
+            warn("epoll_wait failed: {}", strerror(errno));
         }
         return false;
     }
 
-    if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {
+    if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
         if (errno != EINTR) {
-            warn("read failed");
+            warn("Event read failed: {}", strerror(errno));
         }
         return false;
     }
@@ -807,7 +805,7 @@ void RpiBus::PinSetSignal(int pin, bool ast)
 void RpiBus::SetSignalDriveStrength(uint32_t drive)
 {
     const uint32_t data = pads[PAD_0_27];
-    pads[PAD_0_27] = (0xFFFFFFF8 & data) | drive | 0x5a000000;
+    pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
 
 // Read date byte from bus

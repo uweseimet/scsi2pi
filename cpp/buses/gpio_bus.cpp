@@ -8,7 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include <chrono>
 #include "gpio_bus.h"
 
@@ -23,8 +22,6 @@ bool GpioBus::Init(bool b)
 
 int GpioBus::CommandHandShake(vector<uint8_t> &buf)
 {
-    assert(target_mode);
-
     DisableIRQ();
 
     SetREQ(true);
@@ -42,7 +39,7 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
-    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-aware drivers prepend a $1F byte in front
+    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-awarerrore drivers prepend a $1F byte in front
     // of the CDB (effectively resulting in a custom SCSI command) in order to get access to the full SCSI
     // command set. Native ACSI is limited to the low SCSI command classes with command bytes < $20.
     // Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.

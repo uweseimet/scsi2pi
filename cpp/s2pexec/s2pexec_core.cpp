@@ -223,8 +223,8 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!target.empty()) {
-        target = "";
         if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
+            target = "";
             throw parser_exception(error);
         }
     }
