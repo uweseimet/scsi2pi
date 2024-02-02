@@ -98,7 +98,9 @@ void Printer::CleanUp()
 
     if (out.is_open()) {
         out.close();
+    }
 
+    if (!filename.empty()) {
         error_code error;
         filesystem::remove(path(filename), error);
 
@@ -155,6 +157,8 @@ void Printer::SynchronizeBuffer()
 
         throw scsi_exception(sense_key::aborted_command, asc::printer_nothing_to_print);
     }
+
+    out.close();
 
     string cmd = GetParam("cmd");
     const size_t file_position = cmd.find("%f");
