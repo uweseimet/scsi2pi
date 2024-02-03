@@ -39,6 +39,15 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
     EXPECT_EQ(scsi_level::spc_6, device->GetScsiLevel());
 }
 
+TEST(PrimaryDeviceTest, Status)
+{
+    MockPrimaryDevice device(0);
+
+    device.SetStatus(sense_key::illegal_request, asc::parameter_list_length_error);
+    EXPECT_EQ(sense_key::illegal_request, device.GetSenseKey());
+    EXPECT_EQ(asc::parameter_list_length_error, device.GetAsc());
+}
+
 TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
@@ -232,7 +241,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
-    EXPECT_EQ(1U, controller->GetLength()) << "Wrong ALLOCATION LENGTH handling";
+    EXPECT_EQ(1U, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
 
 TEST(PrimaryDeviceTest, RequestSense)
@@ -280,9 +289,9 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_TRUE(device2->Init( { }));
 
     controller->AddDevice(device1);
-    EXPECT_TRUE(controller->HasDeviceForLun(LUN1));
+    EXPECT_TRUE(controller->GetDeviceForLun(LUN1));
     controller->AddDevice(device2);
-    EXPECT_TRUE(controller->HasDeviceForLun(LUN2));
+    EXPECT_TRUE(controller->GetDeviceForLun(LUN2));
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(9, 255);

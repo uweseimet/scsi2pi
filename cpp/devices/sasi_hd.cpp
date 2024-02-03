@@ -57,7 +57,7 @@ void SasiHd::RequestSense()
     //vector<uint8_t> buf(allocation_length ? allocation_length : 4);
 
     // SASI fixed to non-extended format
-    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetStatusCode() >> 16), static_cast<uint8_t>(GetLun() << 5) };
+    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     EnterDataInPhase();

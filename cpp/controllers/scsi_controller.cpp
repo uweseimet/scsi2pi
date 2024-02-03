@@ -52,8 +52,8 @@ void ScsiController::MsgOut()
 
         // Data transfer is 1 byte x 1 block
         ResetOffset();
-        SetLength(1);
-        SetBlocks(1);
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
 
         return;
     }
@@ -81,8 +81,8 @@ void ScsiController::ParseMessage()
         switch (message) {
         case 0x01: {
             LogTrace("Received EXTENDED MESSAGE");
-            SetLength(1);
-            SetBlocks(1);
+            SetCurrentLength(1);
+            SetTransferSize(1, 1);
             // MESSSAGE REJECT
             GetBuffer()[0] = 0x07;
             MsgIn();
@@ -120,8 +120,8 @@ void ScsiController::ProcessMessage()
     if (GetBus().GetATN()) {
         // Data transfer is 1 byte x 1 block
         ResetOffset();
-        SetLength(1);
-        SetBlocks(1);
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
         return;
     }
 

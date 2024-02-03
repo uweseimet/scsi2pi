@@ -111,8 +111,6 @@ void Device::Stop()
     ready = false;
     attn = false;
     stopped = true;
-
-    status_code = 0;
 }
 
 bool Device::Eject(bool force)

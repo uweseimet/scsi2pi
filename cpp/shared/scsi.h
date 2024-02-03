@@ -199,13 +199,13 @@ enum class asc
 
     // SCSI2Pi-specific
     controller_process_phase = 0x80,
-    controller_send_xfer_in = 0x88,
-    controller_receive_result = 0x90,
-    controller_receive_bytes_result = 0x94,
+    controller_xfer_in = 0x88,
+    controller_xfer_out = 0x89,
     daynaport_enable_interface = 0xf0,
     daynaport_disable_interface = 0xf1,
     printer_nothing_to_print = 0xf4,
     printer_printing_failed = 0xf5,
+    printer_write_failed = 0xf6,
     host_services_receive_operation_results = 0xf8
 };
 

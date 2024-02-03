@@ -128,12 +128,13 @@ TEST(PrinterTest, Synchronize_buffer)
     // Further testing would use the printing system
 }
 
-TEST(PrinterTest, WriteByteSequence)
+TEST(PrinterTest, Write)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
     const vector<uint8_t> buf(1);
-    EXPECT_TRUE(printer->WriteByteSequence(buf));
+    controller->SetTransferSize(1, 1);
+    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, false));
 }
 
 TEST(PrinterTest, GetStatistics)

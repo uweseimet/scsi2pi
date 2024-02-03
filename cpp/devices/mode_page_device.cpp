@@ -114,14 +114,14 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
 void ModePageDevice::ModeSense6() const
 {
-    GetController()->SetLength(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
+    GetController()->SetCurrentLength(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
 
 void ModePageDevice::ModeSense10() const
 {
-    GetController()->SetLength(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
+    GetController()->SetCurrentLength(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
@@ -150,7 +150,7 @@ void ModePageDevice::SaveParametersCheck(int length) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(length);
+    GetController()->SetCurrentLength(length);
 
     EnterDataOutPhase();
 }

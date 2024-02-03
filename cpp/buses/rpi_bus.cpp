@@ -55,14 +55,14 @@ bool RpiBus::Init(bool target)
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        error("Error: Unable to open /dev/mem");
+        error("Error: Unable to open /dev/mem: {}", strerror(errno));
         return false;
     }
 
     // Map peripheral region memory
     void *map = mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr);
     if (map == MAP_FAILED) {
-        error("Error: Unable to map memory: " + string(strerror(errno)));
+        error("Error: Unable to map memory: {}", strerror(errno));
         close(fd);
         return false;
     }
@@ -97,6 +97,7 @@ bool RpiBus::Init(bool target)
     if (pi_type == 4) {
         map = mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE);
         if (map == MAP_FAILED) {
+            error("Error: Unable to map memory: {}", strerror(errno));
             close(fd);
             return false;
         }

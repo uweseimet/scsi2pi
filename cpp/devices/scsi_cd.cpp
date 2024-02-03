@@ -136,7 +136,7 @@ void ScsiCd::CreateDataTrack()
 
 void ScsiCd::ReadToc()
 {
-    GetController()->SetLength(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
+    GetController()->SetCurrentLength(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
 
     EnterDataInPhase();
 }
@@ -194,11 +194,11 @@ void ScsiCd::AddAudioControlPage(map<int, vector<byte>> &pages, bool) const
     pages[14] = buf;
 }
 
-int ScsiCd::Read(span<uint8_t> buf, uint64_t block)
+int ScsiCd::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int index = SearchTrack(static_cast<int>(block));
+    const int index = SearchTrack(static_cast<int>(GetNextSector()));
     if (index < 0) {
         throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
     }
@@ -219,7 +219,7 @@ int ScsiCd::Read(span<uint8_t> buf, uint64_t block)
     }
 
     assert(dataindex >= 0);
-    return Disk::Read(buf, block);
+    return Disk::ReadData(buf);
 }
 
 int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)

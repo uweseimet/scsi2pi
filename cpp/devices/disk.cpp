@@ -86,7 +86,7 @@ bool Disk::Init(const param_map &params)
         });
     AddCommand(scsi_command::cmd_verify10, [this]
         {
-            Verify10();
+            Verify(RW10);
         });
     AddCommand(scsi_command::cmd_synchronize_cache10, [this]
         {
@@ -110,7 +110,7 @@ bool Disk::Init(const param_map &params)
         });
     AddCommand(scsi_command::cmd_verify16, [this]
         {
-            Verify16();
+            Verify(RW16);
         });
     AddCommand(scsi_command::cmd_read_capacity16_read_long16, [this]
         {
@@ -177,12 +177,11 @@ void Disk::Read(access_mode mode)
 {
     const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
     if (valid) {
-        GetController()->SetBlocks(blocks);
+        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
 
-        GetController()->SetLength(Read(GetController()->GetBuffer(), start));
+        next_sector = start;
 
-        // Set next block
-        GetController()->SetNext(start + 1);
+        GetController()->SetCurrentLength(ReadData(GetController()->GetBuffer()));
 
         EnterDataInPhase();
     }
@@ -196,7 +195,7 @@ void Disk::ReadWriteLong10() const
     ValidateBlockAddress(RW10);
 
     // Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
-    if (GetInt16(GetController()->GetCdb(), 7) != 0) {
+    if (GetInt16(GetController()->GetCdb(), 7)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -208,14 +207,14 @@ void Disk::ReadWriteLong16() const
     ValidateBlockAddress(RW16);
 
     // Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
-    if (GetInt16(GetController()->GetCdb(), 12) != 0) {
+    if (GetInt16(GetController()->GetCdb(), 12)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     EnterStatusPhase();
 }
 
-void Disk::Write(access_mode mode) const
+void Disk::Write(access_mode mode)
 {
     if (IsProtected()) {
         throw scsi_exception(sense_key::data_protect, asc::write_protected);
@@ -223,11 +222,10 @@ void Disk::Write(access_mode mode) const
 
     const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
     if (valid) {
-        GetController()->SetBlocks(blocks);
-        GetController()->SetLength(GetSectorSizeInBytes());
+        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(GetSectorSizeInBytes());
 
-        // Set next block
-        GetController()->SetNext(start + 1);
+        next_sector = start;
 
         EnterDataOutPhase();
     }
@@ -247,11 +245,10 @@ void Disk::Verify(access_mode mode)
         }
 
         // Test reading
-        GetController()->SetBlocks(blocks);
-        GetController()->SetLength(Read(GetController()->GetBuffer(), start));
+        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(ReadData(GetController()->GetBuffer()));
 
-        // Set next block
-        GetController()->SetNext(start + 1);
+        next_sector = start;
 
         EnterDataOutPhase();
     }
@@ -322,7 +319,7 @@ void Disk::ReadDefectData10() const
 
     // The defect list is empty
     fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
-    GetController()->SetLength(static_cast<uint32_t>(allocation_length));
+    GetController()->SetCurrentLength(static_cast<uint32_t>(allocation_length));
 
     EnterDataInPhase();
 }
@@ -676,32 +673,38 @@ int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
     throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
 }
 
-int Disk::Read(span<uint8_t> buf, uint64_t block)
+int Disk::ReadData(span<uint8_t> buf)
 {
-    assert(block < GetBlockCount());
+    assert(next_sector < GetBlockCount());
 
     CheckReady();
 
-    if (!cache->ReadSector(buf, static_cast<uint32_t>(block))) {
+    if (!cache->ReadSector(buf, static_cast<uint32_t>(next_sector))) {
         throw scsi_exception(sense_key::medium_error, asc::read_fault);
     }
+
+    ++next_sector;
 
     ++sector_read_count;
 
     return GetSectorSizeInBytes();
 }
 
-void Disk::Write(span<const uint8_t> buf, uint64_t block)
+int Disk::WriteData(span<const uint8_t> buf, bool verify)
 {
-    assert(block < GetBlockCount());
+    assert(next_sector < GetBlockCount());
 
     CheckReady();
 
-    if (!cache->WriteSector(buf, static_cast<uint32_t>(block))) {
+    if (!verify && !cache->WriteSector(buf, static_cast<uint32_t>(next_sector))) {
         throw scsi_exception(sense_key::medium_error, asc::write_fault);
     }
 
+    ++next_sector;
+
     ++sector_write_count;
+
+    return GetSectorSizeInBytes();
 }
 
 void Disk::Seek()
@@ -735,7 +738,7 @@ void Disk::ReadCapacity10()
 {
     CheckReady();
 
-    if (GetBlockCount() == 0) {
+    if (!GetBlockCount()) {
         throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
     }
 
@@ -752,7 +755,7 @@ void Disk::ReadCapacity10()
 
     SetInt32(buf, 4, sector_size);
 
-    GetController()->SetLength(8);
+    GetController()->SetCurrentLength(8);
 
     EnterDataInPhase();
 }
@@ -761,7 +764,7 @@ void Disk::ReadCapacity16()
 {
     CheckReady();
 
-    if (GetBlockCount() == 0) {
+    if (!GetBlockCount()) {
         throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
     }
 
@@ -778,7 +781,7 @@ void Disk::ReadCapacity16()
     // Logical blocks per physical block: not reported (1 or more)
     buf[13] = 0;
 
-    GetController()->SetLength(14);
+    GetController()->SetCurrentLength(14);
 
     EnterDataInPhase();
 }
@@ -803,11 +806,12 @@ void Disk::ReadCapacity16_read_long16()
 
 void Disk::ValidateBlockAddress(access_mode mode) const
 {
-    const uint64_t block =
+    const uint64_t sector =
         mode == RW16 ? GetInt64(GetController()->GetCdb(), 2) : GetInt32(GetController()->GetCdb(), 2);
 
-    if (block > GetBlockCount()) {
-        LogTrace(fmt::format("Capacity of {0} block(s) exceeded: Trying to access block {1}", GetBlockCount(), block));
+    if (sector > GetBlockCount()) {
+        LogTrace(
+            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}", GetBlockCount(), sector));
         throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
     }
 }

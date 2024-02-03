@@ -199,14 +199,6 @@ TEST(DeviceTest, GetPaddedName)
     EXPECT_EQ("V       P               R   ", device.GetPaddedName());
 }
 
-TEST(DeviceTest, StatusCode)
-{
-    MockDevice device(0);
-
-    device.SetStatusCode(123);
-    EXPECT_EQ(123, device.GetStatusCode());
-}
-
 TEST(DeviceTest, Reset)
 {
     MockDevice device(0);

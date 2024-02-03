@@ -114,13 +114,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, GetLun);
     FRIEND_TEST(AbstractControllerTest, Message);
-    FRIEND_TEST(AbstractControllerTest, Blocks);
+    FRIEND_TEST(AbstractControllerTest, TransferSize);
     FRIEND_TEST(AbstractControllerTest, Length);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
-    FRIEND_TEST(AbstractControllerTest, Next);
-    FRIEND_TEST(AbstractControllerTest, InitBytesToTransfer);
-    FRIEND_TEST(AbstractControllerTest, ByteTransfer);
     FRIEND_TEST(ScsiControllerTest, Selection);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
@@ -198,11 +195,11 @@ public:
     }
     explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, 32)
     {
-        SetLength(512);
+        SetCurrentLength(512);
     }
     MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, 32)
     {
-        SetLength(512);
+        SetCurrentLength(512);
     }
     ~MockAbstractController() override = default;
 };

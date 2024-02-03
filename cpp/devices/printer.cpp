@@ -12,7 +12,8 @@
 // How to print:
 //
 // 1. The client sends the data to be printed with one or several PRINT commands. The maximum
-// transfer size per PRINT command is currently limited to 4096 bytes.
+// transfer size per PRINT command should not exceed 4096 bytes, in order to be compatible with
+// PiSCSI and to save memory.
 // 2. The client triggers printing with SYNCHRONIZE BUFFER. Each SYNCHRONIZE BUFFER results in
 // the print command for this printer (see below) to be called for the data not yet printed.
 //
@@ -134,7 +135,7 @@ void Printer::Print()
 
     if (length > GetController()->GetBuffer().size()) {
         LogError(
-            fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} bytes expected",
+            fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
                 GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
@@ -142,8 +143,8 @@ void Printer::Print()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(length);
-    GetController()->SetByteTransfer(true);
+    GetController()->SetTransferSize(length, length);
+    GetController()->SetCurrentLength(length);
 
     EnterDataOutPhase();
 }
@@ -171,7 +172,7 @@ void Printer::SynchronizeBuffer()
     LogDebug(fmt::format("Executing print command '{}'", cmd));
 
     if (system(cmd.c_str())) {
-        LogError(fmt::format("Printing file '{}' failed, the printing system might not be configured", filename));
+        LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
 
         ++print_error_count;
 
@@ -185,9 +186,11 @@ void Printer::SynchronizeBuffer()
     EnterStatusPhase();
 }
 
-bool Printer::WriteByteSequence(span<const uint8_t> buf)
+int Printer::WriteData(span<const uint8_t> buf, bool)
 {
-    byte_receive_count += buf.size();
+    const auto length = GetInt24(GetController()->GetCdb(), 2);
+
+    byte_receive_count += length;
 
     if (!out.is_open()) {
         vector<char> f(file_template.begin(), file_template.end());
@@ -198,7 +201,7 @@ bool Printer::WriteByteSequence(span<const uint8_t> buf)
         if (fd == -1) {
             LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
             ++print_error_count;
-            return false;
+            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
         }
         close(fd);
 
@@ -207,22 +210,21 @@ bool Printer::WriteByteSequence(span<const uint8_t> buf)
         out.open(filename, ios::binary);
         if (out.fail()) {
             ++print_error_count;
-            return false;
+            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
         }
 
         LogTrace("Created printer output file '" + filename + "'");
     }
 
-    LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", buf.size(), filename));
+    LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
 
-    out.write((const char*)buf.data(), buf.size());
-
-    const bool status = out.fail();
-    if (status) {
+    out.write((const char*)buf.data(), length);
+    if (out.fail()) {
         ++print_error_count;
+        throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
     }
 
-    return !status;
+    return length;
 }
 
 vector<PbStatistics> Printer::GetStatistics() const

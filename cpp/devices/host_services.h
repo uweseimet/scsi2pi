@@ -34,6 +34,8 @@ public:
     vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;
 
+    int WriteData(span<const uint8_t>, bool) override;
+
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {
         dispatcher = d;
@@ -73,8 +75,6 @@ private:
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
-
-    bool WriteByteSequence(span<const uint8_t>) override;
 
     protobuf_format ConvertFormat() const;
 

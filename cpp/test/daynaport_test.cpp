@@ -62,7 +62,7 @@ TEST(ScsiDaynaportTest, Read)
     controller->SetCdbByte(4, 1);
     vector<uint8_t> buf(0);
     EXPECT_EQ(0, dynamic_pointer_cast<DaynaPort>(daynaport)->Read(controller->GetCdb(), buf, 0))
-    << "Trying to read the root sector must fail";
+        << "Trying to read the root sector must fail";
 }
 
 TEST(ScsiDaynaportTest, Write)
@@ -72,7 +72,7 @@ TEST(ScsiDaynaportTest, Write)
     // Unknown data format
     controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_TRUE(dynamic_pointer_cast<DaynaPort>(daynaport)->Write(controller->GetCdb(), buf));
+    EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, false));
 }
 
 TEST(ScsiDaynaportTest, Read6)

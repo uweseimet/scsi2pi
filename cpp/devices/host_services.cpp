@@ -174,8 +174,8 @@ void HostServices::ExecuteOperation()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(static_cast<uint32_t>(length));
-    GetController()->SetByteTransfer(true);
+    GetController()->SetTransferSize(static_cast<uint32_t>(length), static_cast<uint32_t>(length));
+    GetController()->SetCurrentLength(static_cast<uint32_t>(length));
 
     EnterDataOutPhase();
 }
@@ -299,7 +299,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-bool HostServices::WriteByteSequence(span<const uint8_t> buf)
+int HostServices::WriteData(span<const uint8_t> buf, bool)
 {
     const auto length = GetInt16(GetController()->GetCdb(), 7);
 
@@ -308,14 +308,14 @@ bool HostServices::WriteByteSequence(span<const uint8_t> buf)
     case protobuf_format::binary:
         if (!command.ParseFromArray(buf.data(), length)) {
             LogTrace("Failed to deserialize protobuf binary data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
 
     case protobuf_format::json: {
         if (string cmd((const char*)buf.data(), length); !JsonStringToMessage(cmd, &command).ok()) {
             LogTrace("Failed to deserialize protobuf JSON data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
     }
@@ -323,26 +323,26 @@ bool HostServices::WriteByteSequence(span<const uint8_t> buf)
     case protobuf_format::text: {
         if (string cmd((const char*)buf.data(), length); !TextFormat::ParseFromString(cmd, &command)) {
             LogTrace("Failed to deserialize protobuf text format data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
     }
 
     default:
         assert(false);
-        break;
+        throw scsi_exception(sense_key::aborted_command);
     }
 
     PbResult result;
     if (CommandContext context(command, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(command, "locale"));
     !dispatcher->DispatchCommand(context, result, fmt::format("(ID:LUN {0}:{1}) - ", GetId(), GetLun()))) {
         LogTrace("Failed to execute " + PbOperation_Name(command.operation()) + " operation");
-        return false;
+        throw scsi_exception(sense_key::aborted_command);
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
 
-    return true;
+    return length;
 }
 
 HostServices::protobuf_format HostServices::ConvertFormat() const

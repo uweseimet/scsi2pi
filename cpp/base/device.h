@@ -145,11 +145,6 @@ public:
         return {};
     }
 
-    void SetStatusCode(int s)
-    {
-        status_code = s;
-    }
-
     bool Start();
     void Stop();
     virtual bool Eject(bool);
@@ -200,11 +195,6 @@ protected:
         locked = b;
     }
 
-    int GetStatusCode() const
-    {
-        return status_code;
-    }
-
     string GetParam(const string&) const;
     void SetParams(const param_map&);
 
@@ -249,12 +239,6 @@ private:
 
     // The parameters the device was created with
     param_map params;
-
-    // Sense Key and ASC
-    //  MSB     Reserved (0x00)
-    //          Sense Key
-    //          Additional Sense Code (ASC)
-    int status_code = 0;
 
     inline static const string DEFAULT_VENDOR = "SCSI2Pi";
 };

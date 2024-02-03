@@ -42,9 +42,9 @@ public:
 
     bool Eject(bool) override;
 
-    virtual void Write(span<const uint8_t>, uint64_t);
+    int WriteData(span<const uint8_t>, bool) override;
 
-    virtual int Read(span<uint8_t>, uint64_t);
+    int ReadData(span<uint8_t>) override;
 
     uint32_t GetSectorSizeInBytes() const
     {
@@ -92,6 +92,11 @@ protected:
         sector_size = 1 << count;
     }
 
+    uint64_t GetNextSector() const
+    {
+        return next_sector;
+    }
+
 private:
 
     enum access_mode
@@ -100,6 +105,7 @@ private:
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
+
     void StartStopUnit();
     void PreventAllowMediumRemoval();
     void SynchronizeCache();
@@ -128,14 +134,6 @@ private:
     {
         Write(RW16);
     }
-    void Verify10()
-    {
-        Verify(RW10);
-    }
-    void Verify16()
-    {
-        Verify(RW16);
-    }
     void Seek();
     void Seek10();
     void ReadCapacity10() override;
@@ -143,7 +141,7 @@ private:
     void FormatUnit() override;
     void Seek6();
     void Read(access_mode);
-    void Write(access_mode) const;
+    void Write(access_mode);
     void Verify(access_mode);
     void ReadWriteLong10() const;
     void ReadWriteLong16() const;
@@ -159,6 +157,8 @@ private:
 
     unordered_set<uint32_t> supported_sector_sizes;
     uint32_t configured_sector_size = 0;
+
+    uint64_t next_sector = 0;
 
     uint32_t sector_size = 0;
 

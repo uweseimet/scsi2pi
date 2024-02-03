@@ -30,7 +30,7 @@ shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
     if (auto controller = FindController(id); controller) {
-        if (device->GetLun() > GetLunMax() || controller->HasDeviceForLun(device->GetLun())) {
+        if (device->GetLun() > GetLunMax() || controller->GetDeviceForLun(device->GetLun())) {
             return false;
         }
 

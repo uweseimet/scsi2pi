@@ -151,6 +151,8 @@ bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
         info("Stop requested for {}", device.GetIdentifier());
 
         device.Stop();
+
+        device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
     return true;
@@ -344,7 +346,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
     auto controller = controller_factory->FindController(device.GetId());
-    if (controller == nullptr) {
+    if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }
 
@@ -619,7 +621,7 @@ bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<Pr
 #ifdef BUILD_DISK
     if (sector_size) {
         const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk != nullptr && disk->IsSectorSizeConfigurable()) {
+        if (disk && disk->IsSectorSizeConfigurable()) {
             if (!disk->SetConfiguredSectorSize(sector_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
             }

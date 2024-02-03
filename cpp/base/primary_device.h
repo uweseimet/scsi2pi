@@ -46,9 +46,21 @@ public:
     }
     bool SetScsiLevel(scsi_level);
 
-    int GetId() const override;
+    scsi_defs::sense_key GetSenseKey() const
+    {
+        return sense_key;
+    }
+    scsi_defs::asc GetAsc() const
+    {
+        return asc;
+    }
+    void SetStatus(scsi_defs::sense_key s, scsi_defs::asc a)
+    {
+        sense_key = s;
+        asc = a;
+    }
 
-    virtual bool WriteByteSequence(span<const uint8_t>);
+    int GetId() const override;
 
     int GetDelayAfterBytes() const
     {
@@ -59,6 +71,22 @@ public:
     void DiscardReservation();
 
     void Reset() override;
+
+    virtual int ReadData(span<uint8_t>)
+    {
+        // Devices that implement a DATA IN phase have to override this method
+
+        assert(false);
+        return 0;
+    }
+
+    virtual int WriteData(span<const uint8_t>, bool)
+    {
+        // Devices that implement a DATA OUT phase have to override this method, except for MODE SELECT
+
+        assert(false);
+        return 0;
+    }
 
     virtual void FlushCache()
     {
@@ -138,6 +166,9 @@ private:
     DeviceLogger device_logger;
 
     scsi_level level = scsi_level::none;
+
+    scsi_defs::sense_key sense_key = scsi_defs::sense_key::no_sense;
+    scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
