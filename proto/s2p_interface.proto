@@ -227,6 +227,12 @@ message PbOperationInfo {
     map<int32, PbOperationMetaData> operations = 1;
 }
 
+// The supported caching modes. Legacy caching is the caching as it is supported by PiSCSI.
+enum PbCachingMode {
+    LEGACY_CACHING = 0;
+    NO_CACHING = 1;
+}
+
 // Special purpose error codes for cases where a textual error message may not be not sufficient.
 // The client may react on this code, e.g. by prompting the user for an authentication token.
 enum PbErrorCode {
@@ -267,6 +273,8 @@ message PbDeviceProperties {
     repeated uint32 block_sizes = 10;
     // The SCSI level, 0 if not explicitly set
     int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;   
 }
 
 // The status of a device, only meaningful if the respective feature is supported
@@ -381,6 +389,8 @@ message PbDeviceDefinition {
     //  3: SPC
     //  4-8: SPC-2 to SPC-6
     int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;
 }
 
 // The device data, sent from the server to the client
@@ -403,6 +413,8 @@ message PbDevice {
     uint64 block_count = 12;
     // SCSI standard level
     int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;
 }
 
 message PbDevicesInfo {

@@ -40,6 +40,9 @@ void S2pCtl::Banner(bool usage) const
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
             << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
             << "                                 (256|512|1024|2048|4096).\n"
+            << "  --caching-mode MODE            Caching mode for SCHD/SAHD/SCRM/SCMO\n"
+            << "                                 (no_caching|legacy_caching), default is\n"
+            << "                                 legacy_caching (experimental)\n"
             << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
             << "                                 (VENDOR:PRODUCT:REVISION).\n"
             << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
@@ -133,11 +136,13 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_LIST_LOG_LEVELS = 6;
     const int OPT_LOCALE = 7;
     const int OPT_SCSI_LEVEL = 8;
+    const int OPT_CACHING_MODE = 9;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
         { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "block-size", required_argument, nullptr, 'b' },
+        { "caching-mode", required_argument, nullptr, OPT_CACHING_MODE },
         { "command", required_argument, nullptr, 'c' },
         { "copy", required_argument, nullptr, 'x' },
         { "create", required_argument, nullptr, 'C' },
@@ -330,9 +335,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 't':
-            device->set_type(parser.ParseType(optarg));
+            device->set_type(parser.ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
-                cerr << "Error: Unknown device type '" << optarg << "'" << endl;
+                cerr << "Error: Invalid device type '" << optarg << "'" << endl;
                 return EXIT_FAILURE;
             }
             break;
@@ -368,16 +373,6 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             }
             break;
 
-        case OPT_SCSI_LEVEL:
-            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
-                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
-                return EXIT_FAILURE;
-            }
-            else {
-                device->set_scsi_level(scsi_level);
-            }
-            break;
-
         case 'S':
             command.set_operation(STATISTICS_INFO);
             break;
@@ -407,6 +402,26 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'X':
             command.set_operation(SHUT_DOWN);
             SetParam(command, "mode", "rascsi");
+            break;
+
+        case OPT_SCSI_LEVEL:
+            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
+                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
+                return EXIT_FAILURE;
+            }
+            else {
+                device->set_scsi_level(scsi_level);
+            }
+            break;
+
+        case OPT_CACHING_MODE:
+            try {
+                device->set_caching_mode(parser.ParseCachingMode(optarg));
+            }
+            catch (const parser_exception &e) {
+                cerr << e.what() << endl;
+                return EXIT_FAILURE;
+            }
             break;
 
         case OPT_LOCALE:

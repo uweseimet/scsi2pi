@@ -386,6 +386,9 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
             device.set_block_size(block_size);
         }
     }
+    else if (key == "caching_mode") {
+        device.set_caching_mode(ParseCachingMode(value));
+    }
     else if (key == "product_data") {
         SetProductData(device, value);
     }
@@ -405,7 +408,18 @@ PbDeviceType S2p::ParseDeviceType(const string &value)
         return type;
     }
 
-    throw parser_exception("Illegal device type '" + value + "'");
+    throw parser_exception("Invalid device type '" + value + "'");
+}
+
+PbCachingMode S2p::ParseCachingMode(const string &value)
+{
+    string m;
+    ranges::transform(value, back_inserter(m), ::toupper);
+    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
+        return mode;
+    }
+
+    throw parser_exception("Invalid caching mode '" + value + "'");
 }
 
 void S2p::ProcessScsiCommands()

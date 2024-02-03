@@ -18,7 +18,8 @@ class S2pCtlParser
 public:
 
     PbOperation ParseOperation(string_view) const;
-    PbDeviceType ParseType(const string&) const;
+    PbDeviceType ParseDeviceType(const string&) const;
+    PbCachingMode ParseCachingMode(const string&) const;
 
 private:
 

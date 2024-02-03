@@ -47,10 +47,14 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
 
 #ifdef BUILD_DISK
     shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device);
-    if (disk && disk->IsSectorSizeConfigurable()) {
-        for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
-            properties.add_block_sizes(sector_size);
+    if (disk) {
+        if (disk->IsSectorSizeConfigurable()) {
+            for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
+                properties.add_block_sizes(sector_size);
+            }
         }
+
+        properties.set_caching_mode(disk->GetCachingMode());
     }
 #endif
 }

@@ -69,7 +69,9 @@ void ScsiCd::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache(raw_file);
+    if (!SetUpCache(raw_file)) {
+        throw io_exception("Can't initialize cache");
+    }
 
     SetReadOnly(true);
     SetProtectable(false);
@@ -211,8 +213,10 @@ int ScsiCd::ReadData(span<uint8_t> buf)
         SetBlockCount(tracks[index]->GetBlocks());
         assert(GetBlockCount() > 0);
 
-        // Re-assign disk cache (no need to save)
-        ResizeCache(tracks[index]->GetPath(), raw_file);
+        // Re-assign cache (no need to save)
+        if (!ResizeCache(tracks[index]->GetPath(), raw_file)) {
+            throw scsi_exception(sense_key::medium_error, asc::read_fault);
+        }
 
         // Reset data index
         dataindex = index;

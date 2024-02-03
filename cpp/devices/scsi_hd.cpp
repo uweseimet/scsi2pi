@@ -61,7 +61,9 @@ void ScsiHd::FinalizeSetup()
         SetProduct(GetProductData(), false);
     }
 
-    SetUpCache();
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
+    }
 }
 
 void ScsiHd::Open()

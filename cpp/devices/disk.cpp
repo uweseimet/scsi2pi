@@ -14,6 +14,8 @@
 
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
+#include "null_cache.h"
+#include "disk_cache.h"
 #include "disk.h"
 
 using namespace memory_util;
@@ -25,16 +27,15 @@ bool Disk::Init(const param_map &params)
     // REZERO implementation is identical with Seek
     AddCommand(scsi_command::cmd_rezero, [this]
         {
-            Seek();
+            ReAssignBlocks();
         });
     AddCommand(scsi_command::cmd_format_unit, [this]
         {
             FormatUnit();
         });
-    // REASSIGN BLOCKS implementation is identical with Seek
     AddCommand(scsi_command::cmd_reassign_blocks, [this]
         {
-            Seek();
+            ReAssignBlocks();
         });
     AddCommand(scsi_command::cmd_read6, [this]
         {
@@ -142,22 +143,34 @@ void Disk::Dispatch(scsi_command cmd)
     }
 }
 
-void Disk::SetUpCache(bool raw)
+bool Disk::SetUpCache(bool raw)
 {
-    cache = make_unique<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()));
-    cache->SetRawMode(raw);
+    if (caching_mode == PbCachingMode::NO_CACHING) {
+        cache = make_unique<NullCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
+    }
+    else {
+        cache = make_unique<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
+    }
+
+    return cache->Init();
 }
 
-void Disk::ResizeCache(const string &path, bool raw)
+bool Disk::ResizeCache(const string &path, bool raw)
 {
-    cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount())));
-    cache->SetRawMode(raw);
+    if (caching_mode == PbCachingMode::NO_CACHING) {
+        cache.reset(new NullCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
+    }
+    else {
+        cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
+    }
+
+    return cache->Init();
 }
 
 void Disk::FlushCache()
 {
     if (cache && IsReady()) {
-        cache->Save();
+        cache->Flush();
     }
 }
 
@@ -221,32 +234,24 @@ void Disk::Write(access_mode mode)
     }
 
     const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
-    if (valid) {
-        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(GetSectorSizeInBytes());
-
-        next_sector = start;
-
-        EnterDataOutPhase();
-    }
-    else {
-        EnterStatusPhase();
-    }
+    WriteVerify(start, blocks, valid);
 }
 
 void Disk::Verify(access_mode mode)
 {
-    const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
-    if (valid) {
-        // if BytChk=0
-        if (!(GetController()->GetCdbByte(1) & 0x02)) {
-            Seek();
-            return;
-        }
+    // Flush the cache according to the specification
+    FlushCache();
 
-        // Test reading
+    // A transfer length of 0 is legal
+    const auto& [_, start, blocks] = CheckAndGetStartAndCount(mode);
+    WriteVerify(start, blocks, false);
+}
+
+void Disk::WriteVerify(uint64_t start, uint32_t blocks, bool transfer)
+{
+    if (transfer) {
         GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(ReadData(GetController()->GetBuffer()));
+        GetController()->SetCurrentLength(GetSectorSizeInBytes());
 
         next_sector = start;
 
@@ -707,7 +712,7 @@ int Disk::WriteData(span<const uint8_t> buf, bool verify)
     return GetSectorSizeInBytes();
 }
 
-void Disk::Seek()
+void Disk::ReAssignBlocks()
 {
     CheckReady();
 

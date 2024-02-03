@@ -18,8 +18,8 @@
 #include <tuple>
 #include "base/interfaces/scsi_block_commands.h"
 #include "shared/s2p_util.h"
+#include "cache.h"
 #include "disk_track.h"
-#include "disk_cache.h"
 #include "storage_device.h"
 
 using namespace std;
@@ -63,14 +63,23 @@ public:
         return configured_sector_size;
     }
     bool SetConfiguredSectorSize(uint32_t);
+
+    PbCachingMode GetCachingMode() const
+    {
+        return caching_mode;
+    }
+    void SetCachingMode(PbCachingMode mode)
+    {
+        caching_mode = mode;
+    }
     void FlushCache() override;
 
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
 
-    void SetUpCache(bool = false);
-    void ResizeCache(const string&, bool);
+    bool SetUpCache(bool = false);
+    bool ResizeCache(const string&, bool);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
@@ -134,7 +143,7 @@ private:
     {
         Write(RW16);
     }
-    void Seek();
+    void ReAssignBlocks();
     void Seek10();
     void ReadCapacity10() override;
     void ReadCapacity16() override;
@@ -147,13 +156,16 @@ private:
     void ReadWriteLong16() const;
     void ReadCapacity16_read_long16();
 
+    void WriteVerify(uint64_t, uint32_t, bool);
     void ValidateBlockAddress(access_mode) const;
     tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
 
     int ModeSense6(cdb_t, vector<uint8_t>&) const override;
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
-    unique_ptr<DiskCache> cache;
+    unique_ptr<Cache> cache;
+
+    PbCachingMode caching_mode = PbCachingMode::LEGACY_CACHING;
 
     unordered_set<uint32_t> supported_sector_sizes;
     uint32_t configured_sector_size = 0;

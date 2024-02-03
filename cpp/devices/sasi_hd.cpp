@@ -19,7 +19,9 @@ void SasiHd::FinalizeSetup(off_t image_offset)
 {
     Disk::ValidateFile();
 
-    SetUpCache(image_offset);
+    if (!SetUpCache(image_offset)) {
+        throw io_exception("Can't initialize cache");
+    }
 }
 
 void SasiHd::Open()

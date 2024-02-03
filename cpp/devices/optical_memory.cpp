@@ -48,7 +48,9 @@ void OpticalMemory::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache();
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
+    }
 
     if (IsReady()) {
         SetAttn(true);

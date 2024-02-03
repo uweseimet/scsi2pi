@@ -285,12 +285,6 @@ TEST(DiskTest, Verify10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    // Verify 1 sector with BytChk=0
-    controller->SetCdbByte(8, 1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
-    EXPECT_EQ(status::good, controller->GetStatus());
-
     // Further testing requires filesystem access
 }
 
@@ -304,12 +298,6 @@ TEST(DiskTest, Verify16)
     disk->SetReady(true);
     // Verify 0 sectors
     disk->SetBlockCount(1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
-    EXPECT_EQ(status::good, controller->GetStatus());
-
-    // Verify 1 sector with BytChk=0
-    controller->SetCdbByte(13, 1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
     EXPECT_EQ(status::good, controller->GetStatus());

@@ -42,6 +42,10 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         s << "  " << GetScsiLevel(pb_device.scsi_level());
     }
 
+    if (pb_device.caching_mode()) {
+        s << "  Caching mode: " << PbCachingMode_Name(pb_device.caching_mode());
+    }
+
     if (pb_device.block_size()) {
         s << "  " << pb_device.block_size() << " bytes per sector";
 

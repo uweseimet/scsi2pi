@@ -214,11 +214,18 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const string filename = GetParam(pb_device, "file");
 
     const PbDeviceType type = pb_device.type();
+
     auto device = CreateDevice(context, type, lun, filename);
     if (!device) {
         return false;
     }
 
+    // The effective device type is only available after creating the device
+    if (pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING && device->GetType() != PbDeviceType::SCHD
+        && device->GetType() != PbDeviceType::SCRM && device->GetType() != PbDeviceType::SAHD
+        && device->GetType() != PbDeviceType::SCMO) {
+        return false;
+    }
     if (!SetScsiLevel(context, device, pb_device.scsi_level())) {
         return false;
     }
@@ -244,6 +251,13 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
             return false;
+        }
+
+        const auto disk = dynamic_pointer_cast<Disk>(device);
+        if (disk && pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
+            info("Enabling experimental caching mode {0} for device {1}:{2}",
+                PbCachingMode_Name(pb_device.caching_mode()), pb_device.id(), pb_device.unit());
+            disk->SetCachingMode(pb_device.caching_mode());
         }
     }
 #endif
@@ -523,7 +537,11 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
         }
     }
 
-    s << ", device=" << pb_device.id() << ":" << pb_device.unit() << ", type=" << PbDeviceType_Name(pb_device.type());
+    s << ", device=" << pb_device.id() << ":" << pb_device.unit();
+
+    if (pb_device.type() != PbDeviceType::UNDEFINED) {
+        s << ", type=" << PbDeviceType_Name(pb_device.type());
+    }
 
     if (pb_device.params_size()) {
         s << ", device parameters=";
@@ -537,8 +555,23 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
         }
     }
 
-    s << ", vendor='" << pb_device.vendor() << "', product='" << pb_device.product()
-        << "', revision='" << pb_device.revision() << "', block size=" << pb_device.block_size();
+    if (!pb_device.vendor().empty()) {
+        s << ", vendor='" << pb_device.vendor();
+    }
+    if (!pb_device.product().empty()) {
+        s << "', product='" << pb_device.product();
+    }
+    if (!pb_device.revision().empty()) {
+        s << "', revision='" << pb_device.revision();
+    }
+
+    if (pb_device.block_size()) {
+        s << "', block size=" << pb_device.block_size();
+    }
+
+    if (pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
+        s << ", caching mode=" << PbCachingMode_Name(pb_device.caching_mode());
+    }
 
     return s.str();
 }

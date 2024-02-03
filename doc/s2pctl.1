@@ -30,6 +30,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--rename/-R\fR \fICURRENT_NAME:NEW_NAME\fR] |
 [\fB\--cmd/-c\fR \fICOMMAND\fR] |
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR] |
+[\fB\--caching-mode\fR \fICACHING_MODE\fR] |
 [\fB\--file/f\fR \fIFILE|PARAM\fR] |
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
 [\fB\--host/-H\fR \fIHOST\fR] |
@@ -161,6 +162,9 @@ eject, protect and unprotect are idempotent.
 .TP 
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
 The optional block size, either 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size is 512 bytes.
+.TP
+.BR \--caching-mode\fI " " \fICACHING_MODE
+Caching mode for SCHD/SAHD/SCRM/SCMO (no_caching|legacy_caching), default is legacy caching (experimental).
 .TP
 .BR \--file/-f\fI " " \fIFILE|PARAM
 Device-specific: Either a path to a disk image file, or a parameter for a non-disk device. See the s2p(1) man page for permitted file types.

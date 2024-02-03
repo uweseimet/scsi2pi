@@ -18,13 +18,13 @@
 #include "disk_track.h"
 #include "disk_cache.h"
 
-DiskCache::DiskCache(const string &path, int size, uint32_t blocks)
-: sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(blocks)
+DiskCache::DiskCache(const string &path, int size, uint32_t sectors, bool raw)
+: Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(sectors)
 {
-    assert(blocks > 0);
+    assert(sectors > 0);
 }
 
-bool DiskCache::Save()
+bool DiskCache::Flush()
 {
     // Save valid tracks
     return ranges::none_of(cache.begin(), cache.end(), [this](const cache_t &c)
@@ -157,7 +157,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, sec_size, sectors, cd_raw);
+    disktrk->Init(track, sec_size, sectors, IsRawMode());
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {

@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "shared/shared_exceptions.h"
 #include "s2pctl_parser.h"
 
 PbOperation S2pCtlParser::ParseOperation(string_view operation) const
@@ -14,7 +15,7 @@ PbOperation S2pCtlParser::ParseOperation(string_view operation) const
     return it != operations.end() ? it->second : NO_OPERATION;
 }
 
-PbDeviceType S2pCtlParser::ParseType(const string &type) const
+PbDeviceType S2pCtlParser::ParseDeviceType(const string &type) const
 {
     string t;
     ranges::transform(type, back_inserter(t), ::toupper);
@@ -26,4 +27,16 @@ PbDeviceType S2pCtlParser::ParseType(const string &type) const
     // Handle convenience device types (shortcuts)
     const auto &it = device_types.find(tolower(type[0]));
     return it != device_types.end() ? it->second : UNDEFINED;
+}
+
+PbCachingMode S2pCtlParser::ParseCachingMode(const string &mode) const
+{
+    string m;
+    ranges::transform(mode, back_inserter(m), ::toupper);
+
+    if (PbCachingMode parsed_mode; PbCachingMode_Parse(m, &parsed_mode)) {
+        return parsed_mode;
+    }
+
+    throw parser_exception("Invalid caching mode '" + mode + "'");
 }

@@ -35,17 +35,20 @@ void S2pParser::Banner(bool usage) const
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
             << "  --block-size/-b BLOCK_SIZE  Optional block size.\n"
+            << "  --caching-mode MODE         Caching mode for SCHD/SAHD/SCRM/SCMO\n"
+            << "                              (no_caching|legacy_caching), default is\n"
+            << "                              legacy_caching (experimental)\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
             << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
             << "  --scan-depth/-R SCAN_DEPTH  Scan depth for image file folder.\n"
-            << "  --property/-c KEY=VALUE     Sets a property.\n"
-            << "  --property-files/-C         List of property files.\n"
+            << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
+            << "  --property-files/-C         List of configuration property files.\n"
             << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|off),\n"
             << "                              default is 'info'.\n"
             << "  --token-file/-P TOKEN_FILE  Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --locale,-z                 Locale (language) for client-facing messages.\n"
+            << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|off),\n"
             << "  --version/-v                Display the s2p version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
@@ -64,11 +67,13 @@ void S2pParser::Banner(bool usage) const
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_HELP = 3;
+    const int OPT_CACHING_MODE = 3;
+    const int OPT_HELP = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
+        { "caching-mode", required_argument, nullptr, OPT_CACHING_MODE },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
         { "locale", required_argument, nullptr, 'z' },
@@ -106,6 +111,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     string scsi_level;
     string product_data;
     string block_size;
+    string caching_mode;
     bool blue_scsi_mode = false;
     bool has_scsi = false;
 
@@ -162,6 +168,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             scsi_level = optarg;
             continue;
 
+        case OPT_CACHING_MODE:
+            caching_mode = optarg;
+            continue;
+
         case OPT_HELP:
             Banner(true);
             exit(EXIT_SUCCESS);
@@ -194,6 +204,9 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         if (!block_size.empty()) {
             properties[device_key + "block_size"] = block_size;
         }
+        if (!caching_mode.empty()) {
+            properties[device_key + "caching_mode"] = caching_mode;
+        }
         if (!type.empty()) {
             properties[device_key + "type"] = type;
         }
@@ -212,6 +225,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         scsi_level = "";
         product_data = "";
         block_size = "";
+        caching_mode = "";
     }
 
     return properties;

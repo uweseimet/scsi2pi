@@ -138,6 +138,7 @@ SRC_CONTROLLERS = $(shell ls -1 $(DIR_CONTROLLERS)/*.cpp)
 
 SRC_DISK = \
 	$(DIR_DEVICES)/disk.cpp \
+	$(DIR_DEVICES)/null_cache.cpp \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
 	$(DIR_DEVICES)/storage_device.cpp \
