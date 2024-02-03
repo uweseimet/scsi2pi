@@ -9,7 +9,7 @@
 #include "shared/shared_exceptions.h"
 #include "null_cache.h"
 
-NullCache::NullCache(const string &f, int size, uint32_t s, bool raw)
+NullCache::NullCache(const string &f, int size, uint64_t s, bool raw)
 : Cache(raw), filename(f), sector_size(size), sectors(s)
 {
     assert(sector_size > 0);
@@ -22,7 +22,7 @@ bool NullCache::Init()
     return !file.fail();
 }
 
-bool NullCache::ReadSector(span<uint8_t> buf, uint32_t sector)
+bool NullCache::ReadSector(span<uint8_t> buf, uint64_t sector)
 {
     if (sectors < sector) {
         return false;
@@ -43,7 +43,7 @@ bool NullCache::ReadSector(span<uint8_t> buf, uint32_t sector)
     return true;
 }
 
-bool NullCache::WriteSector(span<const uint8_t> buf, uint32_t sector)
+bool NullCache::WriteSector(span<const uint8_t> buf, uint64_t sector)
 {
     if (sectors < sector) {
         return false;
@@ -62,6 +62,48 @@ bool NullCache::WriteSector(span<const uint8_t> buf, uint32_t sector)
     }
 
     return true;
+}
+
+int NullCache::ReadLong(span<uint8_t> buf, uint64_t sector, int length)
+{
+    if (sectors < sector) {
+        return 0;
+    }
+
+    file.seekg(sector_size * sector, ios::beg);
+    if (file.fail()) {
+        ++read_error_count;
+        return 0;
+    }
+
+    file.read((char*)buf.data(), length);
+    if (file.fail()) {
+        ++read_error_count;
+        return 0;
+    }
+
+    return length;
+}
+
+int NullCache::WriteLong(span<const uint8_t> buf, uint64_t sector, int length)
+{
+    if (sectors < sector) {
+        return 0;
+    }
+
+    file.seekp(sector_size * sector, ios::beg);
+    if (file.fail()) {
+        ++write_error_count;
+        return 0;
+    }
+
+    file.write((const char*)buf.data(), length);
+    if (file.fail()) {
+        ++write_error_count;
+        return 0;
+    }
+
+    return length;
 }
 
 bool NullCache::Flush()

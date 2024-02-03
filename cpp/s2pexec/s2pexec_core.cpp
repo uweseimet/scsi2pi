@@ -417,7 +417,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         if (const string &error = ReadData(); !error.empty()) {
             throw execution_exception(error);
         }
-        debug("Sending {} data bytes", buffer.size());
+        debug("Sending {} data byte(s)", buffer.size());
     }
 
     const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
@@ -433,7 +433,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         const int count = executor->GetByteCount();
 
-        debug("Received {} data bytes", count);
+        debug("Received {} data byte(s)", count);
 
         if (count) {
             if (const string &error = WriteData(count); !error.empty()) {

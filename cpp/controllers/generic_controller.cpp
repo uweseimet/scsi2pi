@@ -306,6 +306,8 @@ void GenericController::Send()
     if (const auto length = GetCurrentLength(); length) {
         assert(GetDeviceForLun(0));
 
+        LogTrace(fmt::format("Sending {} byte(s)", length));
+
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
         if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
@@ -369,6 +371,8 @@ void GenericController::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
+        LogTrace(fmt::format("Receiving {} byte(s)", length));
+
         if (const uint32_t l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
@@ -441,6 +445,8 @@ bool GenericController::XferIn(vector<uint8_t> &buf)
     case scsi_command::cmd_read6:
         case scsi_command::cmd_read10:
         case scsi_command::cmd_read16:
+        case scsi_command::cmd_read_long10:
+        case scsi_command::cmd_read_capacity16_read_long16:
         try {
             SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
         }
@@ -500,11 +506,12 @@ bool GenericController::XferOut(bool cont)
         case scsi_command::cmd_write16:
         case scsi_command::cmd_verify10:
         case scsi_command::cmd_verify16:
+        case scsi_command::cmd_write_long10:
+        case scsi_command::cmd_write_long16:
         case scsi_command::cmd_execute_operation:
         {
         try {
-            const auto length = device->WriteData(GetBuffer(),
-                opcode == scsi_command::cmd_verify10 || opcode == scsi_command::cmd_verify16);
+            const auto length = device->WriteData(GetBuffer(), opcode);
 
             if (cont) {
                 SetCurrentLength(length);

@@ -299,7 +299,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-int HostServices::WriteData(span<const uint8_t> buf, bool)
+int HostServices::WriteData(span<const uint8_t> buf, scsi_command)
 {
     const auto length = GetInt16(GetController()->GetCdb(), 7);
 

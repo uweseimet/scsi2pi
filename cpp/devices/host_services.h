@@ -34,7 +34,7 @@ public:
     vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;
 
-    int WriteData(span<const uint8_t>, bool) override;
+    int WriteData(span<const uint8_t>, scsi_command) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {

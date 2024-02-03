@@ -134,7 +134,7 @@ TEST(PrinterTest, Write)
 
     const vector<uint8_t> buf(1);
     controller->SetTransferSize(1, 1);
-    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, false));
+    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, scsi_command::cmd_test_unit_ready));
 }
 
 TEST(PrinterTest, GetStatistics)

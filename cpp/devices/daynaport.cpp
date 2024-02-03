@@ -209,7 +209,7 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-int DaynaPort::WriteData(span<const uint8_t> buf, bool)
+int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command)
 {
     const cdb_t &cdb = GetController()->GetCdb();
 

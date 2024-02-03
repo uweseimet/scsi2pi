@@ -80,7 +80,7 @@ public:
         return 0;
     }
 
-    virtual int WriteData(span<const uint8_t>, bool)
+    virtual int WriteData(span<const uint8_t>, scsi_command)
     {
         // Devices that implement a DATA OUT phase have to override this method, except for MODE SELECT
 

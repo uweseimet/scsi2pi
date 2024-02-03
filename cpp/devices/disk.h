@@ -42,7 +42,7 @@ public:
 
     bool Eject(bool) override;
 
-    int WriteData(span<const uint8_t>, bool) override;
+    int WriteData(span<const uint8_t>, scsi_command) override;
 
     int ReadData(span<uint8_t>) override;
 
@@ -152,18 +152,21 @@ private:
     void Read(access_mode);
     void Write(access_mode);
     void Verify(access_mode);
-    void ReadWriteLong10() const;
-    void ReadWriteLong16() const;
-    void ReadCapacity16_read_long16();
+    void ReadLong10();
+    void ReadLong16();
+    void WriteLong10();
+    void WriteLong16();
+    void ReadCapacity16_ReadLong16();
 
+    void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
-    void ValidateBlockAddress(access_mode) const;
+    uint64_t ValidateBlockAddress(access_mode) const;
     tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
 
     int ModeSense6(cdb_t, vector<uint8_t>&) const override;
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
-    unique_ptr<Cache> cache;
+    shared_ptr<Cache> cache;
 
     PbCachingMode caching_mode = PbCachingMode::LEGACY_CACHING;
 

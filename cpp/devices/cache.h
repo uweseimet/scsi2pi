@@ -23,8 +23,8 @@ public:
     }
     virtual ~Cache() = default;
 
-    virtual bool ReadSector(span<uint8_t>, uint32_t) = 0;
-    virtual bool WriteSector(span<const uint8_t>, uint32_t) = 0;
+    virtual bool ReadSector(span<uint8_t>, uint64_t) = 0;
+    virtual bool WriteSector(span<const uint8_t>, uint64_t) = 0;
 
     virtual bool Flush() = 0;
 

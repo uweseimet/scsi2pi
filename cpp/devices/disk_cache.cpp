@@ -18,8 +18,8 @@
 #include "disk_track.h"
 #include "disk_cache.h"
 
-DiskCache::DiskCache(const string &path, int size, uint32_t sectors, bool raw)
-: Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(sectors)
+DiskCache::DiskCache(const string &path, int size, uint64_t sectors, bool raw)
+: Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
 {
     assert(sectors > 0);
 }
@@ -43,9 +43,9 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-bool DiskCache::ReadSector(span<uint8_t> buf, uint32_t block)
+bool DiskCache::ReadSector(span<uint8_t> buf, uint64_t block)
 {
-    shared_ptr<DiskTrack> disktrk = GetTrack(block);
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(block));
     if (!disktrk) {
         return false;
     }
@@ -54,9 +54,9 @@ bool DiskCache::ReadSector(span<uint8_t> buf, uint32_t block)
     return disktrk->ReadSector(buf, block & 0xff);
 }
 
-bool DiskCache::WriteSector(span<const uint8_t> buf, uint32_t block)
+bool DiskCache::WriteSector(span<const uint8_t> buf, uint64_t block)
 {
-    shared_ptr<DiskTrack> disktrk = GetTrack(block);
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(block));
     if (!disktrk) {
         return false;
     }

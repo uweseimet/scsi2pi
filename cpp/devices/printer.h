@@ -45,7 +45,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    int WriteData(span<const uint8_t>, bool) override;
+    int WriteData(span<const uint8_t>, scsi_command) override;
 
     vector<PbStatistics> GetStatistics() const override;
 

@@ -244,6 +244,14 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #ifdef BUILD_DISK
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
+        // The caching mode must be set before the file is accessed
+        if (const auto disk = dynamic_pointer_cast<Disk>(device); disk
+            && pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
+            info("Enabling experimental caching mode {0} for device {1}:{2}",
+                PbCachingMode_Name(pb_device.caching_mode()), pb_device.id(), pb_device.unit());
+            disk->SetCachingMode(pb_device.caching_mode());
+        }
+
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME, PbDeviceType_Name(type));
@@ -251,13 +259,6 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
             return false;
-        }
-
-        const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk && pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
-            info("Enabling experimental caching mode {0} for device {1}:{2}",
-                PbCachingMode_Name(pb_device.caching_mode()), pb_device.id(), pb_device.unit());
-            disk->SetCachingMode(pb_device.caching_mode());
         }
     }
 #endif

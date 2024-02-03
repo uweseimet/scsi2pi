@@ -81,6 +81,10 @@ public:
     {
         ctrl.status = s;
     }
+    auto GetChunkSize() const
+    {
+        return ctrl.chunk_size;
+    }
     auto GetCurrentLength() const
     {
         return ctrl.current_length;

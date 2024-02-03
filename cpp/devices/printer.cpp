@@ -186,7 +186,7 @@ void Printer::SynchronizeBuffer()
     EnterStatusPhase();
 }
 
-int Printer::WriteData(span<const uint8_t> buf, bool)
+int Printer::WriteData(span<const uint8_t> buf, scsi_command)
 {
     const auto length = GetInt24(GetController()->GetCdb(), 2);
 

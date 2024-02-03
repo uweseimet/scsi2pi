@@ -31,12 +31,12 @@ public:
         uint32_t serial;
     };
 
-    DiskCache(const string&, int, uint32_t, bool);
+    DiskCache(const string&, int, uint64_t, bool);
     ~DiskCache() override = default;
 
     bool Flush() override;
-    bool ReadSector(span<uint8_t>, uint32_t) override;
-    bool WriteSector(span<const uint8_t>, uint32_t) override;
+    bool ReadSector(span<uint8_t>, uint64_t) override;
+    bool WriteSector(span<const uint8_t>, uint64_t) override;
 
     vector<PbStatistics> GetStatistics(bool) const override;
 

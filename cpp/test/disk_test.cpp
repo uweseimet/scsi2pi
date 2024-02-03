@@ -313,14 +313,21 @@ TEST(DiskTest, ReadLong10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_long10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    controller->SetCdbByte(1, 1);
+    TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "READ LONG(10) must fail because the RelAdr bit is set");
+    controller->SetCdbByte(1, 0);
+
     controller->SetCdbByte(2, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request,
         asc::lba_out_of_range, "READ LONG(10) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 1);
+    controller->SetCdbByte(7, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "READ LONG(10) must fail because it currently only supports 0 bytes transfer length");
+        "READ LONG(10) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, ReadLong16)
@@ -339,10 +346,11 @@ TEST(DiskTest, ReadLong16)
         asc::lba_out_of_range, "READ LONG(16) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(13, 1);
+    controller->SetCdbByte(12, 55);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "READ LONG(16) must fail because it currently only supports 0 bytes transfer length");
+        asc::invalid_field_in_cdb, "READ LONG(16) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong10)
@@ -353,15 +361,21 @@ TEST(DiskTest, WriteLong10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    controller->SetCdbByte(1, 1);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "WRITE LONG(10) must fail because the RelAdr bit is set");
+    controller->SetCdbByte(1, 0);
+
     controller->SetCdbByte(2, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
         asc::lba_out_of_range, "WRITE LONG(10) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 1);
-    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "WRITE LONG(10) must fail because it currently only supports 0 bytes transfer length");
+    controller->SetCdbByte(7, 255);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "WRITE LONG(10) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong16)
@@ -377,10 +391,11 @@ TEST(DiskTest, WriteLong16)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    controller->SetCdbByte(13, 1);
-    TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "WRITE LONG(16) must fail because it currently only supports 0 bytes transfer length");
+    controller->SetCdbByte(12, 255);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "WRITE LONG(16) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, StartStopUnit)
