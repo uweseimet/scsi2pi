@@ -76,11 +76,11 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
-s2p supports non-standard sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
+The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The efault size is 512 bytes.
+s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
 .BR \--caching-mode\fI " " \fICACHING_MODE
-Caching mode for SCHD/SAHD/SCRM/SCMO (no_caching|legacy_caching), default is legacy caching (experimental).
+Caching mode for SCHD/SAHD/SCRM/SCMO (default|off), default is PiSCSI compatible caching (experimental).
 .TP
 .BR \--blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename compatibility mode. See the BlueSCSI documentation for details on the BlueSCSI filename convention.
