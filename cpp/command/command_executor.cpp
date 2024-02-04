@@ -221,7 +221,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     // The effective device type is only available after creating the device
-    if (pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING && device->GetType() != PbDeviceType::SCHD
+    if (pb_device.caching_mode() != PbCachingMode::DEFAULT && device->GetType() != PbDeviceType::SCHD
         && device->GetType() != PbDeviceType::SCRM && device->GetType() != PbDeviceType::SAHD
         && device->GetType() != PbDeviceType::SCMO) {
         return false;
@@ -246,7 +246,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     if (device->SupportsFile()) {
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device); disk
-            && pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
+            && pb_device.caching_mode() != PbCachingMode::DEFAULT) {
             info("Enabling experimental caching mode {0} for device {1}:{2}",
                 PbCachingMode_Name(pb_device.caching_mode()), pb_device.id(), pb_device.unit());
             disk->SetCachingMode(pb_device.caching_mode());
@@ -570,7 +570,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
         s << "', block size=" << pb_device.block_size();
     }
 
-    if (pb_device.caching_mode() != PbCachingMode::LEGACY_CACHING) {
+    if (pb_device.caching_mode() != PbCachingMode::DEFAULT) {
         s << ", caching mode=" << PbCachingMode_Name(pb_device.caching_mode());
     }
 

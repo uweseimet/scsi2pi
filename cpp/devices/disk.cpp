@@ -145,7 +145,12 @@ void Disk::Dispatch(scsi_command cmd)
 
 bool Disk::SetUpCache(bool raw)
 {
-    if (caching_mode == PbCachingMode::NO_CACHING) {
+    if (!supported_sector_sizes.contains(sector_size)) {
+        spdlog::warn("Using non-standard sector size of {} bytes", configured_sector_size);
+        caching_mode = PbCachingMode::OFF;
+    }
+
+    if (caching_mode == PbCachingMode::OFF) {
         cache = make_shared<NullCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
     }
     else {
@@ -157,7 +162,7 @@ bool Disk::SetUpCache(bool raw)
 
 bool Disk::ResizeCache(const string &path, bool raw)
 {
-    if (caching_mode == PbCachingMode::NO_CACHING) {
+    if (caching_mode == PbCachingMode::OFF) {
         cache.reset(new NullCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
     }
     else {
@@ -953,7 +958,7 @@ void Disk::ChangeSectorSize(uint32_t new_size)
 
 bool Disk::SetSectorSizeInBytes(uint32_t size)
 {
-    if (!GetSupportedSectorSizes().contains(size)) {
+    if (!supported_sector_sizes.contains(size) && configured_sector_size != size) {
         return false;
     }
 
@@ -964,7 +969,7 @@ bool Disk::SetSectorSizeInBytes(uint32_t size)
 
 bool Disk::SetConfiguredSectorSize(uint32_t configured_size)
 {
-    if (!supported_sector_sizes.contains(configured_size)) {
+    if (!supported_sector_sizes.contains(configured_size) && configured_size % 4) {
         return false;
     }
 

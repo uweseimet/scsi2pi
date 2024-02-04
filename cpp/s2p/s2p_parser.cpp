@@ -34,7 +34,7 @@ void S2pParser::Banner(bool usage) const
             << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional block size.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional block (sector) size.\n"
             << "  --caching-mode MODE         Caching mode for SCHD/SAHD/SCRM/SCMO\n"
             << "                              (no_caching|legacy_caching), default is\n"
             << "                              legacy_caching (experimental)\n"

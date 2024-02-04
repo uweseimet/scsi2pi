@@ -227,10 +227,10 @@ message PbOperationInfo {
     map<int32, PbOperationMetaData> operations = 1;
 }
 
-// The supported caching modes. Legacy caching is the caching as it is supported by PiSCSI.
+// The supported caching modes. Currently the caching implemented by PiSCSI is the default
 enum PbCachingMode {
-    LEGACY_CACHING = 0;
-    NO_CACHING = 1;
+    DEFAULT = 0;
+    OFF = 1;
 }
 
 // Special purpose error codes for cases where a textual error message may not be not sufficient.

@@ -168,7 +168,7 @@ private:
 
     shared_ptr<Cache> cache;
 
-    PbCachingMode caching_mode = PbCachingMode::LEGACY_CACHING;
+    PbCachingMode caching_mode = PbCachingMode::DEFAULT;
 
     unordered_set<uint32_t> supported_sector_sizes;
     uint32_t configured_sector_size = 0;
