@@ -18,11 +18,9 @@
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "protobuf/protobuf_util.h"
-#include "s2pctl_parser.h"
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"
 
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -41,8 +39,7 @@ void S2pCtl::Banner(bool usage) const
             << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
             << "                                 (256|512|1024|2048|4096).\n"
             << "  --caching-mode MODE            Caching mode for SCHD/SAHD/SCRM/SCMO\n"
-            << "                                 (no_caching|legacy_caching), default is\n"
-            << "                                 legacy_caching (experimental)\n"
+            << "                                 (default|linux|write-through).\n"
             << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
             << "                                 (VENDOR:PRODUCT:REVISION).\n"
             << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
@@ -181,7 +178,6 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { nullptr, 0, nullptr, 0 }
     };
 
-    S2pCtlParser parser;
     PbCommand command;
     PbDeviceDefinition *device = command.add_devices();
     device->set_id(-1);
@@ -223,7 +219,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'c':
-            command.set_operation(parser.ParseOperation(optarg));
+            command.set_operation(ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
                 cerr << "Error: Unknown operation '" << optarg << "'" << endl;
                 return EXIT_FAILURE;
@@ -335,7 +331,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 't':
-            device->set_type(parser.ParseDeviceType(optarg));
+            device->set_type(ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
                 cerr << "Error: Invalid device type '" << optarg << "'" << endl;
                 return EXIT_FAILURE;
@@ -416,7 +412,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case OPT_CACHING_MODE:
             try {
-                device->set_caching_mode(parser.ParseCachingMode(optarg));
+                device->set_caching_mode(ParseCachingMode(optarg));
             }
             catch (const parser_exception &e) {
                 cerr << e.what() << endl;
@@ -470,3 +466,10 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
     return status ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+PbOperation S2pCtl::ParseOperation(string_view operation)
+{
+    const auto &it = OPERATIONS.find(tolower(operation[0]));
+    return it != OPERATIONS.end() ? it->second : NO_OPERATION;
+}
+

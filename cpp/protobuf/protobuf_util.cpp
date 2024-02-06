@@ -18,6 +18,31 @@ using namespace s2p_util;
 
 #define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
 
+PbDeviceType protobuf_util::ParseDeviceType(const string &type)
+{
+    string t;
+    ranges::transform(type, back_inserter(t), ::toupper);
+
+    if (PbDeviceType parsed_type; PbDeviceType_Parse(t, &parsed_type)) {
+        return parsed_type;
+    }
+
+    // Handle convenience device types (shortcuts)
+    const auto &it = DEVICE_TYPES.find(tolower(type[0]));
+    return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
+}
+
+PbCachingMode protobuf_util::ParseCachingMode(const string &value)
+{
+    string m;
+    ranges::transform(value == "write-through" ? "write_through" : value, back_inserter(m), ::toupper);
+    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
+        return mode;
+    }
+
+    throw parser_exception("Invalid caching mode '" + value + "'");
+}
+
 void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &params)
 {
     if (params.empty()) {

@@ -226,6 +226,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         && device->GetType() != PbDeviceType::SCMO) {
         return false;
     }
+
     if (!SetScsiLevel(context, device, pb_device.scsi_level())) {
         return false;
     }
@@ -247,8 +248,6 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device); disk
             && pb_device.caching_mode() != PbCachingMode::DEFAULT) {
-            info("Enabling experimental caching mode {0} for device {1}:{2}",
-                PbCachingMode_Name(pb_device.caching_mode()), pb_device.id(), pb_device.unit());
             disk->SetCachingMode(pb_device.caching_mode());
         }
 

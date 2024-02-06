@@ -8,17 +8,16 @@
 
 #pragma once
 
-#include <span>
 #include <fstream>
 #include "cache.h"
 
-class NullCache : public Cache
+class LinuxCache : public Cache
 {
 
 public:
 
-    NullCache(const string&, int, uint64_t, bool);
-    ~NullCache() override = default;
+    LinuxCache(const string&, int, uint64_t, bool, bool);
+    ~LinuxCache() override = default;
 
     bool ReadSector(span<uint8_t>, uint64_t) override;
     bool WriteSector(span<const uint8_t>, uint64_t) override;
@@ -41,6 +40,8 @@ private:
     int sector_size;
 
     uint64_t sectors;
+
+    bool write_through;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;

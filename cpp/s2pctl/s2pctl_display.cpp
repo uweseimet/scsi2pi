@@ -42,8 +42,11 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         s << "  " << GetScsiLevel(pb_device.scsi_level());
     }
 
+    // Check for existence because PiSCSI does not support this setting
     if (pb_device.caching_mode()) {
-        s << "  Caching mode: " << PbCachingMode_Name(pb_device.caching_mode());
+        string mode;
+        ranges::transform(PbCachingMode_Name(pb_device.caching_mode()), back_inserter(mode), ::tolower);
+        s << "  Caching mode: " << (mode == "write_through" ? "write-through" : mode);
     }
 
     if (pb_device.block_size()) {

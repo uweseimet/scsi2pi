@@ -46,15 +46,10 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_DISK
-    shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device);
-    if (disk) {
-        if (disk->IsSectorSizeConfigurable()) {
-            for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
-                properties.add_block_sizes(sector_size);
-            }
+    if (shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsSectorSizeConfigurable()) {
+        for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
+            properties.add_block_sizes(sector_size);
         }
-
-        properties.set_caching_mode(disk->GetCachingMode());
     }
 #endif
 }
@@ -110,8 +105,9 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
-        pb_device.set_block_size(device->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
-        pb_device.set_block_count(device->IsRemoved() ? 0 : disk->GetBlockCount());
+        pb_device.set_block_size(disk->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
+        pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
+        pb_device.set_caching_mode(disk->GetCachingMode());
     }
 
     const auto storage_device = dynamic_pointer_cast<const StorageDevice>(device);

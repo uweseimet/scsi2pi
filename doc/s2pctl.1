@@ -165,7 +165,7 @@ The optional block size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes.
 s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
 .BR \--caching-mode\fI " " \fICACHING_MODE
-Caching mode for SCHD/SAHD/SCRM/SCMO (default|off), default is PiSCSI compatible caching (experimental).
+Caching mode for SCHD/SAHD/SCRM/SCMO (default|linux|write-through), default is PiSCSI compatible caching.
 .TP
 .BR \--file/-f\fI " " \fIFILE|PARAM
 Device-specific: Either a path to a disk image file, or a parameter for a non-disk device. See the s2p(1) man page for permitted file types.

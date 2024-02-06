@@ -227,10 +227,11 @@ message PbOperationInfo {
     map<int32, PbOperationMetaData> operations = 1;
 }
 
-// The supported caching modes. Currently the caching implemented by PiSCSI is the default
+// The supported caching modes. Currently the caching implemented by PiSCSI is the default.
 enum PbCachingMode {
     DEFAULT = 0;
-    OFF = 1;
+    LINUX = 1;
+    WRITE_THROUGH = 2;
 }
 
 // Special purpose error codes for cases where a textual error message may not be not sufficient.

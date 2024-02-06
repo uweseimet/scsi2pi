@@ -14,7 +14,7 @@
 
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "null_cache.h"
+#include "linux_cache.h"
 #include "disk_cache.h"
 #include "disk.h"
 
@@ -147,11 +147,16 @@ bool Disk::SetUpCache(bool raw)
 {
     if (!supported_sector_sizes.contains(sector_size)) {
         spdlog::warn("Using non-standard sector size of {} bytes", configured_sector_size);
-        caching_mode = PbCachingMode::OFF;
+
+        if (caching_mode != PbCachingMode::LINUX && caching_mode != PbCachingMode::WRITE_THROUGH) {
+            spdlog::info("Updating caching mode");
+            caching_mode = PbCachingMode::LINUX;
+        }
     }
 
-    if (caching_mode == PbCachingMode::OFF) {
-        cache = make_shared<NullCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
+    if (caching_mode == PbCachingMode::LINUX || caching_mode == PbCachingMode::WRITE_THROUGH) {
+        cache = make_shared<LinuxCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
+            caching_mode == PbCachingMode::WRITE_THROUGH);
     }
     else {
         cache = make_shared<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
@@ -162,8 +167,10 @@ bool Disk::SetUpCache(bool raw)
 
 bool Disk::ResizeCache(const string &path, bool raw)
 {
-    if (caching_mode == PbCachingMode::OFF) {
-        cache.reset(new NullCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
+    if (caching_mode == PbCachingMode::LINUX || caching_mode == PbCachingMode::WRITE_THROUGH) {
+        cache.reset(
+            new LinuxCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
+                caching_mode == PbCachingMode::WRITE_THROUGH));
     }
     else {
         cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
@@ -244,8 +251,8 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
     }
 
     // Transfer lengths other than 0 require that caching is disabled
-    auto null_cache = dynamic_pointer_cast<NullCache>(cache);
-    if (!null_cache) {
+    auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
+    if (!linux_cache) {
         spdlog::error("READ/WRITE LONG require caching to be disabled");
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
@@ -266,7 +273,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         EnterDataOutPhase();
     }
     else {
-        GetController()->SetCurrentLength(null_cache->ReadLong(GetController()->GetBuffer(), sector, length));
+        GetController()->SetCurrentLength(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
 
         ++sector_read_count;
 
@@ -749,10 +756,10 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
     CheckReady();
 
     if (command == scsi_command::cmd_write_long10 || command == scsi_command::cmd_write_long16) {
-        auto null_cache = dynamic_pointer_cast<NullCache>(cache);
-        assert(null_cache);
+        auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
+        assert(linux_cache);
 
-        const auto length = null_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
+        const auto length = linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
         if (!length) {
             throw scsi_exception(sense_key::medium_error, asc::write_fault);
         }

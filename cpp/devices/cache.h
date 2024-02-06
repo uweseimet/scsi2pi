@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <span>
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

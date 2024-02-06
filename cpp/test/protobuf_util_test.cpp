@@ -23,6 +23,39 @@ void TestSpecialDevice(const string &name)
     EXPECT_EQ("", GetParam(device, "interfaces"));
 }
 
+TEST(ProtobufUtil, ParseDeviceType)
+{
+    EXPECT_EQ(SCCD, ParseDeviceType("sccd"));
+    EXPECT_EQ(SCDP, ParseDeviceType("scdp"));
+    EXPECT_EQ(SCHD, ParseDeviceType("schd"));
+    EXPECT_EQ(SCLP, ParseDeviceType("sclp"));
+    EXPECT_EQ(SCMO, ParseDeviceType("scmo"));
+    EXPECT_EQ(SCRM, ParseDeviceType("scrm"));
+    EXPECT_EQ(SCHS, ParseDeviceType("schs"));
+
+    EXPECT_EQ(SCCD, ParseDeviceType("c"));
+    EXPECT_EQ(SCDP, ParseDeviceType("d"));
+    EXPECT_EQ(SCHD, ParseDeviceType("h"));
+    EXPECT_EQ(SCLP, ParseDeviceType("l"));
+    EXPECT_EQ(SCMO, ParseDeviceType("m"));
+    EXPECT_EQ(SCRM, ParseDeviceType("r"));
+    EXPECT_EQ(SCHS, ParseDeviceType("s"));
+
+    EXPECT_EQ(UNDEFINED, ParseDeviceType(""));
+    EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
+}
+
+TEST(ProtobufUtil, ParseCachingMode)
+{
+    EXPECT_EQ(DEFAULT, ParseCachingMode("default"));
+    EXPECT_EQ(LINUX, ParseCachingMode("linux"));
+    EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write_through"));
+    EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write-through"));
+
+    EXPECT_THROW(ParseCachingMode(""), parser_exception);
+    EXPECT_THROW(ParseCachingMode("xyz"), parser_exception);
+}
+
 TEST(ProtobufUtil, GetSetParam)
 {
     // The implementation is a function template, testing one possible T is sufficient

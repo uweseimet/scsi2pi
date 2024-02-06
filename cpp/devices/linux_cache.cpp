@@ -6,23 +6,22 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
-#include "null_cache.h"
+#include "linux_cache.h"
 
-NullCache::NullCache(const string &f, int size, uint64_t s, bool raw)
-: Cache(raw), filename(f), sector_size(size), sectors(s)
+LinuxCache::LinuxCache(const string &f, int size, uint64_t s, bool raw, bool w)
+: Cache(raw), filename(f), sector_size(size), sectors(s), write_through(w)
 {
     assert(sector_size > 0);
     assert(sectors > 0);
 }
 
-bool NullCache::Init()
+bool LinuxCache::Init()
 {
     file.open(filename, ios::in | ios::out);
     return !file.fail();
 }
 
-bool NullCache::ReadSector(span<uint8_t> buf, uint64_t sector)
+bool LinuxCache::ReadSector(span<uint8_t> buf, uint64_t sector)
 {
     if (sectors < sector) {
         return false;
@@ -43,7 +42,7 @@ bool NullCache::ReadSector(span<uint8_t> buf, uint64_t sector)
     return true;
 }
 
-bool NullCache::WriteSector(span<const uint8_t> buf, uint64_t sector)
+bool LinuxCache::WriteSector(span<const uint8_t> buf, uint64_t sector)
 {
     if (sectors < sector) {
         return false;
@@ -61,10 +60,18 @@ bool NullCache::WriteSector(span<const uint8_t> buf, uint64_t sector)
         return false;
     }
 
+    if (write_through) {
+        file.flush();
+        if (file.fail()) {
+            ++write_error_count;
+            return false;
+        }
+    }
+
     return true;
 }
 
-int NullCache::ReadLong(span<uint8_t> buf, uint64_t sector, int length)
+int LinuxCache::ReadLong(span<uint8_t> buf, uint64_t sector, int length)
 {
     if (sectors < sector) {
         return 0;
@@ -85,7 +92,7 @@ int NullCache::ReadLong(span<uint8_t> buf, uint64_t sector, int length)
     return length;
 }
 
-int NullCache::WriteLong(span<const uint8_t> buf, uint64_t sector, int length)
+int LinuxCache::WriteLong(span<const uint8_t> buf, uint64_t sector, int length)
 {
     if (sectors < sector) {
         return 0;
@@ -103,10 +110,18 @@ int NullCache::WriteLong(span<const uint8_t> buf, uint64_t sector, int length)
         return 0;
     }
 
+    if (write_through) {
+        file.flush();
+        if (file.fail()) {
+            ++write_error_count;
+            return 0;
+        }
+    }
+
     return length;
 }
 
-bool NullCache::Flush()
+bool LinuxCache::Flush()
 {
     file.flush();
     if (file.fail()) {
@@ -117,7 +132,7 @@ bool NullCache::Flush()
     return true;
 }
 
-vector<PbStatistics> NullCache::GetStatistics(bool is_read_only) const
+vector<PbStatistics> LinuxCache::GetStatistics(bool is_read_only) const
 {
     vector<PbStatistics> statistics;
 

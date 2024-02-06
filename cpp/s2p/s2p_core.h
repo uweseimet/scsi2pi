@@ -48,8 +48,6 @@ private:
 
     static bool CheckActive(const property_map&, const string&);
     static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
-    static PbDeviceType ParseDeviceType(const string&);
-    static PbCachingMode ParseCachingMode(const string&);
 
     string access_token;
 

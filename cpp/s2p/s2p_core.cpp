@@ -400,28 +400,6 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     }
 }
 
-PbDeviceType S2p::ParseDeviceType(const string &value)
-{
-    string t;
-    ranges::transform(value, back_inserter(t), ::toupper);
-    if (PbDeviceType type; PbDeviceType_Parse(t, &type)) {
-        return type;
-    }
-
-    throw parser_exception("Invalid device type '" + value + "'");
-}
-
-PbCachingMode S2p::ParseCachingMode(const string &value)
-{
-    string m;
-    ranges::transform(value, back_inserter(m), ::toupper);
-    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
-        return mode;
-    }
-
-    throw parser_exception("Invalid caching mode '" + value + "'");
-}
-
 void S2p::ProcessScsiCommands()
 {
     while (service_thread.IsRunning()) {

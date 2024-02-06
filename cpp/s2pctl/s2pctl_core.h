@@ -9,9 +9,12 @@
 #pragma once
 
 #include <vector>
+#include "unordered_map"
 #include <string>
+#include "generated/s2p_interface.pb.h"
 
 using namespace std;
+using namespace s2p_interface;
 
 class S2pCtl
 {
@@ -26,7 +29,19 @@ private:
     int RunInteractive();
     int ParseArguments(const vector<char*>&);
 
+    static PbOperation ParseOperation(string_view);
+
     // Preserve host settings during invocations in interactive mode
     string hostname = "localhost";
     int port = 6868;
+
+    inline static const unordered_map<int, PbOperation> OPERATIONS = {
+        { 'a', ATTACH },
+        { 'd', DETACH },
+        { 'e', EJECT },
+        { 'i', INSERT },
+        { 'p', PROTECT },
+        { 's', DEVICES_INFO },
+        { 'u', UNPROTECT }
+    };
 };
