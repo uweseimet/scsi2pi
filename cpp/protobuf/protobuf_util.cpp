@@ -34,8 +34,11 @@ PbDeviceType protobuf_util::ParseDeviceType(const string &type)
 
 PbCachingMode protobuf_util::ParseCachingMode(const string &value)
 {
+    string v = value;
+    ranges::replace(v, '-', '_');
+
     string m;
-    ranges::transform(value == "write-through" ? "write_through" : value, back_inserter(m), ::toupper);
+    ranges::transform(v, back_inserter(m), ::toupper);
     if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
         return mode;
     }

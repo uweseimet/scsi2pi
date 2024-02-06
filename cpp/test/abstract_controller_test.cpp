@@ -134,10 +134,10 @@ TEST(AbstractControllerTest, Offset)
     MockAbstractController controller;
 
     controller.ResetOffset();
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
 
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
 }
 
 TEST(AbstractControllerTest, ProcessOnController)

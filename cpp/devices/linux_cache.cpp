@@ -21,9 +21,9 @@ bool LinuxCache::Init()
     return !file.fail();
 }
 
-bool LinuxCache::ReadSector(span<uint8_t> buf, uint64_t sector)
+bool LinuxCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    if (sectors < sector) {
+    if (sectors < sector + count) {
         return false;
     }
 
@@ -33,7 +33,7 @@ bool LinuxCache::ReadSector(span<uint8_t> buf, uint64_t sector)
         return false;
     }
 
-    file.read((char*)buf.data(), sector_size);
+    file.read((char*)buf.data(), sector_size * count);
     if (file.fail()) {
         ++read_error_count;
         return false;

@@ -83,11 +83,11 @@ key11=value2
     const auto &property_handler = SetUpProperties(properties);
 
     auto p = property_handler.GetProperties("key2");
-    EXPECT_EQ(1, p.size());
+    EXPECT_EQ(1U, p.size());
     EXPECT_TRUE(p.contains("key2"));
 
     p = property_handler.GetProperties("key1");
-    EXPECT_EQ(2, p.size());
+    EXPECT_EQ(2U, p.size());
     EXPECT_TRUE(p.contains("key1"));
     EXPECT_TRUE(p.contains("key11"));
 }

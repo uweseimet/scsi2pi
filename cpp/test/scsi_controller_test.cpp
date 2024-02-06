@@ -194,7 +194,7 @@ TEST(ScsiControllerTest, MsgIn)
     EXPECT_CALL(*bus, SetIO(true));
     controller.MsgIn();
     EXPECT_EQ(phase_t::msgin, controller.GetPhase());
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
     EXPECT_EQ(0U, controller.GetCurrentLength());
 }
 
@@ -209,7 +209,7 @@ TEST(ScsiControllerTest, MsgOut)
     EXPECT_CALL(*bus, SetIO(false));
     controller.MsgOut();
     EXPECT_EQ(phase_t::msgout, controller.GetPhase());
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
     EXPECT_EQ(1U, controller.GetCurrentLength());
 }
 
@@ -230,7 +230,7 @@ TEST(ScsiControllerTest, DataIn)
     EXPECT_CALL(*bus, SetIO(true));
     controller.DataIn();
     EXPECT_EQ(phase_t::datain, controller.GetPhase());
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
 }
 
 TEST(ScsiControllerTest, DataOut)
@@ -250,7 +250,7 @@ TEST(ScsiControllerTest, DataOut)
     EXPECT_CALL(*bus, SetIO(false));
     controller.DataOut();
     EXPECT_EQ(phase_t::dataout, controller.GetPhase());
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0U, controller.GetOffset());
 }
 
 TEST(ScsiControllerTest, Error)

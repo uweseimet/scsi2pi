@@ -90,11 +90,7 @@ public:
         return ctrl.current_length;
     }
     void SetCurrentLength(size_t);
-    void SetTransferSize(uint32_t l, uint32_t c)
-    {
-        ctrl.total_length = l;
-        ctrl.chunk_size = c;
-    }
+    void SetTransferSize(uint32_t, uint32_t);
     void SetMessage(int m)
     {
         ctrl.message = m;

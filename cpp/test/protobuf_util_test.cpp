@@ -51,6 +51,8 @@ TEST(ProtobufUtil, ParseCachingMode)
     EXPECT_EQ(LINUX, ParseCachingMode("linux"));
     EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write_through"));
     EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write-through"));
+    EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux_optimized"));
+    EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux-optimized"));
 
     EXPECT_THROW(ParseCachingMode(""), parser_exception);
     EXPECT_THROW(ParseCachingMode("xyz"), parser_exception);

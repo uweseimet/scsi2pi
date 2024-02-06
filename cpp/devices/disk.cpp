@@ -146,20 +146,20 @@ void Disk::Dispatch(scsi_command cmd)
 bool Disk::SetUpCache(bool raw)
 {
     if (!supported_sector_sizes.contains(sector_size)) {
-        spdlog::warn("Using non-standard sector size of {} bytes", configured_sector_size);
+        spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
 
-        if (caching_mode != PbCachingMode::LINUX && caching_mode != PbCachingMode::WRITE_THROUGH) {
-            spdlog::info("Updating caching mode");
+        if (caching_mode == PbCachingMode::DEFAULT) {
+            spdlog::info("Adjusting caching mode");
             caching_mode = PbCachingMode::LINUX;
         }
     }
 
-    if (caching_mode == PbCachingMode::LINUX || caching_mode == PbCachingMode::WRITE_THROUGH) {
-        cache = make_shared<LinuxCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
-            caching_mode == PbCachingMode::WRITE_THROUGH);
+    if (caching_mode == PbCachingMode::DEFAULT) {
+        cache = make_shared<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
     }
     else {
-        cache = make_shared<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
+        cache = make_shared<LinuxCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
+            caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
     return cache->Init();
@@ -167,13 +167,13 @@ bool Disk::SetUpCache(bool raw)
 
 bool Disk::ResizeCache(const string &path, bool raw)
 {
-    if (caching_mode == PbCachingMode::LINUX || caching_mode == PbCachingMode::WRITE_THROUGH) {
+    if (caching_mode == PbCachingMode::DEFAULT) {
+        cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
+    }
+    else {
         cache.reset(
             new LinuxCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
                 caching_mode == PbCachingMode::WRITE_THROUGH));
-    }
-    else {
-        cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
     }
 
     return cache->Init();
@@ -200,13 +200,15 @@ void Disk::FormatUnit()
 
 void Disk::Read(access_mode mode)
 {
-    const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
+    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
     if (valid) {
-        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
-
         next_sector = start;
 
-        GetController()->SetCurrentLength(ReadData(GetController()->GetBuffer()));
+        read_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
+
+        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), read_count * GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(read_count * GetSectorSizeInBytes());
+        ReadData(GetController()->GetBuffer());
 
         EnterDataInPhase();
     }
@@ -287,8 +289,8 @@ void Disk::Write(access_mode mode)
         throw scsi_exception(sense_key::data_protect, asc::write_protected);
     }
 
-    const auto& [valid, start, blocks] = CheckAndGetStartAndCount(mode);
-    WriteVerify(start, blocks, valid);
+    const auto& [valid, start, sectors] = CheckAndGetStartAndCount(mode);
+    WriteVerify(start, sectors, valid);
 }
 
 void Disk::Verify(access_mode mode)
@@ -301,10 +303,10 @@ void Disk::Verify(access_mode mode)
     WriteVerify(start, blocks, false);
 }
 
-void Disk::WriteVerify(uint64_t start, uint32_t blocks, bool transfer)
+void Disk::WriteVerify(uint64_t start, uint32_t sectors, bool transfer)
 {
     if (transfer) {
-        GetController()->SetTransferSize(blocks * GetSectorSizeInBytes(), GetSectorSizeInBytes());
+        GetController()->SetTransferSize(sectors * GetSectorSizeInBytes(), GetSectorSizeInBytes());
         GetController()->SetCurrentLength(GetSectorSizeInBytes());
 
         next_sector = start;
@@ -734,19 +736,18 @@ int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
 
 int Disk::ReadData(span<uint8_t> buf)
 {
-    assert(next_sector < GetBlockCount());
+    assert(next_sector + read_count <= GetBlockCount());
 
     CheckReady();
 
-    if (!cache->ReadSector(buf, static_cast<uint32_t>(next_sector))) {
+    if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), read_count)) {
         throw scsi_exception(sense_key::medium_error, asc::read_fault);
     }
 
-    ++next_sector;
+    next_sector += read_count;
+    sector_read_count += read_count;
 
-    ++sector_read_count;
-
-    return GetSectorSizeInBytes();
+    return GetSectorSizeInBytes() * read_count;
 }
 
 int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
@@ -775,7 +776,6 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
     }
 
     ++next_sector;
-
     ++sector_write_count;
 
     return GetSectorSizeInBytes();

@@ -43,8 +43,13 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-bool DiskCache::ReadSector(span<uint8_t> buf, uint64_t block)
+bool DiskCache::ReadSectors(span<uint8_t> buf, uint64_t block, uint32_t count)
 {
+    assert(count == 1);
+    if (count != 1) {
+        return false;
+    }
+
     shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(block));
     if (!disktrk) {
         return false;

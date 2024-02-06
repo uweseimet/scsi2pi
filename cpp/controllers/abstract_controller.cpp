@@ -29,6 +29,15 @@ void AbstractController::SetCurrentLength(size_t length)
     ctrl.current_length = static_cast<int>(length);
 }
 
+void AbstractController::SetTransferSize(uint32_t length, uint32_t chunk_size)
+{
+    // The total number of bytes to transfer for the current SCSI/SASI command
+    ctrl.total_length = length;
+
+    // The number of bytes to transfer in a single chunk
+    ctrl.chunk_size = chunk_size;
+}
+
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
 {
     SetCurrentLength(size);

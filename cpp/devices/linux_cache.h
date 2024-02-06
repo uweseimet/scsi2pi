@@ -19,7 +19,7 @@ public:
     LinuxCache(const string&, int, uint64_t, bool, bool);
     ~LinuxCache() override = default;
 
-    bool ReadSector(span<uint8_t>, uint64_t) override;
+    bool ReadSectors(span<uint8_t>, uint64_t, uint32_t) override;
     bool WriteSector(span<const uint8_t>, uint64_t) override;
 
     int ReadLong(span<uint8_t>, uint64_t, int);

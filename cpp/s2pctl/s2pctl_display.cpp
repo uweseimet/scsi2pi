@@ -46,7 +46,8 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     if (pb_device.caching_mode()) {
         string mode;
         ranges::transform(PbCachingMode_Name(pb_device.caching_mode()), back_inserter(mode), ::tolower);
-        s << "  Caching mode: " << (mode == "write_through" ? "write-through" : mode);
+        ranges::replace(mode, '_', '-');
+        s << "  Caching mode: " << mode;
     }
 
     if (pb_device.block_size()) {
