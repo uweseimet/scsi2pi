@@ -50,8 +50,8 @@ private:
     bool Load(const string&, uint64_t&);
     bool Save(const string&, uint64_t&);
 
-    bool ReadSector(span<uint8_t>, int) const;
-    bool WriteSector(span<const uint8_t> buf, int);
+    int ReadSector(span<uint8_t>, int) const;
+    int WriteSector(span<const uint8_t> buf, int);
 
     int GetTrack() const
     {

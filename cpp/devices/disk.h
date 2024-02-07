@@ -175,7 +175,7 @@ private:
 
     uint64_t next_sector = 0;
 
-    uint32_t read_count = 0;
+    uint32_t sector_transfer_count = 0;
 
     uint32_t sector_size = 0;
 

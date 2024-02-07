@@ -297,6 +297,7 @@ TEST(CommandExecutorTest, Insert)
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
+    dynamic_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
     const bool result = executor->Insert(context, definition, device, false);
     remove(filename);
     EXPECT_TRUE(result);
@@ -334,7 +335,7 @@ TEST(CommandExecutorTest, DetachAll)
 {
     const int ID = 4;
 
-    DeviceFactory &device_factory = DeviceFactory::Instance();
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -351,7 +352,6 @@ TEST(CommandExecutorTest, DetachAll)
 
 TEST(CommandExecutorTest, SetReservedIds)
 {
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -382,7 +382,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     EXPECT_TRUE(reserved_ids.contains(5));
     EXPECT_TRUE(reserved_ids.contains(7));
 
-    auto device = device_factory.CreateDevice(SCHS, 0, "");
+    auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 5, device));
     error = executor->SetReservedIds("5");
     EXPECT_FALSE(error.empty());

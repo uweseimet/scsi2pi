@@ -145,16 +145,18 @@ void Disk::Dispatch(scsi_command cmd)
 
 bool Disk::SetUpCache(bool raw)
 {
+    assert(caching_mode != PbCachingMode::DEFAULT);
+
     if (!supported_sector_sizes.contains(sector_size)) {
         spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
 
-        if (caching_mode == PbCachingMode::DEFAULT) {
+        if (caching_mode == PbCachingMode::PISCSI) {
             spdlog::info("Adjusting caching mode");
             caching_mode = PbCachingMode::LINUX;
         }
     }
 
-    if (caching_mode == PbCachingMode::DEFAULT) {
+    if (caching_mode == PbCachingMode::PISCSI) {
         cache = make_shared<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
     }
     else {
@@ -167,13 +169,12 @@ bool Disk::SetUpCache(bool raw)
 
 bool Disk::ResizeCache(const string &path, bool raw)
 {
-    if (caching_mode == PbCachingMode::DEFAULT) {
-        cache.reset(new DiskCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw));
+    if (caching_mode == PbCachingMode::PISCSI) {
+        cache = make_shared<DiskCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
     }
     else {
-        cache.reset(
-            new LinuxCache(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
-                caching_mode == PbCachingMode::WRITE_THROUGH));
+        cache = make_shared<LinuxCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
+            caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
     return cache->Init();
@@ -204,10 +205,10 @@ void Disk::Read(access_mode mode)
     if (valid) {
         next_sector = start;
 
-        read_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
+        sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
-        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), read_count * GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(read_count * GetSectorSizeInBytes());
+        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(sector_transfer_count * GetSectorSizeInBytes());
         ReadData(GetController()->GetBuffer());
 
         EnterDataInPhase();
@@ -217,6 +218,42 @@ void Disk::Read(access_mode mode)
     }
 }
 
+void Disk::Write(access_mode mode)
+{
+    if (IsProtected()) {
+        throw scsi_exception(sense_key::data_protect, asc::write_protected);
+    }
+
+    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
+    WriteVerify(start, count, valid);
+}
+
+void Disk::Verify(access_mode mode)
+{
+    // Flush the cache according to the specification
+    FlushCache();
+
+    // A transfer length of 0 is legal
+    const auto& [_, start, count] = CheckAndGetStartAndCount(mode);
+    WriteVerify(start, count, false);
+}
+
+void Disk::WriteVerify(uint64_t start, uint32_t count, bool transfer)
+{
+    if (transfer) {
+        next_sector = start;
+
+        sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
+
+        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(sector_transfer_count * GetSectorSizeInBytes());
+
+        EnterDataOutPhase();
+    }
+    else {
+        EnterStatusPhase();
+    }
+}
 void Disk::ReadLong10()
 {
     const uint64_t sector = ValidateBlockAddress(RW10);
@@ -283,40 +320,6 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
     }
 }
 
-void Disk::Write(access_mode mode)
-{
-    if (IsProtected()) {
-        throw scsi_exception(sense_key::data_protect, asc::write_protected);
-    }
-
-    const auto& [valid, start, sectors] = CheckAndGetStartAndCount(mode);
-    WriteVerify(start, sectors, valid);
-}
-
-void Disk::Verify(access_mode mode)
-{
-    // Flush the cache according to the specification
-    FlushCache();
-
-    // A transfer length of 0 is legal
-    const auto& [_, start, blocks] = CheckAndGetStartAndCount(mode);
-    WriteVerify(start, blocks, false);
-}
-
-void Disk::WriteVerify(uint64_t start, uint32_t sectors, bool transfer)
-{
-    if (transfer) {
-        GetController()->SetTransferSize(sectors * GetSectorSizeInBytes(), GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(GetSectorSizeInBytes());
-
-        next_sector = start;
-
-        EnterDataOutPhase();
-    }
-    else {
-        EnterStatusPhase();
-    }
-}
 
 void Disk::StartStopUnit()
 {
@@ -736,23 +739,23 @@ int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
 
 int Disk::ReadData(span<uint8_t> buf)
 {
-    assert(next_sector + read_count <= GetBlockCount());
+    assert(next_sector + sector_transfer_count <= GetBlockCount());
 
     CheckReady();
 
-    if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), read_count)) {
+    if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
         throw scsi_exception(sense_key::medium_error, asc::read_fault);
     }
 
-    next_sector += read_count;
-    sector_read_count += read_count;
+    next_sector += sector_transfer_count;
+    sector_read_count += sector_transfer_count;
 
-    return GetSectorSizeInBytes() * read_count;
+    return GetSectorSizeInBytes() * sector_transfer_count;
 }
 
 int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(next_sector < GetBlockCount());
+    assert(next_sector + sector_transfer_count <= GetBlockCount());
 
     CheckReady();
 
@@ -771,14 +774,14 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
     }
 
     if ((command != scsi_command::cmd_verify10 && command != scsi_command::cmd_verify16)
-        && !cache->WriteSector(buf, static_cast<uint32_t>(next_sector))) {
+        && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
         throw scsi_exception(sense_key::medium_error, asc::write_fault);
     }
 
-    ++next_sector;
-    ++sector_write_count;
+    next_sector += sector_transfer_count;
+    sector_write_count += sector_transfer_count;
 
-    return GetSectorSizeInBytes();
+    return GetSectorSizeInBytes() * sector_transfer_count;
 }
 
 void Disk::ReAssignBlocks()
@@ -790,7 +793,7 @@ void Disk::ReAssignBlocks()
 
 void Disk::Seek6()
 {
-    const auto& [valid, start, blocks] = CheckAndGetStartAndCount(SEEK6);
+    const auto& [valid, start, _] = CheckAndGetStartAndCount(SEEK6);
     if (valid) {
         CheckReady();
     }
@@ -800,7 +803,7 @@ void Disk::Seek6()
 
 void Disk::Seek10()
 {
-    const auto& [valid, start, blocks] = CheckAndGetStartAndCount(SEEK10);
+    const auto& [valid, start, _] = CheckAndGetStartAndCount(SEEK10);
     if (valid) {
         CheckReady();
     }

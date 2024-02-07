@@ -67,6 +67,31 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
+    armtaddr = (uint32_t*)map + ARMT_OFFSET / sizeof(uint32_t);
+
+    // Change the ARM timer to free run mode
+    armtaddr[ARMT_CTRL] = 0x00000282;
+
+    // RPI Mailbox property interface
+    // Get max clock rate
+    //  Tag: 0x00030004
+    //
+    //  Request: Length: 4
+    //   Value: u32: clock id
+    //  Response: Length: 8
+    //   Value: u32: clock id, u32: rate (in Hz)
+    //
+    // Clock id
+    //  0x000000004: CORE
+
+    // Get the core frequency
+    const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
+    if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
+        ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
+        corefreq = maxclock[6] / 1000000;
+        close(vcio_fd);
+    }
+
     // Determine the Raspberry Pi type from the base address
     if (baseaddr == 0xfe000000) {
         pi_type = 4;
@@ -106,6 +131,7 @@ bool RpiBus::Init(bool target)
     } else {
         gicc = nullptr;
     }
+
     close(fd);
 
     // Set Drive Strength to 16mA
@@ -820,4 +846,14 @@ uint32_t RpiBus::Acquire()
 #endif
 
     return signals;
+}
+
+// Wait until the signal line stabilizes (400 ns bus settle delay)
+void RpiBus::WaitBusSettle() const
+{
+    if (const uint32_t diff = corefreq * 400 / 1000; diff) {
+        const uint32_t start = armtaddr[ARMT_FREERUN];
+        while ((armtaddr[ARMT_FREERUN] - start) < diff)
+            ;
+    }
 }

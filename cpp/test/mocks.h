@@ -389,6 +389,7 @@ public:
 
     MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, { 512, 1024, 2048, 4096 })
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockDisk() override = default;
 };
@@ -429,10 +430,12 @@ public:
 
     MockScsiHd(int lun, bool removable) : ScsiHd(lun, removable, false, false)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockScsiHd(const unordered_set<uint32_t> &sector_sizes)
     : ScsiHd(0, false, false, false, sector_sizes)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiHd() override = default;
 };
@@ -443,7 +446,13 @@ class MockScsiCd : public ScsiCd // NOSONAR Ignore inheritance hierarchy depth i
     FRIEND_TEST(ScsiCdTest, SetUpModePages);
     FRIEND_TEST(ScsiCdTest, ReadToc);
 
-    using ScsiCd::ScsiCd;
+public:
+
+    explicit MockScsiCd(int lun) : ScsiCd(lun, false)
+    {
+        SetCachingMode(PbCachingMode::PISCSI);
+    }
+    ~MockScsiCd() override = default;
 };
 
 class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hierarchy depth in unit tests

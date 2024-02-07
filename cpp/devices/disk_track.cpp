@@ -137,15 +137,14 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     if (!dt.changed) {
         return true;
     }
-
-    ++cache_miss_write_count;
-
     // Need to write
     assert(dt.buffer);
     assert((dt.sectors > 0) && (dt.sectors <= 0x100));
 
     // Writing in RAW mode is not allowed
     assert(!dt.raw);
+
+    ++cache_miss_write_count;
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
     off_t offset = ((off_t)dt.track << 8);
@@ -204,54 +203,50 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     return true;
 }
 
-bool DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
+int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
 {
     assert(sec >= 0 && sec < 0x100);
 
-    // Error if not initialized
     if (!dt.init) {
-        return false;
+        return 0;
     }
 
-    // // Error if the number of sectors exceeds the valid number
     if (sec >= dt.sectors) {
-        return false;
+        return 0;
     }
+
+    const int length = 1 << dt.size;
 
     // Copy
     assert(dt.buffer);
-    assert((dt.sectors > 0) && (dt.sectors <= 0x100));
-    memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], 1 << dt.size);
+    assert(dt.sectors > 0 && dt.sectors <= 256);
+    memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], length);
 
-    // Success
-    return true;
+    return length;
 }
 
-bool DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
+int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
 {
     assert((sec >= 0) && (sec < 0x100));
     assert(!dt.raw);
 
-    // Error if not initialized
     if (!dt.init) {
-        return false;
+        return 0;
     }
 
-    // // Error if the number of sectors exceeds the valid number
     if (sec >= dt.sectors) {
-        return false;
+        return 0;
     }
 
-    // Calculate offset and length
     const int offset = sec << dt.size;
     const int length = 1 << dt.size;
 
     // Compare
     assert(dt.buffer);
-    assert((dt.sectors > 0) && (dt.sectors <= 0x100));
-    if (memcmp(buf.data(), &dt.buffer[offset], length) == 0) {
+    assert(dt.sectors > 0 && dt.sectors <= 256);
+    if (!memcmp(buf.data(), &dt.buffer[offset], length)) {
         // Exit normally since it's attempting to write the same thing
-        return true;
+        return length;
     }
 
     // Copy, change
@@ -259,6 +254,5 @@ bool DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
     dt.changemap[sec] = true;
     dt.changed = true;
 
-    // Success
-    return true;
+    return length;
 }

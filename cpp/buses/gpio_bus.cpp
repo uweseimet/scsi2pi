@@ -28,6 +28,8 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
 
     bool ack = WaitACK(true);
 
+    WaitBusSettle();
+
     buf[0] = GetDAT();
 
     SetREQ(false);
@@ -50,6 +52,8 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
         SetREQ(true);
 
         ack = WaitACK(true);
+
+        WaitBusSettle();
 
         // Get the actual SCSI command
         buf[0] = GetDAT();
@@ -80,6 +84,8 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
         SetREQ(true);
 
         ack = WaitACK(true);
+
+        WaitBusSettle();
 
         buf[offset] = GetDAT();
 
@@ -112,6 +118,10 @@ int GpioBus::MsgInHandShake()
         return -1;
     }
 
+    DisableIRQ();
+    WaitBusSettle();
+    EnableIRQ();
+
     const uint8_t msg = GetDAT();
 
     SetACK(true);
@@ -133,13 +143,15 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 {
     int bytes_received;
 
-    if (target_mode) {
-        DisableIRQ();
+    DisableIRQ();
 
+    if (target_mode) {
         for (bytes_received = 0; bytes_received < count; bytes_received++) {
             SetREQ(true);
 
             const bool ack = WaitACK(true);
+
+            WaitBusSettle();
 
             *buf = GetDAT();
 
@@ -152,8 +164,6 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
 
             buf++;
         }
-
-        EnableIRQ();
     } else {
         const phase_t phase = GetPhase();
 
@@ -168,6 +178,8 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
             if (GetPhase() != phase) {
                 break;
             }
+
+            WaitBusSettle();
 
             *buf = GetDAT();
 
@@ -186,6 +198,8 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
         }
     }
 
+    EnableIRQ();
+
     return bytes_received;
 }
 
@@ -194,9 +208,9 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
 {
     int bytes_sent;
 
-    if (target_mode) {
-        DisableIRQ();
+    DisableIRQ();
 
+    if (target_mode) {
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
             if (bytes_sent == daynaport_delay_after_bytes) {
                 EnableIRQ();
@@ -228,8 +242,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
         }
 
         WaitACK(false);
-
-        EnableIRQ();
     } else {
         const phase_t phase = GetPhase();
 
@@ -266,6 +278,8 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             buf++;
         }
     }
+
+    EnableIRQ();
 
     return bytes_sent;
 }

@@ -35,8 +35,8 @@ public:
     ~DiskCache() override = default;
 
     bool Flush() override;
-    bool ReadSectors(span<uint8_t>, uint64_t, uint32_t) override;
-    bool WriteSector(span<const uint8_t>, uint64_t) override;
+    int ReadSectors(span<uint8_t>, uint64_t, uint32_t) override;
+    int WriteSectors(span<const uint8_t>, uint64_t, uint32_t) override;
 
     vector<PbStatistics> GetStatistics(bool) const override;
 

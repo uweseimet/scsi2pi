@@ -220,8 +220,12 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
+    // PiSCSI compatible caching is currently the default
+    const PbCachingMode caching_mode =
+        pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
+
     // The effective device type is only available after creating the device
-    if (pb_device.caching_mode() != PbCachingMode::DEFAULT && device->GetType() != PbDeviceType::SCHD
+    if (caching_mode != PbCachingMode::PISCSI && device->GetType() != PbDeviceType::SCHD
         && device->GetType() != PbDeviceType::SCRM && device->GetType() != PbDeviceType::SAHD
         && device->GetType() != PbDeviceType::SCMO) {
         return false;
@@ -246,9 +250,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
         // The caching mode must be set before the file is accessed
-        if (const auto disk = dynamic_pointer_cast<Disk>(device); disk
-            && pb_device.caching_mode() != PbCachingMode::DEFAULT) {
-            disk->SetCachingMode(pb_device.caching_mode());
+        if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
+            disk->SetCachingMode(caching_mode);
         }
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later

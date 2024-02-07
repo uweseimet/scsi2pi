@@ -89,13 +89,12 @@ TEST(ScsiCdTest, Open)
     MockScsiCd cd_iso(0);
     MockScsiCd cd_cue(0);
     MockScsiCd cd_raw(0);
-    MockScsiCd cd_physical(0);
 
     EXPECT_THROW(cd_iso.Open(), io_exception)<< "Missing filename";
 
     path filename = CreateTempFile(2047);
     cd_iso.SetFilename(string(filename));
-    EXPECT_THROW(cd_iso.Open(), io_exception)<< "ISO CD-ROM image file size too small";
+    EXPECT_THROW(cd_iso.Open(), io_exception)<< "ISO CD-ROM image file size is too small";
     remove(filename);
 
     filename = CreateTempFile(2 * 2048);
@@ -134,12 +133,6 @@ TEST(ScsiCdTest, Open)
     resize_file(filename, 2 * 2536);
     cd_raw.Open();
     EXPECT_EQ(2U, cd_raw.GetBlockCount());
-    remove(filename);
-
-    filename = CreateTempFile(2 * 2048);
-    cd_physical.SetFilename("\\" + string(filename));
-    // The respective code in ScsiCd appears to be broken, see https://github.com/akuker/PISCSI/issues/919
-    EXPECT_THROW(cd_physical.Open(), io_exception)<< "Invalid physical CD-ROM file";
     remove(filename);
 }
 

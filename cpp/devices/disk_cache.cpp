@@ -43,38 +43,39 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-bool DiskCache::ReadSectors(span<uint8_t> buf, uint64_t block, uint32_t count)
+int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
 {
     assert(count == 1);
     if (count != 1) {
-        return false;
+        return 0;
     }
 
-    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(block));
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
     if (!disktrk) {
-        return false;
+        return 0;
     }
 
     // Read the track data to the cache
-    return disktrk->ReadSector(buf, block & 0xff);
+    return disktrk->ReadSector(buf, sector & 0xff);
 }
 
-bool DiskCache::WriteSector(span<const uint8_t> buf, uint64_t block)
+int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(block));
+    assert(count == 1);
+    if (count != 1) {
+        return 0;
+    }
+
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
     if (!disktrk) {
-        return false;
+        return 0;
     }
 
     // Write the data to the cache
-    return disktrk->WriteSector(buf, block & 0xff);
+    return disktrk->WriteSector(buf, sector & 0xff);
 }
 
-//---------------------------------------------------------------------------
-//
-//	Track Assignment
-//
-//---------------------------------------------------------------------------
+// Track Assignment
 shared_ptr<DiskTrack> DiskCache::Assign(int track)
 {
     assert(sec_size != 0);
@@ -140,11 +141,6 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     return nullptr;
 }
 
-//---------------------------------------------------------------------------
-//
-//	Load cache
-//
-//---------------------------------------------------------------------------
 bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
 {
     assert(index >= 0 && index < static_cast<int>(cache.size()));

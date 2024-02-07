@@ -102,7 +102,7 @@ void ScsiCd::OpenIso()
     fill_n(sync.begin() + 1, 10, 0xff);
     raw_file = false;
 
-    if (memcmp(header.data(), sync.data(), sync.size()) == 0) {
+    if (!memcmp(header.data(), sync.data(), sync.size())) {
         // Supports MODE1/2048 or MODE1/2352 only
         if (header[15] != 0x01) {
             // Different mode
