@@ -110,6 +110,8 @@ public:
     {
         return WaitSignal(PIN_ACK, ast);
     }
+    void WaitBusSettle() const override;
+
     static uint32_t bcm_host_get_peripheral_address();
 
 private:
@@ -137,6 +139,10 @@ private:
     uint32_t baseaddr = 0;
 
     int pi_type = 0;
+
+    inline static uint32_t corefreq = 0;
+
+    volatile uint32_t *armtaddr = nullptr;
 
     // GPIO register
     volatile uint32_t *gpio = nullptr;
@@ -199,6 +205,11 @@ private:
 #endif
 
     static const array<int, 19> SignalTable;
+
+    const static int ARMT_CTRL = 2;
+    const static int ARMT_FREERUN = 8;
+
+    const static uint32_t ARMT_OFFSET = 0x0000B400;
 
     const static int GPIO_FSEL_0 = 0;
     const static int GPIO_FSEL_1 = 1;
