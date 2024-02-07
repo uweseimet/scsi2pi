@@ -42,6 +42,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_FOLDER:
         if (const string error = s2p_image.SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+            result.set_msg(error);
             context.WriteResult(result);
             return false;
         }

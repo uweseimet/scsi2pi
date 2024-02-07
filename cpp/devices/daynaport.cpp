@@ -211,7 +211,7 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 //---------------------------------------------------------------------------
 bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
 {
-    int data_length;
+    int data_length = 0;
     if (const int data_format = cdb[5]; data_format == 0x00) {
         data_length = GetInt16(cdb, 3);
         tap.Send(buf.data(), data_length);

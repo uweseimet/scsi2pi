@@ -152,6 +152,11 @@ protected:
     // Set GPIO output signal
     virtual void PinSetSignal(int, bool) = 0;
 
+    virtual void WaitBusSettle() const
+    {
+        // Do nothing in base class
+    }
+
 private:
 
     bool target_mode = true;
