@@ -29,6 +29,10 @@ shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
+    if (!is_sasi && device->GetType() == PbDeviceType::SAHD) {
+        return false;
+    }
+
     if (auto controller = FindController(id); controller) {
         if (device->GetLun() > GetLunMax() || controller->HasDeviceForLun(device->GetLun())) {
             return false;
