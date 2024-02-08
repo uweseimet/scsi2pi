@@ -283,7 +283,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     if (!controller_factory->AttachToController(bus, id, device)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_CONTROLLER);
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
 #ifdef BUILD_DISK

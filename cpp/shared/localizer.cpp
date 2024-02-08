@@ -195,12 +195,12 @@ Localizer::Localizer()
         "El tamaño del bloque para el tipo de dispositivo %1 no es configurable");
     Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "zh", "设备类型 %1 的块大小不可配置");
 
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "en", "Couldn't create SCSI controller");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "de", "SCSI-Controller konnte nicht erzeugt werden");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "sv", "Kunde ej skapa SCSI-gränssnitt");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "fr", "Impossible de créer le contrôleur SCSI");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "es", "No se ha podido crear el controlador SCSI");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "zh", "无法创建 SCSI 控制器");
+    Add(LocalizationKey::ERROR_CONTROLLER, "en", "Couldn't create controller");
+    Add(LocalizationKey::ERROR_CONTROLLER, "de", "Controller konnte nicht erzeugt werden");
+    Add(LocalizationKey::ERROR_CONTROLLER, "sv", "Kunde ej skapa gränssnitt");
+    Add(LocalizationKey::ERROR_CONTROLLER, "fr", "Impossible de créer le contrôleur");
+    Add(LocalizationKey::ERROR_CONTROLLER, "es", "No se ha podido crear el controlador");
+    Add(LocalizationKey::ERROR_CONTROLLER, "zh", "无法创建 控制器");
 
     Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-%2)");
     Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-%2)");
