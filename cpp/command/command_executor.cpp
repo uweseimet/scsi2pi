@@ -273,12 +273,13 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     param_map params = { pb_device.params().begin(), pb_device.params().end() };
     if (!device->SupportsFile()) {
-        // Clients like scsictl might have sent both "file" and "interfaces"
+        // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
 
     if (!device->Init(params)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION, device->GetIdentifier());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
+            fmt::format("{0} {1}:{2}", PbDeviceType_Name(type), id, lun));
     }
 
     if (!controller_factory->AttachToController(bus, id, device)) {

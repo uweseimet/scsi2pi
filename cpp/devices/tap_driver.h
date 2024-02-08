@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include <span>
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
@@ -24,7 +23,7 @@ static const int ETH_FCS_LEN = 4;
 
 using namespace std;
 
-class CTapDriver
+class TapDriver
 {
     const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
     const inline static string BRIDGE_NAME = "piscsi_bridge";
@@ -34,8 +33,8 @@ class CTapDriver
 
 public:
 
-    CTapDriver();
-    ~CTapDriver() = default;
+    TapDriver();
+    ~TapDriver() = default;
 
     bool Init(const param_map&);
     void CleanUp() const;
@@ -74,14 +73,9 @@ private:
 
     set<string, less<>> available_interfaces;
 
-    // Prioritized comma-separated list of interfaces to create the bridge for
-    vector<string> interfaces;
-
     string inet;
 
     string bridge_interface;
-
-    bool needs_bridge = false;
 
     bool bridge_created = false;
 };

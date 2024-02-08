@@ -166,7 +166,7 @@ endif
 ifdef BUILD_SCDP
 SRC_SCDP = \
 	$(DIR_DEVICES)/daynaport.cpp \
-	$(DIR_DEVICES)/ctapdriver.cpp
+	$(DIR_DEVICES)/tap_driver.cpp
 endif
 
 ifdef BUILD_SCLP

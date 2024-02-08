@@ -260,7 +260,7 @@ int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
 
     // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
     // on different Pis in the same network do not have identical MAC addresses.
-    if (const auto &mac = GetMacAddress(CTapDriver::GetBridgeName()); mac.size() >= 6) {
+    if (const auto &mac = GetMacAddress(TapDriver::GetBridgeName()); mac.size() >= 6) {
         buf.data()[3] = mac[3];
         buf.data()[4] = mac[4];
         buf.data()[5] = mac[5];
@@ -399,8 +399,8 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetController()->GetCdbByte(5) & 0x80) {
-        if (const string error = CTapDriver::IpLink(true); !error.empty()) {
-            LogWarn("Unable to enable the DaynaPort Interface: " + error);
+        if (const string error = TapDriver::IpLink(true); !error.empty()) {
+            LogWarn("Can't enable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
 
@@ -409,8 +409,8 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string error = CTapDriver::IpLink(false); !error.empty()) {
-            LogWarn("Unable to disable the DaynaPort Interface: " + error);
+        if (const string error = TapDriver::IpLink(false); !error.empty()) {
+            LogWarn("Can't disable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }
 

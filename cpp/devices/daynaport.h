@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <array>
 #include "base/primary_device.h"
-#include "ctapdriver.h"
+#include "tap_driver.h"
 
 class DaynaPort : public PrimaryDevice
 {
@@ -119,7 +119,7 @@ private:
         .frames_lost = 0,
     };
 
-    CTapDriver tap;
+    TapDriver tap;
 
     bool tap_enabled = false;
 };

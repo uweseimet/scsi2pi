@@ -200,11 +200,6 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
     return ext.empty() ? "" : ext.substr(1);
 }
 
-void s2p_util::LogErrno(const string &msg)
-{
-    error(errno ? msg + ": " + string(strerror(errno)) : msg);
-}
-
 string s2p_util::GetScsiLevel(int scsi_level)
 {
     switch (scsi_level) {
