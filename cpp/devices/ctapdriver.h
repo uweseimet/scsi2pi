@@ -34,10 +34,8 @@ class CTapDriver
 
 public:
 
-    CTapDriver() = default;
+    CTapDriver();
     ~CTapDriver() = default;
-    CTapDriver(CTapDriver&) = default;
-    CTapDriver& operator=(const CTapDriver&) = default;
 
     bool Init(const param_map&);
     void CleanUp() const;
@@ -58,7 +56,7 @@ public:
         return BRIDGE_NAME;
     }
 
-    static string AddBridge(int);
+    string AddBridge(int) const;
     string DeleteBridge(int) const;
 
     // Enable/Disable the piscsi0 interface
@@ -66,20 +64,25 @@ public:
 
 private:
 
-    static string SetUpEth0(int, const string&);
-    static string SetUpNonEth0(int, int, const string&);
+    static string IpLink(int, const string&, bool);
+    static string BrSetif(int fd, const string&, const string&, bool);
+    string CreateBridge(int, int);
     static pair<string, string> ExtractAddressAndMask(const string&);
+    string SetAddressAndNetMask(int, const string&) const;
 
-    // File handle
     int tap_fd = -1;
+
+    set<string, less<>> available_interfaces;
 
     // Prioritized comma-separated list of interfaces to create the bridge for
     vector<string> interfaces;
 
     string inet;
 
-#ifdef __linux__
+    string bridge_interface;
+
+    bool needs_bridge = false;
+
     bool bridge_created = false;
-#endif
 };
 

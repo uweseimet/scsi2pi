@@ -69,7 +69,7 @@ public:
 private:
 
     static bool CheckForReservedFile(const CommandContext&, const string&);
-
+    static PbCachingMode GetEffectiveCachingMode(const PbDeviceDefinition&, const PrimaryDevice&);
     static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
 
     Bus &bus;

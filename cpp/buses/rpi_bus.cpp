@@ -707,7 +707,6 @@ void RpiBus::SetSignal(int pin, bool ast)
 
 void RpiBus::DisableIRQ()
 {
-#ifndef NO_IRQ_DISABLE
     switch (pi_type) {
     case 2:
         // RPI2,3 disable core timer IRQ
@@ -728,12 +727,10 @@ void RpiBus::DisableIRQ()
         irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
         break;
     }
-#endif
 }
 
 void RpiBus::EnableIRQ()
 {
-#ifndef NO_IRQ_DISABLE
     switch (pi_type) {
     case 2:
         // RPI2,3 re-enable core timer IRQ
@@ -750,7 +747,6 @@ void RpiBus::EnableIRQ()
         irpctl[IRPT_ENB_IRQ_1] = irptenb & 0xf;
         break;
     }
-#endif
 }
 
 //---------------------------------------------------------------------------
@@ -848,7 +844,8 @@ uint32_t RpiBus::Acquire()
     return signals;
 }
 
-// Wait until the signal line stabilizes (400 ns bus settle delay)
+// Wait until the signal line stabilizes (400 ns bus settle delay).
+// nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 void RpiBus::WaitBusSettle() const
 {
     if (const uint32_t diff = corefreq * 400 / 1000; diff) {

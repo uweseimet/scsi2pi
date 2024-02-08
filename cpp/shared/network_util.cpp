@@ -62,7 +62,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
     ifaddrs *tmp = addrs;
 
     while (tmp) {
-        if (const string name = tmp->ifa_name; tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_PACKET &&
+        if (const string name = tmp->ifa_name; tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET &&
             !(tmp->ifa_flags & IFF_LOOPBACK)
             && (name.starts_with("eth") || name.starts_with("en") || name.starts_with("wlan"))
             && IsInterfaceUp(name)) {

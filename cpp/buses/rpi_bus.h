@@ -10,13 +10,6 @@
 
 #pragma once
 
-// Not having to disable IRQs would ease porting to Pis which other interrupt hardware like maybe the Pi 5.
-// Currently IRQs are disabled in target mode but enabled in initiator mode.
-//#define NO_IRQ_DISABLE
-#ifndef __linux__
-#define NO_IRQ_DISABLE
-#endif
-
 #ifdef __linux__
 #include <linux/gpio.h>
 #include <sys/epoll.h>
@@ -123,19 +116,17 @@ private:
     // QA7 register
     volatile uint32_t *qa7regs = nullptr;
 
-#ifndef NO_IRQ_DISABLE
     // Interrupt enabled state
-    volatile uint32_t irptenb; // NOSONAR volatile is correct here
+    uint32_t irptenb;
 
     // Interupt control target CPU
-    volatile int tintcore; // NOSONAR volatile is correct here
+    int tintcore;
 
     // Interupt control
-    volatile uint32_t tintctl; // NOSONAR volatile is correct here
+    uint32_t tintctl;
 
     // GICC priority setting
-    volatile uint32_t giccpmr; // NOSONAR volatile is correct here
-#endif
+    uint32_t giccpmr;
 
     // GIC CPU interface register
     volatile uint32_t *gicc = nullptr;
@@ -152,6 +143,7 @@ private:
 #ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
+
     // epoll file descriptor
     int epoll_fd = 0;
     #endif

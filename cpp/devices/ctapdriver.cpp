@@ -28,39 +28,9 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 
-static string br_setif(int br_socket_fd, const string &bridgename, const string &ifname, bool add)
+CTapDriver::CTapDriver()
 {
-#ifndef __linux__
-	return "if_nametoindex: Linux is required";
-#else
-    ifreq ifr;
-    ifr.ifr_ifindex = if_nametoindex(ifname.c_str());
-    if (!ifr.ifr_ifindex) {
-        return "Can't if_nametoindex " + ifname;
-    }
-    strncpy(ifr.ifr_name, bridgename.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (ioctl(br_socket_fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
-        return "Can't ioctl " + string(add ? "SIOCBRADDIF" : "SIOCBRDELIF");
-    }
-    return "";
-#endif
-}
-
-string ip_link(int fd, const char *ifname, bool up)
-{
-    ifreq ifr;
-    strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCGIFFLAGS";
-    }
-    ifr.ifr_flags &= ~IFF_UP;
-    if (up) {
-        ifr.ifr_flags |= IFF_UP;
-    }
-    if (ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCSIFFLAGS";
-    }
-    return "";
+    available_interfaces = GetNetworkInterfaces();
 }
 
 bool CTapDriver::Init(const param_map &const_params)
@@ -69,12 +39,18 @@ bool CTapDriver::Init(const param_map &const_params)
     stringstream s(params["interface"]);
     string interface;
     while (getline(s, interface, ',')) {
-        interfaces.push_back(interface);
+        if (available_interfaces.contains(interface)) {
+            interfaces.push_back(interface);
+        }
     }
-    inet = params["inet"];
+
+    if (interfaces.empty()) {
+        error("No network interfaces specified");
+        return false;
+    }
 
     if ((tap_fd = open("/dev/net/tun", O_RDWR)) == -1) {
-        LogErrno("Can't open tun");
+        LogErrno("Can't open /dev/net/tun");
         return false;
     }
 
@@ -82,10 +58,18 @@ bool CTapDriver::Init(const param_map &const_params)
     return false;
 #else
 
+    inet = params["inet"];
+
+    // Only physical interfaces need a bridge
+    bridge_interface = interfaces.at(0);
+    needs_bridge = bridge_interface.starts_with("eth");
+
     // IFF_NO_PI for no extra packet information
     ifreq ifr = { };
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+
+    trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
 
     if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
         LogErrno("Can't ioctl TUNSETIFF");
@@ -100,69 +84,50 @@ bool CTapDriver::Init(const param_map &const_params)
         return false;
     }
 
-    const int br_socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (br_socket_fd == -1) {
-        LogErrno("Can't open bridge socket");
-        close(tap_fd);
-        close(ip_fd);
-        return false;
+    int bridge_fd = -1;
+    if (needs_bridge) {
+        bridge_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+        if (bridge_fd == -1) {
+            LogErrno("Can't open bridge socket");
+            close(tap_fd);
+            close(ip_fd);
+            return false;
+        }
     }
 
-    auto cleanUp = [&](const string &error) {
+    const auto &cleanUp = [this, ip_fd, bridge_fd](const string &error) {
         LogErrno(error);
         close(tap_fd);
         close(ip_fd);
-        close(br_socket_fd);
+        close(bridge_fd);
         return false;
     };
 
-    // Check if the bridge has already been created by checking whether there is a MAC address for it
-    if (GetMacAddress(BRIDGE_NAME).empty()) {
-        trace("Checking which interface is available for creating bridge " + BRIDGE_NAME);
+    if (const string error = IpLink(true); !error.empty()) {
+        return cleanUp(error);
+    }
 
-        const auto &it = ranges::find_if(interfaces, [](const string &iface) {return IsInterfaceUp(iface);});
-        if (it == interfaces.end()) {
-            return cleanUp("No interface is up, not creating bridge " + BRIDGE_NAME);
-        }
-
-        const string bridge_interface = *it;
-
-        info("Creating " + BRIDGE_NAME + " for interface " + bridge_interface);
-
-        if (bridge_interface == "eth0") {
-            if (const string error = SetUpEth0(br_socket_fd, bridge_interface); !error.empty()) {
-                return cleanUp(error);
-            }
-        }
-        else if (const string error = SetUpNonEth0(br_socket_fd, ip_fd, inet); !error.empty()) {
+    if (needs_bridge) {
+        if (const string error = CreateBridge(bridge_fd, ip_fd); !error.empty()) {
             return cleanUp(error);
         }
 
-        trace(">ip link set dev " + BRIDGE_NAME + " up");
-        if (const string error = ip_link(ip_fd, BRIDGE_NAME.c_str(), true); !error.empty()) {
+        trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+        if (const string error = BrSetif(bridge_fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, true); !error.empty()) {
             return cleanUp(error);
         }
-
-        bridge_created = true;
     }
     else {
-        info(BRIDGE_NAME + " already exists");
-    }
-
-    trace(">ip link set " + BRIDGE_INTERFACE_NAME + " up");
-    if (const string error = ip_link(ip_fd, BRIDGE_INTERFACE_NAME.c_str(), true); !error.empty()) {
-        return cleanUp(error);
-    }
-
-    trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
-    if (const string error = br_setif(br_socket_fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, true); !error.empty()) {
-        return cleanUp(error);
+        trace(">ip addr add " + DEFAULT_IP + " brd + dev " + BRIDGE_INTERFACE_NAME);
+        if (const string error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME); !error.empty()) {
+            return cleanUp(error);
+        }
     }
 
     close(ip_fd);
-    close(br_socket_fd);
+    close(bridge_fd);
 
-    info("Tap device " + BRIDGE_INTERFACE_NAME + " created");
+    info("TAP interface " + BRIDGE_INTERFACE_NAME + " created");
 
     return true;
 #endif
@@ -170,26 +135,28 @@ bool CTapDriver::Init(const param_map &const_params)
 
 void CTapDriver::CleanUp() const
 {
-    if (tap_fd == -1) {
+    if (tap_fd == -1 || !bridge_created) {
         return;
     }
 
     if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
         LogErrno("Can't open bridge socket");
     } else {
-        trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
-        if (const string error = br_setif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
-            warn("Removing " + BRIDGE_INTERFACE_NAME + " from the bridge failed: " + error);
-            warn("You may need to manually remove the tap device");
-        }
+        if (needs_bridge) {
+            trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+            if (const string error = BrSetif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
+                warn("Removing " + BRIDGE_INTERFACE_NAME + " from the bridge failed: " + error);
+                warn("You may need to manually remove the tap device");
+            }
 
-        trace(">ip link set dev " + BRIDGE_NAME + " down");
-        if (const string error = ip_link(fd, BRIDGE_NAME.c_str(), false); !error.empty()) {
-            warn(error);
-        }
+            trace(">ip link set dev " + BRIDGE_NAME + " down");
+            if (const string error = IpLink(fd, BRIDGE_NAME, false); !error.empty()) {
+                warn(error);
+            }
 
-        if (const string error = DeleteBridge(fd); !error.empty()) {
-            warn(error);
+            if (const string error = DeleteBridge(fd); !error.empty()) {
+                warn(error);
+            }
         }
 
         close(fd);
@@ -201,16 +168,72 @@ void CTapDriver::CleanUp() const
 param_map CTapDriver::GetDefaultParams() const
 {
     return {
-        {   "interface", Join(GetNetworkInterfaces(), ",")},
+        {   "interface", Join(available_interfaces, ",")},
         {   "inet", DEFAULT_IP}
     };
 }
 
-pair<string, string> CTapDriver::ExtractAddressAndMask(const string &s)
+string CTapDriver::CreateBridge(int br_socket_fd, int ip_fd)
 {
-    string address = s;
+    // Check if the bridge has already been created by checking whether there is a MAC address for it
+    if (GetMacAddress(BRIDGE_NAME).empty()) {
+        info("Creating " + BRIDGE_NAME + " for interface " + bridge_interface);
+
+        if (const string &error = AddBridge(br_socket_fd); !error.empty()) {
+            return error;
+        }
+
+        trace(">ip link set dev " + BRIDGE_NAME + " up");
+        if (const string error = IpLink(ip_fd, BRIDGE_NAME, true); !error.empty()) {
+            return error;
+        }
+
+        bridge_created = true;
+    }
+    else {
+        info(BRIDGE_NAME + " already exists");
+    }
+
+    return "";
+}
+
+string CTapDriver::SetAddressAndNetMask(int fd, const string &interface) const
+{
+#ifdef __linux__
+    const auto [address, netmask] = ExtractAddressAndMask(inet);
+    if (address.empty() || netmask.empty()) {
+        return "Error extracting inet address and netmask";
+    }
+
+    ifreq ifr_a;
+    ifr_a.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr_a.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    if (auto addr = (sockaddr_in*)&ifr_a.ifr_addr;
+    inet_pton(AF_INET, address.c_str(), &addr->sin_addr) != 1) {
+        return "Can't convert '" + address + "' into a network address";
+    }
+
+    ifreq ifr_n;
+    ifr_n.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr_n.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    if (auto mask = (sockaddr_in*)&ifr_n.ifr_addr;
+    inet_pton(AF_INET, netmask.c_str(), &mask->sin_addr) != 1) {
+        return "Can't convert '" + netmask + "' into a netmask";
+    }
+
+    if (ioctl(fd, SIOCSIFADDR, &ifr_a) == -1 || ioctl(fd, SIOCSIFNETMASK, &ifr_n) == -1) {
+        return "Can't ioctl SIOCSIFADDR or SIOCSIFNETMASK";
+    }
+#endif
+
+    return "";
+}
+
+pair<string, string> CTapDriver::ExtractAddressAndMask(const string &addr)
+{
+    string address = addr;
     string netmask = DEFAULT_NETMASK;
-    if (const auto &components = Split(s, '/', 2); components.size() == 2) {
+    if (const auto &components = Split(addr, '/', 2); components.size() == 2) {
         address = components[0];
 
         int m;
@@ -228,71 +251,17 @@ pair<string, string> CTapDriver::ExtractAddressAndMask(const string &s)
     return {address, netmask};
 }
 
-string CTapDriver::SetUpEth0(int socket_fd, const string &bridge_interface)
-{
-#ifdef __linux__
-    if (const string &error = AddBridge(socket_fd); !error.empty()) {
-        return error;
-    }
-
-    trace(">brctl addif " + BRIDGE_NAME + " " + bridge_interface);
-
-    if (const string error = br_setif(socket_fd, BRIDGE_NAME, bridge_interface, true); !error.empty()) {
-        return error;
-    }
-
-    return "";
-#else
-    return "SIOCBRADDBR: Linux is required";
-#endif
-}
-
-string CTapDriver::SetUpNonEth0(int socket_fd, int ip_fd, const string &s)
-{
-    const auto [address, netmask] = ExtractAddressAndMask(s);
-    if (address.empty() || netmask.empty()) {
-        return "Error extracting inet address and netmask";
-    }
-
-#ifdef __linux__
-    if (const string &error = AddBridge(socket_fd); !error.empty()) {
-        return error;
-    }
-
-    ifreq ifr_a;
-    ifr_a.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr_a.ifr_name, BRIDGE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (auto addr = (sockaddr_in*)&ifr_a.ifr_addr;
-    inet_pton(AF_INET, address.c_str(), &addr->sin_addr) != 1) {
-        return "Can't convert '" + address + "' into a network address";
-    }
-
-    ifreq ifr_n;
-    ifr_n.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr_n.ifr_name, BRIDGE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (auto mask = (sockaddr_in*)&ifr_n.ifr_addr;
-    inet_pton(AF_INET, netmask.c_str(), &mask->sin_addr) != 1) {
-        return "Can't convert '" + netmask + "' into a netmask";
-    }
-
-    trace(">ip address add " + s + " dev " + BRIDGE_NAME);
-
-    if (ioctl(ip_fd, SIOCSIFADDR, &ifr_a) == -1 || ioctl(ip_fd, SIOCSIFNETMASK, &ifr_n) == -1) {
-        return "Can't ioctl SIOCSIFADDR or SIOCSIFNETMASK";
-    }
-
-    return "";
-#else
-    return " SIOCSIFADDR/SIOCSIFNETMASK: Linux is required";
-#endif
-}
-
-string CTapDriver::AddBridge(int fd)
+string CTapDriver::AddBridge(int fd) const
 {
 #ifdef __linux__
     trace(">brctl addbr " + BRIDGE_NAME);
     if (ioctl(fd, SIOCBRADDBR, BRIDGE_NAME.c_str()) == -1) {
         return "Can't ioctl SIOCBRADDBR";
+    }
+
+    trace(">brctl addif " + BRIDGE_NAME + " " + bridge_interface);
+    if (const string error = BrSetif(fd, BRIDGE_NAME, bridge_interface, true); !error.empty()) {
+        return error;
     }
 #endif
 
@@ -317,10 +286,48 @@ string CTapDriver::IpLink(bool enable)
 {
     const int fd = socket(PF_INET, SOCK_DGRAM, 0);
     trace(string(">ip link set " + BRIDGE_INTERFACE_NAME + " ") + (enable ? "up" : "down"));
-    const string result = ip_link(fd, BRIDGE_INTERFACE_NAME.c_str(), enable);
+    const string result = IpLink(fd, BRIDGE_INTERFACE_NAME, enable);
     close(fd);
 
     return result;
+}
+
+string CTapDriver::IpLink(int fd, const string &interface, bool up)
+{
+    ifreq ifr;
+    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    if (ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
+        return "Can't ioctl SIOCGIFFLAGS";
+    }
+
+    ifr.ifr_flags &= ~IFF_UP;
+    if (up) {
+        ifr.ifr_flags |= IFF_UP;
+    }
+
+    if (ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
+        return "Can't ioctl SIOCSIFFLAGS";
+    }
+
+    return "";
+}
+
+string CTapDriver::BrSetif(int fd, const string &bridge, const string &interface, bool add)
+{
+#ifdef __linux__
+    ifreq ifr;
+    ifr.ifr_ifindex = if_nametoindex(interface.c_str());
+    if (!ifr.ifr_ifindex) {
+        return "Can't if_nametoindex " + interface;
+    }
+
+    strncpy(ifr.ifr_name, bridge.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
+        return "Can't ioctl " + string(add ? "SIOCBRADDIF" : "SIOCBRDELIF");
+    }
+#endif
+
+    return "";
 }
 
 void CTapDriver::Flush() const

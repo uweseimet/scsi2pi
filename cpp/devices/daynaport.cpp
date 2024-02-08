@@ -82,8 +82,6 @@ bool DaynaPort::Init(const param_map &params)
 #if !defined(__x86_64__) && !defined(__X86__)
 		return false;
 #endif
-    } else {
-        LogTrace("Created tap interface");
     }
 
     Reset();

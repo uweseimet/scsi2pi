@@ -26,8 +26,8 @@ using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
 {
-    return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version,
-        s2p_revision <= 0 ? "" : "." + to_string(s2p_revision), s2p_suffix);
+    const string &revision = s2p_revision <= 0 ? "" : "." + to_string(s2p_revision);
+    return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
 }
 
 string s2p_util::GetHomeDir()

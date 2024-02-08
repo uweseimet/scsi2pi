@@ -134,6 +134,11 @@ public:
 
     bool WaitForSelection() override;
 
+    void WaitBusSettle() const override
+    {
+        // Nothing to do
+    }
+
 private:
 
     void DisableIRQ() override

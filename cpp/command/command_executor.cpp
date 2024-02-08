@@ -220,14 +220,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    // PiSCSI compatible caching is currently the default
-    const PbCachingMode caching_mode =
-        pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
-
-    // The effective device type is only available after creating the device
-    if (caching_mode != PbCachingMode::PISCSI && device->GetType() != PbDeviceType::SCHD
-        && device->GetType() != PbDeviceType::SCRM && device->GetType() != PbDeviceType::SAHD
-        && device->GetType() != PbDeviceType::SCMO) {
+    const PbCachingMode caching_mode = GetEffectiveCachingMode(pb_device, *device);
+    if (caching_mode == PbCachingMode::DEFAULT) {
+        // The requested caching mode is not available for this device type
         return false;
     }
 
@@ -406,6 +401,21 @@ void CommandExecutor::DetachAll() const
 
         info("Detached all devices");
     }
+}
+
+PbCachingMode CommandExecutor::GetEffectiveCachingMode(const PbDeviceDefinition &pb_device, const PrimaryDevice &device)
+{
+    // PiSCSI compatible caching is currently the default
+    const PbCachingMode caching_mode =
+        pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
+
+    if (caching_mode != PbCachingMode::PISCSI && device.GetType() != PbDeviceType::SCHD
+        && device.GetType() != PbDeviceType::SCRM && device.GetType() != PbDeviceType::SAHD
+        && device.GetType() != PbDeviceType::SCMO) {
+        return PbCachingMode::DEFAULT;
+    }
+
+    return caching_mode;
 }
 
 void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, shared_ptr<PrimaryDevice> device)
