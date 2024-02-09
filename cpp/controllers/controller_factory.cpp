@@ -29,7 +29,7 @@ shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
-    if (!is_sasi && device->GetType() == PbDeviceType::SAHD) {
+    if ((!is_sasi && device->GetType() == PbDeviceType::SAHD) || (is_sasi && device->GetType() != PbDeviceType::SAHD)) {
         return false;
     }
 
