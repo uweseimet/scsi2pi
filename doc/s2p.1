@@ -76,7 +76,7 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The efault size is 512 bytes.
+The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
 s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
 .BR \--caching-mode\fI " " \fICACHING_MODE
@@ -102,7 +102,7 @@ An optional comma-separated list of property files with s2p configuration data. 
 The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
+The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
 .TP
 .BR \--token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

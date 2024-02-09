@@ -60,7 +60,7 @@ void S2pDump::Banner(bool header) const
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
         << "                                     default is 1 MiB.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
-        << "                                     error|off), default is 'info'.\n"
+        << "                                     error|critical|off), default is 'info'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
         << "                                     device properties for s2p property files.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"

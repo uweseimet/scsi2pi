@@ -18,10 +18,13 @@
 #include "disk_track.h"
 #include "disk_cache.h"
 
-DiskCache::DiskCache(const string &path, int size, uint64_t sectors, bool raw)
-: Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
+bool DiskCache::Init()
 {
-    assert(sectors > 0);
+    if (!sec_blocks || sec_path.empty()) {
+        return false;
+    }
+
+    return true;
 }
 
 bool DiskCache::Flush()
@@ -45,7 +48,6 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
 
 int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    assert(count == 1);
     if (count != 1) {
         return 0;
     }
@@ -61,7 +63,6 @@ int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
 
 int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    assert(count == 1);
     if (count != 1) {
         return 0;
     }

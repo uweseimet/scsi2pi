@@ -19,6 +19,7 @@ public:
 
     void Trace(const string&) const;
     void Debug(const string&) const;
+    void Info(const string&) const;
     void Warn(const string&) const;
     void Error(const string&) const;
 

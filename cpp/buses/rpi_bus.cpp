@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include <map>
+#include <fstream>
 #include <cstring>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -18,59 +19,35 @@
 
 using namespace spdlog;
 
-// Imported from bcm_host.c
-uint32_t RpiBus::get_dt_ranges(const char *filename, uint32_t offset)
-{
-    uint32_t address = ~0;
-    if (FILE *fp = fopen(filename, "rb"); fp) {
-        fseek(fp, offset, SEEK_SET);
-        if (array<uint8_t, 4> buf; fread(buf.data(), 1, buf.size(), fp) == buf.size()) {
-            address = (int)buf[0] << 24 | (int)buf[1] << 16 | (int)buf[2] << 8 | (int)buf[3] << 0;
-        }
-        fclose(fp);
-    }
-    return address;
-}
-
-uint32_t RpiBus::bcm_host_get_peripheral_address()
-{
-#ifdef __linux__
-    uint32_t address = get_dt_ranges("/proc/device-tree/soc/ranges", 4);
-    if (!address) {
-        address = get_dt_ranges("/proc/device-tree/soc/ranges", 8);
-    }
-    address = (address == (uint32_t)~0) ? 0x20000000 : address;
-    return address;
-#else
-    return 0;
-#endif
-}
-
 bool RpiBus::Init(bool target)
 {
     GpioBus::Init(target);
 
-    // Get the base address
-    const auto baseaddr = bcm_host_get_peripheral_address();
+    // Determine the Raspberry Pi type from the base address
+    const auto baseaddr = GetPeripheralAddress();
+    if (baseaddr == 0xfe000000) {
+        pi_type = 4;
+    } else if (baseaddr == 0x3f000000) {
+        pi_type = 2;
+    } else {
+        pi_type = 1;
+    }
+
+    trace("Detected Raspberry Pi type {}", pi_type);
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        error("Error: Unable to open /dev/mem: {}", strerror(errno));
+        critical("Error: Can't open /dev/mem: {}", strerror(errno));
         return false;
     }
 
     // Map peripheral region memory
-    void *map = mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr);
+    auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr));
     if (map == MAP_FAILED) {
-        error("Error: Unable to map memory: {}", strerror(errno));
+        critical("Error: Can't map memory: {}", strerror(errno));
         close(fd);
         return false;
     }
-
-    armtaddr = (uint32_t*)map + ARMT_OFFSET / sizeof(uint32_t);
-
-    // Change the ARM timer to free run mode
-    armtaddr[ARMT_CTRL] = 0x00000282;
 
     // RPI Mailbox property interface
     // Get max clock rate
@@ -91,43 +68,38 @@ bool RpiBus::Init(bool target)
         corefreq = maxclock[6] / 1000000;
         close(vcio_fd);
     }
-
-    // Determine the Raspberry Pi type from the base address
-    if (baseaddr == 0xfe000000) {
-        pi_type = 4;
-    } else if (baseaddr == 0x3f000000) {
-        pi_type = 2;
-    } else {
-        pi_type = 1;
+    else {
+        critical("Error: Can't open /dev/vcio: {}", strerror(errno));
+        return false;
     }
 
+    armtaddr = map + ARMT_OFFSET / sizeof(uint32_t);
+
+    // Change the ARM timer to free run mode
+    armtaddr[ARMT_CTRL] = 0x00000282;
+
     // GPIO
-    gpio = static_cast<uint32_t*>(map);
-    gpio += GPIO_OFFSET / sizeof(uint32_t);
+    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = static_cast<uint32_t*>(map);
-    pads += PADS_OFFSET / sizeof(uint32_t);
+    pads = map + PADS_OFFSET / sizeof(uint32_t);
 
     // Interrupt controller
-    irpctl = static_cast<uint32_t*>(map);
-    irpctl += IRPT_OFFSET / sizeof(uint32_t);
+    irpctl = map + IRPT_OFFSET / sizeof(uint32_t);
 
     // Quad-A7 control
-    qa7regs = static_cast<uint32_t*>(map);
-    qa7regs += QA7_OFFSET / sizeof(uint32_t);
+    qa7regs = map + QA7_OFFSET / sizeof(uint32_t);
 
     // Map GIC memory
     if (pi_type == 4) {
-        map = mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE);
+        map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
         if (map == MAP_FAILED) {
-            error("Error: Unable to map memory: {}", strerror(errno));
+            critical("Error: Can't map memory: {}", strerror(errno));
             close(fd);
             return false;
         }
-        gicc = static_cast<uint32_t*>(map);
-        gicc += (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
+        gicc = map + (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
     }
 
     close(fd);
@@ -175,7 +147,7 @@ bool RpiBus::Init(bool target)
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
-        error("Unable to open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.");
+        critical("Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.");
         return false;
     }
 
@@ -190,7 +162,7 @@ bool RpiBus::Init(bool target)
 #endif
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        error("Unable to register event request. If s2p is running (e.g. as a service), shut it down first.");
+        critical("Can't register event request. If s2p is running (e.g. as a service), shut it down first.");
         close(fd);
         return false;
     }
@@ -322,9 +294,9 @@ bool RpiBus::WaitForSelection()
         }
         return false;
     }
+#endif
 
     Acquire();
-#endif
 
     return true;
 }
@@ -334,11 +306,11 @@ bool RpiBus::GetBSY() const
     return GetSignal(PIN_BSY);
 }
 
-void RpiBus::SetBSY(bool ast)
+void RpiBus::SetBSY(bool state)
 {
-    SetSignal(PIN_BSY, ast);
+    SetSignal(PIN_BSY, state);
 
-    if (ast) {
+    if (state) {
         SetControl(PIN_ACT, true);
 
         SetControl(PIN_TAD, TAD_OUT);
@@ -366,13 +338,13 @@ bool RpiBus::GetSEL() const
     return GetSignal(PIN_SEL);
 }
 
-void RpiBus::SetSEL(bool ast)
+void RpiBus::SetSEL(bool state)
 {
-    if (!IsTarget() && ast) {
+    if (!IsTarget() && state) {
         SetControl(PIN_ACT, true);
     }
 
-    SetSignal(PIN_SEL, ast);
+    SetSignal(PIN_SEL, state);
 }
 
 bool RpiBus::GetATN() const
@@ -380,9 +352,9 @@ bool RpiBus::GetATN() const
     return GetSignal(PIN_ATN);
 }
 
-void RpiBus::SetATN(bool ast)
+void RpiBus::SetATN(bool state)
 {
-    SetSignal(PIN_ATN, ast);
+    SetSignal(PIN_ATN, state);
 }
 
 bool RpiBus::GetACK() const
@@ -390,9 +362,9 @@ bool RpiBus::GetACK() const
     return GetSignal(PIN_ACK);
 }
 
-void RpiBus::SetACK(bool ast)
+void RpiBus::SetACK(bool state)
 {
-    SetSignal(PIN_ACK, ast);
+    SetSignal(PIN_ACK, state);
 }
 
 bool RpiBus::GetRST() const
@@ -400,9 +372,9 @@ bool RpiBus::GetRST() const
     return GetSignal(PIN_RST);
 }
 
-void RpiBus::SetRST(bool ast)
+void RpiBus::SetRST(bool state)
 {
-    SetSignal(PIN_RST, ast);
+    SetSignal(PIN_RST, state);
 }
 
 bool RpiBus::GetMSG() const
@@ -410,9 +382,9 @@ bool RpiBus::GetMSG() const
     return GetSignal(PIN_MSG);
 }
 
-void RpiBus::SetMSG(bool ast)
+void RpiBus::SetMSG(bool state)
 {
-    SetSignal(PIN_MSG, ast);
+    SetSignal(PIN_MSG, state);
 }
 
 bool RpiBus::GetCD() const
@@ -420,18 +392,18 @@ bool RpiBus::GetCD() const
     return GetSignal(PIN_CD);
 }
 
-void RpiBus::SetCD(bool ast)
+void RpiBus::SetCD(bool state)
 {
-    SetSignal(PIN_CD, ast);
+    SetSignal(PIN_CD, state);
 }
 
 bool RpiBus::GetIO()
 {
-    bool ast = GetSignal(PIN_IO);
+    bool state = GetSignal(PIN_IO);
 
     if (!IsTarget()) {
         // Change the data input/output direction by IO signal
-        if (ast) {
+        if (state) {
             SetControl(PIN_DTD, DTD_IN);
             SetMode(PIN_DT0, IN);
             SetMode(PIN_DT1, IN);
@@ -454,17 +426,17 @@ bool RpiBus::GetIO()
         }
     }
 
-    return ast;
+    return state;
 }
 
-void RpiBus::SetIO(bool ast)
+void RpiBus::SetIO(bool state)
 {
     assert(IsTarget());
 
-    SetSignal(PIN_IO, ast);
+    SetSignal(PIN_IO, state);
 
     // Change the data input/output direction by IO signal
-    if (ast) {
+    if (state) {
         SetControl(PIN_DTD, DTD_OUT);
         SetDAT(0);
         SetMode(PIN_DT0, OUT);
@@ -493,9 +465,9 @@ bool RpiBus::GetREQ() const
     return GetSignal(PIN_REQ);
 }
 
-void RpiBus::SetREQ(bool ast)
+void RpiBus::SetREQ(bool state)
 {
-    SetSignal(PIN_REQ, ast);
+    SetSignal(PIN_REQ, state);
 }
 
 inline uint8_t RpiBus::GetDAT()
@@ -620,9 +592,9 @@ void RpiBus::CreateWorkTable(void)
 #endif
 }
 
-void RpiBus::SetControl(int pin, bool ast)
+void RpiBus::SetControl(int pin, bool state)
 {
-    PinSetSignal(pin, ast);
+    PinSetSignal(pin, state);
 }
 
 //---------------------------------------------------------------------------
@@ -666,13 +638,13 @@ bool RpiBus::GetSignal(int pin) const
 //     PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
 //
 //---------------------------------------------------------------------------
-void RpiBus::SetSignal(int pin, bool ast)
+void RpiBus::SetSignal(int pin, bool state)
 {
 #if SIGNAL_CONTROL_MODE == 0
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
-    if (ast) {
+    if (state) {
         data |= (1 << shift);
     } else {
         data &= ~(0x7 << shift);
@@ -680,13 +652,13 @@ void RpiBus::SetSignal(int pin, bool ast)
     gpio[index] = data;
     gpfsel[index] = data;
 #elif SIGNAL_CONTROL_MODE == 1
-    if (ast) {
+    if (state) {
         gpio[GPIO_CLR_0] = 0x1 << pin;
     } else {
         gpio[GPIO_SET_0] = 0x1 << pin;
     }
 #elif SIGNAL_CONTROL_MODE == 2
-    if (ast) {
+    if (state) {
         gpio[GPIO_SET_0] = 0x1 << pin;
     } else {
         gpio[GPIO_CLR_0] = 0x1 << pin;
@@ -810,11 +782,11 @@ void RpiBus::PullConfig(int pin, int mode)
 }
 
 // Set output pin
-void RpiBus::PinSetSignal(int pin, bool ast)
+void RpiBus::PinSetSignal(int pin, bool state)
 {
     // Check for invalid pin
     if (pin >= 0) {
-        gpio[ast ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+        gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
     }
 }
 
@@ -843,7 +815,32 @@ void RpiBus::WaitBusSettle() const
 {
     if (const uint32_t diff = corefreq * 400 / 1000; diff) {
         const uint32_t start = armtaddr[ARMT_FREERUN];
-        while ((armtaddr[ARMT_FREERUN] - start) < diff)
-            ;
+        while (armtaddr[ARMT_FREERUN] - start < diff) {
+            // Intentionally empty
+        }
     }
+}
+
+uint32_t RpiBus::GetDtRanges(const string &filename, uint32_t offset)
+{
+    ifstream in(filename, ios::binary);
+    if (in.good()) {
+        in.seekg(offset, ios::beg);
+        array<char, 4> buf;
+        in.read(buf.data(), buf.size());
+        if (in.good()) {
+            return (int)buf[0] << 24 | (int)buf[1] << 16 | (int)buf[2] << 8 | (int)buf[3] << 0;
+        }
+    }
+
+    return ~0;
+}
+
+uint32_t RpiBus::GetPeripheralAddress()
+{
+    uint32_t address = GetDtRanges("/proc/device-tree/soc/ranges", 4);
+    if (!address) {
+        address = GetDtRanges("/proc/device-tree/soc/ranges", 8);
+    }
+    return address == (uint32_t)~0 ? 0x20000000 : address;
 }

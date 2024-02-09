@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include "devices/tap_driver.h"
 
-TEST(CTapDriverTest, Crc32)
+TEST(TapDriverTest, Crc32)
 {
     array<uint8_t, ETH_FRAME_LEN> buf;
 

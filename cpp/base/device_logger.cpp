@@ -20,6 +20,11 @@ void DeviceLogger::Debug(const string &message) const
     Log(level::debug, message);
 }
 
+void DeviceLogger::Info(const string &message) const
+{
+    Log(level::info, message);
+}
+
 void DeviceLogger::Warn(const string &message) const
 {
     Log(level::warn, message);

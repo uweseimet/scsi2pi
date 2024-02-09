@@ -51,7 +51,7 @@ bool TapDriver::Init(const param_map &const_params)
     }
 
     if ((tap_fd = open("/dev/net/tun", O_RDWR)) == -1) {
-        error(fmt::format("Can't open /dev/net/tun: {}", strerror(errno)));
+        error("Can't open /dev/net/tun: {}", strerror(errno));
         return false;
     }
 
@@ -68,14 +68,14 @@ bool TapDriver::Init(const param_map &const_params)
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
-        error(fmt::format("Can't ioctl TUNSETIFF: {}", strerror(errno)));
+        error("Can't ioctl TUNSETIFF: {}", strerror(errno));
         close(tap_fd);
         return false;
     }
 
     const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
-        error(fmt::format("Can't open IP socket: {}", strerror(errno)));
+        error("Can't open IP socket: {}", strerror(errno));
         close(tap_fd);
         return false;
     }
@@ -133,7 +133,7 @@ void TapDriver::CleanUp() const
 
     if (bridge_created) {
         if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            error(fmt::format("Can't open bridge socket: {}", strerror(errno)));
+            error("Can't open bridge socket: {}", strerror(errno));
         } else {
             trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
             if (const string error = BrSetif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, false); !error.empty()) {

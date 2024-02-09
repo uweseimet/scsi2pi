@@ -8,9 +8,6 @@
 
 #pragma once
 
-#include <memory>
-#include <span>
-#include <string>
 #include <filesystem>
 #include "base/primary_device.h"
 #include "shared/scsi.h"
@@ -24,8 +21,6 @@ class MockAbstractController;
 
 namespace testing
 {
-extern const path test_data_temp_path;
-
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
@@ -45,9 +40,24 @@ class TestShared
 
 public:
 
+    TestShared() = default;
+    ~TestShared()
+    {
+        for (const string &filename : temp_files) {
+            remove(path(filename));
+        }
+    }
+
     static string GetVersion();
     static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
     static void Dispatch(PrimaryDevice&, scsi_command, sense_key, asc, const string& = "");
+
+    static void RememberTempFile(const string &filename)
+    {
+        temp_files.insert(filename);
+    }
+
+    inline static unordered_set<string> temp_files;
 };
 }

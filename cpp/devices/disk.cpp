@@ -132,7 +132,7 @@ void Disk::CleanUp()
 void Disk::Dispatch(scsi_command cmd)
 {
     // Media changes must be reported on the next access, i.e. not only for TEST UNIT READY
-    if (IsMediumChanged()) {
+    if (cmd != scsi_command::cmd_inquiry && cmd != scsi_command::cmd_request_sense && IsMediumChanged()) {
         assert(IsRemovable());
 
         SetMediumChanged(false);
@@ -149,23 +149,15 @@ bool Disk::SetUpCache(bool raw)
     assert(caching_mode != PbCachingMode::DEFAULT);
 
     if (!supported_sector_sizes.contains(sector_size)) {
-        spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
+        LogWarn(fmt::format("Using non-standard sector size of {} bytes", sector_size));
 
         if (caching_mode == PbCachingMode::PISCSI) {
-            spdlog::info("Adjusting caching mode");
             caching_mode = PbCachingMode::LINUX;
+            LogInfo("Adjusted caching mode to " + ToLower(PbCachingMode_Name(caching_mode)));
         }
     }
 
-    if (caching_mode == PbCachingMode::PISCSI) {
-        cache = make_shared<DiskCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
-    }
-    else {
-        cache = make_shared<LinuxCache>(GetFilename(), sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
-            caching_mode == PbCachingMode::WRITE_THROUGH);
-    }
-
-    return cache->Init();
+    return ResizeCache(GetFilename(), raw);
 }
 
 bool Disk::ResizeCache(const string &path, bool raw)
@@ -231,11 +223,12 @@ void Disk::Write(access_mode mode)
 
 void Disk::Verify(access_mode mode)
 {
+    // A transfer length of 0 is legal
+    const auto& [_, start, count] = CheckAndGetStartAndCount(mode);
+
     // Flush the cache according to the specification
     FlushCache();
 
-    // A transfer length of 0 is legal
-    const auto& [_, start, count] = CheckAndGetStartAndCount(mode);
     WriteVerify(start, count, false);
 }
 
@@ -292,7 +285,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
-        LogError(
+        LogWarn(
             "Full READ/WRITE LONG support requires a different caching mode than '"
                 + ToLower(PbCachingMode_Name(caching_mode)) + "'");
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);

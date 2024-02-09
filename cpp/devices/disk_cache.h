@@ -31,9 +31,13 @@ public:
         uint32_t serial;
     };
 
-    DiskCache(const string&, int, uint64_t, bool);
+    DiskCache(const string &path, int size, uint64_t sectors, bool raw)
+    : Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
+    {
+    }
     ~DiskCache() override = default;
 
+    bool Init() override;
     bool Flush() override;
     int ReadSectors(span<uint8_t>, uint64_t, uint32_t) override;
     int WriteSectors(span<const uint8_t>, uint64_t, uint32_t) override;

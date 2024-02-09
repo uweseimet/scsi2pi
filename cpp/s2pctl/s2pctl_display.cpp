@@ -161,16 +161,16 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
         s << DisplayAttributes(properties);
 
         if (properties.supports_file()) {
-            s << "Image file support\n        ";
+            s << "Image files are supported\n        ";
         }
 
         if (properties.supports_params()) {
-            s << "Parameter support\n        ";
+            s << "Parameters are supported\n        ";
         }
 
         s << DisplayDefaultParameters(properties);
 
-        s << DisplayBlockSizes(properties);
+        s << DisplaySectorSizes(properties);
     }
 
     s << '\n';
@@ -404,13 +404,13 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) const
+string S2pCtlDisplay::DisplaySectorSizes(const PbDeviceProperties &properties) const
 {
     ostringstream s;
 
     if (properties.block_sizes_size()) {
         const set<uint32_t> sorted_sizes(properties.block_sizes().begin(), properties.block_sizes().end());
-        s << "Configurable block sizes in bytes: " << Join(sorted_sizes);
+        s << "Configurable sector sizes in bytes: " << Join(sorted_sizes);
     }
 
     return s.str();

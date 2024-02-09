@@ -29,12 +29,7 @@ public:
 
     virtual bool Flush() = 0;
 
-    virtual bool Init()
-    {
-        // Nothing to do in the base class
-
-        return true;
-    }
+    virtual bool Init() = 0;
 
     virtual vector<PbStatistics> GetStatistics(bool) const = 0;
 

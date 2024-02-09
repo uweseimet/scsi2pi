@@ -248,9 +248,6 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     int lun = -1;
     string level = log_level;
 
-    // Default spdlog format without the date
-    set_pattern("[%T.%e] [%^%l%$] %v");
-
     if (const auto &components = Split(log_level, COMPONENT_SEPARATOR, 2); !components.empty()) {
         level = components[0];
 

@@ -331,7 +331,7 @@ void S2p::AttachDevices(PbCommand &command)
 
         if (const CommandContext context(command, s2p_image.GetDefaultFolder(),
                 property_handler.GetProperty(PropertyHandler::LOCALE)); !executor->ProcessCmd(context)) {
-            throw parser_exception("Error: Can't attach devices");
+            throw parser_exception("Can't attach devices");
         }
 
 #ifdef BUILD_SCHS

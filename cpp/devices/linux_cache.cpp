@@ -8,17 +8,14 @@
 
 #include "linux_cache.h"
 
-LinuxCache::LinuxCache(const string &f, int size, uint64_t s, bool raw, bool w)
-: Cache(raw), filename(f), sector_size(size), sectors(s), write_through(w)
-{
-    assert(sector_size > 0);
-    assert(sectors > 0);
-}
-
 bool LinuxCache::Init()
 {
-    file.open(filename, ios::in | ios::out);
-    return !file.fail();
+    if (!sector_size || !sectors || filename.empty()) {
+        return false;
+    }
+
+    file.open(filename, ios::in | ios::out | ios::binary);
+    return file.good();
 }
 
 int LinuxCache::ReadSectors(span<uint8_t> buf, uint64_t start, uint32_t count)
@@ -33,12 +30,12 @@ int LinuxCache::WriteSectors(span<const uint8_t> buf, uint64_t start, uint32_t c
 
 int LinuxCache::ReadLong(span<uint8_t> buf, uint64_t start, int length)
 {
-    return sectors < start ? 0 : Read(buf, start, length);
+    return sectors <= start ? 0 : Read(buf, start, length);
 }
 
 int LinuxCache::WriteLong(span<const uint8_t> buf, uint64_t start, int length)
 {
-    return sectors < start ? 0 : Write(buf, start, length);
+    return sectors <= start ? 0 : Write(buf, start, length);
 }
 
 int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)

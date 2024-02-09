@@ -186,8 +186,13 @@ void Printer::SynchronizeBuffer()
     EnterStatusPhase();
 }
 
-int Printer::WriteData(span<const uint8_t> buf, scsi_command)
+int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
 {
+    assert(command == scsi_command::cmd_print);
+    if (command != scsi_command::cmd_print) {
+        throw scsi_exception(sense_key::aborted_command);
+    }
+
     const auto length = GetInt24(GetController()->GetCdb(), 2);
 
     byte_receive_count += length;

@@ -46,6 +46,20 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCCD, mapping["is1"]);
 }
 
+TEST(DeviceFactoryTest, AddExtensionMapping)
+{
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
+
+    EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
+    auto mapping = device_factory.GetExtensionMapping();
+    EXPECT_EQ(9U, mapping.size());
+
+    EXPECT_TRUE(device_factory.AddExtensionMapping("ext", SCCD));
+    mapping = device_factory.GetExtensionMapping();
+    EXPECT_EQ(10U, mapping.size());
+    EXPECT_EQ(SCCD, mapping["ext"]);
+}
+
 TEST(DeviceFactoryTest, UnknownDeviceType)
 {
     auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test");

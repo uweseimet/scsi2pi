@@ -51,13 +51,12 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_MISSING_FILENAME, "es", "Falta el nombre del archivo");
     Add(LocalizationKey::ERROR_MISSING_FILENAME, "zh", "缺少文件名");
 
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "en", "Device type %1 requires a filename");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "de", "Gerätetyp %1 erfordert einen Dateinamen");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "sv", "Enhetstypen %1 kräver ett filnamn");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "fr", "Périphérique de type %1 à besoin d'un nom de fichier");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "es",
-        "El tipo de dispositivo %1 requiere un nombre de archivo");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "zh", "设备类型 %1 需要一个文件名");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "en", "Device %1 requires a filename");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "de", "Gerät %1 benötigt einen Dateinamen");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "sv", "Enhet %1 kräver ett filnamn");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "fr", "Périphérique %1 à besoin d'un nom de fichier");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "es", "Dispositivo %1 requiere un nombre de archivo");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "zh", "设备 %1 需要文件名");
 
     Add(LocalizationKey::ERROR_IMAGE_IN_USE, "en", "Image file '%1' is already being used by device %2");
     Add(LocalizationKey::ERROR_IMAGE_IN_USE, "de", "Image-Datei '%1' wird bereits von Gerät %2 benutzt");

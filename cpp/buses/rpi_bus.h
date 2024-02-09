@@ -32,7 +32,7 @@ public:
     bool WaitForSelection() override;
 
     // Bus signal acquisition
-    uint32_t Acquire() override;
+    inline uint32_t Acquire() override;
 
     bool GetBSY() const override;
     void SetBSY(bool) override;
@@ -74,8 +74,6 @@ public:
     }
     void WaitBusSettle() const override;
 
-    static uint32_t bcm_host_get_peripheral_address();
-
 private:
 
     void CreateWorkTable();
@@ -96,7 +94,8 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t);
 
-    static uint32_t get_dt_ranges(const char*, uint32_t);
+    static uint32_t GetPeripheralAddress();
+    static uint32_t GetDtRanges(const string&, uint32_t);
 
     int pi_type = 0;
 

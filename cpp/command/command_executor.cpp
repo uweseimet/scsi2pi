@@ -251,7 +251,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME, PbDeviceType_Name(type));
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
+                fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
         }
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
@@ -279,7 +280,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     if (!device->Init(params)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", PbDeviceType_Name(type), id, lun));
+            fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
     }
 
     if (!controller_factory->AttachToController(bus, id, device)) {
@@ -326,7 +327,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     const string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, device->GetIdentifier());
     }
 
     // Stop the dry run here, before modifying the device

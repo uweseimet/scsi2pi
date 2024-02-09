@@ -143,8 +143,6 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 //---------------------------------------------------------------------------
 int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 {
-    const auto response = (scsi_resp_read_t*)buf.data();
-
     // At startup the host may send a READ(6) command with a sector count of 1 to read the root sector.
     // This will trigger a SCSI error message.
     if (cdb[4] == 1) {
@@ -158,34 +156,29 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
         LogTrace("No network packet received");
+        const auto response = (scsi_resp_read_t*)buf.data();
         response->length = 0;
         response->flags = read_data_flags_t::e_no_more_data;
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (get_level() == level::trace) {
         LogTrace(
-            fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size, FormatBytes(buf, rx_packet_size)));
+            fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
+                FormatBytes(buf, rx_packet_size)));
     }
 
     byte_read_count += rx_packet_size;
 
-    int size = rx_packet_size;
-    if (size < 128) {
-        // A frame must have at least 64 bytes for the Atari driver, see https://github.com/PiSCSI/piscsi/issues/619,
-        // but also works with 128 bytes.
-        // The NetBSD driver requires at least 128 bytes, see https://github.com/PiSCSI/piscsi/issues/1098.
-        // The Mac driver is also fine with 128 bytes.
-        // Note that this work-around breaks the checksum. As currently there are no known drivers
-        // that care for the checksum it was decided to accept the broken checksum.
-        // If a driver should pop up that breaks because of this, the work-around has to be re-evaluated.
-        size = 128;
-    }
+    // A wireless frame must have at least 64 bytes, but all known drivers also work with 128 bytes.
+    // Note that the current code breaks the checksum. As currently there are no known drivers
+    // that care for the checksum it was decided to accept the broken checksum.
+    const int size = rx_packet_size < 64 ? 64 : rx_packet_size;
 
     SetInt16(buf, 0, size);
     SetInt32(buf, 2, tap.HasPendingPackets() ? 0x10 : 0x00);
 
-    // Return the packet size + 2 for the length + 4 for the flag field
-    // The CRC was already appended by the ctapdriver
+    // Return the packet size + 2 for the length + 4 for the flag field.
+    // The CRC has already been appended by the TAP driver.
     return size + DAYNAPORT_READ_HEADER_SZ;
 }
 
@@ -207,8 +200,13 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command)
+int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 {
+    assert(command == scsi_command::cmd_write6);
+    if (command != scsi_command::cmd_write6) {
+        throw scsi_exception(sense_key::aborted_command);
+    }
+
     const cdb_t &cdb = GetController()->GetCdb();
 
     int data_length = 0;
@@ -230,7 +228,7 @@ int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command)
     if (buf.size() && get_level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf.begin(), buf.end(), back_inserter(data));
-        LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length, FormatBytes(data, data_length)));
+        LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length)));
     }
 
     GetController()->SetTransferSize(0, 0);

@@ -19,11 +19,6 @@
 using namespace std;
 using namespace filesystem;
 
-// Include the process id in the temp file path so that multiple instances of the test procedures
-// could run on the same host.
-const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publicly writable directory is fine here
-    path(fmt::format("scsi2pi-test-{}", getpid())));
-
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
@@ -125,14 +120,14 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 
 pair<int, path> testing::OpenTempFile()
 {
-    const string filename = string(test_data_temp_path) + "/scsi2pi_test-XXXXXX"; // NOSONAR Publicly writable directory is fine here
+    const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.begin(), filename.end());
     f.emplace_back(0);
 
-    create_directories(path(filename).parent_path());
-
     const int fd = mkstemp(f.data());
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
+
+    TestShared::RememberTempFile(f.data());
 
     return make_pair(fd, path(f.data()));
 }
@@ -148,16 +143,17 @@ path testing::CreateTempFileWithData(const span<const byte> data)
     const auto [fd, filename] = OpenTempFile();
 
     const size_t count = write(fd, data.data(), data.size());
-    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << string(filename) << "'";
     close(fd);
+    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
+
+    TestShared::RememberTempFile(filename);
 
     return path(filename);
 }
 
 string testing::ReadTempFileToString(const string &filename)
 {
-    const path temp_file = test_data_temp_path / path(filename);
-    ifstream in(temp_file);
+    ifstream in(path(filename), ios::binary);
     stringstream buffer;
     buffer << in.rdbuf();
 
