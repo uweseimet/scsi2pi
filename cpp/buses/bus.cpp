@@ -33,7 +33,7 @@ phase_t Bus::GetPhase()
         return phase_t::busfree;
     }
 
-    // Get target phase from bus signal line
+    // Get target phase from bus signal lines
     int mci = GetMSG() ? 0b100 : 0b000;
     mci |= GetCD() ? 0b010 : 0b000;
     mci |= GetIO() ? 0b001 : 0b000;

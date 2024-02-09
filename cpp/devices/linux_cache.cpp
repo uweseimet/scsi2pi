@@ -33,7 +33,7 @@ int LinuxCache::WriteSectors(span<const uint8_t> buf, uint64_t start, uint32_t c
 
 int LinuxCache::ReadLong(span<uint8_t> buf, uint64_t start, int length)
 {
-    return sectors < start ? 0 : Write(buf, start, length);
+    return sectors < start ? 0 : Read(buf, start, length);
 }
 
 int LinuxCache::WriteLong(span<const uint8_t> buf, uint64_t start, int length)

@@ -146,11 +146,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
         return;
     }
 
-    string folder_pattern_lower;
-    ranges::transform(folder_pattern, back_inserter(folder_pattern_lower), ::tolower);
-
-    string file_pattern_lower;
-    ranges::transform(file_pattern, back_inserter(file_pattern_lower), ::tolower);
+    const string folder_pattern_lower = ToLower(folder_pattern);
+    const string file_pattern_lower = ToLower(file_pattern);
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
         it != recursive_directory_iterator(); it++) {
@@ -254,9 +251,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     const vector<string> command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
     for (const string &operation : command_operations) {
-        string op;
-        ranges::transform(operation, back_inserter(op), ::toupper);
-        operations.insert(op);
+        operations.insert(ToUpper(operation));
     }
 
     if (!operations.empty()) {
@@ -553,16 +548,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)
 {
-    if (!pattern_lower.empty()) {
-        string name_lower;
-        ranges::transform(input, back_inserter(name_lower), ::tolower);
-
-        if (name_lower.find(pattern_lower) == string::npos) {
-            return false;
-        }
-    }
-
-    return true;
+    return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
 }
 
 bool CommandResponse::HasOperation(const set<string, less<>> &operations, PbOperation operation)

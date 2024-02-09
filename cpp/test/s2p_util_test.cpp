@@ -46,6 +46,16 @@ TEST(S2pUtilTest, Split)
     EXPECT_EQ("is:a:test", v[1]);
 }
 
+TEST(S2pUtilTest, ToUpper)
+{
+    EXPECT_EQ("ABC", ToUpper("abc"));
+}
+
+TEST(S2pUtilTest, ToLower)
+{
+    EXPECT_EQ("abc", ToLower("ABC"));
+}
+
 TEST(S2pUtilTest, GetLocale)
 {
     EXPECT_LE(2U, GetLocale().size());

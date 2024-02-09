@@ -53,6 +53,8 @@ string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = INT_MAX);
+string ToUpper(const string&);
+string ToLower(const string&);
 string GetLocale();
 string GetLine(const string&);
 string ConvertCommand(const string&);

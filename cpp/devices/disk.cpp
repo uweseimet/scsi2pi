@@ -19,6 +19,7 @@
 #include "disk.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 bool Disk::Init(const param_map &params)
 {
@@ -289,10 +290,11 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         return;
     }
 
-    // Transfer lengths other than 0 require that caching is disabled
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
-        spdlog::error("READ/WRITE LONG require caching to be disabled");
+        LogError(
+            "Full READ/WRITE LONG support requires a different caching mode than '"
+                + ToLower(PbCachingMode_Name(caching_mode)) + "'");
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

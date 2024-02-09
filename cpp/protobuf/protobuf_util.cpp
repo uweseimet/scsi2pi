@@ -20,10 +20,7 @@ using namespace s2p_util;
 
 PbDeviceType protobuf_util::ParseDeviceType(const string &type)
 {
-    string t;
-    ranges::transform(type, back_inserter(t), ::toupper);
-
-    if (PbDeviceType parsed_type; PbDeviceType_Parse(t, &parsed_type)) {
+    if (PbDeviceType parsed_type; PbDeviceType_Parse(ToUpper(type), &parsed_type)) {
         return parsed_type;
     }
 

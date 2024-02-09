@@ -128,8 +128,6 @@ bool RpiBus::Init(bool target)
         }
         gicc = static_cast<uint32_t*>(map);
         gicc += (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
-    } else {
-        gicc = nullptr;
     }
 
     close(fd);
@@ -175,10 +173,9 @@ bool RpiBus::Init(bool target)
     gpfsel[3] = gpio[GPIO_FSEL_3];
 
     // Initialize SEL signal interrupt
-#ifdef __linux__
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
-        error("Unable to open /dev/gpiochip0. If s2p is running, please shut it down first.");
+        error("Unable to open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.");
         return false;
     }
 
@@ -193,15 +190,14 @@ bool RpiBus::Init(bool target)
 #endif
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        error("Unable to register event request. If s2p is running, please shut it down first.");
+        error("Unable to register event request. If s2p is running (e.g. as a service), shut it down first.");
         close(fd);
         return false;
     }
 
-    // Close GPIO chip file handle
     close(fd);
 
-    // epoll initialization
+#ifdef __linux__
     epoll_fd = epoll_create(1);
     epoll_event ev = { };
     ev.events = EPOLLIN | EPOLLPRI;
@@ -209,11 +205,9 @@ bool RpiBus::Init(bool target)
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev);
 #endif
 
-    // Create work table
     CreateWorkTable();
 
-    // Finally, enable ENABLE
-    // Show the user that this app is running
+    // Enable ENABLE in ordert to show the user that s2p is running
     SetControl(PIN_ENB, ENB_ON);
 
     return true;
@@ -311,12 +305,7 @@ void RpiBus::Reset()
 bool RpiBus::WaitForSelection()
 {
 #ifndef __linux__
-    Acquire();
-    if (!GetSEL()) {
-        const timespec ts = { .tv_sec = 0, .tv_nsec = 0};
-        nanosleep(&ts, nullptr);
-        return false;
-    }
+    return false;
 #else
     errno = 0;
 
@@ -707,6 +696,7 @@ void RpiBus::SetSignal(int pin, bool ast)
 
 void RpiBus::DisableIRQ()
 {
+#ifdef __linux__
     switch (pi_type) {
     case 2:
         // RPI2,3 disable core timer IRQ
@@ -727,10 +717,12 @@ void RpiBus::DisableIRQ()
         irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
         break;
     }
+#endif
 }
 
 void RpiBus::EnableIRQ()
 {
+#ifdef __linux__
     switch (pi_type) {
     case 2:
         // RPI2,3 re-enable core timer IRQ
@@ -747,6 +739,7 @@ void RpiBus::EnableIRQ()
         irpctl[IRPT_ENB_IRQ_1] = irptenb & 0xf;
         break;
     }
+#endif
 }
 
 //---------------------------------------------------------------------------

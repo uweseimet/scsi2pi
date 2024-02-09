@@ -116,6 +116,7 @@ private:
     // QA7 register
     volatile uint32_t *qa7regs = nullptr;
 
+#ifdef __linux__
     // Interrupt enabled state
     uint32_t irptenb;
 
@@ -127,6 +128,11 @@ private:
 
     // GICC priority setting
     uint32_t giccpmr;
+    // SEL signal event request
+    struct gpioevent_request selevreq = { };
+
+    int epoll_fd = 0;
+#endif
 
     // GIC CPU interface register
     volatile uint32_t *gicc = nullptr;
@@ -139,14 +145,6 @@ private:
 
     // GPIO input level
     volatile uint32_t *level = nullptr;
-
-#ifdef __linux__
-    // SEL signal event request
-    struct gpioevent_request selevreq = { };
-
-    // epoll file descriptor
-    int epoll_fd = 0;
-    #endif
 
 #if SIGNAL_CONTROL_MODE == 0
     // Data mask table

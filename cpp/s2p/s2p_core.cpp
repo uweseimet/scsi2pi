@@ -250,11 +250,8 @@ string S2p::MapExtensions() const
             return "Invalid extension mapping: '" + key + "'";
         }
 
-        string type_upper;
-        ranges::transform(components[1], back_inserter(type_upper), ::toupper);
-
         PbDeviceType type = UNDEFINED;
-        if (PbDeviceType_Parse(type_upper, &type) && type == PbDeviceType::UNDEFINED) {
+        if (PbDeviceType_Parse(ToUpper(components[1]), &type) && type == PbDeviceType::UNDEFINED) {
             continue;
         }
 

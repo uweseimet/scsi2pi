@@ -54,7 +54,6 @@ bool BusFactory::CheckForPi()
     const string model = s.str();
 
     if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
-        trace("Detected '{}'", model);
         is_raspberry_pi = true;
         return true;
     }

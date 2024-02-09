@@ -85,6 +85,20 @@ vector<string> s2p_util::Split(const string &s, char separator, int limit)
     return result;
 }
 
+string s2p_util::ToUpper(const string &s)
+{
+    string result;
+    ranges::transform(s, back_inserter(result), ::toupper);
+    return result;
+}
+
+string s2p_util::ToLower(const string &s)
+{
+    string result;
+    ranges::transform(s, back_inserter(result), ::tolower);
+    return result;
+}
+
 string s2p_util::GetLocale()
 {
     const char *locale = setlocale(LC_MESSAGES, nullptr);

@@ -8,9 +8,11 @@
 
 #include <cassert>
 #include <algorithm>
+#include "s2p_util.h"
 #include "localizer.h"
 
 using namespace std;
+using namespace s2p_util;
 
 Localizer::Localizer()
 {
@@ -282,8 +284,7 @@ void Localizer::Add(LocalizationKey key, const string &locale, string_view value
 string Localizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
-    string locale_lower;
-    ranges::transform(locale, back_inserter(locale_lower), ::tolower);
+    const string locale_lower = ToLower(locale);
 
     auto it = localized_messages.find(locale_lower);
     if (it == localized_messages.end()) {

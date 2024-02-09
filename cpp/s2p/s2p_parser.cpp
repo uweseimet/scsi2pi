@@ -160,7 +160,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             continue;
 
         case 't':
-            ranges::transform(string(optarg), back_inserter(type), ::tolower);
+            type = ToLower(optarg);
             continue;
 
         case OPT_SCSI_LEVEL:
@@ -314,9 +314,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
 
         const string ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
 
-        string arg_lower;
-        ranges::transform(arg, back_inserter(arg_lower), ::tolower);
-
+        const string arg_lower = ToLower(arg);
         if (arg_lower.starts_with("-h")) {
             args.emplace_back(strdup("-h"));
             if (!ids.empty()) {
