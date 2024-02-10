@@ -2,7 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -32,7 +31,7 @@ public:
     bool WaitForSelection() override;
 
     // Bus signal acquisition
-    inline uint32_t Acquire() override;
+    uint32_t Acquire() override;
 
     bool GetBSY() const override;
     void SetBSY(bool) override;

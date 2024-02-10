@@ -78,6 +78,11 @@ public:
     MOCK_METHOD(void, Reset, (), (override));
 
     using InProcessBus::InProcessBus;
+
+    void ResetMock()
+    {
+        InProcessBus::Reset();
+    }
 };
 
 class MockPhaseHandler : public PhaseHandler
@@ -345,6 +350,7 @@ public:
 
 class MockDisk : public Disk
 {
+    FRIEND_TEST(DiskTest, SetUpCache);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);

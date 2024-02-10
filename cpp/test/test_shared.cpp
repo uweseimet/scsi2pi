@@ -132,7 +132,7 @@ pair<int, path> testing::OpenTempFile()
     return make_pair(fd, path(f.data()));
 }
 
-path testing::CreateTempFile(int size)
+path testing::CreateTempFile(size_t size)
 {
     const auto data = vector<byte>(size);
     return CreateTempFileWithData(data);

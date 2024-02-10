@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "buses/in_process_bus.h"
+#include "bus.h"
 
 using namespace std;
 
@@ -28,10 +28,5 @@ private:
 
     bool CheckForPi();
 
-    // Bus instance shared by initiator and target
-    inline static InProcessBus in_process_bus;
-
     bool is_raspberry_pi = false;
-
-    inline static const string DEVICE_TREE_MODEL_PATH = "/proc/device-tree/model";
 };

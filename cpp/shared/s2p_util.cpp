@@ -130,16 +130,6 @@ string s2p_util::GetLine(const string &prompt)
     }
 }
 
-string s2p_util::ConvertCommand(const string &command)
-{
-    // Try to guess whether the command is short or long if there is no dash at the beginning
-    if (!command.starts_with("-")) {
-        return command.size() < 2 ? "-" + command : "--" + command;
-    }
-
-    return command;
-}
-
 bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
 {
     if (value.find_first_not_of("0123456789") != string::npos) {
@@ -190,17 +180,15 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
     return "";
 }
 
-string s2p_util::Banner(string_view app, bool scsi2pi)
+string s2p_util::Banner(string_view app)
 {
     stringstream s;
 
     s << "SCSI Target Emulator and SCSI Tools SCSI2Pi " << app << "\n"
-        << "Version " << GetVersionString() << "\n";
-    if (!scsi2pi) {
-        s << "Copyright (C) 2016-2020 GIMONS\n"
-            << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n";
-    }
-    s << "Copyright (C) 2021-2024 Uwe Seimet\n";
+        << "Version " << GetVersionString() << "\n"
+        << "Copyright (C) 2016-2020 GIMONS\n"
+        << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
+        << "Copyright (C) 2021-2024 Uwe Seimet\n";
 
     return s.str();
 }

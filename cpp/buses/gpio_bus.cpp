@@ -2,7 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -13,9 +12,9 @@
 
 using namespace std;
 
-bool GpioBus::Init(bool b)
+bool GpioBus::Init(bool t)
 {
-    target_mode = b;
+    target_mode = t;
 
     return true;
 }
@@ -284,7 +283,7 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
     return bytes_sent;
 }
 
-bool GpioBus::WaitSignal(int pin, bool ast)
+bool GpioBus::WaitSignal(int pin, bool state)
 {
     const auto now = chrono::steady_clock::now();
 
@@ -292,7 +291,7 @@ bool GpioBus::WaitSignal(int pin, bool ast)
     do {
         Acquire();
 
-        if (GetSignal(pin) == ast) {
+        if (GetSignal(pin) == state) {
             return true;
         }
 

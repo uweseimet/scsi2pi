@@ -79,7 +79,7 @@ public:
 protected:
 
     bool SetUpCache(bool = false);
-    bool ResizeCache(const string&, bool);
+    bool InitCache(const string&, bool);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;

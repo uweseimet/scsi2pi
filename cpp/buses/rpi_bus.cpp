@@ -2,7 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -151,6 +150,7 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
+#ifdef __linux__
     // Event request setting
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
@@ -166,10 +166,8 @@ bool RpiBus::Init(bool target)
         close(fd);
         return false;
     }
-
     close(fd);
 
-#ifdef __linux__
     epoll_fd = epoll_create(1);
     epoll_event ev = { };
     ev.events = EPOLLIN | EPOLLPRI;
@@ -797,7 +795,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 }
 
 // Read date byte from bus
-uint32_t RpiBus::Acquire()
+inline uint32_t RpiBus::Acquire()
 {
     signals = *level;
 
@@ -823,8 +821,7 @@ void RpiBus::WaitBusSettle() const
 
 uint32_t RpiBus::GetDtRanges(const string &filename, uint32_t offset)
 {
-    ifstream in(filename, ios::binary);
-    if (in.good()) {
+    if (ifstream in(filename, ios::binary); in.good()) {
         in.seekg(offset, ios::beg);
         array<char, 4> buf;
         in.read(buf.data(), buf.size());

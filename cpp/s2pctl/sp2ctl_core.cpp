@@ -2,9 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
-// Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2020-2023 Contributors to the PiSCSI project
 // Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -26,7 +23,7 @@ using namespace protobuf_util;
 
 void S2pCtl::Banner(bool usage) const
 {
-    cout << s2p_util::Banner("(Server Controller Tool)", false);
+    cout << s2p_util::Banner("(Server Controller Tool)");
 
     if (usage) {
         cout << "Usage: s2pctl [options]\n"
@@ -114,7 +111,8 @@ int S2pCtl::RunInteractive()
 
         vector<char*> interactive_args;
         interactive_args.emplace_back(strdup(prompt.c_str()));
-        interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
+        interactive_args.emplace_back(strdup(args[0].c_str())
+        );
         for (size_t i = 1; i < args.size(); i++) {
             interactive_args.emplace_back(strdup(args[i].c_str()));
         }

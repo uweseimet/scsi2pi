@@ -42,7 +42,9 @@ void S2pExec::TerminationHandler(int)
 void S2pExec::Banner(bool header, bool usage)
 {
     if (header) {
-        cout << s2p_util::Banner("(SCSI/SASI Command Execution Tool)");
+        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
+            << "Version " << GetVersionString() << "\n"
+            << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
     if (usage) {
@@ -116,10 +118,19 @@ bool S2pExec::ParseArguments(span<char*> args)
         { nullptr, 0, nullptr, 0 }
     };
 
-    string initiator = "7";
+    string initiator;
     string target;
     string buf;
     string tout = "3";
+
+    // Resetting these is important for the interactive mode
+    command = "";
+    data = "";
+    request_sense = true;
+    binary_input_filename = "";
+    binary_output_filename = "";
+    hex_input_filename = "";
+    hex_output_filename = "";
 
     optind = 1;
     int opt;
@@ -217,7 +228,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (!initiator.empty()) {
         if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-            initiator = "";
             throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
         }
     }
@@ -291,7 +301,7 @@ bool S2pExec::RunInteractive(bool in_process)
 
         vector<char*> interactive_args;
         interactive_args.emplace_back(strdup(prompt.c_str()));
-        interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
+        interactive_args.emplace_back(strdup(args[0].c_str()));
         for (size_t i = 1; i < args.size(); i++) {
             interactive_args.emplace_back(strdup(args[i].c_str()));
         }

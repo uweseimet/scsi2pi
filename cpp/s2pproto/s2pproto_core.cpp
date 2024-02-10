@@ -44,7 +44,9 @@ void S2pProto::TerminationHandler(int)
 void S2pProto::Banner(bool header)
 {
     if (header) {
-        cout << s2p_util::Banner("(Custom SCSI Command Execution Tool)");
+        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Custom SCSI Command Execution Tool)\n"
+            << "Version " << GetVersionString() << "\n"
+            << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pproto [options]\n"

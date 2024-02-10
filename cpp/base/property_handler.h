@@ -19,7 +19,7 @@ class PropertyHandler
 
 public:
 
-    // Supported property keys
+    // Non device-specific property keys
     inline static const string IMAGE_FOLDER = "image_folder";
     inline static const string LOCALE = "locale";
     inline static const string LOG_LEVEL = "log_level";
@@ -27,9 +27,7 @@ public:
     inline static const string PORT = "port";
     inline static const string PROPERTY_FILES = "property_files";
     inline static const string RESERVED_IDS = "reserved_ids";
-    inline static const string SASI = "sasi";
     inline static const string SCAN_DEPTH = "scan_depth";
-    inline static const string SCSI = "scsi";
     inline static const string TOKEN_FILE = "token_file";
 
     static PropertyHandler& Instance()

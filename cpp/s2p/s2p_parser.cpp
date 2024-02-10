@@ -17,7 +17,7 @@ using namespace s2p_util;
 void S2pParser::Banner(bool usage) const
 {
     if (!usage) {
-        cout << s2p_util::Banner("(Device Emulation)", false) << flush;
+        cout << s2p_util::Banner("(Device Emulation)") << flush;
     }
     else {
         const int id_max = ControllerFactory::GetIdMax() - 1;

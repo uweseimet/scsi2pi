@@ -57,10 +57,9 @@ string ToUpper(const string&);
 string ToLower(const string&);
 string GetLocale();
 string GetLine(const string&);
-string ConvertCommand(const string&);
 bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(int, int, const string&, int&, int&);
-string Banner(string_view, bool = true);
+string Banner(string_view);
 
 string GetExtensionLowerCase(string_view);
 

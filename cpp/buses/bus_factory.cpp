@@ -10,6 +10,7 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include "rpi_bus.h"
+#include "in_process_bus.h"
 #include "bus_factory.h"
 
 using namespace spdlog;
@@ -19,7 +20,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
     unique_ptr<Bus> bus;
 
     if (in_process) {
-        bus = make_unique<DelegatingInProcessBus>(in_process_bus, true);
+        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), true);
     }
     else {
         if (CheckForPi()) {
@@ -30,7 +31,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 
             bus = make_unique<RpiBus>();
         } else {
-            bus = make_unique<DelegatingInProcessBus>(in_process_bus, false);
+            bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), false);
         }
     }
 
@@ -43,7 +44,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 
 bool BusFactory::CheckForPi()
 {
-    ifstream in(DEVICE_TREE_MODEL_PATH);
+    ifstream in("/proc/device-tree/model");
     if (in.fail()) {
         info("This platform does not appear to be a Raspberry Pi, functionality is limited");
         return false;

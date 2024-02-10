@@ -28,7 +28,7 @@ vector<int> CreateCdb(scsi_command, const string&);
 vector<uint8_t> CreateParameters(const string&);
 
 pair<int, path> OpenTempFile();
-path CreateTempFile(int);
+path CreateTempFile(size_t);
 path CreateTempFileWithData(span<const byte>);
 string ReadTempFileToString(const string&);
 
@@ -41,7 +41,7 @@ class TestShared
 public:
 
     TestShared() = default;
-    ~TestShared()
+    ~TestShared() // NOSONAR Destructor in tests is acceptable
     {
         for (const string &filename : temp_files) {
             remove(path(filename));
@@ -58,6 +58,6 @@ public:
         temp_files.insert(filename);
     }
 
-    inline static unordered_set<string> temp_files;
+    inline static unordered_set<string, s2p_util::StringHash, equal_to<>> temp_files;
 };
 }

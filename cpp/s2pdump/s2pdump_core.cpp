@@ -47,7 +47,9 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << s2p_util::Banner("(Drive Dump/Restore Utility)");
+        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+            << "Version " << GetVersionString() << "\n"
+            << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pdump [options]\n"

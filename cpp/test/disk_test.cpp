@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "test_shared.h"
 #include "base/memory_util.h"
 #include "devices/disk.h"
 
@@ -20,6 +21,23 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
     EXPECT_TRUE(controller->AddDevice(disk));
 
     return {controller, disk};
+}
+
+TEST(DiskTest, SetUpCache)
+{
+    MockDisk disk;
+
+    EXPECT_FALSE(disk.SetUpCache(true));
+
+    disk.SetBlockCount(1);
+    disk.SetSectorSizeInBytes(512);
+    EXPECT_FALSE(disk.SetUpCache(false));
+
+    disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
+    EXPECT_FALSE(disk.SetUpCache(false));
+
+    disk.SetFilename(CreateTempFile(512).string());
+    EXPECT_TRUE(disk.SetUpCache(false));
 }
 
 TEST(DiskTest, Dispatch)
@@ -190,6 +208,8 @@ TEST(DiskTest, Read6)
     TestShared::Dispatch(*disk, scsi_command::cmd_read6, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(6) must fail for a medium with 0 blocks");
 
+    EXPECT_EQ(0, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -204,6 +224,8 @@ TEST(DiskTest, Read10)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read10));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -220,6 +242,8 @@ TEST(DiskTest, Read16)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read16));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -238,6 +262,8 @@ TEST(DiskTest, Write6)
     TestShared::Dispatch(*disk, scsi_command::cmd_write6, sense_key::data_protect,
         asc::write_protected, "WRITE(6) must fail because drive is write-protected");
 
+    EXPECT_EQ(0, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -253,6 +279,8 @@ TEST(DiskTest, Write10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    EXPECT_EQ(0, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -267,6 +295,8 @@ TEST(DiskTest, Write16)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write16));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -662,7 +692,7 @@ TEST(DiskTest, VerifySectorSizeChange)
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-    << "Parameter list is invalid";
+        << "Parameter list is invalid";
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
@@ -670,11 +700,31 @@ TEST(DiskTest, VerifySectorSizeChange)
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-    << "Parameter list is invalid";
+        << "Parameter list is invalid";
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
+}
+
+TEST(DiskTest, ReadData)
+{
+    MockDisk disk;
+    vector<uint8_t> buf;
+
+    EXPECT_THAT([&] {disk.ReadData(buf);}, Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
+                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
+}
+
+TEST(DiskTest, WriteData)
+{
+    MockDisk disk;
+    vector<uint8_t> buf;
+
+    EXPECT_THAT([&] {disk.WriteData(buf, scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
+                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache)

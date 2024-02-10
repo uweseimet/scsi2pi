@@ -123,14 +123,6 @@ TEST(S2pUtilTest, ProcessId)
     EXPECT_EQ(31, lun);
 }
 
-TEST(S2pUtilTest, ConvertCommand)
-{
-    EXPECT_EQ("-c", ConvertCommand("c"));
-    EXPECT_EQ("--command", ConvertCommand("command"));
-    EXPECT_EQ("-command", ConvertCommand("-command"));
-    EXPECT_EQ("--command", ConvertCommand("--command"));
-}
-
 TEST(S2pUtilTest, GetAsUnsignedInt)
 {
     int result;

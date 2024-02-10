@@ -27,18 +27,13 @@ DiskTrack::~DiskTrack()
 void DiskTrack::Init(int track, int size, int sectors, bool raw)
 {
     assert(track >= 0);
-    assert((sectors > 0) && (sectors <= 0x100));
+    assert(sectors > 0 && sectors <= 256);
 
-    // Set Parameters
     dt.track = track;
     dt.size = size;
     dt.sectors = sectors;
     dt.raw = raw;
-
-    // Not initialized (needs to be loaded)
     dt.init = false;
-
-    // Not Changed
     dt.changed = false;
 }
 
@@ -65,7 +60,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     // Calculate length (data size of this track)
     const int length = dt.sectors << dt.size;
 
-    assert((dt.sectors > 0) && (dt.sectors <= 0x100));
+    assert(dt.sectors > 0 && dt.sectors <= 256);
 
     // Allocate buffer memory
     if (!dt.buffer && !posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
@@ -139,7 +134,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     }
     // Need to write
     assert(dt.buffer);
-    assert((dt.sectors > 0) && (dt.sectors <= 0x100));
+    assert(dt.sectors > 0 && dt.sectors <= 256);
 
     // Writing in RAW mode is not allowed
     assert(!dt.raw);
@@ -205,7 +200,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 
 int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
 {
-    assert(sec >= 0 && sec < 0x100);
+    assert(sec >= 0 && sec < 256);
 
     if (!dt.init) {
         return 0;
@@ -227,7 +222,7 @@ int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
 
 int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
 {
-    assert((sec >= 0) && (sec < 0x100));
+    assert(sec >= 0 && sec < 256);
     assert(!dt.raw);
 
     if (!dt.init) {

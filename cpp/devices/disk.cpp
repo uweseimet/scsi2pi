@@ -157,10 +157,10 @@ bool Disk::SetUpCache(bool raw)
         }
     }
 
-    return ResizeCache(GetFilename(), raw);
+    return InitCache(GetFilename(), raw);
 }
 
-bool Disk::ResizeCache(const string &path, bool raw)
+bool Disk::InitCache(const string &path, bool raw)
 {
     if (caching_mode == PbCachingMode::PISCSI) {
         cache = make_shared<DiskCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
@@ -402,7 +402,6 @@ bool Disk::Eject(bool force)
 
 int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Get length, clear buffer
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
@@ -414,17 +413,14 @@ int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     // Basic information
     int size = 4;
 
-    // Add block descriptor if DBD is 0
-    if (!(cdb[1] & 0x08)) {
+    // Add block descriptor if DBD is 0, only if ready
+    if (!(cdb[1] & 0x08) && IsReady()) {
         // Mode parameter header, block descriptor length
         buf[3] = 0x08;
 
-        // Only if ready
-        if (IsReady()) {
-            // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
-            SetInt32(buf, 8, GetSectorSizeInBytes());
-        }
+        // Short LBA mode parameter block descriptor (number of blocks and block length)
+        SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
+        SetInt32(buf, 8, GetSectorSizeInBytes());
 
         size = 12;
     }
@@ -439,7 +435,6 @@ int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
 int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Get length, clear buffer
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
@@ -457,7 +452,7 @@ int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
         const uint32_t disk_size = GetSectorSizeInBytes();
 
         // Check LLBAA for short or long block descriptor
-        if (!(cdb[1] & 0x10) || disk_blocks <= 0xFFFFFFFF) {
+        if (!(cdb[1] & 0x10) || disk_blocks <= 0xffffffff) {
             // Mode parameter header, block descriptor length
             buf[7] = 0x08;
 

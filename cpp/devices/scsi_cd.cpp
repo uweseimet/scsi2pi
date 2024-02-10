@@ -214,7 +214,7 @@ int ScsiCd::ReadData(span<uint8_t> buf)
         assert(GetBlockCount() > 0);
 
         // Re-assign cache (no need to save)
-        if (!ResizeCache(tracks[index]->GetPath(), raw_file)) {
+        if (!InitCache(tracks[index]->GetPath(), raw_file)) {
             throw scsi_exception(sense_key::medium_error, asc::read_fault);
         }
 

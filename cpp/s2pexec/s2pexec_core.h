@@ -54,7 +54,7 @@ private:
     bool version = false;
     bool help = false;
 
-    int initiator_id = -1;
+    int initiator_id = 7;
     int target_id = -1;
     int target_lun = 0;
 

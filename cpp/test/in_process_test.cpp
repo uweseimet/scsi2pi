@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         { nullptr, 0, nullptr, 0 }
     };
 
-    string client = "s2pctl";
+    string client = "s2pexec";
     string t_args;
     string c_args;
 
@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
         s2p->Run(target_args, true);
     });
 
-    // Ensure that s2p is up before launching the client
-    sleep(1);
-
     if (client == "s2pctl") {
+        // Ensure that s2p is up
+        sleep(1);
+
         add_arg(client_args, "--port");
         add_arg(client_args, "6870");
         auto s2pctl = make_unique<S2pCtl>();
