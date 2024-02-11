@@ -138,9 +138,7 @@ void ScsiCd::CreateDataTrack()
 
 void ScsiCd::ReadToc()
 {
-    GetController()->SetCurrentLength(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
-
-    EnterDataInPhase();
+    DataInPhase(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
 }
 
 vector<uint8_t> ScsiCd::InquiryInternal() const

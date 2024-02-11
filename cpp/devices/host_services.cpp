@@ -80,21 +80,19 @@
 // ReceiveOperationResults returns the result of the last operation executed.
 //
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
 #include <algorithm>
 #include <chrono>
+#include <google/protobuf/util/json_util.h>
+#include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"
-#include "generated/s2p_interface.pb.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace s2p_interface;
 using namespace memory_util;
 using namespace protobuf_util;
 
@@ -132,7 +130,7 @@ bool HostServices::Init(const param_map &params)
 void HostServices::TestUnitReady()
 {
     // Always successful
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const
@@ -147,20 +145,20 @@ void HostServices::StartStopUnit() const
 
     if (!start) {
         if (load) {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
+            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
         }
         else {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
+            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
         }
     }
     else if (load) {
-        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
+        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
     }
     else {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void HostServices::ExecuteOperation()
@@ -175,9 +173,8 @@ void HostServices::ExecuteOperation()
     }
 
     GetController()->SetTransferSize(static_cast<uint32_t>(length), static_cast<uint32_t>(length));
-    GetController()->SetCurrentLength(static_cast<uint32_t>(length));
 
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 void HostServices::ReceiveOperationResults()
@@ -220,12 +217,12 @@ void HostServices::ReceiveOperationResults()
     const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
     const auto length = static_cast<int>(min(allocation_length, data.size()));
     if (!length) {
-        EnterStatusPhase();
+        StatusPhase();
     }
     else {
         GetController()->CopyToBuffer(data.data(), length);
 
-        EnterDataInPhase();
+        DataInPhase(length);
     }
 }
 

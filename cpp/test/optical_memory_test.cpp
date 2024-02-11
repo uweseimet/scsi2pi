@@ -12,7 +12,6 @@
 using namespace scsi_defs;
 using namespace memory_util;
 
-
 void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";

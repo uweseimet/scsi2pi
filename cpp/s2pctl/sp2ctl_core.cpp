@@ -11,7 +11,6 @@
 #include <fstream>
 #include <unistd.h>
 #include <getopt.h>
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "protobuf/protobuf_util.h"
@@ -78,7 +77,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 s2p requires authentication.\n"
             << "  --list-settings/-s             List s2p settings.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
-            << "  --version/-v                   Display the s2pctl version.\n"
+            << "  --version/-v                   Display the program version.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n";
     }
@@ -430,7 +429,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     }
 
     if (!id_and_lun.empty()) {
-        if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {
+        if (const string error = SetIdAndLun(device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun);
+        !error.empty()) {
             cerr << "Error: " << error << endl;
             return EXIT_FAILURE;
         }

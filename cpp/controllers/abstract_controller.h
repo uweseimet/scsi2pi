@@ -9,13 +9,12 @@
 #pragma once
 
 #include <unordered_set>
-#include <span>
-#include <vector>
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
 
-using namespace std;
+// Command Descriptor Block
+using cdb_t = span<const int>;
 
 class PrimaryDevice;
 
@@ -23,16 +22,6 @@ class AbstractController : public PhaseHandler
 {
 
 public:
-
-    static inline const int UNKNOWN_INITIATOR_ID = -1;
-
-    enum class shutdown_mode
-    {
-        NONE,
-        STOP_S2P,
-        STOP_PI,
-        RESTART_PI
-    };
 
     AbstractController(Bus&, int, int);
     ~AbstractController() override = default;
@@ -43,6 +32,14 @@ public:
     virtual int GetInitiatorId() const = 0;
 
     virtual int GetEffectiveLun() const = 0;
+
+    enum class shutdown_mode
+    {
+        none,
+        stop_s2p,
+        stop_pi,
+        restart_pi
+    };
 
     void ScheduleShutdown(shutdown_mode mode)
     {
@@ -57,6 +54,7 @@ public:
     {
         return target_id;
     }
+
     int GetLunCount() const
     {
         return static_cast<int>(luns.size());
@@ -103,6 +101,8 @@ public:
     {
         return ctrl.cdb[index];
     }
+
+    inline static const int UNKNOWN_INITIATOR_ID = -1;
 
 protected:
 
@@ -200,5 +200,5 @@ private:
 
     int max_luns;
 
-    shutdown_mode sh_mode = shutdown_mode::NONE;
+    shutdown_mode sh_mode = shutdown_mode::none;
 };

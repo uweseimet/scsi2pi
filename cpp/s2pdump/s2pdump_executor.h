@@ -10,7 +10,6 @@
 
 #include <cstdint>
 #include <set>
-#include <span>
 #include "initiator/initiator_executor.h"
 
 using namespace std;

@@ -15,13 +15,13 @@ TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::NONE, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
-    EXPECT_EQ(AbstractController::shutdown_mode::STOP_S2P, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
-    EXPECT_EQ(AbstractController::shutdown_mode::STOP_PI, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
-    EXPECT_EQ(AbstractController::shutdown_mode::RESTART_PI, controller.GetShutdownMode());
+    EXPECT_EQ(AbstractController::shutdown_mode::none, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_s2p, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_pi, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+    EXPECT_EQ(AbstractController::shutdown_mode::restart_pi, controller.GetShutdownMode());
 }
 
 TEST(AbstractControllerTest, SetCurrentLength)

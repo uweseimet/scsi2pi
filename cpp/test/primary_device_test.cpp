@@ -9,7 +9,6 @@
 #include "mocks.h"
 #include "shared/scsi.h"
 #include "shared/shared_exceptions.h"
-#include "base/primary_device.h"
 #include "base/device_factory.h"
 #include "base/memory_util.h"
 
@@ -52,28 +51,40 @@ TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
 
-    auto [controller, device] = CreatePrimaryDevice(ID);
+    auto [_, device] = CreatePrimaryDevice(ID);
 
     EXPECT_EQ(ID, device->GetId());
 }
 
-TEST(PrimaryDeviceTest, PhaseChange)
+TEST(PrimaryDeviceTest, StatusPhase)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, Status);
-    device->EnterStatusPhase();
+    device->StatusPhase();
+}
+
+TEST(PrimaryDeviceTest, DataInPhase)
+{
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, DataIn);
-    device->EnterDataInPhase();
+    device->DataInPhase(123);
+    EXPECT_EQ(123, controller->GetCurrentLength());
+}
+
+TEST(PrimaryDeviceTest, DataOutPhase)
+{
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, DataOut);
-    device->EnterDataOutPhase();
+    device->DataOutPhase(456);
+    EXPECT_EQ(456, controller->GetCurrentLength());
 }
 
 TEST(PrimaryDeviceTest, Reset)
 {
-    auto [controller, device] = CreatePrimaryDevice();
+    auto [_, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
@@ -85,7 +96,7 @@ TEST(PrimaryDeviceTest, Reset)
 
 TEST(PrimaryDeviceTest, CheckReservation)
 {
-    auto [controller, device] = CreatePrimaryDevice();
+    auto [_, device] = CreatePrimaryDevice();
 
     EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready, false))
         << "Device must not be reserved for initiator ID 0";
@@ -134,7 +145,7 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
 
 TEST(PrimaryDeviceTest, DiscardReservation)
 {
-    auto [controller, device] = CreatePrimaryDevice();
+    auto [_, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))

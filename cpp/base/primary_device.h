@@ -15,7 +15,6 @@
 #include "controllers/abstract_controller.h"
 #include "device.h"
 
-using namespace std;
 using namespace scsi_defs;
 
 class PrimaryDevice : private ScsiPrimaryCommands, public Device
@@ -103,7 +102,7 @@ protected:
 
     void AddCommand(scsi_command cmd, const command &c)
     {
-        commands[cmd] = c;
+        commands[static_cast<int>(cmd)] = c;
     }
 
     vector<uint8_t> HandleInquiry(scsi_defs::device_type, bool) const;
@@ -117,20 +116,22 @@ protected:
     void ReserveUnit() override;
     void ReleaseUnit() override;
 
-    void EnterStatusPhase() const
+    void StatusPhase() const
     {
         controller->Status();
     }
-    void EnterDataInPhase() const
+    void DataInPhase(int length) const
     {
+        controller->SetCurrentLength(length);
         controller->DataIn();
     }
-    void EnterDataOutPhase() const
+    void DataOutPhase(int length) const
     {
+        controller->SetCurrentLength(length);
         controller->DataOut();
     }
 
-    auto GetController() const
+    inline auto GetController() const
     {
         return controller;
     }
@@ -173,7 +174,7 @@ private:
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
-    unordered_map<scsi_command, command> commands;
+    array<command, 256> commands = { };
 
     // Number of bytes during a transfer after which to delay for the DaynaPort driver
     int delay_after_bytes = Bus::SEND_NO_DELAY;

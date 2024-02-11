@@ -38,7 +38,8 @@ class scsi_exception : public exception
 
 public:
 
-    scsi_exception(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
+    explicit scsi_exception(scsi_defs::sense_key sense_key,
+        scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
     : sense_key(sense_key), asc(asc)
     {
         message = s2p_util::FormatSenseData(sense_key, asc);

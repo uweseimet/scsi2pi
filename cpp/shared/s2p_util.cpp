@@ -9,17 +9,14 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
-#include <sstream>
 #include <filesystem>
 #include <algorithm>
 #include <unistd.h>
 #include <pwd.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared_exceptions.h"
 #include "s2p_version.h"
-#include "s2p_util.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace spdlog;
 using namespace scsi_defs;
@@ -150,7 +147,7 @@ bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
     return true;
 }
 
-string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &id, int &lun)
+string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -161,16 +158,15 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
         if (components.size() == 1) {
-            if (!GetAsUnsignedInt(components[0], id) || id >= id_max) {
+            if (!GetAsUnsignedInt(components[0], id) || id > 7) {
                 id = -1;
-                return fmt::format("Invalid device ID: '{0}' (0-{1})", components[0], id_max - 1);
+                return "Invalid device ID: '" + components[0] + "' (0-7)";
             }
 
             return "";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id >= id_max || !GetAsUnsignedInt(components[1], lun)
-            || lun >= lun_max) {
+        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= lun_max) {
             id = -1;
             lun = -1;
             return "Invalid LUN (0-" + to_string(lun_max - 1) + ")";
@@ -237,10 +233,7 @@ string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
         s_asc = fmt::format("ASC ${0:02x}, ASCQ ${1:02x}", static_cast<int>(asc), ascq);
     }
 
-    // All sense keys are mapped
-    assert(SENSE_KEY_MAPPING.find(sense_key) != SENSE_KEY_MAPPING.end());
-
-    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEY_MAPPING.find(sense_key)->second,
+    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEYS[static_cast<int>(sense_key)],
         static_cast<int>(sense_key), s_asc);
 }
 

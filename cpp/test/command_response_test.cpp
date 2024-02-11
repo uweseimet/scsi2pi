@@ -13,7 +13,6 @@
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller_factory.h"
 
-using namespace s2p_interface;
 using namespace spdlog;
 using namespace protobuf_util;
 

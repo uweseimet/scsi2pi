@@ -44,7 +44,7 @@ void SasiHd::Inquiry()
     array<uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
-    EnterDataInPhase();
+    DataInPhase(buf.size());
 }
 
 vector<uint8_t> SasiHd::InquiryInternal() const
@@ -62,5 +62,5 @@ void SasiHd::RequestSense()
     array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
-    EnterDataInPhase();
+    DataInPhase(buf.size());
 }

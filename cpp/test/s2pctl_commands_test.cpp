@@ -8,7 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <gtest/gtest.h>
 #include "test/test_shared.h"
 #include "shared/shared_exceptions.h"
@@ -16,7 +15,6 @@
 #include "s2pctl/s2pctl_commands.h"
 
 using namespace testing;
-using namespace s2p_interface;
 using namespace protobuf_util;
 
 TEST(S2pCtlCommandsTest, Execute)

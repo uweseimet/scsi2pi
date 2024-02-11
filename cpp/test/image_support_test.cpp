@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,6 @@
 #include "protobuf/protobuf_util.h"
 #include "command/image_support.h"
 
-using namespace s2p_interface;
 using namespace protobuf_util;
 
 TEST(ImageSupportTest, SetGetDepth)

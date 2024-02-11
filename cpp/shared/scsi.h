@@ -16,9 +16,6 @@
 
 using namespace std;
 
-// Command Descriptor Block
-using cdb_t = span<const int>;
-
 namespace scsi_defs
 {
 enum class scsi_level
@@ -159,23 +156,23 @@ enum class sense_key
     reserved = 0x0f
 };
 
-static const unordered_map<sense_key, string> SENSE_KEY_MAPPING = {
-    { sense_key::no_sense, "NO SENSE" },
-    { sense_key::recovered_error, "RECOVERED ERROR" },
-    { sense_key::not_ready, "NOT READY" },
-    { sense_key::medium_error, "MEDIUM ERROR" },
-    { sense_key::hardware_error, "HARDWARE ERROR" },
-    { sense_key::illegal_request, "ILLEGAL REQUEST" },
-    { sense_key::unit_attention, "UNIT ATTENTION" },
-    { sense_key::data_protect, "DATA_PROTECT" },
-    { sense_key::blank_check, "BLANK CHECK" },
-    { sense_key::vendor_specific, "VENDOR SPECIFIC" },
-    { sense_key::copy_aborted, "COPY ABORTED" },
-    { sense_key::aborted_command, "ABORTED COMMAND" },
-    { sense_key::equal, "EQUAL" },
-    { sense_key::volume_overflow, "VOLUME OVERFLOW" },
-    { sense_key::miscompare, "MISCOMPARE" },
-    { sense_key::reserved, "RESERVED" }
+static const array<string, 16> SENSE_KEYS = {
+    "NO SENSE",
+    "RECOVERED ERROR",
+    "NOT READY",
+    "MEDIUM ERROR",
+    "HARDWARE ERROR",
+    "ILLEGAL REQUEST",
+    "UNIT ATTENTION",
+    "DATA_PROTECT",
+    "BLANK CHECK",
+    "VENDOR SPECIFIC",
+    "COPY ABORTED",
+    "ABORTED COMMAND",
+    "EQUAL",
+    "VOLUME OVERFLOW",
+    "MISCOMPARE",
+    "RESERVED"
 };
 
 enum class asc

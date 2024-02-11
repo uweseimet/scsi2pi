@@ -100,19 +100,20 @@ void GenericController::Command()
         GetBus().SetCD(true);
         GetBus().SetIO(false);
 
-        const int actual_count = GetBus().CommandHandShake(GetBuffer());
+        auto &buf = GetBuffer();
+
+        const int actual_count = GetBus().CommandHandShake(buf);
         if (!actual_count) {
-            LogTrace(fmt::format("Received unknown command: ${:02x}", GetBuffer()[0]));
+            LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
             Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
         }
 
-        const int command_bytes_count = Bus::GetCommandBytesCount(GetBuffer()[0]);
+        const int command_bytes_count = Bus::GetCommandBytesCount(buf[0]);
         assert(command_bytes_count <= 16);
 
-        // TODO Set all bytes by copying
         for (int i = 0; i < command_bytes_count; i++) {
-            SetCdbByte(i, GetBuffer()[i]);
+            SetCdbByte(i, buf[i]);
         }
 
         // Check the log level first in order to avoid a time-consuming string construction
@@ -135,7 +136,6 @@ void GenericController::Command()
 
 void GenericController::Execute()
 {
-    // Initialization for data transfer
     ResetOffset();
     SetTransferSize(0, 0);
 
@@ -196,7 +196,6 @@ void GenericController::Status()
         GetBus().SetCD(true);
         GetBus().SetIO(true);
 
-        // Data transfer is 1 byte x 1 block
         ResetOffset();
         SetCurrentLength(1);
         SetTransferSize(1, 1);

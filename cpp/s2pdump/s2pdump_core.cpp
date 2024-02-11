@@ -19,7 +19,6 @@
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
-#include "shared/s2p_util.h"
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pdump_core.h"
@@ -75,7 +74,7 @@ void S2pDump::Banner(bool header) const
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
-        << "  --version/-v                       Display the s2pdump version.\n"
+        << "  --version/-v                       Display the program version.\n"
         << "  --help/-H                          Display this help.\n";
 }
 
@@ -241,7 +240,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!run_bus_scan) {
-        if (const string error = ProcessId(8, sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
+        if (const string error = ProcessId(sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
 

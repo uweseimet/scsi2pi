@@ -2,11 +2,10 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/command_context.h"
@@ -15,8 +14,6 @@
 #include "controllers/controller_factory.h"
 #include "base/device_factory.h"
 
-using namespace filesystem;
-using namespace s2p_interface;
 using namespace protobuf_util;
 
 TEST(CommandExecutorTest, ProcessDeviceCmd)

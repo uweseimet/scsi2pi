@@ -35,7 +35,8 @@ TEST(ScsiDaynaportTest, Device_Defaults)
 
 TEST(ScsiDaynaportTest, GetDefaultParams)
 {
-    const auto [controller, daynaport] = CreateDevice(SCDP);
+    const auto [_, daynaport] = CreateDevice(SCDP);
+
     const auto params = daynaport->GetDefaultParams();
     EXPECT_EQ(2U, params.size());
 }

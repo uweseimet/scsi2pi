@@ -203,12 +203,12 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_CONTROLLER, "es", "No se ha podido crear el controlador");
     Add(LocalizationKey::ERROR_CONTROLLER, "zh", "无法创建 控制器");
 
-    Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "sv", "Ogiltigt enhets-id %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "fr", "ID de périphérique invalide %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "es", "ID de dispositivo inválido %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "zh", "无效的设备 ID %1 (0-%2)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "sv", "Ogiltigt enhets-id %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "fr", "ID de périphérique invalide %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "es", "ID de dispositivo inválido %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "zh", "无效的设备 ID %1 (0-7)");
 
     Add(LocalizationKey::ERROR_INVALID_LUN, "en", "Invalid LUN %1 (0-%2)");
     Add(LocalizationKey::ERROR_INVALID_LUN, "de", "Ungültige LUN %1 (0-%2)");

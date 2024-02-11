@@ -2,21 +2,15 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <unordered_map>
-#include <memory>
-#include "buses/bus.h"
 #include "base/primary_device.h"
 #include "abstract_controller.h"
-
-using namespace std;
-
-class PrimaryDevice;
 
 class ControllerFactory
 {
@@ -39,10 +33,6 @@ public:
     bool HasDeviceForIdAndLun(int, int) const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    static int GetIdMax()
-    {
-        return 8;
-    }
     static int GetLunMax()
     {
         return is_sasi ? GetSasiLunMax() : GetScsiLunMax();
@@ -63,6 +53,5 @@ private:
     // Controllers mapped to their device IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
 
-    // TODO Try to make non-static
     inline static bool is_sasi = false;
 };

@@ -8,7 +8,7 @@ SCSI2Pi was chosen as the name for this project because there are not that many 
 # How is SCSI2Pi related to PiSCSI?
 
 In the PiSCSI project there was not much interest in replacing old, often buggy or unnecessary code. In addition, code reviewers were missing, which resulted in a rather long PR backlog, slowing down the development process. Developing software without being able to publish the results is not much fun. Further, long promised features on the PiSCSI roadmap and in tickets have not been addressed. This is why I decided to work on the emulation backend in a separate project. The major part of the PiSCSI C++ codebase has been contributed by me anyway.<br />
-There was also no interest in further exploiting the initiator mode feature of the FULLSPEC board. This mode, together with new SCSI2Pi command line tools, offers solutions for use cases that have never been addressed before. These tools also help with advanced testing.
+There was also no interest in further developing the SCSI emulation and exploiting the initiator mode feature of the FULLSPEC board. This mode, together with new SCSI2Pi command line tools, offers solutions for use cases that have never been addressed before. These tools also help with advanced testing.
 
 # Who am I?
 

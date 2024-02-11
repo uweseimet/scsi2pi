@@ -112,7 +112,6 @@ int GpioBus::MsgInHandShake()
     }
 
     // Phase error
-    // TODO Assumption: Phase does not change here, but only below
     if (GetPhase() != phase) {
         return -1;
     }
@@ -173,7 +172,6 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
             }
 
             // Phase error
-            // TODO Assumption: Phase does not change here, but only below
             if (GetPhase() != phase) {
                 break;
             }
@@ -232,7 +230,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             SetREQ(false);
 
             // Check for timeout waiting for ACK to clear
-            // TODO Do we really have to clear REQ here and everywhere else before checking this?
             if (!ack) {
                 break;
             }
@@ -258,7 +255,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             }
 
             // Phase error
-            // TODO Assumption: Phase does not change here, but only below
             if (GetPhase() != phase) {
                 break;
             }

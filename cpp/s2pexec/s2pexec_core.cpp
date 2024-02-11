@@ -13,7 +13,6 @@
 #include <cstring>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "initiator/initiator_util.h"
 #include "s2pexec_core.h"
@@ -67,7 +66,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
             << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
             << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
-            << "  --version/-v                  Display the s2pexec version.\n"
+            << "  --version/-v                  Display the program version.\n"
             << "  --help/-H                     Display this help.\n";
     }
 }
@@ -231,7 +230,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!target.empty()) {
-        if (const string error = ProcessId(8, sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
+        if (const string error = ProcessId(sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
     }

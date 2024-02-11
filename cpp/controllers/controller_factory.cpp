@@ -91,7 +91,7 @@ AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int id_
         return (*it).second->GetShutdownMode();
     }
 
-    return AbstractController::shutdown_mode::NONE;
+    return AbstractController::shutdown_mode::none;
 }
 
 shared_ptr<AbstractController> ControllerFactory::FindController(int target_id) const

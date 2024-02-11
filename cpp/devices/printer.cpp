@@ -119,7 +119,7 @@ param_map Printer::GetDefaultParams() const
 void Printer::TestUnitReady()
 {
     // The printer is always ready
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 vector<uint8_t> Printer::InquiryInternal() const
@@ -144,9 +144,8 @@ void Printer::Print()
     }
 
     GetController()->SetTransferSize(length, length);
-    GetController()->SetCurrentLength(length);
 
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 void Printer::SynchronizeBuffer()
@@ -183,7 +182,7 @@ void Printer::SynchronizeBuffer()
 
     CleanUp();
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 int Printer::WriteData(span<const uint8_t> buf, scsi_command command)

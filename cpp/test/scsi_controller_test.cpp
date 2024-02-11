@@ -88,19 +88,19 @@ TEST(ScsiControllerTest, BusFree)
     EXPECT_EQ(phase_t::busfree, controller.GetPhase());
     EXPECT_EQ(status::good, controller.GetStatus());
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::NONE);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::none);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 }

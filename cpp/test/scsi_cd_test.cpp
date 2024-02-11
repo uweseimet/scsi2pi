@@ -2,18 +2,14 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <fstream>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "base/device_factory.h"
-
-using namespace std;
-using namespace filesystem;
 
 TEST(ScsiCdTest, DeviceDefaults)
 {

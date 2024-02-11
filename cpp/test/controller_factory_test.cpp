@@ -82,12 +82,7 @@ TEST(ControllerFactory, ProcessOnController)
 {
     ControllerFactory controller_factory;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::NONE, controller_factory.ProcessOnController(0));
-}
-
-TEST(ControllerFactory, GetIdMax)
-{
-    EXPECT_EQ(8, ControllerFactory::GetIdMax());
+    EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
 }
 
 TEST(ControllerFactory, GetLunMax)

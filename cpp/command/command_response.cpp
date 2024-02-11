@@ -6,21 +6,17 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "devices/disk.h"
 #include "command_response.h"
 
-using namespace filesystem;
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;

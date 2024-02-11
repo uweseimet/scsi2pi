@@ -22,7 +22,6 @@
 
 #include "shared/shared_exceptions.h"
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "base/memory_util.h"
 #include "daynaport.h"
 
@@ -273,7 +272,7 @@ int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
 void DaynaPort::TestUnitReady()
 {
     // Always successful
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void DaynaPort::Read6()
@@ -287,9 +286,8 @@ void DaynaPort::Read6()
     const uint32_t record = GetInt24(GetController()->GetCdb(), 1) & 0x1fffff;
     const auto length = Read(GetController()->GetCdb(), GetController()->GetBuffer(), record);
     GetController()->SetTransferSize(length, length);
-    GetController()->SetCurrentLength(length);
 
-    EnterDataInPhase();
+    DataInPhase(length);
 }
 
 void DaynaPort::Write6() const
@@ -309,18 +307,16 @@ void DaynaPort::Write6() const
     }
 
     GetController()->SetTransferSize(length, length);
-    GetController()->SetCurrentLength(length);
 
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 void DaynaPort::RetrieveStatistics() const
 {
     const auto length = RetrieveStats(GetController()->GetCdb(), GetController()->GetBuffer());
     GetController()->SetTransferSize(length, length);
-    GetController()->SetCurrentLength(length);
 
-    EnterDataInPhase();
+    DataInPhase(length);
 }
 
 //---------------------------------------------------------------------------
@@ -354,13 +350,12 @@ void DaynaPort::SetInterfaceMode() const
     switch (GetController()->GetCdbByte(5)) {
     case CMD_SCSILINK_SETMODE:
         // Not implemented, do nothing
-        EnterStatusPhase();
+        StatusPhase();
         break;
 
     case CMD_SCSILINK_SETMAC:
         // Currently the MAC address passed is ignored
-        GetController()->SetCurrentLength(6);
-        EnterDataOutPhase();
+        DataOutPhase(6);
         break;
 
     default:
@@ -378,8 +373,7 @@ void DaynaPort::SetMcastAddr() const
     }
 
     // Currently the multicast address passed is ignored
-    GetController()->SetCurrentLength(length);
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 //---------------------------------------------------------------------------
@@ -415,7 +409,7 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been disabled");
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 vector<PbStatistics> DaynaPort::GetStatistics() const

@@ -9,7 +9,6 @@
 #pragma once
 
 #include <filesystem>
-// TODO Try to get rid of this dependency
 #include "protobuf/command_context.h"
 
 using namespace std;

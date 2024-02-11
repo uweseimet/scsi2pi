@@ -15,7 +15,6 @@
 #include <netdb.h>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include "shared/network_util.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"

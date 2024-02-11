@@ -7,8 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include <spdlog/spdlog.h>
-#include <sstream>
-#include <vector>
 #include <set>
 #include <map>
 #include <iomanip>

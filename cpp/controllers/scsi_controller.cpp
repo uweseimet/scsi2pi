@@ -50,7 +50,6 @@ void ScsiController::MsgOut()
         GetBus().SetCD(true);
         GetBus().SetIO(false);
 
-        // Data transfer is 1 byte x 1 block
         ResetOffset();
         SetCurrentLength(1);
         SetTransferSize(1, 1);
@@ -118,7 +117,6 @@ void ScsiController::ProcessMessage()
 {
     // Continue message out phase as long as ATN keeps asserting
     if (GetBus().GetATN()) {
-        // Data transfer is 1 byte x 1 block
         ResetOffset();
         SetCurrentLength(1);
         SetTransferSize(1, 1);

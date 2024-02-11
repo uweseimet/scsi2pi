@@ -11,8 +11,6 @@
 #include "base/device_factory.h"
 #include "devices/printer.h"
 
-using namespace std;
-
 TEST(PrinterTest, Device_Defaults)
 {
     auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "printer");
@@ -37,14 +35,14 @@ TEST(PrinterTest, Device_Defaults)
 
 TEST(PrinterTest, GetDefaultParams)
 {
-    const auto [controller, printer] = CreateDevice(SCLP);
+    const auto [_, printer] = CreateDevice(SCLP);
     const auto params = printer->GetDefaultParams();
     EXPECT_EQ(1U, params.size());
 }
 
 TEST(PrinterTest, Init)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [_, printer] = CreateDevice(SCLP);
     EXPECT_TRUE(printer->Init( { }));
 
     param_map params;
@@ -120,7 +118,7 @@ TEST(PrinterTest, StopPrint)
 
 TEST(PrinterTest, Synchronize_buffer)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [_, printer] = CreateDevice(SCLP);
 
     TestShared::Dispatch(*printer, scsi_command::cmd_synchronize_buffer, sense_key::aborted_command,
         asc::printer_nothing_to_print);

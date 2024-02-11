@@ -6,10 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <sstream>
+#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
-#include "shared/s2p_util.h"
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
@@ -252,7 +251,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
-                fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
+                fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
         }
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
@@ -719,9 +718,8 @@ bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, int id, in
     if (id < 0) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_ID);
     }
-    if (id >= ControllerFactory::GetIdMax()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id),
-            to_string(ControllerFactory::GetIdMax() - 1));
+    if (id >= 8) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id));
     }
     if (lun < 0 || lun >= ControllerFactory::GetLunMax()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun),

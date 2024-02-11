@@ -39,7 +39,7 @@ void ParseParameters(PbDeviceDefinition&, const string&);
 string SetCommandParams(PbCommand&, const string&);
 string SetFromGenericParams(PbCommand&, const string&);
 void SetProductData(PbDeviceDefinition&, const string&);
-string SetIdAndLun(int, int, PbDeviceDefinition&, const string&);
+string SetIdAndLun(int, PbDeviceDefinition&, const string&);
 string ListDevices(const vector<PbDevice>&);
 
 void SerializeMessage(int, const google::protobuf::Message&);

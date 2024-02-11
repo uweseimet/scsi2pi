@@ -20,13 +20,11 @@ void S2pParser::Banner(bool usage) const
         cout << s2p_util::Banner("(Device Emulation)") << flush;
     }
     else {
-        const int id_max = ControllerFactory::GetIdMax() - 1;
-
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
+            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and\n"
             << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
             << "), default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-" << id_max << ") and\n"
+            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and\n"
             << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
             << "), default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
@@ -50,7 +48,7 @@ void S2pParser::Banner(bool usage) const
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --version/-v                Display the s2p version.\n"
+            << "  --version/-v                Display the program version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"

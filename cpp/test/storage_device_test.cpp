@@ -2,17 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include "mocks.h"
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "devices/storage_device.h"
-
-using namespace filesystem;
 
 TEST(StorageDeviceTest, SetGetFilename)
 {

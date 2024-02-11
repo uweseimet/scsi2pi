@@ -10,8 +10,6 @@
 #include "shared/shared_exceptions.h"
 #include "devices/mode_page_device.h"
 
-using namespace std;
-
 TEST(ModePageDeviceTest, SupportsSaveParameters)
 {
     MockModePageDevice device;

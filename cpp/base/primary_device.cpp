@@ -53,14 +53,13 @@ bool PrimaryDevice::Init(const param_map &params)
 
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
-    if (const auto &it = commands.find(cmd); it != commands.end()) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", COMMAND_MAPPING.find(cmd)->second.second,
-            static_cast<int>(cmd)));
-
-        it->second();
+    const int c = static_cast<int>(cmd);
+    if (const auto &command = commands[c]; command) {
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", COMMAND_MAPPING.find(cmd)->second.second, c));
+        command();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
+        LogTrace(fmt::format("Received unsupported command: ${:02x}", c));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
@@ -99,7 +98,7 @@ void PrimaryDevice::TestUnitReady()
 {
     CheckReady();
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void PrimaryDevice::Inquiry()
@@ -123,7 +122,7 @@ void PrimaryDevice::Inquiry()
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
-    EnterDataInPhase();
+    DataInPhase(allocation_length);
 }
 
 void PrimaryDevice::ReportLuns()
@@ -148,9 +147,7 @@ void PrimaryDevice::ReportLuns()
 
     SetInt16(buf, 2, size);
 
-    GetController()->SetCurrentLength(min(allocation_length, size + 8));
-
-    EnterDataInPhase();
+    DataInPhase(min(allocation_length, size + 8));
 }
 
 void PrimaryDevice::RequestSense()
@@ -177,7 +174,7 @@ void PrimaryDevice::RequestSense()
     // Clear the previous status
     SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
 
-    EnterDataInPhase();
+    DataInPhase(length);
 }
 
 void PrimaryDevice::SendDiagnostic()
@@ -187,7 +184,7 @@ void PrimaryDevice::SendDiagnostic()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void PrimaryDevice::CheckReady()
@@ -269,7 +266,7 @@ void PrimaryDevice::ReserveUnit()
         LogTrace("Reserved device for unknown initiator");
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void PrimaryDevice::ReleaseUnit()
@@ -283,7 +280,7 @@ void PrimaryDevice::ReleaseUnit()
 
     DiscardReservation();
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool prevent_removal) const

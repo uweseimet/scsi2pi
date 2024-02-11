@@ -134,11 +134,11 @@ void protobuf_util::SetProductData(PbDeviceDefinition &device, const string &dat
     }
 }
 
-string protobuf_util::SetIdAndLun(int id_max, int lun_max, PbDeviceDefinition &device, const string &value)
+string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const string &value)
 {
     int id;
     int lun;
-    if (const string error = ProcessId(id_max, lun_max, value, id, lun); !error.empty()) {
+    if (const string error = ProcessId(lun_max, value, id, lun); !error.empty()) {
         return error;
     }
 

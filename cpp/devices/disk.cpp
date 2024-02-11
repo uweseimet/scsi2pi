@@ -189,7 +189,7 @@ void Disk::FormatUnit()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::Read(access_mode mode)
@@ -201,13 +201,12 @@ void Disk::Read(access_mode mode)
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
         GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(sector_transfer_count * GetSectorSizeInBytes());
         ReadData(GetController()->GetBuffer());
 
-        EnterDataInPhase();
+        DataInPhase(sector_transfer_count * GetSectorSizeInBytes());
     }
     else {
-        EnterStatusPhase();
+        StatusPhase();
     }
 }
 
@@ -240,14 +239,14 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
         GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
-        GetController()->SetCurrentLength(sector_transfer_count * GetSectorSizeInBytes());
 
-        EnterDataOutPhase();
+        DataOutPhase(sector_transfer_count * GetSectorSizeInBytes());
     }
     else {
-        EnterStatusPhase();
+        StatusPhase();
     }
 }
+
 void Disk::ReadLong10()
 {
     ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), false);
@@ -271,7 +270,7 @@ void Disk::WriteLong16()
 void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 {
     if (!length) {
-        EnterStatusPhase();
+        StatusPhase();
         return;
     }
 
@@ -292,18 +291,14 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
     GetController()->SetTransferSize(length, length);
 
     if (write) {
-        GetController()->SetCurrentLength(length);
-
         next_sector = sector;
 
-        EnterDataOutPhase();
+        DataOutPhase(length);
     }
     else {
-        GetController()->SetCurrentLength(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
-
         ++sector_read_count;
 
-        EnterDataInPhase();
+        DataInPhase(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
     }
 }
 
@@ -340,7 +335,7 @@ void Disk::StartStopUnit()
         }
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::PreventAllowMediumRemoval()
@@ -353,14 +348,14 @@ void Disk::PreventAllowMediumRemoval()
 
     SetLocked(lock);
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::SynchronizeCache()
 {
     FlushCache();
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::ReadDefectData10() const
@@ -370,9 +365,8 @@ void Disk::ReadDefectData10() const
 
     // The defect list is empty
     fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
-    GetController()->SetCurrentLength(static_cast<uint32_t>(allocation_length));
 
-    EnterDataInPhase();
+    DataInPhase(allocation_length);
 }
 
 bool Disk::Eject(bool force)
@@ -770,27 +764,27 @@ void Disk::ReAssignBlocks()
 {
     CheckReady();
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::Seek6()
 {
-    const auto& [valid, start, _] = CheckAndGetStartAndCount(SEEK6);
+    const auto& [valid, _, __] = CheckAndGetStartAndCount(SEEK6);
     if (valid) {
         CheckReady();
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::Seek10()
 {
-    const auto& [valid, start, _] = CheckAndGetStartAndCount(SEEK10);
+    const auto& [valid, _, __] = CheckAndGetStartAndCount(SEEK10);
     if (valid) {
         CheckReady();
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void Disk::ReadCapacity10()
@@ -814,9 +808,7 @@ void Disk::ReadCapacity10()
 
     SetInt32(buf, 4, sector_size);
 
-    GetController()->SetCurrentLength(8);
-
-    EnterDataInPhase();
+    DataInPhase(8);
 }
 
 void Disk::ReadCapacity16()
@@ -840,9 +832,7 @@ void Disk::ReadCapacity16()
     // Logical blocks per physical block: not reported (1 or more)
     buf[13] = 0;
 
-    GetController()->SetCurrentLength(14);
-
-    EnterDataInPhase();
+    DataInPhase(14);
 }
 
 void Disk::ReadCapacity16_ReadLong16()
@@ -866,7 +856,7 @@ void Disk::ReadCapacity16_ReadLong16()
 uint64_t Disk::ValidateBlockAddress(access_mode mode) const
 {
     // The RelAdr bit is only permitted with linked commands
-    if (mode == RW10 && GetController()->GetCdb()[1] & 0x01) {
+    if (mode == RW10 && GetController()->GetCdbByte(1) & 0x01) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
