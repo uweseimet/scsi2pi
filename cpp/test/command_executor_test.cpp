@@ -214,19 +214,16 @@ TEST(CommandExecutorTest, Attach)
     path filename = CreateTempFile(1);
     SetParam(definition, "file", filename.string());
     EXPECT_FALSE(executor->Attach(context, definition, false)) << "Too small image file not rejected";
-    remove(filename);
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
     bool result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
     controller_factory->DeleteAllControllers();
 
     filename = CreateTempFile(513);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     definition.set_type(PbDeviceType::SCCD);
@@ -234,7 +231,6 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(2048);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     definition.set_type(PbDeviceType::SCMO);
@@ -243,7 +239,6 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(4096);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     controller_factory->DeleteAllControllers();
@@ -293,13 +288,11 @@ TEST(CommandExecutorTest, Insert)
     path filename = CreateTempFile(1);
     SetParam(definition, "file", filename.string());
     EXPECT_FALSE(executor->Insert(context, definition, device, false)) << "Too small image file not rejected";
-    remove(filename);
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
     dynamic_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
     const bool result = executor->Insert(context, definition, device, false);
-    remove(filename);
     EXPECT_TRUE(result);
 }
 

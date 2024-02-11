@@ -95,13 +95,11 @@ TEST(ScsiCdTest, Open)
     path filename = CreateTempFile(2047);
     cd_iso.SetFilename(string(filename));
     EXPECT_THROW(cd_iso.Open(), io_exception)<< "ISO CD-ROM image file size is too small";
-    remove(filename);
 
     filename = CreateTempFile(2 * 2048);
     cd_iso.SetFilename(string(filename));
     cd_iso.Open();
     EXPECT_EQ(2U, cd_iso.GetBlockCount());
-    remove(filename);
 
     filename = CreateTempFile(0);
     ofstream out;
@@ -133,7 +131,6 @@ TEST(ScsiCdTest, Open)
     resize_file(filename, 2 * 2536);
     cd_raw.Open();
     EXPECT_EQ(2U, cd_raw.GetBlockCount());
-    remove(filename);
 }
 
 TEST(ScsiCdTest, ReadToc)

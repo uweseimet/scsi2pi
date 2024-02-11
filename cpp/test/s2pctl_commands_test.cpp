@@ -124,18 +124,15 @@ TEST(S2pCtlCommandsTest, Export)
     S2pCtlCommands commands1(command, "localhost", 0, filename_bin, "", "");
     EXPECT_TRUE(commands1.Execute("", "", "", "", ""));
     EXPECT_EQ(2U, file_size(filename_bin));
-    remove(filename_bin);
 
     auto [fd_json, filename_json] = OpenTempFile();
     S2pCtlCommands commands2(command, "localhost", 0, "", filename_json, "");
     EXPECT_TRUE(commands2.Execute("", "", "", "", ""));
     EXPECT_NE(string::npos, ReadTempFileToString(filename_json).find(PbOperation_Name(OPERATION_INFO)));
-    remove(filename_json);
 
     auto [fd_txt, filename_txt] = OpenTempFile();
     S2pCtlCommands commands3(command, "localhost", 0, "", "", filename_txt);
     EXPECT_TRUE(commands3.Execute("", "", "", "", ""));
     EXPECT_NE(string::npos, ReadTempFileToString(filename_txt).find(PbOperation_Name(OPERATION_INFO)));
-    remove(filename_txt);
 }
 

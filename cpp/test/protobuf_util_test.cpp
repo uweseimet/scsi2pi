@@ -232,7 +232,6 @@ TEST(ProtobufUtil, DeserializeMessage)
     fd1 = open(filename1.c_str(), O_RDONLY);
     ASSERT_NE(-1, fd1);
     EXPECT_THROW(DeserializeMessage(fd1, result), io_exception)<< "Invalid header was not rejected";
-    remove(filename1);
 
     auto [fd2, filename2] = OpenTempFile();
     // Data size 2
@@ -242,7 +241,6 @@ TEST(ProtobufUtil, DeserializeMessage)
     fd2 = open(filename2.c_str(), O_RDONLY);
     EXPECT_NE(-1, fd2);
     EXPECT_THROW(DeserializeMessage(fd2, result), io_exception)<< "Invalid data were not rejected";
-    remove(filename2);
 }
 
 TEST(ProtobufUtil, SerializeDeserializeMessage)
@@ -260,7 +258,6 @@ TEST(ProtobufUtil, SerializeDeserializeMessage)
     ASSERT_NE(-1, fd);
     DeserializeMessage(fd, result);
     close(fd);
-    remove(filename);
 
     EXPECT_TRUE(result.status());
 }

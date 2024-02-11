@@ -54,8 +54,6 @@ TEST(StorageDeviceTest, ValidateFile)
     EXPECT_FALSE(device.IsStopped());
     EXPECT_FALSE(device.IsRemoved());
     EXPECT_FALSE(device.IsLocked());
-
-    remove(filename);
 }
 
 TEST(StorageDeviceTest, MediumChanged)
@@ -135,7 +133,6 @@ TEST(StorageDeviceTest, GetFileSize)
     const path filename = CreateTempFile(512);
     device.SetFilename(filename.c_str());
     const off_t size = device.GetFileSize();
-    remove(filename);
     EXPECT_EQ(512, size);
 
     device.SetFilename("/non_existing_file");

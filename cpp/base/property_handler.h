@@ -23,6 +23,7 @@ public:
     inline static const string IMAGE_FOLDER = "image_folder";
     inline static const string LOCALE = "locale";
     inline static const string LOG_LEVEL = "log_level";
+    inline static const string LOG_PATTERN = "log_pattern";
     inline static const string MODE_PAGE = "mode_page";
     inline static const string PORT = "port";
     inline static const string PROPERTY_FILES = "property_files";

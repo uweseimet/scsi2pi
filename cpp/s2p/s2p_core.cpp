@@ -17,6 +17,7 @@
 #include <vector>
 #include <chrono>
 #include "shared/s2p_version.h"
+#include "buses/bus_factory.h"
 #include "base/device_factory.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
@@ -34,9 +35,7 @@ using namespace scsi_defs;
 
 bool S2p::InitBus(bool in_process, bool is_sasi)
 {
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(true, in_process);
+    bus = BusFactory::Instance().CreateBus(true, in_process);
     if (!bus) {
         return false;
     }
@@ -138,6 +137,10 @@ int S2p::Run(span<char*> args, bool in_process)
             throw parser_exception("Invalid log level: '" + log_level + "'");
         }
 
+        if (const string &log_pattern = property_handler.GetProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+            set_pattern(log_pattern);
+        }
+
         // Log the properties (on trace level) *after* the log level has been set
         LogProperties();
 
@@ -215,13 +218,18 @@ int S2p::Run(span<char*> args, bool in_process)
     LogDevices(device_list);
     cout << device_list << flush;
 
-    if (!in_process && !bus_factory->IsRaspberryPi()) {
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
     }
 
     SetUpEnvironment();
 
     service_thread.Start();
+
+    // Signal the in-process client that s2p is ready
+    if (in_process) {
+        bus->CleanUp();
+    }
 
     ProcessScsiCommands();
 

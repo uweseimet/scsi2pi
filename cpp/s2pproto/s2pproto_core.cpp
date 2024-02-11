@@ -16,6 +16,7 @@
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
+#include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pproto_core.h"
 
@@ -80,9 +81,7 @@ bool S2pProto::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process);
     if (bus) {
         executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
     }
@@ -236,7 +235,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!in_process && !bus_factory->IsRaspberryPi()) {
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return EXIT_FAILURE;
     }

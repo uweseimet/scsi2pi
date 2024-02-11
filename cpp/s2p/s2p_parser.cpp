@@ -41,13 +41,14 @@ void S2pParser::Banner(bool usage) const
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
             << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
-            << "  --scan-depth/-R SCAN_DEPTH  Scan depth for image file folder.\n"
+            << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
             << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
             << "  --property-files/-C         List of configuration property files.\n"
-            << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|\n"
+            << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
             << "                              critical|off),\n"
             << "                              default is 'info'.\n"
-            << "  --token-file/-P TOKEN_FILE  Access token file.\n"
+            << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
+            << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --version/-v                Display the s2p version.\n"
             << "  --help                      Display this help.\n"
@@ -78,6 +79,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { "help", no_argument, nullptr, OPT_HELP },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
+        { "log-pattern", required_argument, nullptr, 'l' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
@@ -100,6 +102,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
+        { 'l', PropertyHandler::LOG_PATTERN },
         { 'P', PropertyHandler::TOKEN_FILE },
         { 'R', PropertyHandler::SCAN_DEPTH }
     };
@@ -119,7 +122,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:vBH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:n:p:r:t:z:C:F:L:P:R:vBH",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;

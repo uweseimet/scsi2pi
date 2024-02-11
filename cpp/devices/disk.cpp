@@ -149,11 +149,11 @@ bool Disk::SetUpCache(bool raw)
     assert(caching_mode != PbCachingMode::DEFAULT);
 
     if (!supported_sector_sizes.contains(sector_size)) {
-        LogWarn(fmt::format("Using non-standard sector size of {} bytes", sector_size));
+        spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
 
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
-            LogInfo("Adjusted caching mode to " + ToLower(PbCachingMode_Name(caching_mode)));
+            spdlog::info("Adjusted caching mode to '{}'", ToLower(PbCachingMode_Name(caching_mode)));
         }
     }
 
@@ -232,9 +232,9 @@ void Disk::Verify(access_mode mode)
     WriteVerify(start, count, false);
 }
 
-void Disk::WriteVerify(uint64_t start, uint32_t count, bool transfer)
+void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
 {
-    if (transfer) {
+    if (data_out) {
         next_sector = start;
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
@@ -250,30 +250,22 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool transfer)
 }
 void Disk::ReadLong10()
 {
-    const uint64_t sector = ValidateBlockAddress(RW10);
-
-    ReadWriteLong(sector, GetInt16(GetController()->GetCdb(), 7), false);
+    ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), false);
 }
 
 void Disk::WriteLong10()
 {
-    const uint64_t sector = ValidateBlockAddress(RW10);
-
-    ReadWriteLong(sector, GetInt16(GetController()->GetCdb(), 7), true);
+    ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), true);
 }
 
 void Disk::ReadLong16()
 {
-    const uint64_t sector = ValidateBlockAddress(RW16);
-
-    ReadWriteLong(sector, GetInt16(GetController()->GetCdb(), 12), false);
+    ReadWriteLong(ValidateBlockAddress(RW16), GetInt16(GetController()->GetCdb(), 12), false);
 }
 
 void Disk::WriteLong16()
 {
-    const uint64_t sector = ValidateBlockAddress(RW16);
-
-    ReadWriteLong(sector, GetInt16(GetController()->GetCdb(), 12), true);
+    ReadWriteLong(ValidateBlockAddress(RW16), GetInt16(GetController()->GetCdb(), 12), true);
 }
 
 void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
@@ -713,7 +705,7 @@ int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
     }
 
     // Simple consistency check
-    if (requested_size && !(requested_size & 0xe1ff)) {
+    if (requested_size && !(requested_size % 4)) {
         if (temporary) {
             return requested_size;
         }
@@ -937,7 +929,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
 void Disk::ChangeSectorSize(uint32_t new_size)
 {
-    if (!supported_sector_sizes.contains(new_size)) {
+    if (!supported_sector_sizes.contains(new_size) && new_size % 4) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
     }
 

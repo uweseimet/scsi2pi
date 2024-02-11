@@ -28,10 +28,7 @@ public:
     }
 
     bool Init(bool) override;
-    void CleanUp() override
-    {
-        // Nothing to do
-    }
+    void CleanUp() override;
 
     void Reset() override;
 

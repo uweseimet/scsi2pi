@@ -17,10 +17,7 @@ bool InProcessBus::Init(bool target)
         return false;
     }
 
-    if (target) {
-        target_enabled = true;
-    }
-    else {
+    if (!target) {
         const auto now = chrono::steady_clock::now();
 
         // Wait for the target up to 1 s
@@ -34,6 +31,14 @@ bool InProcessBus::Init(bool target)
     }
 
     return true;
+}
+
+void InProcessBus::CleanUp()
+{
+    // Signal the client that s2p is ready
+    if (IsTarget()) {
+        target_enabled = true;
+    }
 }
 
 void InProcessBus::Reset()

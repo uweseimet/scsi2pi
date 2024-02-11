@@ -132,7 +132,6 @@ TEST(ScsiHdTest, GetProductData)
     hd_gb.FinalizeSetup();
     s = hd_gb.GetProduct();
     EXPECT_NE(string::npos, s.find("10 GiB"));
-    remove(filename);
 }
 
 TEST(ScsiHdTest, GetSectorSizes)

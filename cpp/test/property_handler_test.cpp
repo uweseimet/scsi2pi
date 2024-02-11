@@ -32,10 +32,6 @@ PropertyHandler SetUpProperties(string_view properties1, string_view properties2
         close(fd2);
     }
     property_handler.Init(filenames, cmd_properties);
-    for (const string &filename : s2p_util::Split(filenames, ',')) {
-        remove(filename);
-    }
-
     return property_handler;
 }
 

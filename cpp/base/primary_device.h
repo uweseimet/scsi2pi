@@ -143,10 +143,6 @@ protected:
     {
         device_logger.Debug(s);
     }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
     void LogWarn(const string &s) const
     {
         device_logger.Warn(s);

@@ -10,7 +10,6 @@
 
 #include <span>
 #include <vector>
-#include "buses/bus_factory.h"
 #include "s2pproto_executor.h"
 
 using namespace std;
@@ -33,8 +32,6 @@ private:
 
     void CleanUp() const;
     static void TerminationHandler(int);
-
-    unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
 

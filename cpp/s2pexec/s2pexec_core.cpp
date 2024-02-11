@@ -65,7 +65,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
             << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
             << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
-            << "  --no-request-sense            Do not run REQUEST SENSE on error.\n"
+            << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
             << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
             << "  --version/-v                  Display the s2pexec version.\n"
             << "  --help/-H                     Display this help.\n";
@@ -84,9 +84,7 @@ bool S2pExec::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process);
     if (bus) {
         executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
     }
@@ -281,6 +279,16 @@ bool S2pExec::ParseArguments(span<char*> args)
 
 bool S2pExec::RunInteractive(bool in_process)
 {
+    if (!Init(in_process)) {
+        cerr << "Error: Can't initialize bus" << endl;
+        return false;
+    }
+
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+        cerr << "Error: No board hardware support" << endl;
+        return false;
+    }
+
     const string &prompt = "s2pexec";
 
     if (isatty(STDIN_FILENO)) {
@@ -288,8 +296,6 @@ bool S2pExec::RunInteractive(bool in_process)
 
         cout << "Entering interactive mode, Ctrl-D, \"exit\" or \"quit\" to quit\n";
     }
-
-    bool initialized = false;
 
     while (true) {
         const string &line = GetLine(prompt);
@@ -314,20 +320,6 @@ bool S2pExec::RunInteractive(bool in_process)
         catch (const parser_exception &e) {
             cerr << "Error: " << e.what() << endl;
             continue;
-        }
-
-        if (!initialized) {
-            if (!Init(in_process)) {
-                cerr << "Error: Can't initialize bus" << endl;
-                return false;
-            }
-
-            if (!in_process && !bus_factory->IsRaspberryPi()) {
-                cerr << "Error: No board hardware support" << endl;
-                return false;
-            }
-
-            initialized = true;
         }
 
         Run();
@@ -362,7 +354,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (!in_process && !bus_factory->IsRaspberryPi()) {
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return -1;
     }

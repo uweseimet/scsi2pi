@@ -17,6 +17,12 @@ class BusFactory
 
 public:
 
+    static BusFactory& Instance()
+    {
+        static BusFactory instance; // NOSONAR instance cannot be inlined
+        return instance;
+    }
+
     unique_ptr<Bus> CreateBus(bool, bool);
 
     bool IsRaspberryPi() const
@@ -25,6 +31,8 @@ public:
     }
 
 private:
+
+    BusFactory() = default;
 
     bool CheckForPi();
 

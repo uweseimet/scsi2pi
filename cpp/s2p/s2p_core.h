@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "buses/bus_factory.h"
 #include "controllers/controller_factory.h"
 #include "base/property_handler.h"
 #include "protobuf/command_context.h"
@@ -64,8 +63,6 @@ private:
     shared_ptr<CommandDispatcher> dispatcher;
 
     shared_ptr<ControllerFactory> controller_factory;
-
-    unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
 

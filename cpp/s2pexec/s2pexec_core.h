@@ -45,8 +45,6 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
-    unique_ptr<BusFactory> bus_factory;
-
     unique_ptr<Bus> bus;
 
     unique_ptr<S2pExecExecutor> executor;

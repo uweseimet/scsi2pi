@@ -20,6 +20,7 @@
 #include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_util.h"
+#include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pdump_core.h"
 
@@ -90,10 +91,8 @@ bool S2pDump::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(false, in_process);
-    if (bus != nullptr) {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (bus) {
         executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }
 
@@ -315,7 +314,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             throw parser_exception("Can't initialize bus");
         }
 
-        if (!in_process && !bus_factory->IsRaspberryPi()) {
+        if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
             throw parser_exception("There is no board hardware support");
         }
     }

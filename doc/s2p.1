@@ -17,6 +17,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
+[\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--locale,-z\fR \fILOCALE\fR]
@@ -103,6 +104,9 @@ The optional local default property file is ~/.config/s2p.conf. Definitions in t
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
+.TP
+.BR \--log-pattern/-l\fI " " \fILOG_PATTERN
+The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
 .TP
 .BR \--token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

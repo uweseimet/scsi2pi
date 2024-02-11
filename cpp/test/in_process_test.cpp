@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     });
 
     if (client == "s2pctl") {
-        // Ensure that s2p is up
+        // Ensure that s2p is listening on its socket
         sleep(1);
 
         add_arg(client_args, "--port");
