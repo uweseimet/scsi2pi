@@ -30,7 +30,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
         return {sense_key {-1}, asc {-1}, -1};
     }
 
-    return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]};
+    return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
 }
 
 bool initiator_util::SetLogLevel(const string &log_level)

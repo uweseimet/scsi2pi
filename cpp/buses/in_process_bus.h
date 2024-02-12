@@ -178,7 +178,7 @@ private:
         assert(false);
     }
 
-    volatile static inline bool target_enabled = false;
+    static inline atomic_bool target_enabled;
 
     mutex write_locker;
 

@@ -203,7 +203,7 @@ TEST(DiskTest, ReadCapacity16)
 
 TEST(DiskTest, Read6)
 {
-    auto [_, disk] = CreateDisk();
+    auto [controller, disk] = CreateDisk();
 
     TestShared::Dispatch(*disk, scsi_command::cmd_read6, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(6) must fail for a medium with 0 blocks");
@@ -250,7 +250,7 @@ TEST(DiskTest, Read16)
 
 TEST(DiskTest, Write6)
 {
-    auto [_, disk] = CreateDisk();
+    auto [controller, disk] = CreateDisk();
 
     TestShared::Dispatch(*disk, scsi_command::cmd_write6, sense_key::illegal_request,
         asc::lba_out_of_range, "WRITE(6) must fail for a medium with 0 blocks");

@@ -34,7 +34,7 @@ private:
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;
-    static void TerminationHandler(int);
+    bool ParseProperties(const property_map&, int&);
     void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;
@@ -47,6 +47,8 @@ private:
 
     static bool CheckActive(const property_map&, const string&);
     static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
+
+    static void TerminationHandler(int);
 
     string access_token;
 

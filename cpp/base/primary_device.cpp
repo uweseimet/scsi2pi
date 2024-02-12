@@ -53,7 +53,7 @@ bool PrimaryDevice::Init(const param_map &params)
 
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
-    const int c = static_cast<int>(cmd);
+    const auto c = static_cast<int>(cmd);
     if (const auto &command = commands[c]; command) {
         LogDebug(fmt::format("Device is executing {0} (${1:02x})", COMMAND_MAPPING.find(cmd)->second.second, c));
         command();
@@ -122,7 +122,7 @@ void PrimaryDevice::Inquiry()
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
-    DataInPhase(allocation_length);
+    DataInPhase(static_cast<int>(allocation_length));
 }
 
 void PrimaryDevice::ReportLuns()
@@ -168,7 +168,7 @@ void PrimaryDevice::RequestSense()
 
     vector<byte> buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
-    const size_t length = min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4)));
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4))));
     GetController()->CopyToBuffer(buf.data(), length);
 
     // Clear the previous status

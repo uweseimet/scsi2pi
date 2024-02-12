@@ -120,7 +120,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:n:p:r:t:z:C:F:L:P:R:vBH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:n:p:r:t:z:C:F:L:P:R:BH",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;

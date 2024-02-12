@@ -167,12 +167,12 @@ void HostServices::ExecuteOperation()
 
     input_format = ConvertFormat();
 
-    const auto length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
+    const int length = GetInt16(GetController()->GetCdb(), 7);
     if (!length) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetTransferSize(static_cast<uint32_t>(length), static_cast<uint32_t>(length));
+    GetController()->SetTransferSize(length, length);
 
     DataOutPhase(length);
 }

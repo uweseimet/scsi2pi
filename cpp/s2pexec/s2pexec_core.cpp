@@ -63,7 +63,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
             << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
             << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
-            << "  --timeout TIMEOUT             The command timeout in seconds, default is 3 s.\n"
+            << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
             << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
             << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
             << "  --version/-v                  Display the program version.\n"
@@ -93,8 +93,6 @@ bool S2pExec::Init(bool in_process)
 
 bool S2pExec::ParseArguments(span<char*> args)
 {
-    const int OPT_TIMEOUT = 2;
-
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
@@ -110,7 +108,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "log-level", required_argument, nullptr, 'L' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
-        { "timeout", required_argument, nullptr, OPT_TIMEOUT },
+        { "timeout", required_argument, nullptr, 'o' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -179,6 +177,10 @@ bool S2pExec::ParseArguments(span<char*> args)
             request_sense = false;
             break;
 
+        case 'o':
+            tout = optarg;
+            break;
+
         case 't':
             hex_input_filename = optarg;
             break;
@@ -193,10 +195,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'x':
             hex_only = true;
-            break;
-
-        case OPT_TIMEOUT:
-            tout = optarg;
             break;
 
         default:

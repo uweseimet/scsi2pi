@@ -45,7 +45,7 @@ TEST(LinuxCache, Init)
 TEST(LinuxCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), buf.size(), 1, false, false);
+    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));
@@ -62,7 +62,7 @@ TEST(LinuxCache, ReadWriteSectors)
 TEST(LinuxCache, ReadWriteLong)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), buf.size(), 1, false, false);
+    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadLong(buf, 1, 1));

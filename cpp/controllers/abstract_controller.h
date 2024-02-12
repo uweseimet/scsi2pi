@@ -87,8 +87,8 @@ public:
     {
         return ctrl.current_length;
     }
-    void SetCurrentLength(size_t);
-    void SetTransferSize(uint32_t, uint32_t);
+    void SetCurrentLength(int);
+    void SetTransferSize(int, int);
     void SetMessage(int m)
     {
         ctrl.message = m;
@@ -178,13 +178,13 @@ private:
         // Transfer data buffer, dynamically resized
         vector<uint8_t> buffer;
         // Transfer offset
-        uint32_t offset;
+        int offset;
         // Total number of bytes to be transferred
-        uint32_t total_length;
+        int total_length;
         // Remaining bytes to be transferred in a single handshake cycle
-        uint32_t current_length;
+        int current_length;
         // The number of bytes to be transferred with a single handshake cycle
-        uint32_t chunk_size;
+        int chunk_size;
     };
 
     ctrl_t ctrl = { };

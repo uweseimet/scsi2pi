@@ -201,9 +201,9 @@ void Disk::Read(access_mode mode)
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
         GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
-        ReadData(GetController()->GetBuffer());
 
-        DataInPhase(sector_transfer_count * GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(count * GetSectorSizeInBytes());
+        DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
         StatusPhase();
@@ -298,6 +298,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
     else {
         ++sector_read_count;
 
+        GetController()->SetCurrentLength(length);
         DataInPhase(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
     }
 }
@@ -363,10 +364,12 @@ void Disk::ReadDefectData10() const
     const size_t allocation_length = min(static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7)),
         static_cast<size_t>(4));
 
+    GetController()->SetCurrentLength(static_cast<int>(allocation_length));
+
     // The defect list is empty
     fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
 
-    DataInPhase(allocation_length);
+    DataInPhase(static_cast<int>(allocation_length));
 }
 
 bool Disk::Eject(bool force)

@@ -23,15 +23,12 @@ int main(int argc, char*[])
         dup2(fd, STDERR_FILENO);
     }
 
-    // Required in order to delete all temporary files
-    testing::TestShared instance;
-
     testing::InitGoogleTest();
     const int result = RUN_ALL_TESTS();
 
-    if (fd != -1) {
-        close(fd);
-    }
+    testing::TestShared::CleanUp();
+
+    close(fd);
 
     return result;
 }

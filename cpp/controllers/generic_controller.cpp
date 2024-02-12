@@ -303,14 +303,10 @@ void GenericController::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        assert(GetDeviceForLun(0));
-
         LogTrace(fmt::format("Sending {} byte(s)", length));
 
-        // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
-        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
         if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
-            GetDeviceForLun(0)->GetDelayAfterBytes()); l != static_cast<int>(length)) {
+            GetDeviceForLun(GetEffectiveLun())->GetDelayAfterBytes()); l != length) {
             if (IsDataIn()) {
                 LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", l, length));
             }
@@ -372,7 +368,7 @@ void GenericController::Receive()
     if (const auto length = GetCurrentLength(); length) {
         LogTrace(fmt::format("Receiving {} byte(s)", length));
 
-        if (const uint32_t l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
+        if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;

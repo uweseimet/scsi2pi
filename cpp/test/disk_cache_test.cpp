@@ -33,7 +33,7 @@ TEST(DiskCache, Init)
 TEST(DiskCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    DiskCache cache(CreateTempFile(buf.size()), buf.size(), 1, false);
+    DiskCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));

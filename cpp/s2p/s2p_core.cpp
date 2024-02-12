@@ -126,47 +126,9 @@ int S2p::Run(span<char*> args, bool in_process)
     s2p_parser.Banner(false);
 
     bool is_sasi = false;
+    const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
     int port;
-    try {
-        const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
-        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
-        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
-
-        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
-        !CommandDispatcher::SetLogLevel(log_level)) {
-            throw parser_exception("Invalid log level: '" + log_level + "'");
-        }
-
-        if (const string &log_pattern = property_handler.GetProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
-            set_pattern(log_pattern);
-        }
-
-        // Log the properties (on trace level) *after* the log level has been set
-        LogProperties();
-
-        if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string error = s2p_image.SetDefaultFolder(image_folder); !error.empty()) {
-                throw parser_exception(error);
-            }
-        }
-
-        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
-            if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
-                throw parser_exception(
-                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::PORT));
-            }
-            else {
-                s2p_image.SetDepth(depth);
-            }
-        }
-
-        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
-            || port <= 0 || port > 65535) {
-            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
-        }
-    }
-    catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+    if (!ParseProperties(properties, port)) {
         return EXIT_FAILURE;
     }
 
@@ -234,6 +196,53 @@ int S2p::Run(span<char*> args, bool in_process)
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+bool S2p::ParseProperties(const property_map &properties, int &port)
+{
+    try {
+        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
+        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
+
+        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
+        !CommandDispatcher::SetLogLevel(log_level)) {
+            throw parser_exception("Invalid log level: '" + log_level + "'");
+        }
+
+        if (const string &log_pattern = property_handler.GetProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+            set_pattern(log_pattern);
+        }
+
+        // Log the properties (on trace level) *after* the log level has been set
+        LogProperties();
+
+        if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+            if (const string error = s2p_image.SetDefaultFolder(image_folder); !error.empty()) {
+                throw parser_exception(error);
+            }
+        }
+
+        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
+            if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
+                throw parser_exception(
+                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
+            }
+            else {
+                s2p_image.SetDepth(depth);
+            }
+        }
+
+        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
+            || port <= 0 || port > 65535) {
+            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
+        }
+    }
+    catch (const parser_exception &e) {
+        cerr << "Error: " << e.what() << endl;
+        return false;
+    }
+
+    return true;
 }
 
 void S2p::SetUpEnvironment()

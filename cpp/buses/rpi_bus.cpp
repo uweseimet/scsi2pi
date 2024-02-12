@@ -36,14 +36,14 @@ bool RpiBus::Init(bool target)
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        critical("Error: Can't open /dev/mem: {}", strerror(errno));
+        critical("Can't open /dev/mem: {}", strerror(errno));
         return false;
     }
 
     // Map peripheral region memory
     auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr));
     if (map == MAP_FAILED) {
-        critical("Error: Can't map memory: {}", strerror(errno));
+        critical("Can't map memory: {}", strerror(errno));
         close(fd);
         return false;
     }
@@ -68,7 +68,7 @@ bool RpiBus::Init(bool target)
         close(vcio_fd);
     }
     else {
-        critical("Error: Can't open /dev/vcio: {}", strerror(errno));
+        critical("Can't open /dev/vcio: {}", strerror(errno));
         return false;
     }
 
@@ -94,7 +94,7 @@ bool RpiBus::Init(bool target)
     if (pi_type == 4) {
         map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
         if (map == MAP_FAILED) {
-            critical("Error: Can't map memory: {}", strerror(errno));
+            critical("Can't map memory: {}", strerror(errno));
             close(fd);
             return false;
         }

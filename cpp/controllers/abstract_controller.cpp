@@ -20,16 +20,16 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     device_logger.SetIdAndLun(target_id, -1);
 }
 
-void AbstractController::SetCurrentLength(size_t length)
+void AbstractController::SetCurrentLength(int length)
 {
-    if (length > ctrl.buffer.size()) {
+    if (length > static_cast<int>(ctrl.buffer.size())) {
         ctrl.buffer.resize(length);
     }
 
-    ctrl.current_length = static_cast<int>(length);
+    ctrl.current_length = length;
 }
 
-void AbstractController::SetTransferSize(uint32_t length, uint32_t chunk_size)
+void AbstractController::SetTransferSize(int length, int chunk_size)
 {
     // The total number of bytes to transfer for the current SCSI/SASI command
     ctrl.total_length = length;
@@ -40,7 +40,7 @@ void AbstractController::SetTransferSize(uint32_t length, uint32_t chunk_size)
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
 {
-    SetCurrentLength(size);
+    SetCurrentLength(static_cast<int>(size));
 
     memcpy(ctrl.buffer.data(), src, size);
 }

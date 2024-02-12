@@ -40,18 +40,17 @@ class TestShared
 
 public:
 
-    TestShared() = default;
-    ~TestShared() // NOSONAR Destructor in tests is acceptable
+    static string GetVersion();
+    static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
+    static void TestRemovableDrive(PbDeviceType, const string&, const string&);
+    static void Dispatch(PrimaryDevice&, scsi_command, sense_key, asc, const string& = "");
+
+    static void CleanUp()
     {
         for (const string &filename : temp_files) {
             remove(path(filename));
         }
     }
-
-    static string GetVersion();
-    static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
-    static void TestRemovableDrive(PbDeviceType, const string&, const string&);
-    static void Dispatch(PrimaryDevice&, scsi_command, sense_key, asc, const string& = "");
 
     static void RememberTempFile(const string &filename)
     {
