@@ -149,7 +149,7 @@ int S2p::Run(span<char*> args, bool in_process)
         if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
             if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
                 throw parser_exception(
-                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::PORT));
+                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
                 s2p_image.SetDepth(depth);
