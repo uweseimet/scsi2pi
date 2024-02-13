@@ -305,13 +305,13 @@ void GenericController::Send()
     if (const auto length = GetCurrentLength(); length) {
         LogTrace(fmt::format("Sending {} byte(s)", length));
 
+        // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
+        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
+        // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
         if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
-            GetDeviceForLun(GetEffectiveLun())->GetDelayAfterBytes()); l != length) {
+            GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             if (IsDataIn()) {
                 LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", l, length));
-            }
-            else {
-                LogWarn(fmt::format("Sent {0} byte(s) in STATUS phase, {1} is required", l, length));
             }
             Error(sense_key::aborted_command, asc::data_phase_error);
         }
@@ -354,7 +354,6 @@ void GenericController::Send()
         break;
 
     default:
-        error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
         assert(false);
         break;
     }
@@ -395,15 +394,14 @@ void GenericController::Receive()
         break;
 
     case phase_t::msgout:
-        SetMessage(GetBuffer()[0]);
+        XferMsg(GetBuffer()[0]);
 
-        XferMsg(GetMessage());
-
-        // Clear message data in preparation for Message In
+        // Clear message data in preparation for MESSAGE IN
         SetMessage(0x00);
         break;
 
     default:
+        assert(false);
         break;
     }
 
