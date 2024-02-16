@@ -129,10 +129,7 @@ void ScsiCd::CreateDataTrack()
 {
     // Create only one data track
     assert(!tracks.size());
-    auto track = make_unique<CDTrack>();
-    track->Init(1, 0, static_cast<int>(GetBlockCount()) - 1);
-    track->SetPath(false, GetFilename());
-    tracks.push_back(std::move(track));
+    tracks.push_back(make_unique<Track>(1, 0, static_cast<int>(GetBlockCount()) - 1));
     dataindex = 0;
 }
 
@@ -198,21 +195,13 @@ int ScsiCd::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int index = SearchTrack(static_cast<int>(GetNextSector()));
-    if (index < 0) {
-        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
-    }
-
-    assert(tracks[index]);
-
     // If different from the current data track
-    if (dataindex != index) {
+    if (const int index = SearchTrack(static_cast<int>(GetNextSector())); dataindex != index) {
         // Reset the number of blocks
-        SetBlockCount(tracks[index]->GetBlocks());
-        assert(GetBlockCount() > 0);
+        SetBlockCount(tracks[index]->last_lba - tracks[index]->first_lba + 1);
 
         // Re-assign cache (no need to save)
-        if (!InitCache(tracks[index]->GetPath(), raw_file)) {
+        if (!InitCache(GetFilename(), raw_file)) {
             throw scsi_exception(sense_key::medium_error, asc::read_fault);
         }
 
@@ -230,7 +219,6 @@ int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
 
     // If ready, there is at least one track
     assert(!tracks.empty());
-    assert(tracks[0]);
 
     // Get allocation length, clear buffer
     const int length = GetInt16(cdb, 7);
@@ -240,7 +228,7 @@ int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
     const bool msf = cdb[1] & 0x02;
 
     // Get and check the last track number
-    const int last = tracks[tracks.size() - 1]->GetTrackNo();
+    const int last = tracks[tracks.size() - 1]->track_no;
     // Except for AA
     if (cdb[6] > last && cdb[6] != 0xaa) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -251,7 +239,7 @@ int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
     if (cdb[6] != 0x00) {
         // Advance the track until the track numbers match
         while (tracks[index]) {
-            if (cdb[6] == tracks[index]->GetTrackNo()) {
+            if (cdb[6] == tracks[index]->track_no) {
                 break;
             }
             index++;
@@ -266,10 +254,10 @@ int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
             // Returns the final LBA+1 because it is AA
             buf[0] = 0x00;
             buf[1] = 0x0a;
-            buf[2] = (uint8_t)tracks[0]->GetTrackNo();
+            buf[2] = (uint8_t)tracks[0]->track_no;
             buf[3] = (uint8_t)last;
             buf[6] = 0xaa;
-            const uint32_t lba = tracks[tracks.size() - 1]->GetLast() + 1;
+            const uint32_t lba = tracks[tracks.size() - 1]->last_lba + 1;
             if (msf) {
                 LBAtoMSF(lba, &buf[8]);
             } else {
@@ -281,37 +269,30 @@ int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
     }
 
     // Number of track descriptors returned this time (number of loops)
-    const int loop = last - tracks[index]->GetTrackNo() + 1;
+    const int loop = last - tracks[index]->track_no + 1;
     assert(loop >= 1);
 
     // Create header
     SetInt16(buf, 0, (loop << 3) + 2);
-    buf[2] = (uint8_t)tracks[0]->GetTrackNo();
+    buf[2] = (uint8_t)tracks[0]->track_no;
     buf[3] = (uint8_t)last;
 
     int offset = 4;
 
     for (int i = 0; i < loop; i++) {
-        // ADR and Control
-        if (tracks[index]->IsAudio()) {
-            // audio track
-            buf[offset + 1] = 0x10;
-        } else {
-            // data track
-            buf[offset + 1] = 0x14;
-        }
+        // ADR and Control for data track
+        buf[offset + 1] = 0x14;
 
-        // track number
-        buf[offset + 2] = (uint8_t)tracks[index]->GetTrackNo();
+        // Track number
+        buf[offset + 2] = (uint8_t)tracks[index]->track_no;
 
-        // track address
+        // Track address
         if (msf) {
-            LBAtoMSF(tracks[index]->GetFirst(), &buf[offset + 4]);
+            LBAtoMSF(tracks[index]->first_lba, &buf[offset + 4]);
         } else {
-            SetInt16(buf, offset + 6, tracks[index]->GetFirst());
+            SetInt16(buf, offset + 6, tracks[index]->first_lba);
         }
 
-        // Advance buffer pointer and index
         offset += 8;
         index++;
     }
@@ -335,7 +316,6 @@ void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf) const
         m++;
     }
 
-    // Store
     assert(m < 0x100);
     assert(s < 60);
     assert(f < 75);
@@ -349,23 +329,17 @@ void ScsiCd::ClearTrack()
 {
     tracks.clear();
 
-    // No settings for data and audio
     dataindex = -1;
-    audioindex = -1;
 }
 
 int ScsiCd::SearchTrack(uint32_t lba) const
 {
-    // Track loop
     for (size_t i = 0; i < tracks.size(); i++) {
-        // Listen to the track
-        assert(tracks[i]);
         if (tracks[i]->IsValid(lba)) {
             return static_cast<int>(i);
         }
     }
 
-    // Track wasn't found
-    return -1;
+    throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
 }
 

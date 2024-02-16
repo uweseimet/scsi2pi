@@ -8,7 +8,6 @@
 
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "command_dispatcher.h"

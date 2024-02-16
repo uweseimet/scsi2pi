@@ -68,6 +68,12 @@ public:
 
 private:
 
+    static string GetIdentifier(const Device &device)
+    {
+        return device.GetTypeString() + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());
+    }
+
+
     static bool CheckForReservedFile(const CommandContext&, const string&);
     static PbCachingMode GetEffectiveCachingMode(const PbDeviceDefinition&, const PrimaryDevice&);
     static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);

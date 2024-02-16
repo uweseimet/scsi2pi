@@ -49,7 +49,7 @@ TEST(AbstractControllerTest, Reset)
     controller->Reset();
     EXPECT_TRUE(controller->IsBusFree());
     EXPECT_EQ(status::good, controller->GetStatus());
-    EXPECT_EQ(0U, controller->GetCurrentLength());
+    EXPECT_EQ(0, controller->GetCurrentLength());
 }
 
 TEST(AbstractControllerTest, Message)
@@ -125,8 +125,8 @@ TEST(AbstractControllerTest, UpdateOffsetAndLength)
     MockAbstractController controller;
 
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0U, controller.GetOffset());
-    EXPECT_EQ(0U, controller.GetCurrentLength());
+    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
 TEST(AbstractControllerTest, Offset)
@@ -134,10 +134,10 @@ TEST(AbstractControllerTest, Offset)
     MockAbstractController controller;
 
     controller.ResetOffset();
-    EXPECT_EQ(0U, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetOffset());
 
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0U, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetOffset());
 }
 
 TEST(AbstractControllerTest, ProcessOnController)

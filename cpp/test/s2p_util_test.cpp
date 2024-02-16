@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 #include "shared/shared_exceptions.h"
-#include "shared/s2p_util.h"
 
 using namespace s2p_util;
 

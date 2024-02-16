@@ -208,7 +208,7 @@ TEST(DiskTest, Read6)
     TestShared::Dispatch(*disk, scsi_command::cmd_read6, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(6) must fail for a medium with 0 blocks");
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -225,7 +225,7 @@ TEST(DiskTest, Read10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -243,7 +243,7 @@ TEST(DiskTest, Read16)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -262,7 +262,7 @@ TEST(DiskTest, Write6)
     TestShared::Dispatch(*disk, scsi_command::cmd_write6, sense_key::data_protect,
         asc::write_protected, "WRITE(6) must fail because drive is write-protected");
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -279,7 +279,7 @@ TEST(DiskTest, Write10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -296,7 +296,7 @@ TEST(DiskTest, Write16)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    EXPECT_EQ(0, disk->GetNextSector());
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }

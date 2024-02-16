@@ -13,7 +13,6 @@
 #include "initiator/initiator_executor.h"
 #include "generated/s2p_interface.pb.h"
 
-using namespace std;
 using namespace s2p_interface;
 
 class S2pProtoExecutor

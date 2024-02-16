@@ -8,7 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/s2p_util.h"
 #include "buses/gpio_bus.h"
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
@@ -186,12 +185,11 @@ void GenericController::Status()
                 static_cast<int>(GetStatus())));
         }
         else {
-            LogTrace(fmt::format("Status phase, status code is ${0:02x}", static_cast<int>(GetStatus())));
+            LogTrace(fmt::format("Status phase, status code is ${:02x}", static_cast<int>(GetStatus())));
         }
 
         SetPhase(phase_t::status);
 
-        // Signal line operated by the target
         GetBus().SetMSG(false);
         GetBus().SetCD(true);
         GetBus().SetIO(true);

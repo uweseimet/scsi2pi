@@ -8,10 +8,8 @@
 
 #include <cassert>
 #include <algorithm>
-#include "s2p_util.h"
 #include "localizer.h"
 
-using namespace std;
 using namespace s2p_util;
 
 Localizer::Localizer()

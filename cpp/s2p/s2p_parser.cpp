@@ -11,7 +11,6 @@
 #include "controllers/controller_factory.h"
 #include "s2p/s2p_parser.h"
 
-using namespace std;
 using namespace s2p_util;
 
 void S2pParser::Banner(bool usage) const

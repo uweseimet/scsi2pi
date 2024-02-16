@@ -13,7 +13,6 @@
 
 #pragma once
 
-#include <span>
 #include <array>
 #include <memory>
 #include "disk_track.h"

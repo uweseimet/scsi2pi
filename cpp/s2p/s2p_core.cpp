@@ -8,14 +8,13 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
-#include <netinet/in.h>
 #include <csignal>
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <chrono>
+#include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
@@ -26,9 +25,7 @@
 #include "s2p_parser.h"
 #include "s2p_core.h"
 
-using namespace std;
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 using namespace scsi_defs;
@@ -44,7 +41,7 @@ bool S2p::InitBus(bool in_process, bool is_sasi)
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
-    dispatcher = make_shared<CommandDispatcher>(s2p_image, response, *executor);
+    dispatcher = make_shared<CommandDispatcher>(s2p_image, *executor);
 
     return true;
 }
@@ -58,7 +55,7 @@ void S2p::CleanUp()
     executor->DetachAll();
 
     // TODO Check why there are rare cases where bus is NULL on a remote interface shutdown
-    // even though it is never set to NULL anywhere
+    // even though it is never set to NULL anywhere. This looks like a race condition.
     if (bus) {
         bus->CleanUp();
     }
@@ -173,6 +170,7 @@ int S2p::Run(span<char*> args, bool in_process)
 
     // Display and log the device list
     PbServerInfo server_info;
+    CommandResponse response;
     response.GetDevices(executor->GetAllDevices(), server_info, s2p_image.GetDefaultFolder());
     const vector<PbDevice> &devices = { server_info.devices_info().devices().begin(),
         server_info.devices_info().devices().end() };

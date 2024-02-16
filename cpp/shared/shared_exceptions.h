@@ -9,8 +9,7 @@
 #pragma once
 
 #include <stdexcept>
-#include "shared/s2p_util.h"
-#include "scsi.h"
+#include "s2p_util.h"
 
 using namespace std;
 

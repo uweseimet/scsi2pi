@@ -10,13 +10,9 @@
 
 #include <cstdint>
 #include <climits>
-#include <string>
 #include <sstream>
 #include <vector>
-#include <unordered_map>
 #include "scsi.h"
-
-using namespace std;
 
 namespace s2p_util
 {

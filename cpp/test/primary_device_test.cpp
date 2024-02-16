@@ -252,7 +252,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
-    EXPECT_EQ(1U, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
+    EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
 
 TEST(PrimaryDeviceTest, RequestSense)

@@ -8,13 +8,12 @@
 
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 #include <csignal>
 #include <cstring>
+#include <filesystem>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
-#include "initiator/initiator_util.h"
 #include "s2pexec_core.h"
 
 using namespace filesystem;
@@ -65,7 +64,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
             << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
             << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
-            << "  --hex-only/-x                 Do not display/save the offset and ASCI data.\n"
+            << "  --hex-only/-x                 Do not display/save the offset and ASCII data.\n"
             << "  --version/-v                  Display the program version.\n"
             << "  --help/-H                     Display this help.\n";
     }
@@ -356,7 +355,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    int status = Run();
+    const int status = Run();
 
     CleanUp();
 

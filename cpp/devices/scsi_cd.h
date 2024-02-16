@@ -12,7 +12,6 @@
 #pragma once
 
 #include "base/interfaces/scsi_mmc_commands.h"
-#include "cd_track.h"
 #include "disk.h"
 
 class ScsiCd : public Disk, private ScsiMmcCommands
@@ -37,6 +36,22 @@ protected:
 
 private:
 
+    struct Track
+    {
+        Track(int t, uint32_t f, uint32_t l) : track_no(t), first_lba(f), last_lba(l)
+        {
+        }
+
+        bool IsValid(uint32_t lba) const
+        {
+            return lba >= first_lba && last_lba >= lba;
+        }
+
+        int track_no;
+        uint32_t first_lba;
+        uint32_t last_lba;
+    };
+
     int ReadTocInternal(cdb_t, vector<uint8_t>&);
 
     void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
@@ -48,14 +63,13 @@ private:
 
     void ReadToc() override;
 
-    void LBAtoMSF(uint32_t, uint8_t*) const; // LBA→MSF conversion
+    void LBAtoMSF(uint32_t, uint8_t*) const;
 
-    bool raw_file = false; // RAW flag
+    bool raw_file = false;
 
     // Track management
-    void ClearTrack(); // Clear the track
-    int SearchTrack(uint32_t lba) const; // Track search
-    vector<unique_ptr<CDTrack>> tracks; // Track opbject references
-    int dataindex = -1; // Current data track
-    int audioindex = -1; // Current audio track
+    void ClearTrack();
+    int SearchTrack(uint32_t lba) const;
+    vector<unique_ptr<Track>> tracks;
+    int dataindex = -1;
 };

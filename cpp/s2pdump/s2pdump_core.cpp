@@ -14,7 +14,6 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <array>
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>

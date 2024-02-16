@@ -6,17 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
-#include <vector>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "base/device_factory.h"
 
-using namespace std;
 using namespace filesystem;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,

@@ -14,10 +14,8 @@
 #pragma once
 
 #include <unordered_set>
-#include <unordered_map>
 #include <tuple>
 #include "base/interfaces/scsi_block_commands.h"
-#include "shared/s2p_util.h"
 #include "cache.h"
 #include "disk_track.h"
 #include "storage_device.h"

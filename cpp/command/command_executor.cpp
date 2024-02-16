@@ -134,10 +134,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Start requested for {}", device.GetIdentifier());
+        info("Start requested for {}", GetIdentifier(device));
 
         if (!device.Start()) {
-            warn("Starting {} failed", device.GetIdentifier());
+            warn("Starting {} failed", GetIdentifier(device));
         }
     }
 
@@ -147,7 +147,7 @@ bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Stop requested for {}", device.GetIdentifier());
+        info("Stop requested for {}", GetIdentifier(device));
 
         device.Stop();
 
@@ -160,10 +160,10 @@ bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Eject requested for {}", device.GetIdentifier());
+        info("Eject requested for {}", GetIdentifier(device));
 
         if (!device.Eject(true)) {
-            warn("Ejecting {} failed", device.GetIdentifier());
+            warn("Ejecting {} failed", GetIdentifier(device));
         }
     }
 
@@ -173,7 +173,7 @@ bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write protection requested for {}", device.GetIdentifier());
+        info("Write protection requested for {}", GetIdentifier(device));
 
         device.SetProtected(true);
     }
@@ -184,7 +184,7 @@ bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write unprotection requested for {}", device.GetIdentifier());
+        info("Write unprotection requested for {}", GetIdentifier(device));
 
         device.SetProtected(false);
     }
@@ -301,7 +301,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     else if (device->IsProtectable() && device->IsProtected()) {
         msg += "protected ";
     }
-    msg += device->GetIdentifier();
+    msg += GetIdentifier(*device);
     info(msg);
 
     return true;
@@ -326,7 +326,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     const string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, device->GetIdentifier());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
     }
 
     // Stop the dry run here, before modifying the device
@@ -335,7 +335,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     }
 
     info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
-            + device->GetIdentifier());
+        + GetIdentifier(*device));
 
     if (!SetSectorSize(context, device, pb_device.block_size())) {
         return false;
@@ -370,7 +370,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
     if (!dryRun) {
         // Remember some device data before the device data become invalid on removal
-        const string identifier = device.GetIdentifier();
+        const string identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
 

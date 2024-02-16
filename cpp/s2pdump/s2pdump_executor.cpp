@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <vector>
 #include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
 

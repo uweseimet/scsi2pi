@@ -11,11 +11,8 @@
 #include <filesystem>
 #include "base/primary_device.h"
 #include "shared/scsi.h"
-#include "generated/s2p_interface.pb.h"
 
-using namespace std;
 using namespace filesystem;
-using namespace s2p_interface;
 
 class MockAbstractController;
 

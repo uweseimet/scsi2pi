@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <set>
 #include <map>
 #include <iomanip>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl_display.h"

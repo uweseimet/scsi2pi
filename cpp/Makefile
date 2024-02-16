@@ -158,8 +158,7 @@ endif
 
 ifdef BUILD_SCCD
 SRC_SCCD = \
-	$(DIR_DEVICES)/scsi_cd.cpp \
-	$(DIR_DEVICES)/cd_track.cpp
+	$(DIR_DEVICES)/scsi_cd.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 

@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <array>
 #include "initiator/initiator_util.h"
-#include "initiator/initiator_executor.h"
 
 using namespace std;
 

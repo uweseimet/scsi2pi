@@ -8,17 +8,10 @@
 
 #pragma once
 
-#include "controllers/controller_factory.h"
-#include "base/property_handler.h"
-#include "protobuf/command_context.h"
 #include "command/command_dispatcher.h"
-#include "command/image_support.h"
-#include "command/command_response.h"
-#include "command/command_executor.h"
 #include "s2p_parser.h"
 #include "s2p_thread.h"
 
-using namespace std;
 using namespace s2p_interface;
 
 class S2p
@@ -55,8 +48,6 @@ private:
     [[no_unique_address]] S2pParser s2p_parser;
 
     S2pImage s2p_image;
-
-    [[no_unique_address]] CommandResponse response;
 
     S2pThread service_thread;
 

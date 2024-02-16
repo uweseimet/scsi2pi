@@ -115,10 +115,7 @@ void PrimaryDevice::Inquiry()
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
     // Report if the device does not support the requested LUN
-    if (const int lun = GetController()->GetEffectiveLun(); !GetController()->GetDeviceForLun(lun)) {
-        LogTrace("LUN is not available");
-
-        // Signal that the requested LUN does not exist
+    if (!GetController()->GetDeviceForLun(GetController()->GetEffectiveLun())) {
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
@@ -138,10 +135,10 @@ void PrimaryDevice::ReportLuns()
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;
-    for (uint8_t lun = 0; lun < 32; lun++) {
+    for (int lun = 0; lun < 32; lun++) {
         if (GetController()->GetDeviceForLun(lun)) {
             size += 8;
-            buf[size + 7] = lun;
+            buf[size + 7] = static_cast<uint8_t>(lun);
         }
     }
 

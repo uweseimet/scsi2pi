@@ -25,10 +25,6 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 
 public:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
-    : Device(type, lun), level(l), delay_after_bytes(delay)
-    {
-    }
     ~PrimaryDevice() override = default;
 
     virtual bool Init(const param_map&);
@@ -99,6 +95,11 @@ public:
     }
 
 protected:
+
+    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
+    : Device(type, lun), level(l), delay_after_bytes(delay)
+    {
+    }
 
     void AddCommand(scsi_command cmd, const command &c)
     {

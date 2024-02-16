@@ -19,7 +19,6 @@
 #include <linux/if_tun.h>
 #include <linux/sockios.h>
 #endif
-#include "shared/s2p_util.h"
 #include "shared/network_util.h"
 #include "tap_driver.h"
 
