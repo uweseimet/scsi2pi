@@ -12,40 +12,31 @@
 
 using namespace testing;
 
-TEST(LinuxCache, Constructor)
-{
-    LinuxCache cache1("", 0, 0, false, false);
-    EXPECT_FALSE(cache1.IsRawMode());
-
-    LinuxCache cache2("", 0, 0, true, false);
-    EXPECT_TRUE(cache2.IsRawMode());
-}
-
 TEST(LinuxCache, Init)
 {
-    LinuxCache cache1("", 0, 0, false, false);
+    LinuxCache cache1("", 0, 0, false);
     EXPECT_FALSE(cache1.Init());
 
-    LinuxCache cache2("", 512, 0, false, false);
+    LinuxCache cache2("", 512, 0, false);
     EXPECT_FALSE(cache2.Init());
 
-    LinuxCache cache3("", 0, 1, false, false);
+    LinuxCache cache3("", 0, 1, false);
     EXPECT_FALSE(cache3.Init());
 
-    LinuxCache cache4("", 512, 1, false, false);
+    LinuxCache cache4("", 512, 1, false);
     EXPECT_FALSE(cache4.Init());
 
-    LinuxCache cache5("test", 512, 1, false, false);
+    LinuxCache cache5("test", 512, 1, false);
     EXPECT_FALSE(cache5.Init());
 
-    LinuxCache cache6(CreateTempFile(1), 512, 1, false, false);
+    LinuxCache cache6(CreateTempFile(1), 512, 1, false);
     EXPECT_TRUE(cache6.Init());
 }
 
 TEST(LinuxCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false, false);
+    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));
@@ -62,7 +53,7 @@ TEST(LinuxCache, ReadWriteSectors)
 TEST(LinuxCache, ReadWriteLong)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false, false);
+    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadLong(buf, 1, 1));
@@ -78,13 +69,13 @@ TEST(LinuxCache, ReadWriteLong)
 
 TEST(LinuxCache, Flush)
 {
-    LinuxCache cache(CreateTempFile(1), 512, 1, false, false);
+    LinuxCache cache(CreateTempFile(1), 512, 1, false);
     EXPECT_TRUE(cache.Flush());
 }
 
 TEST(LinuxCache, GetStatistics)
 {
-    LinuxCache cache("", 0, 0, false, false);
+    LinuxCache cache("", 0, 0, false);
 
     EXPECT_EQ(1U, cache.GetStatistics(true).size());
     EXPECT_EQ(2U, cache.GetStatistics(false).size());

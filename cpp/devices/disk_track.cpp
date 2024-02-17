@@ -24,7 +24,7 @@ DiskTrack::~DiskTrack()
     free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
 }
 
-void DiskTrack::Init(int track, int size, int sectors, bool raw)
+void DiskTrack::Init(int track, int size, int sectors)
 {
     assert(track >= 0);
     assert(sectors > 0 && sectors <= 256);
@@ -32,7 +32,6 @@ void DiskTrack::Init(int track, int size, int sectors, bool raw)
     dt.track = track;
     dt.size = size;
     dt.sectors = sectors;
-    dt.raw = raw;
     dt.init = false;
     dt.changed = false;
 }
@@ -49,18 +48,10 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
     off_t offset = ((off_t)dt.track << 8);
-    if (dt.raw) {
-        assert(dt.size == 11);
-        offset *= 0x930;
-        offset += 0x10;
-    } else {
-        offset <<= dt.size;
-    }
+    offset <<= dt.size;
 
     // Calculate length (data size of this track)
     const int length = dt.sectors << dt.size;
-
-    assert(dt.sectors > 0 && dt.sectors <= 256);
 
     // Allocate buffer memory
     if (!dt.buffer && !posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
@@ -89,32 +80,13 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
         return false;
     }
 
-    if (dt.raw) {
-        // Split Reading
-        for (int i = 0; i < dt.sectors; i++) {
-            in.seekg(offset);
-            if (in.fail()) {
-                return false;
-            }
-
-            in.read((char*)&dt.buffer[i << dt.size], 1 << dt.size);
-            if (in.fail()) {
-                return false;
-            }
-
-            // Next offset
-            offset += 0x930;
-        }
-    } else {
-        // Continuous reading
-        in.seekg(offset);
-        if (in.fail()) {
-            return false;
-        }
-        in.read((char*)dt.buffer, length);
-        if (in.fail()) {
-            return false;
-        }
+    in.seekg(offset);
+    if (in.fail()) {
+        return false;
+    }
+    in.read((char*)dt.buffer, length);
+    if (in.fail()) {
+        return false;
     }
 
     // Set a flag and end normally
@@ -134,10 +106,6 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     }
     // Need to write
     assert(dt.buffer);
-    assert(dt.sectors > 0 && dt.sectors <= 256);
-
-    // Writing in RAW mode is not allowed
-    assert(!dt.raw);
 
     ++cache_miss_write_count;
 
@@ -214,7 +182,6 @@ int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
 
     // Copy
     assert(dt.buffer);
-    assert(dt.sectors > 0 && dt.sectors <= 256);
     memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], length);
 
     return length;
@@ -223,7 +190,6 @@ int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
 int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
 {
     assert(sec >= 0 && sec < 256);
-    assert(!dt.raw);
 
     if (!dt.init) {
         return 0;
@@ -238,7 +204,6 @@ int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
 
     // Compare
     assert(dt.buffer);
-    assert(dt.sectors > 0 && dt.sectors <= 256);
     if (!memcmp(buf.data(), &dt.buffer[offset], length)) {
         // Exit normally since it's attempting to write the same thing
         return length;

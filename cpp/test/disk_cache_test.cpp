@@ -12,28 +12,19 @@
 
 using namespace testing;
 
-TEST(DiskCache, Constructor)
-{
-    DiskCache cache1("", 512, 0, false);
-    EXPECT_FALSE(cache1.IsRawMode());
-
-    DiskCache cache2("", 512, 0, true);
-    EXPECT_TRUE(cache2.IsRawMode());
-}
-
 TEST(DiskCache, Init)
 {
-    DiskCache cache1("", 512, 0, false);
+    DiskCache cache1("", 512, 0);
     EXPECT_FALSE(cache1.Init());
 
-    DiskCache cache5("test", 512, 1, false);
+    DiskCache cache5("test", 512, 1);
     EXPECT_TRUE(cache5.Init());
 }
 
 TEST(DiskCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    DiskCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
+    DiskCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));
@@ -49,7 +40,7 @@ TEST(DiskCache, ReadWriteSectors)
 
 TEST(DiskCache, GetStatistics)
 {
-    DiskCache cache("", 512, 0, false);
+    DiskCache cache("", 512, 0);
 
     EXPECT_EQ(2U, cache.GetStatistics(true).size());
     EXPECT_EQ(4U, cache.GetStatistics(false).size());

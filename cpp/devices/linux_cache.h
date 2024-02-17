@@ -16,8 +16,8 @@ class LinuxCache : public Cache
 
 public:
 
-    LinuxCache(const string &f, int size, uint64_t s, bool raw, bool w)
-    : Cache(raw), filename(f), sector_size(size), sectors(s), write_through(w)
+    LinuxCache(const string &f, int size, uint64_t s, bool w)
+    : filename(f), sector_size(size), sectors(s), write_through(w)
     {
     }
     ~LinuxCache() override = default;

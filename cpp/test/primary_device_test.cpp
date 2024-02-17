@@ -309,7 +309,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
 
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device1->Dispatch(scsi_command::cmd_report_luns));
-    const vector<uint8_t> &buffer = controller->GetBuffer();
+    span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";
     EXPECT_EQ(0, GetInt16(buffer, 8)) << "Wrong LUN1 number";

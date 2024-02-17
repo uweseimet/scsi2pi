@@ -19,9 +19,7 @@ class Cache
 
 public:
 
-    explicit Cache(bool r) : raw(r)
-    {
-    }
+    Cache() = default;
     virtual ~Cache() = default;
 
     virtual int ReadSectors(span<uint8_t>, uint64_t, uint32_t) = 0;
@@ -33,20 +31,10 @@ public:
 
     virtual vector<PbStatistics> GetStatistics(bool) const = 0;
 
-    bool IsRawMode() const
-    {
-        return raw;
-    }
-
 protected:
 
     inline static const string READ_ERROR_COUNT = "read_error_count";
     inline static const string WRITE_ERROR_COUNT = "write_error_count";
     inline static const string CACHE_MISS_READ_COUNT = "cache_miss_read_count";
     inline static const string CACHE_MISS_WRITE_COUNT = "cache_miss_write_count";
-
-private:
-
-    // Raw mode for CD-ROMs
-    bool raw;
 };

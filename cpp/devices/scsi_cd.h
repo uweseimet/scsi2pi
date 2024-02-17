@@ -2,9 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -36,40 +33,16 @@ protected:
 
 private:
 
-    struct Track
-    {
-        Track(int t, uint32_t f, uint32_t l) : track_no(t), first_lba(f), last_lba(l)
-        {
-        }
-
-        bool IsValid(uint32_t lba) const
-        {
-            return lba >= first_lba && last_lba >= lba;
-        }
-
-        int track_no;
-        uint32_t first_lba;
-        uint32_t last_lba;
-    };
-
-    int ReadTocInternal(cdb_t, vector<uint8_t>&);
-
-    void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
-    void AddAudioControlPage(map<int, vector<byte>>&, bool) const;
-
-    void OpenIso();
+    void ReadToc() override;
 
     void CreateDataTrack();
 
-    void ReadToc() override;
+    void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
 
-    void LBAtoMSF(uint32_t, uint8_t*) const;
+    static void LBAtoMSF(uint32_t, uint8_t*);
 
-    bool raw_file = false;
+    uint32_t first_lba;
+    uint32_t last_lba;
 
-    // Track management
-    void ClearTrack();
-    int SearchTrack(uint32_t lba) const;
-    vector<unique_ptr<Track>> tracks;
-    int dataindex = -1;
+    bool track_initialized = false;
 };

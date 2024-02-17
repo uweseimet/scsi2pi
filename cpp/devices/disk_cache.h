@@ -30,8 +30,8 @@ public:
         uint32_t serial;
     };
 
-    DiskCache(const string &path, int size, uint64_t sectors, bool raw)
-    : Cache(raw), sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
+    DiskCache(const string &path, int size, uint64_t sectors)
+    : sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
     {
     }
     ~DiskCache() override = default;

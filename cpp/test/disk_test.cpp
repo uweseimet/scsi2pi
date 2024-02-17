@@ -27,17 +27,17 @@ TEST(DiskTest, SetUpCache)
 {
     MockDisk disk;
 
-    EXPECT_FALSE(disk.SetUpCache(true));
+    EXPECT_FALSE(disk.SetUpCache());
 
     disk.SetBlockCount(1);
     disk.SetSectorSizeInBytes(512);
-    EXPECT_FALSE(disk.SetUpCache(false));
+    EXPECT_FALSE(disk.SetUpCache());
 
     disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
-    EXPECT_FALSE(disk.SetUpCache(false));
+    EXPECT_FALSE(disk.SetUpCache());
 
     disk.SetFilename(CreateTempFile(512).string());
-    EXPECT_TRUE(disk.SetUpCache(false));
+    EXPECT_TRUE(disk.SetUpCache());
 }
 
 TEST(DiskTest, Dispatch)

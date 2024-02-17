@@ -76,8 +76,8 @@ public:
 
 protected:
 
-    bool SetUpCache(bool = false);
-    bool InitCache(const string&, bool);
+    bool SetUpCache();
+    bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
@@ -94,10 +94,6 @@ protected:
     void ChangeSectorSize(uint32_t);
     unordered_set<uint32_t> GetSectorSizes() const;
     bool SetSectorSizeInBytes(uint32_t);
-    void SetSectorSizeShiftCount(uint32_t count)
-    {
-        sector_size = 1 << count;
-    }
 
     uint64_t GetNextSector() const
     {

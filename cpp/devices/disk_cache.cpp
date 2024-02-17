@@ -161,7 +161,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, sec_size, sectors, IsRawMode());
+    disktrk->Init(track, sec_size, sectors);
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {

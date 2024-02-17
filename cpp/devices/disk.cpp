@@ -144,7 +144,7 @@ void Disk::Dispatch(scsi_command cmd)
     }
 }
 
-bool Disk::SetUpCache(bool raw)
+bool Disk::SetUpCache()
 {
     assert(caching_mode != PbCachingMode::DEFAULT);
 
@@ -157,16 +157,16 @@ bool Disk::SetUpCache(bool raw)
         }
     }
 
-    return InitCache(GetFilename(), raw);
+    return InitCache(GetFilename());
 }
 
-bool Disk::InitCache(const string &path, bool raw)
+bool Disk::InitCache(const string &path)
 {
     if (caching_mode == PbCachingMode::PISCSI) {
-        cache = make_shared<DiskCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw);
+        cache = make_shared<DiskCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()));
     }
     else {
-        cache = make_shared<LinuxCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()), raw,
+        cache = make_shared<LinuxCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()),
             caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
@@ -934,7 +934,7 @@ void Disk::ChangeSectorSize(uint32_t new_size)
 
         FlushCache();
         if (cache) {
-            SetUpCache(cache->IsRawMode());
+            SetUpCache();
         }
 
         LogTrace(fmt::format("Changed sector size from {0} to {1} bytes", current_size, new_size));

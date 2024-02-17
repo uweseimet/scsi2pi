@@ -32,7 +32,6 @@ class DiskTrack
         bool init; // Is it initilized?
         bool changed; // Changed flag
         vector<bool> changemap; // Changed map
-        bool raw; // RAW mode flag
     } dt = { };
 
 public:
@@ -46,7 +45,7 @@ private:
 
     friend class DiskCache;
 
-    void Init(int, int, int, bool = false);
+    void Init(int, int, int);
     bool Load(const string&, uint64_t&);
     bool Save(const string&, uint64_t&);
 

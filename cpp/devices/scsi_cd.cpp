@@ -4,13 +4,10 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <array>
-#include <fstream>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "scsi_cd.h"
@@ -42,100 +39,81 @@ void ScsiCd::Open()
 {
     assert(!IsReady());
 
-    // Initialization, track clear
-    SetBlockCount(0);
-    raw_file = false;
-    ClearTrack();
+    track_initialized = false;
 
     // Default sector size is 2048 bytes
     if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
         throw io_exception("Invalid sector size");
     }
 
-    // Judge whether it is a CUE sheet or an ISO file
-    array<char, 4> cue;
-    ifstream in(GetFilename(), ios::binary);
-    in.read(cue.data(), cue.size());
-    if (!in.good()) {
-        throw io_exception("Can't read header of CD-ROM file '" + GetFilename() + "'");
-    }
-
-    // If it starts with FILE consider it a CUE sheet
-    if (!strncasecmp(cue.data(), "FILE", cue.size())) {
-        throw io_exception("CUE CD-ROM files are not supported");
-    } else {
-        OpenIso();
-    }
+    SetBlockCount(GetFileSize() / GetSectorSizeInBytes());
 
     Disk::ValidateFile();
 
-    if (!SetUpCache(raw_file)) {
+    if (!SetUpCache()) {
         throw io_exception("Can't initialize cache");
     }
 
     SetReadOnly(true);
     SetProtectable(false);
 
+    CreateDataTrack();
+
     if (IsReady()) {
         SetAttn(true);
     }
 }
 
-void ScsiCd::OpenIso()
-{
-    const off_t size = GetFileSize();
-    if (size < 2048) {
-        throw io_exception("ISO CD-ROM file size must be at least 2048 bytes");
-    }
-
-    // Validate header
-    array<char, 16> header;
-    ifstream in(GetFilename(), ios::binary);
-    in.read(header.data(), header.size());
-    if (!in.good()) {
-        throw io_exception("Can't read header of ISO CD-ROM file");
-    }
-
-    // Check if it is in RAW format
-    array<char, 12> sync = { };
-    // 00,FFx10,00 is presumed to be RAW format
-    fill_n(sync.begin() + 1, 10, 0xff);
-    raw_file = false;
-
-    if (!memcmp(header.data(), sync.data(), sync.size())) {
-        // Supports MODE1/2048 or MODE1/2352 only
-        if (header[15] != 0x01) {
-            // Different mode
-            throw io_exception("Illegal raw ISO CD-ROM file header");
-        }
-
-        raw_file = true;
-    }
-
-    if (raw_file) {
-        if (size % 2536) {
-            LogWarn(fmt::format("Raw ISO CD-ROM file size is not a multiple of 2536 bytes but is {} byte(s)", size));
-        }
-
-        SetBlockCount(static_cast<uint32_t>(size / 2352));
-    } else {
-        SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
-    }
-
-    CreateDataTrack();
-}
-
 void ScsiCd::CreateDataTrack()
 {
-    // Create only one data track
-    assert(!tracks.size());
-    tracks.push_back(make_unique<Track>(1, 0, static_cast<int>(GetBlockCount()) - 1));
-    dataindex = 0;
+    first_lba = 0;
+    last_lba = static_cast<int>(GetBlockCount()) - 1;
+    track_initialized = true;
 }
 
 void ScsiCd::ReadToc()
 {
-    DataInPhase(ReadTocInternal(GetController()->GetCdb(), GetController()->GetBuffer()));
+    CheckReady();
+
+    const auto &cdb = GetController()->GetCdb();
+
+    // Track must be 1, except for lead out track ($AA)
+    if (cdb[6] > 1 && cdb[6] != 0xaa) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
+    uint8_t track_number = 1;
+    uint32_t track_address = first_lba;
+    if (cdb[6] && !track_initialized) {
+        if (cdb[6] != 0xaa) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        }
+
+        track_number = 0xaa;
+        track_address = last_lba + 1;
+    }
+
+    const int length = min(GetInt16(cdb, 7), 12);
+    auto &buf = GetController()->GetBuffer();
+    fill_n(buf.data(), length, 0);
+
+    // TOC data length, excluding this field itself
+    SetInt16(buf, 0, 10);
+    // First track number
+    buf[2] = 1;
+    // Last track number
+    buf[3] = 1;
+
+    buf[6] = track_number;
+
+    // Track address in the requested format (MSF)
+    if (cdb[1] & 0x02) {
+        LBAtoMSF(track_address + 1, &buf[8]);
+    } else {
+        SetInt16(buf, 10, track_address + 1);
+    }
+
+    DataInPhase(length);
 }
 
 vector<uint8_t> ScsiCd::InquiryInternal() const
@@ -147,7 +125,6 @@ void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, in
 {
     Disk::ModeSelect(cmd, cdb, buf, length);
 
-    ClearTrack();
     CreateDataTrack();
 }
 
@@ -157,10 +134,6 @@ void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
 
     if (page == 0x0d || page == 0x3f) {
         AddDeviceParametersPage(pages, changeable);
-    }
-
-    if (page == 0x0e || page == 0x3f) {
-        AddAudioControlPage(pages, changeable);
     }
 }
 
@@ -181,127 +154,28 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
     pages[13] = buf;
 }
 
-void ScsiCd::AddAudioControlPage(map<int, vector<byte>> &pages, bool) const
-{
-    vector<byte> buf(16);
-
-    // Audio waits for operation completion and allows
-    // PLAY across multiple tracks
-
-    pages[14] = buf;
-}
-
 int ScsiCd::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    // If different from the current data track
-    if (const int index = SearchTrack(static_cast<int>(GetNextSector())); dataindex != index) {
-        // Reset the number of blocks
-        SetBlockCount(tracks[index]->last_lba - tracks[index]->first_lba + 1);
+    if (const auto lba = static_cast<uint32_t>(GetNextSector()); first_lba > lba || last_lba < lba) {
+        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
+    }
 
-        // Re-assign cache (no need to save)
-        if (!InitCache(GetFilename(), raw_file)) {
+    if (!track_initialized) {
+        SetBlockCount(last_lba - first_lba + 1);
+
+        if (!InitCache(GetFilename())) {
             throw scsi_exception(sense_key::medium_error, asc::read_fault);
         }
 
-        // Reset data index
-        dataindex = index;
+        track_initialized = true;
     }
 
-    assert(dataindex >= 0);
     return Disk::ReadData(buf);
 }
 
-int ScsiCd::ReadTocInternal(cdb_t cdb, vector<uint8_t> &buf)
-{
-    CheckReady();
-
-    // If ready, there is at least one track
-    assert(!tracks.empty());
-
-    // Get allocation length, clear buffer
-    const int length = GetInt16(cdb, 7);
-    fill_n(buf.data(), length, 0);
-
-    // Get MSF Flag
-    const bool msf = cdb[1] & 0x02;
-
-    // Get and check the last track number
-    const int last = tracks[tracks.size() - 1]->track_no;
-    // Except for AA
-    if (cdb[6] > last && cdb[6] != 0xaa) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
-    // Check start index
-    int index = 0;
-    if (cdb[6] != 0x00) {
-        // Advance the track until the track numbers match
-        while (tracks[index]) {
-            if (cdb[6] == tracks[index]->track_no) {
-                break;
-            }
-            index++;
-        }
-
-        // AA if not found or internal error
-        if (!tracks[index]) {
-            if (cdb[6] != 0xaa) {
-                throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-            }
-
-            // Returns the final LBA+1 because it is AA
-            buf[0] = 0x00;
-            buf[1] = 0x0a;
-            buf[2] = (uint8_t)tracks[0]->track_no;
-            buf[3] = (uint8_t)last;
-            buf[6] = 0xaa;
-            const uint32_t lba = tracks[tracks.size() - 1]->last_lba + 1;
-            if (msf) {
-                LBAtoMSF(lba, &buf[8]);
-            } else {
-                SetInt16(buf, 10, lba);
-            }
-
-            return length;
-        }
-    }
-
-    // Number of track descriptors returned this time (number of loops)
-    const int loop = last - tracks[index]->track_no + 1;
-    assert(loop >= 1);
-
-    // Create header
-    SetInt16(buf, 0, (loop << 3) + 2);
-    buf[2] = (uint8_t)tracks[0]->track_no;
-    buf[3] = (uint8_t)last;
-
-    int offset = 4;
-
-    for (int i = 0; i < loop; i++) {
-        // ADR and Control for data track
-        buf[offset + 1] = 0x14;
-
-        // Track number
-        buf[offset + 2] = (uint8_t)tracks[index]->track_no;
-
-        // Track address
-        if (msf) {
-            LBAtoMSF(tracks[index]->first_lba, &buf[offset + 4]);
-        } else {
-            SetInt16(buf, offset + 6, tracks[index]->first_lba);
-        }
-
-        offset += 8;
-        index++;
-    }
-
-    // Always return only the allocation length
-    return length;
-}
-
-void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf) const
+void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf)
 {
     // 75 and 75*60 get the remainder
     uint32_t m = lba / (75 * 60);
@@ -320,26 +194,7 @@ void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf) const
     assert(s < 60);
     assert(f < 75);
     msf[0] = 0x00;
-    msf[1] = (uint8_t)m;
-    msf[2] = (uint8_t)s;
-    msf[3] = (uint8_t)f;
+    msf[1] = static_cast<uint8_t>(m);
+    msf[2] = static_cast<uint8_t>(s);
+    msf[3] = static_cast<uint8_t>(f);
 }
-
-void ScsiCd::ClearTrack()
-{
-    tracks.clear();
-
-    dataindex = -1;
-}
-
-int ScsiCd::SearchTrack(uint32_t lba) const
-{
-    for (size_t i = 0; i < tracks.size(); i++) {
-        if (tracks[i]->IsValid(lba)) {
-            return static_cast<int>(i);
-        }
-    }
-
-    throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
-}
-
