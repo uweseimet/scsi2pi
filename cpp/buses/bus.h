@@ -24,8 +24,6 @@ class Bus : public PinControl
 
 public:
 
-    static int GetCommandBytesCount(int);
-
     virtual bool Init(bool) = 0;
     virtual void Reset() = 0;
     virtual void CleanUp() = 0;

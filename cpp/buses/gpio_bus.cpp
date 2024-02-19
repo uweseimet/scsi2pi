@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 
 #include <chrono>
+#include "bus_factory.h"
 #include "gpio_bus.h"
 
 using namespace std;
@@ -66,7 +67,7 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = GetCommandBytesCount(buf[0]);
+    const int command_byte_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 

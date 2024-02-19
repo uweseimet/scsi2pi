@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "buses/bus_factory.h"
 #include "buses/gpio_bus.h"
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
@@ -108,7 +109,7 @@ void GenericController::Command()
             return;
         }
 
-        const int command_bytes_count = Bus::GetCommandBytesCount(buf[0]);
+        const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
         assert(command_bytes_count <= 16);
 
         for (int i = 0; i < command_bytes_count; i++) {
@@ -531,10 +532,10 @@ bool GenericController::XferOut(bool cont)
 
 void GenericController::LogCdb() const
 {
-    const auto &cmd = COMMAND_MAPPING.find(GetOpcode());
+    const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",
-        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCdbByte(0)));
-    for (int i = 0; i < Bus::GetCommandBytesCount(GetCdbByte(0)); i++) {
+        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(GetCdbByte(0))); i++) {
         if (i) {
             s += ":";
         }
