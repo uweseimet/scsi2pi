@@ -14,13 +14,6 @@
 using namespace std;
 using namespace scsi_defs;
 
-int Bus::GetCommandBytesCount(int opcode)
-{
-    const auto &mapping = COMMAND_MAPPING.find(static_cast<scsi_command>(opcode));
-
-    return mapping != COMMAND_MAPPING.end() ? mapping->second.first : 0;
-}
-
 phase_t Bus::GetPhase()
 {
     Acquire();

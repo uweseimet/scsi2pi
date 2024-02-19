@@ -13,6 +13,7 @@
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "base/device_factory.h"
+#include "buses/bus_factory.h"
 
 using namespace filesystem;
 
@@ -36,7 +37,7 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
         cdb.emplace_back(static_cast<int>(b));
     }
 
-    EXPECT_EQ(Bus::GetCommandBytesCount(cdb[0]), static_cast<int>(cdb.size()));
+    EXPECT_EQ(BusFactory::Instance().GetCommandBytesCount(cmd), static_cast<int>(cdb.size()));
 
     return cdb;
 }

@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "buses/bus_factory.h"
 #include "shared/shared_exceptions.h"
 #include "memory_util.h"
 #include "primary_device.h"
@@ -55,7 +56,7 @@ void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     const auto c = static_cast<int>(cmd);
     if (const auto &command = commands[c]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", COMMAND_MAPPING.find(cmd)->second.second, c));
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd), c));
         command();
     }
     else {

@@ -25,6 +25,16 @@ public:
 
     unique_ptr<Bus> CreateBus(bool, bool);
 
+    int GetCommandBytesCount(scsi_command opcode) const
+    {
+        return command_byte_counts[static_cast<int>(opcode)];
+    }
+
+    string GetCommandName(scsi_command opcode) const
+    {
+        return command_names[static_cast<int>(opcode)];
+    }
+
     bool IsRaspberryPi() const
     {
         return is_raspberry_pi;
@@ -32,9 +42,15 @@ public:
 
 private:
 
-    BusFactory() = default;
+    BusFactory();
+
+    void AddCommand(scsi_command, int, const string&);
 
     bool CheckForPi();
 
     bool is_raspberry_pi = false;
+
+    array<int, 256> command_byte_counts;
+
+    array<string, 256> command_names;
 };

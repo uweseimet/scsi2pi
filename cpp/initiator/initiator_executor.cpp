@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <spdlog/spdlog.h>
+#include "buses/bus_factory.h"
 #include "initiator_util.h"
 #include "initiator_executor.h"
 
@@ -22,13 +23,14 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
     status = 0xff;
     byte_count = 0;
 
-    if (const int count = Bus::GetCommandBytesCount(static_cast<int>(cmd)); count
+    if (const int count = BusFactory::Instance().GetCommandBytesCount(cmd); count
         && count != static_cast<int>(cdb.size())) {
         warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
     }
 
-    if (const auto &command = COMMAND_MAPPING.find(cmd); command != COMMAND_MAPPING.end()) {
-        trace("Executing command {0} for device {1}:{2}", command->second.second, target_id, target_lun);
+    if (const string &command_name = BusFactory::Instance().GetCommandName(cmd);
+    !command_name.empty()) {
+        trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
     }
     else {
         trace("Executing command ${0:02x} for device {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
@@ -187,9 +189,8 @@ void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     }
 
     if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
-        const auto &command = COMMAND_MAPPING.find(cmd);
-        if (command != COMMAND_MAPPING.end()) {
-            error("Command {} failed", command->second.second);
+        if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+            error("Command {} failed", command_name);
         }
         else {
             error("Command ${:02x} failed", static_cast<int>(cmd));
