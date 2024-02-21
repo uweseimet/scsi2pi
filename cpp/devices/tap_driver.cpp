@@ -26,13 +26,10 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 
-TapDriver::TapDriver()
-{
-    available_interfaces = GetNetworkInterfaces();
-}
-
 bool TapDriver::Init(const param_map &const_params)
 {
+    available_interfaces = GetNetworkInterfaces();
+
     param_map params = const_params;
     stringstream s(params["interface"]);
     string interface;

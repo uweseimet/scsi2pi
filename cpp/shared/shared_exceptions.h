@@ -39,9 +39,8 @@ public:
 
     explicit scsi_exception(scsi_defs::sense_key sense_key,
         scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
-    : sense_key(sense_key), asc(asc)
+    : sense_key(sense_key), asc(asc), message(s2p_util::FormatSenseData(sense_key, asc))
     {
-        message = s2p_util::FormatSenseData(sense_key, asc);
     }
     ~scsi_exception() override = default;
 

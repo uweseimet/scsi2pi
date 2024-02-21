@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <span>
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
@@ -24,16 +25,8 @@ using namespace std;
 
 class TapDriver
 {
-    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
-    const inline static string BRIDGE_NAME = "piscsi_bridge";
-
-    const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
-    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 
 public:
-
-    TapDriver();
-    ~TapDriver() = default;
 
     bool Init(const param_map&);
     void CleanUp() const;
@@ -44,7 +37,6 @@ public:
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
 
-    // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
     static uint32_t Crc32(span<const uint8_t>);
@@ -77,5 +69,11 @@ private:
     string bridge_interface;
 
     bool bridge_created = false;
+
+    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
+    const inline static string BRIDGE_NAME = "piscsi_bridge";
+
+    const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
+    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 };
 

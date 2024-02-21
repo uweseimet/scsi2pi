@@ -62,7 +62,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_receive_operation_results, 10, "RECEIVE OPERATION RESULTS");
 }
 
-void BusFactory::AddCommand(scsi_command opcode, int byte_count, const string &name)
+void BusFactory::AddCommand(scsi_command opcode, int byte_count, string_view name)
 {
     command_byte_counts[static_cast<int>(opcode)] = byte_count;
     command_names[static_cast<int>(opcode)] = name;

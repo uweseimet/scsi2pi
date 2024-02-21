@@ -44,7 +44,7 @@ private:
 
     BusFactory();
 
-    void AddCommand(scsi_command, int, const string&);
+    void AddCommand(scsi_command, int, string_view);
 
     bool CheckForPi();
 

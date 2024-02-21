@@ -41,8 +41,8 @@ private:
 
     static void LBAtoMSF(uint32_t, uint8_t*);
 
-    uint32_t first_lba;
-    uint32_t last_lba;
+    uint32_t first_lba = 0;
+    uint32_t last_lba = 0;
 
     bool track_initialized = false;
 };

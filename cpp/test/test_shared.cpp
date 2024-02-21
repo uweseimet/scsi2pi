@@ -10,12 +10,12 @@
 #include <iostream>
 #include <unistd.h>
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 
 using namespace filesystem;
+using namespace s2p_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
@@ -33,7 +33,7 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    for (const auto b : s2p_util::HexToBytes(hex)) {
+    for (const auto b : HexToBytes(hex)) {
         cdb.emplace_back(static_cast<int>(b));
     }
 
@@ -45,9 +45,7 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
 vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
-    for (const auto b : s2p_util::HexToBytes(hex)) {
-        parameters.emplace_back(static_cast<uint8_t>(b));
-    }
+    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
 
     return parameters;
 }

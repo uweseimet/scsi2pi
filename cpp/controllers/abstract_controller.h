@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <span>
 #include <unordered_set>
 #include "buses/bus.h"
 #include "phase_handler.h"
