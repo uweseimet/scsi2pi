@@ -401,9 +401,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
     }
 
     vector<uint8_t> cdb;
-    for (byte b : cmd_bytes) {
-        cdb.emplace_back(static_cast<uint8_t>(b) & 0xff);
-    }
+    ranges::transform(cmd_bytes, back_inserter(cdb), [](const byte b) {return static_cast<uint8_t>(b) & 0xff;});
 
     if (!data.empty()) {
         if (const string &error = ConvertData(data); !error.empty()) {
@@ -512,9 +510,7 @@ string S2pExec::ConvertData(const string &data)
     }
 
     buffer.clear();
-    for (const byte b : bytes) {
-        buffer.emplace_back(static_cast<uint8_t>(b));
-    }
+    ranges::transform(bytes, back_inserter(buffer), [](const byte b) {return static_cast<uint8_t>(b);});
 
     return "";
 }

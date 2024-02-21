@@ -75,6 +75,14 @@ public:
 
 private:
 
+    enum class PiType
+    {
+        unknown,
+        pi_1,
+        pi_2,
+        pi_4
+    };
+
     void CreateWorkTable();
 
     void SetControl(int, bool) override;
@@ -96,7 +104,7 @@ private:
     static uint32_t GetPeripheralAddress();
     static uint32_t GetDtRanges(const string&, uint32_t);
 
-    int pi_type = 0;
+    PiType pi_type = PiType::unknown;
 
     inline static uint32_t corefreq = 0;
 

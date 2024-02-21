@@ -13,7 +13,7 @@
 #include <memory>
 #include <array>
 #include <vector>
-#include "buses/pin_control.h"
+#include "pin_control.h"
 #include "shared/scsi.h"
 
 using namespace std;

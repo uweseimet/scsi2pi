@@ -2,15 +2,13 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <span>
+#include <array>
 #include <unordered_map>
 #include <string>
 
@@ -53,8 +51,7 @@ enum class device_type
     printer = 2,
     processor = 3,
     cd_rom = 5,
-    optical_memory = 7,
-    communications = 9
+    optical_memory = 7
 };
 
 enum class scsi_command

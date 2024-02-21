@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <span>
 #include <gtest/gtest.h>
 #include "devices/tap_driver.h"
 
@@ -29,12 +30,12 @@ TEST(TapDriverTest, Crc32)
     EXPECT_EQ(0x29cbd638U, TapDriver::Crc32(span(buf.data(), ETH_FRAME_LEN)));
 
     for (size_t i = 0; i < buf.size(); i++) {
-        buf[i] = (uint8_t)i;
+        buf[i] = static_cast<uint8_t>(i);
     }
     EXPECT_EQ(0xe7870705U, TapDriver::Crc32(span(buf.data(), ETH_FRAME_LEN)));
 
     for (size_t i = buf.size() - 1; i > 0; i--) {
-        buf[i] = (uint8_t)i;
+        buf[i] = static_cast<uint8_t>(i);
     }
     EXPECT_EQ(0xe7870705U, TapDriver::Crc32(span(buf.data(), ETH_FRAME_LEN)));
 }

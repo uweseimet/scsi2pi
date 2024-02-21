@@ -24,15 +24,21 @@ bool RpiBus::Init(bool target)
 
     // Determine the Raspberry Pi type from the base address
     const auto baseaddr = GetPeripheralAddress();
-    if (baseaddr == 0xfe000000) {
-        pi_type = 4;
-    } else if (baseaddr == 0x3f000000) {
-        pi_type = 2;
-    } else {
-        pi_type = 1;
+    switch (baseaddr) {
+    case 0xfe000000:
+        pi_type = PiType::pi_4;
+        break;
+
+    case 0x3f000000:
+        pi_type = PiType::pi_2;
+        break;
+
+    default:
+        pi_type = PiType::pi_1;
+        break;
     }
 
-    trace("Detected Raspberry Pi type {}", pi_type);
+    trace("Detected Raspberry Pi type {}", static_cast<int>(pi_type));
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -90,8 +96,8 @@ bool RpiBus::Init(bool target)
     // Quad-A7 control
     qa7regs = map + QA7_OFFSET / sizeof(uint32_t);
 
-    // Map GIC memory
-    if (pi_type == 4) {
+    // Map GICC memory
+    if (pi_type == PiType::pi_4) {
         map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
         if (map == MAP_FAILED) {
             critical("Can't map memory: {}", strerror(errno));
@@ -668,17 +674,17 @@ void RpiBus::DisableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case 2:
+    case PiType::pi_4:
+        // RPI4 is disabled by GICC
+        giccpmr = gicc[GICC_PMR];
+        gicc[GICC_PMR] = 0;
+        break;
+
+    case PiType::pi_2:
         // RPI2,3 disable core timer IRQ
         tintcore = sched_getcpu() + QA7_CORE0_TINTC;
         tintctl = qa7regs[tintcore];
         qa7regs[tintcore] = 0;
-        break;
-
-    case 4:
-        // RPI4 is disabled by GICC
-        giccpmr = gicc[GICC_PMR];
-        gicc[GICC_PMR] = 0;
         break;
 
     default:
@@ -694,14 +700,14 @@ void RpiBus::EnableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case 2:
-        // RPI2,3 re-enable core timer IRQ
-        qa7regs[tintcore] = tintctl;
-        break;
-
-    case 4:
+    case PiType::pi_4:
         // RPI4 enables interrupts via the GICC
         gicc[GICC_PMR] = giccpmr;
+        break;
+
+    case PiType::pi_2:
+        // RPI2,3 re-enable core timer IRQ
+        qa7regs[tintcore] = tintctl;
         break;
 
     default:
@@ -740,7 +746,7 @@ void RpiBus::PullConfig(int pin, int mode)
         return;
     }
 
-    if (pi_type == 4) {
+    if (pi_type == PiType::pi_4) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:
