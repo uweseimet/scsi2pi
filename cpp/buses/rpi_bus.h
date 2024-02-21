@@ -77,10 +77,10 @@ private:
 
     enum class PiType
     {
-        unknown,
-        pi_1,
-        pi_2,
-        pi_4
+        unknown = 0,
+        pi_1 = 1,
+        pi_2_3 = 2,
+        pi_4 = 4
     };
 
     void CreateWorkTable();

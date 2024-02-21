@@ -23,14 +23,14 @@ bool RpiBus::Init(bool target)
     GpioBus::Init(target);
 
     // Determine the Raspberry Pi type from the base address
-    const auto baseaddr = GetPeripheralAddress();
-    switch (baseaddr) {
+    const auto base_addr = GetPeripheralAddress();
+    switch (base_addr) {
     case 0xfe000000:
         pi_type = PiType::pi_4;
         break;
 
     case 0x3f000000:
-        pi_type = PiType::pi_2;
+        pi_type = PiType::pi_2_3;
         break;
 
     default:
@@ -47,7 +47,7 @@ bool RpiBus::Init(bool target)
     }
 
     // Map peripheral region memory
-    auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, baseaddr));
+    auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_addr));
     if (map == MAP_FAILED) {
         critical("Can't map memory: {}", strerror(errno));
         close(fd);
@@ -96,11 +96,10 @@ bool RpiBus::Init(bool target)
     // Quad-A7 control
     qa7regs = map + QA7_OFFSET / sizeof(uint32_t);
 
-    // Map GICC memory
     if (pi_type == PiType::pi_4) {
         map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
         if (map == MAP_FAILED) {
-            critical("Can't map memory: {}", strerror(errno));
+            critical("Can't map GICC/CICD memory: {}", strerror(errno));
             close(fd);
             return false;
         }
@@ -680,7 +679,7 @@ void RpiBus::DisableIRQ()
         gicc[GICC_PMR] = 0;
         break;
 
-    case PiType::pi_2:
+    case PiType::pi_2_3:
         // RPI2,3 disable core timer IRQ
         tintcore = sched_getcpu() + QA7_CORE0_TINTC;
         tintctl = qa7regs[tintcore];
@@ -705,7 +704,7 @@ void RpiBus::EnableIRQ()
         gicc[GICC_PMR] = giccpmr;
         break;
 
-    case PiType::pi_2:
+    case PiType::pi_2_3:
         // RPI2,3 re-enable core timer IRQ
         qa7regs[tintcore] = tintctl;
         break;
