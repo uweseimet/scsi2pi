@@ -365,10 +365,13 @@ clean:
 .PHONY: install
 install: $(BINARIES)
 	$(STRIP) $^
+	chown root:root $^
+	chmod +s $^
 
 $(INSTALL_BIN)%: $(BINDIR)/%
 	mkdir -p $(INSTALL_BIN)
 	cp $< $@
+
 
 ##   help            Lists information about how to use the Makefile
 # The help rule is based upon the approach from:

@@ -72,40 +72,32 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
 {
     unique_ptr<Bus> bus;
 
-    if (in_process) {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), true);
+    if (in_process || !CheckForPi()) {
+        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), in_process);
     }
     else {
-        if (CheckForPi()) {
-            if (getuid()) {
-                error("GPIO bus access requires root permissions");
-                return nullptr;
-            }
-
-            bus = make_unique<RpiBus>();
-        } else {
-            bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), false);
-        }
+        bus = make_unique<RpiBus>();
     }
 
     if (bus && bus->Init(target)) {
         bus->Reset();
+        return bus;
     }
 
-    return bus;
+    return nullptr;
 }
 
 bool BusFactory::CheckForPi()
 {
     ifstream in("/proc/device-tree/model");
     if (in.fail()) {
-        info("This platform is not a Raspberry Pi, functionality is limited");
+        warn("This platform is not a Raspberry Pi, functionality is limited");
         return false;
     }
 
     stringstream s;
     s << in.rdbuf();
-    const string model = s.str();
+    const string &model = s.str();
 
     if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
         is_raspberry_pi = true;

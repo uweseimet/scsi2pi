@@ -42,7 +42,7 @@ bool RpiBus::Init(bool target)
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        critical("Can't open /dev/mem: {}", strerror(errno));
+        critical("Root permissions are required");
         return false;
     }
 
