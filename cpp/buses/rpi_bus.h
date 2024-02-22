@@ -106,9 +106,9 @@ private:
 
     PiType pi_type = PiType::unknown;
 
-    inline static uint32_t corefreq = 0;
+    inline static uint32_t core_freq = 0;
 
-    volatile uint32_t *armtaddr = nullptr;
+    volatile uint32_t *armt_addr = nullptr;
 
     // GPIO register
     volatile uint32_t *gpio = nullptr;
@@ -117,23 +117,23 @@ private:
     volatile uint32_t *pads = nullptr;
 
     // Interrupt control register
-    volatile uint32_t *irpctl = nullptr;
+    volatile uint32_t *irp_ctl = nullptr;
 
     // QA7 register
-    volatile uint32_t *qa7regs = nullptr;
+    volatile uint32_t *qa7_regs = nullptr;
 
 #ifdef __linux__
     // Interrupt enabled state
-    uint32_t irptenb;
+    uint32_t irpt_enb;
 
     // Interupt control target CPU
-    int tintcore;
+    int tint_core;
 
     // Interupt control
-    uint32_t tintctl;
+    uint32_t tint_ctl;
 
-    // GICC priority setting
-    uint32_t giccpmr;
+    // GIC priority setting
+    uint32_t gicc_pmr_saved;
     // SEL signal event request
     struct gpioevent_request selevreq = { };
 
@@ -185,17 +185,12 @@ private:
     const static int IRPT_ENB_IRQ_1 = 4;
     const static int IRPT_DIS_IRQ_1 = 7;
     const static int QA7_CORE0_TINTC = 16;
-    // GPIO3
-    const static int GPIO_IRQ = (32 + 20);
 
     const static uint32_t IRPT_OFFSET = 0x0000B200;
     const static uint32_t PADS_OFFSET = 0x00100000;
     const static uint32_t GPIO_OFFSET = 0x00200000;
     const static uint32_t QA7_OFFSET = 0x01000000;
 
-    // Constant declarations (GIC)
-    const static uint32_t ARM_GICD_BASE = 0xFF841000;
-    const static uint32_t ARM_GICC_BASE = 0xFF842000;
-    const static int GICC_PMR = 0x001;
-    const static int GIC_GPIO_IRQ = (32 + 116);
+    const static uint32_t PI4_ARM_GICC_BASE = 0xFF842000;
+    const static int GICC_PMR = 0x0001;
 };

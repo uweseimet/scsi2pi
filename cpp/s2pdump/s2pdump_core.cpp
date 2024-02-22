@@ -79,6 +79,13 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init(bool in_process)
 {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (!bus) {
+        return false;
+    }
+
+    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
+
     instance = this;
     // Signal handler for cleaning up
     struct sigaction termination_handler;
@@ -89,12 +96,7 @@ bool S2pDump::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus = BusFactory::Instance().CreateBus(false, in_process);
-    if (bus) {
-        executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
-    }
-
-    return bus != nullptr;
+    return true;
 }
 
 bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
@@ -302,10 +304,6 @@ int S2pDump::Run(span<char*> args, bool in_process)
     try {
         if (!ParseArguments(args)) {
             return EXIT_SUCCESS;
-        }
-
-        if (!in_process && getuid()) {
-            throw parser_exception("GPIO bus access requires root permissions");
         }
 
         if (!Init(in_process)) {

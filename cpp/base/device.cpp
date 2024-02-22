@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <stdexcept>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
 #include "device.h"
 
@@ -15,7 +15,7 @@ using namespace spdlog;
 
 Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
 {
-    revision = fmt::format("{0:02}{1:02}", s2p_major_version, s2p_minor_version);
+    revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void Device::Reset()
@@ -47,12 +47,10 @@ void Device::SetProduct(const string &p, bool force)
         throw invalid_argument("Product '" + p + "' must have between 1 and 16 characters");
     }
 
-    // Changing vital product data is not SCSI compliant
-    if (!product.empty() && !force) {
-        return;
+    // Changing existing vital product data is not SCSI compliant
+    if (product.empty() || force) {
+        product = p;
     }
-
-    product = p;
 }
 
 void Device::SetRevision(const string &r)

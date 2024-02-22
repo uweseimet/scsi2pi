@@ -34,6 +34,7 @@ bool RpiBus::Init(bool target)
         break;
 
     default:
+        // 0x20000000
         pi_type = PiType::pi_1;
         break;
     }
@@ -70,7 +71,7 @@ bool RpiBus::Init(bool target)
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        corefreq = maxclock[6] / 1000000;
+        core_freq = maxclock[6] / 1000000;
         close(vcio_fd);
     }
     else {
@@ -78,10 +79,10 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
-    armtaddr = map + ARMT_OFFSET / sizeof(uint32_t);
+    armt_addr = map + ARMT_OFFSET / sizeof(uint32_t);
 
     // Change the ARM timer to free run mode
-    armtaddr[ARMT_CTRL] = 0x00000282;
+    armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
     gpio = map + GPIO_OFFSET / sizeof(uint32_t);
@@ -91,19 +92,19 @@ bool RpiBus::Init(bool target)
     pads = map + PADS_OFFSET / sizeof(uint32_t);
 
     // Interrupt controller
-    irpctl = map + IRPT_OFFSET / sizeof(uint32_t);
+    irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
 
     // Quad-A7 control
-    qa7regs = map + QA7_OFFSET / sizeof(uint32_t);
+    qa7_regs = map + QA7_OFFSET / sizeof(uint32_t);
 
+    // Map GIC interrupt priority mask register
     if (pi_type == PiType::pi_4) {
-        map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
-        if (map == MAP_FAILED) {
-            critical("Can't map GICC/CICD memory: {}", strerror(errno));
+        gicc = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_BASE));
+        if (gicc == MAP_FAILED) {
+            critical("Can't map GIC: {}", strerror(errno));
             close(fd);
             return false;
         }
-        gicc = map + (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
     }
 
     close(fd);
@@ -235,43 +236,25 @@ void RpiBus::Reset()
     SetMode(PIN_REQ, IN);
     SetMode(PIN_IO, IN);
 
-    if (IsTarget()) {
-        // Set the initiator signal to input
-        SetControl(PIN_IND, IND_IN);
-        SetMode(PIN_SEL, IN);
-        SetMode(PIN_ATN, IN);
-        SetMode(PIN_ACK, IN);
-        SetMode(PIN_RST, IN);
+    // Set the initiator signal direction
+    SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 
-        // Set data bus signals to input
-        SetControl(PIN_DTD, DTD_IN);
-        SetMode(PIN_DT0, IN);
-        SetMode(PIN_DT1, IN);
-        SetMode(PIN_DT2, IN);
-        SetMode(PIN_DT3, IN);
-        SetMode(PIN_DT4, IN);
-        SetMode(PIN_DT5, IN);
-        SetMode(PIN_DT6, IN);
-        SetMode(PIN_DT7, IN);
-    } else {
-        // Set the initiator signal to output
-        SetControl(PIN_IND, IND_OUT);
-        SetMode(PIN_SEL, OUT);
-        SetMode(PIN_ATN, OUT);
-        SetMode(PIN_ACK, OUT);
-        SetMode(PIN_RST, OUT);
+    // Set data bus signal directions
+    SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
 
-        // Set the data bus signals to output
-        SetControl(PIN_DTD, DTD_OUT);
-        SetMode(PIN_DT0, OUT);
-        SetMode(PIN_DT1, OUT);
-        SetMode(PIN_DT2, OUT);
-        SetMode(PIN_DT3, OUT);
-        SetMode(PIN_DT4, OUT);
-        SetMode(PIN_DT5, OUT);
-        SetMode(PIN_DT6, OUT);
-        SetMode(PIN_DT7, OUT);
-    }
+    const int dir = IsTarget() ? IN : OUT;
+    SetMode(PIN_SEL, dir);
+    SetMode(PIN_ATN, dir);
+    SetMode(PIN_ACK, dir);
+    SetMode(PIN_RST, dir);
+    SetMode(PIN_DT0, dir);
+    SetMode(PIN_DT1, dir);
+    SetMode(PIN_DT2, dir);
+    SetMode(PIN_DT3, dir);
+    SetMode(PIN_DT4, dir);
+    SetMode(PIN_DT5, dir);
+    SetMode(PIN_DT6, dir);
+    SetMode(PIN_DT7, dir);
 
     // Initialize all signals
     signals = 0;
@@ -282,8 +265,6 @@ bool RpiBus::WaitForSelection()
 #ifndef __linux__
     return false;
 #else
-    errno = 0;
-
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
@@ -650,21 +631,21 @@ void RpiBus::SetSignal(int pin, bool state)
     if (state) {
         data |= (1 << shift);
     } else {
-        data &= ~(0x7 << shift);
+        data &= ~(7 << shift);
     }
     gpio[index] = data;
     gpfsel[index] = data;
 #elif SIGNAL_CONTROL_MODE == 1
     if (state) {
-        gpio[GPIO_CLR_0] = 0x1 << pin;
+        gpio[GPIO_CLR_0] = 1 << pin;
     } else {
-        gpio[GPIO_SET_0] = 0x1 << pin;
+        gpio[GPIO_SET_0] = 1 << pin;
     }
 #elif SIGNAL_CONTROL_MODE == 2
     if (state) {
-        gpio[GPIO_SET_0] = 0x1 << pin;
+        gpio[GPIO_SET_0] = 1 << pin;
     } else {
-        gpio[GPIO_CLR_0] = 0x1 << pin;
+        gpio[GPIO_CLR_0] = 1 << pin;
     }
 #endif
 }
@@ -674,22 +655,22 @@ void RpiBus::DisableIRQ()
 #ifdef __linux__
     switch (pi_type) {
     case PiType::pi_4:
-        // RPI4 is disabled by GICC
-        giccpmr = gicc[GICC_PMR];
+        // RPI4 disables interrupts via the GIC
+        gicc_pmr_saved = gicc[GICC_PMR];
         gicc[GICC_PMR] = 0;
         break;
 
     case PiType::pi_2_3:
         // RPI2,3 disable core timer IRQ
-        tintcore = sched_getcpu() + QA7_CORE0_TINTC;
-        tintctl = qa7regs[tintcore];
-        qa7regs[tintcore] = 0;
+        tint_core = sched_getcpu() + QA7_CORE0_TINTC;
+        tint_ctl = qa7_regs[tint_core];
+        qa7_regs[tint_core] = 0;
         break;
 
     default:
         // Stop system timer interrupt with interrupt controller
-        irptenb = irpctl[IRPT_ENB_IRQ_1];
-        irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
+        irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
+        irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
         break;
     }
 #endif
@@ -700,18 +681,18 @@ void RpiBus::EnableIRQ()
 #ifdef __linux__
     switch (pi_type) {
     case PiType::pi_4:
-        // RPI4 enables interrupts via the GICC
-        gicc[GICC_PMR] = giccpmr;
+        // RPI4 enables interrupts via the GIC
+        gicc[GICC_PMR] = gicc_pmr_saved;
         break;
 
     case PiType::pi_2_3:
         // RPI2,3 re-enable core timer IRQ
-        qa7regs[tintcore] = tintctl;
+        qa7_regs[tint_core] = tint_ctl;
         break;
 
     default:
         // Restart the system timer interrupt with the interrupt controller
-        irpctl[IRPT_ENB_IRQ_1] = irptenb & 0xf;
+        irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
         break;
     }
 #endif
@@ -816,9 +797,9 @@ inline uint32_t RpiBus::Acquire()
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 void RpiBus::WaitBusSettle() const
 {
-    if (const uint32_t diff = corefreq * 400 / 1000; diff) {
-        const uint32_t start = armtaddr[ARMT_FREERUN];
-        while (armtaddr[ARMT_FREERUN] - start < diff) {
+    if (const uint32_t diff = core_freq * 400 / 1000; diff) {
+        const uint32_t start = armt_addr[ARMT_FREERUN];
+        while (armt_addr[ARMT_FREERUN] - start < diff) {
             // Intentionally empty
         }
     }
@@ -835,14 +816,14 @@ uint32_t RpiBus::GetDtRanges(const string &filename, uint32_t offset)
         }
     }
 
-    return ~0;
+    return static_cast<uint32_t>(-1);
 }
 
 uint32_t RpiBus::GetPeripheralAddress()
 {
     uint32_t address = GetDtRanges("/proc/device-tree/soc/ranges", 4);
-    if (!address) {
+    if (address <= 0xffff) {
         address = GetDtRanges("/proc/device-tree/soc/ranges", 8);
     }
-    return address == (uint32_t)~0 ? 0x20000000 : address;
+    return address;
 }

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <unordered_map>
 #include "generated/s2p_interface.pb.h"
 #include "shared/s2p_util.h"
 

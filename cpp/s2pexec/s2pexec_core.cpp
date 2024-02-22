@@ -72,6 +72,13 @@ void S2pExec::Banner(bool header, bool usage)
 
 bool S2pExec::Init(bool in_process)
 {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (!bus) {
+        return false;
+    }
+
+    executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
+
     instance = this;
     // Signal handler for cleaning up
     struct sigaction termination_handler;
@@ -82,12 +89,7 @@ bool S2pExec::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus = BusFactory::Instance().CreateBus(false, in_process);
-    if (bus) {
-        executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
-    }
-
-    return bus != nullptr;
+    return true;
 }
 
 bool S2pExec::ParseArguments(span<char*> args)
