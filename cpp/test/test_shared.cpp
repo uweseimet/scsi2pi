@@ -52,7 +52,7 @@ vector<uint8_t> testing::CreateParameters(const string &hex)
 
 string testing::TestShared::GetVersion()
 {
-    return fmt::format("{0:02}{1:02}", s2p_major_version, s2p_minor_version);
+    return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
@@ -72,7 +72,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     EXPECT_EQ(additional_length, buffer[4]);
     string product_data;
     if (ident.size() == 24) {
-        product_data = fmt::format("{0}{1:02x}{2:02x}", ident, s2p_major_version, s2p_minor_version);
+        product_data = fmt::format("{0}{1:02}{2}{3}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
     } else {
         product_data = ident;
     }
