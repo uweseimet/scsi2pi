@@ -2,12 +2,11 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <cstring>
-
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>

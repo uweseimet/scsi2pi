@@ -19,7 +19,6 @@
 #include <linux/if_tun.h>
 #include <linux/sockios.h>
 #endif
-#include "shared/network_util.h"
 #include "tap_driver.h"
 
 using namespace spdlog;
@@ -28,8 +27,6 @@ using namespace network_util;
 
 bool TapDriver::Init(const param_map &const_params)
 {
-    available_interfaces = GetNetworkInterfaces();
-
     param_map params = const_params;
     stringstream s(params["interface"]);
     string interface;
@@ -281,7 +278,7 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
     ifreq ifr;
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCGIFFLAGS";
+        return "Can't ioctl SIOCGIFFLAGS: " + string(strerror(errno));
     }
 
     ifr.ifr_flags &= ~IFF_UP;
@@ -290,7 +287,7 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
     }
 
     if (ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCSIFFLAGS";
+        return "Can't ioctl SIOCSIFFLAGS: " + string(strerror(errno));
     }
 
     return "";
@@ -302,12 +299,12 @@ string TapDriver::BrSetif(int fd, const string &bridge, const string &interface,
     ifreq ifr;
     ifr.ifr_ifindex = if_nametoindex(interface.c_str());
     if (!ifr.ifr_ifindex) {
-        return "Can't if_nametoindex " + interface;
+        return fmt::format("Can't if_nametoindex {0}: {1}", interface, strerror(errno));
     }
 
     strncpy(ifr.ifr_name, bridge.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
-        return "Can't ioctl " + string(add ? "SIOCBRADDIF" : "SIOCBRDELIF");
+        return fmt::format("Can't ioctl {0}: {1}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
     }
 #endif
 

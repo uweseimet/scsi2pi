@@ -12,6 +12,7 @@
 #pragma once
 
 #include <span>
+#include "shared/network_util.h"
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
@@ -27,6 +28,11 @@ class TapDriver
 {
 
 public:
+
+    TapDriver() : available_interfaces(network_util::GetNetworkInterfaces())
+    {
+    }
+    ~TapDriver() = default;
 
     bool Init(const param_map&);
     void CleanUp() const;
