@@ -99,7 +99,7 @@ bool RpiBus::Init(bool target)
     if (pi_type == PiType::pi_4) {
         map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
         if (map == MAP_FAILED) {
-            critical("Can't map GICC/CICD memory: {}", strerror(errno));
+            critical("Can't map GIC memory: {}", strerror(errno));
             close(fd);
             return false;
         }
@@ -674,7 +674,7 @@ void RpiBus::DisableIRQ()
 #ifdef __linux__
     switch (pi_type) {
     case PiType::pi_4:
-        // RPI4 is disabled by GICC
+        // RPI4 disables interrupts via the GIC
         giccpmr = gicc[GICC_PMR];
         gicc[GICC_PMR] = 0;
         break;
@@ -700,7 +700,7 @@ void RpiBus::EnableIRQ()
 #ifdef __linux__
     switch (pi_type) {
     case PiType::pi_4:
-        // RPI4 enables interrupts via the GICC
+        // RPI4 enables interrupts via the GIC
         gicc[GICC_PMR] = giccpmr;
         break;
 

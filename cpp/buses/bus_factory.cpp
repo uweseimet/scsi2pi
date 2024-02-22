@@ -99,7 +99,7 @@ bool BusFactory::CheckForPi()
 {
     ifstream in("/proc/device-tree/model");
     if (in.fail()) {
-        info("This platform does not appear to be a Raspberry Pi, functionality is limited");
+        info("This platform is not a Raspberry Pi, functionality is limited");
         return false;
     }
 

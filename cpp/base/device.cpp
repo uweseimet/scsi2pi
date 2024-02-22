@@ -15,7 +15,7 @@ using namespace spdlog;
 
 Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
 {
-    revision = fmt::format("{0:02}{1:02}", s2p_major_version, s2p_minor_version);
+    revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void Device::Reset()
