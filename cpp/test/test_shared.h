@@ -38,6 +38,7 @@ class TestShared
 public:
 
     static string GetVersion();
+    static string GetVendorSpecificVersion();
     static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
     static void Dispatch(PrimaryDevice&, scsi_command, sense_key, asc, const string& = "");

@@ -207,23 +207,22 @@ void PrimaryDevice::CheckReady()
 
 vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable) const
 {
-    vector<uint8_t> buf(0x1F + 5);
+    const string &version = "SCSI2Pi " + s2p_util::GetVersionString() + " (C) Uwe Seimet";
 
-    // Basic data
-    // buf[0] ... SCSI device type
-    // buf[1] ... Bit 7: Removable/not removable
-    // buf[2] ... SCSI compliance level of command system
-    // buf[3] ... SCSI compliance level of Inquiry response
-    // buf[4] ... Inquiry additional data
+    vector<uint8_t> buf(0x1f + 5 + version.size());
+
     buf[0] = static_cast<uint8_t>(type);
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= scsi_level::scsi_2 ?
             static_cast<uint8_t>(scsi_level::scsi_2) : static_cast<uint8_t>(scsi_level::scsi_1_ccs);
-    buf[4] = 0x1f;
+    buf[4] = static_cast<uint8_t>(buf.size()) - 5;
 
     // Padded vendor, product, revision
-    memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);
+    memcpy(buf.data() + 8, GetPaddedName().c_str(), 28);
+
+    // SCSI2Pi-specific data
+    memcpy(buf.data() + 36, version.c_str(), version.size());
 
     return buf;
 }

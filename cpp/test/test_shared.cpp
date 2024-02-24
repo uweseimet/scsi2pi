@@ -55,6 +55,11 @@ string testing::TestShared::GetVersion()
     return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
+string testing::TestShared::GetVendorSpecificVersion()
+{
+    return "SCSI2Pi " + s2p_util::GetVersionString() + " (C) Uwe Seimet";
+}
+
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
@@ -69,7 +74,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
     EXPECT_EQ(l, static_cast<scsi_level>(buffer[2]));
     EXPECT_EQ(l > scsi_level::scsi_2 ? scsi_level::scsi_2 : l, static_cast<scsi_level>(buffer[3]));
-    EXPECT_EQ(additional_length, buffer[4]);
+    EXPECT_EQ(additional_length + GetVendorSpecificVersion().size(), buffer[4]);
     string product_data;
     if (ident.size() == 24) {
         product_data = fmt::format("{0}{1:02}{2}{3}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
