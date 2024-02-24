@@ -228,6 +228,7 @@ message PbOperationInfo {
 }
 
 // The supported caching modes. Currently caching like it is implemented by PiSCSI is the default.
+// Note: The actual modes are still subject to change
 enum PbCachingMode {
     DEFAULT = 0;
     PISCSI = 1;

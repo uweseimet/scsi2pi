@@ -40,10 +40,9 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         s << "  " << GetScsiLevel(pb_device.scsi_level());
     }
 
-    // Check for existence because PiSCSI does not support this setting
+    // There is no need to display "default"
     if (pb_device.caching_mode()) {
-        string mode;
-        ranges::transform(PbCachingMode_Name(pb_device.caching_mode()), back_inserter(mode), ::tolower);
+        string mode = PbCachingMode_Name(pb_device.caching_mode());
         ranges::replace(mode, '_', '-');
         s << "  Caching mode: " << mode;
     }
