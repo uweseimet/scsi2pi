@@ -6,7 +6,7 @@
 CROSS_COMPILE =
 
 CXX = $(CROSS_COMPILE)g++
-AR = $(CROSS_COMPILE)ar
+AR = $(CROSS_COMPILE)gcc-ar
 STRIP = $(CROSS_COMPILE)strip
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
