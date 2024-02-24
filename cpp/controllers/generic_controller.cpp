@@ -151,7 +151,7 @@ void GenericController::Execute()
         lun = 0;
     }
 
-    // SCSI-2 4.4.3 Incorrect logical unit handling
+    // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
     if (GetOpcode() == scsi_command::cmd_inquiry && !GetDeviceForLun(lun)) {
         GetBuffer().data()[0] = 0x7f;
         return;

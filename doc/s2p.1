@@ -9,7 +9,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
-[\fB\--caching-mode\fR \fICACHING_MODE\fR]
+[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
@@ -80,8 +80,8 @@ Set the optional vendor, product and revision for the device, to be returned wit
 The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
 s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
-.BR \--caching-mode\fI " " \fICACHING_MODE
-Caching mode (default|piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
+.BR \--caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
 .BR \--blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename compatibility mode. See the BlueSCSI documentation for details on the BlueSCSI filename convention.

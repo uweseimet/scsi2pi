@@ -191,8 +191,7 @@ string s2p_util::Banner(string_view app)
 
 string s2p_util::GetExtensionLowerCase(string_view filename)
 {
-    string ext;
-    ranges::transform(path(filename).extension().string(), back_inserter(ext), ::tolower);
+    const string &ext = ToLower(path(filename).extension().string());
 
     // Remove the leading dot
     return ext.empty() ? "" : ext.substr(1);
@@ -248,8 +247,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
             throw parser_exception("");
         }
 
-        string line_lower;
-        ranges::transform(line, back_inserter(line_lower), ::tolower);
+        const string &line_lower = ToLower(line);
 
         size_t i = 0;
         while (i < line_lower.length()) {

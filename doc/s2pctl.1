@@ -4,7 +4,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 .SH SYNOPSIS
 .B scsictl
 [\fB\--id/i\fR \fIID[:LUN]\fR] |
-[\fB\--list-extensions/-m\fR] |
+[\fB\--list-extensions\fR] |
 [\fB\--list-images/-e\fR] |
 [\fB\--list-operations/-o\fR] |
 [\fB\--help/-h\fR] |
@@ -30,7 +30,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--rename/-R\fR \fICURRENT_NAME:NEW_NAME\fR] |
 [\fB\--cmd/-c\fR \fICOMMAND\fR] |
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR] |
-[\fB\--caching-mode\fR \fICACHING_MODE\fR] |
+[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR] |
 [\fB\--file/f\fR \fIFILE|PARAM\fR] |
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
 [\fB\--host/-H\fR \fIHOST\fR] |
@@ -88,7 +88,7 @@ Prompt for the access token in case s2p requires authentication.
 .BR \--list-devices/-l\fI
 List all of the devices that are currently being emulated, as well as their current status.
 .TP
-.BR \--list-extensions/-m\fI
+.BR \--list-extensions\fI
 List all supported file extensions and the device types they map to.
 .TP
 .BR \--list-images/-e\fI
@@ -164,8 +164,8 @@ eject, protect and unprotect are idempotent.
 The optional block size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
 s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
-.BR \--caching-mode\fI " " \fICACHING_MODE
-Caching mode (default|piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
+.BR \--caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
 .BR \--file/-f\fI " " \fIFILE|PARAM
 Device-specific: Either a path to a disk image file, or a parameter for a non-disk device. See the s2p(1) man page for permitted file types.

@@ -32,7 +32,7 @@ void S2pParser::Banner(bool usage) const
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
             << "  --block-size/-b BLOCK_SIZE  Optional block (sector) size.\n"
-            << "  --caching-mode MODE         Caching mode (default|piscsi|write-through|linux\n"
+            << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
             << "                              |linux-optimized), default currently is PiSCSI\n"
             << "                              compatible caching.\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
@@ -65,13 +65,12 @@ void S2pParser::Banner(bool usage) const
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_CACHING_MODE = 3;
-    const int OPT_HELP = 4;
+    const int OPT_HELP = 3;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
-        { "caching-mode", required_argument, nullptr, OPT_CACHING_MODE },
+        { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
         { "locale", required_argument, nullptr, 'z' },
@@ -119,7 +118,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:n:p:r:t:z:C:F:L:P:R:BH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:BH",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -156,6 +155,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             has_scsi = true;
             continue;
 
+        case 'm':
+            caching_mode = optarg;
+            continue;
+
         case 'n':
             product_data = optarg;
             continue;
@@ -166,10 +169,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         case OPT_SCSI_LEVEL:
             scsi_level = optarg;
-            continue;
-
-        case OPT_CACHING_MODE:
-            caching_mode = optarg;
             continue;
 
         case OPT_HELP:

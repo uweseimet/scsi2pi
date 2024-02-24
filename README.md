@@ -17,7 +17,7 @@ I am also the author of the <a href="https://www.scsi2pi.net/en/app.html" target
 
 # SCSI2Pi goals
 
-SCSI2Pi is not meant to completely replace the PiSCSI software, but only the actual SCSI/SASI emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media. SCSI2Pi also addresses compatibility issues. Some Macs that have not been working with PiSCSI work fine with SCSI2PI, for instance.<br />
+SCSI2Pi is not meant to completely replace the PiSCSI software, but only the actual SCSI/SASI emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media. SCSI2Pi also addresses compatibility issues.<br />
 There is no support for the X68000 platform, in particular not for the host bridge (SCBR) device. In PiSCSI the related code has always been in a bad shape, and nobody has been willing to test it. The other PiSCSI features (and more) are supported by SCSI2Pi - many of these I implemented anyway ;-).
 
 # SCSI2Pi website

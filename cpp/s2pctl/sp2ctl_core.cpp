@@ -34,7 +34,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
             << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
             << "                                 (256|512|1024|2048|4096).\n"
-            << "  --caching-mode MODE            Caching mode (default|piscsi|write-through|linux\n"
+            << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
             << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
@@ -131,13 +131,13 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_LIST_LOG_LEVELS = 6;
     const int OPT_LOCALE = 7;
     const int OPT_SCSI_LEVEL = 8;
-    const int OPT_CACHING_MODE = 9;
+    const int OPT_LIST_EXTENSIONS = 9;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
         { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "block-size", required_argument, nullptr, 'b' },
-        { "caching-mode", required_argument, nullptr, OPT_CACHING_MODE },
+        { "caching-mode", required_argument, nullptr, 'm' },
         { "command", required_argument, nullptr, 'c' },
         { "copy", required_argument, nullptr, 'x' },
         { "create", required_argument, nullptr, 'C' },
@@ -151,7 +151,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { "json-protobuf", required_argument, nullptr, OPT_JSON_PROTOBUF },
         { "list-devices", no_argument, nullptr, 'l' },
         { "list-device-types", no_argument, nullptr, 'T' },
-        { "list-extensions", no_argument, nullptr, 'm' },
+        { "list-extensions", no_argument, nullptr, OPT_LIST_EXTENSIONS },
         { "list-images", no_argument, nullptr, 'e' },
         { "list-image-info", required_argument, nullptr, 'E' },
         { "list-interfaces", required_argument, nullptr, 'N' },
@@ -308,7 +308,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             command.set_operation(DEVICES_INFO);
             break;
 
-        case 'm':
+        case OPT_LIST_EXTENSIONS:
             command.set_operation(MAPPING_INFO);
             break;
 
@@ -344,6 +344,16 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'R':
             command.set_operation(RENAME_IMAGE);
             image_params = optarg;
+            break;
+
+        case 'm':
+            try {
+                device->set_caching_mode(ParseCachingMode(optarg));
+            }
+            catch (const parser_exception &e) {
+                cerr << e.what() << endl;
+                return EXIT_FAILURE;
+            }
             break;
 
         case 'n':
@@ -405,16 +415,6 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             }
             else {
                 device->set_scsi_level(scsi_level);
-            }
-            break;
-
-        case OPT_CACHING_MODE:
-            try {
-                device->set_caching_mode(ParseCachingMode(optarg));
-            }
-            catch (const parser_exception &e) {
-                cerr << e.what() << endl;
-                return EXIT_FAILURE;
             }
             break;
 
