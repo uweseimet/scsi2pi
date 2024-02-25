@@ -97,8 +97,16 @@ void DaynaPort::CleanUp()
 
 vector<uint8_t> DaynaPort::InquiryInternal() const
 {
-    // The Daynaport driver for the Mac expects 37 bytes, which is covered by the SCSI2Pi-specific data
-    return HandleInquiry(device_type::processor, false);
+    vector<uint8_t> buf = HandleInquiry(device_type::processor, false);
+
+    if (GetController()->GetCdbByte(4) == 37) {
+        // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
+        // add a vendor-specific byte in order to satisfy this driver.
+        buf[4]++;
+        buf.push_back(0);
+    }
+
+    return buf;
 }
 
 //---------------------------------------------------------------------------

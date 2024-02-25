@@ -219,8 +219,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
     EXPECT_EQ(scsi_level::spc_3, (scsi_level)controller->GetBuffer()[2]) << "Wrong SCSI level";
     EXPECT_EQ(scsi_level::scsi_2, (scsi_level)controller->GetBuffer()[3]) << "Wrong response level";
-    EXPECT_EQ(0x1f + TestShared::GetVendorSpecificVersion().size(), controller->GetBuffer()[4])
-        << "Wrong additional data size";
+    EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
         return d->HandleInquiry(device_type::direct_access, true);
@@ -233,8 +232,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
     EXPECT_EQ(scsi_level::scsi_1_ccs, (scsi_level)controller->GetBuffer()[2]) << "Wrong SCSI level";
     EXPECT_EQ(scsi_level::scsi_1_ccs, (scsi_level)controller->GetBuffer()[3]) << "Wrong response level";
-    EXPECT_EQ(0x1f + TestShared::GetVendorSpecificVersion().size(), controller->GetBuffer()[4])
-        << "Wrong additional data size";
+    EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     controller->SetCdbByte(1, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
@@ -253,8 +251,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
-    EXPECT_EQ(0x1f + TestShared::GetVendorSpecificVersion().size(), controller->GetBuffer()[4])
-        << "Wrong additional data size";
+    EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
     EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
 
