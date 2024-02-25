@@ -422,7 +422,10 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
             return executor->GetSenseData();
         }
         else {
-            throw execution_exception(fmt::format("Can't execute command ${:02x}", cdb[0]));
+            const string &command_name = BusFactory::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]));
+            const string &s = fmt::format("Can't execute command {}",
+                !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
+            throw execution_exception(s);
         }
     }
 
