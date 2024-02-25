@@ -39,7 +39,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 compatible caching.\n"
             << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
             << "                                 (VENDOR:PRODUCT:REVISION).\n"
-            << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
+            << "  --file/-f FILE|PARAMS          Image file path or device-specific parameters.\n"
             << "  --image-folder/-F FOLDER       Default location for image files,\n"
             << "                                 default is '~/images'.\n"
             << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|error|\n"
@@ -180,7 +180,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     PbDeviceDefinition *device = command.add_devices();
     device->set_id(-1);
     string id_and_lun;
-    string param;
+    string params;
     string log_level;
     string default_folder;
     string reserved_ids;
@@ -196,7 +196,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     optind = 1;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
-        "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
+        "e::hlmos::vDINOPSTVXa:b:-c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) { // NOSONAR Acceptable complexity for parsing
         case 'i':
             id_and_lun = optarg;
@@ -255,7 +255,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'f':
-            param = optarg;
+            params = optarg;
             break;
 
         case 'h':
@@ -428,6 +428,11 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         }
     }
 
+    // When no parameters have been provided with the -f option use the free parameter (if present) instead
+    if (params.empty() && optind < static_cast<int>(args.size())) {
+        params = args.data()[optind];
+    }
+
     if (!id_and_lun.empty()) {
         if (const string error = SetIdAndLun(device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun);
         !error.empty()) {
@@ -450,7 +455,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             status = s2pctl_commands.CommandDevicesInfo();
         }
         else {
-            ParseParameters(*device, param);
+            ParseParameters(*device, params);
 
             status = s2pctl_commands.Execute(log_level, default_folder, reserved_ids, image_params, filename);
         }
