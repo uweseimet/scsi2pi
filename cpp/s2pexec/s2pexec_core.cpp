@@ -30,8 +30,6 @@ void S2pExec::CleanUp() const
 
 void S2pExec::TerminationHandler(int)
 {
-    instance->bus->SetRST(true);
-
     instance->CleanUp();
 
     // Process will terminate automatically
