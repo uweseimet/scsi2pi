@@ -177,7 +177,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             break;
 
         case 1:
-            // Encountered filename
+            // Encountered a free parameter e.g. a filename
             break;
 
         default:
