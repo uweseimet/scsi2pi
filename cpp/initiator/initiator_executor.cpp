@@ -63,8 +63,8 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
                 }
             }
             catch (const phase_exception &e) {
-                error(e.what());
                 bus.SetRST(true);
+                error(e.what());
                 return 0xff;
             }
         }
