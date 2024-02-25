@@ -60,6 +60,8 @@ private:
 
     bool request_sense = true;
 
+    bool reset_bus = false;
+
     bool hex_only = false;
 
     bool sasi = false;

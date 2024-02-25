@@ -62,6 +62,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
             << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
             << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
+            << "  --reset-bus/-r                Reset the bus.\n"
             << "  --hex-only/-x                 Do not display/save the offset and ASCII data.\n"
             << "  --version/-v                  Display the program version.\n"
             << "  --help/-H                     Display this help.\n";
@@ -105,6 +106,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "no-request-sense", no_argument, nullptr, 'n' },
         { "log-level", required_argument, nullptr, 'L' },
+        { "reset-bus", no_argument, nullptr, 'r' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
         { "timeout", required_argument, nullptr, 'o' },
@@ -121,6 +123,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     command = "";
     data = "";
     request_sense = true;
+    reset_bus = false;
     binary_input_filename = "";
     binary_output_filename = "";
     hex_input_filename = "";
@@ -128,7 +131,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:L:t:T:Hnvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:L:t:T:Hnrvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -178,6 +181,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'o':
             tout = optarg;
+            break;
+
+        case 'r':
+            reset_bus = true;
             break;
 
         case 't':
@@ -232,7 +239,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         }
     }
 
-    if (target_id == -1) {
+    if (target_id == -1 && !reset_bus) {
         throw parser_exception("Missing target ID");
     }
 
@@ -244,7 +251,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         target_lun = 0;
     }
 
-    if (command.empty()) {
+    if (command.empty() && !reset_bus) {
         throw parser_exception("Missing command block");
     }
 
@@ -365,6 +372,11 @@ int S2pExec::Run(span<char*> args, bool in_process)
 int S2pExec::Run()
 {
     executor->SetTarget(target_id, target_lun, sasi);
+
+    if (reset_bus) {
+        ResetBus(*bus);
+        return EXIT_SUCCESS;
+    }
 
     int result = EXIT_SUCCESS;
     try {

@@ -23,9 +23,9 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_request_sense, 6, "REQUEST SENSE");
     AddCommand(scsi_command::cmd_format_unit, 6, "FORMAT UNIT");
     AddCommand(scsi_command::cmd_reassign_blocks, 6, "REASSIGN BLOCKS");
-    AddCommand(scsi_command::cmd_read6, 6, "READ(6)/GET MESSAGE(10)");
+    AddCommand(scsi_command::cmd_read6, 6, "READ(6)/GET MESSAGE(6)");
     AddCommand(scsi_command::cmd_retrieve_stats, 6, "RETRIEVE STATS");
-    AddCommand(scsi_command::cmd_write6, 6, "WRITE(6)/PRINT/SEND MESSAGE(10)");
+    AddCommand(scsi_command::cmd_write6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT");
     AddCommand(scsi_command::cmd_seek6, 6, "SEEK(6)");
     AddCommand(scsi_command::cmd_set_iface_mode, 6, "SET INTERFACE MODE");
     AddCommand(scsi_command::cmd_set_mcast_addr, 6, "SET MULTICAST ADDRESS");
@@ -58,8 +58,8 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_read_capacity16_read_long16, 16, "READ CAPACITY(16)/READ LONG(16)");
     AddCommand(scsi_command::cmd_write_long16, 16, "WRITE LONG(16)");
     AddCommand(scsi_command::cmd_report_luns, 12, "REPORT LUNS");
-    AddCommand(scsi_command::cmd_execute_operation, 10, "EXECUTE OPERATION");
-    AddCommand(scsi_command::cmd_receive_operation_results, 10, "RECEIVE OPERATION RESULTS");
+    AddCommand(scsi_command::cmd_execute_operation, 10, "EXECUTE OPERATION (SCSI2Pi-specific)");
+    AddCommand(scsi_command::cmd_receive_operation_results, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)");
 }
 
 void BusFactory::AddCommand(scsi_command opcode, int byte_count, string_view name)

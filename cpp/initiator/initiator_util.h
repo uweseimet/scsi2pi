@@ -14,6 +14,7 @@ using namespace std;
 
 namespace initiator_util
 {
+void ResetBus(Bus&);
 tuple<sense_key, asc, int> GetSenseData(InitiatorExecutor&);
 bool SetLogLevel(const string&);
 }
