@@ -62,9 +62,11 @@ enum class scsi_command
     cmd_format_unit = 0x04,
     cmd_reassign_blocks = 0x07,
     cmd_read6 = 0x08,
+    cmd_get_message6 = 0x08,
     // DaynaPort specific command
     cmd_retrieve_stats = 0x09,
     cmd_write6 = 0x0a,
+    cmd_send_message6 = 0x0a,
     cmd_print = 0x0a,
     cmd_seek6 = 0x0b,
     // DaynaPort specific command

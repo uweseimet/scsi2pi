@@ -14,6 +14,15 @@ using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
+void initiator_util::ResetBus(Bus &bus)
+{
+    bus.SetRST(true);
+    // 100 us should be enough, the standard requires at least 25 us
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 100'000 };
+    nanosleep(&ts, nullptr);
+    bus.Reset();
+}
+
 tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
     array<uint8_t, 14> buf = { };

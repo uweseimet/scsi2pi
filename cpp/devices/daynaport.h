@@ -30,10 +30,11 @@
 #endif
 #include <unordered_map>
 #include <array>
+#include "base/interfaces/scsi_communications_commands.h"
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice
+class DaynaPort : public PrimaryDevice, private ScsiCommunicationsCommands
 {
     uint64_t byte_read_count = 0;
     uint64_t byte_write_count = 0;
@@ -62,8 +63,8 @@ public:
     int RetrieveStats(cdb_t, vector<uint8_t>&) const;
 
     void TestUnitReady() override;
-    void Read6();
-    void Write6() const;
+    void GetMessage6() override;
+    void SendMessage6() const override;
     void RetrieveStatistics() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
