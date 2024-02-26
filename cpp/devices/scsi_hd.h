@@ -15,7 +15,7 @@
 
 class ScsiHd : public Disk
 {
-    static constexpr string DEFAULT_PRODUCT = "SCSI HD";
+    inline static const string DEFAULT_PRODUCT = "SCSI HD";
 
 public:
 

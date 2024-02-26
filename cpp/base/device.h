@@ -235,5 +235,5 @@ private:
     // The parameters the device was created with
     param_map params;
 
-    static constexpr string DEFAULT_VENDOR = "SCSI2Pi";
+    inline static const string DEFAULT_VENDOR = "SCSI2Pi";
 };

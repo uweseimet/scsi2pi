@@ -345,7 +345,7 @@ constexpr array<phase_t, 8> Bus::phases = {
     phase_t::msgin
 };
 
-constexpr array<string, 11> Bus::phase_names = {
+const array<string, 11> Bus::phase_names = {
     "BUS FREE",
     "ARBITRATION",
     "SELECTION",

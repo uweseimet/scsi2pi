@@ -22,16 +22,16 @@ class PropertyHandler
 public:
 
     // Non device-specific property keys
-    static constexpr string IMAGE_FOLDER = "image_folder";
-    static constexpr string LOCALE = "locale";
-    static constexpr string LOG_LEVEL = "log_level";
-    static constexpr string LOG_PATTERN = "log_pattern";
-    static constexpr string MODE_PAGE = "mode_page";
-    static constexpr string PORT = "port";
-    static constexpr string PROPERTY_FILES = "property_files";
-    static constexpr string RESERVED_IDS = "reserved_ids";
-    static constexpr string SCAN_DEPTH = "scan_depth";
-    static constexpr string TOKEN_FILE = "token_file";
+    inline static const string IMAGE_FOLDER = "image_folder";
+    inline static const string LOCALE = "locale";
+    inline static const string LOG_LEVEL = "log_level";
+    inline static const string LOG_PATTERN = "log_pattern";
+    inline static const string MODE_PAGE = "mode_page";
+    inline static const string PORT = "port";
+    inline static const string PROPERTY_FILES = "property_files";
+    inline static const string RESERVED_IDS = "reserved_ids";
+    inline static const string SCAN_DEPTH = "scan_depth";
+    inline static const string TOKEN_FILE = "token_file";
 
     static PropertyHandler& Instance()
     {
@@ -59,6 +59,6 @@ private:
 
     property_map property_cache;
 
-    static constexpr string GLOBAL_CONFIGURATION = "/etc/s2p.conf";
+    inline static const string GLOBAL_CONFIGURATION = "/etc/s2p.conf";
     inline static const string LOCAL_CONFIGURATION = ".config/s2p.conf";
 };
