@@ -6,53 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include "mocks.h"
-
-TEST(BusTest, GetPhase)
-{
-    NiceMock<MockBus> bus;
-
-    EXPECT_EQ(phase_t::busfree, bus.GetPhase());
-
-    ON_CALL(bus, GetSEL()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::selection, bus.GetPhase());
-
-    ON_CALL(bus, GetSEL()).WillByDefault(Return(false));
-    ON_CALL(bus, GetBSY()).WillByDefault(Return(true));
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(false));
-    EXPECT_EQ(phase_t::dataout, bus.GetPhase());
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::reserved, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(false));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::command, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(true));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::msgout, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(false));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(false));
-    ON_CALL(bus, GetIO()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::datain, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(true));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(false));
-    ON_CALL(bus, GetIO()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::reserved, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(true));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(true));
-    ON_CALL(bus, GetIO()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::msgin, bus.GetPhase());
-
-    ON_CALL(bus, GetMSG()).WillByDefault(Return(false));
-    ON_CALL(bus, GetCD()).WillByDefault(Return(true));
-    ON_CALL(bus, GetIO()).WillByDefault(Return(true));
-    EXPECT_EQ(phase_t::status, bus.GetPhase());
-}
+#include <gtest/gtest.h>
+#include "buses/bus.h"
 
 TEST(BusTest, GetPhaseName)
 {

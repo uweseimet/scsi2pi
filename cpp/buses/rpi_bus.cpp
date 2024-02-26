@@ -287,11 +287,6 @@ bool RpiBus::WaitForSelection()
     return true;
 }
 
-bool RpiBus::GetBSY() const
-{
-    return GetSignal(PIN_BSY);
-}
-
 void RpiBus::SetBSY(bool state)
 {
     SetSignal(PIN_BSY, state);
@@ -319,11 +314,6 @@ void RpiBus::SetBSY(bool state)
     }
 }
 
-bool RpiBus::GetSEL() const
-{
-    return GetSignal(PIN_SEL);
-}
-
 void RpiBus::SetSEL(bool state)
 {
     if (!IsTarget() && state) {
@@ -331,56 +321,6 @@ void RpiBus::SetSEL(bool state)
     }
 
     SetSignal(PIN_SEL, state);
-}
-
-bool RpiBus::GetATN() const
-{
-    return GetSignal(PIN_ATN);
-}
-
-void RpiBus::SetATN(bool state)
-{
-    SetSignal(PIN_ATN, state);
-}
-
-bool RpiBus::GetACK() const
-{
-    return GetSignal(PIN_ACK);
-}
-
-void RpiBus::SetACK(bool state)
-{
-    SetSignal(PIN_ACK, state);
-}
-
-bool RpiBus::GetRST() const
-{
-    return GetSignal(PIN_RST);
-}
-
-void RpiBus::SetRST(bool state)
-{
-    SetSignal(PIN_RST, state);
-}
-
-bool RpiBus::GetMSG() const
-{
-    return GetSignal(PIN_MSG);
-}
-
-void RpiBus::SetMSG(bool state)
-{
-    SetSignal(PIN_MSG, state);
-}
-
-bool RpiBus::GetCD() const
-{
-    return GetSignal(PIN_CD);
-}
-
-void RpiBus::SetCD(bool state)
-{
-    SetSignal(PIN_CD, state);
 }
 
 bool RpiBus::GetIO()
@@ -444,16 +384,6 @@ void RpiBus::SetIO(bool state)
         SetMode(PIN_DT6, IN);
         SetMode(PIN_DT7, IN);
     }
-}
-
-bool RpiBus::GetREQ() const
-{
-    return GetSignal(PIN_REQ);
-}
-
-void RpiBus::SetREQ(bool state)
-{
-    SetSignal(PIN_REQ, state);
 }
 
 inline uint8_t RpiBus::GetDAT()

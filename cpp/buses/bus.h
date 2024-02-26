@@ -12,7 +12,6 @@
 
 #include <memory>
 #include <vector>
-#include "signal_control.h"
 #include "shared/scsi.h"
 
 #if defined BOARD_STANDARD
@@ -119,13 +118,13 @@ constexpr static int OUT = GPIO_OUTPUT;
 constexpr static int ON = 1;
 constexpr static int OFF = 0;
 
-class Bus : public SignalControl
+class Bus
 {
 
 public:
 
     Bus() = default;
-    ~Bus() override = default;
+    virtual ~Bus() = default;
 
     virtual bool Init(bool = true);
     virtual void Reset() = 0;
@@ -137,16 +136,99 @@ public:
 
     virtual bool WaitSignal(int, bool);
 
+    virtual void SetBSY(bool) = 0;
+
+    virtual void SetSEL(bool) = 0;
+
+    virtual bool GetIO() = 0;
+    virtual void SetIO(bool) = 0;
+
+    virtual uint8_t GetDAT() = 0;
+    virtual void SetDAT(uint8_t) = 0;
+
+    virtual bool GetSignal(int) const = 0;
+    virtual void SetSignal(int, bool) = 0;
+
     int CommandHandShake(vector<uint8_t>&);
     int MsgInHandShake();
     int ReceiveHandShake(uint8_t*, int);
     int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
 
+    bool GetBSY() const
+    {
+        return GetSignal(PIN_BSY);
+    }
+
+    bool GetSEL() const
+    {
+        return GetSignal(PIN_SEL);
+    }
+
+    inline bool GetREQ() const
+    {
+        return GetSignal(PIN_REQ);
+    }
+
+    inline void SetREQ(bool state)
+    {
+        SetSignal(PIN_REQ, state);
+    }
+
+    bool GetATN() const
+    {
+        return GetSignal(PIN_ATN);
+    }
+
+    void SetATN(bool state)
+    {
+        SetSignal(PIN_ATN, state);
+    }
+
+    inline bool GetACK() const
+    {
+        return GetSignal(PIN_ACK);
+    }
+
+    inline void SetACK(bool state)
+    {
+        SetSignal(PIN_ACK, state);
+    }
+
+    bool GetRST() const
+    {
+        return GetSignal(PIN_RST);
+    }
+
+    void SetRST(bool state)
+    {
+        SetSignal(PIN_RST, state);
+    }
+
+    bool GetMSG() const
+    {
+        return GetSignal(PIN_MSG);
+    }
+
+    void SetMSG(bool state)
+    {
+        SetSignal(PIN_MSG, state);
+    }
+
+    bool GetCD() const
+    {
+        return GetSignal(PIN_CD);
+    }
+
+    void SetCD(bool state)
+    {
+        SetSignal(PIN_CD, state);
+    }
+
     phase_t GetPhase();
 
     static string GetPhaseName(phase_t);
 
-    // For work-around required byte the DaynaPort emulation
+    // For work-around required by the DaynaPort emulation
     static constexpr int SEND_NO_DELAY = -1;
 
 protected:
@@ -172,5 +254,5 @@ private:
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    constexpr static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
+    static constexpr int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 };

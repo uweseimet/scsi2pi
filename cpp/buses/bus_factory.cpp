@@ -103,7 +103,7 @@ bool BusFactory::CheckForPi()
         return false;
     }
 
-    const int type = model.substr(13, 1)[0] - '0';
+    const int type = model.find("Zero") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
         return false;

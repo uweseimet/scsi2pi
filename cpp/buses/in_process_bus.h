@@ -35,77 +35,24 @@ public:
         return dat;
     }
 
-    bool GetBSY() const override
-    {
-        return GetSignal(PIN_BSY);
-    }
     void SetBSY(bool state) override
     {
         SetSignal(PIN_BSY, state);
     }
-    bool GetSEL() const override
-    {
-        return GetSignal(PIN_SEL);
-    }
+
     void SetSEL(bool state) override
     {
         SetSignal(PIN_SEL, state);
     }
-    bool GetATN() const override
-    {
-        return GetSignal(PIN_ATN);
-    }
-    void SetATN(bool state) override
-    {
-        SetSignal(PIN_ATN, state);
-    }
-    bool GetACK() const override
-    {
-        return GetSignal(PIN_ACK);
-    }
-    void SetACK(bool state) override
-    {
-        SetSignal(PIN_ACK, state);
-    }
-    bool GetRST() const override
-    {
-        return GetSignal(PIN_RST);
-    }
-    void SetRST(bool state) override
-    {
-        SetSignal(PIN_RST, state);
-    }
-    bool GetMSG() const override
-    {
-        return GetSignal(PIN_MSG);
-    }
-    void SetMSG(bool state) override
-    {
-        SetSignal(PIN_MSG, state);
-    }
-    bool GetCD() const override
-    {
-        return GetSignal(PIN_CD);
-    }
-    void SetCD(bool state) override
-    {
-        SetSignal(PIN_CD, state);
-    }
+
     bool GetIO() override
     {
         return GetSignal(PIN_IO);
     }
+
     void SetIO(bool state) override
     {
         SetSignal(PIN_IO, state);
-    }
-    bool GetREQ() const override
-    {
-        return GetSignal(PIN_REQ);
-    }
-    void SetREQ(bool state) override
-    {
-        SetSignal(PIN_REQ, state);
     }
 
     uint8_t GetDAT() override

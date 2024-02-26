@@ -22,6 +22,8 @@ static constexpr char COMPONENT_SEPARATOR = ':';
 
 struct StringHash
 {
+    using is_transparent = void;
+
     size_t operator()(string_view sv) const
     {
         hash<string_view> hasher;

@@ -15,7 +15,7 @@
 #endif
 #include "bus.h"
 
-class RpiBus : public Bus
+class RpiBus final : public Bus
 {
 
 public:
@@ -44,32 +44,12 @@ public:
     // Bus signal acquisition
     uint32_t Acquire() override;
 
-    bool GetBSY() const override;
     void SetBSY(bool) override;
 
-    bool GetSEL() const override;
     void SetSEL(bool) override;
-
-    bool GetATN() const override;
-    void SetATN(bool) override;
-
-    bool GetACK() const override;
-    void SetACK(bool) override;
-
-    bool GetRST() const override;
-    void SetRST(bool) override;
-
-    bool GetMSG() const override;
-    void SetMSG(bool) override;
-
-    bool GetCD() const override;
-    void SetCD(bool) override;
 
     bool GetIO() override;
     void SetIO(bool ast) override;
-
-    bool GetREQ() const override;
-    void SetREQ(bool) override;
 
     uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
