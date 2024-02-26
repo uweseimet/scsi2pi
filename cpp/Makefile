@@ -29,10 +29,12 @@ ifeq ("$(shell uname -s)", "Linux")
 endif
 
 ifeq ("$(shell uname -s)", "FreeBSD")
+	AR = ar
 	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
+	AR = ar
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
