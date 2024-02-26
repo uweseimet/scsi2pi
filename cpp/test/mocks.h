@@ -21,7 +21,7 @@
 
 using namespace testing;
 
-class MockBus : public Bus // NOSONAR Having many fields/methods cannot be avoided
+class MockBus : public Bus
 {
 
 public:
@@ -54,17 +54,9 @@ public:
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
-    MOCK_METHOD(void, PinConfig, (int, int), (override));
-    MOCK_METHOD(void, PullConfig, (int, int), (override));
-    MOCK_METHOD(void, SetControl, (int, bool), (override));
-    MOCK_METHOD(void, SetMode, (int, int), (override));
-    MOCK_METHOD(void, PinSetSignal, (int, bool), (override));
     MOCK_METHOD(void, WaitBusSettle, (), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));
     MOCK_METHOD(void, DisableIRQ, (), (override));
-
-    MockBus() = default;
-    ~MockBus() override = default;
 };
 
 class MockInProcessBus : public InProcessBus

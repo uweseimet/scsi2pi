@@ -8,17 +8,14 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include <chrono>
 #include "bus_factory.h"
-#include "bus.h"
 
-using namespace std;
 using namespace scsi_defs;
 
-bool Bus::Init(bool t)
+bool Bus::Init(bool mode)
 {
-    target_mode = t;
+    target_mode = mode;
 
     return true;
 }
@@ -325,8 +322,7 @@ phase_t Bus::GetPhase()
 
 string Bus::GetPhaseName(phase_t phase)
 {
-    assert(phase_names.find(phase) != phase_names.end());
-    return phase_names.at(phase);
+    return phase_names[static_cast<int>(phase)];
 }
 
 // Phase Table
@@ -343,7 +339,7 @@ string Bus::GetPhaseName(phase_t phase)
 // | 1 | 1 | 0 | MESSAGE OUT
 // | 1 | 1 | 1 | MESSAGE IN
 //
-const array<phase_t, 8> Bus::phases = {
+constexpr array<phase_t, 8> Bus::phases = {
     phase_t::dataout,
     phase_t::datain,
     phase_t::command,
@@ -354,16 +350,16 @@ const array<phase_t, 8> Bus::phases = {
     phase_t::msgin
 };
 
-const unordered_map<phase_t, string> Bus::phase_names = {
-    { phase_t::busfree, "BUS FREE" },
-    { phase_t::arbitration, "ARBITRATION" },
-    { phase_t::selection, "SELECTION" },
-    { phase_t::reselection, "RESELECTION" },
-    { phase_t::command, "COMMAND" },
-    { phase_t::datain, "DATA IN" },
-    { phase_t::dataout, "DATA OUT" },
-    { phase_t::status, "STATUS" },
-    { phase_t::msgin, "MESSAGE IN" },
-    { phase_t::msgout, "MESSAGE OUT" },
-    { phase_t::reserved, "reserved" }
+const array<string, 11> Bus::phase_names = {
+    "BUS FREE",
+    "ARBITRATION",
+    "SELECTION",
+    "RESELECTION",
+    "COMMAND",
+    "DATA IN",
+    "DATA OUT",
+    "STATUS",
+    "MESSAGE IN",
+    "MESSAGE OUT",
+    "RESERVED"
 };

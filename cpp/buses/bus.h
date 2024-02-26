@@ -12,7 +12,7 @@
 
 #include <memory>
 #include <vector>
-#include "pin_control.h"
+#include "signal_control.h"
 #include "shared/scsi.h"
 
 #if defined BOARD_STANDARD
@@ -119,10 +119,13 @@ constexpr static int OUT = GPIO_OUTPUT;
 constexpr static int ON = 1;
 constexpr static int OFF = 0;
 
-class Bus : public PinControl
+class Bus : public SignalControl
 {
 
 public:
+
+    Bus() = default;
+    virtual ~Bus() = default;
 
     virtual bool Init(bool = true);
     virtual void Reset() = 0;
@@ -130,9 +133,9 @@ public:
 
     virtual uint32_t Acquire() = 0;
 
-    virtual bool WaitSignal(int, bool);
-
     virtual bool WaitForSelection() = 0;
+
+    virtual bool WaitSignal(int, bool);
 
     int CommandHandShake(vector<uint8_t>&);
     int MsgInHandShake();
@@ -146,12 +149,10 @@ public:
     }
     static string GetPhaseName(phase_t);
 
-    // Work-around needed for the DaynaPort emulation
+    // For work-around required byte the DaynaPort emulation
     static constexpr int SEND_NO_DELAY = -1;
 
 protected:
-
-    virtual void PinSetSignal(int, bool) = 0;
 
     virtual void WaitBusSettle() const = 0;
 
@@ -167,7 +168,7 @@ private:
 
     static const array<phase_t, 8> phases;
 
-    static const unordered_map<phase_t, string> phase_names;
+    static const array<string, 11> phase_names;
 
     bool target_mode = true;
 

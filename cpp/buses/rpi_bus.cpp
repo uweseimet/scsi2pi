@@ -9,7 +9,6 @@
 
 #include <map>
 #include <fstream>
-#include <cstring>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -72,7 +71,7 @@ bool RpiBus::Init(bool target)
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        core_freq = maxclock[6] / 1000000;
+        timer_core_freq = maxclock[6] / 1000000;
         close(vcio_fd);
     }
     else {
@@ -758,7 +757,7 @@ void RpiBus::PullConfig(int pin, int mode)
         gpio[GPIO_PUPPDN0 + (pin >> 4)] = bits;
     } else {
         // 2 us
-        const timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
+        constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
 
         pin &= 0x1f;
         gpio[GPIO_PUD] = mode & 0x3;
@@ -802,7 +801,7 @@ inline uint32_t RpiBus::Acquire()
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 void RpiBus::WaitBusSettle() const
 {
-    if (const uint32_t diff = core_freq * 400 / 1000; diff) {
+    if (const uint32_t diff = timer_core_freq * 400 / 1000; diff) {
         const uint32_t start = armt_addr[ARMT_FREERUN];
         while (armt_addr[ARMT_FREERUN] - start < diff) {
             // Intentionally empty

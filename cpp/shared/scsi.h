@@ -29,20 +29,19 @@ enum class scsi_level
     spc_6 = 8
 };
 
-// Phase definitions
 enum class phase_t
 {
-    busfree,
-    arbitration,
-    selection,
-    reselection,
-    command,
-    datain,
-    dataout,
-    status,
-    msgin,
-    msgout,
-    reserved
+    busfree = 0,
+    arbitration = 1,
+    selection = 2,
+    reselection = 3,
+    command = 4,
+    datain = 5,
+    dataout = 6,
+    status = 7,
+    msgin = 8,
+    msgout = 9,
+    reserved = 10
 };
 
 enum class device_type

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
@@ -76,17 +75,14 @@ public:
     {
         SetSignal(PIN_RST, state);
     }
-    ;
     bool GetMSG() const override
     {
         return GetSignal(PIN_MSG);
     }
-    ;
     void SetMSG(bool state) override
     {
         SetSignal(PIN_MSG, state);
     }
-    ;
     bool GetCD() const override
     {
         return GetSignal(PIN_CD);
@@ -144,27 +140,6 @@ private:
     void EnableIRQ() override
     {
         // Nothing to do }
-    }
-
-    void SetControl(int, bool) override
-    {
-        assert(false);
-    }
-    void SetMode(int, int) override
-    {
-        assert(false);
-    }
-    void PinConfig(int, int) override
-    {
-        assert(false);
-    }
-    void PullConfig(int, int) override
-    {
-        assert(false);
-    }
-    void PinSetSignal(int, bool) override
-    {
-        assert(false);
     }
 
     static inline atomic_bool target_enabled;

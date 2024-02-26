@@ -2,10 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022 akuker
 // Copyright (C) 2023-2024 Uwe Seimet
-//
-// Virtual base class with methods to control the GPIO pins
 //
 //---------------------------------------------------------------------------
 
@@ -13,13 +10,13 @@
 
 #pragma once
 
-class PinControl
+class SignalControl
 {
 
 public:
 
-    PinControl() = default;
-    virtual ~PinControl() = default;
+    SignalControl() = default;
+    virtual ~SignalControl() = default;
 
     virtual bool GetBSY() const = 0;
     virtual void SetBSY(bool) = 0;
@@ -50,17 +47,6 @@ public:
 
     virtual uint8_t GetDAT() = 0;
     virtual void SetDAT(uint8_t) = 0;
-
-    // GPIO pin direction setting
-    virtual void PinConfig(int, int) = 0;
-
-    // GPIO pin pull up/down resistor setting
-    virtual void PullConfig(int, int) = 0;
-
-    virtual void SetControl(int, bool) = 0;
-
-    // Sets signal direction (in/out) depending on initiator/target mode
-    virtual void SetMode(int, int) = 0;
 
     virtual bool GetSignal(int) const = 0;
     virtual void SetSignal(int, bool) = 0;

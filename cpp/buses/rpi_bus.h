@@ -69,7 +69,7 @@ public:
     void SetIO(bool ast) override;
 
     bool GetREQ() const override;
-    void SetREQ(bool ast) override;
+    void SetREQ(bool) override;
 
     uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
@@ -80,8 +80,10 @@ private:
 
     void CreateWorkTable();
 
-    void SetControl(int, bool) override;
-    void SetMode(int, int) override;
+    void SetControl(int, bool);
+
+    // Sets signal direction (in/out) depending on initiator/target mode
+    void SetMode(int, int);
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
@@ -89,16 +91,20 @@ private:
     void DisableIRQ() override;
     void EnableIRQ() override;
 
-    void PinConfig(int, int) override;
-    void PullConfig(int, int) override;
-    void PinSetSignal(int, bool) override;
+    //GPIO pin pull up/down resistor setting
+    void PullConfig(int, int);
+
+    //GPIO pin direction setting
+    void PinConfig(int, int);
+
+    void PinSetSignal(int, bool);
 
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t);
 
     PiType pi_type;
 
-    inline static uint32_t core_freq = 0;
+    uint32_t timer_core_freq = 0;
 
     volatile uint32_t *armt_addr = nullptr;
 
