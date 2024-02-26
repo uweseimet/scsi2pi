@@ -21,7 +21,7 @@
 class DiskCache : public Cache
 {
     // Number of tracks to cache
-    static const int CACHE_MAX = 16;
+    static constexpr int CACHE_MAX = 16;
 
 public:
 

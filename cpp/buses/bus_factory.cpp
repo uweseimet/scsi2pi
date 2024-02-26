@@ -9,7 +9,6 @@
 #include <sstream>
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "rpi_bus.h"
 #include "in_process_bus.h"
 #include "bus_factory.h"
 
@@ -76,7 +75,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
         bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), in_process);
     }
     else {
-        bus = make_unique<RpiBus>();
+        bus = make_unique<RpiBus>(pi_type);
     }
 
     if (bus && bus->Init(target)) {
@@ -99,13 +98,21 @@ bool BusFactory::CheckForPi()
     s << in.rdbuf();
     const string &model = s.str();
 
-    if (model.starts_with("Raspberry Pi") && !model.starts_with("Raspberry Pi 5")) {
-        is_raspberry_pi = true;
-        return true;
+    if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
+        warn("This platform is not a Raspberry Pi, functionality is limited");
+        return false;
     }
 
-    warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
+    const int type = model.substr(13, 1)[0] - '0';
+    if (type <= 0 || type > 4) {
+        warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
+        return false;
+    }
 
-    return false;
+    trace("Detected Raspberry Pi type {}", type);
+
+    pi_type = static_cast<RpiBus::PiType>(type);
+
+    return true;
 }
 

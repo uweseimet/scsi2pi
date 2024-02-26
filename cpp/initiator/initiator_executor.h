@@ -78,20 +78,18 @@ private:
 
     int next_message = 0x80;
 
-    // Timeout values see bus.h
+    static constexpr long BUS_SETTLE_DELAY_NS = 400;
+    static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_SETTLE_DELAY_NS };
 
-    inline static const long BUS_SETTLE_DELAY_NS = 400;
-    inline static const timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_SETTLE_DELAY_NS };
+    static constexpr long BUS_CLEAR_DELAY_NS = 800;
+    static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = BUS_CLEAR_DELAY_NS };
 
-    inline static const long BUS_CLEAR_DELAY_NS = 800;
-    inline static const timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = BUS_CLEAR_DELAY_NS };
+    static constexpr long BUS_FREE_DELAY_NS = 800;
+    static constexpr timespec BUS_FREE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_FREE_DELAY_NS };
 
-    inline static const long BUS_FREE_DELAY_NS = 800;
-    inline static const timespec BUS_FREE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_FREE_DELAY_NS };
+    static constexpr long DESKEW_DELAY_NS = 45;
+    static constexpr timespec DESKEW_DELAY = { .tv_sec = 0, .tv_nsec = DESKEW_DELAY_NS };
 
-    inline static const long DESKEW_DELAY_NS = 45;
-    inline static const timespec DESKEW_DELAY = { .tv_sec = 0, .tv_nsec = DESKEW_DELAY_NS };
-
-    inline static const long ARBITRATION_DELAY_NS = 2'400;
-    inline static const timespec ARBITRATION_DELAY = { .tv_sec = 0, .tv_nsec = ARBITRATION_DELAY_NS };
+    static constexpr long ARBITRATION_DELAY_NS = 2'400;
+    static constexpr timespec ARBITRATION_DELAY = { .tv_sec = 0, .tv_nsec = ARBITRATION_DELAY_NS };
 };

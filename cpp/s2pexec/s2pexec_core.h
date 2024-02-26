@@ -81,5 +81,5 @@ private:
     // Required for the termination handler
     static inline S2pExec *instance;
 
-    inline static const int DEFAULT_BUFFER_SIZE = 131072;
+    static constexpr int DEFAULT_BUFFER_SIZE = 131072;
 };

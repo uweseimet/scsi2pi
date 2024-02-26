@@ -22,24 +22,25 @@ bool RpiBus::Init(bool target)
 {
     GpioBus::Init(target);
 
-    // Determine the Raspberry Pi type from the base address
-    const auto base_addr = GetPeripheralAddress();
-    switch (base_addr) {
-    case 0xfe000000:
-        pi_type = PiType::pi_4;
+    uint32_t base_addr = 0;
+    switch (pi_type) {
+    case RpiBus::PiType::pi_1:
+        base_addr = 0x20000000;
         break;
 
-    case 0x3f000000:
-        pi_type = PiType::pi_2_3;
+    case RpiBus::PiType::pi_2:
+    case RpiBus::PiType::pi_3:
+        base_addr = 0x3f000000;
+        break;
+
+    case RpiBus::PiType::pi_4:
+        base_addr = 0xfe000000;
         break;
 
     default:
-        // 0x20000000
-        pi_type = PiType::pi_1;
+        assert(false);
         break;
     }
-
-    trace("Detected Raspberry Pi type {}", static_cast<int>(pi_type));
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -99,12 +100,14 @@ bool RpiBus::Init(bool target)
 
     // Map GIC interrupt priority mask register
     if (pi_type == PiType::pi_4) {
-        gicc = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_BASE));
-        if (gicc == MAP_FAILED) {
+        gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_BASE));
+        if (gicc_mpr == MAP_FAILED) {
             critical("Can't map GIC: {}", strerror(errno));
             close(fd);
             return false;
         }
+        // MPR has offset 1
+        ++gicc_mpr;
     }
 
     close(fd);
@@ -656,11 +659,12 @@ void RpiBus::DisableIRQ()
     switch (pi_type) {
     case PiType::pi_4:
         // RPI4 disables interrupts via the GIC
-        gicc_pmr_saved = gicc[GICC_PMR];
-        gicc[GICC_PMR] = 0;
+        gicc_pmr_saved = *gicc_mpr;
+        *gicc_mpr = 0;
         break;
 
-    case PiType::pi_2_3:
+    case PiType::pi_2:
+    case PiType::pi_3:
         // RPI2,3 disable core timer IRQ
         tint_core = sched_getcpu() + QA7_CORE0_TINTC;
         tint_ctl = qa7_regs[tint_core];
@@ -682,10 +686,11 @@ void RpiBus::EnableIRQ()
     switch (pi_type) {
     case PiType::pi_4:
         // RPI4 enables interrupts via the GIC
-        gicc[GICC_PMR] = gicc_pmr_saved;
+        *gicc_mpr = gicc_pmr_saved;
         break;
 
-    case PiType::pi_2_3:
+    case PiType::pi_2:
+    case PiType::pi_3:
         // RPI2,3 re-enable core timer IRQ
         qa7_regs[tint_core] = tint_ctl;
         break;
@@ -803,27 +808,4 @@ void RpiBus::WaitBusSettle() const
             // Intentionally empty
         }
     }
-}
-
-uint32_t RpiBus::GetDtRanges(const string &filename, uint32_t offset)
-{
-    if (ifstream in(filename, ios::binary); in.good()) {
-        in.seekg(offset, ios::beg);
-        array<char, 4> buf;
-        in.read(buf.data(), buf.size());
-        if (in.good()) {
-            return (int)buf[0] << 24 | (int)buf[1] << 16 | (int)buf[2] << 8 | (int)buf[3] << 0;
-        }
-    }
-
-    return static_cast<uint32_t>(-1);
-}
-
-uint32_t RpiBus::GetPeripheralAddress()
-{
-    uint32_t address = GetDtRanges("/proc/device-tree/soc/ranges", 4);
-    if (address <= 0xffff) {
-        address = GetDtRanges("/proc/device-tree/soc/ranges", 8);
-    }
-    return address;
 }

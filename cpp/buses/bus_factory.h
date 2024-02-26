@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "bus.h"
+#include "rpi_bus.h"
 
 using namespace std;
 
@@ -37,7 +37,7 @@ public:
 
     bool IsRaspberryPi() const
     {
-        return is_raspberry_pi;
+        return pi_type != RpiBus::PiType::unknown;
     }
 
 private:
@@ -48,7 +48,7 @@ private:
 
     bool CheckForPi();
 
-    bool is_raspberry_pi = false;
+    RpiBus::PiType pi_type = RpiBus::PiType::unknown;
 
     array<int, 256> command_byte_counts;
 

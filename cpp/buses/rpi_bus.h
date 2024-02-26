@@ -20,7 +20,18 @@ class RpiBus : public GpioBus
 
 public:
 
-    RpiBus() = default;
+    enum class PiType
+    {
+        unknown = 0,
+        pi_1 = 1,
+        pi_2 = 2,
+        pi_3 = 3,
+        pi_4 = 4
+    };
+
+    explicit RpiBus(PiType t) : pi_type(t)
+    {
+    }
     ~RpiBus() override = default;
 
     bool Init(bool = true) override;
@@ -75,14 +86,6 @@ public:
 
 private:
 
-    enum class PiType
-    {
-        unknown = 0,
-        pi_1 = 1,
-        pi_2_3 = 2,
-        pi_4 = 4
-    };
-
     void CreateWorkTable();
 
     void SetControl(int, bool) override;
@@ -101,10 +104,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t);
 
-    static uint32_t GetPeripheralAddress();
-    static uint32_t GetDtRanges(const string&, uint32_t);
-
-    PiType pi_type = PiType::unknown;
+    PiType pi_type;
 
     inline static uint32_t core_freq = 0;
 
@@ -141,7 +141,7 @@ private:
 #endif
 
     // GIC CPU interface register
-    volatile uint32_t *gicc = nullptr;
+    volatile uint32_t *gicc_mpr = nullptr;
 
     // RAM copy of GPFSEL0-4  values (GPIO Function Select)
     array<uint32_t, 4> gpfsel;
@@ -166,31 +166,30 @@ private:
 
     static const array<int, 19> SignalTable;
 
-    const static int ARMT_CTRL = 2;
-    const static int ARMT_FREERUN = 8;
+    constexpr static int ARMT_CTRL = 2;
+    constexpr static int ARMT_FREERUN = 8;
 
-    const static uint32_t ARMT_OFFSET = 0x0000B400;
+    constexpr static uint32_t ARMT_OFFSET = 0x0000B400;
 
-    const static int GPIO_FSEL_0 = 0;
-    const static int GPIO_FSEL_1 = 1;
-    const static int GPIO_FSEL_2 = 2;
-    const static int GPIO_FSEL_3 = 3;
-    const static int GPIO_SET_0 = 7;
-    const static int GPIO_CLR_0 = 10;
-    const static int GPIO_LEV_0 = 13;
-    const static int GPIO_PUD = 37;
-    const static int GPIO_CLK_0 = 38;
-    const static int GPIO_PUPPDN0 = 57;
-    const static int PAD_0_27 = 11;
-    const static int IRPT_ENB_IRQ_1 = 4;
-    const static int IRPT_DIS_IRQ_1 = 7;
-    const static int QA7_CORE0_TINTC = 16;
+    constexpr static int GPIO_FSEL_0 = 0;
+    constexpr static int GPIO_FSEL_1 = 1;
+    constexpr static int GPIO_FSEL_2 = 2;
+    constexpr static int GPIO_FSEL_3 = 3;
+    constexpr static int GPIO_SET_0 = 7;
+    constexpr static int GPIO_CLR_0 = 10;
+    constexpr static int GPIO_LEV_0 = 13;
+    constexpr static int GPIO_PUD = 37;
+    constexpr static int GPIO_CLK_0 = 38;
+    constexpr static int GPIO_PUPPDN0 = 57;
+    constexpr static int PAD_0_27 = 11;
+    constexpr static int IRPT_ENB_IRQ_1 = 4;
+    constexpr static int IRPT_DIS_IRQ_1 = 7;
+    constexpr static int QA7_CORE0_TINTC = 16;
 
-    const static uint32_t IRPT_OFFSET = 0x0000B200;
-    const static uint32_t PADS_OFFSET = 0x00100000;
-    const static uint32_t GPIO_OFFSET = 0x00200000;
-    const static uint32_t QA7_OFFSET = 0x01000000;
+    constexpr static uint32_t IRPT_OFFSET = 0x0000B200;
+    constexpr static uint32_t PADS_OFFSET = 0x00100000;
+    constexpr static uint32_t GPIO_OFFSET = 0x00200000;
+    constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
-    const static uint32_t PI4_ARM_GICC_BASE = 0xFF842000;
-    const static int GICC_PMR = 0x0001;
+    constexpr static uint32_t PI4_ARM_GICC_BASE = 0xFF842000;
 };

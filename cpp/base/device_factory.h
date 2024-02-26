@@ -13,7 +13,6 @@
 #include <unordered_map>
 #include "primary_device.h"
 #include "generated/s2p_interface.pb.h"
-#include "shared/s2p_util.h"
 
 using namespace std;
 using namespace s2p_interface;

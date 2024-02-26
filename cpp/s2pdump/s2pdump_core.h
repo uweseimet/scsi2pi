@@ -90,8 +90,8 @@ private:
     // Required for the termination handler
     static inline S2pDump *instance;
 
-    static const int MINIMUM_BUFFER_SIZE = 1024 * 64;
-    static const int DEFAULT_BUFFER_SIZE = 1024 * 1024;
+    static constexpr int MINIMUM_BUFFER_SIZE = 1024 * 64;
+    static constexpr int DEFAULT_BUFFER_SIZE = 1024 * 1024;
 
     static inline const string DIVIDER = "----------------------------------------";
 

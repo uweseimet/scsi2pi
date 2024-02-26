@@ -18,9 +18,6 @@ using namespace s2p_interface;
 class S2pProtoExecutor
 {
 
-    // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
-    inline static const int BUFFER_SIZE = 65535;
-
 public:
 
     enum class protobuf_format
@@ -48,6 +45,9 @@ public:
     }
 
 private:
+
+    // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
+    static constexpr int BUFFER_SIZE = 65535;
 
     array<uint8_t, BUFFER_SIZE> buffer;
 

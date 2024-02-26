@@ -11,12 +11,10 @@
 #pragma once
 
 #include <memory>
-#include <array>
 #include <vector>
 #include "pin_control.h"
 #include "shared/scsi.h"
 
-using namespace std;
 using namespace scsi_defs;
 
 class Bus : public PinControl
@@ -50,7 +48,7 @@ public:
     virtual void SetSignal(int, bool) = 0;
 
     // Work-around needed for the DaynaPort emulation
-    static const int SEND_NO_DELAY = -1;
+    static constexpr int SEND_NO_DELAY = -1;
 
 private:
 

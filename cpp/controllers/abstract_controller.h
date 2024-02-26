@@ -103,7 +103,7 @@ public:
         return ctrl.cdb[index];
     }
 
-    inline static const int UNKNOWN_INITIATOR_ID = -1;
+    static constexpr int UNKNOWN_INITIATOR_ID = -1;
 
 protected:
 
