@@ -13,9 +13,9 @@
 #include <linux/gpio.h>
 #include <sys/epoll.h>
 #endif
-#include "gpio_bus.h"
+#include "bus.h"
 
-class RpiBus : public GpioBus
+class RpiBus : public Bus
 {
 
 public:
@@ -74,14 +74,6 @@ public:
     uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
 
-    bool WaitREQ(bool ast) override
-    {
-        return WaitSignal(PIN_REQ, ast);
-    }
-    inline bool WaitACK(bool ast) override
-    {
-        return WaitSignal(PIN_ACK, ast);
-    }
     void WaitBusSettle() const override;
 
 private:

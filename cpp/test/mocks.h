@@ -50,19 +50,18 @@ public:
     MOCK_METHOD(uint8_t, GetDAT, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
     MOCK_METHOD(uint32_t, Acquire, (), (override));
-    MOCK_METHOD(int, CommandHandShake, (vector<uint8_t>&), (override));
-    MOCK_METHOD(int, MsgInHandShake, (), (override));
-    MOCK_METHOD(int, ReceiveHandShake, (uint8_t *, int), (override));
-    MOCK_METHOD(int, SendHandShake, (uint8_t *, int, int), (override));
     MOCK_METHOD(bool, GetSignal, (int), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
-    MOCK_METHOD(bool, WaitREQ, (bool), (override));
-    MOCK_METHOD(bool, WaitACK, (bool), (override));
+    MOCK_METHOD(bool, WaitSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
     MOCK_METHOD(void, PinConfig, (int, int), (override));
     MOCK_METHOD(void, PullConfig, (int, int), (override));
     MOCK_METHOD(void, SetControl, (int, bool), (override));
     MOCK_METHOD(void, SetMode, (int, int), (override));
+    MOCK_METHOD(void, PinSetSignal, (int, bool), (override));
+    MOCK_METHOD(void, WaitBusSettle, (), (const, override));
+    MOCK_METHOD(void, EnableIRQ, (), (override));
+    MOCK_METHOD(void, DisableIRQ, (), (override));
 
     MockBus() = default;
     ~MockBus() override = default;

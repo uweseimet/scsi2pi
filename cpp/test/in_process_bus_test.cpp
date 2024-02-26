@@ -183,26 +183,20 @@ TEST(DelegatingProcessBusTest, Acquire)
     EXPECT_EQ(0x45U, delegating_bus.Acquire());
 }
 
-TEST(DelegatingProcessBusTest, WaitACK)
+TEST(DelegatingProcessBusTest, WaitSignal)
 {
     MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetACK(true);
-    EXPECT_TRUE(delegating_bus.WaitACK(true));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_ACK, true));
     bus.SetACK(false);
-    EXPECT_TRUE(delegating_bus.WaitACK(false));
-}
-
-TEST(DelegatingProcessBusTest, WaitREQ)
-{
-    MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_ACK, false));
 
     bus.SetREQ(true);
-    EXPECT_TRUE(delegating_bus.WaitREQ(true));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_REQ, true));
     bus.SetREQ(false);
-    EXPECT_TRUE(delegating_bus.WaitREQ(false));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_REQ, false));
 }
 
 TEST(DelegatingProcessBusTest, DAT)

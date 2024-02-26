@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 
 #include "buses/bus_factory.h"
-#include "buses/gpio_bus.h"
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
 #endif

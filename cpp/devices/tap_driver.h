@@ -15,10 +15,10 @@
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
-static const int ETH_FRAME_LEN = 1514;
+static constexpr int ETH_FRAME_LEN = 1514;
 #endif
 #ifndef ETH_FCS_LEN
-static const int ETH_FCS_LEN = 4;
+static constexpr int ETH_FCS_LEN = 4;
 #endif
 
 using namespace std;

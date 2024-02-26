@@ -13,7 +13,7 @@ using namespace spdlog;
 
 bool InProcessBus::Init(bool target)
 {
-    if (!GpioBus::Init(target)) {
+    if (!Bus::Init(target)) {
         return false;
     }
 

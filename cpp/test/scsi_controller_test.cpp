@@ -175,7 +175,6 @@ TEST(ScsiControllerTest, Command)
     EXPECT_EQ(phase_t::command, controller.GetPhase());
 
     controller.SetPhase(phase_t::reserved);
-    ON_CALL(*bus, CommandHandShake).WillByDefault(Return(6));
     EXPECT_CALL(*bus, SetMSG(false));
     EXPECT_CALL(*bus, SetCD(true));
     EXPECT_CALL(*bus, SetIO(false));

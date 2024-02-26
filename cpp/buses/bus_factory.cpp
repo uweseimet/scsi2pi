@@ -109,8 +109,6 @@ bool BusFactory::CheckForPi()
         return false;
     }
 
-    trace("Detected Raspberry Pi type {}", type);
-
     pi_type = static_cast<RpiBus::PiType>(type);
 
     return true;

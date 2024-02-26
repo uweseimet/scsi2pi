@@ -61,4 +61,7 @@ public:
 
     // Sets signal direction (in/out) depending on initiator/target mode
     virtual void SetMode(int, int) = 0;
+
+    virtual bool GetSignal(int) const = 0;
+    virtual void SetSignal(int, bool) = 0;
 };

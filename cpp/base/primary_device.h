@@ -156,7 +156,7 @@ protected:
 
 private:
 
-    static const int NOT_RESERVED = -2;
+    static constexpr int NOT_RESERVED = -2;
 
     void SetController(AbstractController*);
 

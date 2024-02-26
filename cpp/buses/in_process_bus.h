@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,9 +12,9 @@
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
-#include "buses/gpio_bus.h"
+#include "bus.h"
 
-class InProcessBus : public GpioBus
+class InProcessBus : public Bus
 {
 
 public:
@@ -29,7 +29,6 @@ public:
 
     bool Init(bool) override;
     void CleanUp() override;
-
     void Reset() override;
 
     uint32_t Acquire() override
@@ -111,16 +110,6 @@ public:
     void SetREQ(bool state) override
     {
         SetSignal(PIN_REQ, state);
-    }
-
-    bool WaitREQ(bool state) override
-    {
-        return WaitSignal(PIN_REQ, state);
-    }
-
-    bool WaitACK(bool state) override
-    {
-        return WaitSignal(PIN_ACK, state);
     }
 
     uint8_t GetDAT() override
@@ -209,14 +198,9 @@ public:
         return bus.Acquire();
     }
 
-    bool WaitREQ(bool state) override
+    bool WaitSignal(int pin, bool state) override
     {
-        return bus.WaitSignal(PIN_REQ, state);
-    }
-
-    bool WaitACK(bool state) override
-    {
-        return bus.WaitSignal(PIN_ACK, state);
+        return bus.WaitSignal(pin, state);
     }
 
     uint8_t GetDAT() override

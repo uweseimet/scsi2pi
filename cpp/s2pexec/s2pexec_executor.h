@@ -16,8 +16,6 @@ using namespace std;
 
 class S2pExecExecutor
 {
-    // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
-    inline static const int BUFFER_SIZE = 65535;
 
 public:
 
@@ -53,4 +51,7 @@ public:
 private:
 
     unique_ptr<InitiatorExecutor> initiator_executor;
+
+    // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
+    static constexpr int BUFFER_SIZE = 65535;
 };

@@ -20,7 +20,7 @@ using namespace spdlog;
 
 bool RpiBus::Init(bool target)
 {
-    GpioBus::Init(target);
+    Bus::Init(target);
 
     uint32_t base_addr = 0;
     switch (pi_type) {
@@ -612,7 +612,7 @@ void RpiBus::SetMode(int pin, int mode)
 }
 
 // Get input signal value
-bool RpiBus::GetSignal(int pin) const
+inline bool RpiBus::GetSignal(int pin) const
 {
     return (signals >> pin) & 1;
 }

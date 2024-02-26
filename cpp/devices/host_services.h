@@ -16,7 +16,6 @@
 
 class HostServices : public ModePageDevice
 {
-    inline static const int EXECUTE_BUFFER_SIZE = 65535;
 
 public:
 
@@ -80,4 +79,6 @@ private:
     S2pImage s2p_image;
 
     protobuf_format input_format = protobuf_format::binary;
+
+    static constexpr int EXECUTE_BUFFER_SIZE = 65535;
 };
