@@ -408,7 +408,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
     try {
         cmd_bytes = HexToBytes(command);
     }
-    catch (const parser_exception&)
+    catch (const out_of_range&)
     {
         throw execution_exception("Invalid CDB input format: '" + command + "'");
     }
@@ -522,7 +522,7 @@ string S2pExec::ConvertData(const string &data)
     try {
         bytes = HexToBytes(data);
     }
-    catch (const parser_exception&) {
+    catch (const out_of_range&) {
         return "Invalid data input format";
     }
 

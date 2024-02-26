@@ -154,7 +154,7 @@ enum class sense_key
     reserved = 0x0f
 };
 
-static const array<string, 16> SENSE_KEYS = {
+static constexpr array<string, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",
     "NOT READY",

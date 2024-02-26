@@ -142,7 +142,7 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
         try {
             data = HexToBytes(value);
         }
-        catch (const parser_exception&) {
+        catch (const out_of_range&) {
             warn("Ignored invalid mode page definition for page {0}: {1}", page, value);
             continue;
         }

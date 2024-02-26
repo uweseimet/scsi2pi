@@ -313,11 +313,8 @@ phase_t Bus::GetPhase()
         return phase_t::busfree;
     }
 
-    // Get target phase from bus signal lines
-    int mci = GetMSG() ? 0b100 : 0b000;
-    mci |= GetCD() ? 0b010 : 0b000;
-    mci |= GetIO() ? 0b001 : 0b000;
-    return GetPhase(mci);
+    // Get phase from bus signal lines
+    return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
 }
 
 string Bus::GetPhaseName(phase_t phase)
@@ -325,9 +322,7 @@ string Bus::GetPhaseName(phase_t phase)
     return phase_names[static_cast<int>(phase)];
 }
 
-// Phase Table
-// Reference Table 8: https://www.staff.uni-mainz.de/tacke/scsi/SCSI2-06.html
-// This determines the phase based upon the Msg, C/D and I/O signals.
+// Phase Table with the phases based upon the MSG, C/D and I/O signals
 //
 // |MSG|C/D|I/O| Phase
 // | 0 | 0 | 0 | DATA OUT
@@ -350,7 +345,7 @@ constexpr array<phase_t, 8> Bus::phases = {
     phase_t::msgin
 };
 
-const array<string, 11> Bus::phase_names = {
+constexpr array<string, 11> Bus::phase_names = {
     "BUS FREE",
     "ARBITRATION",
     "SELECTION",

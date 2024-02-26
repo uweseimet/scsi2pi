@@ -10,15 +10,6 @@
 
 TEST(BusTest, GetPhase)
 {
-    EXPECT_EQ(phase_t::dataout, Bus::GetPhase(0b000));
-    EXPECT_EQ(phase_t::datain, Bus::GetPhase(0b001));
-    EXPECT_EQ(phase_t::command, Bus::GetPhase(0b010));
-    EXPECT_EQ(phase_t::status, Bus::GetPhase(0b011));
-    EXPECT_EQ(phase_t::reserved, Bus::GetPhase(0b100));
-    EXPECT_EQ(phase_t::reserved, Bus::GetPhase(0b101));
-    EXPECT_EQ(phase_t::msgout, Bus::GetPhase(0b110));
-    EXPECT_EQ(phase_t::msgin, Bus::GetPhase(0b111));
-
     NiceMock<MockBus> bus;
 
     EXPECT_EQ(phase_t::busfree, bus.GetPhase());

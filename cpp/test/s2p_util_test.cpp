@@ -185,12 +185,12 @@ TEST(S2pUtilTest, GetHexBytes)
     bytes = HexToBytes("ab:cd\n12");
     EXPECT_EQ(result, bytes);
 
-    EXPECT_THROW(HexToBytes("ab:cd12xx"), parser_exception);
-    EXPECT_THROW(HexToBytes(":abcd12"), parser_exception);
-    EXPECT_THROW(HexToBytes("abcd12:"), parser_exception);
-    EXPECT_THROW(HexToBytes("ab::cd12"), parser_exception);
-    EXPECT_THROW(HexToBytes("9"), parser_exception);
-    EXPECT_THROW(HexToBytes("012"), parser_exception);
+    EXPECT_THROW(HexToBytes("ab:cd12xx"), out_of_range);
+    EXPECT_THROW(HexToBytes(":abcd12"), out_of_range);
+    EXPECT_THROW(HexToBytes("abcd12:"), out_of_range);
+    EXPECT_THROW(HexToBytes("ab::cd12"), out_of_range);
+    EXPECT_THROW(HexToBytes("9"), out_of_range);
+    EXPECT_THROW(HexToBytes("012"), out_of_range);
 }
 
 TEST(S2pUtilTest, FormatBytes)

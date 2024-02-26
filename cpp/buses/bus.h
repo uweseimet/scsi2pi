@@ -125,7 +125,7 @@ class Bus : public SignalControl
 public:
 
     Bus() = default;
-    virtual ~Bus() = default;
+    ~Bus() override = default;
 
     virtual bool Init(bool = true);
     virtual void Reset() = 0;
@@ -143,10 +143,7 @@ public:
     int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
 
     phase_t GetPhase();
-    static phase_t GetPhase(int mci)
-    {
-        return phases[mci];
-    }
+
     static string GetPhaseName(phase_t);
 
     // For work-around required byte the DaynaPort emulation

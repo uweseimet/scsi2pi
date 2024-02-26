@@ -244,7 +244,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     string line;
     while (getline(ss, line)) {
         if (line.starts_with(":") || line.ends_with(":")) {
-            throw parser_exception("");
+            throw out_of_range("");
         }
 
         const string &line_lower = ToLower(line);
@@ -255,13 +255,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
                 i++;
             }
 
-            try {
-                bytes.push_back(
-                    static_cast<byte>((HEX_TO_DEC.at(line_lower[i]) << 4) + HEX_TO_DEC.at(line_lower[i + 1])));
-            }
-            catch (const out_of_range&) {
-                throw parser_exception("");
-            }
+            bytes.push_back(static_cast<byte>((HexToDec(line_lower[i]) << 4) + HexToDec(line_lower[i + 1])));
 
             i += 2;
         }
@@ -310,4 +304,17 @@ string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count, bool hex_only)
     }
 
     return str;
+}
+
+int s2p_util::HexToDec(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return c -'0';
+    }
+
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+
+    throw out_of_range("");
 }
