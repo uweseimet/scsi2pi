@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <mutex>
 #include <atomic>
 #include "bus.h"

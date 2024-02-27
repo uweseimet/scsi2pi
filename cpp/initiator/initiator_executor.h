@@ -10,11 +10,11 @@
 
 #include <ctime>
 #include <stdexcept>
+#include <memory>
 #include <span>
 #include "buses/bus.h"
 
 using namespace std;
-using namespace scsi_defs;
 
 class InitiatorExecutor
 {

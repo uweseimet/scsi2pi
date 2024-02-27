@@ -62,7 +62,7 @@ void InProcessBus::SetSignal(int pin, bool state)
 bool InProcessBus::WaitForSelection()
 {
     // Busy waiting cannot be avoided
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
+    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
     nanosleep(&ts, nullptr);
 
     return true;
@@ -98,5 +98,5 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
 string DelegatingInProcessBus::GetSignalName(int pin) const
 {
     const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "????";
+    return it != SIGNALS.end() ? it->second : "???";
 }

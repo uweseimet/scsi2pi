@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "shared/shared_exceptions.h"
 #include "sasi_hd.h"
 
 SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false,
@@ -41,7 +42,7 @@ void SasiHd::Inquiry()
 {
     // Byte 0 = 0: Direct access device
 
-    array<uint8_t, 2> buf = { };
+    constexpr array<uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());

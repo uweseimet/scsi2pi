@@ -8,6 +8,7 @@
 
 #include "mocks.h"
 #include "test_shared.h"
+#include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "devices/disk.h"
 

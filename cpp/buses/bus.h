@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <memory>
+#include <cstdint>
 #include <vector>
 #include "shared/scsi.h"
 
@@ -26,7 +26,6 @@
 #error Invalid connection type or none specified
 #endif
 
-using namespace std;
 using namespace scsi_defs;
 
 //---------------------------------------------------------------------------

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <memory>
 #include "rpi_bus.h"
 
 using namespace std;

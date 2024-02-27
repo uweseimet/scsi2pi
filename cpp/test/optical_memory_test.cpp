@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 
 using namespace scsi_defs;

@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
+#include "shared/shared_exceptions.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
 #include "protobuf/protobuf_util.h"

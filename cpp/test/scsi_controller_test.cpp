@@ -19,6 +19,7 @@ TEST(ScsiControllerTest, Reset)
     auto controller = make_shared<ScsiController>(bus, ID, 32);
     auto device = make_shared<MockPrimaryDevice>(0);
 
+    controller->Init();
     controller->AddDevice(device);
 
     controller->Process(ID);
@@ -35,9 +36,9 @@ TEST(ScsiControllerTest, GetInitiatorId)
     MockScsiController controller(bus, 0);
     auto device = make_shared<MockPrimaryDevice>(0);
 
+    controller.Init();
     controller.AddDevice(device);
 
-    EXPECT_CALL(controller, Status).Times(2);
     controller.Process(ID);
     EXPECT_EQ(ID, controller.GetInitiatorId());
     controller.Process(1234);

@@ -7,8 +7,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <map>
-#include <fstream>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -68,7 +66,7 @@ bool RpiBus::Init(bool target)
     //  0x000000004: CORE
 
     // Get the core frequency
-    const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
+    constexpr array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
         timer_core_freq = maxclock[6] / 1000000;
@@ -418,18 +416,17 @@ void RpiBus::SetDAT(uint8_t dat)
 #endif
 }
 
-const array<int, 19> RpiBus::SignalTable = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
-    PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY,
-    PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
+constexpr array<int, 19> RpiBus::SignalTable = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
+    PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
 
 void RpiBus::CreateWorkTable(void)
 {
-    const array<int, 9> pintbl = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
+    constexpr array<int, 9> pintbl = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
 
     array<bool, 256> tblParity;
 
     // Create parity table
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < 256; i++) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; j++) {
@@ -449,7 +446,7 @@ void RpiBus::CreateWorkTable(void)
         tbl.fill(0);
     }
 
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < 256; i++) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -476,7 +473,7 @@ void RpiBus::CreateWorkTable(void)
         }
     }
 #else
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < 256; i++) {
         // Bit string for inspection
         uint32_t bits = i;
 

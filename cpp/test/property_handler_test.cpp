@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 #include "test/test_shared.h"
+#include "shared/shared_exceptions.h"
 #include "base/property_handler.h"
 
 using namespace testing;
