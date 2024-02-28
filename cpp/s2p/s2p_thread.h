@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -39,8 +39,8 @@ private:
 
 #if !defined __FreeBSD__ && !defined __APPLE__
     jthread service_thread;
-    #else
-	thread service_thread;
+#else
+    thread service_thread;
 #endif
 
     int service_socket = -1;

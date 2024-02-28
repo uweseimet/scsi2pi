@@ -6,8 +6,10 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--scsi-id/-i n[:u]\fR \fISCSI_IMAGE_FILE\fR]
 [\fB\--sasi-id/-h n[:u]\fR \fISASI_IMAGE_FILE\fR]
 [\fB\--type/-t\fR \fITYPE\fR]
+[\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
+[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
@@ -15,6 +17,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
+[\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--locale,-z\fR \fILOCALE\fR]
@@ -65,11 +68,20 @@ FILE is the name of the image file to use for the SASI hard drive.
 .BR \--type/-t\fI " " \fITYPE
 The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
 .TP
+.BR \--scsi-level\fI " " \fITYPE
+The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
+In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+.TP
 .BR \--name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, either 256 (SASI only), 512, 1024, 2048 or 4096 bytes. Default size is 512 bytes.
+The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
+s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
+.TP
+.BR \--caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
 .BR \--blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename compatibility mode. See the BlueSCSI documentation for details on the BlueSCSI filename convention.
@@ -84,14 +96,17 @@ The default folder for image files. For files in this folder no absolute path ne
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR \--property-\fI " " \fIKEY=VALUE
-Set the s2p property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
+Set the s2p configuration property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
 .BR \--property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The optional default global property file is /etc/s2p.conf. This file is parsed first.
 The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
 .TP
 .BR \--log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
+The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
+.TP
+.BR \--log-pattern/-l\fI " " \fILOG_PATTERN
+The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
 .TP
 .BR \--token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

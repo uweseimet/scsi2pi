@@ -227,6 +227,16 @@ message PbOperationInfo {
     map<int32, PbOperationMetaData> operations = 1;
 }
 
+// The supported caching modes. Currently caching like it is implemented by PiSCSI is the default.
+// Note: The actual modes are still subject to change
+enum PbCachingMode {
+    DEFAULT = 0;
+    PISCSI = 1;
+    WRITE_THROUGH = 2;
+    LINUX = 3;
+    LINUX_OPTIMIZED = 4;
+}
+
 // Special purpose error codes for cases where a textual error message may not be not sufficient.
 // The client may react on this code, e.g. by prompting the user for an authentication token.
 enum PbErrorCode {
@@ -265,6 +275,10 @@ message PbDeviceProperties {
     int32 luns = 9;
     // Unordered list of permitted block sizes in bytes, empty if the block size is not configurable
     repeated uint32 block_sizes = 10;
+    // The SCSI level, 0 if not explicitly set
+    int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;   
 }
 
 // The status of a device, only meaningful if the respective feature is supported
@@ -373,6 +387,14 @@ message PbDeviceDefinition {
     string revision = 8;
     // Create a write-protected device
     bool protected = 9;
+    // The optional SCSI standard level, which overrides the device-specific default level
+    //  1: SCSI-1-CCS
+    //  2: SCSI-2
+    //  3: SPC
+    //  4-8: SPC-2 to SPC-6
+    int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;
 }
 
 // The device data, sent from the server to the client
@@ -393,6 +415,10 @@ message PbDevice {
     int32 block_size = 11;
     // Number of blocks
     uint64 block_count = 12;
+    // SCSI standard level
+    int32 scsi_level = 100;
+    // The caching mode for this device
+    PbCachingMode caching_mode = 101;
 }
 
 message PbDevicesInfo {

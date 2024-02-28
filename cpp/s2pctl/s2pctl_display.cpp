@@ -6,12 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
-#include <sstream>
-#include <vector>
 #include <set>
 #include <map>
 #include <iomanip>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl_display.h"
@@ -36,6 +34,18 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
 
     s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << PbDeviceType_Name(pb_device.type())
         << "  " << pb_device.vendor() << ":" << pb_device.product() << ":" << pb_device.revision();
+
+    // Check for existence because PiSCSI does not support this setting
+    if (pb_device.scsi_level()) {
+        s << "  " << GetScsiLevel(pb_device.scsi_level());
+    }
+
+    // There is no need to display "default"
+    if (pb_device.caching_mode()) {
+        string mode = PbCachingMode_Name(pb_device.caching_mode());
+        ranges::replace(mode, '_', '-');
+        s << "  Caching mode: " << mode;
+    }
 
     if (pb_device.block_size()) {
         s << "  " << pb_device.block_size() << " bytes per sector";
@@ -148,16 +158,16 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
         s << DisplayAttributes(properties);
 
         if (properties.supports_file()) {
-            s << "Image file support\n        ";
+            s << "Image files are supported\n        ";
         }
 
         if (properties.supports_params()) {
-            s << "Parameter support\n        ";
+            s << "Parameters are supported\n        ";
         }
 
         s << DisplayDefaultParameters(properties);
 
-        s << DisplayBlockSizes(properties);
+        s << DisplaySectorSizes(properties);
     }
 
     s << '\n';
@@ -325,7 +335,7 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
     const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().begin(),
         properties_info.s2p_properties().end());
 
-    s << "Property settings on s2p startup:\n";
+    s << "s2p properties:\n";
     for (const auto& [key, value] : sorted_properties) {
         s << "  " << key << "=" << value << "\n";
     }
@@ -391,13 +401,13 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) const
+string S2pCtlDisplay::DisplaySectorSizes(const PbDeviceProperties &properties) const
 {
     ostringstream s;
 
     if (properties.block_sizes_size()) {
         const set<uint32_t> sorted_sizes(properties.block_sizes().begin(), properties.block_sizes().end());
-        s << "Configurable block sizes in bytes: " << Join(sorted_sizes);
+        s << "Configurable sector sizes in bytes: " << Join(sorted_sizes);
     }
 
     return s.str();

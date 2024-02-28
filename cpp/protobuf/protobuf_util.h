@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -33,15 +33,27 @@ void SetParam(auto &item, const string &key, string_view value)
     }
 }
 
+PbDeviceType ParseDeviceType(const string&);
+PbCachingMode ParseCachingMode(const string&);
 void ParseParameters(PbDeviceDefinition&, const string&);
 string SetCommandParams(PbCommand&, const string&);
 string SetFromGenericParams(PbCommand&, const string&);
 void SetProductData(PbDeviceDefinition&, const string&);
-string SetIdAndLun(int, int, PbDeviceDefinition&, const string&);
+string SetIdAndLun(int, PbDeviceDefinition&, const string&);
 string ListDevices(const vector<PbDevice>&);
 
 void SerializeMessage(int, const google::protobuf::Message&);
 void DeserializeMessage(int, google::protobuf::Message&);
 size_t ReadBytes(int, span<byte>);
 size_t WriteBytes(int, span<uint8_t>);
+
+inline static const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
+    { 'c', SCCD },
+    { 'd', SCDP },
+    { 'h', SCHD },
+    { 'l', SCLP },
+    { 'm', SCMO },
+    { 'r', SCRM },
+    { 's', SCHS }
+};
 }

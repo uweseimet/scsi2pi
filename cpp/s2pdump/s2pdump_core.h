@@ -10,7 +10,6 @@
 
 #include <vector>
 #include <unordered_map>
-#include "buses/bus_factory.h"
 #include "s2pdump_executor.h"
 
 using namespace std;
@@ -55,8 +54,6 @@ private:
 
     void CleanUp() const;
     static void TerminationHandler(int);
-
-    unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
 

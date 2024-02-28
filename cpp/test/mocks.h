@@ -78,6 +78,11 @@ public:
     MOCK_METHOD(void, Reset, (), (override));
 
     using InProcessBus::InProcessBus;
+
+    void ResetMock()
+    {
+        InProcessBus::Reset();
+    }
 };
 
 class MockPhaseHandler : public PhaseHandler
@@ -114,13 +119,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, GetLun);
     FRIEND_TEST(AbstractControllerTest, Message);
-    FRIEND_TEST(AbstractControllerTest, Blocks);
+    FRIEND_TEST(AbstractControllerTest, TransferSize);
     FRIEND_TEST(AbstractControllerTest, Length);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
-    FRIEND_TEST(AbstractControllerTest, Next);
-    FRIEND_TEST(AbstractControllerTest, InitBytesToTransfer);
-    FRIEND_TEST(AbstractControllerTest, ByteTransfer);
     FRIEND_TEST(ScsiControllerTest, Selection);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
@@ -160,6 +162,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
+    FRIEND_TEST(ScsiCdTest, ReadToc);
     FRIEND_TEST(ScsiDaynaportTest, Read);
     FRIEND_TEST(ScsiDaynaportTest, Write);
     FRIEND_TEST(ScsiDaynaportTest, Read6);
@@ -198,11 +201,11 @@ public:
     }
     explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, 32)
     {
-        SetLength(512);
+        SetCurrentLength(512);
     }
     MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, 32)
     {
-        SetLength(512);
+        SetCurrentLength(512);
     }
     ~MockAbstractController() override = default;
 };
@@ -262,7 +265,9 @@ public:
 
 class MockPrimaryDevice : public PrimaryDevice
 {
-    FRIEND_TEST(PrimaryDeviceTest, PhaseChange);
+    FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
+    FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
+    FRIEND_TEST(PrimaryDeviceTest, DataOutPhase);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
@@ -274,7 +279,7 @@ public:
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
-    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
+    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, scsi_level::scsi_2, lun)
     {
     }
     ~MockPrimaryDevice() override = default;
@@ -292,7 +297,7 @@ public:
     MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
 
-    MockModePageDevice() : ModePageDevice(UNDEFINED, 0, false)
+    MockModePageDevice() : ModePageDevice(UNDEFINED, scsi_level::scsi_2, 0, false)
     {
     }
     ~MockModePageDevice() override = default;
@@ -340,7 +345,7 @@ public:
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, 0, false)
+    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false)
     {
     }
     ~MockStorageDevice() override = default;
@@ -348,6 +353,7 @@ public:
 
 class MockDisk : public Disk
 {
+    FRIEND_TEST(DiskTest, SetUpCache);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -390,8 +396,9 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, false, false, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, { 512, 1024, 2048, 4096 })
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockDisk() override = default;
 };
@@ -432,10 +439,12 @@ public:
 
     MockScsiHd(int lun, bool removable) : ScsiHd(lun, removable, false, false)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockScsiHd(const unordered_set<uint32_t> &sector_sizes)
     : ScsiHd(0, false, false, false, sector_sizes)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiHd() override = default;
 };
@@ -446,7 +455,13 @@ class MockScsiCd : public ScsiCd // NOSONAR Ignore inheritance hierarchy depth i
     FRIEND_TEST(ScsiCdTest, SetUpModePages);
     FRIEND_TEST(ScsiCdTest, ReadToc);
 
-    using ScsiCd::ScsiCd;
+public:
+
+    explicit MockScsiCd(int lun) : ScsiCd(lun, false)
+    {
+        SetCachingMode(PbCachingMode::PISCSI);
+    }
+    ~MockScsiCd() override = default;
 };
 
 class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hierarchy depth in unit tests

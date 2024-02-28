@@ -325,7 +325,7 @@ TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
 
     const string s = display.DisplayPropertiesInfo(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("settings"));
+    EXPECT_NE(string::npos, s.find("s2p properties"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)

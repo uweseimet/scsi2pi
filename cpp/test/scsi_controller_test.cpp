@@ -88,19 +88,19 @@ TEST(ScsiControllerTest, BusFree)
     EXPECT_EQ(phase_t::busfree, controller.GetPhase());
     EXPECT_EQ(status::good, controller.GetStatus());
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::NONE);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::none);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
     controller.SetPhase(phase_t::reserved);
     controller.BusFree();
 }
@@ -194,8 +194,8 @@ TEST(ScsiControllerTest, MsgIn)
     EXPECT_CALL(*bus, SetIO(true));
     controller.MsgIn();
     EXPECT_EQ(phase_t::msgin, controller.GetPhase());
-    EXPECT_FALSE(controller.HasValidLength());
     EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
 TEST(ScsiControllerTest, MsgOut)
@@ -209,8 +209,8 @@ TEST(ScsiControllerTest, MsgOut)
     EXPECT_CALL(*bus, SetIO(false));
     controller.MsgOut();
     EXPECT_EQ(phase_t::msgout, controller.GetPhase());
-    EXPECT_EQ(1U, controller.GetLength());
     EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(1, controller.GetCurrentLength());
 }
 
 TEST(ScsiControllerTest, DataIn)
@@ -219,12 +219,12 @@ TEST(ScsiControllerTest, DataIn)
     MockScsiController controller(bus, 0);
 
     controller.SetPhase(phase_t::reserved);
-    controller.SetLength(0);
+    controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataIn();
     EXPECT_EQ(phase_t::reserved, controller.GetPhase());
 
-    controller.SetLength(1);
+    controller.SetCurrentLength(1);
     EXPECT_CALL(*bus, SetMSG(false));
     EXPECT_CALL(*bus, SetCD(false));
     EXPECT_CALL(*bus, SetIO(true));
@@ -239,12 +239,12 @@ TEST(ScsiControllerTest, DataOut)
     MockScsiController controller(bus, 0);
 
     controller.SetPhase(phase_t::reserved);
-    controller.SetLength(0);
+    controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataOut();
     EXPECT_EQ(phase_t::reserved, controller.GetPhase());
 
-    controller.SetLength(1);
+    controller.SetCurrentLength(1);
     EXPECT_CALL(*bus, SetMSG(false));
     EXPECT_CALL(*bus, SetCD(false));
     EXPECT_CALL(*bus, SetIO(false));

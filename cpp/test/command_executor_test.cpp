@@ -2,11 +2,10 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/command_context.h"
@@ -15,8 +14,6 @@
 #include "controllers/controller_factory.h"
 #include "base/device_factory.h"
 
-using namespace filesystem;
-using namespace s2p_interface;
 using namespace protobuf_util;
 
 TEST(CommandExecutorTest, ProcessDeviceCmd)
@@ -170,7 +167,7 @@ TEST(CommandExecutorTest, Attach)
     const int ID = 3;
     const int LUN = 0;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -214,19 +211,16 @@ TEST(CommandExecutorTest, Attach)
     path filename = CreateTempFile(1);
     SetParam(definition, "file", filename.string());
     EXPECT_FALSE(executor->Attach(context, definition, false)) << "Too small image file not rejected";
-    remove(filename);
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
     bool result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
     controller_factory->DeleteAllControllers();
 
     filename = CreateTempFile(513);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     definition.set_type(PbDeviceType::SCCD);
@@ -234,7 +228,6 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(2048);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     definition.set_type(PbDeviceType::SCMO);
@@ -243,7 +236,6 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(4096);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
-    remove(filename);
     EXPECT_TRUE(result);
 
     controller_factory->DeleteAllControllers();
@@ -293,12 +285,11 @@ TEST(CommandExecutorTest, Insert)
     path filename = CreateTempFile(1);
     SetParam(definition, "file", filename.string());
     EXPECT_FALSE(executor->Insert(context, definition, device, false)) << "Too small image file not rejected";
-    remove(filename);
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
+    dynamic_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
     const bool result = executor->Insert(context, definition, device, false);
-    remove(filename);
     EXPECT_TRUE(result);
 }
 
@@ -308,7 +299,7 @@ TEST(CommandExecutorTest, Detach)
     const int LUN1 = 0;
     const int LUN2 = 1;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -334,7 +325,7 @@ TEST(CommandExecutorTest, DetachAll)
 {
     const int ID = 4;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -351,7 +342,6 @@ TEST(CommandExecutorTest, DetachAll)
 
 TEST(CommandExecutorTest, SetReservedIds)
 {
-    DeviceFactory device_factory;
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -382,7 +372,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     EXPECT_TRUE(reserved_ids.contains(5));
     EXPECT_TRUE(reserved_ids.contains(7));
 
-    auto device = device_factory.CreateDevice(SCHS, 0, "");
+    auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 5, device));
     error = executor->SetReservedIds("5");
     EXPECT_FALSE(error.empty());
@@ -390,7 +380,7 @@ TEST(CommandExecutorTest, SetReservedIds)
 
 TEST(CommandExecutorTest, ValidateImageFile)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -430,7 +420,7 @@ TEST(CommandExecutorTest, PrintCommand)
 
 TEST(CommandExecutorTest, EnsureLun0)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -457,7 +447,7 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
     const int LUN1 = 0;
     const int LUN2 = 3;
 
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);

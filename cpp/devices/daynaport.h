@@ -30,10 +30,11 @@
 #endif
 #include <unordered_map>
 #include <array>
+#include "base/interfaces/scsi_communications_commands.h"
 #include "base/primary_device.h"
-#include "ctapdriver.h"
+#include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice
+class DaynaPort : public PrimaryDevice, private ScsiCommunicationsCommands
 {
     uint64_t byte_read_count = 0;
     uint64_t byte_write_count = 0;
@@ -57,13 +58,13 @@ public:
     // Commands
     vector<uint8_t> InquiryInternal() const override;
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
-    bool Write(cdb_t, span<const uint8_t>);
+    int WriteData(span<const uint8_t>, scsi_command) override;
 
     int RetrieveStats(cdb_t, vector<uint8_t>&) const;
 
     void TestUnitReady() override;
-    void Read6();
-    void Write6() const;
+    void GetMessage6() override;
+    void SendMessage6() const override;
     void RetrieveStatistics() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
@@ -119,7 +120,7 @@ private:
         .frames_lost = 0,
     };
 
-    CTapDriver tap;
+    TapDriver tap;
 
     bool tap_enabled = false;
 };

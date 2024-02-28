@@ -15,7 +15,6 @@
 #include "controllers/abstract_controller.h"
 #include "device.h"
 
-using namespace std;
 using namespace scsi_defs;
 
 class PrimaryDevice : private ScsiPrimaryCommands, public Device
@@ -26,10 +25,6 @@ class PrimaryDevice : private ScsiPrimaryCommands, public Device
 
 public:
 
-    PrimaryDevice(PbDeviceType type, int lun, int delay = Bus::SEND_NO_DELAY) : Device(type, lun), delay_after_bytes(
-        delay)
-    {
-    }
     ~PrimaryDevice() override = default;
 
     virtual bool Init(const param_map&);
@@ -40,9 +35,27 @@ public:
 
     virtual void Dispatch(scsi_command);
 
-    int GetId() const override;
+    scsi_level GetScsiLevel() const
+    {
+        return level;
+    }
+    bool SetScsiLevel(scsi_level);
 
-    virtual bool WriteByteSequence(span<const uint8_t>);
+    scsi_defs::sense_key GetSenseKey() const
+    {
+        return sense_key;
+    }
+    scsi_defs::asc GetAsc() const
+    {
+        return asc;
+    }
+    void SetStatus(scsi_defs::sense_key s, scsi_defs::asc a)
+    {
+        sense_key = s;
+        asc = a;
+    }
+
+    int GetId() const override;
 
     int GetDelayAfterBytes() const
     {
@@ -53,6 +66,22 @@ public:
     void DiscardReservation();
 
     void Reset() override;
+
+    virtual int ReadData(span<uint8_t>)
+    {
+        // Devices that implement a DATA IN phase have to override this method
+
+        assert(false);
+        return 0;
+    }
+
+    virtual int WriteData(span<const uint8_t>, scsi_command)
+    {
+        // Devices that implement a DATA OUT phase have to override this method, except for MODE SELECT
+
+        assert(false);
+        return 0;
+    }
 
     virtual void FlushCache()
     {
@@ -67,12 +96,17 @@ public:
 
 protected:
 
-    void AddCommand(scsi_command cmd, const command &c)
+    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
+    : Device(type, lun), level(l), delay_after_bytes(delay)
     {
-        commands[cmd] = c;
     }
 
-    vector<uint8_t> HandleInquiry(scsi_defs::device_type, scsi_level, bool) const;
+    void AddCommand(scsi_command cmd, const command &c)
+    {
+        commands[static_cast<int>(cmd)] = c;
+    }
+
+    vector<uint8_t> HandleInquiry(scsi_defs::device_type, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
@@ -83,20 +117,22 @@ protected:
     void ReserveUnit() override;
     void ReleaseUnit() override;
 
-    void EnterStatusPhase() const
+    void StatusPhase() const
     {
         controller->Status();
     }
-    void EnterDataInPhase() const
+    void DataInPhase(int length) const
     {
+        controller->SetCurrentLength(length);
         controller->DataIn();
     }
-    void EnterDataOutPhase() const
+    void DataOutPhase(int length) const
     {
+        controller->SetCurrentLength(length);
         controller->DataOut();
     }
 
-    auto GetController() const
+    inline auto GetController() const
     {
         return controller;
     }
@@ -131,10 +167,15 @@ private:
 
     DeviceLogger device_logger;
 
+    scsi_level level = scsi_level::none;
+
+    scsi_defs::sense_key sense_key = scsi_defs::sense_key::no_sense;
+    scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information;
+
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
-    unordered_map<scsi_command, command> commands;
+    array<command, 256> commands = { };
 
     // Number of bytes during a transfer after which to delay for the DaynaPort driver
     int delay_after_bytes = Bus::SEND_NO_DELAY;

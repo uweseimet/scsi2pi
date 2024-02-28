@@ -15,23 +15,23 @@ TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::NONE, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
-    EXPECT_EQ(AbstractController::shutdown_mode::STOP_S2P, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
-    EXPECT_EQ(AbstractController::shutdown_mode::STOP_PI, controller.GetShutdownMode());
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
-    EXPECT_EQ(AbstractController::shutdown_mode::RESTART_PI, controller.GetShutdownMode());
+    EXPECT_EQ(AbstractController::shutdown_mode::none, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_s2p, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_pi, controller.GetShutdownMode());
+    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+    EXPECT_EQ(AbstractController::shutdown_mode::restart_pi, controller.GetShutdownMode());
 }
 
-TEST(AbstractControllerTest, SetLength)
+TEST(AbstractControllerTest, SetCurrentLength)
 {
     MockAbstractController controller;
 
     EXPECT_EQ(4096U, controller.GetBuffer().size());
-    controller.SetLength(1);
+    controller.SetCurrentLength(1);
     EXPECT_LE(1U, controller.GetBuffer().size());
-    controller.SetLength(10000);
+    controller.SetCurrentLength(10000);
     EXPECT_LE(10000U, controller.GetBuffer().size());
 }
 
@@ -49,17 +49,7 @@ TEST(AbstractControllerTest, Reset)
     controller->Reset();
     EXPECT_TRUE(controller->IsBusFree());
     EXPECT_EQ(status::good, controller->GetStatus());
-    EXPECT_EQ(0U, controller->GetLength());
-}
-
-TEST(AbstractControllerTest, Next)
-{
-    MockAbstractController controller;
-
-    controller.SetNext(0x1234);
-    EXPECT_EQ(0x1234U, controller.GetNext());
-    controller.IncrementNext();
-    EXPECT_EQ(0x1235U, controller.GetNext());
+    EXPECT_EQ(0, controller->GetCurrentLength());
 }
 
 TEST(AbstractControllerTest, Message)
@@ -68,34 +58,6 @@ TEST(AbstractControllerTest, Message)
 
     controller.SetMessage(0x12);
     EXPECT_EQ(0x12, controller.GetMessage());
-}
-
-TEST(AbstractControllerTest, ByteTransfer)
-{
-    MockAbstractController controller;
-
-    controller.SetByteTransfer(false);
-    EXPECT_FALSE(controller.IsByteTransfer());
-    controller.SetByteTransfer(true);
-    EXPECT_TRUE(controller.IsByteTransfer());
-}
-
-TEST(AbstractControllerTest, InitBytesToTransfer)
-{
-    MockAbstractController controller;
-
-    controller.SetLength(0x1234);
-    controller.InitBytesToTransfer();
-    EXPECT_EQ(0x1234U, controller.GetBytesToTransfer());
-    controller.SetByteTransfer(false);
-    EXPECT_EQ(0U, controller.GetBytesToTransfer());
-}
-
-TEST(AbstractControllerTest, GetMaxLuns)
-{
-    MockAbstractController controller;
-
-    EXPECT_EQ(32, controller.GetMaxLuns());
 }
 
 TEST(AbstractControllerTest, Status)
@@ -123,8 +85,6 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_FALSE(controller->AddDevice(device2));
     EXPECT_FALSE(controller->AddDevice(device3));
     EXPECT_TRUE(controller->GetLunCount() > 0);
-    EXPECT_TRUE(controller->HasDeviceForLun(LUN));
-    EXPECT_FALSE(controller->HasDeviceForLun(0));
     EXPECT_NE(nullptr, controller->GetDeviceForLun(LUN));
     EXPECT_EQ(nullptr, controller->GetDeviceForLun(0));
     EXPECT_TRUE(controller->RemoveDevice(*device1));
@@ -150,35 +110,23 @@ TEST(AbstractControllerTest, GetLun)
     EXPECT_EQ(LUN, controller.GetLun());
 }
 
-TEST(AbstractControllerTest, Blocks)
+TEST(AbstractControllerTest, TransferSize)
 {
     MockAbstractController controller;
 
-    controller.SetBlocks(1);
-    EXPECT_TRUE(controller.InTransfer());
-    controller.DecrementBlocks();
-    EXPECT_FALSE(controller.InTransfer());
-}
-
-TEST(AbstractControllerTest, Length)
-{
-    MockAbstractController controller;
-
-    EXPECT_FALSE(controller.HasValidLength());
-
-    controller.SetLength(1);
-    EXPECT_EQ(1U, controller.GetLength());
-    EXPECT_TRUE(controller.HasValidLength());
+    controller.SetTransferSize(3, 1);
+    EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_FALSE(controller.UpdateTransferSize());
 }
 
 TEST(AbstractControllerTest, UpdateOffsetAndLength)
 {
     MockAbstractController controller;
 
-    EXPECT_FALSE(controller.HasValidLength());
-
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0U, controller.GetLength());
+    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
 TEST(AbstractControllerTest, Offset)

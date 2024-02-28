@@ -8,13 +8,12 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
+#include "base/device_factory.h"
 #include "devices/daynaport.h"
 
 TEST(ScsiDaynaportTest, Device_Defaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "daynaport");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "daynaport");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCDP, device->GetType());
     EXPECT_FALSE(device->SupportsFile());
@@ -37,6 +36,7 @@ TEST(ScsiDaynaportTest, Device_Defaults)
 TEST(ScsiDaynaportTest, GetDefaultParams)
 {
     const auto [controller, daynaport] = CreateDevice(SCDP);
+
     const auto params = daynaport->GetDefaultParams();
     EXPECT_EQ(2U, params.size());
 }
@@ -63,7 +63,7 @@ TEST(ScsiDaynaportTest, Read)
     controller->SetCdbByte(4, 1);
     vector<uint8_t> buf(0);
     EXPECT_EQ(0, dynamic_pointer_cast<DaynaPort>(daynaport)->Read(controller->GetCdb(), buf, 0))
-    << "Trying to read the root sector must fail";
+        << "Trying to read the root sector must fail";
 }
 
 TEST(ScsiDaynaportTest, Write)
@@ -73,7 +73,7 @@ TEST(ScsiDaynaportTest, Write)
     // Unknown data format
     controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_TRUE(dynamic_pointer_cast<DaynaPort>(daynaport)->Write(controller->GetCdb(), buf));
+    EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, scsi_command::cmd_write6));
 }
 
 TEST(ScsiDaynaportTest, Read6)

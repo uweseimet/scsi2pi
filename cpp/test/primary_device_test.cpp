@@ -9,7 +9,6 @@
 #include "mocks.h"
 #include "shared/scsi.h"
 #include "shared/shared_exceptions.h"
-#include "base/primary_device.h"
 #include "base/device_factory.h"
 #include "base/memory_util.h"
 
@@ -26,6 +25,28 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
     return {controller, device};
 }
 
+TEST(PrimaryDeviceTest, SetScsiLevel)
+{
+    auto device = make_shared<MockPrimaryDevice>(0);
+
+    EXPECT_EQ(scsi_level::scsi_2, device->GetScsiLevel());
+
+    EXPECT_FALSE(device->SetScsiLevel(scsi_level::none));
+    EXPECT_FALSE(device->SetScsiLevel(static_cast<scsi_level>(9)));
+
+    EXPECT_TRUE(device->SetScsiLevel(scsi_level::spc_6));
+    EXPECT_EQ(scsi_level::spc_6, device->GetScsiLevel());
+}
+
+TEST(PrimaryDeviceTest, Status)
+{
+    MockPrimaryDevice device(0);
+
+    device.SetStatus(sense_key::illegal_request, asc::parameter_list_length_error);
+    EXPECT_EQ(sense_key::illegal_request, device.GetSenseKey());
+    EXPECT_EQ(asc::parameter_list_length_error, device.GetAsc());
+}
+
 TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
@@ -35,18 +56,30 @@ TEST(PrimaryDeviceTest, GetId)
     EXPECT_EQ(ID, device->GetId());
 }
 
-TEST(PrimaryDeviceTest, PhaseChange)
+TEST(PrimaryDeviceTest, StatusPhase)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, Status);
-    device->EnterStatusPhase();
+    device->StatusPhase();
+}
+
+TEST(PrimaryDeviceTest, DataInPhase)
+{
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, DataIn);
-    device->EnterDataInPhase();
+    device->DataInPhase(123);
+    EXPECT_EQ(123, controller->GetCurrentLength());
+}
+
+TEST(PrimaryDeviceTest, DataOutPhase)
+{
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, DataOut);
-    device->EnterDataOutPhase();
+    device->DataOutPhase(456);
+    EXPECT_EQ(456, controller->GetCurrentLength());
 }
 
 TEST(PrimaryDeviceTest, Reset)
@@ -168,7 +201,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(4, 255);
 
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(device_type::processor, scsi_level::spc_3, false);
+        return d->HandleInquiry(device_type::processor, false);
     });
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
@@ -180,6 +213,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_FALSE(controller->AddDevice(make_shared<MockPrimaryDevice>(0))) << "Duplicate LUN was not rejected";
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
+    device->SetScsiLevel(scsi_level::spc_3);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
     EXPECT_EQ(device_type::processor, (device_type )controller->GetBuffer()[0]);
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
@@ -188,10 +222,11 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(device_type::direct_access, scsi_level::scsi_1_ccs, true);
+        return d->HandleInquiry(device_type::direct_access, true);
     });
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
+    device->SetScsiLevel(scsi_level::scsi_1_ccs);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
     EXPECT_EQ(device_type::direct_access, (device_type )controller->GetBuffer()[0]);
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
@@ -217,7 +252,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_inquiry));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
-    EXPECT_EQ(1U, controller->GetLength()) << "Wrong ALLOCATION LENGTH handling";
+    EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
 
 TEST(PrimaryDeviceTest, RequestSense)
@@ -265,16 +300,16 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_TRUE(device2->Init( { }));
 
     controller->AddDevice(device1);
-    EXPECT_TRUE(controller->HasDeviceForLun(LUN1));
+    EXPECT_TRUE(controller->GetDeviceForLun(LUN1));
     controller->AddDevice(device2);
-    EXPECT_TRUE(controller->HasDeviceForLun(LUN2));
+    EXPECT_TRUE(controller->GetDeviceForLun(LUN2));
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(9, 255);
 
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device1->Dispatch(scsi_command::cmd_report_luns));
-    const vector<uint8_t> &buffer = controller->GetBuffer();
+    span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";
     EXPECT_EQ(0, GetInt16(buffer, 8)) << "Wrong LUN1 number";

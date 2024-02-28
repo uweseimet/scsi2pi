@@ -8,13 +8,11 @@
 
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "command_dispatcher.h"
 
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -37,6 +35,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
+            PropertyHandler::Instance().AddProperty("log_level", log_level);
             return context.ReturnSuccessStatus();
         }
 
@@ -47,6 +46,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return false;
         }
         else {
+            PropertyHandler::Instance().AddProperty("image_folder", GetParam(command, "folder"));
             return context.WriteSuccessResult(result);
         }
 
@@ -184,22 +184,22 @@ bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m)
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING);
     }
 
-    AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::NONE;
+    AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::none;
     if (m == "rascsi") {
-        mode = AbstractController::shutdown_mode::STOP_S2P;
+        mode = AbstractController::shutdown_mode::stop_s2p;
     }
     else if (m == "system") {
-        mode = AbstractController::shutdown_mode::STOP_PI;
+        mode = AbstractController::shutdown_mode::stop_pi;
     }
     else if (m == "reboot") {
-        mode = AbstractController::shutdown_mode::RESTART_PI;
+        mode = AbstractController::shutdown_mode::restart_pi;
     }
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than rascsi require root permissions
-    if (mode != AbstractController::shutdown_mode::STOP_S2P && getuid()) {
+    if (mode != AbstractController::shutdown_mode::stop_s2p && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -214,25 +214,25 @@ bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m)
 bool CommandDispatcher::ShutDown(AbstractController::shutdown_mode mode) const
 {
     switch (mode) {
-    case AbstractController::shutdown_mode::STOP_S2P:
+    case AbstractController::shutdown_mode::stop_s2p:
         info("s2p shutdown requested");
         return true;
 
-    case AbstractController::shutdown_mode::STOP_PI:
+    case AbstractController::shutdown_mode::stop_pi:
         info("Raspberry Pi shutdown requested");
         if (system("init 0") == -1) {
             error("Raspberry Pi shutdown failed");
         }
         break;
 
-    case AbstractController::shutdown_mode::RESTART_PI:
+    case AbstractController::shutdown_mode::restart_pi:
         info("Raspberry Pi restart requested");
         if (system("init 6") == -1) {
             error("Raspberry Pi restart failed");
         }
         break;
 
-    case AbstractController::shutdown_mode::NONE:
+    case AbstractController::shutdown_mode::none:
         assert(false);
         break;
     }
@@ -250,8 +250,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         level = components[0];
 
         if (components.size() > 1) {
-            if (const string error = ProcessId(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-                components[1], id, lun); !error.empty()) {
+            if (const string error = ProcessId(ControllerFactory::GetLunMax(), components[1], id, lun); !error.empty()) {
                 warn("Error setting log level: " + error);
                 return false;
             }

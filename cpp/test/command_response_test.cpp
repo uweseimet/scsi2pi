@@ -8,12 +8,11 @@
 
 #include "mocks.h"
 #include "shared/s2p_version.h"
+#include "base/device_factory.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller_factory.h"
-#include "base/device_factory.h"
 
-using namespace s2p_interface;
 using namespace spdlog;
 using namespace protobuf_util;
 
@@ -30,10 +29,9 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    DeviceFactory device_factory;
     CommandResponse response;
 
-    auto d = device_factory.CreateDevice(type, 0, "");
+    auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
     const param_map params;
     d->Init(params);
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));

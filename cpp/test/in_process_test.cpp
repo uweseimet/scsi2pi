@@ -8,23 +8,27 @@
 
 #include <thread>
 #include <getopt.h>
-#include "shared/s2p_util.h"
 #include "s2p/s2p_core.h"
 #include "s2pctl/s2pctl_core.h"
 #include "s2pdump/s2pdump_core.h"
 #include "s2pexec/s2pexec_core.h"
 #include "s2pproto/s2pproto_core.h"
 
-using namespace std;
 using namespace s2p_util;
 
 void usage()
 {
+    cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (In-process Test Tool)\n"
+        << "Version " << GetVersionString() << "\n"
+        << "Copyright (C) 2023-2024 Uwe Seimet\n";
+
     cout << "Usage: in_process_test [options]\n"
-        << "  --client/-c       Client to run against s2p (s2pctl|s2pdump|s2pexec»s2pproto),\n"
-        << "                    default is s2pctl.\n"
-        << "  --client-args/-a  Arguments to run client with, optional for s2pctl.\n"
+        << "  --client/-c       In-process client to run against s2p (s2pctl|s2pdump|\n"
+        << "                    s2pexec|s2pproto), default is s2pexec.\n"
+        << "  --client-args/-a  Arguments to run client with,\n"
+        << "                    optional for s2pctl and s2pexec.\n"
         << "  --s2p-args/-s     Arguments to run s2p with.\n"
+        << "  --version/-v      Display the program version.\n"
         << "  --help/-h         Display this help.\n";
 }
 
@@ -40,16 +44,17 @@ int main(int argc, char *argv[])
         { "client-args", required_argument, nullptr, 'a' },
         { "help", no_argument, nullptr, 'h' },
         { "s2p-args", required_argument, nullptr, 's' },
+        { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
 
-    string client = "s2pctl";
+    string client = "s2pexec";
     string t_args;
     string c_args;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(argc, argv, "-a:c:hs:", options.data(), nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "-a:c:hs:v", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'a':
             c_args = optarg;
@@ -68,6 +73,11 @@ int main(int argc, char *argv[])
             t_args = optarg;
             break;
 
+        case 'v':
+            cout << GetVersionString() << '\n';
+            exit(EXIT_SUCCESS);
+            break;
+
         default:
             usage();
             exit(EXIT_FAILURE);
@@ -81,9 +91,9 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // s2pctl does not require arguments because it supports an interactive mode
-    if (client != "s2pctl" && c_args.empty()) {
-        cerr << "Test client requires client arguments" << endl;
+    // s2pctl and s2pexec do not require arguments because they support an interactive mode
+    if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
+        cerr << "Test client '" << client << "' requires arguments" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -95,6 +105,8 @@ int main(int argc, char *argv[])
 
     vector<char*> target_args;
     add_arg(target_args, "s2p");
+    add_arg(target_args, "--port");
+    add_arg(target_args, "6870");
     for (const auto &arg : Split(t_args, ' ')) {
         add_arg(target_args, arg);
     }
@@ -108,10 +120,12 @@ int main(int argc, char *argv[])
         s2p->Run(target_args, true);
     });
 
-    // Ensure that s2p is up before launching the client
-    sleep(1);
-
     if (client == "s2pctl") {
+        // Ensure that s2p is listening on its socket
+        sleep(1);
+
+        add_arg(client_args, "--port");
+        add_arg(client_args, "6870");
         auto s2pctl = make_unique<S2pCtl>();
         s2pctl->Run(client_args);
     }

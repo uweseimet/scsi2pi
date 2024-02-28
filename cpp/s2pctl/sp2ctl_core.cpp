@@ -2,9 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
-// Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2020-2023 Contributors to the PiSCSI project
 // Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -14,21 +11,18 @@
 #include <fstream>
 #include <unistd.h>
 #include <getopt.h>
-#include "shared/s2p_util.h"
 #include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
 #include "protobuf/protobuf_util.h"
-#include "s2pctl_parser.h"
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"
 
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 
 void S2pCtl::Banner(bool usage) const
 {
-    cout << s2p_util::Banner("(Server Controller Tool)", false);
+    cout << s2p_util::Banner("(Server Controller Tool)");
 
     if (usage) {
         cout << "Usage: s2pctl [options]\n"
@@ -40,13 +34,16 @@ void S2pCtl::Banner(bool usage) const
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
             << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
             << "                                 (256|512|1024|2048|4096).\n"
+            << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
+            << "                                 |linux-optimized), default is PiSCSI\n"
+            << "                                 compatible caching.\n"
             << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
             << "                                 (VENDOR:PRODUCT:REVISION).\n"
-            << "  --file/-f FILE|PARAM           Image file path or device-specific parameter.\n"
+            << "  --file/-f FILE|PARAMS          Image file path or device-specific parameters.\n"
             << "  --image-folder/-F FOLDER       Default location for image files,\n"
             << "                                 default is '~/images'.\n"
-            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|\n"
-            << "                                 error|off), default is 'info'.\n"
+            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|error|\n"
+            << "                                 critical|off), default is 'info'.\n"
             << "  --help/-h                      Display this help.\n"
             << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
             << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
@@ -73,75 +70,59 @@ void S2pCtl::Banner(bool usage) const
             << "                                 and the device types they map to.\n"
             << "  --list-interfaces/-N           List network interfaces that are up.\n"
             << "  --list-operations/-o           List available remote interface operations.\n"
-            << "  --list-properties/-P           List s2p startup properties.\n"
+            << "  --list-properties/-P           List the current s2p properties.\n"
             << "  --list-log-levels              List the available s2p log levels\n"
             << "                                 and the current log level.\n"
             << "  --prompt                       Prompt for the access token in case\n"
             << "                                 s2p requires authentication.\n"
             << "  --list-settings/-s             List s2p settings.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
-            << "  --version/-v                   Display the s2pctl version.\n"
+            << "  --version/-v                   Display the program version.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n";
     }
 }
 
-int S2pCtl::Run(const vector<char*> &args) const
+int S2pCtl::Run(const vector<char*> &args)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
 
-int S2pCtl::RunInteractive() const
+int S2pCtl::RunInteractive()
 {
+    const string &prompt = "s2pctl";
+
     if (isatty(STDIN_FILENO)) {
         Banner(false);
 
-        cout << "Entering interactive mode, Ctrl-D or \"exit\" to quit\n";
+        cout << "Entering interactive mode, Ctrl-D, \"exit\" or \"quit\" to quit\n";
     }
 
     while (true) {
-        if (isatty(STDIN_FILENO)) {
-            cout << "s2pctl>";
-        }
-
-        string line;
-        if (!getline(cin, line) || line == "exit") {
-            if (line.empty() && isatty(STDIN_FILENO)) {
-                cout << "\n";
-            }
+        const string &line = GetLine(prompt);
+        if (line.empty()) {
             break;
         }
 
-        if (!line.empty() && !line.starts_with("#")) {
-            const auto &args = Split(line, ' ');
+        const auto &args = Split(line, ' ');
 
-            vector<char*> interactive_args;
-            interactive_args.emplace_back(strdup("s2pctl"));
-            interactive_args.emplace_back(strdup(ConvertCommand(args[0]).c_str()));
-            for (size_t i = 1; i < args.size(); i++) {
-                interactive_args.emplace_back(strdup(args[i].c_str()));
-            }
-
-            ParseArguments(interactive_args);
+        vector<char*> interactive_args;
+        interactive_args.emplace_back(strdup(prompt.c_str()));
+        interactive_args.emplace_back(strdup(args[0].c_str())
+        );
+        for (size_t i = 1; i < args.size(); i++) {
+            interactive_args.emplace_back(strdup(args[i].c_str()));
         }
+
+        ParseArguments(interactive_args);
     }
 
     return EXIT_SUCCESS;
 }
 
-string S2pCtl::ConvertCommand(const string &command)
-{
-    // Try to guess whether the command is short or long if there is no dash at the beginning
-    if (!command.starts_with("-")) {
-        return command.size() < 2 ? "-" + command : "--" + command;
-    }
-
-    return command;
-}
-
-int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptable for parsing
+int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_PROMPT = 2;
     const int OPT_BINARY_PROTOBUF = 3;
@@ -149,11 +130,14 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
     const int OPT_TEXT_PROTOBUF = 5;
     const int OPT_LIST_LOG_LEVELS = 6;
     const int OPT_LOCALE = 7;
+    const int OPT_SCSI_LEVEL = 8;
+    const int OPT_LIST_EXTENSIONS = 9;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
         { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "block-size", required_argument, nullptr, 'b' },
+        { "caching-mode", required_argument, nullptr, 'm' },
         { "command", required_argument, nullptr, 'c' },
         { "copy", required_argument, nullptr, 'x' },
         { "create", required_argument, nullptr, 'C' },
@@ -167,7 +151,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
         { "json-protobuf", required_argument, nullptr, OPT_JSON_PROTOBUF },
         { "list-devices", no_argument, nullptr, 'l' },
         { "list-device-types", no_argument, nullptr, 'T' },
-        { "list-extensions", no_argument, nullptr, 'm' },
+        { "list-extensions", no_argument, nullptr, OPT_LIST_EXTENSIONS },
         { "list-images", no_argument, nullptr, 'e' },
         { "list-image-info", required_argument, nullptr, 'E' },
         { "list-interfaces", required_argument, nullptr, 'N' },
@@ -183,6 +167,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
         { "port", required_argument, nullptr, 'p' },
         { "rename", required_argument, nullptr, 'R' },
         { "reserve-ids", optional_argument, nullptr, 'r' },
+        { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "server-version", no_argument, nullptr, 'V' },
         { "shut-down", no_argument, nullptr, 'X' },
         { "text-protobuf", required_argument, nullptr, OPT_TEXT_PROTOBUF },
@@ -191,14 +176,11 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
         { nullptr, 0, nullptr, 0 }
     };
 
-    S2pCtlParser parser;
     PbCommand command;
     PbDeviceDefinition *device = command.add_devices();
     device->set_id(-1);
-    string hostname = "localhost";
-    int port = 6868;
     string id_and_lun;
-    string param;
+    string params;
     string log_level;
     string default_folder;
     string reserved_ids;
@@ -214,8 +196,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
     optind = 1;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
-        "e::hlmos::vDINOPSTVXa:b:c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
-        switch (opt) {
+        "e::hlmos::vDINOPSTVXa:b:-c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
+        switch (opt) { // NOSONAR Acceptable complexity for parsing
         case 'i':
             id_and_lun = optarg;
             break;
@@ -235,7 +217,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             break;
 
         case 'c':
-            command.set_operation(parser.ParseOperation(optarg));
+            command.set_operation(ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
                 cerr << "Error: Unknown operation '" << optarg << "'" << endl;
                 return EXIT_FAILURE;
@@ -273,7 +255,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             break;
 
         case 'f':
-            param = optarg;
+            params = optarg;
             break;
 
         case 'h':
@@ -326,7 +308,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             command.set_operation(DEVICES_INFO);
             break;
 
-        case 'm':
+        case OPT_LIST_EXTENSIONS:
             command.set_operation(MAPPING_INFO);
             break;
 
@@ -347,9 +329,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             break;
 
         case 't':
-            device->set_type(parser.ParseType(optarg));
+            device->set_type(ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
-                cerr << "Error: Unknown device type '" << optarg << "'" << endl;
+                cerr << "Error: Invalid device type '" << optarg << "'" << endl;
                 return EXIT_FAILURE;
             }
             break;
@@ -364,13 +346,23 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             image_params = optarg;
             break;
 
+        case 'm':
+            try {
+                device->set_caching_mode(ParseCachingMode(optarg));
+            }
+            catch (const parser_exception &e) {
+                cerr << e.what() << endl;
+                return EXIT_FAILURE;
+            }
+            break;
+
         case 'n':
             SetProductData(*device, optarg);
             break;
 
         case 'p':
             if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
-                cerr << "Error: Invalid port " << optarg << ", port must be between 1 and 65535" << endl;
+                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535" << endl;
                 return EXIT_FAILURE;
             }
             break;
@@ -416,6 +408,16 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             SetParam(command, "mode", "rascsi");
             break;
 
+        case OPT_SCSI_LEVEL:
+            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
+                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
+                return EXIT_FAILURE;
+            }
+            else {
+                device->set_scsi_level(scsi_level);
+            }
+            break;
+
         case OPT_LOCALE:
             locale = optarg;
             break;
@@ -426,8 +428,14 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
         }
     }
 
+    // When no parameters have been provided with the -f option use the free parameter (if present) instead
+    if (params.empty() && optind < static_cast<int>(args.size())) {
+        params = args.data()[optind];
+    }
+
     if (!id_and_lun.empty()) {
-        if (const string error = SetIdAndLun(8, device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun); !error.empty()) {
+        if (const string error = SetIdAndLun(device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun);
+        !error.empty()) {
             cerr << "Error: " << error << endl;
             return EXIT_FAILURE;
         }
@@ -447,7 +455,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
             status = s2pctl_commands.CommandDevicesInfo();
         }
         else {
-            ParseParameters(*device, param);
+            ParseParameters(*device, params);
 
             status = s2pctl_commands.Execute(log_level, default_folder, reserved_ids, image_params, filename);
         }
@@ -462,3 +470,10 @@ int S2pCtl::ParseArguments(const vector<char*> &args) const // NOSONAR Acceptabl
 
     return status ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+PbOperation S2pCtl::ParseOperation(string_view operation)
+{
+    const auto &it = OPERATIONS.find(tolower(operation[0]));
+    return it != OPERATIONS.end() ? it->second : NO_OPERATION;
+}
+

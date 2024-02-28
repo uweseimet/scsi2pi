@@ -6,30 +6,22 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
-#include <vector>
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "shared/s2p_version.h"
+#include "base/device_factory.h"
+#include "buses/bus_factory.h"
 
-using namespace std;
 using namespace filesystem;
-
-// Include the process id in the temp file path so that multiple instances of the test procedures
-// could run on the same host.
-const path testing::test_data_temp_path(temp_directory_path() / // NOSONAR Publicly writable directory is fine here
-    path(fmt::format("scsi2pi-test-{}", getpid())));
+using namespace s2p_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
-    DeviceFactory device_factory;
-
     auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
-    auto device = device_factory.CreateDevice(type, lun, extension);
+    auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
     device->Init( { });
 
     EXPECT_TRUE(controller->AddDevice(device));
@@ -41,11 +33,11 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    for (const auto b : s2p_util::HexToBytes(hex)) {
+    for (const auto b : HexToBytes(hex)) {
         cdb.emplace_back(static_cast<int>(b));
     }
 
-    EXPECT_EQ(Bus::GetCommandBytesCount(cdb[0]), static_cast<int>(cdb.size()));
+    EXPECT_EQ(BusFactory::Instance().GetCommandBytesCount(cmd), static_cast<int>(cdb.size()));
 
     return cdb;
 }
@@ -53,16 +45,14 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
 vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
-    for (const auto b : s2p_util::HexToBytes(hex)) {
-        parameters.emplace_back(static_cast<uint8_t>(b));
-    }
+    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
 
     return parameters;
 }
 
 string testing::TestShared::GetVersion()
 {
-    return fmt::format("{0:02}{1:02}", s2p_major_version, s2p_minor_version);
+    return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
@@ -74,7 +64,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
     device->Dispatch(scsi_command::cmd_inquiry);
-    const vector<uint8_t> &buffer = controller->GetBuffer();
+    span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
     EXPECT_EQ(l, static_cast<scsi_level>(buffer[2]));
@@ -82,7 +72,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     EXPECT_EQ(additional_length, buffer[4]);
     string product_data;
     if (ident.size() == 24) {
-        product_data = fmt::format("{0}{1:02x}{2:02x}", ident, s2p_major_version, s2p_minor_version);
+        product_data = fmt::format("{0}{1:02}{2}{3}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
     } else {
         product_data = ident;
     }
@@ -91,8 +81,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    DeviceFactory device_factory;
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, filename);
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
@@ -127,19 +116,19 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 
 pair<int, path> testing::OpenTempFile()
 {
-    const string filename = string(test_data_temp_path) + "/scsi2pi_test-XXXXXX"; // NOSONAR Publicly writable directory is fine here
+    const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.begin(), filename.end());
     f.emplace_back(0);
-
-    create_directories(path(filename).parent_path());
 
     const int fd = mkstemp(f.data());
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
 
+    TestShared::RememberTempFile(f.data());
+
     return make_pair(fd, path(f.data()));
 }
 
-path testing::CreateTempFile(int size)
+path testing::CreateTempFile(size_t size)
 {
     const auto data = vector<byte>(size);
     return CreateTempFileWithData(data);
@@ -150,16 +139,17 @@ path testing::CreateTempFileWithData(const span<const byte> data)
     const auto [fd, filename] = OpenTempFile();
 
     const size_t count = write(fd, data.data(), data.size());
-    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << string(filename) << "'";
     close(fd);
+    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
+
+    TestShared::RememberTempFile(filename);
 
     return path(filename);
 }
 
 string testing::ReadTempFileToString(const string &filename)
 {
-    const path temp_file = test_data_temp_path / path(filename);
-    ifstream in(temp_file);
+    ifstream in(path(filename), ios::binary);
     stringstream buffer;
     buffer << in.rdbuf();
 

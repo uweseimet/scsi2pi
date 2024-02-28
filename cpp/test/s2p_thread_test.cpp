@@ -20,7 +20,6 @@
 #include "protobuf/command_context.h"
 #include "s2p/s2p_thread.h"
 
-using namespace s2p_interface;
 using namespace protobuf_util;
 using namespace network_util;
 

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,7 +11,7 @@
 
 TEST(DeviceFactoryTest, GetTypeForFile)
 {
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     EXPECT_EQ(device_factory.GetTypeForFile("test.hd1"), SCHD);
     EXPECT_EQ(device_factory.GetTypeForFile("test.hds"), SCHD);
@@ -33,9 +33,7 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 
 TEST(DeviceFactoryTest, GetExtensionMapping)
 {
-    DeviceFactory device_factory;
-
-    auto mapping = device_factory.GetExtensionMapping();
+    auto mapping = DeviceFactory::Instance().GetExtensionMapping();
     EXPECT_EQ(9U, mapping.size());
     EXPECT_EQ(SCHD, mapping["hd1"]);
     EXPECT_EQ(SCHD, mapping["hds"]);
@@ -48,10 +46,22 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCCD, mapping["is1"]);
 }
 
+TEST(DeviceFactoryTest, AddExtensionMapping)
+{
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
+
+    EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
+    auto mapping = device_factory.GetExtensionMapping();
+    EXPECT_EQ(9U, mapping.size());
+
+    EXPECT_TRUE(device_factory.AddExtensionMapping("ext", SCCD));
+    mapping = device_factory.GetExtensionMapping();
+    EXPECT_EQ(10U, mapping.size());
+    EXPECT_EQ(SCCD, mapping["ext"]);
+}
+
 TEST(DeviceFactoryTest, UnknownDeviceType)
 {
-    DeviceFactory device_factory;
-
-    auto device1 = device_factory.CreateDevice(UNDEFINED, 0, "test");
-    EXPECT_EQ(nullptr, device1);
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test");
+    EXPECT_EQ(nullptr, device);
 }

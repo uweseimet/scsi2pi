@@ -2,23 +2,18 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <fstream>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-
-using namespace std;
-using namespace filesystem;
+#include "base/device_factory.h"
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "test.iso");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.iso");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCCD, device->GetType());
     EXPECT_TRUE(device->SupportsFile());
@@ -40,14 +35,13 @@ TEST(ScsiCdTest, DeviceDefaults)
 
 void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
     EXPECT_EQ(12U, pages[7].size());
     EXPECT_EQ(12U, pages[8].size());
     EXPECT_EQ(8U, pages[10].size());
     EXPECT_EQ(8U, pages[13].size());
-    EXPECT_EQ(16U, pages[14].size());
     EXPECT_EQ(24U, pages[48].size());
 }
 
@@ -87,61 +81,20 @@ TEST(ScsiCdTest, SetUpModePages)
 
 TEST(ScsiCdTest, Open)
 {
-    MockScsiCd cd_iso(0);
-    MockScsiCd cd_cue(0);
-    MockScsiCd cd_raw(0);
-    MockScsiCd cd_physical(0);
+    MockScsiCd cd(0);
 
-    EXPECT_THROW(cd_iso.Open(), io_exception)<< "Missing filename";
+    EXPECT_THROW(cd.Open(), io_exception)<< "Missing filename";
 
     path filename = CreateTempFile(2047);
-    cd_iso.SetFilename(string(filename));
-    EXPECT_THROW(cd_iso.Open(), io_exception)<< "ISO CD-ROM image file size too small";
-    remove(filename);
+    cd.SetFilename(string(filename));
+    EXPECT_THROW(cd.Open(), io_exception)<< "ISO CD-ROM image file size is too small";
 
     filename = CreateTempFile(2 * 2048);
-    cd_iso.SetFilename(string(filename));
-    cd_iso.Open();
-    EXPECT_EQ(2U, cd_iso.GetBlockCount());
-    remove(filename);
+    cd.SetFilename(string(filename));
+    cd.Open();
+    EXPECT_EQ(2U, cd.GetBlockCount());
 
-    filename = CreateTempFile(0);
-    ofstream out;
-    out.open(filename);
-    array<char, 4> cue = { 'F', 'I', 'L', 'E' };
-    out.write(cue.data(), cue.size());
-    out.close();
-    resize_file(filename, 2 * 2048);
-    cd_cue.SetFilename(string(filename));
-    EXPECT_THROW(cd_cue.Open(), io_exception)<< "CUE CD-ROM files are not supported";
-
-    filename = CreateTempFile(0);
-    out.open(filename);
-    array<char, 16> header;
-    header.fill(0xff);
-    header[0] = 0;
-    header[11] = 0;
-    out.write(header.data(), header.size());
-    out.close();
-    resize_file(filename, 2 * 2535);
-    cd_raw.SetFilename(string(filename));
-    EXPECT_THROW(cd_raw.Open(), io_exception)<< "Illegal raw ISO CD-ROM header";
-    header[15] = 0x01;
-    filename = CreateTempFile(0);
-    out.open(filename);
-    out.write(header.data(), header.size());
-    out.close();
-    cd_raw.SetFilename(string(filename));
-    resize_file(filename, 2 * 2536);
-    cd_raw.Open();
-    EXPECT_EQ(2U, cd_raw.GetBlockCount());
-    remove(filename);
-
-    filename = CreateTempFile(2 * 2048);
-    cd_physical.SetFilename("\\" + string(filename));
-    // The respective code in ScsiCd appears to be broken, see https://github.com/akuker/PISCSI/issues/919
-    EXPECT_THROW(cd_physical.Open(), io_exception)<< "Invalid physical CD-ROM file";
-    remove(filename);
+    // Further testing requires filesystem access
 }
 
 TEST(ScsiCdTest, ReadToc)
@@ -152,7 +105,27 @@ TEST(ScsiCdTest, ReadToc)
 
     controller->AddDevice(cd);
 
-    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::not_ready, asc::medium_not_present);
+    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::not_ready, asc::medium_not_present,
+        "Drive is not ready");
 
-    // Further testing requires filesystem access
+    cd->SetReady(true);
+
+    controller->SetCdbByte(6, 2);
+    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid track number");
+
+    controller->SetCdbByte(6, 1);
+    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Invalid track number");
+
+    controller->SetCdbByte(6, 0);
+    EXPECT_CALL(*controller, DataIn());
+    EXPECT_NO_THROW(cd->Dispatch(scsi_command::cmd_read_toc));
+}
+
+TEST(ScsiCdTest, ReadData)
+{
+    MockScsiCd cd(0);
+
+    EXPECT_THROW(cd.ReadData( {}), scsi_exception)<< "Drive is not ready";
 }

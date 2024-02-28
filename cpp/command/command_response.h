@@ -9,7 +9,6 @@
 #pragma once
 
 #include <set>
-#include "base/device_factory.h"
 
 using namespace filesystem;
 using namespace s2p_interface;
@@ -18,11 +17,6 @@ class CommandResponse
 {
 
 public:
-
-    CommandResponse() // NOSONAR Constructor required by the bookworm compiler
-    {
-    }
-    ~CommandResponse() = default;
 
     bool GetImageFile(PbImageFile&, const string&, const string&) const;
     void GetImageFilesInfo(PbImageFilesInfo&, const string&, const string&, const string&, int) const;
@@ -45,10 +39,8 @@ private:
 
     inline static const vector<string> EMPTY_VECTOR;
 
-    [[no_unique_address]] const DeviceFactory device_factory;
-
-    void GetDeviceProperties(shared_ptr<Device>, PbDeviceProperties&) const;
-    void GetDevice(shared_ptr<Device>, PbDevice&, const string&) const;
+    void GetDeviceProperties(shared_ptr<PrimaryDevice>, PbDeviceProperties&) const;
+    void GetDevice(shared_ptr<PrimaryDevice>, PbDevice&, const string&) const;
     void GetDeviceTypeProperties(PbDeviceTypesInfo&, PbDeviceType) const;
     void GetAvailableImages(PbImageFilesInfo&, const string&, const string&, const string&, int) const;
     void GetAvailableImages(PbServerInfo&, const string&, const string&, const string&, int) const;

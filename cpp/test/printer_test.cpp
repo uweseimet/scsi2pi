@@ -8,15 +8,12 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
+#include "base/device_factory.h"
 #include "devices/printer.h"
-
-using namespace std;
 
 TEST(PrinterTest, Device_Defaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "printer");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "printer");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCLP, device->GetType());
     EXPECT_FALSE(device->SupportsFile());
@@ -129,12 +126,13 @@ TEST(PrinterTest, Synchronize_buffer)
     // Further testing would use the printing system
 }
 
-TEST(PrinterTest, WriteByteSequence)
+TEST(PrinterTest, Write)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
     const vector<uint8_t> buf(1);
-    EXPECT_TRUE(printer->WriteByteSequence(buf));
+    controller->SetTransferSize(1, 1);
+    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, scsi_command::cmd_print));
 }
 
 TEST(PrinterTest, GetStatistics)

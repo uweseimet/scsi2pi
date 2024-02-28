@@ -10,7 +10,6 @@
 
 #include <mutex>
 #include "controllers/controller_factory.h"
-#include "base/device_factory.h"
 #include "devices/storage_device.h"
 
 class CommandContext;
@@ -50,6 +49,7 @@ public:
     string EnsureLun0(const PbCommand&) const;
     bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
+    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
     bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
@@ -68,13 +68,18 @@ public:
 
 private:
 
+    static string GetIdentifier(const Device &device)
+    {
+        return device.GetTypeString() + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());
+    }
+
+
     static bool CheckForReservedFile(const CommandContext&, const string&);
+    static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
 
     Bus &bus;
 
     shared_ptr<ControllerFactory> controller_factory;
-
-    [[no_unique_address]] const DeviceFactory device_factory;
 
     mutex execution_locker;
 

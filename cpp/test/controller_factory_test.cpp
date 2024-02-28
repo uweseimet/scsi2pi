@@ -19,7 +19,7 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     auto device = device_factory.CreateDevice(SCHS, -1, "");
     EXPECT_FALSE(controller_factory.AttachToController(*bus, ID1, device));
@@ -67,7 +67,7 @@ TEST(ControllerFactoryTest, AttachToController)
 
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    DeviceFactory device_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     auto device1 = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_FALSE(controller_factory.AttachToController(*bus, ID, device1)) << "LUN 0 is missing";
@@ -82,12 +82,7 @@ TEST(ControllerFactory, ProcessOnController)
 {
     ControllerFactory controller_factory;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::NONE, controller_factory.ProcessOnController(0));
-}
-
-TEST(ControllerFactory, GetIdMax)
-{
-    EXPECT_EQ(8, ControllerFactory::GetIdMax());
+    EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
 }
 
 TEST(ControllerFactory, GetLunMax)

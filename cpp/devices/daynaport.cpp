@@ -22,7 +22,6 @@
 
 #include "shared/shared_exceptions.h"
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "base/memory_util.h"
 #include "daynaport.h"
 
@@ -33,7 +32,7 @@ using namespace s2p_util;
 
 // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
 // It appears as if the real DaynaPort hardware indeed has this delay.
-DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
+DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
     SetVendor("Dayna");
@@ -51,13 +50,13 @@ bool DaynaPort::Init(const param_map &params)
         {
             TestUnitReady();
         });
-    AddCommand(scsi_command::cmd_read6, [this]
+    AddCommand(scsi_command::cmd_get_message6, [this]
         {
-            Read6();
+            GetMessage6();
         });
-    AddCommand(scsi_command::cmd_write6, [this]
+    AddCommand(scsi_command::cmd_send_message6, [this]
         {
-            Write6();
+            SendMessage6();
         });
     AddCommand(scsi_command::cmd_retrieve_stats, [this]
         {
@@ -82,8 +81,6 @@ bool DaynaPort::Init(const param_map &params)
 #if !defined(__x86_64__) && !defined(__X86__)
 		return false;
 #endif
-    } else {
-        LogTrace("Created tap interface");
     }
 
     Reset();
@@ -100,7 +97,7 @@ void DaynaPort::CleanUp()
 
 vector<uint8_t> DaynaPort::InquiryInternal() const
 {
-    vector<uint8_t> buf = HandleInquiry(device_type::processor, scsi_level::scsi_2, false);
+    vector<uint8_t> buf = HandleInquiry(device_type::processor, false);
 
     if (GetController()->GetCdbByte(4) == 37) {
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
@@ -114,7 +111,7 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 
 //---------------------------------------------------------------------------
 //
-//	READ
+//	Read
 //
 //   Command:  08 00 00 LL LL XX (LLLL is data length, XX = c0 or 80)
 //   Function: Read a packet at a time from the device (standard SCSI Read)
@@ -145,8 +142,6 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 //---------------------------------------------------------------------------
 int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 {
-    const auto response = (scsi_resp_read_t*)buf.data();
-
     // At startup the host may send a READ(6) command with a sector count of 1 to read the root sector.
     // This will trigger a SCSI error message.
     if (cdb[4] == 1) {
@@ -160,34 +155,29 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
         LogTrace("No network packet received");
+        const auto response = (scsi_resp_read_t*)buf.data();
         response->length = 0;
         response->flags = read_data_flags_t::e_no_more_data;
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (get_level() == level::trace) {
         LogTrace(
-            fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size, FormatBytes(buf, rx_packet_size)));
+            fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
+                FormatBytes(buf, rx_packet_size)));
     }
 
     byte_read_count += rx_packet_size;
 
-    int size = rx_packet_size;
-    if (size < 128) {
-        // A frame must have at least 64 bytes for the Atari driver, see https://github.com/PiSCSI/piscsi/issues/619,
-        // but also works with 128 bytes.
-        // The NetBSD driver requires at least 128 bytes, see https://github.com/PiSCSI/piscsi/issues/1098.
-        // The Mac driver is also fine with 128 bytes.
-        // Note that this work-around breaks the checksum. As currently there are no known drivers
-        // that care for the checksum it was decided to accept the broken checksum.
-        // If a driver should pop up that breaks because of this, the work-around has to be re-evaluated.
-        size = 128;
-    }
+    // A wireless frame must have at least 64 bytes, but all known drivers also work with 128 bytes.
+    // Note that the current code breaks the checksum. As currently there are no known drivers
+    // that care for the checksum it was decided to accept the broken checksum.
+    const int size = rx_packet_size < 64 ? 64 : rx_packet_size;
 
     SetInt16(buf, 0, size);
     SetInt32(buf, 2, tap.HasPendingPackets() ? 0x10 : 0x00);
 
-    // Return the packet size + 2 for the length + 4 for the flag field
-    // The CRC was already appended by the ctapdriver
+    // Return the packet size + 2 for the length + 4 for the flag field.
+    // The CRC has already been appended by the TAP driver.
     return size + DAYNAPORT_READ_HEADER_SZ;
 }
 
@@ -209,8 +199,15 @@ int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
+int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 {
+    assert(command == scsi_command::cmd_write6);
+    if (command != scsi_command::cmd_write6) {
+        throw scsi_exception(sense_key::aborted_command);
+    }
+
+    const cdb_t &cdb = GetController()->GetCdb();
+
     int data_length = 0;
     if (const int data_format = cdb[5]; data_format == 0x00) {
         data_length = GetInt16(cdb, 3);
@@ -230,12 +227,12 @@ bool DaynaPort::Write(cdb_t cdb, span<const uint8_t> buf)
     if (buf.size() && get_level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf.begin(), buf.end(), back_inserter(data));
-        LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length, FormatBytes(data, data_length)));
+        LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length)));
     }
 
-    GetController()->SetBlocks(0);
+    GetController()->SetTransferSize(0, 0);
 
-    return true;
+    return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -260,7 +257,7 @@ int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
 
     // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
     // on different Pis in the same network do not have identical MAC addresses.
-    if (const auto &mac = GetMacAddress(CTapDriver::GetBridgeName()); mac.size() >= 6) {
+    if (const auto &mac = GetMacAddress(TapDriver::GetBridgeName()); mac.size() >= 6) {
         buf.data()[3] = mac[3];
         buf.data()[4] = mac[4];
         buf.data()[5] = mac[5];
@@ -275,30 +272,25 @@ int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
 void DaynaPort::TestUnitReady()
 {
     // Always successful
-    EnterStatusPhase();
+    StatusPhase();
 }
 
-void DaynaPort::Read6()
+void DaynaPort::GetMessage6()
 {
-    const uint32_t record = GetInt24(GetController()->GetCdb(), 1) & 0x1fffff;
-    GetController()->SetBlocks(1);
-
     // If any commands have a bogus control value, they were probably not
     // generated by the DaynaPort driver so ignore them
     if (GetController()->GetCdbByte(5) != 0xc0 && GetController()->GetCdbByte(5) != 0x80) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int length = Read(GetController()->GetCdb(), GetController()->GetBuffer(), record);
-    GetController()->SetLength(length);
+    const uint32_t record = GetInt24(GetController()->GetCdb(), 1) & 0x1fffff;
+    const auto length = Read(GetController()->GetCdb(), GetController()->GetBuffer(), record);
+    GetController()->SetTransferSize(length, length);
 
-    // Set next block
-    GetController()->SetNext(record + 1);
-
-    EnterDataInPhase();
+    DataInPhase(length);
 }
 
-void DaynaPort::Write6() const
+void DaynaPort::SendMessage6() const
 {
     const int data_format = GetController()->GetCdbByte(5);
 
@@ -314,24 +306,17 @@ void DaynaPort::Write6() const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(length);
+    GetController()->SetTransferSize(length, length);
 
-    // Set next block
-    GetController()->SetBlocks(1);
-    GetController()->SetNext(1);
-
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 void DaynaPort::RetrieveStatistics() const
 {
-    GetController()->SetLength(RetrieveStats(GetController()->GetCdb(), GetController()->GetBuffer()));
+    const auto length = RetrieveStats(GetController()->GetCdb(), GetController()->GetBuffer());
+    GetController()->SetTransferSize(length, length);
 
-    // Set next block
-    GetController()->SetBlocks(1);
-    GetController()->SetNext(1);
-
-    EnterDataInPhase();
+    DataInPhase(length);
 }
 
 //---------------------------------------------------------------------------
@@ -365,13 +350,12 @@ void DaynaPort::SetInterfaceMode() const
     switch (GetController()->GetCdbByte(5)) {
     case CMD_SCSILINK_SETMODE:
         // Not implemented, do nothing
-        EnterStatusPhase();
+        StatusPhase();
         break;
 
     case CMD_SCSILINK_SETMAC:
         // Currently the MAC address passed is ignored
-        GetController()->SetLength(6);
-        EnterDataOutPhase();
+        DataOutPhase(6);
         break;
 
     default:
@@ -389,8 +373,7 @@ void DaynaPort::SetMcastAddr() const
     }
 
     // Currently the multicast address passed is ignored
-    GetController()->SetLength(length);
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 //---------------------------------------------------------------------------
@@ -408,8 +391,8 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetController()->GetCdbByte(5) & 0x80) {
-        if (const string error = CTapDriver::IpLink(true); !error.empty()) {
-            LogWarn("Unable to enable the DaynaPort Interface: " + error);
+        if (const string error = TapDriver::IpLink(true); !error.empty()) {
+            LogWarn("Can't enable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
 
@@ -418,15 +401,15 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string error = CTapDriver::IpLink(false); !error.empty()) {
-            LogWarn("Unable to disable the DaynaPort Interface: " + error);
+        if (const string error = TapDriver::IpLink(false); !error.empty()) {
+            LogWarn("Can't disable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }
 
         LogDebug("The DaynaPort interface has been disabled");
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 vector<PbStatistics> DaynaPort::GetStatistics() const

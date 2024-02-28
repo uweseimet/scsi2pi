@@ -2,9 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -12,7 +9,6 @@
 #pragma once
 
 #include "base/interfaces/scsi_mmc_commands.h"
-#include "cd_track.h"
 #include "disk.h"
 
 class ScsiCd : public Disk, private ScsiMmcCommands
@@ -29,7 +25,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
-    int Read(span<uint8_t>, uint64_t) override;
+    int ReadData(span<uint8_t>) override;
 
 protected:
 
@@ -37,27 +33,16 @@ protected:
 
 private:
 
-    int ReadTocInternal(cdb_t, vector<uint8_t>&);
-
-    void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
-    void AddAudioControlPage(map<int, vector<byte>>&, bool) const;
-
-    void OpenIso();
+    void ReadToc() override;
 
     void CreateDataTrack();
 
-    void ReadToc() override;
+    void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
 
-    void LBAtoMSF(uint32_t, uint8_t*) const; // LBA→MSF conversion
+    static void LBAtoMSF(uint32_t, uint8_t*);
 
-    scsi_defs::scsi_level scsi_level;
+    uint32_t first_lba = 0;
+    uint32_t last_lba = 0;
 
-    bool raw_file = false; // RAW flag
-
-    // Track management
-    void ClearTrack(); // Clear the track
-    int SearchTrack(uint32_t lba) const; // Track search
-    vector<unique_ptr<CDTrack>> tracks; // Track opbject references
-    int dataindex = -1; // Current data track
-    int audioindex = -1; // Current audio track
+    bool track_initialized = false;
 };

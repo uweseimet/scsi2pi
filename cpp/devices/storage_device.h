@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <filesystem>
 #include "shared/s2p_util.h"
 #include "mode_page_device.h"
@@ -21,7 +20,7 @@ class StorageDevice : public ModePageDevice
 {
 public:
 
-    StorageDevice(PbDeviceType, int, bool);
+    StorageDevice(PbDeviceType, scsi_level, int, bool);
     ~StorageDevice() override = default;
 
     void CleanUp() override;

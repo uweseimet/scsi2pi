@@ -2,13 +2,14 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/memory_util.h"
 #include "shared/shared_exceptions.h"
+#include "base/memory_util.h"
+#include "base/device_factory.h"
 
 using namespace memory_util;
 
@@ -36,9 +37,7 @@ void ScsiHdTest_ValidateDrivePage(AbstractController &controller, int offset)
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "test.hda");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHD, device->GetType());
@@ -58,7 +57,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
     EXPECT_EQ("FIREBALL", device->GetProduct()) << "Invalid default vendor for Apple drive";
     EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
 
-    device = device_factory.CreateDevice(UNDEFINED, 0, "test.hds");
+    device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHD, device->GetType());
 }
@@ -133,7 +132,6 @@ TEST(ScsiHdTest, GetProductData)
     hd_gb.FinalizeSetup();
     s = hd_gb.GetProduct();
     EXPECT_NE(string::npos, s.find("10 GiB"));
-    remove(filename);
 }
 
 TEST(ScsiHdTest, GetSectorSizes)

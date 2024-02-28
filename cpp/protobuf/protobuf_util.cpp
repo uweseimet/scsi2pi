@@ -18,6 +18,31 @@ using namespace s2p_util;
 
 #define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
 
+PbDeviceType protobuf_util::ParseDeviceType(const string &type)
+{
+    if (PbDeviceType parsed_type; PbDeviceType_Parse(ToUpper(type), &parsed_type)) {
+        return parsed_type;
+    }
+
+    // Handle convenience device types (shortcuts)
+    const auto &it = DEVICE_TYPES.find(tolower(type[0]));
+    return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
+}
+
+PbCachingMode protobuf_util::ParseCachingMode(const string &value)
+{
+    string v = value;
+    ranges::replace(v, '-', '_');
+
+    string m;
+    ranges::transform(v, back_inserter(m), ::toupper);
+    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
+        return mode;
+    }
+
+    throw parser_exception("Invalid caching mode '" + value + "'");
+}
+
 void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &params)
 {
     if (params.empty()) {
@@ -109,11 +134,11 @@ void protobuf_util::SetProductData(PbDeviceDefinition &device, const string &dat
     }
 }
 
-string protobuf_util::SetIdAndLun(int id_max, int lun_max, PbDeviceDefinition &device, const string &value)
+string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const string &value)
 {
     int id;
     int lun;
-    if (const string error = ProcessId(id_max, lun_max, value, id, lun); !error.empty()) {
+    if (const string error = ProcessId(lun_max, value, id, lun); !error.empty()) {
         return error;
     }
 

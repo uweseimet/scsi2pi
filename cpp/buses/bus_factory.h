@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "buses/in_process_bus.h"
+#include "bus.h"
 
 using namespace std;
 
@@ -17,7 +17,23 @@ class BusFactory
 
 public:
 
-    unique_ptr<Bus> CreateBus(bool, bool = false);
+    static BusFactory& Instance()
+    {
+        static BusFactory instance; // NOSONAR instance cannot be inlined
+        return instance;
+    }
+
+    unique_ptr<Bus> CreateBus(bool, bool);
+
+    int GetCommandBytesCount(scsi_command opcode) const
+    {
+        return command_byte_counts[static_cast<int>(opcode)];
+    }
+
+    string GetCommandName(scsi_command opcode) const
+    {
+        return command_names[static_cast<int>(opcode)];
+    }
 
     bool IsRaspberryPi() const
     {
@@ -26,12 +42,15 @@ public:
 
 private:
 
-    bool CheckForPi();
+    BusFactory();
 
-    // Bus instance shared by initiator and target
-    inline static InProcessBus in_process_bus;
+    void AddCommand(scsi_command, int, string_view);
+
+    bool CheckForPi();
 
     bool is_raspberry_pi = false;
 
-    inline static const string DEVICE_TREE_MODEL_PATH = "/proc/device-tree/model";
+    array<int, 256> command_byte_counts;
+
+    array<string, 256> command_names;
 };

@@ -4,20 +4,18 @@
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
-// Base class for device controllers
-//
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <unordered_set>
 #include <span>
-#include <vector>
+#include <unordered_set>
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
 
-using namespace std;
+// Command Descriptor Block
+using cdb_t = span<const int>;
 
 class PrimaryDevice;
 
@@ -25,16 +23,6 @@ class AbstractController : public PhaseHandler
 {
 
 public:
-
-    static inline const int UNKNOWN_INITIATOR_ID = -1;
-
-    enum class shutdown_mode
-    {
-        NONE,
-        STOP_S2P,
-        STOP_PI,
-        RESTART_PI
-    };
 
     AbstractController(Bus&, int, int);
     ~AbstractController() override = default;
@@ -45,6 +33,14 @@ public:
     virtual int GetInitiatorId() const = 0;
 
     virtual int GetEffectiveLun() const = 0;
+
+    enum class shutdown_mode
+    {
+        none,
+        stop_s2p,
+        stop_pi,
+        restart_pi
+    };
 
     void ScheduleShutdown(shutdown_mode mode)
     {
@@ -59,10 +55,7 @@ public:
     {
         return target_id;
     }
-    int GetMaxLuns() const
-    {
-        return max_luns;
-    }
+
     int GetLunCount() const
     {
         return static_cast<int>(luns.size());
@@ -72,7 +65,6 @@ public:
     shared_ptr<PrimaryDevice> GetDeviceForLun(int) const;
     bool AddDevice(shared_ptr<PrimaryDevice>);
     bool RemoveDevice(PrimaryDevice&);
-    bool HasDeviceForLun(int) const;
     void ProcessOnController(int);
 
     void CopyToBuffer(const void*, size_t);
@@ -88,24 +80,21 @@ public:
     {
         ctrl.status = s;
     }
-    auto GetLength() const
+    auto GetChunkSize() const
     {
-        return ctrl.length;
+        return ctrl.chunk_size;
     }
-    void SetLength(size_t);
-    void SetBlocks(uint32_t b)
+    auto GetCurrentLength() const
     {
-        ctrl.blocks = b;
+        return ctrl.current_length;
     }
-    void SetNext(uint64_t n)
-    {
-        ctrl.next = n;
-    }
+    void SetCurrentLength(int);
+    void SetTransferSize(int, int);
     void SetMessage(int m)
     {
         ctrl.message = m;
     }
-    auto GetCdb() const
+    auto& GetCdb() const
     {
         return ctrl.cdb;
     }
@@ -113,7 +102,8 @@ public:
     {
         return ctrl.cdb[index];
     }
-    void SetByteTransfer(bool);
+
+    inline static const int UNKNOWN_INITIATOR_ID = -1;
 
 protected:
 
@@ -136,32 +126,17 @@ protected:
         ctrl.cdb[index] = value;
     }
 
-    bool InTransfer() const
+    bool UpdateTransferSize()
     {
-        return ctrl.blocks;
+        ctrl.total_length -= ctrl.chunk_size;
+        return ctrl.total_length != 0;
     }
-    void DecrementBlocks()
-    {
-        --ctrl.blocks;
-    }
-    auto GetNext() const
-    {
-        return ctrl.next;
-    }
-    void IncrementNext()
-    {
-        ++ctrl.next;
-    }
-    int GetMessage() const
+    auto GetMessage() const
     {
         return ctrl.message;
     }
 
-    bool HasValidLength() const
-    {
-        return ctrl.length != 0;
-    }
-    int GetOffset() const
+    auto GetOffset() const
     {
         return ctrl.offset;
     }
@@ -171,21 +146,8 @@ protected:
     }
     void UpdateOffsetAndLength()
     {
-        ctrl.offset += ctrl.length;
-        ctrl.length = 0;
-    }
-
-    bool IsByteTransfer() const
-    {
-        return is_byte_transfer;
-    }
-    void InitBytesToTransfer()
-    {
-        bytes_to_transfer = ctrl.length;
-    }
-    auto GetBytesToTransfer() const
-    {
-        return bytes_to_transfer;
+        ctrl.offset += ctrl.current_length;
+        ctrl.current_length = 0;
     }
 
     void LogTrace(const string &s) const
@@ -216,14 +178,14 @@ private:
 
         // Transfer data buffer, dynamically resized
         vector<uint8_t> buffer;
-        // Number of transfer blocks
-        uint32_t blocks;
-        // Next record
-        uint64_t next;
         // Transfer offset
-        uint32_t offset;
-        // Remaining bytes to be transferred
-        uint32_t length;
+        int offset;
+        // Total number of bytes to be transferred
+        int total_length;
+        // Remaining bytes to be transferred in a single handshake cycle
+        int current_length;
+        // The number of bytes to be transferred with a single handshake cycle
+        int chunk_size;
     };
 
     ctrl_t ctrl = { };
@@ -239,8 +201,5 @@ private:
 
     int max_luns;
 
-    bool is_byte_transfer = false;
-    uint32_t bytes_to_transfer = 0;
-
-    shutdown_mode sh_mode = shutdown_mode::NONE;
+    shutdown_mode sh_mode = shutdown_mode::none;
 };

@@ -18,35 +18,48 @@ using namespace s2p_util;
 
 void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties)
 {
-    // Clearing the property cache helps with testing because Init() can be called for different files
+    // A clear property cache helps with testing because Init() can be called for different files
     property_cache.clear();
-    property_cache[PropertyHandler::LOCALE] = GetLocale();
-    property_cache[PropertyHandler::LOG_LEVEL] = "info";
-    property_cache[PropertyHandler::PORT] = "6868";
-    property_cache[PropertyHandler::SCAN_DEPTH] = "1";
+
+    property_map properties;
+    properties[PropertyHandler::LOCALE] = GetLocale();
+    properties[PropertyHandler::LOG_LEVEL] = "info";
+    properties[PropertyHandler::PORT] = "6868";
+    properties[PropertyHandler::SCAN_DEPTH] = "1";
 
     // Always parse the optional global property file
     if (exists(path(GLOBAL_CONFIGURATION))) {
-        ParsePropertyFile(GLOBAL_CONFIGURATION, true);
+        ParsePropertyFile(properties, GLOBAL_CONFIGURATION, true);
     }
 
     // When there is no explicit property file list parse the local property file
     if (filenames.empty()) {
-        ParsePropertyFile(GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
+        ParsePropertyFile(properties, GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
     }
     else {
         for (const auto &filename : Split(filenames, ',')) {
-            ParsePropertyFile(filename, false);
+            ParsePropertyFile(properties, filename, false);
         }
     }
 
     // Merge properties from property files and from the command line
     for (const auto& [k, v] : cmd_properties) {
-        property_cache[k] = v;
+        properties[k] = v;
+    }
+
+    // Normalize properties by adding an explicit LUN where required
+    for (const auto& [key, value] : properties) {
+        const auto &components = Split(key, '.');
+        if (key.starts_with("device.") && key.find(":") == string::npos && components.size() == 3) {
+            property_cache[components[0] + "." + components[1] + ":0." + components[2]] = value;
+        }
+        else {
+            property_cache[key] = value;
+        }
     }
 }
 
-void PropertyHandler::ParsePropertyFile(const string &filename, bool default_file)
+void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
 {
     ifstream property_file(filename);
     if (property_file.fail() && !default_file) {
@@ -66,9 +79,25 @@ void PropertyHandler::ParsePropertyFile(const string &filename, bool default_fil
                 throw parser_exception(fmt::format("Invalid property '{}'", property));
             }
 
-            property_cache[kv[0]] = kv[1];
+            properties[kv[0]] = kv[1];
         }
     }
+}
+
+property_map PropertyHandler::GetProperties(const string &filter) const
+{
+    if (filter.empty()) {
+        return property_cache;
+    }
+
+    property_map filtered_properties;
+    for (const auto& [key, value] : property_cache) {
+        if (key.starts_with(filter)) {
+            filtered_properties[key] = value;
+        }
+    }
+
+    return filtered_properties;
 }
 
 string PropertyHandler::GetProperty(string_view key) const
@@ -80,6 +109,11 @@ string PropertyHandler::GetProperty(string_view key) const
     }
 
     return "";
+}
+
+void PropertyHandler::RemoveProperties(const string &filter)
+{
+    erase_if(property_cache, [&filter](auto &kv) {return kv.first.starts_with(filter);});
 }
 
 map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor, const string &product) const

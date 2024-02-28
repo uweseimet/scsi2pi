@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ using namespace std;
 
 namespace memory_util
 {
-int GetInt16(const auto buf, int offset)
+int GetInt16(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);
 

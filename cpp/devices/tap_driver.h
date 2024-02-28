@@ -3,7 +3,6 @@
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 // for Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
@@ -24,20 +23,13 @@ static const int ETH_FCS_LEN = 4;
 
 using namespace std;
 
-class CTapDriver
+class TapDriver
 {
-    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
-    const inline static string BRIDGE_NAME = "piscsi_bridge";
-
-    const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
-    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 
 public:
 
-    CTapDriver() = default;
-    ~CTapDriver() = default;
-    CTapDriver(CTapDriver&) = default;
-    CTapDriver& operator=(const CTapDriver&) = default;
+    TapDriver();
+    ~TapDriver() = default;
 
     bool Init(const param_map&);
     void CleanUp() const;
@@ -48,7 +40,6 @@ public:
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
 
-    // Purge all of the packets that are waiting to be processed
     void Flush() const;
 
     static uint32_t Crc32(span<const uint8_t>);
@@ -58,7 +49,7 @@ public:
         return BRIDGE_NAME;
     }
 
-    static string AddBridge(int);
+    string AddBridge(int) const;
     string DeleteBridge(int) const;
 
     // Enable/Disable the piscsi0 interface
@@ -66,20 +57,26 @@ public:
 
 private:
 
-    static string SetUpEth0(int, const string&);
-    static string SetUpNonEth0(int, int, const string&);
+    static string IpLink(int, const string&, bool);
+    static string BrSetif(int fd, const string&, const string&, bool);
+    string CreateBridge(int, int);
     static pair<string, string> ExtractAddressAndMask(const string&);
+    string SetAddressAndNetMask(int, const string&) const;
 
-    // File handle
     int tap_fd = -1;
 
-    // Prioritized comma-separated list of interfaces to create the bridge for
-    vector<string> interfaces;
+    set<string, less<>> available_interfaces;
 
     string inet;
 
-#ifdef __linux__
+    string bridge_interface;
+
     bool bridge_created = false;
-#endif
+
+    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
+    const inline static string BRIDGE_NAME = "piscsi_bridge";
+
+    const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
+    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 };
 

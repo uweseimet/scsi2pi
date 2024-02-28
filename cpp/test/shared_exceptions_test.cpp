@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,13 +29,15 @@ TEST(SharedExceptionsTest, FileNotFoundException)
     }
 }
 
-TEST(SharedExceptionsTest, ScsiErrorException)
+TEST(SharedExceptionsTest, ScsiException)
 {
     try {
         throw scsi_exception(sense_key::unit_attention);
     } catch (const scsi_exception &e) {
         EXPECT_EQ(sense_key::unit_attention, e.get_sense_key());
         EXPECT_EQ(asc::no_additional_sense_information, e.get_asc());
+        EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
+        EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }
 
     try {
@@ -43,5 +45,7 @@ TEST(SharedExceptionsTest, ScsiErrorException)
     } catch (const scsi_exception &e) {
         EXPECT_EQ(sense_key::illegal_request, e.get_sense_key());
         EXPECT_EQ(asc::lba_out_of_range, e.get_asc());
+        EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
+        EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }
 }

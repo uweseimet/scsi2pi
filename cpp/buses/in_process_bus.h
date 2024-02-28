@@ -19,15 +19,18 @@ class InProcessBus : public GpioBus
 
 public:
 
-    InProcessBus() = default;
     ~InProcessBus() override = default;
 
-    void Reset() override;
-
-    void CleanUp() override
+    static InProcessBus& Instance()
     {
-        // Nothing to do
+        static InProcessBus instance; // NOSONAR instance cannot be inlined
+        return instance;
     }
+
+    bool Init(bool) override;
+    void CleanUp() override;
+
+    void Reset() override;
 
     uint32_t Acquire() override
     {
@@ -134,6 +137,15 @@ public:
 
     bool WaitForSelection() override;
 
+    void WaitBusSettle() const override
+    {
+        // Nothing to do
+    }
+
+protected:
+
+    InProcessBus() = default;
+
 private:
 
     void DisableIRQ() override
@@ -165,6 +177,8 @@ private:
     {
         assert(false);
     }
+
+    static inline atomic_bool target_enabled;
 
     mutex write_locker;
 

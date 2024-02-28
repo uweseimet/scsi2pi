@@ -10,13 +10,9 @@
 
 #include <cstdint>
 #include <climits>
-#include <string>
 #include <sstream>
 #include <vector>
-#include <unordered_map>
 #include "scsi.h"
-
-using namespace std;
 
 namespace s2p_util
 {
@@ -53,14 +49,17 @@ string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = INT_MAX);
+string ToUpper(const string&);
+string ToLower(const string&);
 string GetLocale();
+string GetLine(const string&);
 bool GetAsUnsignedInt(const string&, int&);
-string ProcessId(int, int, const string&, int&, int&);
-string Banner(string_view, bool = true);
+string ProcessId(int, const string&, int&, int&);
+string Banner(string_view);
 
 string GetExtensionLowerCase(string_view);
 
-void LogErrno(const string&);
+string GetScsiLevel(int);
 
 string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc, int = 0);
 

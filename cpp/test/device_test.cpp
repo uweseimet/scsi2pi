@@ -148,14 +148,6 @@ TEST(DeviceTest, GetTypeString)
     EXPECT_EQ("SAHD", sahd.GetTypeString());
 }
 
-TEST(DeviceTest, GetIdentifier)
-{
-    MockDevice device(1);
-
-    EXPECT_CALL(device, GetId());
-    EXPECT_EQ("UNDEFINED 0:1", device.GetIdentifier());
-}
-
 TEST(DeviceTest, Vendor)
 {
     MockDevice device(0);
@@ -197,14 +189,6 @@ TEST(DeviceTest, GetPaddedName)
     device.SetRevision("R");
 
     EXPECT_EQ("V       P               R   ", device.GetPaddedName());
-}
-
-TEST(DeviceTest, StatusCode)
-{
-    MockDevice device(0);
-
-    device.SetStatusCode(123);
-    EXPECT_EQ(123, device.GetStatusCode());
 }
 
 TEST(DeviceTest, Reset)

@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,8 +29,12 @@ shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
+    if ((!is_sasi && device->GetType() == PbDeviceType::SAHD) || (is_sasi && device->GetType() != PbDeviceType::SAHD)) {
+        return false;
+    }
+
     if (auto controller = FindController(id); controller) {
-        if (device->GetLun() > GetLunMax() || controller->HasDeviceForLun(device->GetLun())) {
+        if (device->GetLun() > GetLunMax() || controller->GetDeviceForLun(device->GetLun())) {
             return false;
         }
 
@@ -87,7 +91,7 @@ AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int id_
         return (*it).second->GetShutdownMode();
     }
 
-    return AbstractController::shutdown_mode::NONE;
+    return AbstractController::shutdown_mode::none;
 }
 
 shared_ptr<AbstractController> ControllerFactory::FindController(int target_id) const

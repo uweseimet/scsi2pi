@@ -14,12 +14,11 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <array>
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/shared_exceptions.h"
-#include "shared/s2p_util.h"
+#include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pdump_core.h"
 
@@ -47,7 +46,9 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << s2p_util::Banner("(Drive Dump/Restore Utility)");
+        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+            << "Version " << GetVersionString() << "\n"
+            << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pdump [options]\n"
@@ -60,7 +61,7 @@ void S2pDump::Banner(bool header) const
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
         << "                                     default is 1 MiB.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
-        << "                                     error|off), default is 'info'.\n"
+        << "                                     error|critical|off), default is 'info'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
         << "                                     device properties for s2p property files.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
@@ -72,7 +73,7 @@ void S2pDump::Banner(bool header) const
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
-        << "  --version/-v                       Display the s2pdump version.\n"
+        << "  --version/-v                       Display the program version.\n"
         << "  --help/-H                          Display this help.\n";
 }
 
@@ -88,17 +89,15 @@ bool S2pDump::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(false, in_process);
-    if (bus != nullptr) {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (bus) {
         executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
     }
 
     return bus != nullptr;
 }
 
-bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable for parsing
+bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
         { "all-luns", no_argument, nullptr, 'a' },
@@ -240,7 +239,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable for parsing
     }
 
     if (!run_bus_scan) {
-        if (const string error = ProcessId(8, sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
+        if (const string error = ProcessId(sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
 
@@ -313,7 +312,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             throw parser_exception("Can't initialize bus");
         }
 
-        if (!in_process && !bus_factory->IsRaspberryPi()) {
+        if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
             throw parser_exception("There is no board hardware support");
         }
     }
@@ -427,25 +426,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     }
 
     if (buf[2]) {
-        cout << "SCSI Level:           ";
-        switch (buf[2]) {
-        case 1:
-            cout << "SCSI-1-CCS";
-            break;
-
-        case 2:
-            cout << "SCSI-2";
-            break;
-
-        case 3:
-            cout << "SCSI-3 (SPC)";
-            break;
-
-        default:
-            cout << "SPC-" << buf[2] - 2;
-            break;
-        }
-        cout << "\n";
+        cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << "\n";
     }
 
     cout << "Response Data Format: ";

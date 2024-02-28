@@ -6,29 +6,26 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <spdlog/spdlog.h>
+#include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
-#include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "devices/disk.h"
 #include "command_response.h"
 
-using namespace std;
-using namespace filesystem;
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
 
-void CommandResponse::GetDeviceProperties(shared_ptr<Device> device, PbDeviceProperties &properties) const
+void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
 {
     properties.set_luns(device->GetType() == PbDeviceType::SAHD ?
             ControllerFactory::GetSasiLunMax() : ControllerFactory::GetScsiLunMax());
+    properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());
     properties.set_stoppable(device->IsStoppable());
@@ -45,8 +42,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<Device> device, PbDevicePro
     }
 
 #ifdef BUILD_DISK
-    shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device);
-    if (disk && disk->IsSectorSizeConfigurable()) {
+    if (shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsSectorSizeConfigurable()) {
         for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
             properties.add_block_sizes(sector_size);
         }
@@ -58,7 +54,7 @@ void CommandResponse::GetDeviceTypeProperties(PbDeviceTypesInfo &device_types_in
 {
     auto type_properties = device_types_info.add_properties();
     type_properties->set_type(type);
-    const auto device = device_factory.CreateDevice(type, 0, "");
+    const auto device = DeviceFactory::Instance().CreateDevice(type, 0, "");
     GetDeviceProperties(device, *type_properties->mutable_properties());
 }
 
@@ -69,7 +65,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
         PbDeviceType type = UNDEFINED;
         PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
         // Only report device types actually supported by the factory
-        if (device_factory.CreateDevice(type, 0, "")) {
+        if (DeviceFactory::Instance().CreateDevice(type, 0, "")) {
             GetDeviceTypeProperties(device_types_info, type);
         }
         ordinal++;
@@ -78,7 +74,8 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void CommandResponse::GetDevice(shared_ptr<Device> device, PbDevice &pb_device, const string &default_folder) const
+void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device,
+    const string &default_folder) const
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
@@ -86,6 +83,7 @@ void CommandResponse::GetDevice(shared_ptr<Device> device, PbDevice &pb_device, 
     pb_device.set_product(device->GetProduct());
     pb_device.set_revision(device->GetRevision());
     pb_device.set_type(device->GetType());
+    pb_device.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
 
     GetDeviceProperties(device, *pb_device.mutable_properties());
 
@@ -103,8 +101,9 @@ void CommandResponse::GetDevice(shared_ptr<Device> device, PbDevice &pb_device, 
 
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
-        pb_device.set_block_size(device->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
-        pb_device.set_block_count(device->IsRemoved() ? 0 : disk->GetBlockCount());
+        pb_device.set_block_size(disk->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
+        pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
+        pb_device.set_caching_mode(disk->GetCachingMode());
     }
 
     const auto storage_device = dynamic_pointer_cast<const StorageDevice>(device);
@@ -119,7 +118,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &defaul
 {
     if (!filename.empty()) {
         image_file.set_name(filename);
-        image_file.set_type(device_factory.GetTypeForFile(filename));
+        image_file.set_type(DeviceFactory::Instance().GetTypeForFile(filename));
 
         const path p(filename[0] == '/' ? filename : default_folder + "/" + filename);
 
@@ -143,11 +142,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
         return;
     }
 
-    string folder_pattern_lower;
-    ranges::transform(folder_pattern, back_inserter(folder_pattern_lower), ::tolower);
-
-    string file_pattern_lower;
-    ranges::transform(file_pattern, back_inserter(file_pattern_lower), ::tolower);
+    const string folder_pattern_lower = ToLower(folder_pattern);
+    const string file_pattern_lower = ToLower(file_pattern);
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
         it != recursive_directory_iterator(); it++) {
@@ -251,9 +247,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     const vector<string> command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
     for (const string &operation : command_operations) {
-        string op;
-        ranges::transform(operation, back_inserter(op), ::toupper);
-        operations.insert(op);
+        operations.insert(ToUpper(operation));
     }
 
     if (!operations.empty()) {
@@ -333,7 +327,7 @@ void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_
 
 void CommandResponse::GetMappingInfo(PbMappingInfo &mapping_info) const
 {
-    for (const auto& [name, type] : device_factory.GetExtensionMapping()) {
+    for (const auto& [name, type] : DeviceFactory::Instance().GetExtensionMapping()) {
         (*mapping_info.mutable_mapping())[name] = type;
     }
 }
@@ -550,16 +544,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)
 {
-    if (!pattern_lower.empty()) {
-        string name_lower;
-        ranges::transform(input, back_inserter(name_lower), ::tolower);
-
-        if (name_lower.find(pattern_lower) == string::npos) {
-            return false;
-        }
-    }
-
-    return true;
+    return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
 }
 
 bool CommandResponse::HasOperation(const set<string, less<>> &operations, PbOperation operation)

@@ -2,18 +2,15 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
-//
-// Message localization support. Currently only for messages with up to 3 string parameters.
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <unordered_set>
-#include <unordered_map>
 #include <regex>
-#include "shared/s2p_util.h"
+#include "s2p_util.h"
 
 using namespace std;
 
@@ -40,9 +37,10 @@ enum class LocalizationKey
     ERROR_SHUTDOWN_MODE_INVALID,
     ERROR_SHUTDOWN_PERMISSION,
     ERROR_FILE_OPEN,
+    ERROR_SCSI_LEVEL,
     ERROR_BLOCK_SIZE,
     ERROR_BLOCK_SIZE_NOT_CONFIGURABLE,
-    ERROR_SCSI_CONTROLLER,
+    ERROR_CONTROLLER,
     ERROR_INVALID_ID,
     ERROR_INVALID_LUN,
     ERROR_LUN0,

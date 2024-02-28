@@ -2,12 +2,12 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include <spdlog/spdlog.h>
+#include "test_shared.h"
 
 int main(int argc, char*[])
 {
@@ -23,12 +23,11 @@ int main(int argc, char*[])
     }
 
     testing::InitGoogleTest();
-
     const int result = RUN_ALL_TESTS();
 
-    if (fd != -1) {
-        close(fd);
-    }
+    testing::TestShared::CleanUp();
+
+    close(fd);
 
     return result;
 }

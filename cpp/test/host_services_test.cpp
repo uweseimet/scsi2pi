@@ -8,14 +8,11 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-
-using namespace std;
+#include "base/device_factory.h"
 
 TEST(HostServicesTest, DeviceDefaults)
 {
-    DeviceFactory device_factory;
-
-    auto device = device_factory.CreateDevice(UNDEFINED, 0, "services");
+    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "services");
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHS, device->GetType());
     EXPECT_FALSE(device->SupportsFile());
@@ -201,4 +198,12 @@ TEST(HostServicesTest, SetUpModePages)
     pages.clear();
     services.SetUpModePages(pages, 0x3f, true);
     HostServices_SetUpModePages(pages);
+}
+
+TEST(HostServicesTest, WriteData)
+{
+    auto [controller, services] = CreateDevice(SCHS);
+
+    vector<uint8_t> buf;
+    EXPECT_EQ(0, services->WriteData(buf, scsi_command::cmd_execute_operation));
 }

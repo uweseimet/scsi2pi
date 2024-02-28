@@ -40,7 +40,7 @@ private:
     string DisplayParams(const PbDevice&) const;
     string DisplayAttributes(const PbDeviceProperties&) const;
     string DisplayDefaultParameters(const PbDeviceProperties&) const;
-    string DisplayBlockSizes(const PbDeviceProperties&) const;
+    string DisplaySectorSizes(const PbDeviceProperties&) const;
     string DisplayParameters(const PbOperationMetaData&) const;
     string DisplayPermittedValues(const PbOperationParameter&) const;
 };

@@ -13,8 +13,7 @@
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, lun, true, sector_sizes), scsi_level(
-    scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2)
+: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -62,7 +61,9 @@ void ScsiHd::FinalizeSetup()
         SetProduct(GetProductData(), false);
     }
 
-    SetUpCache();
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
+    }
 }
 
 void ScsiHd::Open()
@@ -82,7 +83,7 @@ void ScsiHd::Open()
 
 vector<uint8_t> ScsiHd::InquiryInternal() const
 {
-    return HandleInquiry(device_type::direct_access, scsi_level, IsRemovable());
+    return HandleInquiry(device_type::direct_access, IsRemovable());
 }
 
 void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -110,9 +111,9 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(24);
 
     if (changeable) {
-        // The sector size is simulated to be changeable, see the MODE SELECT implementation for details
-        // TODO Consider all supported sector sizes
-        SetInt16(buf, 12, GetSectorSizeInBytes());
+        // The sector size is simulated to be changeable in multiples of 4,
+        // see the MODE SELECT implementation for details
+        SetInt16(buf, 12, 0xffff);
 
         pages[3] = buf;
 
@@ -121,22 +122,22 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
 
     if (IsReady()) {
         // Set the number of tracks in one zone to 8
-        buf[0x03] = (byte)0x08;
+        buf[3] = (byte)0x08;
 
         // Set sector/track to 25
-        SetInt16(buf, 0x0a, 25);
+        SetInt16(buf, 10, 25);
 
-        // Set the number of bytes in a physical sector
-        SetInt16(buf, 0x0c, GetSectorSizeInBytes());
+        // The current sector size
+        SetInt16(buf, 12, GetSectorSizeInBytes());
 
         // Interleave 1
-        SetInt16(buf, 0x0e, 1);
+        SetInt16(buf, 14, 1);
 
         // Track skew factor 11
-        SetInt16(buf, 0x10, 11);
+        SetInt16(buf, 16, 11);
 
         // Cylinder skew factor 20
-        SetInt16(buf, 0x12, 20);
+        SetInt16(buf, 18, 20);
     }
 
     buf[20] = IsRemovable() ? (byte)0x20 : (byte)0x00;

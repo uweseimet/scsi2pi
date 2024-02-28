@@ -8,18 +8,10 @@
 
 #pragma once
 
-#include "buses/bus_factory.h"
-#include "controllers/controller_factory.h"
-#include "base/property_handler.h"
-#include "protobuf/command_context.h"
 #include "command/command_dispatcher.h"
-#include "command/image_support.h"
-#include "command/command_response.h"
-#include "command/command_executor.h"
 #include "s2p_parser.h"
 #include "s2p_thread.h"
 
-using namespace std;
 using namespace s2p_interface;
 
 class S2p
@@ -35,8 +27,9 @@ private:
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;
-    static void TerminationHandler(int);
+    bool ParseProperties(const property_map&, int&);
     void SetUpEnvironment();
+    string MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
     void AttachDevices(PbCommand&);
@@ -47,15 +40,14 @@ private:
 
     static bool CheckActive(const property_map&, const string&);
     static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
-    static PbDeviceType ParseDeviceType(const string&);
+
+    static void TerminationHandler(int);
 
     string access_token;
 
     [[no_unique_address]] S2pParser s2p_parser;
 
     S2pImage s2p_image;
-
-    [[no_unique_address]] CommandResponse response;
 
     S2pThread service_thread;
 
@@ -64,8 +56,6 @@ private:
     shared_ptr<CommandDispatcher> dispatcher;
 
     shared_ptr<ControllerFactory> controller_factory;
-
-    unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
 

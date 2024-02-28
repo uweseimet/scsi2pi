@@ -6,7 +6,7 @@
 CROSS_COMPILE =
 
 CXX = $(CROSS_COMPILE)g++
-AR = $(CROSS_COMPILE)ar
+AR = $(CROSS_COMPILE)gcc-ar
 STRIP = $(CROSS_COMPILE)strip
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
@@ -29,10 +29,12 @@ ifeq ("$(shell uname -s)", "Linux")
 endif
 
 ifeq ("$(shell uname -s)", "FreeBSD")
+	AR = ar
 	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
+	AR = ar
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
@@ -138,6 +140,7 @@ SRC_CONTROLLERS = $(shell ls -1 $(DIR_CONTROLLERS)/*.cpp)
 
 SRC_DISK = \
 	$(DIR_DEVICES)/disk.cpp \
+	$(DIR_DEVICES)/linux_cache.cpp \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
 	$(DIR_DEVICES)/storage_device.cpp \
@@ -157,15 +160,14 @@ endif
 
 ifdef BUILD_SCCD
 SRC_SCCD = \
-	$(DIR_DEVICES)/scsi_cd.cpp \
-	$(DIR_DEVICES)/cd_track.cpp
+	$(DIR_DEVICES)/scsi_cd.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 
 ifdef BUILD_SCDP
 SRC_SCDP = \
 	$(DIR_DEVICES)/daynaport.cpp \
-	$(DIR_DEVICES)/ctapdriver.cpp
+	$(DIR_DEVICES)/tap_driver.cpp
 endif
 
 ifdef BUILD_SCLP
@@ -365,10 +367,13 @@ clean:
 .PHONY: install
 install: $(BINARIES)
 	$(STRIP) $^
+	chown root:root $^
+	chmod +s $^
 
 $(INSTALL_BIN)%: $(BINDIR)/%
 	mkdir -p $(INSTALL_BIN)
 	cp $< $@
+
 
 ##   help            Lists information about how to use the Makefile
 # The help rule is based upon the approach from:

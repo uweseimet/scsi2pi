@@ -15,7 +15,7 @@
 
 using namespace memory_util;
 
-OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, { 512, 1024, 2048, 4096 })
+OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true, { 512, 1024, 2048, 4096 })
 {
     // 128 MB, 512 bytes per sector, 248826 sectors
     geometries[512 * 248826] = { 512, 248826 };
@@ -48,7 +48,9 @@ void OpticalMemory::Open()
 
     Disk::ValidateFile();
 
-    SetUpCache();
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
+    }
 
     if (IsReady()) {
         SetAttn(true);
@@ -57,7 +59,7 @@ void OpticalMemory::Open()
 
 vector<uint8_t> OpticalMemory::InquiryInternal() const
 {
-    return HandleInquiry(device_type::optical_memory, scsi_level::scsi_2, true);
+    return HandleInquiry(device_type::optical_memory, true);
 }
 
 void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const

@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <sstream>
-#include "shared/s2p_util.h"
+#include <spdlog/spdlog.h>
+#include "base/device_factory.h"
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
@@ -91,8 +91,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         if (const string error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
             return context.ReturnErrorStatus(error);
         }
-
-        return context.ReturnSuccessStatus();
+        else {
+            PropertyHandler::Instance().AddProperty("reserved_ids", Join(reserved_ids, ","));
+            return context.ReturnSuccessStatus();
+        }
     }
 
     case CHECK_AUTHENTICATION:
@@ -132,10 +134,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Start requested for {}", device.GetIdentifier());
+        info("Start requested for {}", GetIdentifier(device));
 
         if (!device.Start()) {
-            warn("Starting {} failed", device.GetIdentifier());
+            warn("Starting {} failed", GetIdentifier(device));
         }
     }
 
@@ -145,9 +147,11 @@ bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Stop requested for {}", device.GetIdentifier());
+        info("Stop requested for {}", GetIdentifier(device));
 
         device.Stop();
+
+        device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
     return true;
@@ -156,10 +160,10 @@ bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Eject requested for {}", device.GetIdentifier());
+        info("Eject requested for {}", GetIdentifier(device));
 
         if (!device.Eject(true)) {
-            warn("Ejecting {} failed", device.GetIdentifier());
+            warn("Ejecting {} failed", GetIdentifier(device));
         }
     }
 
@@ -169,7 +173,7 @@ bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write protection requested for {}", device.GetIdentifier());
+        info("Write protection requested for {}", GetIdentifier(device));
 
         device.SetProtected(true);
     }
@@ -180,7 +184,7 @@ bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
 bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
 {
     if (!dryRun) {
-        info("Write unprotection requested for {}", device.GetIdentifier());
+        info("Write unprotection requested for {}", GetIdentifier(device));
 
         device.SetProtected(false);
     }
@@ -209,8 +213,20 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const string filename = GetParam(pb_device, "file");
 
     const PbDeviceType type = pb_device.type();
+
     auto device = CreateDevice(context, type, lun, filename);
     if (!device) {
+        return false;
+    }
+
+    const PbCachingMode caching_mode =
+        pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
+    if (caching_mode == PbCachingMode::DEFAULT) {
+        // The requested caching mode is not available for this device type
+        return false;
+    }
+
+    if (!SetScsiLevel(context, device, pb_device.scsi_level())) {
         return false;
     }
 
@@ -228,9 +244,15 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #ifdef BUILD_DISK
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
+        // The caching mode must be set before the file is accessed
+        if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
+            disk->SetCachingMode(caching_mode);
+        }
+
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME, PbDeviceType_Name(type));
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
+                fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
         }
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
@@ -252,16 +274,17 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     param_map params = { pb_device.params().begin(), pb_device.params().end() };
     if (!device->SupportsFile()) {
-        // Clients like scsictl might have sent both "file" and "interfaces"
+        // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
 
     if (!device->Init(params)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION, device->GetIdentifier());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
+            fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
     }
 
     if (!controller_factory->AttachToController(bus, id, device)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_CONTROLLER);
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
 #ifdef BUILD_DISK
@@ -270,6 +293,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 #endif
 
+    SetUpDeviceProperties(context, device);
+
     string msg = "Attached ";
     if (device->IsReadOnly()) {
         msg += "read-only ";
@@ -277,7 +302,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     else if (device->IsProtectable() && device->IsProtected()) {
         msg += "protected ";
     }
-    msg += device->GetIdentifier();
+    msg += GetIdentifier(*device);
     info(msg);
 
     return true;
@@ -302,7 +327,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     const string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
     }
 
     // Stop the dry run here, before modifying the device
@@ -311,7 +336,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     }
 
     info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
-            + device->GetIdentifier());
+        + GetIdentifier(*device));
 
     if (!SetSectorSize(context, device, pb_device.block_size())) {
         return false;
@@ -335,7 +360,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
     auto controller = controller_factory->FindController(device.GetId());
-    if (controller == nullptr) {
+    if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }
 
@@ -345,8 +370,10 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
     }
 
     if (!dryRun) {
-        // Remember the device identifier for the log message before the device data become invalid on removal
-        const string identifier = device.GetIdentifier();
+        // Remember some device data before the device data become invalid on removal
+        const string identifier = GetIdentifier(device);
+        const int id = device.GetId();
+        const int lun = device.GetLun();
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
@@ -355,6 +382,12 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory->DeleteController(*controller)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
+        }
+
+        // Consider both potential identifiers if the LUN is 0
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", identifier));
+        if (!lun) {
+            PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
 
         info("Detached " + identifier);
@@ -366,7 +399,37 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 void CommandExecutor::DetachAll() const
 {
     if (controller_factory->DeleteAllControllers()) {
+        PropertyHandler::Instance().RemoveProperties("device.");
+
         info("Detached all devices");
+    }
+}
+
+void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, shared_ptr<PrimaryDevice> device)
+{
+    const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
+    PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
+    PropertyHandler::Instance().AddProperty(identifier + "product",
+        device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+    const auto disk = dynamic_pointer_cast<Disk>(device);
+    if (disk && disk->GetConfiguredSectorSize()) {
+        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
+
+    }
+    if (disk && !disk->GetFilename().empty()) {
+        if (string filename = disk->GetFilename(); filename.starts_with(context.GetDefaultFolder())) {
+            filename = filename.substr(context.GetDefaultFolder().length() + 1);
+        }
+        else {
+            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+        }
+    }
+    else if (!device->GetParams().empty()) {
+        vector<string> p;
+        for (const auto& [param, value] : device->GetParams()) {
+            p.emplace_back(param + "=" + value);
+        }
+        PropertyHandler::Instance().AddProperty(identifier + "params", Join(p, ":"));
     }
 }
 
@@ -474,7 +537,11 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
         }
     }
 
-    s << ", device=" << pb_device.id() << ":" << pb_device.unit() << ", type=" << PbDeviceType_Name(pb_device.type());
+    s << ", device=" << pb_device.id() << ":" << pb_device.unit();
+
+    if (pb_device.type() != PbDeviceType::UNDEFINED) {
+        s << ", type=" << PbDeviceType_Name(pb_device.type());
+    }
 
     if (pb_device.params_size()) {
         s << ", device parameters=";
@@ -488,8 +555,23 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
         }
     }
 
-    s << ", vendor='" << pb_device.vendor() << "', product='" << pb_device.product()
-        << "', revision='" << pb_device.revision() << "', block size=" << pb_device.block_size();
+    if (!pb_device.vendor().empty()) {
+        s << ", vendor='" << pb_device.vendor();
+    }
+    if (!pb_device.product().empty()) {
+        s << "', product='" << pb_device.product();
+    }
+    if (!pb_device.revision().empty()) {
+        s << "', revision='" << pb_device.revision();
+    }
+
+    if (pb_device.block_size()) {
+        s << "', block size=" << pb_device.block_size();
+    }
+
+    if (pb_device.caching_mode() != PbCachingMode::DEFAULT) {
+        s << ", caching mode=" << PbCachingMode_Name(pb_device.caching_mode());
+    }
 
     return s.str();
 }
@@ -529,7 +611,7 @@ bool CommandExecutor::VerifyExistingIdAndLun(const CommandContext &context, int 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context, const PbDeviceType type,
     int lun, const string &filename) const
 {
-    auto device = device_factory.CreateDevice(type, lun, filename);
+    auto device = DeviceFactory::Instance().CreateDevice(type, lun, filename);
     if (!device) {
         if (type == UNDEFINED) {
             context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, filename);
@@ -555,16 +637,26 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     return device;
 }
 
+bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<PrimaryDevice> device, int level) const
+{
+    if (level && !device->SetScsiLevel(static_cast<scsi_level>(level))) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, to_string(level));
+    }
+
+    return true;
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device, int size) const
+bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
+    int sector_size) const
 {
 #ifdef BUILD_DISK
-    if (size) {
+    if (sector_size) {
         const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk != nullptr && disk->IsSectorSizeConfigurable()) {
-            if (!disk->SetConfiguredSectorSize(size)) {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(size));
+        if (disk && disk->IsSectorSizeConfigurable()) {
+            if (!disk->SetConfiguredSectorSize(sector_size)) {
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
             }
         }
         else {
@@ -612,9 +704,8 @@ bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, int id, in
     if (id < 0) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_ID);
     }
-    if (id >= ControllerFactory::GetIdMax()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id),
-            to_string(ControllerFactory::GetIdMax() - 1));
+    if (id >= 8) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id));
     }
     if (lun < 0 || lun >= ControllerFactory::GetLunMax()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun),

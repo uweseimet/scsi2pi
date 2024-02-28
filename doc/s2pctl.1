@@ -4,7 +4,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 .SH SYNOPSIS
 .B scsictl
 [\fB\--id/i\fR \fIID[:LUN]\fR] |
-[\fB\--list-extensions/-m\fR] |
+[\fB\--list-extensions\fR] |
 [\fB\--list-images/-e\fR] |
 [\fB\--list-operations/-o\fR] |
 [\fB\--help/-h\fR] |
@@ -30,6 +30,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--rename/-R\fR \fICURRENT_NAME:NEW_NAME\fR] |
 [\fB\--cmd/-c\fR \fICOMMAND\fR] |
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR] |
+[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR] |
 [\fB\--file/f\fR \fIFILE|PARAM\fR] |
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
 [\fB\--host/-H\fR \fIHOST\fR] |
@@ -47,6 +48,7 @@ sends commands to s2p in order to apply configuration changes at runtime or to c
 You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
 
 When launched without arguments s2pctl enters interactive mode, where you can enter commands on the command line.
+In interactive mode the host and port settings are preserved between command invocations.
 
 .SH OPTIONS
 .TP
@@ -69,7 +71,7 @@ Set the default image folder.
 Display reserved device IDs.
 .TP
 .BR \--log-level/-L\fI " "\fILOG_LEVEL[:ID[:LUN]]
-Set the s2p log level (trace, debug, info, warning, error, off).
+Set the s2p log level (trace, debug, info, warning, error, critical, off).
 .TP
 .BR \--host/-H\fI " " \fIHOST
 The s2p host to connect to, default is 'localhost'.
@@ -86,7 +88,7 @@ Prompt for the access token in case s2p requires authentication.
 .BR \--list-devices/-l\fI
 List all of the devices that are currently being emulated, as well as their current status.
 .TP
-.BR \--list-extensions/-m\fI
+.BR \--list-extensions\fI
 List all supported file extensions and the device types they map to.
 .TP
 .BR \--list-images/-e\fI
@@ -102,7 +104,7 @@ Rename an image file in the default image folder.
 The s2p port to connect to, default is 6868.
 .TP
 .BR \--list-properties/-P\fI " " \fIPORT
-Display s2p startup properties.
+Display the current s2p properties. The resulting output can directly be used for property files, e.g. for /etc/s2p.conf when running s2p as a system service.
 .TP
 .BR \--reserved-ids/-r\fI " " \fIRESERVED_IDS
 Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
@@ -159,10 +161,14 @@ Command is the operation being requested. Options are:
 eject, protect and unprotect are idempotent.
 .TP 
 .BR \--block-size/-b\fI " " \fIBLOCK_SIZE
-The optional block size, either 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size is 512 bytes.
+The optional block size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
+s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
 .TP
-.BR \--file/-f\fI " " \fIFILE|PARAM
-Device-specific: Either a path to a disk image file, or a parameter for a non-disk device. See the s2p(1) man page for permitted file types.
+.BR \--caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
+.TP
+.BR \--file/-f\fI " " \fIFILE|PARAMS
+Device-specific: Either a path to a disk image file, or parameters for a non-disk device. See the s2p(1) man page for permitted file types.
 .TP 
 .BR \--type/-t\fI " " \fITYPE
 Specifies the device type. This type overrides the type derived from the file extension of the specified image. See the s2p(1) man page for the available device types. For some types there are shortcuts (only the first letter is required):
@@ -177,6 +183,11 @@ Specifies the device type. This type overrides the type derived from the file ex
 .TP 
 .BR \--name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+.TP 
+.BR \--scsi-level\fI " " \fISCSI_LEVEL
+The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
+In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
 .TP 
 .BR \-u\fI " " \fIUNIT
 Logical unit number (0-31 for SCSI, 0-1 for SASI). The LUN defaults to 0. This option is used when there are multiple SCSI/SASI devices for the same SCSI ID.

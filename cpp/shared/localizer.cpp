@@ -10,7 +10,7 @@
 #include <algorithm>
 #include "localizer.h"
 
-using namespace std;
+using namespace s2p_util;
 
 Localizer::Localizer()
 {
@@ -49,13 +49,12 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_MISSING_FILENAME, "es", "Falta el nombre del archivo");
     Add(LocalizationKey::ERROR_MISSING_FILENAME, "zh", "缺少文件名");
 
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "en", "Device type %1 requires a filename");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "de", "Gerätetyp %1 erfordert einen Dateinamen");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "sv", "Enhetstypen %1 kräver ett filnamn");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "fr", "Périphérique de type %1 à besoin d'un nom de fichier");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "es",
-        "El tipo de dispositivo %1 requiere un nombre de archivo");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "zh", "设备类型 %1 需要一个文件名");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "en", "Device %1 requires a filename");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "de", "Gerät %1 benötigt einen Dateinamen");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "sv", "Enhet %1 kräver ett filnamn");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "fr", "Périphérique %1 à besoin d'un nom de fichier");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "es", "Dispositivo %1 requiere un nombre de archivo");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "zh", "设备 %1 需要文件名");
 
     Add(LocalizationKey::ERROR_IMAGE_IN_USE, "en", "Image file '%1' is already being used by device %2");
     Add(LocalizationKey::ERROR_IMAGE_IN_USE, "de", "Image-Datei '%1' wird bereits von Gerät %2 benutzt");
@@ -170,11 +169,18 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_FILE_OPEN, "es", "Archivo inválido o inexistente '%1'");
     Add(LocalizationKey::ERROR_FILE_OPEN, "zh", "文件'%1'无效或不存在");
 
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "en", "Invalid block size %1 bytes");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "de", "Ungültige Blockgröße %1 Bytes");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "en", "Invalid SCSI level: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "de", "Ungültiger SCSI-Level: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "sv", "Ogiltig SCSI nivå: %1");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "fr", "Niveau SCSI %1 invalide");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "es", "Niveau SCSI %1 invalido");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, "zh", "SCSI级别 %1 字节");
+
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "en", "Invalid block size: %1 bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "de", "Ungültige Blockgröße: %1 Bytes");
     Add(LocalizationKey::ERROR_BLOCK_SIZE, "sv", "Ogiltig blockstorlek: %1 byte");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "fr", "Taille de bloc invalide %1 octets");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "es", "Tamaño de bloque inválido %1 bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "fr", "Taille de bloc %1 octets invalide");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, "es", "Tamaño de bloque %1 bytes invalido");
     Add(LocalizationKey::ERROR_BLOCK_SIZE, "zh", "无效的块大小 %1 字节");
 
     Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "en", "Block size for device type %1 is not configurable");
@@ -188,19 +194,19 @@ Localizer::Localizer()
         "El tamaño del bloque para el tipo de dispositivo %1 no es configurable");
     Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "zh", "设备类型 %1 的块大小不可配置");
 
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "en", "Couldn't create SCSI controller");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "de", "SCSI-Controller konnte nicht erzeugt werden");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "sv", "Kunde ej skapa SCSI-gränssnitt");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "fr", "Impossible de créer le contrôleur SCSI");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "es", "No se ha podido crear el controlador SCSI");
-    Add(LocalizationKey::ERROR_SCSI_CONTROLLER, "zh", "无法创建 SCSI 控制器");
+    Add(LocalizationKey::ERROR_CONTROLLER, "en", "Couldn't create controller");
+    Add(LocalizationKey::ERROR_CONTROLLER, "de", "Controller konnte nicht erzeugt werden");
+    Add(LocalizationKey::ERROR_CONTROLLER, "sv", "Kunde ej skapa gränssnitt");
+    Add(LocalizationKey::ERROR_CONTROLLER, "fr", "Impossible de créer le contrôleur");
+    Add(LocalizationKey::ERROR_CONTROLLER, "es", "No se ha podido crear el controlador");
+    Add(LocalizationKey::ERROR_CONTROLLER, "zh", "无法创建 控制器");
 
-    Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "sv", "Ogiltigt enhets-id %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "fr", "ID de périphérique invalide %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "es", "ID de dispositivo inválido %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "zh", "无效的设备 ID %1 (0-%2)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "sv", "Ogiltigt enhets-id %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "fr", "ID de périphérique invalide %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "es", "ID de dispositivo inválido %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, "zh", "无效的设备 ID %1 (0-7)");
 
     Add(LocalizationKey::ERROR_INVALID_LUN, "en", "Invalid LUN %1 (0-%2)");
     Add(LocalizationKey::ERROR_INVALID_LUN, "de", "Ungültige LUN %1 (0-%2)");
@@ -275,8 +281,7 @@ void Localizer::Add(LocalizationKey key, const string &locale, string_view value
 string Localizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
-    string locale_lower;
-    ranges::transform(locale, back_inserter(locale_lower), ::tolower);
+    const string locale_lower = ToLower(locale);
 
     auto it = localized_messages.find(locale_lower);
     if (it == localized_messages.end()) {

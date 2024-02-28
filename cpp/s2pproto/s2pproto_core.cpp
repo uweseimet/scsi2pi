@@ -15,7 +15,7 @@
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
-#include "shared/s2p_util.h"
+#include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pproto_core.h"
 
@@ -44,14 +44,17 @@ void S2pProto::TerminationHandler(int)
 void S2pProto::Banner(bool header)
 {
     if (header) {
-        cout << s2p_util::Banner("(Custom SCSI Command Execution Tool)");
+        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Custom SCSI Command Execution Tool)\n"
+            << "Version " << GetVersionString() << "\n"
+            << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pproto [options]\n"
         << "  --scsi-target/-i ID:[LUN] SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                            default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID    Board (initiator) ID (0-7), default is 7.\n"
-        << "  --log-level/-L LOG_LEVEL  Log level (trace|debug|info|warning|error|off),\n"
+        << "  --log-level/-L LOG_LEVEL  Log level (trace|debug|info|warning|error|\n"
+        << "                            critical|off),\n"
         << "                            default is 'info'.\n"
         << "  --input-file/-f FILE      Protobuf data input file,\n"
         << "                            by default in JSON format.\n"
@@ -61,7 +64,7 @@ void S2pProto::Banner(bool header)
         << "  --binary-output           Generate protobuf binary format file.\n"
         << "  --text-input              Input file has protobuf text format.\n"
         << "  --text-output             Generate protobuf text format file.\n"
-        << "  --version/-v              Display the s2pproto version.\n"
+        << "  --version/-v              Display the program version.\n"
         << "  --help/-h                 Display this help.\n";
 }
 
@@ -77,9 +80,7 @@ bool S2pProto::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process);
     if (bus) {
         executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
     }
@@ -185,7 +186,7 @@ bool S2pProto::ParseArguments(span<char*> args)
         throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string error = ProcessId(8, 32, target, target_id, target_lun); !error.empty()) {
+    if (const string error = ProcessId(32, target, target_id, target_lun); !error.empty()) {
         throw parser_exception(error);
     }
 
@@ -233,7 +234,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!in_process && !bus_factory->IsRaspberryPi()) {
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return EXIT_FAILURE;
     }

@@ -8,11 +8,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/s2p_util.h"
+#include "buses/bus_factory.h"
 #include "buses/gpio_bus.h"
-#include "devices/disk.h"
-#ifdef BUILD_SCDP
-#include "devices/daynaport.h"
+#ifdef BUILD_MODE_PAGE_DEVICE
+#include "devices/mode_page_device.h"
 #endif
 #include "generic_controller.h"
 
@@ -63,8 +62,6 @@ void GenericController::BusFree()
         SetStatus(status::good);
         SetMessage(0x00);
 
-        SetByteTransfer(false);
-
         return;
     }
 
@@ -103,19 +100,20 @@ void GenericController::Command()
         GetBus().SetCD(true);
         GetBus().SetIO(false);
 
-        const int actual_count = GetBus().CommandHandShake(GetBuffer());
+        auto &buf = GetBuffer();
+
+        const int actual_count = GetBus().CommandHandShake(buf);
         if (!actual_count) {
-            LogTrace(fmt::format("Received unknown command: ${:02x}", GetBuffer()[0]));
+            LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
             Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
         }
 
-        const int command_bytes_count = Bus::GetCommandBytesCount(GetBuffer()[0]);
+        const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
         assert(command_bytes_count <= 16);
 
-        // TODO Set all bytes by copying
         for (int i = 0; i < command_bytes_count; i++) {
-            SetCdbByte(i, GetBuffer()[i]);
+            SetCdbByte(i, buf[i]);
         }
 
         // Check the log level first in order to avoid a time-consuming string construction
@@ -130,7 +128,7 @@ void GenericController::Command()
             return;
         }
 
-        SetLength(0);
+        SetCurrentLength(0);
 
         Execute();
     }
@@ -138,24 +136,23 @@ void GenericController::Command()
 
 void GenericController::Execute()
 {
-    // Initialization for data transfer
     ResetOffset();
-    SetBlocks(1);
+    SetTransferSize(0, 0);
 
     int lun = GetEffectiveLun();
-    if (!HasDeviceForLun(lun)) {
+    if (!GetDeviceForLun(lun)) {
         if (GetOpcode() != scsi_command::cmd_inquiry && GetOpcode() != scsi_command::cmd_request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
         }
 
-        assert(HasDeviceForLun(0));
+        assert(GetDeviceForLun(0));
 
         lun = 0;
     }
 
-    // SCSI-2 4.4.3 Incorrect logical unit handling
-    if (GetOpcode() == scsi_command::cmd_inquiry && !HasDeviceForLun(lun)) {
+    // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+    if (GetOpcode() == scsi_command::cmd_inquiry && !GetDeviceForLun(lun)) {
         GetBuffer().data()[0] = 0x7f;
         return;
     }
@@ -165,7 +162,7 @@ void GenericController::Execute()
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (GetOpcode() != scsi_command::cmd_request_sense) {
         SetStatus(status::good);
-        device->SetStatusCode(0);
+        device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
     if (device->CheckReservation(initiator_id, GetOpcode(), GetCdbByte(4) & 0x01)) {
@@ -189,20 +186,18 @@ void GenericController::Status()
                 static_cast<int>(GetStatus())));
         }
         else {
-            LogTrace(fmt::format("Status phase, status code is ${0:02x}", static_cast<int>(GetStatus())));
+            LogTrace(fmt::format("Status phase, status code is ${:02x}", static_cast<int>(GetStatus())));
         }
 
         SetPhase(phase_t::status);
 
-        // Signal line operated by the target
         GetBus().SetMSG(false);
         GetBus().SetCD(true);
         GetBus().SetIO(true);
 
-        // Data transfer is 1 byte x 1 block
         ResetOffset();
-        SetLength(1);
-        SetBlocks(1);
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
         GetBuffer()[0] = (uint8_t)GetStatus();
 
         return;
@@ -222,6 +217,7 @@ void GenericController::MsgIn()
         GetBus().SetIO(true);
 
         ResetOffset();
+
         return;
     }
 
@@ -231,7 +227,7 @@ void GenericController::MsgIn()
 void GenericController::DataIn()
 {
     if (!IsDataIn()) {
-        if (!HasValidLength()) {
+        if (!GetCurrentLength()) {
             Status();
             return;
         }
@@ -254,7 +250,7 @@ void GenericController::DataIn()
 void GenericController::DataOut()
 {
     if (!IsDataOut()) {
-        if (!HasValidLength()) {
+        if (!GetCurrentLength()) {
             Status();
             return;
         }
@@ -267,37 +263,31 @@ void GenericController::DataOut()
         GetBus().SetIO(false);
 
         ResetOffset();
+
         return;
     }
 
     Receive();
 }
 
-void GenericController::Error(sense_key sense_key, asc asc, status status)
+void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status status)
 {
     GetBus().Acquire();
-
-    if (GetBus().GetRST()) {
-        BusFree();
-        return;
-    }
-
-    // Bus free for status phase and message in phase
-    if (IsStatus() || IsMsgIn()) {
+    if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
         BusFree();
         return;
     }
 
     int lun = GetEffectiveLun();
-    if (!HasDeviceForLun(lun) || asc == asc::invalid_lun) {
+    if (asc == asc::invalid_lun || !GetDeviceForLun(lun)) {
         lun = 0;
     }
 
     if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
         LogDebug(FormatSenseData(sense_key, asc));
 
-        // Set Sense Key and ASC for a subsequent REQUEST SENSE
-        GetDeviceForLun(lun)->SetStatusCode((static_cast<int>(sense_key) << 16) | (static_cast<int>(asc) << 8));
+        // Set Sense Key and ASC in the device for a subsequent REQUEST SENSE
+        GetDeviceForLun(lun)->SetStatus(sense_key, asc);
     }
 
     SetStatus(status);
@@ -311,18 +301,16 @@ void GenericController::Send()
     assert(!GetBus().GetREQ());
     assert(GetBus().GetIO());
 
-    if (HasValidLength()) {
-        assert(HasDeviceForLun(0));
+    if (const auto length = GetCurrentLength(); length) {
+        LogTrace(fmt::format("Sending {} byte(s)", length));
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
-        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine.
-        if (const int len = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), GetLength(),
-            GetDeviceForLun(0)->GetDelayAfterBytes()); len != static_cast<int>(GetLength())) {
+        // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
+        // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
+        if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
+            GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             if (IsDataIn()) {
-                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", len, GetLength()));
-            }
-            else {
-                LogWarn(fmt::format("Sent {0} byte(s) in STATUS phase, {1} is required", len, GetLength()));
+                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", l, length));
             }
             Error(sense_key::aborted_command, asc::data_phase_error);
         }
@@ -333,16 +321,14 @@ void GenericController::Send()
         return;
     }
 
-    DecrementBlocks();
+    const bool pending_data = UpdateTransferSize();
 
-    if (IsDataIn() && InTransfer() && !XferIn(GetBuffer())) {
-        Error(sense_key::aborted_command, asc::controller_send_xfer_in);
+    if (pending_data && IsDataIn() && !XferIn(GetBuffer())) {
         return;
     }
 
-    // Continue sending if blocks != 0
-    if (InTransfer()) {
-        assert(HasValidLength());
+    if (pending_data) {
+        assert(GetCurrentLength());
         assert(!GetOffset());
         return;
     }
@@ -360,8 +346,8 @@ void GenericController::Send()
         break;
 
     case phase_t::status:
-        SetLength(1);
-        SetBlocks(1);
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
         GetBuffer()[0] = (uint8_t)GetMessage();
         MsgIn();
         break;
@@ -377,189 +363,67 @@ void GenericController::Receive()
     assert(!GetBus().GetREQ());
     assert(!GetBus().GetIO());
 
-    if (HasValidLength()) {
-        if (const uint32_t len = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), GetLength()); len
-            != GetLength()) {
-            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", len, GetLength()));
+    if (const auto length = GetCurrentLength(); length) {
+        LogTrace(fmt::format("Receiving {} byte(s)", length));
+
+        if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
+            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }
         // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
-        else if (IsDataOut() && !GetOffset() && len < 256 && get_level() == level::trace) {
-            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", len, FormatBytes(GetBuffer(), len)));
+        else if (IsDataOut() && !GetOffset() && l < 256 && get_level() == level::trace) {
+            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", l, FormatBytes(GetBuffer(), l)));
         }
     }
 
-    if (IsByteTransfer()) {
-        ReceiveBytes();
-        return;
-    }
-
-    if (HasValidLength()) {
+    if (GetCurrentLength()) {
         UpdateOffsetAndLength();
         return;
     }
 
-    DecrementBlocks();
-    bool result = true;
+    const bool pending_data = UpdateTransferSize();
 
     // Processing after receiving data
     switch (GetPhase()) {
     case phase_t::dataout:
-        if (!InTransfer()) {
-            // End with this buffer
-            result = XferOut(false);
-        } else {
-            // Continue to next buffer (set offset, length)
-            result = XferOut(true);
+        if (!XferOut(pending_data)) {
+            return;
         }
         break;
 
     case phase_t::msgout:
-        SetMessage(GetBuffer()[0]);
+        XferMsg(GetBuffer()[0]);
 
-        XferMsg(GetMessage());
-
-        // Clear message data in preparation for Message In
+        // Clear message data in preparation for MESSAGE IN
         SetMessage(0x00);
         break;
 
     default:
+        assert(false);
         break;
     }
 
-    if (!result) {
-        Error(sense_key::aborted_command, asc::controller_receive_result);
-        return;
-    }
-
-    // Continue to receive if blocks != 0
-    if (InTransfer()) {
-        assert(HasValidLength());
+    if (pending_data) {
+        assert(GetCurrentLength());
         assert(!GetOffset());
         return;
     }
 
     // Move to next phase
     switch (GetPhase()) {
-    case phase_t::command:
-        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
-        ProcessCommand();
-        break;
-
     case phase_t::msgout:
         ProcessMessage();
         break;
 
     case phase_t::dataout:
-        // Block-oriented data have been handled above
-        DataOutNonBlockOriented();
-
+        // All data have been transferred
         Status();
         break;
 
     default:
+        error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
         assert(false);
-        break;
-    }
-}
-
-void GenericController::ReceiveBytes()
-{
-    if (HasValidLength()) {
-        InitBytesToTransfer();
-        UpdateOffsetAndLength();
-        return;
-    }
-
-    bool result = true;
-
-    // Processing after receiving data
-    switch (GetPhase()) {
-    case phase_t::dataout:
-        result = XferOut(false);
-        break;
-
-    case phase_t::msgout:
-        SetMessage(GetBuffer()[0]);
-
-        XferMsg(GetMessage());
-
-        // Clear message data in preparation for Message In
-        SetMessage(0x00);
-        break;
-
-    default:
-        break;
-    }
-
-    if (!result) {
-        Error(sense_key::aborted_command, asc::controller_receive_bytes_result);
-        return;
-    }
-
-    // Move to next phase
-    switch (GetPhase()) {
-    case phase_t::command:
-        // TODO This probably does not make sense, because a DATA OUT phase cannot follow a DATA OUT phase
-        ProcessCommand();
-        break;
-
-    case phase_t::msgout:
-        ProcessMessage();
-        break;
-
-    case phase_t::dataout:
-        Status();
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
-}
-
-bool GenericController::XferOut(bool cont)
-{
-    assert(IsDataOut());
-
-    if (!IsByteTransfer()) {
-        return XferOutBlockOriented(cont);
-    }
-
-    const uint32_t count = GetBytesToTransfer();
-    SetByteTransfer(false);
-
-    auto device = GetDeviceForLun(GetEffectiveLun());
-    return device ? device->WriteByteSequence(span(GetBuffer().data(), count)) : false;
-}
-
-void GenericController::DataOutNonBlockOriented() const
-{
-    assert(IsDataOut());
-
-    switch (GetOpcode()) {
-    case scsi_command::cmd_write6:
-        case scsi_command::cmd_write10:
-        case scsi_command::cmd_write16:
-        case scsi_command::cmd_write_long10:
-        case scsi_command::cmd_write_long16:
-        case scsi_command::cmd_verify10:
-        case scsi_command::cmd_verify16:
-        case scsi_command::cmd_mode_select6:
-        case scsi_command::cmd_mode_select10:
-        break;
-
-    case scsi_command::cmd_set_mcast_addr:
-        // TODO: Eventually, we should store off the multicast address configuration data here
-        break;
-
-    case scsi_command::cmd_set_iface_mode:
-        // TODO Should the DaynaPort MAC address actually be set here?
-        break;
-
-    default:
-        LogWarn(fmt::format("Unexpected Data Out phase for command ${:02x}", static_cast<int>(GetOpcode())));
         break;
     }
 }
@@ -568,57 +432,51 @@ void GenericController::DataOutNonBlockOriented() const
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool GenericController::XferIn(vector<uint8_t> &buf)
 {
-    assert(IsDataIn());
-
-    const int lun = GetEffectiveLun();
-    if (!HasDeviceForLun(lun)) {
-        return false;
-    }
-
     // Limited to read commands
     switch (GetOpcode()) {
     case scsi_command::cmd_read6:
         case scsi_command::cmd_read10:
         case scsi_command::cmd_read16:
-        #ifdef BUILD_DISK
+        case scsi_command::cmd_read_long10:
+        case scsi_command::cmd_read_capacity16_read_long16:
         try {
-            SetLength(dynamic_pointer_cast<Disk>(GetDeviceForLun(lun))->Read(buf, GetNext()));
+            SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
         }
-        catch (const scsi_exception&) {
-            // If there is an error, go to the status phase
+        catch (const scsi_exception &e) {
+            Error(e.get_sense_key(), e.get_asc());
             return false;
         }
 
-        IncrementNext();
-
-        // If things are normal, work setting
         ResetOffset();
-#endif
-        break;
+        return true;
 
     default:
         assert(false);
-        return false;
+        break;
     }
 
-    return true;
+    Error(sense_key::aborted_command, asc::controller_xfer_in);
+
+    return false;
 }
 #pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool GenericController::XferOutBlockOriented(bool cont)
+bool GenericController::XferOut(bool cont)
 {
     auto device = GetDeviceForLun(GetEffectiveLun());
 
-    // Limited to write commands
-    switch (GetOpcode()) {
+    // Limited to write/verify commands
+    switch (const auto opcode = GetOpcode(); opcode) {
     case scsi_command::cmd_mode_select6:
         case scsi_command::cmd_mode_select10:
         {
 #ifdef BUILD_MODE_PAGE_DEVICE
         auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
+        assert(mode_page_device);
         if (!mode_page_device) {
+            Error(sense_key::aborted_command, asc::controller_xfer_out);
             return false;
         }
 
@@ -627,114 +485,57 @@ bool GenericController::XferOutBlockOriented(bool cont)
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
+            return false;
         }
+
+        return true;
 #endif
-        break;
     }
+        break;
 
     case scsi_command::cmd_write6:
         case scsi_command::cmd_write10:
         case scsi_command::cmd_write16:
+        case scsi_command::cmd_verify10:
+        case scsi_command::cmd_verify16:
+        case scsi_command::cmd_write_long10:
+        case scsi_command::cmd_write_long16:
+        case scsi_command::cmd_execute_operation:
         {
-#ifdef BUILD_SCDP
-        // TODO Get rid of this special case for SCDP
-        if (auto daynaport = dynamic_pointer_cast<DaynaPort>(device); daynaport) {
-            if (!daynaport->Write(GetCdb(), GetBuffer())) {
-                return false;
-            }
-
-            ResetOffset();
-            break;
-        }
-#endif
-
-#ifdef BUILD_DISK
-        auto disk = dynamic_pointer_cast<Disk>(device);
-        if (!disk) {
-            return false;
-        }
-
         try {
-            disk->Write(GetBuffer(), GetNext() - 1);
+            const auto length = device->WriteData(GetBuffer(), opcode);
+
+            if (cont) {
+                SetCurrentLength(length);
+                ResetOffset();
+            }
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
-
             return false;
         }
 
-        // If you do not need the next block, end here
-        IncrementNext();
-        if (cont) {
-            SetLength(disk->GetSectorSizeInBytes());
-            ResetOffset();
-        }
-#endif
-        break;
+        return true;
     }
-
-    case scsi_command::cmd_verify10:
-        case scsi_command::cmd_verify16:
-        {
-#ifdef BUILD_DISK
-        auto disk = dynamic_pointer_cast<Disk>(device);
-        if (!disk) {
-            return false;
-        }
-
-        // If you do not need the next block, end here
-        IncrementNext();
-        if (cont) {
-            SetLength(disk->GetSectorSizeInBytes());
-            ResetOffset();
-        }
-#endif
-        break;
-    }
-
-    case scsi_command::cmd_set_mcast_addr:
-        LogTrace("Ignored DaynaPort Set Multicast Address");
-        break;
-
-    case scsi_command::cmd_set_iface_mode:
-        LogTrace("Ignored DaynaPort Set Interface Mode");
         break;
 
     default:
-        LogWarn(fmt::format("Received unexpected command ${:02x}", static_cast<int>(GetOpcode())));
+        assert(false);
         break;
     }
 
-    return true;
+    Error(sense_key::aborted_command, asc::controller_xfer_out);
+
+    return false;
 }
 #pragma GCC diagnostic pop
 
-// TODO This probably does not make sense
-void GenericController::ProcessCommand()
-{
-    const int len = GpioBus::GetCommandBytesCount(GetBuffer()[0]);
-
-    for (int i = 0; i < len; i++) {
-        SetCdbByte(i, GetBuffer()[i]);
-    }
-
-    if (get_level() == level::trace) {
-        string s = "CDB=$";
-        for (int i = 0; i < len; i++) {
-            s += fmt::format("{:02x}", GetCdbByte(i));
-        }
-        LogTrace(s);
-    }
-
-    Execute();
-}
-
 void GenericController::LogCdb() const
 {
-    const auto &cmd = COMMAND_MAPPING.find(GetOpcode());
+    const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",
-        cmd != COMMAND_MAPPING.end() ? cmd->second.second : fmt::format("{:02x}", GetCdbByte(0)));
-    for (int i = 0; i < Bus::GetCommandBytesCount(GetCdbByte(0)); i++) {
+        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(GetCdbByte(0))); i++) {
         if (i) {
             s += ":";
         }

@@ -11,40 +11,43 @@
 #include "controllers/controller_factory.h"
 #include "s2p/s2p_parser.h"
 
-using namespace std;
 using namespace s2p_util;
 
 void S2pParser::Banner(bool usage) const
 {
     if (!usage) {
-        cout << s2p_util::Banner("(Device Emulation)", false) << flush;
+        cout << s2p_util::Banner("(Device Emulation)") << flush;
     }
     else {
-        const int id_max = ControllerFactory::GetIdMax() - 1;
-
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-" << id_max << ") and\n"
+            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and\n"
             << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
             << "), default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-" << id_max << ") and\n"
+            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and\n"
             << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
             << "), default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
+            << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
+            << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional block size.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional block (sector) size.\n"
+            << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
+            << "                              |linux-optimized), default currently is PiSCSI\n"
+            << "                              compatible caching.\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
             << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
-            << "  --scan-depth/-R SCAN_DEPTH  Scan depth for image file folder.\n"
-            << "  --property/-c KEY=VALUE     Sets a property.\n"
-            << "  --property-files/-C         List of property files.\n"
-            << "  --log-level/-L LOG_LEVEL    Log level (trace|debug|info|warning|error|off),\n"
+            << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
+            << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
+            << "  --property-files/-C         List of configuration property files.\n"
+            << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
+            << "                              critical|off),\n"
             << "                              default is 'info'.\n"
-            << "  --token-file/-P TOKEN_FILE  Access token file.\n"
+            << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
+            << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --locale,-z                 Locale (language) for client-facing messages.\n"
-            << "  --version/-v                Display the s2p version.\n"
+            << "  --version/-v                Display the program version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
@@ -59,17 +62,20 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable for parsing
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
 {
-    const int OPT_HELP = 2;
+    const int OPT_SCSI_LEVEL = 2;
+    const int OPT_HELP = 3;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
+        { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
+        { "log-pattern", required_argument, nullptr, 'l' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
@@ -78,6 +84,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { "sasi-id", required_argument, nullptr, 'h' },
         { "scan-depth", required_argument, nullptr, 'R' },
         { "scsi-id", required_argument, nullptr, 'i' },
+        { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
@@ -91,6 +98,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
+        { 'l', PropertyHandler::LOG_PATTERN },
         { 'P', PropertyHandler::TOKEN_FILE },
         { 'R', PropertyHandler::SCAN_DEPTH }
     };
@@ -99,8 +107,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     string id_lun;
     string type;
+    string scsi_level;
     string product_data;
     string block_size;
+    string caching_mode;
     bool blue_scsi_mode = false;
     bool has_scsi = false;
 
@@ -108,7 +118,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:n:p:r:t:z:C:F:L:P:R:vBH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:BH",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -119,6 +129,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         switch (opt) {
         case 'b':
             block_size = optarg;
+            continue;
+
+        case 'B':
+            blue_scsi_mode = true;
             continue;
 
         case 'c':
@@ -136,14 +150,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             type = "sahd";
             continue;
 
-        case OPT_HELP:
-            Banner(true);
-            exit(EXIT_SUCCESS);
-            break;
-
         case 'i':
             id_lun = optarg;
             has_scsi = true;
+            continue;
+
+        case 'm':
+            caching_mode = optarg;
             continue;
 
         case 'n':
@@ -151,15 +164,20 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             continue;
 
         case 't':
-            ranges::transform(string(optarg), back_inserter(type), ::tolower);
+            type = ToLower(optarg);
             continue;
 
-        case 'B':
-            blue_scsi_mode = true;
+        case OPT_SCSI_LEVEL:
+            scsi_level = optarg;
             continue;
+
+        case OPT_HELP:
+            Banner(true);
+            exit(EXIT_SUCCESS);
+            break;
 
         case 1:
-            // Encountered filename
+            // Encountered a free parameter e.g. a filename
             break;
 
         default:
@@ -185,8 +203,14 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         if (!block_size.empty()) {
             properties[device_key + "block_size"] = block_size;
         }
+        if (!caching_mode.empty()) {
+            properties[device_key + "caching_mode"] = caching_mode;
+        }
         if (!type.empty()) {
             properties[device_key + "type"] = type;
+        }
+        if (!scsi_level.empty()) {
+            properties[device_key + "scsi_level"] = scsi_level;
         }
         if (!product_data.empty()) {
             properties[device_key + "product_data"] = product_data;
@@ -197,8 +221,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         id_lun = "";
         type = "";
+        scsi_level = "";
         product_data = "";
         block_size = "";
+        caching_mode = "";
     }
 
     return properties;
@@ -288,9 +314,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
 
         const string ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
 
-        string arg_lower;
-        ranges::transform(arg, back_inserter(arg_lower), ::tolower);
-
+        const string arg_lower = ToLower(arg);
         if (arg_lower.starts_with("-h")) {
             args.emplace_back(strdup("-h"));
             if (!ids.empty()) {

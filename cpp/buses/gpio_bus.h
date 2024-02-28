@@ -2,7 +2,6 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -105,12 +104,12 @@ using namespace std;
 //---------------------------------------------------------------------------
 
 // Constant declarations (GPIO)
-const static int GPIO_INPUT = 0;
-const static int GPIO_OUTPUT = 1;
-const static int GPIO_IRQ_IN = 3;
-const static int GPIO_PULLNONE = 0;
-const static int GPIO_PULLDOWN = 1;
-const static int GPIO_PULLUP = 2;
+constexpr static int GPIO_INPUT = 0;
+constexpr static int GPIO_OUTPUT = 1;
+constexpr static int GPIO_IRQ_IN = 3;
+constexpr static int GPIO_PULLNONE = 0;
+constexpr static int GPIO_PULLDOWN = 1;
+constexpr static int GPIO_PULLUP = 2;
 
 // Constant declarations (Control signals)
 #define ACT_OFF !ACT_ON
@@ -120,10 +119,10 @@ const static int GPIO_PULLUP = 2;
 #define DTD_OUT !DTD_IN
 
 // Constant declarations (SCSI)
-#define IN GPIO_INPUT
-#define OUT GPIO_OUTPUT
-const static int ON = 1;
-const static int OFF = 0;
+constexpr static int IN = GPIO_INPUT;
+constexpr static int OUT = GPIO_OUTPUT;
+constexpr static int ON = 1;
+constexpr static int OFF = 0;
 
 class GpioBus : public Bus
 {
@@ -152,10 +151,7 @@ protected:
     // Set GPIO output signal
     virtual void PinSetSignal(int, bool) = 0;
 
-    virtual void WaitBusSettle() const
-    {
-        // Do nothing in base class
-    }
+    virtual void WaitBusSettle() const = 0;
 
 private:
 
@@ -164,5 +160,5 @@ private:
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    inline const static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
+    constexpr static int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
 };

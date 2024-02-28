@@ -12,8 +12,6 @@
 #include <vector>
 #include "base/property_handler.h"
 
-using namespace std;
-
 class S2pParser
 {
 

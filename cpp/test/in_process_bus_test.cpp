@@ -12,15 +12,15 @@ TEST(InProcessBusTest, IsTarget)
 {
     MockInProcessBus bus;
 
-    bus.Init(false);
-    EXPECT_FALSE(bus.IsTarget());
     bus.Init(true);
     EXPECT_TRUE(bus.IsTarget());
+    bus.Init(false);
+    EXPECT_FALSE(bus.IsTarget());
 }
 
 TEST(InProcessBusTest, BSY)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetBSY(true);
     EXPECT_TRUE(bus.GetBSY());
@@ -30,7 +30,7 @@ TEST(InProcessBusTest, BSY)
 
 TEST(InProcessBusTest, SEL)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetSEL(true);
     EXPECT_TRUE(bus.GetSEL());
@@ -40,7 +40,7 @@ TEST(InProcessBusTest, SEL)
 
 TEST(InProcessBusTest, ATN)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetATN(true);
     EXPECT_TRUE(bus.GetATN());
@@ -50,7 +50,7 @@ TEST(InProcessBusTest, ATN)
 
 TEST(InProcessBusTest, ACK)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetACK(true);
     EXPECT_TRUE(bus.GetACK());
@@ -60,7 +60,7 @@ TEST(InProcessBusTest, ACK)
 
 TEST(InProcessBusTest, REQ)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetREQ(true);
     EXPECT_TRUE(bus.GetREQ());
@@ -70,7 +70,7 @@ TEST(InProcessBusTest, REQ)
 
 TEST(InProcessBusTest, RST)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetRST(true);
     EXPECT_TRUE(bus.GetRST());
@@ -80,7 +80,7 @@ TEST(InProcessBusTest, RST)
 
 TEST(InProcessBusTest, MSG)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetMSG(true);
     EXPECT_TRUE(bus.GetMSG());
@@ -90,7 +90,7 @@ TEST(InProcessBusTest, MSG)
 
 TEST(InProcessBusTest, CD)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetCD(true);
     EXPECT_TRUE(bus.GetCD());
@@ -100,7 +100,7 @@ TEST(InProcessBusTest, CD)
 
 TEST(InProcessBusTest, IO)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetIO(true);
     EXPECT_TRUE(bus.GetIO());
@@ -110,7 +110,7 @@ TEST(InProcessBusTest, IO)
 
 TEST(InProcessBusTest, DAT)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetDAT(0xae);
     EXPECT_EQ(0xae, bus.GetDAT());
@@ -120,7 +120,7 @@ TEST(InProcessBusTest, DAT)
 
 TEST(InProcessBusTest, Acquire)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetDAT(0x12);
     EXPECT_EQ(0x12U, bus.Acquire());
@@ -128,17 +128,17 @@ TEST(InProcessBusTest, Acquire)
 
 TEST(InProcessBusTest, Reset)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetSignal(PIN_BSY, true);
     EXPECT_TRUE(bus.GetSignal(PIN_BSY));
-    bus.Reset();
+    bus.ResetMock();
     EXPECT_FALSE(bus.GetSignal(PIN_BSY));
 }
 
 TEST(InProcessBusTest, SetGetSignal)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.GetSignal(PIN_REQ));
@@ -148,7 +148,7 @@ TEST(InProcessBusTest, SetGetSignal)
 
 TEST(InProcessBusTest, WaitSignal)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(bus.WaitSignal(PIN_ACK, true));
@@ -160,7 +160,7 @@ TEST(InProcessBusTest, WaitSignal)
 
 TEST(InProcessBusTest, WaitForSelection)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
 
     EXPECT_TRUE(bus.WaitForSelection());
 }
@@ -176,7 +176,7 @@ TEST(DelegatingProcessBusTest, Reset)
 
 TEST(DelegatingProcessBusTest, Acquire)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetDAT(0x45);
@@ -185,7 +185,7 @@ TEST(DelegatingProcessBusTest, Acquire)
 
 TEST(DelegatingProcessBusTest, WaitACK)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetACK(true);
@@ -196,7 +196,7 @@ TEST(DelegatingProcessBusTest, WaitACK)
 
 TEST(DelegatingProcessBusTest, WaitREQ)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetREQ(true);
@@ -207,7 +207,7 @@ TEST(DelegatingProcessBusTest, WaitREQ)
 
 TEST(DelegatingProcessBusTest, DAT)
 {
-    InProcessBus bus;
+    MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     delegating_bus.SetDAT(0x56);

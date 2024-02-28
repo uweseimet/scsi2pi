@@ -18,13 +18,16 @@
 #include "disk_track.h"
 #include "disk_cache.h"
 
-DiskCache::DiskCache(const string &path, int size, uint32_t blocks)
-: sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(blocks)
+bool DiskCache::Init()
 {
-    assert(blocks > 0);
+    if (!sec_blocks || sec_path.empty()) {
+        return false;
+    }
+
+    return true;
 }
 
-bool DiskCache::Save()
+bool DiskCache::Flush()
 {
     // Save valid tracks
     return ranges::none_of(cache.begin(), cache.end(), [this](const cache_t &c)
@@ -43,33 +46,39 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-bool DiskCache::ReadSector(span<uint8_t> buf, uint32_t block)
+int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    shared_ptr<DiskTrack> disktrk = GetTrack(block);
+    assert(count == 1);
+    if (count != 1) {
+        return 0;
+    }
+
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
     if (!disktrk) {
-        return false;
+        return 0;
     }
 
     // Read the track data to the cache
-    return disktrk->ReadSector(buf, block & 0xff);
+    return disktrk->ReadSector(buf, sector & 0xff);
 }
 
-bool DiskCache::WriteSector(span<const uint8_t> buf, uint32_t block)
+int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t count)
 {
-    shared_ptr<DiskTrack> disktrk = GetTrack(block);
+    assert(count == 1);
+    if (count != 1) {
+        return 0;
+    }
+
+    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
     if (!disktrk) {
-        return false;
+        return 0;
     }
 
     // Write the data to the cache
-    return disktrk->WriteSector(buf, block & 0xff);
+    return disktrk->WriteSector(buf, sector & 0xff);
 }
 
-//---------------------------------------------------------------------------
-//
-//	Track Assignment
-//
-//---------------------------------------------------------------------------
+// Track Assignment
 shared_ptr<DiskTrack> DiskCache::Assign(int track)
 {
     assert(sec_size != 0);
@@ -135,11 +144,6 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     return nullptr;
 }
 
-//---------------------------------------------------------------------------
-//
-//	Load cache
-//
-//---------------------------------------------------------------------------
 bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
 {
     assert(index >= 0 && index < static_cast<int>(cache.size()));
@@ -157,7 +161,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, sec_size, sectors, cd_raw);
+    disktrk->Init(track, sec_size, sectors);
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {

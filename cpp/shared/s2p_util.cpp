@@ -8,25 +8,23 @@
 
 #include <cassert>
 #include <cstring>
-#include <sstream>
+#include <iostream>
 #include <filesystem>
 #include <algorithm>
 #include <unistd.h>
 #include <pwd.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared_exceptions.h"
 #include "s2p_version.h"
-#include "s2p_util.h"
 
-using namespace std;
 using namespace filesystem;
 using namespace spdlog;
 using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
 {
-    return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version,
-        s2p_revision <= 0 ? "" : "." + to_string(s2p_revision), s2p_suffix);
+    const string &revision = s2p_revision <= 0 ? "" : "." + to_string(s2p_revision);
+    return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
 }
 
 string s2p_util::GetHomeDir()
@@ -84,6 +82,20 @@ vector<string> s2p_util::Split(const string &s, char separator, int limit)
     return result;
 }
 
+string s2p_util::ToUpper(const string &s)
+{
+    string result;
+    ranges::transform(s, back_inserter(result), ::toupper);
+    return result;
+}
+
+string s2p_util::ToLower(const string &s)
+{
+    string result;
+    ranges::transform(s, back_inserter(result), ::tolower);
+    return result;
+}
+
 string s2p_util::GetLocale()
 {
     const char *locale = setlocale(LC_MESSAGES, nullptr);
@@ -92,6 +104,27 @@ string s2p_util::GetLocale()
     }
 
     return locale;
+}
+
+string s2p_util::GetLine(const string &prompt)
+{
+    while (true) {
+        if (isatty(STDIN_FILENO)) {
+            cout << prompt << ">";
+        }
+
+        string line;
+        if (!getline(cin, line) || line == "exit" || line == "quit") {
+            if (line.empty() && isatty(STDIN_FILENO)) {
+                cout << "\n";
+            }
+            return "";
+        }
+
+        if (!line.empty() && !line.starts_with("#")) {
+            return line;
+        }
+    }
 }
 
 bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
@@ -114,7 +147,7 @@ bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
     return true;
 }
 
-string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &id, int &lun)
+string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -125,16 +158,15 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
         if (components.size() == 1) {
-            if (!GetAsUnsignedInt(components[0], id) || id >= id_max) {
+            if (!GetAsUnsignedInt(components[0], id) || id > 7) {
                 id = -1;
-                return fmt::format("Invalid device ID: '{0}' (0-{1})", components[0], id_max - 1);
+                return "Invalid device ID: '" + components[0] + "' (0-7)";
             }
 
             return "";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id >= id_max || !GetAsUnsignedInt(components[1], lun)
-            || lun >= lun_max) {
+        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= lun_max) {
             id = -1;
             lun = -1;
             return "Invalid LUN (0-" + to_string(lun_max - 1) + ")";
@@ -144,33 +176,50 @@ string s2p_util::ProcessId(int id_max, int lun_max, const string &id_spec, int &
     return "";
 }
 
-string s2p_util::Banner(string_view app, bool scsi2pi)
+string s2p_util::Banner(string_view app)
 {
     stringstream s;
 
     s << "SCSI Target Emulator and SCSI Tools SCSI2Pi " << app << "\n"
-        << "Version " << GetVersionString() << "\n";
-    if (!scsi2pi) {
-        s << "Copyright (C) 2016-2020 GIMONS\n"
-            << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n";
-    }
-    s << "Copyright (C) 2021-2024 Uwe Seimet\n";
+        << "Version " << GetVersionString() << "\n"
+        << "Copyright (C) 2016-2020 GIMONS\n"
+        << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
+        << "Copyright (C) 2021-2024 Uwe Seimet\n";
 
     return s.str();
 }
 
 string s2p_util::GetExtensionLowerCase(string_view filename)
 {
-    string ext;
-    ranges::transform(path(filename).extension().string(), back_inserter(ext), ::tolower);
+    const string &ext = ToLower(path(filename).extension().string());
 
     // Remove the leading dot
     return ext.empty() ? "" : ext.substr(1);
 }
 
-void s2p_util::LogErrno(const string &msg)
+string s2p_util::GetScsiLevel(int scsi_level)
 {
-    error(errno ? msg + ": " + string(strerror(errno)) : msg);
+    switch (scsi_level) {
+    case 0:
+        return "???";
+        break;
+
+    case 1:
+        return "SCSI-1-CCS";
+        break;
+
+    case 2:
+        return "SCSI-2";
+        break;
+
+    case 3:
+        return "SCSI-3 (SPC)";
+        break;
+
+    default:
+        return "SPC-" + to_string(scsi_level - 2);
+        break;
+    }
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
@@ -183,10 +232,7 @@ string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
         s_asc = fmt::format("ASC ${0:02x}, ASCQ ${1:02x}", static_cast<int>(asc), ascq);
     }
 
-    // All sense keys are mapped
-    assert(SENSE_KEY_MAPPING.find(sense_key) != SENSE_KEY_MAPPING.end());
-
-    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEY_MAPPING.find(sense_key)->second,
+    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEYS[static_cast<int>(sense_key)],
         static_cast<int>(sense_key), s_asc);
 }
 
@@ -201,8 +247,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
             throw parser_exception("");
         }
 
-        string line_lower;
-        ranges::transform(line, back_inserter(line_lower), ::tolower);
+        const string &line_lower = ToLower(line);
 
         size_t i = 0;
         while (i < line_lower.length()) {

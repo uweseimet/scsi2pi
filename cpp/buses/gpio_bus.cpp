@@ -2,29 +2,26 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Powered by XM6 TypeG Technology.
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include <chrono>
+#include "bus_factory.h"
 #include "gpio_bus.h"
 
 using namespace std;
 
-bool GpioBus::Init(bool b)
+bool GpioBus::Init(bool t)
 {
-    target_mode = b;
+    target_mode = t;
 
     return true;
 }
 
 int GpioBus::CommandHandShake(vector<uint8_t> &buf)
 {
-    assert(target_mode);
-
     DisableIRQ();
 
     SetREQ(true);
@@ -44,7 +41,7 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
-    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-aware drivers prepend a $1F byte in front
+    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-awarerrore drivers prepend a $1F byte in front
     // of the CDB (effectively resulting in a custom SCSI command) in order to get access to the full SCSI
     // command set. Native ACSI is limited to the low SCSI command classes with command bytes < $20.
     // Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.
@@ -70,7 +67,7 @@ int GpioBus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = GetCommandBytesCount(buf[0]);
+    const int command_byte_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 
@@ -116,7 +113,6 @@ int GpioBus::MsgInHandShake()
     }
 
     // Phase error
-    // TODO Assumption: Phase does not change here, but only below
     if (GetPhase() != phase) {
         return -1;
     }
@@ -177,7 +173,6 @@ int GpioBus::ReceiveHandShake(uint8_t *buf, int count)
             }
 
             // Phase error
-            // TODO Assumption: Phase does not change here, but only below
             if (GetPhase() != phase) {
                 break;
             }
@@ -236,7 +231,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             SetREQ(false);
 
             // Check for timeout waiting for ACK to clear
-            // TODO Do we really have to clear REQ here and everywhere else before checking this?
             if (!ack) {
                 break;
             }
@@ -262,7 +256,6 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
             }
 
             // Phase error
-            // TODO Assumption: Phase does not change here, but only below
             if (GetPhase() != phase) {
                 break;
             }
@@ -287,7 +280,7 @@ int GpioBus::SendHandShake(uint8_t *buf, int count, int daynaport_delay_after_by
     return bytes_sent;
 }
 
-bool GpioBus::WaitSignal(int pin, bool ast)
+bool GpioBus::WaitSignal(int pin, bool state)
 {
     const auto now = chrono::steady_clock::now();
 
@@ -295,7 +288,7 @@ bool GpioBus::WaitSignal(int pin, bool ast)
     do {
         Acquire();
 
-        if (GetSignal(pin) == ast) {
+        if (GetSignal(pin) == state) {
             return true;
         }
 

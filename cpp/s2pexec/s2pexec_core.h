@@ -18,25 +18,32 @@ using namespace std;
 class S2pExec
 {
 
+    class execution_exception : public runtime_error
+    {
+        using runtime_error::runtime_error;
+    };
+
 public:
 
     int Run(span<char*>, bool);
 
 private:
 
-    static void Banner(bool);
+    static void Banner(bool, bool);
 
     bool Init(bool);
     bool ParseArguments(span<char*>);
-    string ExecuteCommand();
+    bool RunInteractive(bool);
+    int Run();
+
+    tuple<sense_key, asc, int> ExecuteCommand();
 
     string ReadData();
     string WriteData(int);
+    string ConvertData(const string&);
 
     void CleanUp() const;
     static void TerminationHandler(int);
-
-    unique_ptr<BusFactory> bus_factory;
 
     unique_ptr<Bus> bus;
 
@@ -45,13 +52,15 @@ private:
     bool version = false;
     bool help = false;
 
-    int initiator_id = -1;
+    int initiator_id = 7;
     int target_id = -1;
     int target_lun = 0;
 
     int timeout = 3;
 
     bool request_sense = true;
+
+    bool reset_bus = false;
 
     bool hex_only = false;
 
@@ -65,11 +74,12 @@ private:
     string hex_output_filename;
 
     string command;
+    string data;
 
     string log_level = "info";
 
     // Required for the termination handler
     static inline S2pExec *instance;
 
-    inline static const int DEFAULT_BUFFER_SIZE = 4096;
+    inline static const int DEFAULT_BUFFER_SIZE = 131072;
 };

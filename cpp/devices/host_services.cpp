@@ -80,25 +80,23 @@
 // ReceiveOperationResults returns the result of the last operation executed.
 //
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
 #include <algorithm>
 #include <chrono>
+#include <google/protobuf/util/json_util.h>
+#include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/scsi_controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"
-#include "generated/s2p_interface.pb.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace s2p_interface;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, lun, false)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false)
 {
     SetProduct("Host Services");
 }
@@ -132,12 +130,12 @@ bool HostServices::Init(const param_map &params)
 void HostServices::TestUnitReady()
 {
     // Always successful
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const
 {
-    return HandleInquiry(device_type::processor, scsi_level::spc_3, false);
+    return HandleInquiry(device_type::processor, false);
 }
 
 void HostServices::StartStopUnit() const
@@ -147,20 +145,20 @@ void HostServices::StartStopUnit() const
 
     if (!start) {
         if (load) {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::STOP_PI);
+            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
         }
         else {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::STOP_S2P);
+            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
         }
     }
     else if (load) {
-        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::RESTART_PI);
+        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
     }
     else {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    EnterStatusPhase();
+    StatusPhase();
 }
 
 void HostServices::ExecuteOperation()
@@ -169,15 +167,14 @@ void HostServices::ExecuteOperation()
 
     input_format = ConvertFormat();
 
-    const auto length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
+    const int length = GetInt16(GetController()->GetCdb(), 7);
     if (!length) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(static_cast<uint32_t>(length));
-    GetController()->SetByteTransfer(true);
+    GetController()->SetTransferSize(length, length);
 
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
 
 void HostServices::ReceiveOperationResults()
@@ -220,12 +217,12 @@ void HostServices::ReceiveOperationResults()
     const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
     const auto length = static_cast<int>(min(allocation_length, data.size()));
     if (!length) {
-        EnterStatusPhase();
+        StatusPhase();
     }
     else {
         GetController()->CopyToBuffer(data.data(), length);
 
-        EnterDataInPhase();
+        DataInPhase(length);
     }
 }
 
@@ -299,50 +296,59 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-bool HostServices::WriteByteSequence(span<const uint8_t> buf)
+int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    const auto length = GetInt16(GetController()->GetCdb(), 7);
+    assert(command == scsi_command::cmd_execute_operation);
+    if (command != scsi_command::cmd_execute_operation) {
+        throw scsi_exception(sense_key::aborted_command);
+    }
 
-    PbCommand command;
+    const auto length = GetInt16(GetController()->GetCdb(), 7);
+    if (!length) {
+        execution_results[GetController()->GetInitiatorId()] = "";
+        return 0;
+    }
+
+    PbCommand cmd;
     switch (input_format) {
     case protobuf_format::binary:
-        if (!command.ParseFromArray(buf.data(), length)) {
+        if (!cmd.ParseFromArray(buf.data(), length)) {
             LogTrace("Failed to deserialize protobuf binary data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
 
     case protobuf_format::json: {
-        if (string cmd((const char*)buf.data(), length); !JsonStringToMessage(cmd, &command).ok()) {
+        if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
             LogTrace("Failed to deserialize protobuf JSON data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
     }
 
     case protobuf_format::text: {
-        if (string cmd((const char*)buf.data(), length); !TextFormat::ParseFromString(cmd, &command)) {
+        if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
             LogTrace("Failed to deserialize protobuf text format data");
-            return false;
+            throw scsi_exception(sense_key::aborted_command);
         }
         break;
     }
 
     default:
         assert(false);
-        break;
+        throw scsi_exception(sense_key::aborted_command);
     }
 
     PbResult result;
-    if (CommandContext context(command, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(command, "locale"));
+    if (CommandContext context(cmd, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(cmd, "locale"));
     !dispatcher->DispatchCommand(context, result, fmt::format("(ID:LUN {0}:{1}) - ", GetId(), GetLun()))) {
-        LogTrace("Failed to execute " + PbOperation_Name(command.operation()) + " operation");
-        return false;
+        LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
+        throw scsi_exception(sense_key::aborted_command);
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
 
-    return true;
+    return length;
 }
 
 HostServices::protobuf_format HostServices::ConvertFormat() const

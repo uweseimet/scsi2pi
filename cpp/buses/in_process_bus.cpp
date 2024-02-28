@@ -11,6 +11,36 @@
 
 using namespace spdlog;
 
+bool InProcessBus::Init(bool target)
+{
+    if (!GpioBus::Init(target)) {
+        return false;
+    }
+
+    if (!target) {
+        const auto now = chrono::steady_clock::now();
+
+        // Wait for the target up to 1 s
+        do {
+            if (target_enabled) {
+                return true;
+            }
+        } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
+
+        return false;
+    }
+
+    return true;
+}
+
+void InProcessBus::CleanUp()
+{
+    // Signal the client that s2p is ready
+    if (IsTarget()) {
+        target_enabled = true;
+    }
+}
+
 void InProcessBus::Reset()
 {
     signals = { };

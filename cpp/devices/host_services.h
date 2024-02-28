@@ -10,15 +10,9 @@
 
 #pragma once
 
-#include <span>
-#include <vector>
-#include <map>
-#include "protobuf/command_context.h"
 #include "command/command_dispatcher.h"
 #include "command/image_support.h"
 #include "mode_page_device.h"
-
-using namespace std;
 
 class HostServices : public ModePageDevice
 {
@@ -33,6 +27,8 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;
+
+    int WriteData(span<const uint8_t>, scsi_command) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {
@@ -73,8 +69,6 @@ private:
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
-
-    bool WriteByteSequence(span<const uint8_t>) override;
 
     protobuf_format ConvertFormat() const;
 

@@ -47,8 +47,6 @@ protected:
     void Receive();
 
     void Execute();
-    void DataOutNonBlockOriented() const;
-    void ProcessCommand();
 
     virtual void ParseMessage() = 0;
     virtual void ProcessMessage() = 0;
@@ -58,8 +56,6 @@ private:
 
     void Send();
     virtual void XferMsg(int) = 0;
-    bool XferOutBlockOriented(bool);
-    void ReceiveBytes();
 
     void LogCdb() const;
 

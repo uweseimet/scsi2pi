@@ -8,17 +8,20 @@
 
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, sector_sizes)
+SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false,
+    sector_sizes)
 {
     SetProduct("SASI HD");
     SetProtectable(true);
 }
 
-void SasiHd::FinalizeSetup(off_t image_offset)
+void SasiHd::FinalizeSetup()
 {
     Disk::ValidateFile();
 
-    SetUpCache(image_offset);
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
+    }
 }
 
 void SasiHd::Open()
@@ -31,7 +34,7 @@ void SasiHd::Open()
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
-    FinalizeSetup(0);
+    FinalizeSetup();
 }
 
 void SasiHd::Inquiry()
@@ -41,7 +44,7 @@ void SasiHd::Inquiry()
     array<uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
-    EnterDataInPhase();
+    DataInPhase(buf.size());
 }
 
 vector<uint8_t> SasiHd::InquiryInternal() const
@@ -56,8 +59,8 @@ void SasiHd::RequestSense()
     //vector<uint8_t> buf(allocation_length ? allocation_length : 4);
 
     // SASI fixed to non-extended format
-    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetStatusCode() >> 16), static_cast<uint8_t>(GetLun() << 5) };
+    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
-    EnterDataInPhase();
+    DataInPhase(buf.size());
 }

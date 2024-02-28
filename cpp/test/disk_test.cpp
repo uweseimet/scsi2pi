@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "test_shared.h"
 #include "base/memory_util.h"
 #include "devices/disk.h"
 
@@ -20,6 +21,23 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
     EXPECT_TRUE(controller->AddDevice(disk));
 
     return {controller, disk};
+}
+
+TEST(DiskTest, SetUpCache)
+{
+    MockDisk disk;
+
+    EXPECT_FALSE(disk.SetUpCache());
+
+    disk.SetBlockCount(1);
+    disk.SetSectorSizeInBytes(512);
+    EXPECT_FALSE(disk.SetUpCache());
+
+    disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
+    EXPECT_FALSE(disk.SetUpCache());
+
+    disk.SetFilename(CreateTempFile(512).string());
+    EXPECT_TRUE(disk.SetUpCache());
 }
 
 TEST(DiskTest, Dispatch)
@@ -190,6 +208,8 @@ TEST(DiskTest, Read6)
     TestShared::Dispatch(*disk, scsi_command::cmd_read6, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(6) must fail for a medium with 0 blocks");
 
+    EXPECT_EQ(0U, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -204,6 +224,8 @@ TEST(DiskTest, Read10)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read10));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -220,6 +242,8 @@ TEST(DiskTest, Read16)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read16));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -238,6 +262,8 @@ TEST(DiskTest, Write6)
     TestShared::Dispatch(*disk, scsi_command::cmd_write6, sense_key::data_protect,
         asc::write_protected, "WRITE(6) must fail because drive is write-protected");
 
+    EXPECT_EQ(0U, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -252,6 +278,8 @@ TEST(DiskTest, Write10)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write10));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    EXPECT_EQ(0U, disk->GetNextSector());
 
     // Further testing requires filesystem access
 }
@@ -268,6 +296,8 @@ TEST(DiskTest, Write16)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    EXPECT_EQ(0U, disk->GetNextSector());
+
     // Further testing requires filesystem access
 }
 
@@ -281,12 +311,7 @@ TEST(DiskTest, Verify10)
     disk->SetReady(true);
     // Verify 0 sectors
     disk->SetBlockCount(1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
-    EXPECT_EQ(status::good, controller->GetStatus());
-
-    // Verify 1 sector with BytChk=0
-    controller->SetCdbByte(8, 1);
+    EXPECT_CALL(*disk, FlushCache());
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
     EXPECT_EQ(status::good, controller->GetStatus());
@@ -304,12 +329,7 @@ TEST(DiskTest, Verify16)
     disk->SetReady(true);
     // Verify 0 sectors
     disk->SetBlockCount(1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
-    EXPECT_EQ(status::good, controller->GetStatus());
-
-    // Verify 1 sector with BytChk=0
-    controller->SetCdbByte(13, 1);
+    EXPECT_CALL(*disk, FlushCache());
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
     EXPECT_EQ(status::good, controller->GetStatus());
@@ -325,14 +345,21 @@ TEST(DiskTest, ReadLong10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_long10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    controller->SetCdbByte(1, 1);
+    TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "READ LONG(10) must fail because the RelAdr bit is set");
+    controller->SetCdbByte(1, 0);
+
     controller->SetCdbByte(2, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request,
         asc::lba_out_of_range, "READ LONG(10) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 1);
+    controller->SetCdbByte(7, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "READ LONG(10) must fail because it currently only supports 0 bytes transfer length");
+        "READ LONG(10) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, ReadLong16)
@@ -351,10 +378,11 @@ TEST(DiskTest, ReadLong16)
         asc::lba_out_of_range, "READ LONG(16) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(13, 1);
+    controller->SetCdbByte(12, 55);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "READ LONG(16) must fail because it currently only supports 0 bytes transfer length");
+        asc::invalid_field_in_cdb, "READ LONG(16) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong10)
@@ -365,15 +393,21 @@ TEST(DiskTest, WriteLong10)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
+    controller->SetCdbByte(1, 1);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "WRITE LONG(10) must fail because the RelAdr bit is set");
+    controller->SetCdbByte(1, 0);
+
     controller->SetCdbByte(2, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
         asc::lba_out_of_range, "WRITE LONG(10) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 1);
-    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "WRITE LONG(10) must fail because it currently only supports 0 bytes transfer length");
+    controller->SetCdbByte(7, 255);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "WRITE LONG(10) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong16)
@@ -389,10 +423,11 @@ TEST(DiskTest, WriteLong16)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
-    controller->SetCdbByte(13, 1);
-    TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request,
-        asc::invalid_field_in_cdb,
-        "WRITE LONG(16) must fail because it currently only supports 0 bytes transfer length");
+    controller->SetCdbByte(12, 255);
+    TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "WRITE LONG(16) must fail because it only supports a limited transfer length");
+
+    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, StartStopUnit)
@@ -657,7 +692,7 @@ TEST(DiskTest, VerifySectorSizeChange)
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-    << "Parameter list is invalid";
+        << "Parameter list is invalid";
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
@@ -665,11 +700,31 @@ TEST(DiskTest, VerifySectorSizeChange)
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-    << "Parameter list is invalid";
+        << "Parameter list is invalid";
     EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
+}
+
+TEST(DiskTest, ReadData)
+{
+    MockDisk disk;
+    vector<uint8_t> buf;
+
+    EXPECT_THAT([&] {disk.ReadData(buf);}, Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
+                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
+}
+
+TEST(DiskTest, WriteData)
+{
+    MockDisk disk;
+    vector<uint8_t> buf;
+
+    EXPECT_THAT([&] {disk.WriteData(buf, scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
+                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache)

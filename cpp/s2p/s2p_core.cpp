@@ -8,15 +8,16 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
-#include <netinet/in.h>
 #include <csignal>
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <chrono>
+#include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
+#include "buses/bus_factory.h"
+#include "base/device_factory.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
@@ -24,18 +25,14 @@
 #include "s2p_parser.h"
 #include "s2p_core.h"
 
-using namespace std;
 using namespace spdlog;
-using namespace s2p_interface;
 using namespace s2p_util;
 using namespace protobuf_util;
 using namespace scsi_defs;
 
 bool S2p::InitBus(bool in_process, bool is_sasi)
 {
-    bus_factory = make_unique<BusFactory>();
-
-    bus = bus_factory->CreateBus(true, in_process);
+    bus = BusFactory::Instance().CreateBus(true, in_process);
     if (!bus) {
         return false;
     }
@@ -44,7 +41,7 @@ bool S2p::InitBus(bool in_process, bool is_sasi)
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
-    dispatcher = make_shared<CommandDispatcher>(s2p_image, response, *executor);
+    dispatcher = make_shared<CommandDispatcher>(s2p_image, *executor);
 
     return true;
 }
@@ -58,7 +55,7 @@ void S2p::CleanUp()
     executor->DetachAll();
 
     // TODO Check why there are rare cases where bus is NULL on a remote interface shutdown
-    // even though it is never set to NULL anywhere
+    // even though it is never set to NULL anywhere. This looks like a race condition.
     if (bus) {
         bus->CleanUp();
     }
@@ -126,43 +123,14 @@ int S2p::Run(span<char*> args, bool in_process)
     s2p_parser.Banner(false);
 
     bool is_sasi = false;
+    const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
     int port;
-    try {
-        const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
-        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
-        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
-
-        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
-        !CommandDispatcher::SetLogLevel(log_level)) {
-            throw parser_exception("Invalid log level: '" + log_level + "'");
-        }
-
-        // Log the properties (on trace level) *after* the log level has been set
-        LogProperties();
-
-        if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string error = s2p_image.SetDefaultFolder(image_folder); !error.empty()) {
-                throw parser_exception(error);
-            }
-        }
-
-        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
-            if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
-                throw parser_exception(
-                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::PORT));
-            }
-            else {
-                s2p_image.SetDepth(depth);
-            }
-        }
-
-        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
-            || port <= 0 || port > 65535) {
-            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
-        }
+    if (!ParseProperties(properties, port)) {
+        return EXIT_FAILURE;
     }
-    catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+
+    if (const string &error = MapExtensions(); !error.empty()) {
+        cerr << "Error: " << error << endl;
         return EXIT_FAILURE;
     }
 
@@ -202,6 +170,7 @@ int S2p::Run(span<char*> args, bool in_process)
 
     // Display and log the device list
     PbServerInfo server_info;
+    CommandResponse response;
     response.GetDevices(executor->GetAllDevices(), server_info, s2p_image.GetDefaultFolder());
     const vector<PbDevice> &devices = { server_info.devices_info().devices().begin(),
         server_info.devices_info().devices().end() };
@@ -209,7 +178,7 @@ int S2p::Run(span<char*> args, bool in_process)
     LogDevices(device_list);
     cout << device_list << flush;
 
-    if (!in_process && !bus_factory->IsRaspberryPi()) {
+    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
     }
 
@@ -217,9 +186,61 @@ int S2p::Run(span<char*> args, bool in_process)
 
     service_thread.Start();
 
+    // Signal the in-process client that s2p is ready
+    if (in_process) {
+        bus->CleanUp();
+    }
+
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+bool S2p::ParseProperties(const property_map &properties, int &port)
+{
+    try {
+        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
+        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
+
+        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
+        !CommandDispatcher::SetLogLevel(log_level)) {
+            throw parser_exception("Invalid log level: '" + log_level + "'");
+        }
+
+        if (const string &log_pattern = property_handler.GetProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+            set_pattern(log_pattern);
+        }
+
+        // Log the properties (on trace level) *after* the log level has been set
+        LogProperties();
+
+        if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+            if (const string error = s2p_image.SetDefaultFolder(image_folder); !error.empty()) {
+                throw parser_exception(error);
+            }
+        }
+
+        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
+            if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
+                throw parser_exception(
+                    "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
+            }
+            else {
+                s2p_image.SetDepth(depth);
+            }
+        }
+
+        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
+            || port <= 0 || port > 65535) {
+            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
+        }
+    }
+    catch (const parser_exception &e) {
+        cerr << "Error: " << e.what() << endl;
+        return false;
+    }
+
+    return true;
 }
 
 void S2p::SetUpEnvironment()
@@ -234,6 +255,29 @@ void S2p::SetUpEnvironment()
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
+}
+
+string S2p::MapExtensions() const
+{
+    for (const auto& [key, value] : property_handler.GetProperties("extensions.")) {
+        const auto &components = Split(key, '.');
+        if (components.size() != 2) {
+            return "Invalid extension mapping: '" + key + "'";
+        }
+
+        PbDeviceType type = UNDEFINED;
+        if (PbDeviceType_Parse(ToUpper(components[1]), &type) && type == PbDeviceType::UNDEFINED) {
+            continue;
+        }
+
+        for (const string &extension : Split(value, ',')) {
+            if (!DeviceFactory::Instance().AddExtensionMapping(extension, type)) {
+                return "Duplicate extension mapping for extension '" + extension + "'";
+            }
+        }
+    }
+
+    return "";
 }
 
 void S2p::LogProperties() const
@@ -265,8 +309,8 @@ void S2p::CreateDevices()
         }
 
         const auto &id_and_lun = key_components[1];
-        if (const string error = SetIdAndLun(ControllerFactory::GetIdMax(), ControllerFactory::GetLunMax(),
-            device_definition, id_and_lun); !error.empty()) {
+        if (const string error = SetIdAndLun( ControllerFactory::GetLunMax(), device_definition, id_and_lun);
+            !error.empty()) {
             throw parser_exception(error);
         }
 
@@ -302,7 +346,7 @@ void S2p::AttachDevices(PbCommand &command)
 
         if (const CommandContext context(command, s2p_image.GetDefaultFolder(),
                 property_handler.GetProperty(PropertyHandler::LOCALE)); !executor->ProcessCmd(context)) {
-            throw parser_exception("Error: Can't attach devices");
+            throw parser_exception("Can't attach devices");
         }
 
 #ifdef BUILD_SCHS
@@ -338,13 +382,24 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     else if (key == "type") {
         device.set_type(ParseDeviceType(value));
     }
+    else if (key == "scsi_level") {
+        if (int scsi_level; !GetAsUnsignedInt(value, scsi_level) || !scsi_level) {
+            throw parser_exception(fmt::format("Invalid SCSI level: '{}'", value));
+        }
+        else {
+            device.set_scsi_level(scsi_level);
+        }
+    }
     else if (key == "block_size") {
         if (int block_size; !GetAsUnsignedInt(value, block_size)) {
-            throw parser_exception(fmt::format("Invalid block size: {}", value));
+            throw parser_exception(fmt::format("Invalid block size: '{}'", value));
         }
         else {
             device.set_block_size(block_size);
         }
+    }
+    else if (key == "caching_mode") {
+        device.set_caching_mode(ParseCachingMode(value));
     }
     else if (key == "product_data") {
         SetProductData(device, value);
@@ -357,28 +412,16 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     }
 }
 
-PbDeviceType S2p::ParseDeviceType(const string &value)
-{
-    string t;
-    ranges::transform(value, back_inserter(t), ::toupper);
-    if (PbDeviceType type; PbDeviceType_Parse(t, &type)) {
-        return type;
-    }
-
-    throw parser_exception("Illegal device type '" + value + "'");
-}
-
 void S2p::ProcessScsiCommands()
 {
     while (service_thread.IsRunning()) {
         // Only process the SCSI command if the bus is not busy and no other device responded
-        // TODO There may be something wrong with the SEL/BSY handling, see PhaseExecutor/Arbitration
         if (bus->WaitForSelection() && WaitForNotBusy()) {
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
             if (const auto shutdown_mode = controller_factory->ProcessOnController(bus->GetDAT());
-            shutdown_mode != AbstractController::shutdown_mode::NONE) {
+            shutdown_mode != AbstractController::shutdown_mode::none) {
                 // When the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);
             }

@@ -20,29 +20,29 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     device_logger.SetIdAndLun(target_id, -1);
 }
 
-void AbstractController::SetLength(size_t length)
+void AbstractController::SetCurrentLength(int length)
 {
-    if (length > ctrl.buffer.size()) {
+    if (length > static_cast<int>(ctrl.buffer.size())) {
         ctrl.buffer.resize(length);
     }
 
-    ctrl.length = static_cast<int>(length);
+    ctrl.current_length = length;
+}
+
+void AbstractController::SetTransferSize(int length, int chunk_size)
+{
+    // The total number of bytes to transfer for the current SCSI/SASI command
+    ctrl.total_length = length;
+
+    // The number of bytes to transfer in a single chunk
+    ctrl.chunk_size = chunk_size;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
 {
-    SetLength(size);
+    SetCurrentLength(static_cast<int>(size));
 
     memcpy(ctrl.buffer.data(), src, size);
-}
-
-void AbstractController::SetByteTransfer(bool b)
-{
-    is_byte_transfer = b;
-
-    if (!is_byte_transfer) {
-        bytes_to_transfer = 0;
-    }
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
@@ -66,8 +66,6 @@ void AbstractController::Reset()
     SetPhase(phase_t::busfree);
 
     ctrl = { };
-
-    SetByteTransfer(false);
 
     // Reset all LUNs
     for (const auto& [_, device] : luns) {
@@ -98,7 +96,7 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
 
-    if (lun < 0 || lun >= GetMaxLuns() || HasDeviceForLun(lun) || device->GetController()) {
+    if (lun < 0 || lun >= max_luns || GetDeviceForLun(lun) || device->GetController()) {
         return false;
     }
 
@@ -113,11 +111,6 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
-}
-
-bool AbstractController::HasDeviceForLun(int lun) const
-{
-    return luns.contains(lun);
 }
 
 int AbstractController::ExtractInitiatorId(int id_data) const

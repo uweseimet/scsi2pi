@@ -6,13 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "generated/s2p_interface.pb.h"
 
-using namespace s2p_interface;
 using namespace protobuf_util;
 
 void TestSpecialDevice(const string &name)
@@ -21,6 +18,41 @@ void TestSpecialDevice(const string &name)
     ParseParameters(device, name);
     EXPECT_EQ(name, GetParam(device, "file"));
     EXPECT_EQ("", GetParam(device, "interfaces"));
+}
+
+TEST(ProtobufUtil, ParseDeviceType)
+{
+    EXPECT_EQ(SCCD, ParseDeviceType("sccd"));
+    EXPECT_EQ(SCDP, ParseDeviceType("scdp"));
+    EXPECT_EQ(SCHD, ParseDeviceType("schd"));
+    EXPECT_EQ(SCLP, ParseDeviceType("sclp"));
+    EXPECT_EQ(SCMO, ParseDeviceType("scmo"));
+    EXPECT_EQ(SCRM, ParseDeviceType("scrm"));
+    EXPECT_EQ(SCHS, ParseDeviceType("schs"));
+
+    EXPECT_EQ(SCCD, ParseDeviceType("c"));
+    EXPECT_EQ(SCDP, ParseDeviceType("d"));
+    EXPECT_EQ(SCHD, ParseDeviceType("h"));
+    EXPECT_EQ(SCLP, ParseDeviceType("l"));
+    EXPECT_EQ(SCMO, ParseDeviceType("m"));
+    EXPECT_EQ(SCRM, ParseDeviceType("r"));
+    EXPECT_EQ(SCHS, ParseDeviceType("s"));
+
+    EXPECT_EQ(UNDEFINED, ParseDeviceType(""));
+    EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
+}
+
+TEST(ProtobufUtil, ParseCachingMode)
+{
+    EXPECT_EQ(DEFAULT, ParseCachingMode("default"));
+    EXPECT_EQ(LINUX, ParseCachingMode("linux"));
+    EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write_through"));
+    EXPECT_EQ(WRITE_THROUGH, ParseCachingMode("write-through"));
+    EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux_optimized"));
+    EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux-optimized"));
+
+    EXPECT_THROW(ParseCachingMode(""), parser_exception);
+    EXPECT_THROW(ParseCachingMode("xyz"), parser_exception);
 }
 
 TEST(ProtobufUtil, GetSetParam)
@@ -160,10 +192,10 @@ TEST(ProtobufUtil, SetIdAndLun)
 {
     PbDeviceDefinition device;
 
-    EXPECT_NE("", SetIdAndLun(8, 32, device, ""));
-    EXPECT_EQ("", SetIdAndLun(8, 32, device, "1"));
+    EXPECT_NE("", SetIdAndLun(32, device, ""));
+    EXPECT_EQ("", SetIdAndLun(32, device, "1"));
     EXPECT_EQ(1, device.id());
-    EXPECT_EQ("", SetIdAndLun(8, 32, device, "2:0"));
+    EXPECT_EQ("", SetIdAndLun(32, device, "2:0"));
     EXPECT_EQ(2, device.id());
     EXPECT_EQ(0, device.unit());
 }
@@ -197,7 +229,6 @@ TEST(ProtobufUtil, DeserializeMessage)
     fd1 = open(filename1.c_str(), O_RDONLY);
     ASSERT_NE(-1, fd1);
     EXPECT_THROW(DeserializeMessage(fd1, result), io_exception)<< "Invalid header was not rejected";
-    remove(filename1);
 
     auto [fd2, filename2] = OpenTempFile();
     // Data size 2
@@ -207,7 +238,6 @@ TEST(ProtobufUtil, DeserializeMessage)
     fd2 = open(filename2.c_str(), O_RDONLY);
     EXPECT_NE(-1, fd2);
     EXPECT_THROW(DeserializeMessage(fd2, result), io_exception)<< "Invalid data were not rejected";
-    remove(filename2);
 }
 
 TEST(ProtobufUtil, SerializeDeserializeMessage)
@@ -225,7 +255,6 @@ TEST(ProtobufUtil, SerializeDeserializeMessage)
     ASSERT_NE(-1, fd);
     DeserializeMessage(fd, result);
     close(fd);
-    remove(filename);
 
     EXPECT_TRUE(result.status());
 }

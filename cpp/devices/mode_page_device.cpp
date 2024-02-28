@@ -11,7 +11,6 @@
 #include <cstddef>
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
-#include "base/property_handler.h"
 #include "mode_page_device.h"
 
 using namespace memory_util;
@@ -114,16 +113,12 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
 void ModePageDevice::ModeSense6() const
 {
-    GetController()->SetLength(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
-
-    EnterDataInPhase();
+    DataInPhase(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
 }
 
 void ModePageDevice::ModeSense10() const
 {
-    GetController()->SetLength(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
-
-    EnterDataInPhase();
+    DataInPhase(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
 }
 
 void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int)
@@ -150,7 +145,5 @@ void ModePageDevice::SaveParametersCheck(int length) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    GetController()->SetLength(length);
-
-    EnterDataOutPhase();
+    DataOutPhase(length);
 }
