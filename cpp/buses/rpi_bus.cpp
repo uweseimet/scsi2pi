@@ -147,7 +147,6 @@ bool RpiBus::Init(bool target)
     gpfsel[0] = gpio[GPIO_FSEL_0];
     gpfsel[1] = gpio[GPIO_FSEL_1];
     gpfsel[2] = gpio[GPIO_FSEL_2];
-    gpfsel[3] = gpio[GPIO_FSEL_3];
 
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
@@ -528,6 +527,7 @@ void RpiBus::SetMode(int pin, int mode)
 
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
+    assert(index <= 2);
     uint32_t data = gpfsel[index];
     data &= ~(0x7 << shift);
     if (mode == OUT) {
@@ -555,6 +555,7 @@ void RpiBus::SetSignal(int pin, bool state)
 {
 #if SIGNAL_CONTROL_MODE == 0
     const int index = pin / 10;
+    assert(index <= 2);
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {

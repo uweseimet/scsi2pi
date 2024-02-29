@@ -183,6 +183,17 @@ TEST(DelegatingProcessBusTest, Acquire)
     EXPECT_EQ(0x45U, delegating_bus.Acquire());
 }
 
+TEST(DelegatingProcessBusTest, SetGetSignal)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, false);
+
+    delegating_bus.SetSignal(PIN_ACK, true);
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK));
+    delegating_bus.SetSignal(PIN_ACK, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK));
+}
+
 TEST(DelegatingProcessBusTest, WaitSignal)
 {
     MockInProcessBus bus;

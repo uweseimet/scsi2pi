@@ -133,8 +133,6 @@ public:
 
     virtual bool WaitForSelection() = 0;
 
-    virtual bool WaitSignal(int, bool);
-
     virtual void SetBSY(bool) = 0;
 
     virtual void SetSEL(bool) = 0;
@@ -147,6 +145,8 @@ public:
 
     virtual bool GetSignal(int) const = 0;
     virtual void SetSignal(int, bool) = 0;
+
+    virtual bool WaitSignal(int, bool);
 
     int CommandHandShake(vector<uint8_t>&);
     int MsgInHandShake();

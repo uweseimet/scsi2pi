@@ -121,8 +121,8 @@ private:
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;
 
-    // RAM copy of GPFSEL0-4  values (GPIO Function Select)
-    array<uint32_t, 4> gpfsel;
+    // RAM copy of GPFSEL0-2  values (GPIO Function Select)
+    array<uint32_t, 3> gpfsel;
 
     // All bus signals
     uint32_t signals = 0;
@@ -152,7 +152,6 @@ private:
     constexpr static int GPIO_FSEL_0 = 0;
     constexpr static int GPIO_FSEL_1 = 1;
     constexpr static int GPIO_FSEL_2 = 2;
-    constexpr static int GPIO_FSEL_3 = 3;
     constexpr static int GPIO_SET_0 = 7;
     constexpr static int GPIO_CLR_0 = 10;
     constexpr static int GPIO_LEV_0 = 13;

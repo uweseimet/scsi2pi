@@ -71,6 +71,8 @@ private:
 
     string bridge_interface;
 
+    bool create_bridge = true;
+
     bool bridge_created = false;
 
     const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";

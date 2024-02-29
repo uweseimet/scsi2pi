@@ -57,6 +57,8 @@ bool TapDriver::Init(const param_map &const_params)
     return false;
 #else
 
+    create_bridge = params["bridge"] == "true";
+
     inet = params["inet"];
 
     trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
@@ -90,7 +92,7 @@ bool TapDriver::Init(const param_map &const_params)
     }
 
     // Only physical interfaces need a bridge
-    if (bridge_interface.starts_with("eth")) {
+    if (create_bridge && bridge_interface.starts_with("eth")) {
         const int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
         if (fd == -1) {
             return cleanUp(fmt::format("Can't open bridge socket: {}", strerror(errno)));
@@ -159,7 +161,8 @@ param_map TapDriver::GetDefaultParams() const
 {
     return {
         {   "interface", Join(available_interfaces, ",")},
-        {   "inet", DEFAULT_IP}
+        {   "inet", DEFAULT_IP},
+        {   "bridge", "true"}
     };
 }
 
