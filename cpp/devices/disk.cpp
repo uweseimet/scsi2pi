@@ -18,6 +18,7 @@
 #include "disk_cache.h"
 #include "disk.h"
 
+using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
@@ -149,11 +150,11 @@ bool Disk::SetUpCache()
     assert(caching_mode != PbCachingMode::DEFAULT);
 
     if (!supported_sector_sizes.contains(sector_size)) {
-        spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
-
+        warn("Using non-standard sector size of {} bytes", sector_size);
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
-            spdlog::info("Adjusted caching mode to '{}'", ToLower(PbCachingMode_Name(caching_mode)));
+            // LogInfo() does not work here because at initialization time the device ID is not yet set
+            info("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode));
         }
     }
 
@@ -276,10 +277,12 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
-        LogWarn(
-            "Full READ/WRITE LONG support requires a different caching mode than '"
-                + ToLower(PbCachingMode_Name(caching_mode)) + "'");
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        // FUll READ/WRITE LONG support requires an appropriate caching mode
+        FlushCache();
+        caching_mode = PbCachingMode::LINUX;
+        InitCache(GetFilename());
+        linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
+        LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
 
     if (length > sector_size) {
@@ -885,7 +888,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
         count = GetController()->GetCdbByte(4);
         if (!count) {
-            count = 0x100;
+            count = 256;
         }
     }
     else {
@@ -905,7 +908,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {0}, sector count: {1}", start, count));
 
     // Check capacity
-    if (uint64_t capacity = GetBlockCount(); !capacity || start > capacity || start + count > capacity) {
+    if (const uint64_t capacity = GetBlockCount(); !capacity || start + count > capacity) {
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
                 start, count));
@@ -913,11 +916,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     }
 
     // Do not process 0 blocks
-    if (!count && (mode != SEEK6 && mode != SEEK10)) {
-        return tuple(false, start, count);
-    }
-
-    return tuple(true, start, count);
+    return tuple(count || mode == SEEK6 || mode == SEEK10, start, count);
 }
 
 void Disk::ChangeSectorSize(uint32_t new_size)
