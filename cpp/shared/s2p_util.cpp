@@ -98,7 +98,7 @@ string s2p_util::ToLower(const string &s)
 
 string s2p_util::GetLocale()
 {
-    const char *locale = setlocale(LC_MESSAGES, nullptr);
+    const char *locale = setlocale(LC_MESSAGES, "");
     if (locale == nullptr || !strcmp(locale, "C") || !strcmp(locale, "POSIX")) {
         locale = "en";
     }
