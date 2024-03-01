@@ -16,15 +16,6 @@ SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD
     SetProtectable(true);
 }
 
-void SasiHd::FinalizeSetup()
-{
-    Disk::ValidateFile();
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
-}
-
 void SasiHd::Open()
 {
     assert(!IsReady());
@@ -35,7 +26,7 @@ void SasiHd::Open()
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
-    FinalizeSetup();
+    Disk::ValidateFile();
 }
 
 void SasiHd::Inquiry()

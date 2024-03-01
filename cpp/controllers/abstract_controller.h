@@ -30,7 +30,6 @@ public:
     virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
         scsi_defs::status = scsi_defs::status::check_condition) = 0;
     virtual void Reset();
-    virtual int GetInitiatorId() const = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
@@ -41,6 +40,11 @@ public:
         stop_pi,
         restart_pi
     };
+
+    int GetInitiatorId()
+    {
+        return initiator_id;
+    }
 
     void ScheduleShutdown(shutdown_mode mode)
     {
@@ -70,42 +74,43 @@ public:
     void CopyToBuffer(const void*, size_t);
     auto& GetBuffer()
     {
-        return ctrl.buffer;
+        return buffer;
     }
     auto GetStatus() const
     {
-        return ctrl.status;
+        return status;
     }
     void SetStatus(scsi_defs::status s)
     {
-        ctrl.status = s;
+        status = s;
     }
     auto GetChunkSize() const
     {
-        return ctrl.chunk_size;
+        return chunk_size;
     }
     auto GetCurrentLength() const
     {
-        return ctrl.current_length;
+        return current_length;
     }
     void SetCurrentLength(int);
     void SetTransferSize(int, int);
-    void SetMessage(int m)
-    {
-        ctrl.message = m;
-    }
     auto& GetCdb() const
     {
-        return ctrl.cdb;
+        return cdb;
     }
     int GetCdbByte(int index) const
     {
-        return ctrl.cdb[index];
+        return cdb[index];
     }
 
     static constexpr int UNKNOWN_INITIATOR_ID = -1;
 
 protected:
+
+    void SetInitiatorId(int id)
+    {
+        initiator_id = id;
+    }
 
     inline Bus& GetBus() const
     {
@@ -114,40 +119,37 @@ protected:
 
     auto GetOpcode() const
     {
-        return static_cast<scsi_defs::scsi_command>(ctrl.cdb[0]);
+        return static_cast<scsi_defs::scsi_command>(cdb[0]);
     }
+
     int GetLun() const
     {
-        return (ctrl.cdb[1] >> 5) & 0x07;
+        return cdb[1] >> 5;
     }
 
     void SetCdbByte(int index, int value)
     {
-        ctrl.cdb[index] = value;
+        cdb[index] = value;
     }
 
     bool UpdateTransferSize()
     {
-        ctrl.total_length -= ctrl.chunk_size;
-        return ctrl.total_length != 0;
-    }
-    auto GetMessage() const
-    {
-        return ctrl.message;
+        total_length -= chunk_size;
+        return total_length != 0;
     }
 
     auto GetOffset() const
     {
-        return ctrl.offset;
+        return offset;
     }
     void ResetOffset()
     {
-        ctrl.offset = 0;
+        offset = 0;
     }
     void UpdateOffsetAndLength()
     {
-        ctrl.offset += ctrl.current_length;
-        ctrl.current_length = 0;
+        offset += current_length;
+        current_length = 0;
     }
 
     void LogTrace(const string &s) const
@@ -167,28 +169,20 @@ private:
 
     int ExtractInitiatorId(int) const;
 
-    using ctrl_t = struct _ctrl_t {
-        // Command data
-        array<int, 16> cdb;
+    array<int, 16> cdb = { };
 
-        // Status data
-        scsi_defs::status status;
-        // Message data
-        int message;
+    // Transfer data buffer, dynamically resized
+    vector<uint8_t> buffer;
+    // Transfer offset
+    int offset = 0;
+    // Total number of bytes to be transferred
+    int total_length = 0;
+    // Remaining bytes to be transferred in a single handshake cycle
+    int current_length = 0;
+    // The number of bytes to be transferred with the current handshake cycle
+    int chunk_size = 0;
 
-        // Transfer data buffer, dynamically resized
-        vector<uint8_t> buffer;
-        // Transfer offset
-        int offset;
-        // Total number of bytes to be transferred
-        int total_length;
-        // Remaining bytes to be transferred in a single handshake cycle
-        int current_length;
-        // The number of bytes to be transferred with a single handshake cycle
-        int chunk_size;
-    };
-
-    ctrl_t ctrl = { };
+    scsi_defs::status status = status::good;
 
     Bus &bus;
 
@@ -198,6 +192,9 @@ private:
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;
 
     int target_id;
+
+    // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
+    int initiator_id = UNKNOWN_INITIATOR_ID;
 
     int max_luns;
 

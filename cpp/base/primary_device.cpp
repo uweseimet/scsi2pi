@@ -207,14 +207,8 @@ void PrimaryDevice::CheckReady()
 
 vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable) const
 {
-    vector<uint8_t> buf(0x1F + 5);
+    vector<uint8_t> buf(0x1f + 5);
 
-    // Basic data
-    // buf[0] ... SCSI device type
-    // buf[1] ... Bit 7: Removable/not removable
-    // buf[2] ... SCSI compliance level of command system
-    // buf[3] ... SCSI compliance level of Inquiry response
-    // buf[4] ... Inquiry additional data
     buf[0] = static_cast<uint8_t>(type);
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
@@ -292,6 +286,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool pr
         || cmd == scsi_command::cmd_release6) {
         return true;
     }
+
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
     if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !prevent_removal) {
         return true;

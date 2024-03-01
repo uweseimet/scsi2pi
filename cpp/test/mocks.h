@@ -101,6 +101,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(ScsiControllerTest, Selection);
+    FRIEND_TEST(PrimaryDeviceTest, CheckReservation);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
@@ -163,7 +164,6 @@ public:
     MOCK_METHOD(bool, Process, (int), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
     MOCK_METHOD(void, Error, (scsi_defs::sense_key, scsi_defs::asc, scsi_defs::status), (override));
-    MOCK_METHOD(int, GetInitiatorId, (), (const, override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, DataIn, (), (override));
     MOCK_METHOD(void, DataOut, (), (override));
@@ -330,7 +330,6 @@ public:
 
 class MockDisk : public Disk
 {
-    FRIEND_TEST(DiskTest, SetUpCache);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -382,8 +381,6 @@ public:
 
 class MockSasiHd : public SasiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
 {
-    FRIEND_TEST(SasiHdTest, FinalizeSetup);
-
 public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)

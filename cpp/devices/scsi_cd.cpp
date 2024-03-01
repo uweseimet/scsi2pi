@@ -45,14 +45,9 @@ void ScsiCd::Open()
     if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
         throw io_exception("Invalid sector size");
     }
-
     SetBlockCount(GetFileSize() / GetSectorSizeInBytes());
 
     Disk::ValidateFile();
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
 
     SetReadOnly(true);
     SetProtectable(false);

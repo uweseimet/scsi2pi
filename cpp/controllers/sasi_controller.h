@@ -24,7 +24,7 @@ public:
 
 private:
 
-    void XferMsg(int) override;
+    void XferMsg(uint8_t) override;
 
     void ParseMessage() override;
     void ProcessMessage() override;

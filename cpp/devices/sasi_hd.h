@@ -20,7 +20,6 @@ public:
     explicit SasiHd(int, const unordered_set<uint32_t>& = { 256, 512, 1024 });
     ~SasiHd() override = default;
 
-    void FinalizeSetup();
     void Open() override;
 
     void Inquiry() override;

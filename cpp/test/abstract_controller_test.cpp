@@ -52,14 +52,6 @@ TEST(AbstractControllerTest, Reset)
     EXPECT_EQ(0, controller->GetCurrentLength());
 }
 
-TEST(AbstractControllerTest, Message)
-{
-    MockAbstractController controller;
-
-    controller.SetMessage(0x12);
-    EXPECT_EQ(0x12, controller.GetMessage());
-}
-
 TEST(AbstractControllerTest, Status)
 {
     MockAbstractController controller;

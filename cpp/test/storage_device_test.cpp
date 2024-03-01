@@ -30,7 +30,7 @@ TEST(StorageDeviceTest, ValidateFile)
     EXPECT_THROW(device.ValidateFile(), io_exception);
 
     const path filename = CreateTempFile(1);
-    device.SetFilename(string(filename));
+    device.SetFilename(filename.string());
     device.SetReadOnly(false);
     device.SetProtectable(true);
     device.ValidateFile();

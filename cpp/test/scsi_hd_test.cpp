@@ -112,21 +112,21 @@ TEST(ScsiHdTest, GetProductData)
     MockScsiHd hd_gb(0, false);
 
     const path filename = CreateTempFile(1);
-    hd_kb.SetFilename(string(filename));
+    hd_kb.SetFilename(filename.string());
     hd_kb.SetSectorSizeInBytes(1024);
     hd_kb.SetBlockCount(1);
     hd_kb.FinalizeSetup();
     string s = hd_kb.GetProduct();
     EXPECT_NE(string::npos, s.find("1 KiB"));
 
-    hd_mb.SetFilename(string(filename));
+    hd_mb.SetFilename(filename.string());
     hd_mb.SetSectorSizeInBytes(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
     hd_mb.FinalizeSetup();
     s = hd_mb.GetProduct();
     EXPECT_NE(string::npos, s.find("1 MiB"));
 
-    hd_gb.SetFilename(string(filename));
+    hd_gb.SetFilename(filename.string());
     hd_gb.SetSectorSizeInBytes(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
     hd_gb.FinalizeSetup();

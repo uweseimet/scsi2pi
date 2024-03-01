@@ -101,6 +101,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready, false))
         << "Device must not be reserved for initiator ID 0";
 
+    controller->SetInitiatorId(0);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready, false))
         << "Device must not be reserved for initiator ID 0";
@@ -133,7 +134,6 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
     EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
         << "Device must not be reserved anymore for initiator ID 1";
 
-    ON_CALL(*controller, GetInitiatorId).WillByDefault(Return(-1));
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
         << "Device must be reserved for unknown initiator";

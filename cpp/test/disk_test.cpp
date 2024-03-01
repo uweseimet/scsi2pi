@@ -24,23 +24,6 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
     return {controller, disk};
 }
 
-TEST(DiskTest, SetUpCache)
-{
-    MockDisk disk;
-
-    EXPECT_FALSE(disk.SetUpCache());
-
-    disk.SetBlockCount(1);
-    disk.SetSectorSizeInBytes(512);
-    EXPECT_FALSE(disk.SetUpCache());
-
-    disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
-    EXPECT_FALSE(disk.SetUpCache());
-
-    disk.SetFilename(CreateTempFile(512).string());
-    EXPECT_TRUE(disk.SetUpCache());
-}
-
 TEST(DiskTest, Dispatch)
 {
     auto [controller, disk] = CreateDisk();
@@ -795,7 +778,6 @@ TEST(DiskTest, ChangeSectorSize)
     EXPECT_EQ(1024U, disk.GetSectorSizeInBytes());
 
     disk.SetBlockCount(10);
-    disk.SetUpCache();
     EXPECT_CALL(disk, FlushCache());
     disk.ChangeSectorSize(512);
     EXPECT_EQ(512U, disk.GetSectorSizeInBytes());

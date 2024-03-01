@@ -45,12 +45,6 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     }
 
     switch (operation) {
-    case START:
-        return Start(*device, dryRun);
-
-    case STOP:
-        return Stop(*device, dryRun);
-
     case ATTACH:
         return Attach(context, pb_device, dryRun);
 
@@ -60,15 +54,20 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     case INSERT:
         return Insert(context, pb_device, device, dryRun);
 
+    case START:
+        return dryRun ? true : Start(*device);
+
+    case STOP:
+        return dryRun ? true : Stop(*device);
+
     case EJECT:
-        return Eject(*device, dryRun);
+        return dryRun ? true : Eject(*device);
 
     case PROTECT:
-        return Protect(*device, dryRun);
+        return dryRun ? true : Protect(*device);
 
     case UNPROTECT:
-        return Unprotect(*device, dryRun);
-        break;
+        return dryRun ? true : Unprotect(*device);
 
     default:
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
@@ -131,63 +130,53 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
 }
 
-bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Start(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Start requested for {}", GetIdentifier(device));
+    info("Start requested for {}", GetIdentifier(device));
 
-        if (!device.Start()) {
-            warn("Starting {} failed", GetIdentifier(device));
-        }
+    if (!device.Start()) {
+        warn("Starting {} failed", GetIdentifier(device));
     }
 
     return true;
 }
 
-bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Stop(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Stop requested for {}", GetIdentifier(device));
+    info("Stop requested for {}", GetIdentifier(device));
 
-        device.Stop();
+    device.Stop();
 
-        device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+    device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+
+    return true;
+}
+
+bool CommandExecutor::Eject(PrimaryDevice &device) const
+{
+    info("Eject requested for {}", GetIdentifier(device));
+
+    if (!device.Eject(true)) {
+        warn("Ejecting {} failed", GetIdentifier(device));
     }
 
     return true;
 }
 
-bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Protect(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Eject requested for {}", GetIdentifier(device));
+    info("Write protection requested for {}", GetIdentifier(device));
 
-        if (!device.Eject(true)) {
-            warn("Ejecting {} failed", GetIdentifier(device));
-        }
-    }
+    device.SetProtected(true);
 
     return true;
 }
 
-bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Unprotect(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Write protection requested for {}", GetIdentifier(device));
+    info("Write unprotection requested for {}", GetIdentifier(device));
 
-        device.SetProtected(true);
-    }
-
-    return true;
-}
-
-bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
-{
-    if (!dryRun) {
-        info("Write unprotection requested for {}", GetIdentifier(device));
-
-        device.SetProtected(false);
-    }
+    device.SetProtected(false);
 
     return true;
 }
@@ -477,18 +466,18 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         return false;
     }
 
-    storage_device.SetFilename(filename);
+    string effective_filename = filename;
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        const string effective_filename = context.GetDefaultFolder() + "/" + filename;
+        effective_filename = context.GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
         }
-
-        storage_device.SetFilename(effective_filename);
     }
+
+    storage_device.SetFilename(effective_filename);
 
     try {
         storage_device.Open();

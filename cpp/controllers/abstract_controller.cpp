@@ -15,34 +15,34 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     max_luns)
 {
     // The initial buffer size is the size of the biggest supported sector
-    ctrl.buffer.resize(4096);
+    buffer.resize(4096);
 
     device_logger.SetIdAndLun(target_id, -1);
 }
 
 void AbstractController::SetCurrentLength(int length)
 {
-    if (length > static_cast<int>(ctrl.buffer.size())) {
-        ctrl.buffer.resize(length);
+    if (length > static_cast<int>(buffer.size())) {
+        buffer.resize(length);
     }
 
-    ctrl.current_length = length;
+    current_length = length;
 }
 
-void AbstractController::SetTransferSize(int length, int chunk_size)
+void AbstractController::SetTransferSize(int length, int size)
 {
     // The total number of bytes to transfer for the current SCSI/SASI command
-    ctrl.total_length = length;
+    total_length = length;
 
     // The number of bytes to transfer in a single chunk
-    ctrl.chunk_size = chunk_size;
+    chunk_size = size;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
 {
     SetCurrentLength(static_cast<int>(size));
 
-    memcpy(ctrl.buffer.data(), src, size);
+    memcpy(buffer.data(), src, size);
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
@@ -65,7 +65,14 @@ void AbstractController::Reset()
 {
     SetPhase(phase_t::busfree);
 
-    ctrl = { };
+    offset = 0;
+    total_length = 0;
+    current_length = 0;
+    chunk_size = 0;
+
+    status = status::good;
+
+    initiator_id = UNKNOWN_INITIATOR_ID;
 
     // Reset all LUNs
     for (const auto& [_, device] : luns) {

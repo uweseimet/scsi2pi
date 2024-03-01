@@ -23,10 +23,9 @@ void ScsiController::Reset()
 void ScsiController::BusFree()
 {
     if (!IsBusFree()) {
-        // Initialize ATN message reception status
-        atn_msg = false;
-
         identified_lun = -1;
+
+        atn_msg = false;
     }
 
     GenericController::BusFree();
@@ -40,8 +39,7 @@ void ScsiController::MsgOut()
         // Process the IDENTIFY message
         if (IsSelection()) {
             atn_msg = true;
-            msc = 0;
-            msb = { };
+            msg_bytes.clear();
         }
 
         SetPhase(phase_t::msgout);
@@ -60,23 +58,18 @@ void ScsiController::MsgOut()
     Receive();
 }
 
-void ScsiController::XferMsg(int msg)
+void ScsiController::XferMsg(uint8_t msg)
 {
     assert(IsMsgOut());
 
-    // Save message out data
     if (atn_msg) {
-        msb[msc] = (uint8_t)msg;
-        msc++;
-        msc %= 256;
+        msg_bytes.emplace_back(msg);
     }
 }
 
 void ScsiController::ParseMessage()
 {
-    int count = -1;
-    while (++count < msc) {
-        const uint8_t message = msb[count];
+    for (const uint8_t message : msg_bytes) {
         switch (message) {
         case 0x01: {
             LogTrace("Received EXTENDED MESSAGE");
@@ -96,7 +89,7 @@ void ScsiController::ParseMessage()
 
         case 0x0c: {
             LogTrace("Received BUS DEVICE RESET message");
-            if (auto device = GetDeviceForLun(identified_lun); device) {
+            if (auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->DiscardReservation();
             }
             BusFree();
@@ -115,7 +108,7 @@ void ScsiController::ParseMessage()
 
 void ScsiController::ProcessMessage()
 {
-    // Continue message out phase as long as ATN keeps asserting
+    // MESSAGE OUT phase as long as ATN is asserted
     if (GetBus().GetATN()) {
         ResetOffset();
         SetCurrentLength(1);
@@ -124,11 +117,9 @@ void ScsiController::ProcessMessage()
     }
 
     if (atn_msg) {
+        atn_msg = false;
         ParseMessage();
     }
-
-    // Initialize ATN message reception status
-    atn_msg = false;
 
     Command();
 }
@@ -138,7 +129,6 @@ void ScsiController::ProcessExtendedMessage()
     // Completed sending response to extended message of IDENTIFY message
     if (atn_msg) {
         atn_msg = false;
-
         Command();
     } else {
         BusFree();

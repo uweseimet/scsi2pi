@@ -20,17 +20,10 @@ public:
     using AbstractController::AbstractController;
     ~GenericController() override = default;
 
-    void Reset() override;
-
     bool Process(int) override;
 
     void Error(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information,
         scsi_defs::status status = scsi_defs::status::check_condition) override;
-
-    int GetInitiatorId() const override
-    {
-        return initiator_id;
-    }
 
     void BusFree() override;
     void Selection() override;
@@ -55,11 +48,8 @@ protected:
 private:
 
     void Send();
-    virtual void XferMsg(int) = 0;
+    virtual void XferMsg(uint8_t) = 0;
 
     void LogCdb() const;
-
-    // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
-    int initiator_id = UNKNOWN_INITIATOR_ID;
 };
 

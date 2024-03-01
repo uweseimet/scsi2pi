@@ -41,7 +41,6 @@ private:
 
     void GetDeviceProperties(shared_ptr<PrimaryDevice>, PbDeviceProperties&) const;
     void GetDevice(shared_ptr<PrimaryDevice>, PbDevice&, const string&) const;
-    void GetDeviceTypeProperties(PbDeviceTypesInfo&, PbDeviceType) const;
     void GetAvailableImages(PbImageFilesInfo&, const string&, const string&, const string&, int) const;
     void GetAvailableImages(PbServerInfo&, const string&, const string&, const string&, int) const;
     PbOperationMetaData* CreateOperation(PbOperationInfo&, const PbOperation&, const string&) const;

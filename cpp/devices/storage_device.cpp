@@ -26,29 +26,10 @@ void StorageDevice::CleanUp()
     ModePageDevice::CleanUp();
 }
 
-void StorageDevice::SetFilename(string_view f)
-{
-    filename = filesystem::path(f);
-
-    // Permanently write-protected
-    SetReadOnly(IsReadOnlyFile());
-
-    SetProtectable(!IsReadOnlyFile());
-
-    if (IsReadOnlyFile()) {
-        SetProtected(false);
-    }
-}
-
 void StorageDevice::ValidateFile()
 {
     if (!blocks) {
-        throw io_exception(string(GetTypeString()) + " device has 0 blocks");
-    }
-
-    if (!exists(filename)) {
-        throw file_not_found_exception(
-            "Image file '" + filename.string() + "' for " + GetTypeString() + " device does not exist");
+        throw io_exception(GetTypeString() + " device has 0 blocks");
     }
 
     if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {

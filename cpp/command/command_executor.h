@@ -34,11 +34,11 @@ public:
 
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
-    bool Start(PrimaryDevice&, bool) const;
-    bool Stop(PrimaryDevice&, bool) const;
-    bool Eject(PrimaryDevice&, bool) const;
-    bool Protect(PrimaryDevice&, bool) const;
-    bool Unprotect(PrimaryDevice&, bool) const;
+    bool Start(PrimaryDevice&) const;
+    bool Stop(PrimaryDevice&) const;
+    bool Eject(PrimaryDevice&) const;
+    bool Protect(PrimaryDevice&) const;
+    bool Unprotect(PrimaryDevice&) const;
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>&, bool) const;
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;

@@ -19,13 +19,6 @@ using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
-void GenericController::Reset()
-{
-    AbstractController::Reset();
-
-    initiator_id = UNKNOWN_INITIATOR_ID;
-}
-
 bool GenericController::Process(int id)
 {
     GetBus().Acquire();
@@ -36,7 +29,7 @@ bool GenericController::Process(int id)
         return false;
     }
 
-    initiator_id = id;
+    SetInitiatorId(id);
 
     if (!ProcessPhase()) {
         Error(sense_key::aborted_command, asc::controller_process_phase);
@@ -58,9 +51,7 @@ void GenericController::BusFree()
         GetBus().SetIO(false);
         GetBus().SetBSY(false);
 
-        // Initialize status and message
         SetStatus(status::good);
-        SetMessage(0x00);
 
         return;
     }
@@ -139,35 +130,35 @@ void GenericController::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    int lun = GetEffectiveLun();
-    if (!GetDeviceForLun(lun)) {
-        if (GetOpcode() != scsi_command::cmd_inquiry && GetOpcode() != scsi_command::cmd_request_sense) {
+    const auto opcode = GetOpcode();
+
+    auto device = GetDeviceForLun(GetEffectiveLun());
+    const bool has_lun = device != nullptr;
+
+    if (!has_lun) {
+        if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
         }
 
-        assert(GetDeviceForLun(0));
-
-        lun = 0;
+        device = GetDeviceForLun(0);
+        assert(device);
     }
-
-    // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-    if (GetOpcode() == scsi_command::cmd_inquiry && !GetDeviceForLun(lun)) {
-        GetBuffer().data()[0] = 0x7f;
-        return;
-    }
-
-    auto device = GetDeviceForLun(lun);
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (GetOpcode() != scsi_command::cmd_request_sense) {
+    if (opcode != scsi_command::cmd_request_sense) {
         SetStatus(status::good);
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
-    if (device->CheckReservation(initiator_id, GetOpcode(), GetCdbByte(4) & 0x01)) {
+    if (device->CheckReservation(GetInitiatorId(), opcode, GetCdbByte(4) & 0x01)) {
         try {
-            device->Dispatch(GetOpcode());
+            device->Dispatch(opcode);
+
+            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+            if (opcode == scsi_command::cmd_inquiry && !has_lun) {
+                GetBuffer().data()[0] = 0x7f;
+            }
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
@@ -291,7 +282,6 @@ void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status st
     }
 
     SetStatus(status);
-    SetMessage(0x00);
 
     Status();
 }
@@ -335,7 +325,6 @@ void GenericController::Send()
 
     LogTrace("All data transferred");
 
-    // Move to next phase
     switch (GetPhase()) {
     case phase_t::msgin:
         ProcessExtendedMessage();
@@ -348,7 +337,8 @@ void GenericController::Send()
     case phase_t::status:
         SetCurrentLength(1);
         SetTransferSize(1, 1);
-        GetBuffer()[0] = (uint8_t)GetMessage();
+        // Message byte
+        GetBuffer()[0] = 0;
         MsgIn();
         break;
 
@@ -395,8 +385,6 @@ void GenericController::Receive()
     case phase_t::msgout:
         XferMsg(GetBuffer()[0]);
 
-        // Clear message data in preparation for MESSAGE IN
-        SetMessage(0x00);
         break;
 
     default:
@@ -410,7 +398,6 @@ void GenericController::Receive()
         return;
     }
 
-    // Move to next phase
     switch (GetPhase()) {
     case phase_t::msgout:
         ProcessMessage();
@@ -435,10 +422,10 @@ bool GenericController::XferIn(vector<uint8_t> &buf)
     // Limited to read commands
     switch (GetOpcode()) {
     case scsi_command::cmd_read6:
-        case scsi_command::cmd_read10:
-        case scsi_command::cmd_read16:
-        case scsi_command::cmd_read_long10:
-        case scsi_command::cmd_read_capacity16_read_long16:
+    case scsi_command::cmd_read10:
+    case scsi_command::cmd_read16:
+    case scsi_command::cmd_read_long10:
+    case scsi_command::cmd_read_capacity16_read_long16:
         try {
             SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
         }
@@ -470,7 +457,7 @@ bool GenericController::XferOut(bool cont)
     // Limited to write/verify commands
     switch (const auto opcode = GetOpcode(); opcode) {
     case scsi_command::cmd_mode_select6:
-        case scsi_command::cmd_mode_select10:
+    case scsi_command::cmd_mode_select10:
         {
 #ifdef BUILD_MODE_PAGE_DEVICE
         auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
@@ -494,13 +481,13 @@ bool GenericController::XferOut(bool cont)
         break;
 
     case scsi_command::cmd_write6:
-        case scsi_command::cmd_write10:
-        case scsi_command::cmd_write16:
-        case scsi_command::cmd_verify10:
-        case scsi_command::cmd_verify16:
-        case scsi_command::cmd_write_long10:
-        case scsi_command::cmd_write_long16:
-        case scsi_command::cmd_execute_operation:
+    case scsi_command::cmd_write10:
+    case scsi_command::cmd_write16:
+    case scsi_command::cmd_verify10:
+    case scsi_command::cmd_verify16:
+    case scsi_command::cmd_write_long10:
+    case scsi_command::cmd_write_long16:
+    case scsi_command::cmd_execute_operation:
         {
         try {
             const auto length = device->WriteData(GetBuffer(), opcode);

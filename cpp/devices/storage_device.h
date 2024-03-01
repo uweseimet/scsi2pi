@@ -31,7 +31,10 @@ public:
     {
         return filename.string();
     }
-    void SetFilename(string_view);
+    void SetFilename(string_view file)
+    {
+        filename = filesystem::path(file);
+    }
 
     uint64_t GetBlockCount() const
     {
@@ -60,7 +63,7 @@ public:
 
 protected:
 
-    void ValidateFile();
+    virtual void ValidateFile();
 
     bool IsMediumChanged() const
     {

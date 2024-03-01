@@ -76,7 +76,8 @@ public:
 
 protected:
 
-    bool SetUpCache();
+    void ValidateFile() override;
+
     bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
@@ -151,6 +152,8 @@ private:
     void WriteLong10();
     void WriteLong16();
     void ReadCapacity16_ReadLong16();
+
+    bool SetUpCache();
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);

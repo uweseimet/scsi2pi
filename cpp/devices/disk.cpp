@@ -141,7 +141,16 @@ void Disk::Dispatch(scsi_command cmd)
         GetController()->Error(sense_key::unit_attention, asc::not_ready_to_ready_change);
     }
     else {
-        PrimaryDevice::Dispatch(cmd);
+        StorageDevice::Dispatch(cmd);
+    }
+}
+
+void Disk::ValidateFile()
+{
+    StorageDevice::ValidateFile();
+
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
     }
 }
 

@@ -60,23 +60,17 @@ void ScsiHd::FinalizeSetup()
     if (!IsRemovable()) {
         SetProduct(GetProductData(), false);
     }
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
 }
 
 void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetFileSize();
-
     // Sector size (default 512 bytes) and number of blocks
     if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
     FinalizeSetup();
 }

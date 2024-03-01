@@ -450,10 +450,10 @@ void RpiBus::CreateWorkTable(void)
         }
 
         // Bit check
-        for (int j = 0; j < static_cast<int>(pins.size()); j++) {
+        for (const int pin : pins) {
             // Index and shift amount calculation
-            int index = pins[j] / 10;
-            int shift = (pins[j] % 10) * 3;
+            int index = pin / 10;
+            int shift = (pin % 10) * 3;
 
             // Mask data
             tblDatMsk[index][i] &= ~(0x7 << shift);

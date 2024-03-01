@@ -14,7 +14,7 @@ void SasiController::MsgOut()
     Command();
 }
 
-void SasiController::XferMsg(int)
+void SasiController::XferMsg(uint8_t)
 {
     assert(false);
 }
