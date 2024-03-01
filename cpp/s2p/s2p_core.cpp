@@ -432,6 +432,8 @@ void S2p::ProcessScsiCommands()
 
 bool S2p::ExecuteCommand(CommandContext &context)
 {
+    context.SetLocale(GetParam(context.GetCommand(), "locale"));
+
     if (!access_token.empty() && access_token != GetParam(context.GetCommand(), "token")) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_AUTHENTICATION, UNAUTHORIZED);
     }

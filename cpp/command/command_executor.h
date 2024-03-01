@@ -46,7 +46,7 @@ public:
     string SetReservedIds(string_view);
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
     string PrintCommand(const PbCommand&, const PbDeviceDefinition&) const;
-    string EnsureLun0(const PbCommand&) const;
+    bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
     bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;

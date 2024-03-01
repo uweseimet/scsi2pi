@@ -19,6 +19,12 @@ bool RpiBus::Init(bool target)
 {
     Bus::Init(target);
 
+    int fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (fd == -1) {
+        critical("Root permissions are required");
+        return false;
+    }
+
     uint32_t base_addr = 0;
     switch (pi_type) {
     case RpiBus::PiType::pi_1:
@@ -37,12 +43,6 @@ bool RpiBus::Init(bool target)
     default:
         assert(false);
         break;
-    }
-
-    int fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (fd == -1) {
-        critical("Root permissions are required");
-        return false;
     }
 
     // Map peripheral region memory
@@ -114,19 +114,14 @@ bool RpiBus::Init(bool target)
 
     // Set pull up/pull down
 #if SIGNAL_CONTROL_MODE == 0
-    int pullmode = GPIO_PULLNONE;
+    constexpr int pull_mode = GPIO_PULLNONE;
 #elif SIGNAL_CONTROL_MODE == 1
-    int pullmode = GPIO_PULLUP;
+    constexpr int pull_mode = GPIO_PULLUP;
 #else
-    int pullmode = GPIO_PULLDOWN;
+    constexpr int pull_mode = GPIO_PULLDOWN;
 #endif
 
-    // Initialize all signals
-    for (const int signal : SignalTable) {
-        PinSetSignal(signal, false);
-        PinConfig(signal, GPIO_INPUT);
-        PullConfig(signal, pullmode);
-    }
+    InitializeSignals(pull_mode);
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
@@ -206,12 +201,7 @@ void RpiBus::CleanUp()
     PinConfig(PIN_IND, GPIO_INPUT);
     PinConfig(PIN_DTD, GPIO_INPUT);
 
-    // Initialize all signals
-    for (const int signal : SignalTable) {
-        PinSetSignal(signal, false);
-        PinConfig(signal, GPIO_INPUT);
-        PullConfig(signal, GPIO_PULLNONE);
-    }
+    InitializeSignals(GPIO_PULLNONE);
 
     // Set drive strength back to 8mA
     SetSignalDriveStrength(3);
@@ -223,7 +213,7 @@ void RpiBus::Reset()
     SetControl(PIN_ACT, false);
 
     // Set all signals to off
-    for (const int signal : SignalTable) {
+    for (const int signal : SIGNAL_TABLE) {
         SetSignal(signal, false);
     }
 
@@ -257,6 +247,15 @@ void RpiBus::Reset()
 
     // Initialize all signals
     signals = 0;
+}
+
+void RpiBus::InitializeSignals(int pull_mode)
+{
+    for (const int signal : SIGNAL_TABLE) {
+        PinSetSignal(signal, false);
+        PinConfig(signal, GPIO_INPUT);
+        PullConfig(signal, pull_mode);
+    }
 }
 
 bool RpiBus::WaitForSelection()
@@ -313,16 +312,15 @@ void RpiBus::SetBSY(bool state)
 
 void RpiBus::SetSEL(bool state)
 {
-    if (!IsTarget() && state) {
-        SetControl(PIN_ACT, true);
-    }
+    assert(!IsTarget());
 
+    SetControl(PIN_ACT, state);
     SetSignal(PIN_SEL, state);
 }
 
 bool RpiBus::GetIO()
 {
-    bool state = GetSignal(PIN_IO);
+    const bool state = GetSignal(PIN_IO);
 
     if (!IsTarget()) {
         // Change the data input/output direction by IO signal
@@ -415,17 +413,14 @@ void RpiBus::SetDAT(uint8_t dat)
 #endif
 }
 
-constexpr array<int, 19> RpiBus::SignalTable = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
-    PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
-
 void RpiBus::CreateWorkTable(void)
 {
-    constexpr array<int, 9> pintbl = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
+    constexpr array<int, 9> pins = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
 
     array<bool, 256> tblParity;
 
     // Create parity table
-    for (uint32_t i = 0; i < 256; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; j++) {
@@ -445,7 +440,7 @@ void RpiBus::CreateWorkTable(void)
         tbl.fill(0);
     }
 
-    for (uint32_t i = 0; i < 256; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -455,10 +450,10 @@ void RpiBus::CreateWorkTable(void)
         }
 
         // Bit check
-        for (int j = 0; j < 9; j++) {
+        for (int j = 0; j < static_cast<int>(pins.size()); j++) {
             // Index and shift amount calculation
-            int index = pintbl[j] / 10;
-            int shift = (pintbl[j] % 10) * 3;
+            int index = pins[j] / 10;
+            int shift = (pins[j] % 10) * 3;
 
             // Mask data
             tblDatMsk[index][i] &= ~(0x7 << shift);
@@ -472,7 +467,7 @@ void RpiBus::CreateWorkTable(void)
         }
     }
 #else
-    for (uint32_t i = 0; i < 256; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -489,11 +484,11 @@ void RpiBus::CreateWorkTable(void)
         // Create GPIO register information
         uint32_t gpclr = 0;
         uint32_t gpset = 0;
-        for (int j = 0; j < 9; j++) {
+        for (int j = 0; j < static_cast<int>(pins.size()); j++) {
             if (bits & 1) {
-                gpset |= (1 << pintbl[j]);
+                gpset |= (1 << pins[j]);
             } else {
-                gpclr |= (1 << pintbl[j]);
+                gpclr |= (1 << pins[j]);
             }
             bits >>= 1;
         }

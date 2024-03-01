@@ -99,7 +99,6 @@ using namespace scsi_defs;
 // Constant declarations (GPIO)
 constexpr static int GPIO_INPUT = 0;
 constexpr static int GPIO_OUTPUT = 1;
-constexpr static int GPIO_IRQ_IN = 3;
 constexpr static int GPIO_PULLNONE = 0;
 constexpr static int GPIO_PULLDOWN = 1;
 constexpr static int GPIO_PULLUP = 2;
@@ -203,7 +202,7 @@ public:
         SetSignal(PIN_RST, state);
     }
 
-    bool GetMSG() const
+    inline bool GetMSG() const
     {
         return GetSignal(PIN_MSG);
     }
@@ -213,7 +212,7 @@ public:
         SetSignal(PIN_MSG, state);
     }
 
-    bool GetCD() const
+    inline bool GetCD() const
     {
         return GetSignal(PIN_CD);
     }
@@ -225,7 +224,10 @@ public:
 
     phase_t GetPhase();
 
-    static string GetPhaseName(phase_t);
+    static string GetPhaseName(phase_t phase)
+    {
+        return phase_names[static_cast<int>(phase)];
+    }
 
     // For work-around required by the DaynaPort emulation
     static constexpr int SEND_NO_DELAY = -1;

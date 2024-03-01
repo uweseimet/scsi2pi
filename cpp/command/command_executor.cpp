@@ -118,8 +118,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    if (const string error = EnsureLun0(command); !error.empty()) {
-        return context.ReturnErrorStatus(error);
+    if (!EnsureLun0(context, command)) {
+        return false;
     }
 
     if (ranges::find_if_not(command.devices(), [&](const auto &device)
@@ -576,9 +576,9 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     return s.str();
 }
 
-string CommandExecutor::EnsureLun0(const PbCommand &command) const
+bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand &command) const
 {
-    // Mapping of available LUNs (bit vector) to devices
+    // Mapping of available LUNs (bit vector) to device IDs
     unordered_map<int32_t, int32_t> luns;
 
     // Collect LUN bit vectors of new devices
@@ -592,7 +592,9 @@ string CommandExecutor::EnsureLun0(const PbCommand &command) const
     }
 
     const auto &it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
-    return it == luns.end() ? "" : "LUN 0 is missing for device ID " + to_string((*it).first);
+    return
+        it == luns.end() ?
+            true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, to_string((*it).first));
 }
 
 bool CommandExecutor::VerifyExistingIdAndLun(const CommandContext &context, int id, int lun) const

@@ -215,6 +215,13 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_INVALID_LUN, "es", "LUN invalido %1 (0-%2)");
     Add(LocalizationKey::ERROR_INVALID_LUN, "zh", "无效的 LUN %1 (0-%2)");
 
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "en", "Missing LUN 0 for device ID %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "de", "Fehlende LUN 0 für Geräte-ID %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "sv", "Saknar LUN 0 för enhets-ID %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "fr", "LUN 0 manquant pour l'ID de périphérique %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "es", "Falta LUN 0 para la ID del dispositivo %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, "zh", "设备 ID %1 缺少 LUN 0");
+
     Add(LocalizationKey::ERROR_LUN0, "en", "LUN 0 cannot be detached as long as there is still another LUN");
     Add(LocalizationKey::ERROR_LUN0, "de", "LUN 0 kann nicht entfernt werden, solange noch eine andere LUN existiert");
     Add(LocalizationKey::ERROR_LUN0, "sv",

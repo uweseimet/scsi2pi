@@ -425,20 +425,18 @@ TEST(CommandExecutorTest, EnsureLun0)
     auto controller_factory = make_shared<ControllerFactory>();
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
+    CommandContext context(command, "", "");
 
     auto device1 = command.add_devices();
     device1->set_unit(0);
-    string error = executor->EnsureLun0(command);
-    EXPECT_TRUE(error.empty());
+    EXPECT_TRUE(executor->EnsureLun0(context, command));
 
     device1->set_unit(1);
-    error = executor->EnsureLun0(command);
-    EXPECT_FALSE(error.empty());
+    EXPECT_FALSE(executor->EnsureLun0(context, command));
 
     auto device2 = device_factory.CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 0, device2));
-    error = executor->EnsureLun0(command);
-    EXPECT_TRUE(error.empty());
+    EXPECT_TRUE(executor->EnsureLun0(context, command));
 }
 
 TEST(CommandExecutorTest, VerifyExistingIdAndLun)

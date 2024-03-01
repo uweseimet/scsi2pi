@@ -63,7 +63,7 @@ public:
         dat = d;
     }
 
-    bool GetSignal(int pin) const override;
+    bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
 
     bool WaitForSelection() override;

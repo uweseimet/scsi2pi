@@ -317,11 +317,6 @@ phase_t Bus::GetPhase()
     return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
 }
 
-string Bus::GetPhaseName(phase_t phase)
-{
-    return phase_names[static_cast<int>(phase)];
-}
-
 // Phase Table with the phases based upon the MSG, C/D and I/O signals
 //
 // |MSG|C/D|I/O| Phase
@@ -356,5 +351,5 @@ const array<string, 11> Bus::phase_names = {
     "STATUS",
     "MESSAGE IN",
     "MESSAGE OUT",
-    "RESERVED"
+    "???"
 };

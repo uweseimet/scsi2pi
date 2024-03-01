@@ -58,6 +58,8 @@ public:
 
 private:
 
+    void InitializeSignals(int);
+
     void CreateWorkTable();
 
     void SetControl(int, bool);
@@ -142,7 +144,8 @@ private:
     array<uint32_t, 256> tblDatSet = {};
 #endif
 
-    static const array<int, 19> SignalTable;
+    constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
+        PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
 
     constexpr static int ARMT_CTRL = 2;
     constexpr static int ARMT_FREERUN = 8;
