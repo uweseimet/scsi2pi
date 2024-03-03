@@ -89,7 +89,7 @@ protected:
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int, int&) const;
+    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int&) const;
     int VerifySectorSizeChange(int, bool) const;
 
     void ChangeSectorSize(uint32_t);
@@ -178,6 +178,8 @@ private:
 
     uint64_t sector_read_count = 0;
     uint64_t sector_write_count = 0;
+
+    string last_filename;
 
     inline static const string SECTOR_READ_COUNT = "sector_read_count";
     inline static const string SECTOR_WRITE_COUNT = "sector_write_count";

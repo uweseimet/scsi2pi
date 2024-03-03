@@ -50,12 +50,15 @@ void StorageDevice::ValidateFile()
     SetReady(true);
 }
 
-void StorageDevice::ReserveFile() const
+bool StorageDevice::ReserveFile() const
 {
-    assert(!filename.empty());
-    assert(!reserved_files.contains(filename.string()));
+    if (filename.empty() || reserved_files.contains(filename.string())) {
+        return false;
+    }
 
     reserved_files[filename.string()] = { GetId(), GetLun() };
+
+    return true;
 }
 
 void StorageDevice::UnreserveFile()

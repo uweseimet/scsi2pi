@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device.h"
 
 TEST(DeviceTest, GetDefaultParams)
 {

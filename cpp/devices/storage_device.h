@@ -41,7 +41,7 @@ public:
         return blocks;
     }
 
-    void ReserveFile() const;
+    bool ReserveFile() const;
     void UnreserveFile();
 
     static bool FileExists(string_view);

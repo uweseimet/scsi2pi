@@ -4,8 +4,6 @@
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
-// Abstract base class for SCSI-like controllers
-//
 //---------------------------------------------------------------------------
 
 #pragma once

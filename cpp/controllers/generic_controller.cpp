@@ -468,7 +468,7 @@ bool GenericController::XferOut(bool cont)
         }
 
         try {
-            mode_page_device->ModeSelect(GetOpcode(), GetCdb(), GetBuffer(), GetOffset());
+            mode_page_device->ModeSelect(opcode, GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());

@@ -41,7 +41,7 @@ public:
         restart_pi
     };
 
-    int GetInitiatorId()
+    int GetInitiatorId() const
     {
         return initiator_id;
     }

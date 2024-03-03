@@ -86,15 +86,15 @@ void AbstractController::ProcessOnController(int id_data)
 {
     device_logger.SetIdAndLun(GetTargetId(), -1);
 
-    const int initiator_id = ExtractInitiatorId(id_data);
-    if (initiator_id != UNKNOWN_INITIATOR_ID) {
-        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
+    const int id = ExtractInitiatorId(id_data);
+    if (id != UNKNOWN_INITIATOR_ID) {
+        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", id));
     }
     else {
         LogTrace("++++ Starting processing for unknown initiator ID");
     }
 
-    while (Process(initiator_id)) {
+    while (Process(id)) {
         // Handle bus phases until the bus is free for the next command
     }
 }

@@ -17,8 +17,8 @@ using namespace s2p_util;
 void initiator_util::ResetBus(Bus &bus)
 {
     bus.SetRST(true);
-    // 100 us should be enough, the standard requires at least 25 us
-    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 100'000 };
+    // 50 us should be enough, the specification requires at least 25 us
+    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
     nanosleep(&ts, nullptr);
     bus.Reset();
 }

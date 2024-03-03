@@ -78,18 +78,9 @@ private:
 
     int next_message = 0x80;
 
-    static constexpr long BUS_SETTLE_DELAY_NS = 400;
-    static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_SETTLE_DELAY_NS };
-
-    static constexpr long BUS_CLEAR_DELAY_NS = 800;
-    static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = BUS_CLEAR_DELAY_NS };
-
-    static constexpr long BUS_FREE_DELAY_NS = 800;
-    static constexpr timespec BUS_FREE_DELAY = { .tv_sec = 0, .tv_nsec = BUS_FREE_DELAY_NS };
-
-    static constexpr long DESKEW_DELAY_NS = 45;
-    static constexpr timespec DESKEW_DELAY = { .tv_sec = 0, .tv_nsec = DESKEW_DELAY_NS };
-
-    static constexpr long ARBITRATION_DELAY_NS = 2'400;
-    static constexpr timespec ARBITRATION_DELAY = { .tv_sec = 0, .tv_nsec = ARBITRATION_DELAY_NS };
+    static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = 400 };
+    static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = 800 };
+    static constexpr timespec BUS_FREE_DELAY = { .tv_sec = 0, .tv_nsec = 800 };
+    static constexpr timespec DESKEW_DELAY = { .tv_sec = 0, .tv_nsec = 45 };
+    static constexpr timespec ARBITRATION_DELAY = { .tv_sec = 0, .tv_nsec = 2'400 };
 };

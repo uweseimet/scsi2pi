@@ -347,6 +347,15 @@ void Disk::StartStopUnit()
             FlushCache();
         }
     }
+    else if (load && !last_filename.empty()) {
+        SetFilename(last_filename);
+        if (!ReserveFile()) {
+            last_filename.clear();
+            throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
+        }
+
+        SetMediumChanged(true);
+    }
 
     StatusPhase();
 }
@@ -390,6 +399,8 @@ bool Disk::Eject(bool force)
     if (status) {
         FlushCache();
         cache.reset();
+
+        last_filename = GetFilename();
 
         // The image file for this drive is not in use anymore
         UnreserveFile();
@@ -622,7 +633,7 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
 
     int size = GetSectorSizeInBytes();
 
-    int offset = EvaluateBlockDescriptors(cmd, buf, length, size);
+    int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
     length -= offset;
 
     map<int, vector<byte>> pages;
@@ -640,31 +651,28 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
         if (length < 2) {
             throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
         }
-        const size_t page_size = buf[offset + 1];
+
+        // The page size field does not count itself and the page code field
+        const size_t page_size = buf[offset + 1] + 2;
 
         // The page size in the parameters must match the actual page size
-        if (it->second.size() - 2 != page_size || page_size + 2 > static_cast<size_t>(length)) {
+        if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
             throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
         }
 
         switch (page_code) {
-        // Read-write error recovery page
+        // Read-write/Verify error recovery pages
         case 0x01:
+        case 0x07:
             // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
             break;
 
         // Format device page
-        case 0x03: {
+        case 0x03:
             // With this page the sector size for a subsequent FORMAT can be selected, but only a few drives
             // support this, e.g. FUJITSU M2624S.
             // We are fine as long as the permanent current sector size remains unchanged.
             VerifySectorSizeChange(GetInt16(buf, offset + 12), false);
-            break;
-        }
-
-        // Verify error recovery page
-        case 0x07:
-            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
             break;
 
         default:
@@ -672,39 +680,33 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
             break;
         }
 
-        // The page size field does not count itself and the page code field
-        length -= page_size + 2;
-        offset += page_size + 2;
+        length -= page_size;
+        offset += page_size;
     }
 
     ChangeSectorSize(size);
 }
 
-int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int &size) const
+int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int &size) const
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
-    int required_length;
-    int block_descriptor_length;
-    if (cmd == scsi_command::cmd_mode_select10) {
-        block_descriptor_length = GetInt16(buf, 6);
-        required_length = 8;
-    }
-    else {
-        block_descriptor_length = buf[3];
-        required_length = 4;
+    const size_t required_length = cmd == scsi_command::cmd_mode_select10 ? 8 : 4;
+    if (buf.size() < required_length) {
+        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
-    if (length < block_descriptor_length + required_length) {
+    const size_t descriptor_length = cmd == scsi_command::cmd_mode_select10 ? GetInt16(buf, 6) : buf[3];
+    if (buf.size() < descriptor_length + required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
     // Check for temporary sector size change in first block descriptor
-    if (block_descriptor_length && length >= required_length + 8) {
-        size = VerifySectorSizeChange(GetInt16(buf, required_length + 6), true);
+    if (descriptor_length && buf.size() >= required_length + 8) {
+        size = VerifySectorSizeChange(GetInt16(buf, static_cast<int>(required_length) + 6), true);
     }
 
-    return block_descriptor_length + required_length;
+    return static_cast<int>(descriptor_length + required_length);
 }
 
 int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const

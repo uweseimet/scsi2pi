@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "test_shared.h"
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "devices/disk.h"
@@ -193,8 +192,6 @@ TEST(DiskTest, Read6)
         asc::lba_out_of_range, "READ(6) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Read10)
@@ -204,14 +201,14 @@ TEST(DiskTest, Read10)
     TestShared::Dispatch(*disk, scsi_command::cmd_read10, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(10) must fail for a medium with 0 blocks");
 
+    EXPECT_EQ(0U, disk->GetNextSector());
+
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read10));
     EXPECT_EQ(status::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Read16)
@@ -221,15 +218,12 @@ TEST(DiskTest, Read16)
     TestShared::Dispatch(*disk, scsi_command::cmd_read16, sense_key::illegal_request,
         asc::lba_out_of_range, "READ(16) must fail for a medium with 0 blocks");
 
-
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read16));
     EXPECT_EQ(status::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Write6)
@@ -247,8 +241,6 @@ TEST(DiskTest, Write6)
         asc::write_protected, "WRITE(6) must fail because drive is write-protected");
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Write10)
@@ -264,8 +256,6 @@ TEST(DiskTest, Write10)
     EXPECT_EQ(status::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Write16)
@@ -281,8 +271,6 @@ TEST(DiskTest, Write16)
     EXPECT_EQ(status::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Verify10)
@@ -299,8 +287,6 @@ TEST(DiskTest, Verify10)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
     EXPECT_EQ(status::good, controller->GetStatus());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, Verify16)
@@ -317,8 +303,6 @@ TEST(DiskTest, Verify16)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
     EXPECT_EQ(status::good, controller->GetStatus());
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, ReadLong10)
@@ -343,8 +327,6 @@ TEST(DiskTest, ReadLong10)
     controller->SetCdbByte(7, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "READ LONG(10) must fail because it only supports a limited transfer length");
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, ReadLong16)
@@ -367,8 +349,6 @@ TEST(DiskTest, ReadLong16)
     controller->SetCdbByte(12, 55);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "READ LONG(16) must fail because it only supports a limited transfer length");
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong10)
@@ -393,8 +373,6 @@ TEST(DiskTest, WriteLong10)
     controller->SetCdbByte(7, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "WRITE LONG(10) must fail because it only supports a limited transfer length");
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, WriteLong16)
@@ -414,8 +392,6 @@ TEST(DiskTest, WriteLong16)
     controller->SetCdbByte(12, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "WRITE LONG(16) must fail because it only supports a limited transfer length");
-
-    // Further testing requires filesystem access
 }
 
 TEST(DiskTest, StartStopUnit)
@@ -444,13 +420,13 @@ TEST(DiskTest, StartStopUnit)
     disk->SetReady(false);
     EXPECT_CALL(*disk, FlushCache).Times(0);
     TestShared::Dispatch(*disk, scsi_command::cmd_start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "START/STOP must fail");
+        asc::load_or_eject_failed, "START/STOP must fail because drive is not ready");
 
     disk->SetReady(true);
     disk->SetLocked(true);
     EXPECT_CALL(*disk, FlushCache).Times(0);
     TestShared::Dispatch(*disk, scsi_command::cmd_start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "LOAD/EJECT must fail");
+        asc::load_or_eject_failed, "LOAD/EJECT must fail because drive is locked");
 
     // Start/Unload
     controller->SetCdbByte(4, 0x01);
@@ -464,6 +440,23 @@ TEST(DiskTest, StartStopUnit)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
     EXPECT_EQ(status::good, controller->GetStatus());
+
+    // Start/Load with previous medium
+    controller->SetCdbByte(4, 0x02);
+    disk->SetLocked(false);
+    disk->SetFilename("filename");
+    EXPECT_CALL(*controller, Status);
+    EXPECT_CALL(*disk, FlushCache);
+    // Eject existing medium
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_TRUE(disk->GetFilename().empty());
+    // Re-load medium
+    controller->SetCdbByte(4, 0x03);
+    EXPECT_CALL(*controller, Status);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ("filename", disk->GetFilename());
 }
 
 TEST(DiskTest, PreventAllowMediumRemoval)
@@ -643,24 +636,51 @@ TEST(DiskTest, EvaluateBlockDescriptors)
     int sector_size = 512;
     MockDisk disk;
 
-    EXPECT_THAT([&] { disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, 0, sector_size) ; },
+    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error)))) << "Parameter list is invalid";
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+        << "Parameter list is too short";
+    EXPECT_EQ(512, sector_size);
 
-    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, 0, sector_size);},
+    buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08");
+    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error)))) << "Parameter list is invalid";
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+        << "Parameter list is too short";
+    EXPECT_EQ(512, sector_size);
+
+    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, sector_size);},
+        Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+        << "Parameter list is too short";
+    EXPECT_EQ(512, sector_size);
+
+    buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04");
+    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, sector_size);},
+        Throws<scsi_exception>(AllOf(
+                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+        << "Parameter list is too short";
+    EXPECT_EQ(512, sector_size);
 
     buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08:00");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, buf.size(), sector_size));
+    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, sector_size));
     EXPECT_EQ(2048, sector_size);
-    sector_size = 512;
+
+    buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08:04");
+    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, sector_size));
+    EXPECT_EQ(2052, sector_size);
 
     buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04:00");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, buf.size(), sector_size));
+    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, sector_size));
     EXPECT_EQ(1024, sector_size);
+
+    buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:03:fc");
+    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, sector_size));
+    EXPECT_EQ(1020, sector_size);
 }
 
 TEST(DiskTest, VerifySectorSizeChange)
@@ -698,9 +718,8 @@ TEST(DiskTest, VerifySectorSizeChange)
 TEST(DiskTest, ReadData)
 {
     MockDisk disk;
-    vector<uint8_t> buf;
 
-    EXPECT_THAT([&] {disk.ReadData(buf);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.ReadData( {});}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::not_ready),
                 Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
 }
@@ -708,9 +727,8 @@ TEST(DiskTest, ReadData)
 TEST(DiskTest, WriteData)
 {
     MockDisk disk;
-    vector<uint8_t> buf;
 
-    EXPECT_THAT([&] {disk.WriteData(buf, scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.WriteData( {}, scsi_command::cmd_write6);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::not_ready),
                 Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
 }

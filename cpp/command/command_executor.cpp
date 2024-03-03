@@ -337,9 +337,12 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    storage_device->SetProtected(pb_device.protected_());
-    storage_device->ReserveFile();
+    if (!storage_device->ReserveFile()) {
+        return false;
+    }
+
     storage_device->SetMediumChanged(true);
+    storage_device->SetProtected(pb_device.protected_());
 #endif
 
     return true;

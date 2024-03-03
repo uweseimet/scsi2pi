@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/scsi.h"
 #include "shared/shared_exceptions.h"
 #include "base/device_factory.h"
 #include "base/memory_util.h"

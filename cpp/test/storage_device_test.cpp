@@ -65,6 +65,26 @@ TEST(StorageDeviceTest, MediumChanged)
     EXPECT_FALSE(device.IsMediumChanged());
 }
 
+TEST(StorageDeviceTest, ReserveUnreserveFile)
+{
+    MockStorageDevice device1;
+    MockStorageDevice device2;
+
+    device1.SetFilename("");
+    EXPECT_FALSE(device1.ReserveFile());
+    device1.SetFilename("filename1");
+    EXPECT_TRUE(device1.ReserveFile());
+    EXPECT_FALSE(device1.ReserveFile());
+    device2.SetFilename("filename1");
+    EXPECT_FALSE(device2.ReserveFile());
+    device2.SetFilename("filename2");
+    EXPECT_TRUE(device2.ReserveFile());
+    device1.UnreserveFile();
+    EXPECT_TRUE(device1.GetFilename().empty());
+    device2.UnreserveFile();
+    EXPECT_TRUE(device2.GetFilename().empty());
+}
+
 TEST(StorageDeviceTest, GetIdsForReservedFile)
 {
     const int ID = 1;
