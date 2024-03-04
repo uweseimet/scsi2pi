@@ -12,6 +12,7 @@
 #include "primary_device.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 bool PrimaryDevice::Init(const param_map &params)
 {
@@ -229,20 +230,17 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
 
-    // Set 18 bytes including extended sense data
-
+    // 18 bytes including extended sense data
     vector<byte> buf(18);
 
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)(sense_key);
-    buf[7] = (byte)10;
-    buf[12] = (byte)(asc);
+    buf[2] = (byte)sense_key;
+    buf[7] = byte { 10 };
+    buf[12] = (byte)asc;
 
-    LogTrace(
-        fmt::format("Status ${0:02x}, Sense Key ${1:02x}, ASC ${2:02x}", static_cast<int>(GetController()->GetStatus()),
-            static_cast<int>(buf[2]), static_cast<int>(buf[12])));
+    LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
 
     return buf;
 }
@@ -251,31 +249,17 @@ void PrimaryDevice::ReserveUnit()
 {
     reserving_initiator = GetController()->GetInitiatorId();
 
-    if (reserving_initiator != -1) {
-        LogTrace(fmt::format("Reserved device for initiator ID {}", reserving_initiator));
-    }
-    else {
-        LogTrace("Reserved device for unknown initiator");
-    }
-
     StatusPhase();
 }
 
 void PrimaryDevice::ReleaseUnit()
 {
-    if (reserving_initiator != -1) {
-        LogTrace(fmt::format("Released device reserved by initiator ID {}", reserving_initiator));
-    }
-    else {
-        LogTrace("Released device reserved by unknown initiator");
-    }
-
     DiscardReservation();
 
     StatusPhase();
 }
 
-bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool prevent_removal) const
+bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd) const
 {
     if (reserving_initiator == NOT_RESERVED || reserving_initiator == initiator_id) {
         return true;
@@ -288,7 +272,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool pr
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !prevent_removal) {
+    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetController()->GetCdbByte(4) & 0x01)) {
         return true;
     }
 

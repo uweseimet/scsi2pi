@@ -62,7 +62,7 @@ void InProcessBus::SetSignal(int pin, bool state)
 bool InProcessBus::WaitForSelection()
 {
     // Busy waiting cannot be avoided
-    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
     nanosleep(&ts, nullptr);
 
     return true;

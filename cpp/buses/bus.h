@@ -192,7 +192,7 @@ public:
         SetSignal(PIN_ACK, state);
     }
 
-    bool GetRST() const
+    inline bool GetRST() const
     {
         return GetSignal(PIN_RST);
     }

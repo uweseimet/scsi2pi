@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include <chrono>
+#include <spdlog/spdlog.h>
 #include "bus_factory.h"
 
 using namespace scsi_defs;
@@ -121,7 +122,7 @@ int Bus::MsgInHandShake()
     WaitBusSettle();
     EnableIRQ();
 
-    const uint8_t msg = GetDAT();
+    const int msg = GetDAT();
 
     SetACK(true);
 
@@ -202,7 +203,11 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
 }
 
 // Handshake for DATA OUT and MESSAGE OUT
+#ifdef BUILD_SCDP
 int Bus::SendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes)
+#else
+int Bus::SendHandShake(const uint8_t *buf, int count, int)
+#endif
 {
     int bytes_sent;
 
@@ -210,12 +215,14 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_
 
     if (target_mode) {
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
+#ifdef BUILD_SCDP
             if (bytes_sent == daynaport_delay_after_bytes) {
+                const timespec ts = { .tv_sec = 0, .tv_nsec = SCSI_DELAY_SEND_DATA_DAYNAPORT_NS };
                 EnableIRQ();
-                constexpr timespec ts = { .tv_sec = 0, .tv_nsec = SCSI_DELAY_SEND_DATA_DAYNAPORT_NS };
                 nanosleep(&ts, nullptr);
                 DisableIRQ();
             }
+#endif
 
             SetDAT(*buf);
 
@@ -292,11 +299,13 @@ bool Bus::WaitSignal(int pin, bool state)
             return true;
         }
 
-        // Abort on a reset
         if (GetRST()) {
+            spdlog::warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
             return false;
         }
     } while ((chrono::duration_cast < chrono::seconds > (chrono::steady_clock::now() - now).count()) < 3);
+
+    spdlog::trace("Timeout while waiting for ACK/REQ to change to {}", state ? "true" : "false");
 
     return false;
 }

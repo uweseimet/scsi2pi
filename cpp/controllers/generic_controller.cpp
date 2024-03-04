@@ -101,7 +101,7 @@ void GenericController::Command()
         }
 
         const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
-        assert(command_bytes_count <= 16);
+        assert(command_bytes_count && command_bytes_count <= 16);
 
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
@@ -151,7 +151,7 @@ void GenericController::Execute()
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
-    if (device->CheckReservation(GetInitiatorId(), opcode, GetCdbByte(4) & 0x01)) {
+    if (device->CheckReservation(GetInitiatorId(), opcode)) {
         try {
             device->Dispatch(opcode);
 
@@ -172,13 +172,8 @@ void GenericController::Execute()
 void GenericController::Status()
 {
     if (!IsStatus()) {
-        if (const auto &it_status = STATUS_MAPPING.find(GetStatus()); it_status != STATUS_MAPPING.end()) {
-            LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", it_status->second,
+        LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
                 static_cast<int>(GetStatus())));
-        }
-        else {
-            LogTrace(fmt::format("Status phase, status code is ${:02x}", static_cast<int>(GetStatus())));
-        }
 
         SetPhase(phase_t::status);
 
@@ -363,7 +358,7 @@ void GenericController::Receive()
         }
         // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
         else if (IsDataOut() && !GetOffset() && l < 256 && get_level() == level::trace) {
-            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", l, FormatBytes(GetBuffer(), l)));
+            LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", l, FormatBytes(GetBuffer(), l)));
         }
     }
 
@@ -410,7 +405,6 @@ void GenericController::Receive()
 
     default:
         error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
-        assert(false);
         break;
     }
 }

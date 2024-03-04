@@ -34,9 +34,7 @@ PbCachingMode protobuf_util::ParseCachingMode(const string &value)
     string v = value;
     ranges::replace(v, '-', '_');
 
-    string m;
-    ranges::transform(v, back_inserter(m), ::toupper);
-    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
+    if (PbCachingMode mode; PbCachingMode_Parse(ToUpper(v), &mode)) {
         return mode;
     }
 

@@ -86,10 +86,10 @@ TEST(PrimaryDeviceTest, Reset)
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for initiator ID 1";
     device->Reset();
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved anymore for initiator ID 1";
 }
 
@@ -97,27 +97,28 @@ TEST(PrimaryDeviceTest, CheckReservation)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved for initiator ID 0";
 
     controller->SetInitiatorId(0);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(0, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved for initiator ID 0";
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for initiator ID 1";
-    EXPECT_FALSE(device->CheckReservation(-1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(-1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for unknown initiator";
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_inquiry, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_inquiry))
         << "Device must not be reserved for INQUIRY";
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_request_sense, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_request_sense))
         << "Device must not be reserved for REQUEST SENSE";
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_release6, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_release6))
         << "Device must not be reserved for RELEASE (6)";
 
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_prevent_allow_medium_removal, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_prevent_allow_medium_removal ))
         << "Device must not be reserved for PREVENT ALLOW MEDIUM REMOVAL with prevent bit not set";
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_prevent_allow_medium_removal, true))
+    controller->SetCdbByte(4, 0x01);
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_prevent_allow_medium_removal))
         << "Device must be reserved for PREVENT ALLOW MEDIUM REMOVAL with prevent bit set";
 }
 
@@ -126,19 +127,19 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for initiator ID 1";
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_release6));
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved anymore for initiator ID 1";
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for unknown initiator";
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_release6));
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved anymore for unknown initiator";
 }
 
@@ -147,10 +148,10 @@ TEST(PrimaryDeviceTest, DiscardReservation)
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_FALSE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must be reserved for initiator ID 1";
     EXPECT_NO_THROW(device->DiscardReservation());
-    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready, false))
+    EXPECT_TRUE(device->CheckReservation(1, scsi_command::cmd_test_unit_ready))
         << "Device must not be reserved anymore for initiator ID 1";
 }
 
