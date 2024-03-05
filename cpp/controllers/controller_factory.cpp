@@ -6,22 +6,15 @@
 //
 //---------------------------------------------------------------------------
 
-#include "scsi_controller.h"
-#include "sasi_controller.h"
+#include "controller.h"
 #include "controller_factory.h"
 
 using namespace std;
 
 shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int id) const
 {
-    shared_ptr<AbstractController> controller;
-    if (is_sasi) {
-        controller = make_shared<SasiController>(bus, id, GetSasiLunMax());
-    }
-    else {
-        controller = make_shared<ScsiController>(bus, id, GetScsiLunMax());
-    }
-
+    shared_ptr<AbstractController> controller = make_shared<Controller>(bus, id,
+        is_sasi ? GetSasiLunMax() : GetScsiLunMax());
     controller->Init();
 
     return controller;

@@ -10,44 +10,51 @@
 
 #include "abstract_controller.h"
 
-class GenericController : public AbstractController
+class Controller : public AbstractController
 {
 
 public:
 
     using AbstractController::AbstractController;
-    ~GenericController() override = default;
+    ~Controller() override = default;
 
     bool Process(int) override;
 
     void Error(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information,
         scsi_defs::status status = scsi_defs::status::check_condition) override;
+    void Reset() override;
 
     void BusFree() override;
     void Selection() override;
     void Command() override;
     void MsgIn() override;
+    void MsgOut() override;
     void Status() override;
     void DataIn() override;
     void DataOut() override;
 
-protected:
-
-    bool XferIn(vector<uint8_t>&);
-    bool XferOut(bool);
-    void Receive();
-
-    void Execute();
-
-    virtual void ParseMessage() = 0;
-    virtual void ProcessMessage() = 0;
-    virtual void ProcessExtendedMessage() = 0;
+    int GetEffectiveLun() const override;
 
 private:
 
+    void Execute();
     void Send();
-    virtual void XferMsg(uint8_t) = 0;
+    void Receive();
+    void XferMsg(uint8_t);
+    bool XferIn(vector<uint8_t>&);
+    bool XferOut(bool);
+
+    void ParseMessage();
+    void ProcessMessage();
+    void ProcessExtendedMessage();
 
     void LogCdb() const;
+
+    // The LUN from the IDENTIFY message
+    int identified_lun = -1;
+
+    bool atn_msg = false;
+
+    vector<uint8_t> msg_bytes;
 };
 

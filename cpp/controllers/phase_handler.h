@@ -16,7 +16,6 @@ using namespace scsi_defs;
 
 class PhaseHandler
 {
-    phase_t phase = phase_t::busfree;
 
 public:
 
@@ -36,8 +35,6 @@ public:
     {
         // To be implemented by controllers supporting this phase (SCSI, but not SASI)
     }
-
-    virtual bool Process(int) = 0;
 
 protected:
 
@@ -95,6 +92,8 @@ protected:
     }
 
 private:
+
+    phase_t phase = phase_t::busfree;
 
     array<function<void()>, 11> phase_executors;
 };

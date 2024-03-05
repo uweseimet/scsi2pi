@@ -11,7 +11,7 @@
 #include <gmock/gmock.h>
 #include "command/command_executor.h"
 #include "buses/in_process_bus.h"
-#include "controllers/scsi_controller.h"
+#include "controllers/controller.h"
 #include "devices/sasi_hd.h"
 #include "devices/scsi_hd.h"
 #include "devices/scsi_cd.h"
@@ -77,14 +77,13 @@ public:
     MOCK_METHOD(void, Command, (), (override));
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
-    MOCK_METHOD(bool, Process, (int), (override));
 
     using PhaseHandler::PhaseHandler;
 };
 
 inline static const auto mock_bus = make_shared<MockBus>();
 
-class MockAbstractController : public AbstractController // NOSONAR Having many fields/methods cannot be avoided
+class MockAbstractController : public AbstractController // NOSONAR Having many methods cannot be avoided
 {
     friend class testing::TestShared;
 
@@ -187,7 +186,7 @@ public:
     ~MockAbstractController() override = default;
 };
 
-class MockScsiController : public ScsiController
+class MockScsiController : public Controller
 {
     FRIEND_TEST(ScsiControllerTest, Process);
     FRIEND_TEST(ScsiControllerTest, BusFree);
@@ -207,11 +206,11 @@ public:
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, Execute, (), ());
 
-    using ScsiController::ScsiController;
-    MockScsiController(shared_ptr<Bus> bus, int target_id) : ScsiController(*bus, target_id, 32)
+    using Controller::Controller;
+    MockScsiController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, 32)
     {
     }
-    explicit MockScsiController(shared_ptr<Bus> bus) : ScsiController(*bus, 0, 32)
+    explicit MockScsiController(shared_ptr<Bus> bus) : Controller(*bus, 0, 32)
     {
     }
     ~MockScsiController() override = default;

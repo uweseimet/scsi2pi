@@ -16,7 +16,7 @@ TEST(ScsiControllerTest, Reset)
     const int ID = 5;
 
     NiceMock<MockBus> bus;
-    auto controller = make_shared<ScsiController>(bus, ID, 32);
+    auto controller = make_shared<Controller>(bus, ID, 32);
     auto device = make_shared<MockPrimaryDevice>(0);
 
     controller->Init();

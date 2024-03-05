@@ -13,13 +13,22 @@
 #include "devices/mode_page_device.h"
 #endif
 #include "shared/shared_exceptions.h"
-#include "generic_controller.h"
+#include "controller.h"
 
 using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
-bool GenericController::Process(int id)
+void Controller::Reset()
+{
+    AbstractController::Reset();
+
+    identified_lun = -1;
+
+    atn_msg = false;
+}
+
+bool Controller::Process(int id)
 {
     GetBus().Acquire();
 
@@ -39,7 +48,7 @@ bool GenericController::Process(int id)
     return !IsBusFree();
 }
 
-void GenericController::BusFree()
+void Controller::BusFree()
 {
     if (!IsBusFree()) {
         LogTrace("BUS FREE phase");
@@ -53,6 +62,10 @@ void GenericController::BusFree()
 
         SetStatus(status::good);
 
+        identified_lun = -1;
+
+        atn_msg = false;
+
         return;
     }
 
@@ -61,7 +74,7 @@ void GenericController::BusFree()
     }
 }
 
-void GenericController::Selection()
+void Controller::Selection()
 {
     if (!IsSelection()) {
         LogTrace("SELECTION phase");
@@ -81,7 +94,7 @@ void GenericController::Selection()
     }
 }
 
-void GenericController::Command()
+void Controller::Command()
 {
     if (!IsCommand()) {
         LogTrace("COMMAND phase");
@@ -125,7 +138,7 @@ void GenericController::Command()
     }
 }
 
-void GenericController::Execute()
+void Controller::Execute()
 {
     ResetOffset();
     SetTransferSize(0, 0);
@@ -169,7 +182,7 @@ void GenericController::Execute()
     }
 }
 
-void GenericController::Status()
+void Controller::Status()
 {
     if (!IsStatus()) {
         LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
@@ -192,7 +205,7 @@ void GenericController::Status()
     Send();
 }
 
-void GenericController::MsgIn()
+void Controller::MsgIn()
 {
     if (!IsMsgIn()) {
         LogTrace("MESSAGE IN phase");
@@ -210,7 +223,34 @@ void GenericController::MsgIn()
     Send();
 }
 
-void GenericController::DataIn()
+void Controller::MsgOut()
+{
+    if (!IsMsgOut()) {
+        LogTrace("MESSAGE OUT phase");
+
+        // Process the IDENTIFY message
+        if (IsSelection()) {
+            atn_msg = true;
+            msg_bytes.clear();
+        }
+
+        SetPhase(phase_t::msgout);
+
+        GetBus().SetMSG(true);
+        GetBus().SetCD(true);
+        GetBus().SetIO(false);
+
+        ResetOffset();
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
+
+        return;
+    }
+
+    Receive();
+}
+
+void Controller::DataIn()
 {
     if (!IsDataIn()) {
         if (!GetCurrentLength()) {
@@ -233,7 +273,7 @@ void GenericController::DataIn()
     Send();
 }
 
-void GenericController::DataOut()
+void Controller::DataOut()
 {
     if (!IsDataOut()) {
         if (!GetCurrentLength()) {
@@ -256,7 +296,7 @@ void GenericController::DataOut()
     Receive();
 }
 
-void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status status)
+void Controller::Error(sense_key sense_key, asc asc, scsi_defs::status status)
 {
     GetBus().Acquire();
     if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
@@ -281,7 +321,7 @@ void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status st
     Status();
 }
 
-void GenericController::Send()
+void Controller::Send()
 {
     assert(!GetBus().GetREQ());
     assert(GetBus().GetIO());
@@ -343,7 +383,7 @@ void GenericController::Send()
     }
 }
 
-void GenericController::Receive()
+void Controller::Receive()
 {
     assert(!GetBus().GetREQ());
     assert(!GetBus().GetIO());
@@ -411,7 +451,7 @@ void GenericController::Receive()
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool GenericController::XferIn(vector<uint8_t> &buf)
+bool Controller::XferIn(vector<uint8_t> &buf)
 {
     // Limited to read commands
     switch (GetOpcode()) {
@@ -444,7 +484,7 @@ bool GenericController::XferIn(vector<uint8_t> &buf)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool GenericController::XferOut(bool cont)
+bool Controller::XferOut(bool cont)
 {
     auto device = GetDeviceForLun(GetEffectiveLun());
 
@@ -511,7 +551,90 @@ bool GenericController::XferOut(bool cont)
 }
 #pragma GCC diagnostic pop
 
-void GenericController::LogCdb() const
+void Controller::XferMsg(uint8_t msg)
+{
+    assert(IsMsgOut());
+
+    if (atn_msg) {
+        msg_bytes.emplace_back(msg);
+    }
+}
+
+void Controller::ParseMessage()
+{
+    for (const uint8_t message : msg_bytes) {
+        switch (message) {
+        case 0x01: {
+            LogTrace("Received EXTENDED MESSAGE");
+            SetCurrentLength(1);
+            SetTransferSize(1, 1);
+            // MESSSAGE REJECT
+            GetBuffer()[0] = 0x07;
+            MsgIn();
+            return;
+        }
+
+        case 0x06: {
+            LogTrace("Received ABORT message");
+            BusFree();
+            return;
+        }
+
+        case 0x0c: {
+            LogTrace("Received BUS DEVICE RESET message");
+            if (auto device = GetDeviceForLun(GetEffectiveLun()); device) {
+                device->DiscardReservation();
+            }
+            BusFree();
+            return;
+        }
+
+        default:
+            if (message >= 0x80) {
+                identified_lun = static_cast<int>(message) & 0x1f;
+                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
+            }
+            break;
+        }
+    }
+}
+
+void Controller::ProcessMessage()
+{
+    // MESSAGE OUT phase as long as ATN is asserted
+    if (GetBus().GetATN()) {
+        ResetOffset();
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
+        return;
+    }
+
+    if (atn_msg) {
+        atn_msg = false;
+        ParseMessage();
+    }
+
+    Command();
+}
+
+void Controller::ProcessExtendedMessage()
+{
+    // Completed sending response to extended message of IDENTIFY message
+    if (atn_msg) {
+        atn_msg = false;
+        Command();
+    } else {
+        BusFree();
+    }
+}
+
+int Controller::GetEffectiveLun() const
+{
+    // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
+    return identified_lun != -1 ? identified_lun : GetLun();
+}
+
+void Controller::LogCdb() const
 {
     const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",

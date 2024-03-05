@@ -86,7 +86,7 @@
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "controllers/scsi_controller.h"
+#include "controllers/controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"
 

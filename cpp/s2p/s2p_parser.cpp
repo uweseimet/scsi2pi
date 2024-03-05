@@ -21,12 +21,10 @@ void S2pParser::Banner(bool usage) const
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and\n"
-            << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
-            << "), default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and\n"
-            << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
-            << "), default LUN is 0.\n"
+            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and LUN (0-7),\n"
+            << "                              default LUN is 0.\n"
+            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
+            << "                              default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
             << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
             << "                              default is device-specific and usually SCSI-2.\n"

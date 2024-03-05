@@ -24,15 +24,6 @@ class AbstractController : public PhaseHandler
 
 public:
 
-    AbstractController(Bus&, int, int);
-    ~AbstractController() override = default;
-
-    virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
-        scsi_defs::status = scsi_defs::status::check_condition) = 0;
-    virtual void Reset();
-
-    virtual int GetEffectiveLun() const = 0;
-
     enum class shutdown_mode
     {
         none,
@@ -40,6 +31,18 @@ public:
         stop_pi,
         restart_pi
     };
+
+    AbstractController(Bus&, int, int);
+    ~AbstractController() override = default;
+
+    virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
+        scsi_defs::status = scsi_defs::status::check_condition) = 0;
+
+    virtual bool Process(int) = 0;
+
+    virtual int GetEffectiveLun() const = 0;
+
+    virtual void Reset();
 
     int GetInitiatorId() const
     {
