@@ -2,7 +2,7 @@
 //
 // SCSI target emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -34,6 +34,10 @@ public:
     void SetDefaultFolder(string_view f)
     {
         default_folder = f;
+    }
+    void SetLocale(string_view l)
+    {
+        locale = l;
     }
     bool ReadCommand();
     void WriteResult(const PbResult&) const;

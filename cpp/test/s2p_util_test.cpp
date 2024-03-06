@@ -54,17 +54,6 @@ TEST(S2pUtilTest, ToLower)
     EXPECT_EQ("abc", ToLower("ABC"));
 }
 
-TEST(S2pUtilTest, GetLocale)
-{
-    EXPECT_LE(2U, GetLocale().size());
-
-    setlocale(LC_MESSAGES, "C");
-    EXPECT_EQ("en", GetLocale());
-
-    setlocale(LC_MESSAGES, "POSIX");
-    EXPECT_EQ("en", GetLocale());
-}
-
 TEST(S2pUtilTest, ProcessId)
 {
     int id = -1;

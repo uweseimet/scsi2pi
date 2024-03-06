@@ -139,35 +139,35 @@ void GenericController::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    int lun = GetEffectiveLun();
-    if (!GetDeviceForLun(lun)) {
-        if (GetOpcode() != scsi_command::cmd_inquiry && GetOpcode() != scsi_command::cmd_request_sense) {
+    const auto opcode = GetOpcode();
+
+    auto device = GetDeviceForLun(GetEffectiveLun());
+    const bool has_lun = device != nullptr;
+
+    if (!has_lun) {
+        if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
         }
 
-        assert(GetDeviceForLun(0));
-
-        lun = 0;
+        device = GetDeviceForLun(0);
+        assert(device);
     }
-
-    // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-    if (GetOpcode() == scsi_command::cmd_inquiry && !GetDeviceForLun(lun)) {
-        GetBuffer().data()[0] = 0x7f;
-        return;
-    }
-
-    auto device = GetDeviceForLun(lun);
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (GetOpcode() != scsi_command::cmd_request_sense) {
+    if (opcode != scsi_command::cmd_request_sense) {
         SetStatus(status::good);
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
-    if (device->CheckReservation(initiator_id, GetOpcode(), GetCdbByte(4) & 0x01)) {
+    if (device->CheckReservation(GetInitiatorId(), opcode, GetCdbByte(4) & 0x01)) {
         try {
-            device->Dispatch(GetOpcode());
+            device->Dispatch(opcode);
+
+            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+            if (opcode == scsi_command::cmd_inquiry && !has_lun) {
+                GetBuffer().data()[0] = 0x7f;
+            }
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
