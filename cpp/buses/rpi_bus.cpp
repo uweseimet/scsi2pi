@@ -475,18 +475,31 @@ void RpiBus::SetREQ(bool state)
 
 inline uint8_t RpiBus::GetDAT()
 {
+#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
+    uint32_t data = Acquire();
+    data = ((data >> (PIN_DT0 - 0)) & (1 << 0)) | ((data >> (PIN_DT1 - 1)) & (1 << 1)) |
+        ((data >> (PIN_DT2 - 2)) & (1 << 2)) | ((data >> (PIN_DT3 - 3)) & (1 << 3)) |
+        ((data >> (PIN_DT4 - 4)) & (1 << 4)) | ((data >> (PIN_DT5 - 5)) & (1 << 5)) |
+        ((data >> (PIN_DT6 - 6)) & (1 << 6)) | ((data >> (PIN_DT7 - 7)) & (1 << 7));
+
+    return (uint8_t)data;
+#else
     return static_cast<uint8_t>(Acquire() >> PIN_DT0);
+#endif
 }
 
 void RpiBus::SetDAT(uint8_t dat)
 {
     // Write to port
 #if SIGNAL_CONTROL_MODE == 0
-    uint32_t fsel = gpfsel[0];
+    uint32_t fsel;
+#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
+    fsel = gpfsel[0];
     fsel &= tblDatMsk[0][dat];
     fsel |= tblDatSet[0][dat];
     gpfsel[0] = fsel;
     gpio[GPIO_FSEL_0] = fsel;
+#endif
 
     fsel = gpfsel[1];
     fsel &= tblDatMsk[1][dat];
@@ -494,11 +507,13 @@ void RpiBus::SetDAT(uint8_t dat)
     gpfsel[1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 
+#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
     fsel = gpfsel[2];
     fsel &= tblDatMsk[2][dat];
     fsel |= tblDatSet[2][dat];
     gpfsel[2] = fsel;
     gpio[GPIO_FSEL_2] = fsel;
+#endif
 #else
     gpio[GPIO_CLR_0] = tblDatMsk[dat];
     gpio[GPIO_SET_0] = tblDatSet[dat];
