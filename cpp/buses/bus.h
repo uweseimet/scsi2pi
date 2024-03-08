@@ -136,7 +136,10 @@ public:
 
     virtual void SetSEL(bool) = 0;
 
-    virtual bool GetIO() = 0;
+    virtual bool GetIO()
+    {
+        return GetSignal(PIN_IO);
+    }
     virtual void SetIO(bool) = 0;
 
     virtual uint8_t GetDAT() = 0;

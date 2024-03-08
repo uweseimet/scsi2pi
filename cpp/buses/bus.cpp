@@ -16,6 +16,8 @@ using namespace scsi_defs;
 
 bool Bus::Init(bool mode)
 {
+    static_assert(SIGNAL_CONTROL_MODE == 0 || SIGNAL_CONTROL_MODE == 2);
+
     target_mode = mode;
 
     return true;
@@ -108,7 +110,6 @@ int Bus::MsgInHandShake()
 {
     const phase_t phase = GetPhase();
 
-    // Check for timeout waiting for REQ signal
     if (!WaitSignal(PIN_REQ, true)) {
         return -1;
     }
@@ -168,7 +169,6 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
         const phase_t phase = GetPhase();
 
         for (bytes_received = 0; bytes_received < count; bytes_received++) {
-            // Check for timeout waiting for REQ signal
             if (!WaitSignal(PIN_REQ, true)) {
                 break;
             }
@@ -188,7 +188,6 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
 
             SetACK(false);
 
-            // Check for timeout waiting for REQ to clear and for unexpected phase change
             if (!req || GetPhase() != phase) {
                 break;
             }
@@ -226,7 +225,6 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
 
             SetDAT(*buf);
 
-            // Check for timeout waiting for ACK to clear
             if (!WaitSignal(PIN_ACK, false)) {
                 break;
             }
@@ -237,7 +235,6 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
 
             SetREQ(false);
 
-            // Check for timeout waiting for ACK to clear
             if (!ack) {
                 break;
             }
@@ -252,7 +249,6 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
             SetDAT(*buf);
 
-            // Check for timeout waiting for REQ to be asserted
             if (!WaitSignal(PIN_REQ, true)) {
                 break;
             }
@@ -273,7 +269,6 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
 
             SetACK(false);
 
-            // Check for timeout waiting for REQ to clear and for unexpected phase change
             if (!req || GetPhase() != phase) {
                 break;
             }

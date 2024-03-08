@@ -48,7 +48,6 @@ public:
 
     void SetSEL(bool) override;
 
-    bool GetIO() override;
     void SetIO(bool ast) override;
 
     uint8_t GetDAT() override;

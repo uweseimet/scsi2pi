@@ -114,14 +114,10 @@ bool RpiBus::Init(bool target)
 
     // Set pull up/pull down
 #if SIGNAL_CONTROL_MODE == 0
-    constexpr int pull_mode = GPIO_PULLNONE;
-#elif SIGNAL_CONTROL_MODE == 1
-    constexpr int pull_mode = GPIO_PULLUP;
+    InitializeSignals(GPIO_PULLNONE);
 #else
-    constexpr int pull_mode = GPIO_PULLDOWN;
+    InitializeSignals(GPIO_PULLDOWN);
 #endif
-
-    InitializeSignals(pull_mode);
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
@@ -155,7 +151,7 @@ bool RpiBus::Init(bool target)
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
     selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
-#if SIGNAL_CONTROL_MODE < 2
+#if SIGNAL_CONTROL_MODE == 0
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
 #else
     selevreq.eventflags = GPIOEVENT_REQUEST_RISING_EDGE;
@@ -318,38 +314,6 @@ void RpiBus::SetSEL(bool state)
     SetSignal(PIN_SEL, state);
 }
 
-bool RpiBus::GetIO()
-{
-    const bool state = GetSignal(PIN_IO);
-
-    if (!IsTarget()) {
-        // Change the data input/output direction by IO signal
-        if (state) {
-            SetControl(PIN_DTD, DTD_IN);
-            SetMode(PIN_DT0, IN);
-            SetMode(PIN_DT1, IN);
-            SetMode(PIN_DT2, IN);
-            SetMode(PIN_DT3, IN);
-            SetMode(PIN_DT4, IN);
-            SetMode(PIN_DT5, IN);
-            SetMode(PIN_DT6, IN);
-            SetMode(PIN_DT7, IN);
-        } else {
-            SetControl(PIN_DTD, DTD_OUT);
-            SetMode(PIN_DT0, OUT);
-            SetMode(PIN_DT1, OUT);
-            SetMode(PIN_DT2, OUT);
-            SetMode(PIN_DT3, OUT);
-            SetMode(PIN_DT4, OUT);
-            SetMode(PIN_DT5, OUT);
-            SetMode(PIN_DT6, OUT);
-            SetMode(PIN_DT7, OUT);
-        }
-    }
-
-    return state;
-}
-
 void RpiBus::SetIO(bool state)
 {
     assert(IsTarget());
@@ -396,7 +360,7 @@ inline uint8_t RpiBus::GetDAT()
 #endif
 }
 
-void RpiBus::SetDAT(uint8_t dat)
+inline void RpiBus::SetDAT(uint8_t dat)
 {
     // Write to port
 #if SIGNAL_CONTROL_MODE == 0
@@ -466,14 +430,18 @@ void RpiBus::CreateWorkTable(void)
 
         // Bit check
         for (const int pin : pins) {
-            // Index and shift amount calculation
-            int index = pin / 10;
-            int shift = (pin % 10) * 3;
+            // Offset of the Function Select register for this pin (3 bits per pin)
+            const int index = pin / 10;
+#if defined BOARD_STANDARD || defined BOARD_FULLSPEC
+            // Must be GPFSEL1 for standard and fullspec board
+            assert(index == 1);
+#endif
+            const int shift = (pin % 10) * 3;
 
-            // Mask data
-            tblDatMsk[index][i] &= ~(0x7 << shift);
+            // Mask data (GPIO pin is an output pin)
+            tblDatMsk[index][i] &= ~(7 << shift);
 
-            // Setting data
+            // Value (GPIO pin is set to 1)
             if (bits & 1) {
                 tblDatSet[index][i] |= (1 << shift);
             }
@@ -490,11 +458,6 @@ void RpiBus::CreateWorkTable(void)
         if (tblParity[i]) {
             bits |= (1 << 8);
         }
-
-#if SIGNAL_CONTROL_MODE == 1
-        // Negative logic is inverted
-        bits = ~bits;
-#endif
 
         // Create GPIO register information
         uint32_t gpclr = 0;
@@ -530,6 +493,7 @@ void RpiBus::SetControl(int pin, bool state)
 void RpiBus::SetMode(int pin, int mode)
 {
 #if SIGNAL_CONTROL_MODE == 0
+    // Pins are implicitly set to OUT when applying the mask
     if (mode == OUT) {
         return;
     }
@@ -539,7 +503,7 @@ void RpiBus::SetMode(int pin, int mode)
     const int shift = (pin % 10) * 3;
     assert(index <= 2);
     uint32_t data = gpfsel[index];
-    data &= ~(0x7 << shift);
+    data &= ~(7 << shift);
     if (mode == OUT) {
         data |= (1 << shift);
     }
@@ -575,13 +539,7 @@ void RpiBus::SetSignal(int pin, bool state)
     }
     gpio[index] = data;
     gpfsel[index] = data;
-#elif SIGNAL_CONTROL_MODE == 1
-    if (state) {
-        gpio[GPIO_CLR_0] = 1 << pin;
-    } else {
-        gpio[GPIO_SET_0] = 1 << pin;
-    }
-#elif SIGNAL_CONTROL_MODE == 2
+#else
     if (state) {
         gpio[GPIO_SET_0] = 1 << pin;
     } else {
@@ -727,7 +685,7 @@ inline uint32_t RpiBus::Acquire()
 {
     signals = *level;
 
-#if SIGNAL_CONTROL_MODE < 2
+#if SIGNAL_CONTROL_MODE == 0
     // Invert if negative logic (internal processing is unified to positive logic)
     signals = ~signals;
 #endif
