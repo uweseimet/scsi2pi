@@ -240,6 +240,7 @@ void RpiBus::Reset()
     SetMode(PIN_DT5, dir);
     SetMode(PIN_DT6, dir);
     SetMode(PIN_DT7, dir);
+    SetMode(PIN_DP, dir);
 
     // Initialize all signals
     signals = 0;
@@ -321,28 +322,17 @@ void RpiBus::SetIO(bool state)
     SetSignal(PIN_IO, state);
 
     // Change the data input/output direction by IO signal
-    if (state) {
-        SetControl(PIN_DTD, DTD_OUT);
-        SetDAT(0);
-        SetMode(PIN_DT0, OUT);
-        SetMode(PIN_DT1, OUT);
-        SetMode(PIN_DT2, OUT);
-        SetMode(PIN_DT3, OUT);
-        SetMode(PIN_DT4, OUT);
-        SetMode(PIN_DT5, OUT);
-        SetMode(PIN_DT6, OUT);
-        SetMode(PIN_DT7, OUT);
-    } else {
-        SetControl(PIN_DTD, DTD_IN);
-        SetMode(PIN_DT0, IN);
-        SetMode(PIN_DT1, IN);
-        SetMode(PIN_DT2, IN);
-        SetMode(PIN_DT3, IN);
-        SetMode(PIN_DT4, IN);
-        SetMode(PIN_DT5, IN);
-        SetMode(PIN_DT6, IN);
-        SetMode(PIN_DT7, IN);
-    }
+    SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
+    const int dir = state ? OUT : IN;
+    SetMode(PIN_DT0, dir);
+    SetMode(PIN_DT1, dir);
+    SetMode(PIN_DT2, dir);
+    SetMode(PIN_DT3, dir);
+    SetMode(PIN_DT4, dir);
+    SetMode(PIN_DT5, dir);
+    SetMode(PIN_DT6, dir);
+    SetMode(PIN_DT7, dir);
+    SetMode(PIN_DP, dir);
 }
 
 inline uint8_t RpiBus::GetDAT()
