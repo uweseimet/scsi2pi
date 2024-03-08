@@ -124,6 +124,7 @@ private:
     volatile uint32_t *gicc_mpr = nullptr;
 
     // RAM copy of GPFSEL0-2  values (GPIO Function Select)
+    // Reading the current data from the copy is faster than directly reading them from the ports
     array<uint32_t, 3> gpfsel;
 
     // All bus signals
