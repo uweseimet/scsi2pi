@@ -253,6 +253,7 @@ void RpiBus::Reset()
         SetMode(PIN_DT5, IN);
         SetMode(PIN_DT6, IN);
         SetMode(PIN_DT7, IN);
+        SetMode(PIN_DP, IN);
     } else {
         // Set the initiator signal to output
         SetControl(PIN_IND, IND_OUT);
@@ -271,6 +272,7 @@ void RpiBus::Reset()
         SetMode(PIN_DT5, OUT);
         SetMode(PIN_DT6, OUT);
         SetMode(PIN_DT7, OUT);
+        SetMode(PIN_DP, OUT);
     }
 
     // Initialize all signals
@@ -416,6 +418,7 @@ bool RpiBus::GetIO()
             SetMode(PIN_DT5, IN);
             SetMode(PIN_DT6, IN);
             SetMode(PIN_DT7, IN);
+            SetMode(PIN_DP, IN);
         } else {
             SetControl(PIN_DTD, DTD_OUT);
             SetMode(PIN_DT0, OUT);
@@ -426,6 +429,7 @@ bool RpiBus::GetIO()
             SetMode(PIN_DT5, OUT);
             SetMode(PIN_DT6, OUT);
             SetMode(PIN_DT7, OUT);
+            SetMode(PIN_DP, OUT);
         }
     }
 
@@ -450,6 +454,7 @@ void RpiBus::SetIO(bool state)
         SetMode(PIN_DT5, OUT);
         SetMode(PIN_DT6, OUT);
         SetMode(PIN_DT7, OUT);
+        SetMode(PIN_DP, OUT);
     } else {
         SetControl(PIN_DTD, DTD_IN);
         SetMode(PIN_DT0, IN);
@@ -460,6 +465,7 @@ void RpiBus::SetIO(bool state)
         SetMode(PIN_DT5, IN);
         SetMode(PIN_DT6, IN);
         SetMode(PIN_DT7, IN);
+        SetMode(PIN_DP, IN);
     }
 }
 
