@@ -219,9 +219,6 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    // If no filename was provided the medium is considered not inserted
-    device->SetRemoved(device->SupportsFile() ? filename.empty() : false);
-
     if (!SetProductData(context, pb_device, *device)) {
         return false;
     }
@@ -233,6 +230,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #ifdef BUILD_DISK
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
+        // If no filename was provided the medium is considered not inserted
+        device->SetRemoved(filename.empty());
+
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
             disk->SetCachingMode(caching_mode);
@@ -284,15 +284,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     SetUpDeviceProperties(context, device);
 
-    string msg = "Attached ";
-    if (device->IsReadOnly()) {
-        msg += "read-only ";
-    }
-    else if (device->IsProtectable() && device->IsProtected()) {
-        msg += "protected ";
-    }
-    msg += GetIdentifier(*device);
-    info(msg);
+    DisplayDeviceInfo(*device);
 
     return true;
 }
@@ -423,6 +415,19 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", Join(p, ":"));
     }
+}
+
+void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device)
+{
+    string msg = "Attached ";
+    if (device.IsReadOnly()) {
+        msg += "read-only ";
+    }
+    else if (device.IsProtectable() && device.IsProtected()) {
+        msg += "protected ";
+    }
+    msg += GetIdentifier(device);
+    info(msg);
 }
 
 string CommandExecutor::SetReservedIds(string_view ids)

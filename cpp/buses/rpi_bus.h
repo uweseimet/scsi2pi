@@ -26,7 +26,8 @@ public:
         pi_1 = 1,
         pi_2 = 2,
         pi_3 = 3,
-        pi_4 = 4
+        pi_4 = 4,
+        pi_5 = 5
     };
 
     explicit RpiBus(PiType t) : pi_type(t)
@@ -136,8 +137,8 @@ private:
     // Data mask table
     array<array<uint32_t, 256>, 3> tblDatMsk;
     // Data setting table
-    array<array<uint32_t, 256>, 3> tblDatSet;
-    #else
+    array<array<uint32_t, 256>, 3> tblDatSet = { };
+#else
     // Data mask table
     array<uint32_t, 256> tblDatMsk = {};
     // Table setting table
@@ -169,6 +170,7 @@ private:
     constexpr static uint32_t IRPT_OFFSET = 0x0000B200;
     constexpr static uint32_t PADS_OFFSET = 0x00100000;
     constexpr static uint32_t GPIO_OFFSET = 0x00200000;
+    constexpr static uint32_t GPIO_OFFSET_PI5 = 0x000d0000;
     constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
     constexpr static uint32_t PI4_ARM_GICC_BASE = 0xFF842000;

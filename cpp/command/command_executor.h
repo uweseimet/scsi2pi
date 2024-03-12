@@ -68,6 +68,8 @@ public:
 
 private:
 
+    static void DisplayDeviceInfo(const PrimaryDevice&);
+
     static string GetIdentifier(const Device &device)
     {
         return device.GetTypeString() + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());

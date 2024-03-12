@@ -25,7 +25,8 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
-    uint32_t base_addr = 0;
+    off_t base_addr = 0;
+    uint32_t gpio_offset = GPIO_OFFSET;
     switch (pi_type) {
     case RpiBus::PiType::pi_1:
         base_addr = 0x20000000;
@@ -38,6 +39,11 @@ bool RpiBus::Init(bool target)
 
     case RpiBus::PiType::pi_4:
         base_addr = 0xfe000000;
+        break;
+
+    case RpiBus::PiType::pi_5:
+        base_addr = 0x1f00000000;
+        gpio_offset = GPIO_OFFSET_PI5;
         break;
 
     default:
@@ -66,10 +72,10 @@ bool RpiBus::Init(bool target)
     //  0x000000004: CORE
 
     // Get the core frequency
-    constexpr array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
+    const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        timer_core_freq = maxclock[6] / 1000000;
+        timer_core_freq = maxclock[6] / 1'000'000;
         close(vcio_fd);
     }
     else {
@@ -83,7 +89,7 @@ bool RpiBus::Init(bool target)
     armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
-    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
+    gpio = map + gpio_offset / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
@@ -129,8 +135,6 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_IND, GPIO_OUTPUT);
     PinConfig(PIN_DTD, GPIO_OUTPUT);
 
-    // Set the ENABLE signal
-    // This is used to show that the application is running
     PinSetSignal(PIN_ENB, ENB_OFF);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
@@ -173,7 +177,7 @@ bool RpiBus::Init(bool target)
 
     CreateWorkTable();
 
-    // Enable ENABLE in ordert to show the user that s2p is running
+    // Enable ENABLE in order to show the user that s2p is running
     SetControl(PIN_ENB, ENB_ON);
 
     return true;
@@ -352,16 +356,20 @@ inline uint8_t RpiBus::GetDAT()
 
 inline void RpiBus::SetDAT(uint8_t dat)
 {
-    // Write to port
 #if SIGNAL_CONTROL_MODE == 0
-    uint32_t fsel;
-#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
-    fsel = gpfsel[0];
+#if defined BOARD_STANDARD || defined BOARD_FULLSPEC
+    uint32_t fsel = gpfsel[1];
+    // Mask for the DT0-DT7 and DP pins
+    fsel &= 0b11111000000000000000000000000000;
+    fsel |= tblDatSet[1][dat];
+    gpfsel[1] = fsel;
+    gpio[GPIO_FSEL_1] = fsel;
+#else
+    uint32_t fsel = gpfsel[0];
     fsel &= tblDatMsk[0][dat];
     fsel |= tblDatSet[0][dat];
     gpfsel[0] = fsel;
     gpio[GPIO_FSEL_0] = fsel;
-#endif
 
     fsel = gpfsel[1];
     fsel &= tblDatMsk[1][dat];
@@ -369,7 +377,6 @@ inline void RpiBus::SetDAT(uint8_t dat)
     gpfsel[1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 
-#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
     fsel = gpfsel[2];
     fsel &= tblDatMsk[2][dat];
     fsel |= tblDatSet[2][dat];
@@ -401,12 +408,9 @@ void RpiBus::CreateWorkTable(void)
     }
 
 #if SIGNAL_CONTROL_MODE == 0
-    // Mask and setting data generation
+    // Mask data defaults
     for (auto &tbl : tblDatMsk) {
         tbl.fill(-1);
-    }
-    for (auto &tbl : tblDatSet) {
-        tbl.fill(0);
     }
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
@@ -423,7 +427,7 @@ void RpiBus::CreateWorkTable(void)
             // Offset of the Function Select register for this pin (3 bits per pin)
             const int index = pin / 10;
 #if defined BOARD_STANDARD || defined BOARD_FULLSPEC
-            // Must be GPFSEL1 for standard and fullspec board
+            // Must always be GPFSEL1 for standard and fullspec board
             assert(index == 1);
 #endif
             const int shift = (pin % 10) * 3;
@@ -474,10 +478,10 @@ void RpiBus::SetControl(int pin, bool state)
 
 //---------------------------------------------------------------------------
 //
-//	Input/output mode setting
+// Input/output mode setting
 //
 // Set direction fo pin (IN / OUT)
-//   Used with: TAD, BSY, MSG, CD, REQ, O, SEL, IND, ATN, ACK, RST, DT*
+//   Used with: TAD, BSY, MSG, CD, REQ, I/O, SEL, IND, ATN, ACK, RST, DT*
 //
 //---------------------------------------------------------------------------
 void RpiBus::SetMode(int pin, int mode)
@@ -509,10 +513,10 @@ inline bool RpiBus::GetSignal(int pin) const
 
 //---------------------------------------------------------------------------
 //
-//	Set output signal value
+// Set output signal value
 //
-//  Sets the output value. Used with:
-//     PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
+// Sets the output value. Used with:
+//   PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
 //
 //---------------------------------------------------------------------------
 void RpiBus::SetSignal(int pin, bool state)
@@ -590,7 +594,7 @@ void RpiBus::EnableIRQ()
 
 //---------------------------------------------------------------------------
 //
-//	Pin direction setting (input/output)
+// Pin direction setting (input/output)
 //
 // Used in Init() for ACT, TAD, IND, DTD, ENB to set direction (GPIO_OUTPUT vs GPIO_INPUT)
 // Also used on SignalTable
