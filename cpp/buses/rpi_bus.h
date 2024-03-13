@@ -49,7 +49,8 @@ public:
 
     void SetSEL(bool) override;
 
-    void SetIO(bool ast) override;
+    bool GetIO() override;
+    void SetIO(bool) override;
 
     uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
@@ -169,9 +170,10 @@ private:
 
     constexpr static uint32_t IRPT_OFFSET = 0x0000B200;
     constexpr static uint32_t PADS_OFFSET = 0x00100000;
+    constexpr static uint32_t PADS_OFFSET_PI5 = 0x000f0000;
     constexpr static uint32_t GPIO_OFFSET = 0x00200000;
     constexpr static uint32_t GPIO_OFFSET_PI5 = 0x000d0000;
     constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
-    constexpr static uint32_t PI4_ARM_GICC_BASE = 0xFF842000;
+    constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
 };

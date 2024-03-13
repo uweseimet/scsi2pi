@@ -27,6 +27,7 @@ bool RpiBus::Init(bool target)
 
     off_t base_addr = 0;
     uint32_t gpio_offset = GPIO_OFFSET;
+    uint32_t pads_offset = PADS_OFFSET;
     switch (pi_type) {
     case RpiBus::PiType::pi_1:
         base_addr = 0x20000000;
@@ -44,6 +45,7 @@ bool RpiBus::Init(bool target)
     case RpiBus::PiType::pi_5:
         base_addr = 0x1f00000000;
         gpio_offset = GPIO_OFFSET_PI5;
+        pads_offset = PADS_OFFSET_PI5;
         break;
 
     default:
@@ -93,17 +95,17 @@ bool RpiBus::Init(bool target)
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = map + PADS_OFFSET / sizeof(uint32_t);
+    pads = map + pads_offset / sizeof(uint32_t);
 
-    // Interrupt controller
+    // Interrupt controller (Pi 1)
     irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
 
-    // Quad-A7 control
+    // Quad-A7 control (Pi 2/3)
     qa7_regs = map + QA7_OFFSET / sizeof(uint32_t);
 
     // Map GIC interrupt priority mask register
     if (pi_type == PiType::pi_4) {
-        gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_BASE));
+        gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR));
         if (gicc_mpr == MAP_FAILED) {
             critical("Can't map GIC: {}", strerror(errno));
             close(fd);
@@ -317,6 +319,38 @@ void RpiBus::SetSEL(bool state)
 
     SetControl(PIN_ACT, state);
     SetSignal(PIN_SEL, state);
+}
+
+bool RpiBus::GetIO()
+{
+    const bool state = GetSignal(PIN_IO);
+
+    if (!IsTarget()) {
+        // Change the data input/output direction by IO signal
+        if (state) {
+            SetControl(PIN_DTD, DTD_IN);
+            SetMode(PIN_DT0, IN);
+            SetMode(PIN_DT1, IN);
+            SetMode(PIN_DT2, IN);
+            SetMode(PIN_DT3, IN);
+            SetMode(PIN_DT4, IN);
+            SetMode(PIN_DT5, IN);
+            SetMode(PIN_DT6, IN);
+            SetMode(PIN_DT7, IN);
+        } else {
+            SetControl(PIN_DTD, DTD_OUT);
+            SetMode(PIN_DT0, OUT);
+            SetMode(PIN_DT1, OUT);
+            SetMode(PIN_DT2, OUT);
+            SetMode(PIN_DT3, OUT);
+            SetMode(PIN_DT4, OUT);
+            SetMode(PIN_DT5, OUT);
+            SetMode(PIN_DT6, OUT);
+            SetMode(PIN_DT7, OUT);
+        }
+    }
+
+    return state;
 }
 
 void RpiBus::SetIO(bool state)
@@ -546,12 +580,11 @@ void RpiBus::DisableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_4:
-        // RPI4 disables interrupts via the GIC
-        gicc_pmr_saved = *gicc_mpr;
-        *gicc_mpr = 0;
+    case PiType::pi_1:
+        // Stop system timer interrupt with interrupt controller
+        irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
+        irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
         break;
-
     case PiType::pi_2:
     case PiType::pi_3:
         // RPI2,3 disable core timer IRQ
@@ -560,10 +593,14 @@ void RpiBus::DisableIRQ()
         qa7_regs[tint_core] = 0;
         break;
 
+    case PiType::pi_4:
+        // RPI4 disables interrupts via the GIC
+        gicc_pmr_saved = *gicc_mpr;
+        *gicc_mpr = 0;
+        break;
+
     default:
-        // Stop system timer interrupt with interrupt controller
-        irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
-        irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
+        // Currently do nothing
         break;
     }
 #endif
@@ -573,9 +610,9 @@ void RpiBus::EnableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_4:
-        // RPI4 enables interrupts via the GIC
-        *gicc_mpr = gicc_pmr_saved;
+    case PiType::pi_1:
+        // Restart the system timer interrupt with the interrupt controller
+        irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
         break;
 
     case PiType::pi_2:
@@ -584,9 +621,13 @@ void RpiBus::EnableIRQ()
         qa7_regs[tint_core] = tint_ctl;
         break;
 
+    case PiType::pi_4:
+        // RPI4 enables interrupts via the GIC
+        *gicc_mpr = gicc_pmr_saved;
+        break;
+
     default:
-        // Restart the system timer interrupt with the interrupt controller
-        irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
+        // Currently do nothing
         break;
     }
 #endif
@@ -608,7 +649,7 @@ void RpiBus::PinConfig(int pin, int mode)
     }
 
     const int index = pin / 10;
-    uint32_t mask = ~(0x7 << ((pin % 10) * 3));
+    uint32_t mask = ~(7 << ((pin % 10) * 3));
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
@@ -620,15 +661,11 @@ void RpiBus::PullConfig(int pin, int mode)
         return;
     }
 
-    if (pi_type == PiType::pi_4) {
+    if (pi_type == PiType::pi_4 || pi_type == PiType::pi_5) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:
             pull = 0;
-            break;
-
-        case GPIO_PULLUP:
-            pull = 1;
             break;
 
         case GPIO_PULLDOWN:
@@ -636,6 +673,7 @@ void RpiBus::PullConfig(int pin, int mode)
             break;
 
         default:
+            assert(false);
             return;
         }
 
@@ -652,7 +690,7 @@ void RpiBus::PullConfig(int pin, int mode)
         pin &= 0x1f;
         gpio[GPIO_PUD] = mode & 0x3;
         nanosleep(&ts, nullptr);
-        gpio[GPIO_CLK_0] = 0x1 << pin;
+        gpio[GPIO_CLK_0] = 1 << pin;
         nanosleep(&ts, nullptr);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;

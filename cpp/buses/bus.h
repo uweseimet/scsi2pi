@@ -101,7 +101,6 @@ constexpr static int GPIO_INPUT = 0;
 constexpr static int GPIO_OUTPUT = 1;
 constexpr static int GPIO_PULLNONE = 0;
 constexpr static int GPIO_PULLDOWN = 1;
-constexpr static int GPIO_PULLUP = 2;
 
 // Constant declarations (Control signals)
 #define ACT_OFF !ACT_ON
@@ -136,10 +135,7 @@ public:
 
     virtual void SetSEL(bool) = 0;
 
-    virtual bool GetIO()
-    {
-        return GetSignal(PIN_IO);
-    }
+    virtual bool GetIO() = 0;
     virtual void SetIO(bool) = 0;
 
     virtual uint8_t GetDAT() = 0;

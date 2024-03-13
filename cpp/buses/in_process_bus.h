@@ -44,6 +44,10 @@ public:
         SetSignal(PIN_SEL, state);
     }
 
+    bool GetIO() override
+    {
+        return GetSignal(PIN_IO);
+    }
     void SetIO(bool state) override
     {
         SetSignal(PIN_IO, state);
