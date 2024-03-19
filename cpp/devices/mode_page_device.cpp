@@ -79,7 +79,7 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
             const size_t off = result.size();
 
             // Page data
-            result.insert(result.end(), data.begin(), data.end());
+            result.insert(result.end(), data.cbegin(), data.cend());
             // Page code, PS bit may already have been set
             result[off] |= (byte)index;
             // Page payload size
@@ -95,7 +95,7 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
         const size_t off = result.size();
 
         // Page data
-        result.insert(result.end(), page0.begin(), page0.end());
+        result.insert(result.end(), page0.cbegin(), page0.cend());
         // Page payload size
         result[off + 1] = (byte)(page0.size() - 2);
     }
@@ -141,7 +141,7 @@ void ModePageDevice::ModeSelect10() const
 
 void ModePageDevice::SaveParametersCheck(int length) const
 {
-    if (!SupportsSaveParameters() && (GetController()->GetCdbByte(1) & 0x01)) {
+    if (!supports_save_parameters && (GetController()->GetCdbByte(1) & 0x01)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

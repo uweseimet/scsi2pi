@@ -42,6 +42,11 @@ public:
     }
     virtual void Reset();
 
+    void SetReset(bool b)
+    {
+        reset = b;
+    }
+
     bool IsProtectable() const
     {
         return protectable;
@@ -155,10 +160,6 @@ protected:
     bool IsReset() const
     {
         return reset;
-    }
-    void SetReset(bool b)
-    {
-        reset = b;
     }
     bool IsAttn() const
     {

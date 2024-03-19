@@ -27,8 +27,7 @@ private:
 
     bool Init(bool);
     bool ParseArguments(span<char*>);
-    int GenerateOutput(S2pProtoExecutor::protobuf_format, const string&, S2pProtoExecutor::protobuf_format,
-        const string&);
+    int GenerateOutput(const string&, const string&);
 
     void CleanUp() const;
     static void TerminationHandler(int);

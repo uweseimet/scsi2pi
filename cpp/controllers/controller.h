@@ -18,7 +18,7 @@ public:
     using AbstractController::AbstractController;
     ~Controller() override = default;
 
-    bool Process(int) override;
+    bool Process() override;
 
     void Error(scsi_defs::sense_key sense_key, scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information,
         scsi_defs::status status = scsi_defs::status::check_condition) override;

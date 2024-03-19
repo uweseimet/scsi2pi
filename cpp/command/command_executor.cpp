@@ -261,7 +261,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    param_map params = { pb_device.params().begin(), pb_device.params().end() };
+    param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
     if (!device->SupportsFile()) {
         // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
@@ -354,7 +354,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
     }
 
     if (!dryRun) {
-        // Remember some device data before the device data become invalid on removal
+        // Remember some device data before they become invalid on removal
         const string identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
@@ -448,7 +448,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
         ids_to_reserve.insert(res_id);
     }
 
-    reserved_ids = { ids_to_reserve.begin(), ids_to_reserve.end() };
+    reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
 
     if (!ids_to_reserve.empty()) {
         info("Reserved ID(s) set to {}", Join(ids_to_reserve));
@@ -516,7 +516,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device) const
 {
-    const map<string, string, less<>> params = { command.params().begin(), command.params().end() };
+    const map<string, string, less<>> params = { command.params().cbegin(), command.params().cend() };
 
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());

@@ -31,10 +31,7 @@ public:
     virtual void DataIn() = 0;
     virtual void DataOut() = 0;
     virtual void MsgIn() = 0;
-    virtual void MsgOut()
-    {
-        // To be implemented by controllers supporting this phase (SCSI, but not SASI)
-    }
+    virtual void MsgOut() = 0;
 
 protected:
 

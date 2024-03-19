@@ -29,7 +29,7 @@ TEST(ControllerFactoryTest, LifeCycle)
     EXPECT_TRUE(controller_factory_scsi.HasController(ID1));
     auto controller = controller_factory_scsi.FindController(ID1);
     EXPECT_NE(nullptr, controller);
-    EXPECT_EQ(1, controller->GetLunCount());
+    EXPECT_EQ(1U, controller->GetLunCount());
     EXPECT_FALSE(controller_factory_scsi.HasController(0));
     EXPECT_EQ(nullptr, controller_factory_scsi.FindController(0));
     EXPECT_TRUE(controller_factory_scsi.HasDeviceForIdAndLun(ID1, LUN1));

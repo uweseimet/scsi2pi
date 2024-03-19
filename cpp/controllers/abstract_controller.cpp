@@ -20,6 +20,33 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     device_logger.SetIdAndLun(target_id, -1);
 }
 
+void AbstractController::CleanUp() const
+{
+    for (const auto& [_, device] : luns) {
+        device->CleanUp();
+    }
+}
+
+void AbstractController::Reset()
+{
+    SetPhase(phase_t::busfree);
+
+    offset = 0;
+    total_length = 0;
+    current_length = 0;
+    chunk_size = 0;
+
+    status = status::good;
+
+    initiator_id = UNKNOWN_INITIATOR_ID;
+
+    for (const auto& [_, device] : luns) {
+        device->Reset();
+    }
+
+    bus.Reset();
+}
+
 void AbstractController::SetCurrentLength(int length)
 {
     if (length > static_cast<int>(buffer.size())) {
@@ -61,48 +88,32 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-void AbstractController::Reset()
+AbstractController::shutdown_mode AbstractController::ProcessOnController(int ids)
 {
-    SetPhase(phase_t::busfree);
+    device_logger.SetIdAndLun(target_id, -1);
 
-    offset = 0;
-    total_length = 0;
-    current_length = 0;
-    chunk_size = 0;
-
-    status = status::good;
-
-    initiator_id = UNKNOWN_INITIATOR_ID;
-
-    // Reset all LUNs
-    for (const auto& [_, device] : luns) {
-        device->Reset();
-    }
-
-    GetBus().Reset();
-}
-
-void AbstractController::ProcessOnController(int id_data)
-{
-    device_logger.SetIdAndLun(GetTargetId(), -1);
-
-    const int id = ExtractInitiatorId(id_data);
-    if (id != UNKNOWN_INITIATOR_ID) {
-        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", id));
+    if (int ids_without_target = ids - (1 << target_id); ids_without_target) {
+        initiator_id = 0;
+        while (!(ids_without_target & (1 << initiator_id))) {
+            ++initiator_id;
+        }
+        LogTrace("++++ Starting processing for initiator ID " + to_string(initiator_id));
     }
     else {
+        initiator_id = UNKNOWN_INITIATOR_ID;
         LogTrace("++++ Starting processing for unknown initiator ID");
     }
 
-    while (Process(id)) {
+    while (Process()) {
         // Handle bus phases until the bus is free for the next command
     }
+
+    return sh_mode;
 }
 
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-
     if (lun < 0 || lun >= max_luns || GetDeviceForLun(lun) || device->GetController()) {
         return false;
     }
@@ -118,13 +129,4 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
-}
-
-int AbstractController::ExtractInitiatorId(int id_data) const
-{
-    if (const int id_data_without_target = id_data - (1 << target_id); id_data_without_target) {
-        return static_cast<int>(log2(id_data_without_target & -id_data_without_target));
-    }
-
-    return UNKNOWN_INITIATOR_ID;
 }

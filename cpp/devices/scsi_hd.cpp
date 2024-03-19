@@ -13,7 +13,7 @@
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, sector_sizes)
+: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -26,7 +26,6 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
     SetProtectable(true);
     SetRemovable(removable);
     SetLockable(removable);
-    SupportsSaveParameters(true);
 }
 
 string ScsiHd::GetProductData() const
@@ -89,7 +88,7 @@ void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
         AddFormatPage(pages, changeable);
     }
 
-    // Page 4 (rigid drive page)
+    // Page 4 (rigid drive)
     if (page == 0x04 || page == 0x3f) {
         AddDrivePage(pages, changeable);
     }

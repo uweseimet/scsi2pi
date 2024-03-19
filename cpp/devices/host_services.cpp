@@ -96,7 +96,7 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false, false)
 {
     SetProduct("Host Services");
 }
@@ -140,16 +140,11 @@ vector<uint8_t> HostServices::InquiryInternal() const
 
 void HostServices::StartStopUnit() const
 {
-    const bool start = GetController()->GetCdbByte(4) & 0x01;
     const bool load = GetController()->GetCdbByte(4) & 0x02;
 
-    if (!start) {
-        if (load) {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
-        }
-        else {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
-        }
+    if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
+        GetController()->ScheduleShutdown(
+            load ? AbstractController::shutdown_mode::stop_pi : AbstractController::shutdown_mode::stop_s2p);
     }
     else if (load) {
         GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);

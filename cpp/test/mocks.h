@@ -90,16 +90,16 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     friend shared_ptr<PrimaryDevice> CreateDevice(s2p_interface::PbDeviceType, AbstractController&, int);
 
     FRIEND_TEST(AbstractControllerTest, Reset);
+    FRIEND_TEST(AbstractControllerTest, Status);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
-    FRIEND_TEST(AbstractControllerTest, GetLun);
     FRIEND_TEST(AbstractControllerTest, Message);
     FRIEND_TEST(AbstractControllerTest, TransferSize);
     FRIEND_TEST(AbstractControllerTest, Length);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
-    FRIEND_TEST(ScsiControllerTest, Selection);
+    FRIEND_TEST(ControllerTest, Selection);
     FRIEND_TEST(PrimaryDeviceTest, CheckReservation);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
@@ -160,7 +160,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 
 public:
 
-    MOCK_METHOD(bool, Process, (int), (override));
+    MOCK_METHOD(bool, Process, (), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
     MOCK_METHOD(void, Error, (scsi_defs::sense_key, scsi_defs::asc, scsi_defs::status), (override));
     MOCK_METHOD(void, Status, (), (override));
@@ -186,18 +186,18 @@ public:
     ~MockAbstractController() override = default;
 };
 
-class MockScsiController : public Controller
+class MockController : public Controller
 {
-    FRIEND_TEST(ScsiControllerTest, Process);
-    FRIEND_TEST(ScsiControllerTest, BusFree);
-    FRIEND_TEST(ScsiControllerTest, Selection);
-    FRIEND_TEST(ScsiControllerTest, Command);
-    FRIEND_TEST(ScsiControllerTest, MsgIn);
-    FRIEND_TEST(ScsiControllerTest, MsgOut);
-    FRIEND_TEST(ScsiControllerTest, DataIn);
-    FRIEND_TEST(ScsiControllerTest, DataOut);
-    FRIEND_TEST(ScsiControllerTest, Error);
-    FRIEND_TEST(ScsiControllerTest, RequestSense);
+    FRIEND_TEST(ControllerTest, Process);
+    FRIEND_TEST(ControllerTest, BusFree);
+    FRIEND_TEST(ControllerTest, Selection);
+    FRIEND_TEST(ControllerTest, Command);
+    FRIEND_TEST(ControllerTest, MsgIn);
+    FRIEND_TEST(ControllerTest, MsgOut);
+    FRIEND_TEST(ControllerTest, DataIn);
+    FRIEND_TEST(ControllerTest, DataOut);
+    FRIEND_TEST(ControllerTest, Error);
+    FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
 
 public:
@@ -207,13 +207,13 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockScsiController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, 32)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, 32)
     {
     }
-    explicit MockScsiController(shared_ptr<Bus> bus) : Controller(*bus, 0, 32)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, 32)
     {
     }
-    ~MockScsiController() override = default;
+    ~MockController() override = default;
 };
 
 class MockDevice : public Device
@@ -247,7 +247,7 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
-    FRIEND_TEST(ScsiControllerTest, RequestSense);
+    FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(CommandExecutorTest, ValidateOperationAgainstDevice);
 
 public:
@@ -273,7 +273,7 @@ public:
     MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
 
-    MockModePageDevice() : ModePageDevice(UNDEFINED, scsi_level::scsi_2, 0, false)
+    MockModePageDevice() : ModePageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
     {
     }
     ~MockModePageDevice() override = default;
@@ -321,7 +321,7 @@ public:
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false)
+    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
     {
     }
     ~MockStorageDevice() override = default;
@@ -371,7 +371,7 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }

@@ -20,7 +20,7 @@ class StorageDevice : public ModePageDevice
 {
 public:
 
-    StorageDevice(PbDeviceType, scsi_level, int, bool);
+    StorageDevice(PbDeviceType, scsi_level, int, bool, bool);
     ~StorageDevice() override = default;
 
     void CleanUp() override;

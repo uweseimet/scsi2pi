@@ -62,7 +62,7 @@ public:
         return delay_after_bytes;
     }
 
-    bool CheckReservation(int, scsi_command) const;
+    bool CheckReservation(int) const;
     void DiscardReservation();
 
     void Reset() override;

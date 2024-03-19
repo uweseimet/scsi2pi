@@ -38,11 +38,11 @@ public:
     virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
         scsi_defs::status = scsi_defs::status::check_condition) = 0;
 
-    virtual bool Process(int) = 0;
-
     virtual int GetEffectiveLun() const = 0;
 
     virtual void Reset();
+
+    void CleanUp() const;
 
     int GetInitiatorId() const
     {
@@ -53,26 +53,22 @@ public:
     {
         sh_mode = mode;
     }
-    shutdown_mode GetShutdownMode() const
-    {
-        return sh_mode;
-    }
 
     int GetTargetId() const
     {
         return target_id;
     }
 
-    int GetLunCount() const
+    auto GetLunCount() const
     {
-        return static_cast<int>(luns.size());
+        return luns.size();
     }
 
     unordered_set<shared_ptr<PrimaryDevice>> GetDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForLun(int) const;
     bool AddDevice(shared_ptr<PrimaryDevice>);
     bool RemoveDevice(PrimaryDevice&);
-    void ProcessOnController(int);
+    shutdown_mode ProcessOnController(int);
 
     void CopyToBuffer(const void*, size_t);
     auto& GetBuffer()
@@ -82,10 +78,6 @@ public:
     auto GetStatus() const
     {
         return status;
-    }
-    void SetStatus(scsi_defs::status s)
-    {
-        status = s;
     }
     auto GetChunkSize() const
     {
@@ -106,28 +98,18 @@ public:
         return cdb[index];
     }
 
-    static constexpr int UNKNOWN_INITIATOR_ID = -1;
-
-protected:
-
-    void SetInitiatorId(int id)
-    {
-        initiator_id = id;
-    }
-
-    inline Bus& GetBus() const
-    {
-        return bus;
-    }
-
     auto GetOpcode() const
     {
         return static_cast<scsi_defs::scsi_command>(cdb[0]);
     }
 
-    int GetLun() const
+protected:
+
+    virtual bool Process() = 0;
+
+    inline Bus& GetBus() const
     {
-        return cdb[1] >> 5;
+        return bus;
     }
 
     void SetCdbByte(int index, int value)
@@ -139,6 +121,11 @@ protected:
     {
         total_length -= chunk_size;
         return total_length != 0;
+    }
+
+    void SetStatus(scsi_defs::status s)
+    {
+        status = s;
     }
 
     auto GetOffset() const
@@ -170,8 +157,6 @@ protected:
 
 private:
 
-    int ExtractInitiatorId(int) const;
-
     array<int, 16> cdb = { };
 
     // Transfer data buffer, dynamically resized
@@ -195,6 +180,8 @@ private:
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;
 
     int target_id;
+
+    static constexpr int UNKNOWN_INITIATOR_ID = -1;
 
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;

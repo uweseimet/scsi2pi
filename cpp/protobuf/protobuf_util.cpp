@@ -204,7 +204,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
     const string s = message.SerializeAsString();
-    vector<uint8_t> data(s.begin(), s.end());
+    vector<uint8_t> data(s.cbegin(), s.cend());
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),

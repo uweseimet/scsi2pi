@@ -9,7 +9,7 @@
 #include "shared/shared_exceptions.h"
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false,
+SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false, false,
     sector_sizes)
 {
     SetProduct("SASI HD");
@@ -33,7 +33,7 @@ void SasiHd::Inquiry()
 {
     // Byte 0 = 0: Direct access device
 
-    constexpr array<uint8_t, 2> buf = { };
+    const array<uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());
@@ -51,7 +51,7 @@ void SasiHd::RequestSense()
     //vector<uint8_t> buf(allocation_length ? allocation_length : 4);
 
     // SASI fixed to non-extended format
-    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
+    const array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());

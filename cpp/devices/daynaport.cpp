@@ -83,9 +83,7 @@ bool DaynaPort::Init(const param_map &params)
 #endif
     }
 
-    Reset();
     SetReady(true);
-    SetReset(false);
 
     return true;
 }

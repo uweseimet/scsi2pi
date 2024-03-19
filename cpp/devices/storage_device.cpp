@@ -12,8 +12,9 @@
 
 using namespace filesystem;
 
-StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_pages)
-: ModePageDevice(type, level, lun, supports_mode_pages)
+StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select,
+    bool supports_save_parameters)
+: ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters)
 {
     SupportsFile(true);
     SetStoppable(true);
@@ -36,7 +37,7 @@ void StorageDevice::ValidateFile()
         throw io_exception("Image files > 2 TiB are not supported");
     }
 
-    // TODO Check for duplicate handling of these properties (-> S2pExecutor)
+    // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {
         // Permanently write-protected
         SetReadOnly(true);

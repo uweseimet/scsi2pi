@@ -18,19 +18,6 @@ using namespace std;
 
 class Printer : public PrimaryDevice, private ScsiPrinterCommands
 {
-    uint64_t file_print_count = 0;
-    uint64_t byte_receive_count = 0;
-    uint64_t print_error_count = 0;
-    uint64_t print_warning_count = 0;
-
-    static constexpr int NOT_RESERVED = -2;
-
-    static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
-
-    inline static const string FILE_PRINT_COUNT = "file_print_count";
-    inline static const string BYTE_RECEIVE_COUNT = "byte_receive_count";
-    inline static const string PRINT_ERROR_COUNT = "print_error_count";
-    inline static const string PRINT_WARNING_COUNT = "print_warning_count";
 
 public:
 
@@ -51,18 +38,6 @@ public:
 private:
 
     void TestUnitReady() override;
-    void ReserveUnit() override
-    {
-        PrimaryDevice::ReserveUnit();
-    }
-    void ReleaseUnit() override
-    {
-        PrimaryDevice::ReleaseUnit();
-    }
-    void SendDiagnostic() override
-    {
-        PrimaryDevice::SendDiagnostic();
-    }
     void Print() override;
     void SynchronizeBuffer();
 
@@ -71,4 +46,18 @@ private:
     string filename;
 
     ofstream out;
+
+    uint64_t file_print_count = 0;
+    uint64_t byte_receive_count = 0;
+    uint64_t print_error_count = 0;
+    uint64_t print_warning_count = 0;
+
+    static constexpr int NOT_RESERVED = -2;
+
+    static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
+
+    inline static const string FILE_PRINT_COUNT = "file_print_count";
+    inline static const string BYTE_RECEIVE_COUNT = "byte_receive_count";
+    inline static const string PRINT_ERROR_COUNT = "print_error_count";
+    inline static const string PRINT_WARNING_COUNT = "print_warning_count";
 };

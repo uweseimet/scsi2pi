@@ -30,13 +30,6 @@ TEST(OpticalMemoryTest, Inquiry)
     TestShared::Inquiry(SCMO, device_type::optical_memory, scsi_level::scsi_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
 }
 
-TEST(OpticalMemoryTest, SupportsSaveParameters)
-{
-    MockOpticalMemory mo(0);
-
-    EXPECT_TRUE(mo.SupportsSaveParameters());
-}
-
 TEST(OpticalMemoryTest, GetSectorSizes)
 {
     MockOpticalMemory mo(0);

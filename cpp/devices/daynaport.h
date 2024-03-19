@@ -33,11 +33,6 @@
 
 class DaynaPort : public PrimaryDevice, private ScsiCommunicationsCommands
 {
-    uint64_t byte_read_count = 0;
-    uint64_t byte_write_count = 0;
-
-    inline static const string BYTE_READ_COUNT = "byte_read_count";
-    inline static const string BYTE_WRITE_COUNT = "byte_write_count";
 
 public:
 
@@ -113,4 +108,10 @@ private:
     TapDriver tap;
 
     bool tap_enabled = false;
+
+    uint64_t byte_read_count = 0;
+    uint64_t byte_write_count = 0;
+
+    inline static const string BYTE_READ_COUNT = "byte_read_count";
+    inline static const string BYTE_WRITE_COUNT = "byte_write_count";
 };

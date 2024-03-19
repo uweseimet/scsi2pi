@@ -14,8 +14,8 @@
 
 using namespace memory_util;
 
-ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, { 512,
-    2048 })
+ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, false,
+    { 512, 2048 })
 {
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);

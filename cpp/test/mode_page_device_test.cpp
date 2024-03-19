@@ -10,17 +10,6 @@
 #include "shared/shared_exceptions.h"
 #include "devices/mode_page_device.h"
 
-TEST(ModePageDeviceTest, SupportsSaveParameters)
-{
-    MockModePageDevice device;
-
-    EXPECT_FALSE(device.SupportsSaveParameters()) << "Wrong default value";
-    device.SupportsSaveParameters(true);
-    EXPECT_TRUE(device.SupportsSaveParameters());
-    device.SupportsSaveParameters(false);
-    EXPECT_FALSE(device.SupportsSaveParameters());
-}
-
 TEST(ModePageDeviceTest, AddModePages)
 {
     vector<uint8_t> buf(512);

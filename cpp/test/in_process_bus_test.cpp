@@ -186,12 +186,17 @@ TEST(DelegatingProcessBusTest, Acquire)
 TEST(DelegatingProcessBusTest, SetGetSignal)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, true);
 
     delegating_bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK));
     delegating_bus.SetSignal(PIN_ACK, false);
     EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK));
+
+    delegating_bus.SetSignal(PIN_IO, true);
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO));
+    delegating_bus.SetSignal(PIN_IO, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO));
 }
 
 TEST(DelegatingProcessBusTest, WaitSignal)

@@ -118,7 +118,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 pair<int, path> testing::OpenTempFile()
 {
     const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
-    vector<char> f(filename.begin(), filename.end());
+    vector<char> f(filename.cbegin(), filename.cend());
     f.emplace_back(0);
 
     const int fd = mkstemp(f.data());

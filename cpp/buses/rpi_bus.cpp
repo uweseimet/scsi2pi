@@ -233,20 +233,10 @@ void RpiBus::Reset()
     // Set data bus signal directions
     SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
 
-    const int dir = IsTarget() ? IN : OUT;
-    SetMode(PIN_SEL, dir);
-    SetMode(PIN_ATN, dir);
-    SetMode(PIN_ACK, dir);
-    SetMode(PIN_RST, dir);
-    SetMode(PIN_DT0, dir);
-    SetMode(PIN_DT1, dir);
-    SetMode(PIN_DT2, dir);
-    SetMode(PIN_DT3, dir);
-    SetMode(PIN_DT4, dir);
-    SetMode(PIN_DT5, dir);
-    SetMode(PIN_DT6, dir);
-    SetMode(PIN_DT7, dir);
-    SetMode(PIN_DP, dir);
+    for (int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
+        PIN_DT7, PIN_DP }) {
+        SetMode(pin, IsTarget() ? IN : OUT);
+    }
 
     // Initialize all signals
     signals = 0;
@@ -290,27 +280,14 @@ void RpiBus::SetBSY(bool state)
 {
     SetSignal(PIN_BSY, state);
 
-    if (state) {
-        SetControl(PIN_ACT, true);
+    SetControl(PIN_ACT, state);
+    SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
-        SetControl(PIN_TAD, TAD_OUT);
-
-        SetMode(PIN_BSY, OUT);
-        SetMode(PIN_MSG, OUT);
-        SetMode(PIN_CD, OUT);
-        SetMode(PIN_REQ, OUT);
-        SetMode(PIN_IO, OUT);
-    } else {
-        SetControl(PIN_ACT, false);
-
-        SetControl(PIN_TAD, TAD_IN);
-
-        SetMode(PIN_BSY, IN);
-        SetMode(PIN_MSG, IN);
-        SetMode(PIN_CD, IN);
-        SetMode(PIN_REQ, IN);
-        SetMode(PIN_IO, IN);
-    }
+    SetMode(PIN_BSY, state ? OUT : IN);
+    SetMode(PIN_MSG, state ? OUT : IN);
+    SetMode(PIN_CD, state ? OUT : IN);
+    SetMode(PIN_REQ, state ? OUT : IN);
+    SetMode(PIN_IO, state ? OUT : IN);
 }
 
 void RpiBus::SetSEL(bool state)
@@ -327,26 +304,10 @@ bool RpiBus::GetIO()
 
     if (!IsTarget()) {
         // Change the data input/output direction by IO signal
-        if (state) {
-            SetControl(PIN_DTD, DTD_IN);
-            SetMode(PIN_DT0, IN);
-            SetMode(PIN_DT1, IN);
-            SetMode(PIN_DT2, IN);
-            SetMode(PIN_DT3, IN);
-            SetMode(PIN_DT4, IN);
-            SetMode(PIN_DT5, IN);
-            SetMode(PIN_DT6, IN);
-            SetMode(PIN_DT7, IN);
-        } else {
-            SetControl(PIN_DTD, DTD_OUT);
-            SetMode(PIN_DT0, OUT);
-            SetMode(PIN_DT1, OUT);
-            SetMode(PIN_DT2, OUT);
-            SetMode(PIN_DT3, OUT);
-            SetMode(PIN_DT4, OUT);
-            SetMode(PIN_DT5, OUT);
-            SetMode(PIN_DT6, OUT);
-            SetMode(PIN_DT7, OUT);
+        SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
+
+        for (int pin : DATA_PINS) {
+            SetMode(pin, state ? IN : OUT);
         }
     }
 
@@ -361,16 +322,10 @@ void RpiBus::SetIO(bool state)
 
     // Change the data input/output direction by IO signal
     SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
-    const int dir = state ? OUT : IN;
-    SetMode(PIN_DT0, dir);
-    SetMode(PIN_DT1, dir);
-    SetMode(PIN_DT2, dir);
-    SetMode(PIN_DT3, dir);
-    SetMode(PIN_DT4, dir);
-    SetMode(PIN_DT5, dir);
-    SetMode(PIN_DT6, dir);
-    SetMode(PIN_DT7, dir);
-    SetMode(PIN_DP, dir);
+
+    for (int pin : DATA_PINS) {
+        SetMode(pin, state ? OUT : IN);
+    }
 }
 
 inline uint8_t RpiBus::GetDAT()
@@ -425,8 +380,6 @@ inline void RpiBus::SetDAT(uint8_t dat)
 
 void RpiBus::CreateWorkTable(void)
 {
-    constexpr array<int, 9> pins = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
-
     array<bool, 256> tblParity;
 
     // Create parity table
@@ -457,13 +410,9 @@ void RpiBus::CreateWorkTable(void)
         }
 
         // Bit check
-        for (const int pin : pins) {
+        for (const int pin : DATA_PINS) {
             // Offset of the Function Select register for this pin (3 bits per pin)
             const int index = pin / 10;
-#if defined BOARD_STANDARD || defined BOARD_FULLSPEC
-            // Must always be GPFSEL1 for standard and fullspec board
-            assert(index == 1);
-#endif
             const int shift = (pin % 10) * 3;
 
             // Mask data (GPIO pin is an output pin)
@@ -490,7 +439,7 @@ void RpiBus::CreateWorkTable(void)
         // Create GPIO register information
         uint32_t gpclr = 0;
         uint32_t gpset = 0;
-        for (int j = 0; j < static_cast<int>(pins.size()); j++) {
+        for (int j = 0; j < static_cast<int>(DATA_PINS.size()); j++) {
             if (bits & 1) {
                 gpset |= (1 << pins[j]);
             } else {
@@ -661,7 +610,7 @@ void RpiBus::PullConfig(int pin, int mode)
         return;
     }
 
-    if (pi_type == PiType::pi_4 || pi_type == PiType::pi_5) {
+    if (pi_type >= PiType::pi_4) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:

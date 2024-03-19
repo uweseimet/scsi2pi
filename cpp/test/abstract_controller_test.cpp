@@ -15,13 +15,17 @@ TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::none, controller.GetShutdownMode());
+    EXPECT_CALL(controller, Process);
+    EXPECT_EQ(AbstractController::shutdown_mode::none, controller.ProcessOnController(0));
     controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
-    EXPECT_EQ(AbstractController::shutdown_mode::stop_s2p, controller.GetShutdownMode());
+    EXPECT_CALL(controller, Process);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_s2p, controller.ProcessOnController(0));
     controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
-    EXPECT_EQ(AbstractController::shutdown_mode::stop_pi, controller.GetShutdownMode());
+    EXPECT_CALL(controller, Process);
+    EXPECT_EQ(AbstractController::shutdown_mode::stop_pi, controller.ProcessOnController(0));
     controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
-    EXPECT_EQ(AbstractController::shutdown_mode::restart_pi, controller.GetShutdownMode());
+    EXPECT_CALL(controller, Process);
+    EXPECT_EQ(AbstractController::shutdown_mode::restart_pi, controller.ProcessOnController(0));
 }
 
 TEST(AbstractControllerTest, SetCurrentLength)
@@ -71,7 +75,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     auto device2 = make_shared<MockPrimaryDevice>(32);
     auto device3 = make_shared<MockPrimaryDevice>(-1);
 
-    EXPECT_EQ(0, controller->GetLunCount());
+    EXPECT_EQ(0U, controller->GetLunCount());
     EXPECT_EQ(ID, controller->GetTargetId());
     EXPECT_TRUE(controller->AddDevice(device1));
     EXPECT_FALSE(controller->AddDevice(device2));
@@ -90,16 +94,6 @@ TEST(AbstractControllerTest, GetOpcode)
 
     controller.SetCdbByte(0, static_cast<int>(scsi_command::cmd_inquiry));
     EXPECT_EQ(scsi_command::cmd_inquiry, controller.GetOpcode());
-}
-
-TEST(AbstractControllerTest, GetLun)
-{
-    const int LUN = 3;
-
-    MockAbstractController controller;
-
-    controller.SetCdbByte(1, LUN << 5);
-    EXPECT_EQ(LUN, controller.GetLun());
 }
 
 TEST(AbstractControllerTest, TransferSize)
@@ -138,6 +132,8 @@ TEST(AbstractControllerTest, ProcessOnController)
     auto bus = make_shared<MockBus>();
     auto controller = make_shared<MockAbstractController>(bus, 1);
 
-    EXPECT_CALL(*controller, Process(-1));
+    EXPECT_CALL(*controller, Process());
     controller->ProcessOnController(0x02);
+    EXPECT_CALL(*controller, Process());
+    controller->ProcessOnController(0x06);
 }

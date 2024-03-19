@@ -35,8 +35,7 @@ TEST(DiskTest, Dispatch)
     EXPECT_EQ(status::good, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    EXPECT_CALL(*controller, Error);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_test_unit_ready));
+    EXPECT_THROW(disk->Dispatch(scsi_command::cmd_test_unit_ready), scsi_exception);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
@@ -643,7 +642,6 @@ TEST(DiskTest, EvaluateBlockDescriptors)
         << "Parameter list is too short";
     EXPECT_EQ(512, sector_size);
 
-    buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08");
     EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
@@ -658,7 +656,6 @@ TEST(DiskTest, EvaluateBlockDescriptors)
         << "Parameter list is too short";
     EXPECT_EQ(512, sector_size);
 
-    buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04");
     EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, sector_size);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),

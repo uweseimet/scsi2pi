@@ -21,7 +21,7 @@ string S2pCtlDisplay::DisplayDevicesInfo(const PbDevicesInfo &devices_info) cons
 {
     ostringstream s;
 
-    const vector<PbDevice> devices(devices_info.devices().begin(), devices_info.devices().end());
+    const vector<PbDevice> devices(devices_info.devices().cbegin(), devices_info.devices().cend());
 
     s << ListDevices(devices);
 
@@ -180,7 +180,7 @@ string S2pCtlDisplay::DisplayReservedIdsInfo(const PbReservedIdsInfo &reserved_i
     ostringstream s;
 
     if (reserved_ids_info.ids_size()) {
-        const set<int32_t> sorted_ids(reserved_ids_info.ids().begin(), reserved_ids_info.ids().end());
+        const set<int32_t> sorted_ids(reserved_ids_info.ids().cbegin(), reserved_ids_info.ids().cend());
         s << "Reserved device IDs: " << Join(sorted_ids) << '\n';
     }
 
@@ -214,7 +214,7 @@ string S2pCtlDisplay::DisplayImageFilesInfo(const PbImageFilesInfo &image_files_
     s << "Supported folder depth: " << image_files_info.depth() << '\n';
 
     if (!image_files_info.image_files().empty()) {
-        vector<PbImageFile> image_files(image_files_info.image_files().begin(), image_files_info.image_files().end());
+        vector<PbImageFile> image_files(image_files_info.image_files().cbegin(), image_files_info.image_files().cend());
         ranges::sort(image_files, [](const auto &a, const auto &b) {return a.name() < b.name();});
 
         s << "Available image files:\n";
@@ -232,8 +232,8 @@ string S2pCtlDisplay::DisplayNetworkInterfaces(const PbNetworkInterfacesInfo &ne
 {
     ostringstream s;
 
-    const set<string, less<>> sorted_interfaces(network_interfaces_info.name().begin(),
-        network_interfaces_info.name().end());
+    const set<string, less<>> sorted_interfaces(network_interfaces_info.name().cbegin(),
+        network_interfaces_info.name().cend());
     s << "Available (up) network interfaces: " << Join(sorted_interfaces) << '\n';
 
     return s.str();
@@ -245,7 +245,7 @@ string S2pCtlDisplay::DisplayMappingInfo(const PbMappingInfo &mapping_info) cons
 
     s << "Supported image file extension to device type mappings:\n";
 
-    for (const map<string, PbDeviceType, less<>> sorted_mappings(mapping_info.mapping().begin(), mapping_info.mapping().end());
+    for (const map<string, PbDeviceType, less<>> sorted_mappings(mapping_info.mapping().cbegin(), mapping_info.mapping().cend());
         const auto& [extension, type] : sorted_mappings) {
         s << "  " << extension << "->" << PbDeviceType_Name(type) << '\n';
     }
@@ -261,7 +261,7 @@ string S2pCtlDisplay::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_i
 
     // Sort by ascending ID, LUN and key and by descending category
     vector<PbStatistics> sorted_statistics =
-        { statistics_info.statistics().begin(), statistics_info.statistics().end() };
+        { statistics_info.statistics().cbegin(), statistics_info.statistics().cend() };
     ranges::sort(sorted_statistics, [](const PbStatistics &a, const PbStatistics &b) {
         if (a.category() > b.category()) return true;
         if (a.category() < b.category()) return false;
@@ -291,8 +291,8 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
 {
     ostringstream s;
 
-    const map<int, PbOperationMetaData, less<>> operations(operation_info.operations().begin(),
-        operation_info.operations().end());
+    const map<int, PbOperationMetaData, less<>> operations(operation_info.operations().cbegin(),
+        operation_info.operations().cend());
 
     // Copies result into a map sorted by operation name
     auto unknown_operation = make_unique<PbOperationMetaData>();
@@ -332,8 +332,8 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
 {
     ostringstream s;
 
-    const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().begin(),
-        properties_info.s2p_properties().end());
+    const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().cbegin(),
+        properties_info.s2p_properties().cend());
 
     s << "s2p properties:\n";
     for (const auto& [key, value] : sorted_properties) {
@@ -406,7 +406,7 @@ string S2pCtlDisplay::DisplaySectorSizes(const PbDeviceProperties &properties) c
     ostringstream s;
 
     if (properties.block_sizes_size()) {
-        const set<uint32_t> sorted_sizes(properties.block_sizes().begin(), properties.block_sizes().end());
+        const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
         s << "Configurable sector sizes in bytes: " << Join(sorted_sizes);
     }
 
@@ -415,7 +415,7 @@ string S2pCtlDisplay::DisplaySectorSizes(const PbDeviceProperties &properties) c
 
 string S2pCtlDisplay::DisplayParameters(const PbOperationMetaData &meta_data) const
 {
-    vector<PbOperationParameter> sorted_parameters(meta_data.parameters().begin(), meta_data.parameters().end());
+    vector<PbOperationParameter> sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
     ranges::sort(sorted_parameters, [](const auto &a, const auto &b) {return a.name() < b.name();});
 
     ostringstream s;
@@ -443,8 +443,8 @@ string S2pCtlDisplay::DisplayPermittedValues(const PbOperationParameter &paramet
 {
     ostringstream s;
     if (parameter.permitted_values_size()) {
-        const set<string, less<>> sorted_values(parameter.permitted_values().begin(),
-            parameter.permitted_values().end());
+        const set<string, less<>> sorted_values(parameter.permitted_values().cbegin(),
+            parameter.permitted_values().cend());
         s << "      Permitted values: " << Join(sorted_values) << '\n';
     }
 

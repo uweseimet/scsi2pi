@@ -48,40 +48,31 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
 
 bool ControllerFactory::DeleteController(const AbstractController &controller)
 {
-    for (const auto &device : controller.GetDevices()) {
-        device->CleanUp();
-    }
+    controller.CleanUp();
 
     return controllers.erase(controller.GetTargetId()) == 1;
 }
 
 bool ControllerFactory::DeleteAllControllers()
 {
-    bool has_controller = false;
-
-    unordered_set<shared_ptr<AbstractController>> values;
-    ranges::transform(controllers, inserter(values, values.begin()), [](const auto &controller) {
-            return controller.second;
-        });
-
-    for (const auto &controller : values) {
-        DeleteController(*controller);
-        has_controller = true;
+    if (controllers.empty()) {
+        return false;
     }
 
-    assert(controllers.empty());
+    for (auto it = controllers.cbegin(); it != controllers.cend();) {
+        (*it).second->CleanUp();
+        controllers.erase(it++);
+    }
 
-    return has_controller;
+    return true;
 }
 
-AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int id_data) const
+AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int ids) const
 {
     if (const auto &it = ranges::find_if(controllers, [&](const auto &c) {
-        return (id_data & (1 << c.first));
+        return (ids & (1 << c.first));
     }); it != controllers.end()) {
-        (*it).second->ProcessOnController(id_data);
-
-        return (*it).second->GetShutdownMode();
+        return (*it).second->ProcessOnController(ids);
     }
 
     return AbstractController::shutdown_mode::none;
@@ -104,7 +95,7 @@ unordered_set<shared_ptr<PrimaryDevice>> ControllerFactory::GetAllDevices() cons
 
     for (const auto& [_, controller] : controllers) {
         const auto &d = controller->GetDevices();
-        devices.insert(d.begin(), d.end());
+        devices.insert(d.cbegin(), d.cend());
     }
 
     return devices;

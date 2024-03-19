@@ -516,11 +516,11 @@ string S2pExec::WriteData(int count)
     return "";
 }
 
-string S2pExec::ConvertData(const string &data)
+string S2pExec::ConvertData(const string &hex)
 {
     vector<byte> bytes;
     try {
-        bytes = HexToBytes(data);
+        bytes = HexToBytes(hex);
     }
     catch (const out_of_range&) {
         return "Invalid data input format";

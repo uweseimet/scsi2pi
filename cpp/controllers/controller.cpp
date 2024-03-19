@@ -28,7 +28,7 @@ void Controller::Reset()
     atn_msg = false;
 }
 
-bool Controller::Process(int id)
+bool Controller::Process()
 {
     GetBus().Acquire();
 
@@ -37,8 +37,6 @@ bool Controller::Process(int id)
         Reset();
         return false;
     }
-
-    SetInitiatorId(id);
 
     if (!ProcessPhase()) {
         Error(sense_key::aborted_command, asc::controller_process_phase);
@@ -132,23 +130,20 @@ void Controller::Command()
             return;
         }
 
-        SetCurrentLength(0);
-
         Execute();
     }
 }
 
 void Controller::Execute()
 {
+    SetCurrentLength(0);
     ResetOffset();
     SetTransferSize(0, 0);
 
     const auto opcode = GetOpcode();
 
     auto device = GetDeviceForLun(GetEffectiveLun());
-    const bool has_lun = device != nullptr;
-
-    if (!has_lun) {
+    if (!device) {
         if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
@@ -164,21 +159,13 @@ void Controller::Execute()
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
-    if (device->CheckReservation(GetInitiatorId(), opcode)) {
+    if (device->CheckReservation(GetInitiatorId())) {
         try {
             device->Dispatch(opcode);
-
-            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-            if (opcode == scsi_command::cmd_inquiry && !has_lun) {
-                GetBuffer().data()[0] = 0x7f;
-            }
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
         }
-    }
-    else {
-        Error(sense_key::aborted_command, asc::no_additional_sense_information, status::reservation_conflict);
     }
 }
 
@@ -419,7 +406,6 @@ void Controller::Receive()
 
     case phase_t::msgout:
         XferMsg(GetBuffer()[0]);
-
         break;
 
     default:
@@ -583,6 +569,7 @@ void Controller::ParseMessage()
         case 0x0c: {
             LogTrace("Received BUS DEVICE RESET message");
             if (auto device = GetDeviceForLun(GetEffectiveLun()); device) {
+                device->SetReset(true);
                 device->DiscardReservation();
             }
             BusFree();
@@ -592,7 +579,7 @@ void Controller::ParseMessage()
         default:
             if (message >= 0x80) {
                 identified_lun = static_cast<int>(message) & 0x1f;
-                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
+                LogTrace("Received IDENTIFY message for LUN " + to_string(identified_lun));
             }
             break;
         }
@@ -631,7 +618,7 @@ void Controller::ProcessExtendedMessage()
 int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
-    return identified_lun != -1 ? identified_lun : GetLun();
+    return identified_lun != -1 ? identified_lun : GetCdbByte(1) >> 5;
 }
 
 void Controller::LogCdb() const

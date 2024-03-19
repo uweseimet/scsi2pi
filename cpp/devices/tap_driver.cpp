@@ -57,7 +57,7 @@ bool TapDriver::Init(const param_map &const_params)
     return false;
 #else
 
-    create_bridge = params["bridge"] == "true";
+    const bool create_bridge = params["bridge"] == "true";
 
     inet = params["inet"];
 
@@ -75,7 +75,7 @@ bool TapDriver::Init(const param_map &const_params)
 
     const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
-        error("Can't open IP socket: {}", strerror(errno));
+        error("Can't create IP socket: {}", strerror(errno));
         close(tap_fd);
         return false;
     }
@@ -87,24 +87,24 @@ bool TapDriver::Init(const param_map &const_params)
         return false;
     };
 
-    if (const string error = IpLink(true); !error.empty()) {
+    if (const string &error = IpLink(true); !error.empty()) {
         return cleanUp(error);
     }
 
-    // Only physical interfaces need a bridge
-    if (create_bridge && bridge_interface.starts_with("eth")) {
+    // Only physical interfaces need a bridge or can be in promiscuous mode
+    if (const bool is_physical = bridge_interface.starts_with("eth"); is_physical && create_bridge) {
         const int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
         if (fd == -1) {
-            return cleanUp(fmt::format("Can't open bridge socket: {}", strerror(errno)));
+            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)));
         }
 
-        if (const string error = CreateBridge(fd, ip_fd); !error.empty()) {
+        if (const string &error = CreateBridge(fd, ip_fd); !error.empty()) {
             close(fd);
             return cleanUp(error);
         }
 
         trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
-        const string error = BrSetif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, true);
+        const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, true);
         close(fd);
         if (!error.empty()) {
             return cleanUp(error);
@@ -112,14 +112,14 @@ bool TapDriver::Init(const param_map &const_params)
     }
     else {
         trace(">ip addr add {0} brd + dev {1}", inet, BRIDGE_INTERFACE_NAME);
-        if (const string error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME); !error.empty()) {
+        if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME); !error.empty()) {
             return cleanUp(error);
         }
     }
 
     close(ip_fd);
 
-    info("TAP interface " + BRIDGE_INTERFACE_NAME + " created");
+    info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
 
     return true;
 #endif
@@ -133,20 +133,20 @@ void TapDriver::CleanUp() const
 
     if (bridge_created) {
         if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            error("Can't open bridge socket: {}", strerror(errno));
+            error("Can't create bridge socket: {}", strerror(errno));
         } else {
             trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
-            if (const string error = BrSetif(fd, BRIDGE_NAME, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
+            if (const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
                 warn("Removing {0} from {1} failed: {2}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
                 warn("You may need to manually remove the TAP device");
             }
 
             trace(">ip link set dev " + BRIDGE_NAME + " down");
-            if (const string error = IpLink(fd, BRIDGE_NAME, false); !error.empty()) {
+            if (const string &error = IpLink(fd, BRIDGE_NAME, false); !error.empty()) {
                 warn(error);
             }
 
-            if (const string error = DeleteBridge(fd); !error.empty()) {
+            if (const string &error = DeleteBridge(fd); !error.empty()) {
                 warn(error);
             }
 
@@ -177,7 +177,7 @@ string TapDriver::CreateBridge(int bridge_fd, int ip_fd)
         }
 
         trace(">ip link set dev " + BRIDGE_NAME + " up");
-        if (const string error = IpLink(ip_fd, BRIDGE_NAME, true); !error.empty()) {
+        if (const string &error = IpLink(ip_fd, BRIDGE_NAME, true); !error.empty()) {
             return error;
         }
 
@@ -189,7 +189,7 @@ string TapDriver::CreateBridge(int bridge_fd, int ip_fd)
 
 string TapDriver::SetAddressAndNetMask(int fd, const string &interface) const
 {
-    const auto [address, netmask] = ExtractAddressAndMask(inet);
+    const auto [address, netmask] = ExtractAddressAndMask();
     if (address.empty() || netmask.empty()) {
         return "Error extracting inet address and netmask";
     }
@@ -219,11 +219,11 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface) const
     return "";
 }
 
-pair<string, string> TapDriver::ExtractAddressAndMask(const string &addr)
+pair<string, string> TapDriver::ExtractAddressAndMask() const
 {
-    string address = addr;
+    string address = inet;
     string netmask = DEFAULT_NETMASK;
-    if (const auto &components = Split(addr, '/', 2); components.size() == 2) {
+    if (const auto &components = Split(inet, '/', 2); components.size() == 2) {
         address = components[0];
 
         int m;
@@ -250,7 +250,7 @@ string TapDriver::AddBridge(int fd) const
     }
 
     trace(">brctl addif {0} {1}", BRIDGE_NAME, bridge_interface);
-    if (const string error = BrSetif(fd, BRIDGE_NAME, bridge_interface, true); !error.empty()) {
+    if (const string &error = BrSetIf(fd, bridge_interface, true); !error.empty()) {
         return error;
     }
 #endif
@@ -264,7 +264,7 @@ string TapDriver::DeleteBridge(int fd) const
     if (bridge_created) {
         trace(">brctl delbr " + BRIDGE_NAME);
         if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
-            return "Removing " + BRIDGE_NAME + " failed: " + strerror(errno);
+            return "Removing bridge " + BRIDGE_NAME + " failed: " + strerror(errno);
         }
     }
 #endif
@@ -275,8 +275,13 @@ string TapDriver::DeleteBridge(int fd) const
 string TapDriver::IpLink(bool up)
 {
     const int fd = socket(PF_INET, SOCK_DGRAM, 0);
+    if (fd == -1) {
+        return fmt::format("Can't create socket: {}", strerror(errno));
+    }
+
     trace(string(">ip link set " + BRIDGE_INTERFACE_NAME + " ") + (up ? "up" : "down"));
     const string result = IpLink(fd, BRIDGE_INTERFACE_NAME, up);
+
     close(fd);
 
     return result;
@@ -302,7 +307,7 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
     return "";
 }
 
-string TapDriver::BrSetif(int fd, const string &bridge, const string &interface, bool add)
+string TapDriver::BrSetIf(int fd, const string &interface, bool add)
 {
 #ifdef __linux__
     ifreq ifr;
@@ -311,7 +316,7 @@ string TapDriver::BrSetif(int fd, const string &bridge, const string &interface,
         return fmt::format("Can't if_nametoindex {0}: {1}", interface, strerror(errno));
     }
 
-    strncpy(ifr.ifr_name, bridge.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    strncpy(ifr.ifr_name, BRIDGE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
         return fmt::format("Can't ioctl {0}: {1}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
     }

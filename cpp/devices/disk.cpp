@@ -138,11 +138,10 @@ void Disk::Dispatch(scsi_command cmd)
 
         SetMediumChanged(false);
 
-        GetController()->Error(sense_key::unit_attention, asc::not_ready_to_ready_change);
+        throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
     }
-    else {
-        StorageDevice::Dispatch(cmd);
-    }
+
+    StorageDevice::Dispatch(cmd);
 }
 
 void Disk::ValidateFile()

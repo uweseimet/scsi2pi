@@ -1,6 +1,6 @@
 # What is SCSI2Pi?
 
-SCSI2Pi (or simply just S2P) is an alternative to the <a href="https://github.com/PiSCSI/piscsi" target="blank">PiSCSI software</a> for the PiSCSI/RaSCSI board. It provides an improved SCSI emulation, extendend functionality and new tools for the board's initiator mode. SCSI2Pi is compatible with the PiSCSI web UI and the <a href="https://www.scsi2pi.net/en/app.html" target="blank">SCSI Control app</a>.<br />
+SCSI2Pi is an alternative to the <a href="https://github.com/PiSCSI/piscsi" target="blank">PiSCSI software</a> for the PiSCSI/RaSCSI board. It provides an improved SCSI emulation, extendend functionality and new tools for the board's initiator mode. SCSI2Pi is compatible with the PiSCSI web UI and the <a href="https://www.scsi2pi.net/en/app.html" target="blank">SCSI Control app</a>.<br />
 You can switch from PiSCSI to SCSI2Pi (or back, if needed) in seconds, simply by installing/de-installing a <a href="https://www.scsi2pi.net/en/downloads.html" target="blank">package with the SCSI2Pi binaries</a>. No time-consuming compilation is required.<br />
 SCSI2Pi emulates several SCSI or SASI devices like hard drives, CD-ROM drives, printers or network adapters at the same time. You can easily add a range of devices to computers like 68k Macs, Atari ST/TT/Falcon030, Unix workstations, samplers or other computers with SCSI port. Compared to PiSCSI, SCSI2Pi offers <a href="https://www.scsi2pi.net/en/scsi2pi.html" target="blank">numerous extensions</a>, performance improvements and bug fixes. These add to the extensive changes and new features I contributed to the PiSCSI project in the past.<br />
 SCSI2Pi was chosen as the name for this project because there are not that many choices left for names that contain both "SCSI" and "Pi" ;-).
@@ -17,7 +17,7 @@ I am also the author of the <a href="https://www.scsi2pi.net/en/app.html" target
 
 # SCSI2Pi goals
 
-SCSI2Pi is not meant to completely replace the PiSCSI software, but only the actual SCSI/SASI emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media. SCSI2Pi also addresses compatibility issues.<br />
+SCSI2Pi is not meant to completely replace the PiSCSI software, but only the device emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media. SCSI2Pi also addresses compatibility issues.<br />
 There is no support for the X68000 platform, in particular not for the host bridge (SCBR) device. In PiSCSI the related code has always been in a bad shape, and nobody has been willing to test it. The other PiSCSI features (and more) are supported by SCSI2Pi - many of these I implemented anyway ;-).
 
 # SCSI2Pi website

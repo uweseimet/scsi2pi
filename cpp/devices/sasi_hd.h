@@ -9,7 +9,6 @@
 #pragma once
 
 #include <unordered_set>
-#include <vector>
 #include "disk.h"
 
 class SasiHd : public Disk

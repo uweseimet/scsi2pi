@@ -173,8 +173,8 @@ int S2p::Run(span<char*> args, bool in_process)
     PbServerInfo server_info;
     CommandResponse response;
     response.GetDevices(executor->GetAllDevices(), server_info, s2p_image.GetDefaultFolder());
-    const vector<PbDevice> &devices = { server_info.devices_info().devices().begin(),
-        server_info.devices_info().devices().end() };
+    const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
+        server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
     LogDevices(device_list);
     cout << device_list << flush;
@@ -199,8 +199,8 @@ int S2p::Run(span<char*> args, bool in_process)
 
 bool S2p::ParseProperties(const property_map &properties, int &port)
 {
+    const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
     try {
-        const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
         property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
 
         if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);

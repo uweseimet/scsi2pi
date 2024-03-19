@@ -110,7 +110,7 @@ void PrimaryDevice::Inquiry()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const vector<uint8_t> buf = InquiryInternal();
+    const vector<uint8_t> &buf = InquiryInternal();
 
     const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3)));
 
@@ -118,6 +118,7 @@ void PrimaryDevice::Inquiry()
 
     // Report if the device does not support the requested LUN
     if (!GetController()->GetDeviceForLun(GetController()->GetEffectiveLun())) {
+        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
@@ -153,7 +154,7 @@ void PrimaryDevice::RequestSense()
 {
     int effective_lun = GetController()->GetEffectiveLun();
 
-    // Note: According to the SCSI specs the LUN handling for REQUEST SENSE non-existing LUNs do *not* result
+    // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
     // in CHECK CONDITION. Only the Sense Key and ASC are set in order to signal the non-existing LUN.
     if (!GetController()->GetDeviceForLun(effective_lun)) {
         // LUN 0 can be assumed to be present (required to call RequestSense() below)
@@ -165,7 +166,7 @@ void PrimaryDevice::RequestSense()
         GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status::good);
     }
 
-    vector<byte> buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
+    const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4))));
     GetController()->CopyToBuffer(buf.data(), length);
@@ -259,13 +260,14 @@ void PrimaryDevice::ReleaseUnit()
     StatusPhase();
 }
 
-bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd) const
+bool PrimaryDevice::CheckReservation(int initiator_id) const
 {
     if (reserving_initiator == NOT_RESERVED || reserving_initiator == initiator_id) {
         return true;
     }
 
     // A reservation is valid for all commands except those excluded below
+    const auto cmd = GetController()->GetOpcode();
     if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
         || cmd == scsi_command::cmd_release6) {
         return true;
@@ -282,6 +284,9 @@ bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd) const
     else {
         LogTrace("Unknown initiator tries to access reserved device");
     }
+
+    GetController()->Error(sense_key::aborted_command, asc::no_additional_sense_information,
+        status::reservation_conflict);
 
     return false;
 }

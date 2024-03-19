@@ -260,26 +260,24 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     const level::level_enum l = level::from_str(level);
     // Compensate for spdlog using 'off' for unknown levels
     if (to_string_view(l) != level) {
-        warn("Invalid log level '" + level + "'");
+        warn("Invalid log level '{}'", level);
         return false;
     }
 
     set_level(l);
     DeviceLogger::SetLogIdAndLun(id, lun);
 
-    string msg;
     if (id != -1) {
         if (lun == -1) {
-            msg = fmt::format("Set log level for device {0} to '{1}'", id, level);
+            info("Set log level for device {0} to '{1}'", id, level);
         }
         else {
-            msg = fmt::format("Set log level for device {0}:{1} to '{2}'", id, lun, level);
+            info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
         }
     }
     else {
-        msg = fmt::format("Set log level to '{}'", level);
+        info("Set log level to '{}'", level);
     }
-    info(msg);
 
     return true;
 }

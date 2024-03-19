@@ -13,8 +13,6 @@ using namespace scsi_defs;
 
 void PhaseHandler::Init()
 {
-    assert(phase_executors.size() == 11);
-
     phase_executors[static_cast<int>(phase_t::busfree)] = [this]() {BusFree();};
     phase_executors[static_cast<int>(phase_t::arbitration)] = []() {throw invalid_argument("");};
     phase_executors[static_cast<int>(phase_t::selection)] = [this]() {Selection();};

@@ -15,7 +15,7 @@
 
 using namespace memory_util;
 
-OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true, { 512, 1024, 2048, 4096 })
+OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true, true, { 512, 1024, 2048, 4096 })
 {
     // 128 MB, 512 bytes per sector, 248826 sectors
     geometries[512 * 248826] = { 512, 248826 };
@@ -30,7 +30,6 @@ OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true
     SetProtectable(true);
     SetRemovable(true);
     SetLockable(true);
-    SupportsSaveParameters(true);
 }
 
 void OpticalMemory::Open()

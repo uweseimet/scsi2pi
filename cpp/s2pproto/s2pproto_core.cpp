@@ -243,15 +243,14 @@ int S2pProto::Run(span<char*> args, bool in_process)
 
     executor->SetTarget(target_id, target_lun, false);
 
-    int result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
+    int result = GenerateOutput(protobuf_input_filename, protobuf_output_filename);
 
     CleanUp();
 
     return result;
 }
 
-int S2pProto::GenerateOutput(S2pProtoExecutor::protobuf_format input_format, const string &input_filename,
-    S2pProtoExecutor::protobuf_format output_format, const string &output_filename)
+int S2pProto::GenerateOutput(const string &input_filename, const string &output_filename)
 {
     PbResult result;
     if (string error = executor->Execute(input_filename, input_format, result); !error.empty()) {

@@ -149,6 +149,9 @@ private:
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
 
+    constexpr static array<int, 9> DATA_PINS = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
+        PIN_DP };
+
     constexpr static int ARMT_CTRL = 2;
     constexpr static int ARMT_FREERUN = 8;
 
@@ -173,6 +176,7 @@ private:
     constexpr static uint32_t PADS_OFFSET_PI5 = 0x000f0000;
     constexpr static uint32_t GPIO_OFFSET = 0x00200000;
     constexpr static uint32_t GPIO_OFFSET_PI5 = 0x000d0000;
+    constexpr static uint32_t RIO_OFFSET_PI5 = 0x000e0000;
     constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
     constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;

@@ -90,13 +90,6 @@ TEST(ScsiHdTest, Inquiry)
         false, "file.hd1");
 }
 
-TEST(ScsiHdTest, SupportsSaveParameters)
-{
-    MockScsiHd hd(0, false);
-
-    EXPECT_TRUE(hd.SupportsSaveParameters());
-}
-
 TEST(ScsiHdTest, FinalizeSetup)
 {
     MockScsiHd hd(0, false);
