@@ -361,7 +361,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
     if (!dryRun) {
         // Remember some device data before they become invalid on removal
-        const string identifier = GetIdentifier(device);
+        const string &identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
 

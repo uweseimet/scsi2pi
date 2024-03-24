@@ -813,15 +813,9 @@ void Disk::ReadCapacity10()
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
 
-    // Create end of logical block address (blocks-1)
-    uint64_t capacity = GetBlockCount() - 1;
-
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
-    if (capacity > 4294967295) {
-        capacity = -1;
-    }
-    SetInt32(buf, 0, static_cast<uint32_t>(capacity));
-
+    const uint64_t capacity = GetBlockCount() - 1;
+    SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
     SetInt32(buf, 4, sector_size);
 
     DataInPhase(8);
@@ -836,19 +830,12 @@ void Disk::ReadCapacity16()
     }
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
+    fill_n(buf.begin(), 32, 0);
 
-    // Create end of logical block address (blocks-1)
     SetInt64(buf, 0, GetBlockCount() - 1);
-
-    // Create block length (1 << size)
     SetInt32(buf, 8, sector_size);
 
-    buf[12] = 0;
-
-    // Logical blocks per physical block: not reported (1 or more)
-    buf[13] = 0;
-
-    DataInPhase(14);
+    DataInPhase(min(32, static_cast<int>(GetInt32(GetController()->GetCdb(), 10))));
 }
 
 void Disk::ReadCapacity16_ReadLong16()

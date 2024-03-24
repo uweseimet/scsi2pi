@@ -626,7 +626,7 @@ void Controller::LogCdb() const
     const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(GetCdbByte(0))); i++) {
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(GetOpcode()); i++) {
         if (i) {
             s += ":";
         }

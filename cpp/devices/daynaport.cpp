@@ -60,7 +60,7 @@ bool DaynaPort::Init(const param_map &params)
         });
     AddCommand(scsi_command::cmd_retrieve_stats, [this]
         {
-            RetrieveStatistics();
+            RetrieveStats();
         });
     AddCommand(scsi_command::cmd_set_iface_mode, [this]
         {
@@ -140,8 +140,8 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 //---------------------------------------------------------------------------
 int DaynaPort::Read(cdb_t cdb, vector<uint8_t> &buf, uint64_t)
 {
-    // At startup the host may send a READ(6) command with a sector count of 1 to read the root sector.
-    // This will trigger a SCSI error message.
+    // At startup a driver may send a READ(6) command with a sector count of 1 to read the root sector.
+    // The code below will intentionally trigger a SCSI error message in this case.
     if (cdb[4] == 1) {
         return 0;
     }
@@ -249,8 +249,10 @@ int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 //              - long #3: frames lost
 //
 //---------------------------------------------------------------------------
-int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
+void DaynaPort::RetrieveStats() const
 {
+    auto &buf = GetController()->GetBuffer();
+
     memcpy(buf.data(), &m_scsi_link_stats, sizeof(m_scsi_link_stats));
 
     // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
@@ -264,7 +266,11 @@ int DaynaPort::RetrieveStats(cdb_t cdb, vector<uint8_t> &buf) const
     LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
         buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
-    return static_cast<int>(min(sizeof(m_scsi_link_stats), static_cast<size_t>(GetInt16(cdb, 3))));
+    const auto length = static_cast<int>(min(sizeof(m_scsi_link_stats),
+        static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3))));
+    GetController()->SetTransferSize(length, length);
+
+    DataInPhase(length);
 }
 
 void DaynaPort::TestUnitReady()
@@ -307,14 +313,6 @@ void DaynaPort::SendMessage6() const
     GetController()->SetTransferSize(length, length);
 
     DataOutPhase(length);
-}
-
-void DaynaPort::RetrieveStatistics() const
-{
-    const auto length = RetrieveStats(GetController()->GetCdb(), GetController()->GetBuffer());
-    GetController()->SetTransferSize(length, length);
-
-    DataInPhase(length);
 }
 
 //---------------------------------------------------------------------------

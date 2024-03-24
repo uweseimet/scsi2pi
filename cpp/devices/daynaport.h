@@ -51,12 +51,10 @@ public:
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     int WriteData(span<const uint8_t>, scsi_command) override;
 
-    int RetrieveStats(cdb_t, vector<uint8_t>&) const;
-
     void TestUnitReady() override;
     void GetMessage6() override;
     void SendMessage6() const override;
-    void RetrieveStatistics() const;
+    void RetrieveStats() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
     void EnableInterface() const;
