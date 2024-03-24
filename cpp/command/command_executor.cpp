@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -22,7 +22,13 @@ using namespace s2p_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    info((dryRun ? "Validating: " : "Executing: ") + PrintCommand(context.GetCommand(), pb_device));
+    const string &msg = PrintCommand(context.GetCommand(), pb_device);
+    if (dryRun) {
+        trace("Validating: " + msg);
+    }
+    else {
+        info("Executing: " + msg);
+    }
 
     const int id = pb_device.id();
     const int lun = pb_device.unit();
@@ -514,7 +520,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 }
 #pragma GCC diagnostic pop
 
-string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device) const
+string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
     const map<string, string, less<>> params = { command.params().cbegin(), command.params().cend() };
 

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -45,16 +45,11 @@ public:
     void DetachAll() const;
     string SetReservedIds(string_view);
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
-    string PrintCommand(const PbCommand&, const PbDeviceDefinition&) const;
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
     bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
     bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
-
-    static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
-    static bool ValidateIdAndLun(const CommandContext&, int, int);
-    static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
 
     mutex& GetExecutionLocker()
     {
@@ -66,16 +61,19 @@ public:
         return controller_factory->GetAllDevices();
     }
 
-private:
+    static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
+    static bool ValidateIdAndLun(const CommandContext&, int, int);
+    static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
+    static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
 
-    static void DisplayDeviceInfo(const PrimaryDevice&);
+private:
 
     static string GetIdentifier(const Device &device)
     {
         return device.GetTypeString() + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());
     }
 
-
+    static void DisplayDeviceInfo(const PrimaryDevice&);
     static bool CheckForReservedFile(const CommandContext&, const string&);
     static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
 

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -84,7 +84,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_NE(nullptr, controller->GetDeviceForLun(LUN));
     EXPECT_EQ(nullptr, controller->GetDeviceForLun(0));
     EXPECT_TRUE(controller->RemoveDevice(*device1));
-    EXPECT_EQ(0, controller->GetLunCount());
+    EXPECT_EQ(0L, controller->GetLunCount());
     EXPECT_FALSE(controller->RemoveDevice(*device1));
 }
 

@@ -13,7 +13,7 @@ There was also no interest in further developing the SCSI emulation and exploiti
 # Who am I?
 
 In the past I was the main contributor for the PiSCSI emulation backend. I revised the backend architecture, added a remote interface and re-engineered most of the legacy C++ code. The code was updated to C++-20, which is the latest C++ standard you can currently use on the Pi. All in all this resulted in more modular code and drastically improved the <a href="https://sonarcloud.io/project/overview?id=uweseimet_scsi2pi" target="blank">SonarQube code metrics</a>. Besides adding numerous <a href="https://www.scsi2pi.net/en/scsi2pi.html" target="blank">new features</a> and improving the compatibility with many platforms, I also fixed a range of bugs in the legacy codebase and added an extensive set of unit tests.<br />
-I am also the author of the <a href="https://www.scsi2pi.net/en/app.html" target="blank">SCSI Control app</a> for Android, which is the remote control for your PiSCSI/RaSCSI boards. SCSI Control supports both SCSI2Pi and PiSCSI. I also develop the <a href="https://www.hddriver.net" target="blank">HDDRIVER driver package</a> and tools for Atari 32 bit computers.
+I am also the author of the <a href="https://www.scsi2pi.net/en/app.html" target="blank">SCSI Control app</a> for Android, which is the remote control for your PiSCSI/RaSCSI boards. SCSI Control supports both SCSI2Pi and PiSCSI.
 
 # SCSI2Pi goals
 
