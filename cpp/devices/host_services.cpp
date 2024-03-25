@@ -231,7 +231,7 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
-    // 4 bytes basic information
+    // Basic information
     const int size = AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
@@ -250,7 +250,7 @@ int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
-    // 8 bytes basic information
+    // Basic information
     const int size = AddModePages(cdb, buf, 8, length, 65535);
 
     // The size fields do not count themselves

@@ -127,9 +127,9 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             continue;
         }
 
-        int page;
-        if (!GetAsUnsignedInt(key_components[1], page) || page > 0x3e) {
-            warn("Ignored invalid mode page property '{}'", key);
+        int page_code;
+        if (!GetAsUnsignedInt(key_components[1], page_code) || page_code > 0x3e) {
+            warn("Ignored invalid page code in mode page property '{}'", key);
             continue;
         }
 
@@ -138,35 +138,34 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
             continue;
         }
 
-        vector<byte> data;
+        vector<byte> page_data;
         try {
-            data = HexToBytes(value);
+            page_data = HexToBytes(value);
         }
         catch (const out_of_range&) {
-            warn("Ignored invalid mode page definition for page {0}: {1}", page, value);
+            warn("Ignored invalid mode page definition for page {0}: {1}", page_code, value);
             continue;
         }
 
-        if (data.empty()) {
-            trace("Removing default mode page {}", page);
+        if (page_data.empty()) {
+            trace("Removing default mode page {}", page_code);
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (page != (static_cast<int>(data[0]) & 0x3f)) {
-                warn("Ignored mode page definition with inconsistent page codes {0}: {1}", page, data[0]);
-                continue;
-
-            }
-
-            if (page && static_cast<byte>(data.size() - 2) != data[1]) {
-                warn("Ignored mode page definition with wrong page size {0}: {1}", page, data[1]);
+            if (page_code != (static_cast<int>(page_data[0]) & 0x3f)) {
+                warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
                 continue;
             }
 
-            trace("Adding/replacing mode page {0}: {1}", page, key_components[2]);
+            if (page_code && static_cast<byte>(page_data.size() - 2) != page_data[1]) {
+                warn("Ignored mode page definition with wrong page size {0}: {1}", page_code, page_data[1]);
+                continue;
+            }
+
+            trace("Adding/replacing mode page {0}: {1}", page_code, value);
         }
 
-        pages[page] = data;
+        pages[page_code] = page_data;
     }
 
     return pages;

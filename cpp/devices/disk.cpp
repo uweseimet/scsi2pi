@@ -676,7 +676,6 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
 
         default:
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
-            break;
         }
 
         length -= page_size;

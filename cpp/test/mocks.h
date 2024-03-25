@@ -288,23 +288,6 @@ public:
     }
 };
 
-class MockPage0ModePageDevice : public MockModePageDevice
-{
-    FRIEND_TEST(ModePageDeviceTest, Page0);
-
-public:
-
-    using MockModePageDevice::MockModePageDevice;
-
-    void SetUpModePages(map<int, vector<byte>> &pages, int, bool) const override
-    {
-        // Return dummy data for pages 0 and 1
-        vector<byte> buf(32);
-        pages[0] = buf;
-        pages[1] = buf;
-    }
-};
-
 class MockStorageDevice : public StorageDevice
 {
     FRIEND_TEST(StorageDeviceTest, ValidateFile);

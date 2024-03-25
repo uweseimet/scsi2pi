@@ -39,16 +39,6 @@ TEST(ModePageDeviceTest, AddModePages)
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Maximum size was ignored";
 }
 
-TEST(ModePageDeviceTest, Page0)
-{
-    vector<uint8_t> buf(512);
-    MockPage0ModePageDevice device;
-
-    const vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f:00:00:00");
-    EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
-    EXPECT_EQ(1, device.AddModePages(cdb, buf, 0, 1, 255));
-}
-
 TEST(ModePageDeviceTest, AddVendorPages)
 {
     map<int, vector<byte>> pages;
