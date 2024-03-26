@@ -50,7 +50,7 @@ TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
 
-    auto [_, device] = CreatePrimaryDevice(ID);
+    auto [__, device] = CreatePrimaryDevice(ID);
 
     EXPECT_EQ(ID, device->GetId());
 }

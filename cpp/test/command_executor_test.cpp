@@ -395,24 +395,21 @@ TEST(CommandExecutorTest, ValidateImageFile)
 
 TEST(CommandExecutorTest, PrintCommand)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>(false);
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
-
     PbCommand command;
-    string s = executor->PrintCommand(command, definition);
+
+    string s = CommandExecutor::PrintCommand(command, definition);
     EXPECT_NE(s.find("operation="), string::npos);
     EXPECT_EQ(s.find("key1=value1"), string::npos);
     EXPECT_EQ(s.find("key2=value2"), string::npos);
 
     SetParam(command, "key1", "value1");
-    s = executor->PrintCommand(command, definition);
+    s = CommandExecutor::PrintCommand(command, definition);
     EXPECT_NE(s.find("operation="), string::npos);
     EXPECT_NE(s.find("key1=value1"), string::npos);
 
     SetParam(command, "key2", "value2");
-    s = executor->PrintCommand(command, definition);
+    s = CommandExecutor::PrintCommand(command, definition);
     EXPECT_NE(s.find("operation="), string::npos);
     EXPECT_NE(s.find("key1=value1"), string::npos);
     EXPECT_NE(s.find("key2=value2"), string::npos);

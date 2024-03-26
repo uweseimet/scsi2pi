@@ -77,6 +77,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 s2p requires authentication.\n"
             << "  --list-settings/-s             List s2p settings.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
+            << "  --persist                      Save the current configuration to /etc/s2p.conf.\n"
             << "  --version/-v                   Display the program version.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n";
@@ -132,6 +133,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_LOCALE = 7;
     const int OPT_SCSI_LEVEL = 8;
     const int OPT_LIST_EXTENSIONS = 9;
+    const int OPT_PERSIST = 10;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
@@ -164,6 +166,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { "locale", required_argument, nullptr, OPT_LOCALE },
         { "log-level", required_argument, nullptr, 'L' },
         { "name", required_argument, nullptr, 'n' },
+        { "persist", no_argument, nullptr, OPT_PERSIST },
         { "port", required_argument, nullptr, 'p' },
         { "rename", required_argument, nullptr, 'R' },
         { "reserve-ids", optional_argument, nullptr, 'r' },
@@ -326,6 +329,10 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case 'P':
             command.set_operation(PROPERTIES_INFO);
+            break;
+
+        case OPT_PERSIST:
+            command.set_operation(PERSIST_CONFIGURATION);
             break;
 
         case 't':

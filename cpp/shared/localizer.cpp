@@ -273,6 +273,13 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "fr", "Il ne peut y avoir qu'un seul périphérique %1");
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "es", "Sólo puede haber un único dispositivo %1");
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "zh", "只能有一个%1设备");
+
+    Add(LocalizationKey::ERROR_PERSIST, "en", "Couldn't save '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "de", "'/etc/s2p.conf' konnte nicht gespeichert werden");
+    Add(LocalizationKey::ERROR_PERSIST, "sv", "Kunde inte spara '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "fr", "Impossible d'enregistrer '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "es", "No se pudo guardar '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "zh", "无法保存'/etc/s2p.conf'");
 }
 
 void Localizer::Add(LocalizationKey key, const string &locale, string_view value)

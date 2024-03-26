@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/shared_exceptions.h"
@@ -143,6 +144,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case RESERVE_IDS:
         return executor.ProcessCmd(context);
+
+    case PERSIST_CONFIGURATION:
+        if (PropertyHandler::Instance().Persist()) {
+            return context.ReturnSuccessStatus();
+        }
+        else {
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
+        }
 
     default:
         // The remaining commands may only be executed when the target is idle

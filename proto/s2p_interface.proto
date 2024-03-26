@@ -198,6 +198,9 @@ enum PbOperation {
 
     // Get properties (PbPropertiesInfo)
     PROPERTIES_INFO = 100;
+    
+    // Persist configuration in /etc/s2p.conf
+    PERSIST_CONFIGURATION = 101;
 }
 
 // The operation parameter meta data. The parameter data type is provided by the protobuf API.

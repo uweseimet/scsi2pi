@@ -51,6 +51,8 @@ public:
 
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 
+    bool Persist() const;
+
 private:
 
     PropertyHandler() = default;

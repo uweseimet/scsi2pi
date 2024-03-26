@@ -22,7 +22,7 @@ TEST(CommandResponseTest, Operation_Count)
 
     PbOperationInfo info;
     response.GetOperationInfo(info, 0);
-    EXPECT_EQ(33, info.operations_size());
+    EXPECT_EQ(34, info.operations_size());
 }
 
 void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)

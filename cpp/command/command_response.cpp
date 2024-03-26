@@ -398,8 +398,6 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
 
     CreateOperation(operation_info, STATISTICS_INFO, "Get statistics");
 
-    CreateOperation(operation_info, PROPERTIES_INFO, "Get properties");
-
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
     operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set default image file folder");
@@ -445,6 +443,10 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
 
     operation = CreateOperation(operation_info, CHECK_AUTHENTICATION, "Check whether an authentication token is valid");
     AddOperationParameter(*operation, "token", "Authentication token to be checked", "", true);
+
+    CreateOperation(operation_info, PROPERTIES_INFO, "Get current s2p properties");
+
+    CreateOperation(operation_info, PERSIST_CONFIGURATION, "Save current configuration to /etc/s2p.conf");
 
     CreateOperation(operation_info, OPERATION_INFO, "Get operation meta data");
 }

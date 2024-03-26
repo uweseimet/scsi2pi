@@ -170,3 +170,21 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
 
     return pages;
 }
+
+bool PropertyHandler::Persist() const
+{
+    error_code error;
+    remove(GLOBAL_CONFIGURATION + ".old", error);
+    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION + ".old"), error);
+
+    ofstream out(GLOBAL_CONFIGURATION);
+    for (const auto& [key, value] : GetProperties()) {
+        out << key << "=" << value << "\n";
+        if (out.fail()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
