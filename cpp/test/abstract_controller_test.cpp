@@ -69,7 +69,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     const int ID = 1;
     const int LUN = 4;
 
-    auto controller = make_shared<NiceMock<MockAbstractController>>(ID);
+    auto controller = make_shared<MockAbstractController>(ID);
 
     auto device1 = make_shared<MockPrimaryDevice>(LUN);
     auto device2 = make_shared<MockPrimaryDevice>(32);
@@ -84,7 +84,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_NE(nullptr, controller->GetDeviceForLun(LUN));
     EXPECT_EQ(nullptr, controller->GetDeviceForLun(0));
     EXPECT_TRUE(controller->RemoveDevice(*device1));
-    EXPECT_EQ(0L, controller->GetLunCount());
+    EXPECT_EQ(0U, controller->GetLunCount());
     EXPECT_FALSE(controller->RemoveDevice(*device1));
 }
 

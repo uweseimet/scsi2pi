@@ -635,6 +635,7 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
     int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
     length -= offset;
 
+    // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
     SetUpModePages(pages, 0x3f, true);
 
@@ -660,10 +661,11 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
         }
 
         switch (page_code) {
-        // Read-write/Verify error recovery pages
+        // Read-write/Verify error recovery and caching pages
         case 0x01:
         case 0x07:
-            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
+        case 0x08:
+            // Simply ignore the requested changes in the error handling or caching, they are not relevant for SCSI2Pi
             break;
 
         // Format device page

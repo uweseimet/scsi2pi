@@ -26,15 +26,15 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
 
 TEST(PrimaryDeviceTest, SetScsiLevel)
 {
-    auto device = make_shared<MockPrimaryDevice>(0);
+    MockPrimaryDevice device(0);
 
-    EXPECT_EQ(scsi_level::scsi_2, device->GetScsiLevel());
+    EXPECT_EQ(scsi_level::scsi_2, device.GetScsiLevel());
 
-    EXPECT_FALSE(device->SetScsiLevel(scsi_level::none));
-    EXPECT_FALSE(device->SetScsiLevel(static_cast<scsi_level>(9)));
+    EXPECT_FALSE(device.SetScsiLevel(scsi_level::none));
+    EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(9)));
 
-    EXPECT_TRUE(device->SetScsiLevel(scsi_level::spc_6));
-    EXPECT_EQ(scsi_level::spc_6, device->GetScsiLevel());
+    EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_6));
+    EXPECT_EQ(scsi_level::spc_6, device.GetScsiLevel());
 }
 
 TEST(PrimaryDeviceTest, Status)
@@ -50,7 +50,7 @@ TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
 
-    auto [controller, device] = CreatePrimaryDevice(ID);
+    auto [_, device] = CreatePrimaryDevice(ID);
 
     EXPECT_EQ(ID, device->GetId());
 }
@@ -317,18 +317,17 @@ TEST(PrimaryDeviceTest, ReportLuns)
 
 TEST(PrimaryDeviceTest, Dispatch)
 {
-    auto [controller, device] = CreatePrimaryDevice();
+    MockPrimaryDevice device(0);
 
-    TestShared::Dispatch(*device, static_cast<scsi_command>(0x1f), sense_key::illegal_request,
+    TestShared::Dispatch(device, static_cast<scsi_command>(0x1f), sense_key::illegal_request,
         asc::invalid_command_operation_code, "Unsupported SCSI command");
 }
 
 TEST(PrimaryDeviceTest, Init)
 {
-    param_map params;
     MockPrimaryDevice device(0);
 
-    EXPECT_TRUE(device.Init(params)) << "Initialization of primary device must not fail";
+    EXPECT_TRUE(device.Init( {})) << "Initialization of primary device must not fail";
 }
 
 TEST(PrimaryDeviceTest, GetDelayAfterBytes)

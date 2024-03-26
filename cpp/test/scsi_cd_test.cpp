@@ -6,31 +6,29 @@
 //
 //---------------------------------------------------------------------------
 
-#include <fstream>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "base/device_factory.h"
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.iso");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCCD, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
-    EXPECT_FALSE(device->SupportsParams());
-    EXPECT_FALSE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_TRUE(device->IsReadOnly());
-    EXPECT_TRUE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_TRUE(device->IsLockable());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_TRUE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    MockScsiCd cd(0);
 
-    EXPECT_EQ("SCSI2Pi", device->GetVendor());
-    EXPECT_EQ("SCSI CD-ROM", device->GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
+    EXPECT_EQ(SCCD, cd.GetType());
+    EXPECT_TRUE(cd.SupportsFile());
+    EXPECT_FALSE(cd.SupportsParams());
+    EXPECT_FALSE(cd.IsProtectable());
+    EXPECT_FALSE(cd.IsProtected());
+    EXPECT_TRUE(cd.IsReadOnly());
+    EXPECT_TRUE(cd.IsRemovable());
+    EXPECT_FALSE(cd.IsRemoved());
+    EXPECT_TRUE(cd.IsLockable());
+    EXPECT_FALSE(cd.IsLocked());
+    EXPECT_TRUE(cd.IsStoppable());
+    EXPECT_FALSE(cd.IsStopped());
+
+    EXPECT_EQ("SCSI2Pi", cd.GetVendor());
+    EXPECT_EQ("SCSI CD-ROM", cd.GetProduct());
+    EXPECT_EQ(TestShared::GetVersion(), cd.GetRevision());
 }
 
 void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)

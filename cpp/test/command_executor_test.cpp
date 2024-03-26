@@ -23,7 +23,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
 
     auto bus = make_shared<MockBus>();
     MockAbstractController controller(bus, ID);
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
@@ -108,7 +108,7 @@ TEST(CommandExecutorTest, ProcessCmd)
 {
     auto bus = make_shared<MockBus>();
     MockAbstractController controller(bus, 0);
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
 
     PbCommand command_detach_all;
@@ -169,7 +169,7 @@ TEST(CommandExecutorTest, Attach)
 
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
@@ -245,7 +245,7 @@ TEST(CommandExecutorTest, Insert)
 {
     auto bus = make_shared<MockBus>();
     auto [controller, device] = CreateDevice(SCHD);
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
@@ -301,7 +301,7 @@ TEST(CommandExecutorTest, Detach)
 
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -327,7 +327,7 @@ TEST(CommandExecutorTest, DetachAll)
 
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
 
     auto device = device_factory.CreateDevice(SCHS, 0, "");
@@ -343,7 +343,7 @@ TEST(CommandExecutorTest, DetachAll)
 TEST(CommandExecutorTest, SetReservedIds)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
 
     string error = executor->SetReservedIds("xyz");
@@ -382,7 +382,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
 {
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -396,7 +396,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
 TEST(CommandExecutorTest, PrintCommand)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
 
@@ -422,7 +422,7 @@ TEST(CommandExecutorTest, EnsureLun0)
 {
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -447,7 +447,7 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
 
     const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -462,7 +462,7 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
 TEST(CommandExecutorTest, CreateDevice)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -479,7 +479,7 @@ TEST(CommandExecutorTest, CreateDevice)
 TEST(CommandExecutorTest, SetSectorSize)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -502,7 +502,7 @@ TEST(CommandExecutorTest, SetSectorSize)
 TEST(CommandExecutorTest, ValidateOperationAgainstDevice)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -555,7 +555,7 @@ TEST(CommandExecutorTest, ValidateOperationAgainstDevice)
 TEST(CommandExecutorTest, ValidateIdAndLun)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
@@ -571,7 +571,7 @@ TEST(CommandExecutorTest, ValidateIdAndLun)
 TEST(CommandExecutorTest, SetProductData)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
+    auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");

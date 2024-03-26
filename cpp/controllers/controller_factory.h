@@ -17,7 +17,7 @@ class ControllerFactory
 
 public:
 
-    explicit ControllerFactory(bool b = false)
+    explicit ControllerFactory(bool b)
     {
         is_sasi = b;
     }

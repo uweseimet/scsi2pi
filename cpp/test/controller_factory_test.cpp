@@ -18,7 +18,7 @@ TEST(ControllerFactoryTest, LifeCycle)
     const int LUN2 = 1;
 
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory_scsi;
+    ControllerFactory controller_factory_scsi(false);
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     auto device = device_factory.CreateDevice(SCHS, -1, "");
@@ -82,7 +82,7 @@ TEST(ControllerFactoryTest, AttachToController)
     const int LUN2 = 0;
 
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     auto device1 = device_factory.CreateDevice(SCHS, LUN1, "");
@@ -96,7 +96,7 @@ TEST(ControllerFactoryTest, AttachToController)
 
 TEST(ControllerFactory, ProcessOnController)
 {
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
 
     EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
 }
