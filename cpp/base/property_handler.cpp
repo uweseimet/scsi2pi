@@ -16,9 +16,9 @@ using namespace filesystem;
 using namespace spdlog;
 using namespace s2p_util;
 
-void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties)
+void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties, bool ignore_conf)
 {
-    // A clear property cache helps with testing because Init() can be called for different files
+    // A clear property cache helps with unit testing because Init() can be called for different files
     property_cache.clear();
 
     property_map properties;
@@ -28,13 +28,15 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     properties[PropertyHandler::SCAN_DEPTH] = "1";
 
     // Always parse the optional global property file
-    if (exists(path(GLOBAL_CONFIGURATION))) {
+    if (!ignore_conf && exists(path(GLOBAL_CONFIGURATION))) {
         ParsePropertyFile(properties, GLOBAL_CONFIGURATION, true);
     }
 
     // When there is no explicit property file list parse the local property file
     if (filenames.empty()) {
-        ParsePropertyFile(properties, GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
+        if (!ignore_conf) {
+            ParsePropertyFile(properties, GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
+        }
     }
     else {
         for (const auto &filename : Split(filenames, ',')) {

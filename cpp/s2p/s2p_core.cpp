@@ -124,9 +124,10 @@ int S2p::Run(span<char*> args, bool in_process)
     s2p_parser.Banner(false);
 
     bool is_sasi = false;
-    const auto &properties = s2p_parser.ParseArguments(args, is_sasi);
+    bool ignore_conf = false;
+    const auto &properties = s2p_parser.ParseArguments(args, is_sasi, ignore_conf);
     int port;
-    if (!ParseProperties(properties, port)) {
+    if (!ParseProperties(properties, port, ignore_conf)) {
         return EXIT_FAILURE;
     }
 
@@ -197,11 +198,12 @@ int S2p::Run(span<char*> args, bool in_process)
     return EXIT_SUCCESS;
 }
 
-bool S2p::ParseProperties(const property_map &properties, int &port)
+bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore_conf)
 {
     const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
     try {
-        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties);
+        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
+            ignore_conf);
 
         if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
         !CommandDispatcher::SetLogLevel(log_level)) {

@@ -16,6 +16,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
+[\fB\--ignore-conf\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
 [\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
@@ -98,6 +99,9 @@ Set the s2p configuration property with the name KEY to the value VALUE. Propert
 .BR --property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The default global property file is /etc/s2p.conf. This file is parsed first.
 The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
+.TP
+.BR --ignore-conf\fI " " \fI
+Ignore any properties in the global configuration file /etc/s2p.conf and the local property file ~/.config/s2p.conf.
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.

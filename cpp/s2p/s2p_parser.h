@@ -21,7 +21,7 @@ public:
     ~S2pParser() = default;
 
     void Banner(bool) const;
-    property_map ParseArguments(span<char*>, bool&) const;
+    property_map ParseArguments(span<char*>, bool&, bool&) const;
 
 private:
 

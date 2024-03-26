@@ -39,7 +39,7 @@ public:
         return instance;
     }
 
-    void Init(const string&, const property_map&);
+    void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
     string GetProperty(string_view) const;

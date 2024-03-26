@@ -27,7 +27,7 @@ private:
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;
-    bool ParseProperties(const property_map&, int&);
+    bool ParseProperties(const property_map&, int&, bool);
     void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;

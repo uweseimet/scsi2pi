@@ -31,7 +31,7 @@ PropertyHandler SetUpProperties(string_view properties1, string_view properties2
         write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
-    property_handler.Init(filenames, cmd_properties);
+    property_handler.Init(filenames, cmd_properties, true);
     return property_handler;
 }
 
@@ -50,8 +50,8 @@ device.3.params=params3
 )";
 
     auto property_handler = PropertyHandler::Instance();
-    property_handler.Init("", { });
-    EXPECT_THROW(property_handler.Init("non_existing_file", { }), parser_exception);
+    property_handler.Init("", { }, true);
+    EXPECT_THROW(property_handler.Init("non_existing_file", { }, true), parser_exception);
 
     property_map cmd_properties;
     cmd_properties["key1"] = "value2";

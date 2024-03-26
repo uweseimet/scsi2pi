@@ -46,6 +46,7 @@ void S2pParser::Banner(bool usage) const
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
+            << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
             << "  --version/-v                Display the program version.\n"
             << "  --help                      Display this help.\n"
             << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
@@ -61,10 +62,11 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_HELP = 3;
+    const int OPT_IGNORE_CONF = 3;
+    const int OPT_HELP = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
@@ -72,6 +74,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
+        { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-pattern", required_argument, nullptr, 'l' },
@@ -117,7 +120,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:BH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -168,6 +171,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         case OPT_SCSI_LEVEL:
             scsi_level = optarg;
+            continue;
+
+        case OPT_IGNORE_CONF:
+            ignore_conf = true;
             continue;
 
         case OPT_HELP:
