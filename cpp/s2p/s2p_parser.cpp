@@ -110,7 +110,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
     string id_lun;
     string type;
     string scsi_level;
-    string product_data;
+    string product;
     string block_size;
     string caching_mode;
     bool blue_scsi_mode = false;
@@ -162,7 +162,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
             continue;
 
         case 'n':
-            product_data = optarg;
+            product = optarg;
             continue;
 
         case 't':
@@ -218,8 +218,8 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
         if (!scsi_level.empty()) {
             properties[device_key + "scsi_level"] = scsi_level;
         }
-        if (!product_data.empty()) {
-            properties[device_key + "product_data"] = product_data;
+        if (!product.empty()) {
+            properties[device_key + "product"] = product;
         }
         if (!params.empty()) {
             properties[device_key + "params"] = params;
@@ -228,7 +228,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
         id_lun = "";
         type = "";
         scsi_level = "";
-        product_data = "";
+        product = "";
         block_size = "";
         caching_mode = "";
     }
@@ -290,13 +290,13 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
         }
         // When there is no block_size number after the "_" separator the string is the product data
         else {
-            properties[device_key + "product_data"] = components[1];
+            properties[device_key + "product"] = components[1];
         }
     }
     properties[device_key + "block_size"] = block_size;
 
     if (components.size() > 2) {
-        properties[device_key + "product_data"] = components[2];
+        properties[device_key + "product"] = components[2];
     }
 
     return device_key;
