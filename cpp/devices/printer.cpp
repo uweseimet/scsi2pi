@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -65,20 +65,6 @@ bool Printer::Init(const param_map &params)
             TestUnitReady();
         });
 
-    // Required also in this class in order to fulfill the ScsiPrinterCommands interface contract
-    AddCommand(scsi_command::cmd_reserve6, [this]
-        {
-            ReserveUnit();
-        });
-    AddCommand(scsi_command::cmd_release6, [this]
-        {
-            ReleaseUnit();
-        });
-    AddCommand(scsi_command::cmd_send_diagnostic, [this]
-        {
-            SendDiagnostic();
-        });
-
     if (GetParam("cmd").find("%f") == string::npos) {
         LogTrace("Missing filename specifier %f");
         return false;
@@ -95,8 +81,6 @@ bool Printer::Init(const param_map &params)
 
 void Printer::CleanUp()
 {
-    PrimaryDevice::CleanUp();
-
     if (out.is_open()) {
         out.close();
     }

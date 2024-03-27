@@ -1,12 +1,13 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 
 using namespace scsi_defs;
@@ -27,13 +28,6 @@ void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)
 TEST(OpticalMemoryTest, Inquiry)
 {
     TestShared::Inquiry(SCMO, device_type::optical_memory, scsi_level::scsi_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
-}
-
-TEST(OpticalMemoryTest, SupportsSaveParameters)
-{
-    MockOpticalMemory mo(0);
-
-    EXPECT_TRUE(mo.SupportsSaveParameters());
 }
 
 TEST(OpticalMemoryTest, GetSectorSizes)

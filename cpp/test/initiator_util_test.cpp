@@ -2,17 +2,19 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "s2p_core.h"
+#include "mocks.h"
+#include "initiator/initiator_util.h"
 
-using namespace std;
+using namespace initiator_util;
 
-int main(int argc, char *argv[])
+TEST(InitiatorUtilTest, ResetBus)
 {
-    vector<char*> args(argv, argv + argc);
+    NiceMock<MockBus> bus;
 
-    return S2p().Run(args);
+    EXPECT_CALL(bus, Reset);
+    ResetBus(bus);
 }

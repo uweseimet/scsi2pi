@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -30,7 +30,7 @@ TEST(StorageDeviceTest, ValidateFile)
     EXPECT_THROW(device.ValidateFile(), io_exception);
 
     const path filename = CreateTempFile(1);
-    device.SetFilename(string(filename));
+    device.SetFilename(filename.string());
     device.SetReadOnly(false);
     device.SetProtectable(true);
     device.ValidateFile();
@@ -65,12 +65,32 @@ TEST(StorageDeviceTest, MediumChanged)
     EXPECT_FALSE(device.IsMediumChanged());
 }
 
+TEST(StorageDeviceTest, ReserveUnreserveFile)
+{
+    MockStorageDevice device1;
+    MockStorageDevice device2;
+
+    device1.SetFilename("");
+    EXPECT_FALSE(device1.ReserveFile());
+    device1.SetFilename("filename1");
+    EXPECT_TRUE(device1.ReserveFile());
+    EXPECT_FALSE(device1.ReserveFile());
+    device2.SetFilename("filename1");
+    EXPECT_FALSE(device2.ReserveFile());
+    device2.SetFilename("filename2");
+    EXPECT_TRUE(device2.ReserveFile());
+    device1.UnreserveFile();
+    EXPECT_TRUE(device1.GetFilename().empty());
+    device2.UnreserveFile();
+    EXPECT_TRUE(device2.GetFilename().empty());
+}
+
 TEST(StorageDeviceTest, GetIdsForReservedFile)
 {
     const int ID = 1;
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
     MockAbstractController controller(bus, ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");
@@ -98,7 +118,7 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     const int ID = 1;
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
     MockAbstractController controller(bus, ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");

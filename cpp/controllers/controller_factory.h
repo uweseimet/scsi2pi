@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -17,7 +17,7 @@ class ControllerFactory
 
 public:
 
-    explicit ControllerFactory(bool b = false)
+    explicit ControllerFactory(bool b)
     {
         is_sasi = b;
     }

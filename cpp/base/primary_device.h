@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -62,7 +62,7 @@ public:
         return delay_after_bytes;
     }
 
-    bool CheckReservation(int, scsi_command, bool) const;
+    bool CheckReservation(int) const;
     void DiscardReservation();
 
     void Reset() override;
@@ -145,6 +145,10 @@ protected:
     {
         device_logger.Debug(s);
     }
+    void LogInfo(const string &s) const
+    {
+        device_logger.Info(s);
+    }
     void LogWarn(const string &s) const
     {
         device_logger.Warn(s);
@@ -156,7 +160,7 @@ protected:
 
 private:
 
-    static const int NOT_RESERVED = -2;
+    static constexpr int NOT_RESERVED = -2;
 
     void SetController(AbstractController*);
 

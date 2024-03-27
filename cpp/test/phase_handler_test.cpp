@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2023 Uwe Seimet
 //
@@ -130,6 +130,9 @@ TEST(PhaseHandlerTest, ProcessPhase)
     handler.SetPhase(phase_t::msgout);
     EXPECT_CALL(handler, MsgOut);
     EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(phase_t::arbitration);
+    EXPECT_FALSE(handler.ProcessPhase());
 
     handler.SetPhase(phase_t::reselection);
     EXPECT_FALSE(handler.ProcessPhase());

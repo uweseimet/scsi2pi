@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -28,20 +28,12 @@ TEST(SasiHdTest, RequestSense)
     auto [controller, hd] = CreateDevice(SAHD, LUN);
 
     // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
+    controller->SetCdbByte(4, 4);
     EXPECT_CALL(*controller, DataIn());
     EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_request_sense));
     span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);
-}
-
-TEST(SasiHdTest, FinalizeSetup)
-{
-    MockSasiHd hd(0);
-
-    hd.SetSectorSizeInBytes(1024);
-    EXPECT_THROW(hd.FinalizeSetup(), io_exception)<< "Device has 0 blocks";
 }
 
 TEST(SasiHdTest, GetSectorSizes)
@@ -50,7 +42,6 @@ TEST(SasiHdTest, GetSectorSizes)
 
     const auto &sector_sizes = hd.GetSupportedSectorSizes();
     EXPECT_EQ(3U, sector_sizes.size());
-
     EXPECT_TRUE(sector_sizes.contains(256));
     EXPECT_TRUE(sector_sizes.contains(512));
     EXPECT_TRUE(sector_sizes.contains(1024));

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -34,9 +34,7 @@ PbCachingMode protobuf_util::ParseCachingMode(const string &value)
     string v = value;
     ranges::replace(v, '-', '_');
 
-    string m;
-    ranges::transform(v, back_inserter(m), ::toupper);
-    if (PbCachingMode mode; PbCachingMode_Parse(m, &mode)) {
+    if (PbCachingMode mode; PbCachingMode_Parse(ToUpper(v), &mode)) {
         return mode;
     }
 
@@ -206,7 +204,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
     const string s = message.SerializeAsString();
-    vector<uint8_t> data(s.begin(), s.end());
+    vector<uint8_t> data(s.cbegin(), s.cend());
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),

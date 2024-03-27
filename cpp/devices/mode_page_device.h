@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -15,8 +15,8 @@ class ModePageDevice : public PrimaryDevice
 {
 public:
 
-    ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m)
-    : PrimaryDevice(type, level, lun), supports_mode_select(m)
+    ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m, bool s)
+    : PrimaryDevice(type, level, lun), supports_mode_select(m), supports_save_parameters(s)
     {
     }
     ~ModePageDevice() override = default;
@@ -27,14 +27,6 @@ public:
 
 protected:
 
-    bool SupportsSaveParameters() const
-    {
-        return supports_save_parameters;
-    }
-    void SupportsSaveParameters(bool b)
-    {
-        supports_save_parameters = b;
-    }
     int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
     virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const = 0;
     virtual void AddVendorPages(map<int, vector<byte>>&, int, bool) const
@@ -56,7 +48,7 @@ private:
 
     bool supports_mode_select;
 
-    bool supports_save_parameters = false;
+    bool supports_save_parameters;
 
     PropertyHandler &property_handler = PropertyHandler::Instance();
 };

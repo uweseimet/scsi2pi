@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,29 +8,28 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "base/device_factory.h"
 #include "devices/printer.h"
 
 TEST(PrinterTest, Device_Defaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "printer");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCLP, device->GetType());
-    EXPECT_FALSE(device->SupportsFile());
-    EXPECT_TRUE(device->SupportsParams());
-    EXPECT_FALSE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_FALSE(device->IsReadOnly());
-    EXPECT_FALSE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLockable());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_FALSE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    Printer printer(0);
 
-    EXPECT_EQ("SCSI2Pi", device->GetVendor());
-    EXPECT_EQ("SCSI PRINTER", device->GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
+    EXPECT_EQ(SCLP, printer.GetType());
+    EXPECT_FALSE(printer.SupportsFile());
+    EXPECT_TRUE(printer.SupportsParams());
+    EXPECT_FALSE(printer.IsProtectable());
+    EXPECT_FALSE(printer.IsProtected());
+    EXPECT_FALSE(printer.IsReadOnly());
+    EXPECT_FALSE(printer.IsRemovable());
+    EXPECT_FALSE(printer.IsRemoved());
+    EXPECT_FALSE(printer.IsLockable());
+    EXPECT_FALSE(printer.IsLocked());
+    EXPECT_FALSE(printer.IsStoppable());
+    EXPECT_FALSE(printer.IsStopped());
+
+    EXPECT_EQ("SCSI2Pi", printer.GetVendor());
+    EXPECT_EQ("SCSI PRINTER", printer.GetProduct());
+    EXPECT_EQ(TestShared::GetVersion(), printer.GetRevision());
 }
 
 TEST(PrinterTest, GetDefaultParams)

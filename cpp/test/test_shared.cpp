@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "mocks.h"
 #include "shared/s2p_version.h"
+#include "shared/shared_exceptions.h"
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 
@@ -117,7 +118,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 pair<int, path> testing::OpenTempFile()
 {
     const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
-    vector<char> f(filename.begin(), filename.end());
+    vector<char> f(filename.cbegin(), filename.cend());
     f.emplace_back(0);
 
     const int fd = mkstemp(f.data());

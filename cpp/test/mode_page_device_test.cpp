@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -9,17 +9,6 @@
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 #include "devices/mode_page_device.h"
-
-TEST(ModePageDeviceTest, SupportsSaveParameters)
-{
-    MockModePageDevice device;
-
-    EXPECT_FALSE(device.SupportsSaveParameters()) << "Wrong default value";
-    device.SupportsSaveParameters(true);
-    EXPECT_TRUE(device.SupportsSaveParameters());
-    device.SupportsSaveParameters(false);
-    EXPECT_FALSE(device.SupportsSaveParameters());
-}
 
 TEST(ModePageDeviceTest, AddModePages)
 {
@@ -48,16 +37,6 @@ TEST(ModePageDeviceTest, AddModePages)
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, -1);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Maximum size was ignored";
-}
-
-TEST(ModePageDeviceTest, Page0)
-{
-    vector<uint8_t> buf(512);
-    MockPage0ModePageDevice device;
-
-    const vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f:00:00:00");
-    EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
-    EXPECT_EQ(1, device.AddModePages(cdb, buf, 0, 1, 255));
 }
 
 TEST(ModePageDeviceTest, AddVendorPages)

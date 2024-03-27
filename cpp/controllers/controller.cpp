@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -9,24 +9,26 @@
 //---------------------------------------------------------------------------
 
 #include "buses/bus_factory.h"
-#include "buses/gpio_bus.h"
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
 #endif
-#include "generic_controller.h"
+#include "shared/shared_exceptions.h"
+#include "controller.h"
 
 using namespace spdlog;
 using namespace scsi_defs;
 using namespace s2p_util;
 
-void GenericController::Reset()
+void Controller::Reset()
 {
     AbstractController::Reset();
 
-    initiator_id = UNKNOWN_INITIATOR_ID;
+    identified_lun = -1;
+
+    atn_msg = false;
 }
 
-bool GenericController::Process(int id)
+bool Controller::Process()
 {
     GetBus().Acquire();
 
@@ -36,8 +38,6 @@ bool GenericController::Process(int id)
         return false;
     }
 
-    initiator_id = id;
-
     if (!ProcessPhase()) {
         Error(sense_key::aborted_command, asc::controller_process_phase);
         return false;
@@ -46,7 +46,7 @@ bool GenericController::Process(int id)
     return !IsBusFree();
 }
 
-void GenericController::BusFree()
+void Controller::BusFree()
 {
     if (!IsBusFree()) {
         LogTrace("BUS FREE phase");
@@ -58,9 +58,11 @@ void GenericController::BusFree()
         GetBus().SetIO(false);
         GetBus().SetBSY(false);
 
-        // Initialize status and message
         SetStatus(status::good);
-        SetMessage(0x00);
+
+        identified_lun = -1;
+
+        atn_msg = false;
 
         return;
     }
@@ -70,7 +72,7 @@ void GenericController::BusFree()
     }
 }
 
-void GenericController::Selection()
+void Controller::Selection()
 {
     if (!IsSelection()) {
         LogTrace("SELECTION phase");
@@ -90,7 +92,7 @@ void GenericController::Selection()
     }
 }
 
-void GenericController::Command()
+void Controller::Command()
 {
     if (!IsCommand()) {
         LogTrace("COMMAND phase");
@@ -110,7 +112,7 @@ void GenericController::Command()
         }
 
         const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
-        assert(command_bytes_count <= 16);
+        assert(command_bytes_count && command_bytes_count <= 16);
 
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
@@ -128,23 +130,20 @@ void GenericController::Command()
             return;
         }
 
-        SetCurrentLength(0);
-
         Execute();
     }
 }
 
-void GenericController::Execute()
+void Controller::Execute()
 {
+    SetCurrentLength(0);
     ResetOffset();
     SetTransferSize(0, 0);
 
     const auto opcode = GetOpcode();
 
     auto device = GetDeviceForLun(GetEffectiveLun());
-    const bool has_lun = device != nullptr;
-
-    if (!has_lun) {
+    if (!device) {
         if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
@@ -160,34 +159,21 @@ void GenericController::Execute()
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
-    if (device->CheckReservation(GetInitiatorId(), opcode, GetCdbByte(4) & 0x01)) {
+    if (device->CheckReservation(GetInitiatorId())) {
         try {
             device->Dispatch(opcode);
-
-            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-            if (opcode == scsi_command::cmd_inquiry && !has_lun) {
-                GetBuffer().data()[0] = 0x7f;
-            }
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
         }
     }
-    else {
-        Error(sense_key::aborted_command, asc::no_additional_sense_information, status::reservation_conflict);
-    }
 }
 
-void GenericController::Status()
+void Controller::Status()
 {
     if (!IsStatus()) {
-        if (const auto &it_status = STATUS_MAPPING.find(GetStatus()); it_status != STATUS_MAPPING.end()) {
-            LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", it_status->second,
+        LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
                 static_cast<int>(GetStatus())));
-        }
-        else {
-            LogTrace(fmt::format("Status phase, status code is ${:02x}", static_cast<int>(GetStatus())));
-        }
 
         SetPhase(phase_t::status);
 
@@ -206,7 +192,7 @@ void GenericController::Status()
     Send();
 }
 
-void GenericController::MsgIn()
+void Controller::MsgIn()
 {
     if (!IsMsgIn()) {
         LogTrace("MESSAGE IN phase");
@@ -224,7 +210,34 @@ void GenericController::MsgIn()
     Send();
 }
 
-void GenericController::DataIn()
+void Controller::MsgOut()
+{
+    if (!IsMsgOut()) {
+        LogTrace("MESSAGE OUT phase");
+
+        // Process the IDENTIFY message
+        if (IsSelection()) {
+            atn_msg = true;
+            msg_bytes.clear();
+        }
+
+        SetPhase(phase_t::msgout);
+
+        GetBus().SetMSG(true);
+        GetBus().SetCD(true);
+        GetBus().SetIO(false);
+
+        ResetOffset();
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
+
+        return;
+    }
+
+    Receive();
+}
+
+void Controller::DataIn()
 {
     if (!IsDataIn()) {
         if (!GetCurrentLength()) {
@@ -247,7 +260,7 @@ void GenericController::DataIn()
     Send();
 }
 
-void GenericController::DataOut()
+void Controller::DataOut()
 {
     if (!IsDataOut()) {
         if (!GetCurrentLength()) {
@@ -270,7 +283,7 @@ void GenericController::DataOut()
     Receive();
 }
 
-void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status status)
+void Controller::Error(sense_key sense_key, asc asc, scsi_defs::status status)
 {
     GetBus().Acquire();
     if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
@@ -291,12 +304,11 @@ void GenericController::Error(sense_key sense_key, asc asc, scsi_defs::status st
     }
 
     SetStatus(status);
-    SetMessage(0x00);
 
     Status();
 }
 
-void GenericController::Send()
+void Controller::Send()
 {
     assert(!GetBus().GetREQ());
     assert(GetBus().GetIO());
@@ -335,7 +347,6 @@ void GenericController::Send()
 
     LogTrace("All data transferred");
 
-    // Move to next phase
     switch (GetPhase()) {
     case phase_t::msgin:
         ProcessExtendedMessage();
@@ -348,7 +359,8 @@ void GenericController::Send()
     case phase_t::status:
         SetCurrentLength(1);
         SetTransferSize(1, 1);
-        GetBuffer()[0] = (uint8_t)GetMessage();
+        // Message byte
+        GetBuffer()[0] = 0;
         MsgIn();
         break;
 
@@ -358,7 +370,7 @@ void GenericController::Send()
     }
 }
 
-void GenericController::Receive()
+void Controller::Receive()
 {
     assert(!GetBus().GetREQ());
     assert(!GetBus().GetIO());
@@ -373,7 +385,7 @@ void GenericController::Receive()
         }
         // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
         else if (IsDataOut() && !GetOffset() && l < 256 && get_level() == level::trace) {
-            LogTrace(fmt::format("{} byte(s) of command parameter data:\n{}", l, FormatBytes(GetBuffer(), l)));
+            LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", l, FormatBytes(GetBuffer(), l)));
         }
     }
 
@@ -394,9 +406,6 @@ void GenericController::Receive()
 
     case phase_t::msgout:
         XferMsg(GetBuffer()[0]);
-
-        // Clear message data in preparation for MESSAGE IN
-        SetMessage(0x00);
         break;
 
     default:
@@ -410,7 +419,6 @@ void GenericController::Receive()
         return;
     }
 
-    // Move to next phase
     switch (GetPhase()) {
     case phase_t::msgout:
         ProcessMessage();
@@ -423,22 +431,21 @@ void GenericController::Receive()
 
     default:
         error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
-        assert(false);
         break;
     }
 }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool GenericController::XferIn(vector<uint8_t> &buf)
+bool Controller::XferIn(vector<uint8_t> &buf)
 {
     // Limited to read commands
     switch (GetOpcode()) {
     case scsi_command::cmd_read6:
-        case scsi_command::cmd_read10:
-        case scsi_command::cmd_read16:
-        case scsi_command::cmd_read_long10:
-        case scsi_command::cmd_read_capacity16_read_long16:
+    case scsi_command::cmd_read10:
+    case scsi_command::cmd_read16:
+    case scsi_command::cmd_read_long10:
+    case scsi_command::cmd_read_capacity16_read_long16:
         try {
             SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
         }
@@ -463,14 +470,14 @@ bool GenericController::XferIn(vector<uint8_t> &buf)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool GenericController::XferOut(bool cont)
+bool Controller::XferOut(bool cont)
 {
     auto device = GetDeviceForLun(GetEffectiveLun());
 
     // Limited to write/verify commands
     switch (const auto opcode = GetOpcode(); opcode) {
     case scsi_command::cmd_mode_select6:
-        case scsi_command::cmd_mode_select10:
+    case scsi_command::cmd_mode_select10:
         {
 #ifdef BUILD_MODE_PAGE_DEVICE
         auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
@@ -481,7 +488,7 @@ bool GenericController::XferOut(bool cont)
         }
 
         try {
-            mode_page_device->ModeSelect(GetOpcode(), GetCdb(), GetBuffer(), GetOffset());
+            mode_page_device->ModeSelect(opcode, GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
@@ -494,13 +501,13 @@ bool GenericController::XferOut(bool cont)
         break;
 
     case scsi_command::cmd_write6:
-        case scsi_command::cmd_write10:
-        case scsi_command::cmd_write16:
-        case scsi_command::cmd_verify10:
-        case scsi_command::cmd_verify16:
-        case scsi_command::cmd_write_long10:
-        case scsi_command::cmd_write_long16:
-        case scsi_command::cmd_execute_operation:
+    case scsi_command::cmd_write10:
+    case scsi_command::cmd_write16:
+    case scsi_command::cmd_verify10:
+    case scsi_command::cmd_verify16:
+    case scsi_command::cmd_write_long10:
+    case scsi_command::cmd_write_long16:
+    case scsi_command::cmd_execute_operation:
         {
         try {
             const auto length = device->WriteData(GetBuffer(), opcode);
@@ -530,12 +537,96 @@ bool GenericController::XferOut(bool cont)
 }
 #pragma GCC diagnostic pop
 
-void GenericController::LogCdb() const
+void Controller::XferMsg(uint8_t msg)
+{
+    assert(IsMsgOut());
+
+    if (atn_msg) {
+        msg_bytes.emplace_back(msg);
+    }
+}
+
+void Controller::ParseMessage()
+{
+    for (const uint8_t message : msg_bytes) {
+        switch (message) {
+        case 0x01: {
+            LogTrace("Received EXTENDED MESSAGE");
+            SetCurrentLength(1);
+            SetTransferSize(1, 1);
+            // MESSSAGE REJECT
+            GetBuffer()[0] = 0x07;
+            MsgIn();
+            return;
+        }
+
+        case 0x06: {
+            LogTrace("Received ABORT message");
+            BusFree();
+            return;
+        }
+
+        case 0x0c: {
+            LogTrace("Received BUS DEVICE RESET message");
+            if (auto device = GetDeviceForLun(GetEffectiveLun()); device) {
+                device->SetReset(true);
+                device->DiscardReservation();
+            }
+            BusFree();
+            return;
+        }
+
+        default:
+            if (message >= 0x80) {
+                identified_lun = static_cast<int>(message) & 0x1f;
+                LogTrace("Received IDENTIFY message for LUN " + to_string(identified_lun));
+            }
+            break;
+        }
+    }
+}
+
+void Controller::ProcessMessage()
+{
+    // MESSAGE OUT phase as long as ATN is asserted
+    if (GetBus().GetATN()) {
+        ResetOffset();
+        SetCurrentLength(1);
+        SetTransferSize(1, 1);
+        return;
+    }
+
+    if (atn_msg) {
+        atn_msg = false;
+        ParseMessage();
+    }
+
+    Command();
+}
+
+void Controller::ProcessExtendedMessage()
+{
+    // Completed sending response to extended message of IDENTIFY message
+    if (atn_msg) {
+        atn_msg = false;
+        Command();
+    } else {
+        BusFree();
+    }
+}
+
+int Controller::GetEffectiveLun() const
+{
+    // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
+    return identified_lun != -1 ? identified_lun : GetCdbByte(1) >> 5;
+}
+
+void Controller::LogCdb() const
 {
     const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
     string s = fmt::format("Controller is executing {}, CDB $",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(GetCdbByte(0))); i++) {
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(GetOpcode()); i++) {
         if (i) {
             s += ":";
         }

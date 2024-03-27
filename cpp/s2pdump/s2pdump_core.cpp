@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -79,6 +79,13 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init(bool in_process)
 {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (!bus) {
+        return false;
+    }
+
+    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
+
     instance = this;
     // Signal handler for cleaning up
     struct sigaction termination_handler;
@@ -89,12 +96,7 @@ bool S2pDump::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus = BusFactory::Instance().CreateBus(false, in_process);
-    if (bus) {
-        executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
-    }
-
-    return bus != nullptr;
+    return true;
 }
 
 bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
@@ -302,10 +304,6 @@ int S2pDump::Run(span<char*> args, bool in_process)
     try {
         if (!ParseArguments(args)) {
             return EXIT_SUCCESS;
-        }
-
-        if (!in_process && getuid()) {
-            throw parser_exception("GPIO bus access requires root permissions");
         }
 
         if (!Init(in_process)) {
@@ -732,12 +730,13 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
         const int page_length = page_code ? buf[offset] : length - offset;
-        ++offset;
 
         cout << fmt::format("{0}mode_page.{1}={2:02x}", id_and_lun, page_code & 0x3f, page_code);
 
         if (page_code) {
             cout << fmt::format(":{:02x}", page_length);
+
+            ++offset;
         }
 
         for (int i = 0; i < page_length && offset < length; i++, offset++) {

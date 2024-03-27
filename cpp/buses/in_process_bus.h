@@ -1,20 +1,18 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <cassert>
-#include <unordered_map>
 #include <mutex>
 #include <atomic>
-#include "buses/gpio_bus.h"
+#include "bus.h"
 
-class InProcessBus : public GpioBus
+class InProcessBus : public Bus
 {
 
 public:
@@ -29,7 +27,6 @@ public:
 
     bool Init(bool) override;
     void CleanUp() override;
-
     void Reset() override;
 
     uint32_t Acquire() override
@@ -37,65 +34,16 @@ public:
         return dat;
     }
 
-    bool GetBSY() const override
-    {
-        return GetSignal(PIN_BSY);
-    }
     void SetBSY(bool state) override
     {
         SetSignal(PIN_BSY, state);
     }
-    bool GetSEL() const override
-    {
-        return GetSignal(PIN_SEL);
-    }
+
     void SetSEL(bool state) override
     {
         SetSignal(PIN_SEL, state);
     }
-    bool GetATN() const override
-    {
-        return GetSignal(PIN_ATN);
-    }
-    void SetATN(bool state) override
-    {
-        SetSignal(PIN_ATN, state);
-    }
-    bool GetACK() const override
-    {
-        return GetSignal(PIN_ACK);
-    }
-    void SetACK(bool state) override
-    {
-        SetSignal(PIN_ACK, state);
-    }
-    bool GetRST() const override
-    {
-        return GetSignal(PIN_RST);
-    }
-    void SetRST(bool state) override
-    {
-        SetSignal(PIN_RST, state);
-    }
-    ;
-    bool GetMSG() const override
-    {
-        return GetSignal(PIN_MSG);
-    }
-    ;
-    void SetMSG(bool state) override
-    {
-        SetSignal(PIN_MSG, state);
-    }
-    ;
-    bool GetCD() const override
-    {
-        return GetSignal(PIN_CD);
-    }
-    void SetCD(bool state) override
-    {
-        SetSignal(PIN_CD, state);
-    }
+
     bool GetIO() override
     {
         return GetSignal(PIN_IO);
@@ -103,24 +51,6 @@ public:
     void SetIO(bool state) override
     {
         SetSignal(PIN_IO, state);
-    }
-    bool GetREQ() const override
-    {
-        return GetSignal(PIN_REQ);
-    }
-    void SetREQ(bool state) override
-    {
-        SetSignal(PIN_REQ, state);
-    }
-
-    bool WaitREQ(bool state) override
-    {
-        return WaitSignal(PIN_REQ, state);
-    }
-
-    bool WaitACK(bool state) override
-    {
-        return WaitSignal(PIN_ACK, state);
     }
 
     uint8_t GetDAT() override
@@ -132,7 +62,7 @@ public:
         dat = d;
     }
 
-    bool GetSignal(int pin) const override;
+    bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
 
     bool WaitForSelection() override;
@@ -155,27 +85,6 @@ private:
     void EnableIRQ() override
     {
         // Nothing to do }
-    }
-
-    void SetControl(int, bool) override
-    {
-        assert(false);
-    }
-    void SetMode(int, int) override
-    {
-        assert(false);
-    }
-    void PinConfig(int, int) override
-    {
-        assert(false);
-    }
-    void PullConfig(int, int) override
-    {
-        assert(false);
-    }
-    void PinSetSignal(int, bool) override
-    {
-        assert(false);
     }
 
     static inline atomic_bool target_enabled;
@@ -209,14 +118,9 @@ public:
         return bus.Acquire();
     }
 
-    bool WaitREQ(bool state) override
+    bool WaitSignal(int pin, bool state) override
     {
-        return bus.WaitSignal(PIN_REQ, state);
-    }
-
-    bool WaitACK(bool state) override
-    {
-        return bus.WaitSignal(PIN_ACK, state);
+        return bus.WaitSignal(pin, state);
     }
 
     uint8_t GetDAT() override

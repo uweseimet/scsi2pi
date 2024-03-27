@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -28,7 +28,7 @@ TEST(CommandResponseTest, Operation_Count)
 void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
     CommandResponse response;
 
     auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
@@ -112,7 +112,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     const int LUN3 = 6;
 
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory;
+    ControllerFactory controller_factory(false);
     CommandResponse response;
     PbCommand command;
 

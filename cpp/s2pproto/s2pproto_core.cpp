@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -70,6 +70,13 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process)
 {
+    bus = BusFactory::Instance().CreateBus(false, in_process);
+    if (!bus) {
+        return false;
+    }
+
+    executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
+
     instance = this;
     // Signal handler for cleaning up
     struct sigaction termination_handler;
@@ -80,12 +87,7 @@ bool S2pProto::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus = BusFactory::Instance().CreateBus(false, in_process);
-    if (bus) {
-        executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
-    }
-
-    return bus != nullptr;
+    return true;
 }
 
 bool S2pProto::ParseArguments(span<char*> args)
@@ -241,15 +243,14 @@ int S2pProto::Run(span<char*> args, bool in_process)
 
     executor->SetTarget(target_id, target_lun, false);
 
-    int result = GenerateOutput(input_format, protobuf_input_filename, output_format, protobuf_output_filename);
+    int result = GenerateOutput(protobuf_input_filename, protobuf_output_filename);
 
     CleanUp();
 
     return result;
 }
 
-int S2pProto::GenerateOutput(S2pProtoExecutor::protobuf_format input_format, const string &input_filename,
-    S2pProtoExecutor::protobuf_format output_format, const string &output_filename)
+int S2pProto::GenerateOutput(const string &input_filename, const string &output_filename)
 {
     PbResult result;
     if (string error = executor->Execute(input_filename, input_format, result); !error.empty()) {

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -45,7 +45,7 @@ string S2pProtoExecutor::Execute(const string &filename, protobuf_format input_f
 
         stringstream buf;
         buf << in.rdbuf();
-        const string data = buf.str();
+        const string &data = buf.str();
         length = data.size();
         memcpy(buffer.data(), data.data(), length);
         break;

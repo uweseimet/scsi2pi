@@ -1,36 +1,34 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <fstream>
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "base/device_factory.h"
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.iso");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCCD, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
-    EXPECT_FALSE(device->SupportsParams());
-    EXPECT_FALSE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_TRUE(device->IsReadOnly());
-    EXPECT_TRUE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_TRUE(device->IsLockable());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_TRUE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    MockScsiCd cd(0);
 
-    EXPECT_EQ("SCSI2Pi", device->GetVendor());
-    EXPECT_EQ("SCSI CD-ROM", device->GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
+    EXPECT_EQ(SCCD, cd.GetType());
+    EXPECT_TRUE(cd.SupportsFile());
+    EXPECT_FALSE(cd.SupportsParams());
+    EXPECT_FALSE(cd.IsProtectable());
+    EXPECT_FALSE(cd.IsProtected());
+    EXPECT_TRUE(cd.IsReadOnly());
+    EXPECT_TRUE(cd.IsRemovable());
+    EXPECT_FALSE(cd.IsRemoved());
+    EXPECT_TRUE(cd.IsLockable());
+    EXPECT_FALSE(cd.IsLocked());
+    EXPECT_TRUE(cd.IsStoppable());
+    EXPECT_FALSE(cd.IsStopped());
+
+    EXPECT_EQ("SCSI2Pi", cd.GetVendor());
+    EXPECT_EQ("SCSI CD-ROM", cd.GetProduct());
+    EXPECT_EQ(TestShared::GetVersion(), cd.GetRevision());
 }
 
 void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
@@ -86,11 +84,11 @@ TEST(ScsiCdTest, Open)
     EXPECT_THROW(cd.Open(), io_exception)<< "Missing filename";
 
     path filename = CreateTempFile(2047);
-    cd.SetFilename(string(filename));
+    cd.SetFilename(filename.string());
     EXPECT_THROW(cd.Open(), io_exception)<< "ISO CD-ROM image file size is too small";
 
     filename = CreateTempFile(2 * 2048);
-    cd.SetFilename(string(filename));
+    cd.SetFilename(filename.string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
 

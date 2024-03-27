@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 // for Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
@@ -15,10 +15,7 @@
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
-static const int ETH_FRAME_LEN = 1514;
-#endif
-#ifndef ETH_FCS_LEN
-static const int ETH_FCS_LEN = 4;
+static constexpr int ETH_FRAME_LEN = 1514;
 #endif
 
 using namespace std;
@@ -49,18 +46,18 @@ public:
         return BRIDGE_NAME;
     }
 
-    string AddBridge(int) const;
-    string DeleteBridge(int) const;
-
     // Enable/Disable the piscsi0 interface
     static string IpLink(bool);
 
 private:
 
+    string AddBridge(int) const;
+    string DeleteBridge(int) const;
+
     static string IpLink(int, const string&, bool);
-    static string BrSetif(int fd, const string&, const string&, bool);
+    static string BrSetIf(int fd, const string&, bool);
     string CreateBridge(int, int);
-    static pair<string, string> ExtractAddressAndMask(const string&);
+    pair<string, string> ExtractAddressAndMask() const;
     string SetAddressAndNetMask(int, const string&) const;
 
     int tap_fd = -1;

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,16 +8,14 @@
 
 #pragma once
 
-#include <unordered_map>
+#include <stdexcept>
 #include <functional>
 #include "shared/scsi.h"
-#include "shared/shared_exceptions.h"
 
 using namespace scsi_defs;
 
 class PhaseHandler
 {
-    phase_t phase = phase_t::busfree;
 
 public:
 
@@ -33,52 +31,47 @@ public:
     virtual void DataIn() = 0;
     virtual void DataOut() = 0;
     virtual void MsgIn() = 0;
-    virtual void MsgOut()
-    {
-        // To be implemented by controllers supporting this phase (SCSI, but not SASI)
-    }
-
-    virtual bool Process(int) = 0;
+    virtual void MsgOut() = 0;
 
 protected:
 
-    phase_t GetPhase() const
+    inline phase_t GetPhase() const
     {
         return phase;
     }
-    void SetPhase(phase_t p)
+    inline void SetPhase(phase_t p)
     {
         phase = p;
     }
-    bool IsSelection() const
+    inline bool IsSelection() const
     {
         return phase == phase_t::selection;
     }
-    bool IsBusFree() const
+    inline bool IsBusFree() const
     {
         return phase == phase_t::busfree;
     }
-    bool IsCommand() const
+    inline bool IsCommand() const
     {
         return phase == phase_t::command;
     }
-    bool IsStatus() const
+    inline bool IsStatus() const
     {
         return phase == phase_t::status;
     }
-    bool IsDataIn() const
+    inline bool IsDataIn() const
     {
         return phase == phase_t::datain;
     }
-    bool IsDataOut() const
+    inline bool IsDataOut() const
     {
         return phase == phase_t::dataout;
     }
-    bool IsMsgIn() const
+    inline bool IsMsgIn() const
     {
         return phase == phase_t::msgin;
     }
-    bool IsMsgOut() const
+    inline bool IsMsgOut() const
     {
         return phase == phase_t::msgout;
     }
@@ -86,9 +79,9 @@ protected:
     bool ProcessPhase() const
     {
         try {
-            phase_executors.at(phase)();
+            phase_executors[static_cast<int>(phase)]();
         }
-        catch (const out_of_range&) {
+        catch (const invalid_argument&) {
             return false;
         }
 
@@ -97,5 +90,7 @@ protected:
 
 private:
 
-    unordered_map<phase_t, function<void()>> phase_executors;
+    phase_t phase = phase_t::busfree;
+
+    array<function<void()>, 11> phase_executors;
 };

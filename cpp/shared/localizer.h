@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -43,6 +43,7 @@ enum class LocalizationKey
     ERROR_CONTROLLER,
     ERROR_INVALID_ID,
     ERROR_INVALID_LUN,
+    ERROR_MISSING_LUN0,
     ERROR_LUN0,
     ERROR_INITIALIZATION,
     ERROR_OPERATION_DENIED_STOPPABLE,

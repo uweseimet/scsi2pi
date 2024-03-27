@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -13,7 +13,6 @@
 #include <unordered_map>
 #include "primary_device.h"
 #include "generated/s2p_interface.pb.h"
-#include "shared/s2p_util.h"
 
 using namespace std;
 using namespace s2p_interface;

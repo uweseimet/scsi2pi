@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 #include "test/test_shared.h"
+#include "shared/shared_exceptions.h"
 #include "base/property_handler.h"
 
 using namespace testing;

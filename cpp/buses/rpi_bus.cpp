@@ -1,15 +1,12 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <map>
-#include <fstream>
-#include <cstring>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -20,30 +17,40 @@ using namespace spdlog;
 
 bool RpiBus::Init(bool target)
 {
-    GpioBus::Init(target);
-
-    // Determine the Raspberry Pi type from the base address
-    const auto base_addr = GetPeripheralAddress();
-    switch (base_addr) {
-    case 0xfe000000:
-        pi_type = PiType::pi_4;
-        break;
-
-    case 0x3f000000:
-        pi_type = PiType::pi_2_3;
-        break;
-
-    default:
-        pi_type = PiType::pi_1;
-        break;
-    }
-
-    trace("Detected Raspberry Pi type {}", static_cast<int>(pi_type));
+    Bus::Init(target);
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         critical("Root permissions are required");
         return false;
+    }
+
+    off_t base_addr = 0;
+    uint32_t gpio_offset = GPIO_OFFSET;
+    uint32_t pads_offset = PADS_OFFSET;
+    switch (pi_type) {
+    case RpiBus::PiType::pi_1:
+        base_addr = 0x20000000;
+        break;
+
+    case RpiBus::PiType::pi_2:
+    case RpiBus::PiType::pi_3:
+        base_addr = 0x3f000000;
+        break;
+
+    case RpiBus::PiType::pi_4:
+        base_addr = 0xfe000000;
+        break;
+
+    case RpiBus::PiType::pi_5:
+        base_addr = 0x1f00000000;
+        gpio_offset = GPIO_OFFSET_PI5;
+        pads_offset = PADS_OFFSET_PI5;
+        break;
+
+    default:
+        assert(false);
+        break;
     }
 
     // Map peripheral region memory
@@ -70,7 +77,7 @@ bool RpiBus::Init(bool target)
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        corefreq = maxclock[6] / 1000000;
+        timer_core_freq = maxclock[6] / 1'000'000;
         close(vcio_fd);
     }
     else {
@@ -78,32 +85,34 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
-    armtaddr = map + ARMT_OFFSET / sizeof(uint32_t);
+    armt_addr = map + ARMT_OFFSET / sizeof(uint32_t);
 
     // Change the ARM timer to free run mode
-    armtaddr[ARMT_CTRL] = 0x00000282;
+    armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
-    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
+    gpio = map + gpio_offset / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = map + PADS_OFFSET / sizeof(uint32_t);
+    pads = map + pads_offset / sizeof(uint32_t);
 
-    // Interrupt controller
-    irpctl = map + IRPT_OFFSET / sizeof(uint32_t);
+    // Interrupt controller (Pi 1)
+    irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
 
-    // Quad-A7 control
-    qa7regs = map + QA7_OFFSET / sizeof(uint32_t);
+    // Quad-A7 control (Pi 2/3)
+    qa7_regs = map + QA7_OFFSET / sizeof(uint32_t);
 
+    // Map GIC interrupt priority mask register
     if (pi_type == PiType::pi_4) {
-        map = static_cast<uint32_t*>(mmap(nullptr, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ARM_GICD_BASE));
-        if (map == MAP_FAILED) {
-            critical("Can't map GIC memory: {}", strerror(errno));
+        gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR));
+        if (gicc_mpr == MAP_FAILED) {
+            critical("Can't map GIC: {}", strerror(errno));
             close(fd);
             return false;
         }
-        gicc = map + (ARM_GICC_BASE - ARM_GICD_BASE) / sizeof(uint32_t);
+        // MPR has offset 1
+        ++gicc_mpr;
     }
 
     close(fd);
@@ -113,19 +122,10 @@ bool RpiBus::Init(bool target)
 
     // Set pull up/pull down
 #if SIGNAL_CONTROL_MODE == 0
-    int pullmode = GPIO_PULLNONE;
-#elif SIGNAL_CONTROL_MODE == 1
-    int pullmode = GPIO_PULLUP;
+    InitializeSignals(GPIO_PULLNONE);
 #else
-    int pullmode = GPIO_PULLDOWN;
+    InitializeSignals(GPIO_PULLDOWN);
 #endif
-
-    // Initialize all signals
-    for (const int signal : SignalTable) {
-        PinSetSignal(signal, false);
-        PinConfig(signal, GPIO_INPUT);
-        PullConfig(signal, pullmode);
-    }
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
@@ -137,16 +137,13 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_IND, GPIO_OUTPUT);
     PinConfig(PIN_DTD, GPIO_OUTPUT);
 
-    // Set the ENABLE signal
-    // This is used to show that the application is running
     PinSetSignal(PIN_ENB, ENB_OFF);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
-    // GPIO Function Select (GPFSEL) registers backup
+    // GPIO Function Select (GPFSEL) registers copy
     gpfsel[0] = gpio[GPIO_FSEL_0];
     gpfsel[1] = gpio[GPIO_FSEL_1];
     gpfsel[2] = gpio[GPIO_FSEL_2];
-    gpfsel[3] = gpio[GPIO_FSEL_3];
 
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
@@ -160,7 +157,7 @@ bool RpiBus::Init(bool target)
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
     selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
-#if SIGNAL_CONTROL_MODE < 2
+#if SIGNAL_CONTROL_MODE == 0
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
 #else
     selevreq.eventflags = GPIOEVENT_REQUEST_RISING_EDGE;
@@ -182,7 +179,7 @@ bool RpiBus::Init(bool target)
 
     CreateWorkTable();
 
-    // Enable ENABLE in ordert to show the user that s2p is running
+    // Enable ENABLE in order to show the user that s2p is running
     SetControl(PIN_ENB, ENB_ON);
 
     return true;
@@ -206,12 +203,7 @@ void RpiBus::CleanUp()
     PinConfig(PIN_IND, GPIO_INPUT);
     PinConfig(PIN_DTD, GPIO_INPUT);
 
-    // Initialize all signals
-    for (const int signal : SignalTable) {
-        PinSetSignal(signal, false);
-        PinConfig(signal, GPIO_INPUT);
-        PullConfig(signal, GPIO_PULLNONE);
-    }
+    InitializeSignals(GPIO_PULLNONE);
 
     // Set drive strength back to 8mA
     SetSignalDriveStrength(3);
@@ -223,7 +215,7 @@ void RpiBus::Reset()
     SetControl(PIN_ACT, false);
 
     // Set all signals to off
-    for (const int signal : SignalTable) {
+    for (const int signal : SIGNAL_TABLE) {
         SetSignal(signal, false);
     }
 
@@ -235,48 +227,28 @@ void RpiBus::Reset()
     SetMode(PIN_REQ, IN);
     SetMode(PIN_IO, IN);
 
-    if (IsTarget()) {
-        // Set the initiator signal to input
-        SetControl(PIN_IND, IND_IN);
-        SetMode(PIN_SEL, IN);
-        SetMode(PIN_ATN, IN);
-        SetMode(PIN_ACK, IN);
-        SetMode(PIN_RST, IN);
+    // Set the initiator signal direction
+    SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 
-        // Set data bus signals to input
-        SetControl(PIN_DTD, DTD_IN);
-        SetMode(PIN_DT0, IN);
-        SetMode(PIN_DT1, IN);
-        SetMode(PIN_DT2, IN);
-        SetMode(PIN_DT3, IN);
-        SetMode(PIN_DT4, IN);
-        SetMode(PIN_DT5, IN);
-        SetMode(PIN_DT6, IN);
-        SetMode(PIN_DT7, IN);
-        SetMode(PIN_DP, IN);
-    } else {
-        // Set the initiator signal to output
-        SetControl(PIN_IND, IND_OUT);
-        SetMode(PIN_SEL, OUT);
-        SetMode(PIN_ATN, OUT);
-        SetMode(PIN_ACK, OUT);
-        SetMode(PIN_RST, OUT);
+    // Set data bus signal directions
+    SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
 
-        // Set the data bus signals to output
-        SetControl(PIN_DTD, DTD_OUT);
-        SetMode(PIN_DT0, OUT);
-        SetMode(PIN_DT1, OUT);
-        SetMode(PIN_DT2, OUT);
-        SetMode(PIN_DT3, OUT);
-        SetMode(PIN_DT4, OUT);
-        SetMode(PIN_DT5, OUT);
-        SetMode(PIN_DT6, OUT);
-        SetMode(PIN_DT7, OUT);
-        SetMode(PIN_DP, OUT);
+    for (int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
+        PIN_DT7, PIN_DP }) {
+        SetMode(pin, IsTarget() ? IN : OUT);
     }
 
     // Initialize all signals
     signals = 0;
+}
+
+void RpiBus::InitializeSignals(int pull_mode)
+{
+    for (const int signal : SIGNAL_TABLE) {
+        PinSetSignal(signal, false);
+        PinConfig(signal, GPIO_INPUT);
+        PullConfig(signal, pull_mode);
+    }
 }
 
 bool RpiBus::WaitForSelection()
@@ -284,8 +256,6 @@ bool RpiBus::WaitForSelection()
 #ifndef __linux__
     return false;
 #else
-    errno = 0;
-
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
@@ -306,130 +276,38 @@ bool RpiBus::WaitForSelection()
     return true;
 }
 
-bool RpiBus::GetBSY() const
-{
-    return GetSignal(PIN_BSY);
-}
-
 void RpiBus::SetBSY(bool state)
 {
     SetSignal(PIN_BSY, state);
 
-    if (state) {
-        SetControl(PIN_ACT, true);
+    SetControl(PIN_ACT, state);
+    SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
-        SetControl(PIN_TAD, TAD_OUT);
-
-        SetMode(PIN_BSY, OUT);
-        SetMode(PIN_MSG, OUT);
-        SetMode(PIN_CD, OUT);
-        SetMode(PIN_REQ, OUT);
-        SetMode(PIN_IO, OUT);
-    } else {
-        SetControl(PIN_ACT, false);
-
-        SetControl(PIN_TAD, TAD_IN);
-
-        SetMode(PIN_BSY, IN);
-        SetMode(PIN_MSG, IN);
-        SetMode(PIN_CD, IN);
-        SetMode(PIN_REQ, IN);
-        SetMode(PIN_IO, IN);
-    }
-}
-
-bool RpiBus::GetSEL() const
-{
-    return GetSignal(PIN_SEL);
+    SetMode(PIN_BSY, state ? OUT : IN);
+    SetMode(PIN_MSG, state ? OUT : IN);
+    SetMode(PIN_CD, state ? OUT : IN);
+    SetMode(PIN_REQ, state ? OUT : IN);
+    SetMode(PIN_IO, state ? OUT : IN);
 }
 
 void RpiBus::SetSEL(bool state)
 {
-    if (!IsTarget() && state) {
-        SetControl(PIN_ACT, true);
-    }
+    assert(!IsTarget());
 
+    SetControl(PIN_ACT, state);
     SetSignal(PIN_SEL, state);
-}
-
-bool RpiBus::GetATN() const
-{
-    return GetSignal(PIN_ATN);
-}
-
-void RpiBus::SetATN(bool state)
-{
-    SetSignal(PIN_ATN, state);
-}
-
-bool RpiBus::GetACK() const
-{
-    return GetSignal(PIN_ACK);
-}
-
-void RpiBus::SetACK(bool state)
-{
-    SetSignal(PIN_ACK, state);
-}
-
-bool RpiBus::GetRST() const
-{
-    return GetSignal(PIN_RST);
-}
-
-void RpiBus::SetRST(bool state)
-{
-    SetSignal(PIN_RST, state);
-}
-
-bool RpiBus::GetMSG() const
-{
-    return GetSignal(PIN_MSG);
-}
-
-void RpiBus::SetMSG(bool state)
-{
-    SetSignal(PIN_MSG, state);
-}
-
-bool RpiBus::GetCD() const
-{
-    return GetSignal(PIN_CD);
-}
-
-void RpiBus::SetCD(bool state)
-{
-    SetSignal(PIN_CD, state);
 }
 
 bool RpiBus::GetIO()
 {
-    bool state = GetSignal(PIN_IO);
+    const bool state = GetSignal(PIN_IO);
 
     if (!IsTarget()) {
         // Change the data input/output direction by IO signal
-        if (state) {
-            SetControl(PIN_DTD, DTD_IN);
-            SetMode(PIN_DT0, IN);
-            SetMode(PIN_DT1, IN);
-            SetMode(PIN_DT2, IN);
-            SetMode(PIN_DT3, IN);
-            SetMode(PIN_DT4, IN);
-            SetMode(PIN_DT5, IN);
-            SetMode(PIN_DT6, IN);
-            SetMode(PIN_DT7, IN);
-            SetMode(PIN_DP, IN);
-        } else {
-            SetControl(PIN_DTD, DTD_OUT);
-            SetMode(PIN_DT0, OUT);
-            SetMode(PIN_DT1, OUT);
-            SetMode(PIN_DT2, OUT);
-            SetMode(PIN_DT3, OUT);
-            SetMode(PIN_DT4, OUT);
-            SetMode(PIN_DT5, OUT);
-            SetMode(PIN_DT6, OUT);
-            SetMode(PIN_DT7, OUT);
-            SetMode(PIN_DP, OUT);
+        SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
+
+        for (int pin : DATA_PINS) {
+            SetMode(pin, state ? IN : OUT);
         }
     }
 
@@ -443,40 +321,11 @@ void RpiBus::SetIO(bool state)
     SetSignal(PIN_IO, state);
 
     // Change the data input/output direction by IO signal
-    if (state) {
-        SetControl(PIN_DTD, DTD_OUT);
-        SetDAT(0);
-        SetMode(PIN_DT0, OUT);
-        SetMode(PIN_DT1, OUT);
-        SetMode(PIN_DT2, OUT);
-        SetMode(PIN_DT3, OUT);
-        SetMode(PIN_DT4, OUT);
-        SetMode(PIN_DT5, OUT);
-        SetMode(PIN_DT6, OUT);
-        SetMode(PIN_DT7, OUT);
-        SetMode(PIN_DP, OUT);
-    } else {
-        SetControl(PIN_DTD, DTD_IN);
-        SetMode(PIN_DT0, IN);
-        SetMode(PIN_DT1, IN);
-        SetMode(PIN_DT2, IN);
-        SetMode(PIN_DT3, IN);
-        SetMode(PIN_DT4, IN);
-        SetMode(PIN_DT5, IN);
-        SetMode(PIN_DT6, IN);
-        SetMode(PIN_DT7, IN);
-        SetMode(PIN_DP, IN);
+    SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
+
+    for (int pin : DATA_PINS) {
+        SetMode(pin, state ? OUT : IN);
     }
-}
-
-bool RpiBus::GetREQ() const
-{
-    return GetSignal(PIN_REQ);
-}
-
-void RpiBus::SetREQ(bool state)
-{
-    SetSignal(PIN_REQ, state);
 }
 
 inline uint8_t RpiBus::GetDAT()
@@ -494,18 +343,22 @@ inline uint8_t RpiBus::GetDAT()
 #endif
 }
 
-void RpiBus::SetDAT(uint8_t dat)
+inline void RpiBus::SetDAT(uint8_t dat)
 {
-    // Write to port
 #if SIGNAL_CONTROL_MODE == 0
-    uint32_t fsel;
-#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
-    fsel = gpfsel[0];
+#if defined BOARD_STANDARD || defined BOARD_FULLSPEC
+    uint32_t fsel = gpfsel[1];
+    // Mask for the DT0-DT7 and DP pins
+    fsel &= 0b11111000000000000000000000000000;
+    fsel |= tblDatSet[1][dat];
+    gpfsel[1] = fsel;
+    gpio[GPIO_FSEL_1] = fsel;
+#else
+    uint32_t fsel = gpfsel[0];
     fsel &= tblDatMsk[0][dat];
     fsel |= tblDatSet[0][dat];
     gpfsel[0] = fsel;
     gpio[GPIO_FSEL_0] = fsel;
-#endif
 
     fsel = gpfsel[1];
     fsel &= tblDatMsk[1][dat];
@@ -513,7 +366,6 @@ void RpiBus::SetDAT(uint8_t dat)
     gpfsel[1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 
-#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
     fsel = gpfsel[2];
     fsel &= tblDatMsk[2][dat];
     fsel |= tblDatSet[2][dat];
@@ -526,18 +378,12 @@ void RpiBus::SetDAT(uint8_t dat)
 #endif
 }
 
-const array<int, 19> RpiBus::SignalTable = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
-    PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY,
-    PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
-
 void RpiBus::CreateWorkTable(void)
 {
-    const array<int, 9> pintbl = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7, PIN_DP };
-
     array<bool, 256> tblParity;
 
     // Create parity table
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; j++) {
@@ -549,15 +395,12 @@ void RpiBus::CreateWorkTable(void)
     }
 
 #if SIGNAL_CONTROL_MODE == 0
-    // Mask and setting data generation
+    // Mask data defaults
     for (auto &tbl : tblDatMsk) {
         tbl.fill(-1);
     }
-    for (auto &tbl : tblDatSet) {
-        tbl.fill(0);
-    }
 
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -567,15 +410,15 @@ void RpiBus::CreateWorkTable(void)
         }
 
         // Bit check
-        for (int j = 0; j < 9; j++) {
-            // Index and shift amount calculation
-            int index = pintbl[j] / 10;
-            int shift = (pintbl[j] % 10) * 3;
+        for (const int pin : DATA_PINS) {
+            // Offset of the Function Select register for this pin (3 bits per pin)
+            const int index = pin / 10;
+            const int shift = (pin % 10) * 3;
 
-            // Mask data
-            tblDatMsk[index][i] &= ~(0x7 << shift);
+            // Mask data (GPIO pin is an output pin)
+            tblDatMsk[index][i] &= ~(7 << shift);
 
-            // Setting data
+            // Value (GPIO pin is set to 1)
             if (bits & 1) {
                 tblDatSet[index][i] |= (1 << shift);
             }
@@ -584,7 +427,7 @@ void RpiBus::CreateWorkTable(void)
         }
     }
 #else
-    for (uint32_t i = 0; i < 0x100; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -593,19 +436,14 @@ void RpiBus::CreateWorkTable(void)
             bits |= (1 << 8);
         }
 
-#if SIGNAL_CONTROL_MODE == 1
-        // Negative logic is inverted
-        bits = ~bits;
-#endif
-
         // Create GPIO register information
         uint32_t gpclr = 0;
         uint32_t gpset = 0;
-        for (int j = 0; j < 9; j++) {
+        for (int j = 0; j < static_cast<int>(DATA_PINS.size()); j++) {
             if (bits & 1) {
-                gpset |= (1 << pintbl[j]);
+                gpset |= (1 << pins[j]);
             } else {
-                gpclr |= (1 << pintbl[j]);
+                gpclr |= (1 << pins[j]);
             }
             bits >>= 1;
         }
@@ -623,15 +461,16 @@ void RpiBus::SetControl(int pin, bool state)
 
 //---------------------------------------------------------------------------
 //
-//	Input/output mode setting
+// Input/output mode setting
 //
 // Set direction fo pin (IN / OUT)
-//   Used with: TAD, BSY, MSG, CD, REQ, O, SEL, IND, ATN, ACK, RST, DT*
+//   Used with: TAD, BSY, MSG, CD, REQ, I/O, SEL, IND, ATN, ACK, RST, DT*
 //
 //---------------------------------------------------------------------------
 void RpiBus::SetMode(int pin, int mode)
 {
 #if SIGNAL_CONTROL_MODE == 0
+    // Pins are implicitly set to OUT when applying the mask
     if (mode == OUT) {
         return;
     }
@@ -639,8 +478,9 @@ void RpiBus::SetMode(int pin, int mode)
 
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
+    assert(index <= 2);
     uint32_t data = gpfsel[index];
-    data &= ~(0x7 << shift);
+    data &= ~(7 << shift);
     if (mode == OUT) {
         data |= (1 << shift);
     }
@@ -649,43 +489,38 @@ void RpiBus::SetMode(int pin, int mode)
 }
 
 // Get input signal value
-bool RpiBus::GetSignal(int pin) const
+inline bool RpiBus::GetSignal(int pin) const
 {
     return (signals >> pin) & 1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Set output signal value
+// Set output signal value
 //
-//  Sets the output value. Used with:
-//     PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
+// Sets the output value. Used with:
+//   PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
 //
 //---------------------------------------------------------------------------
 void RpiBus::SetSignal(int pin, bool state)
 {
 #if SIGNAL_CONTROL_MODE == 0
     const int index = pin / 10;
+    assert(index <= 2);
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
         data |= (1 << shift);
     } else {
-        data &= ~(0x7 << shift);
+        data &= ~(7 << shift);
     }
     gpio[index] = data;
     gpfsel[index] = data;
-#elif SIGNAL_CONTROL_MODE == 1
+#else
     if (state) {
-        gpio[GPIO_CLR_0] = 0x1 << pin;
+        gpio[GPIO_SET_0] = 1 << pin;
     } else {
-        gpio[GPIO_SET_0] = 0x1 << pin;
-    }
-#elif SIGNAL_CONTROL_MODE == 2
-    if (state) {
-        gpio[GPIO_SET_0] = 0x1 << pin;
-    } else {
-        gpio[GPIO_CLR_0] = 0x1 << pin;
+        gpio[GPIO_CLR_0] = 1 << pin;
     }
 #endif
 }
@@ -694,23 +529,27 @@ void RpiBus::DisableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_4:
-        // RPI4 disables interrupts via the GIC
-        giccpmr = gicc[GICC_PMR];
-        gicc[GICC_PMR] = 0;
+    case PiType::pi_1:
+        // Stop system timer interrupt with interrupt controller
+        irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
+        irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
+        break;
+    case PiType::pi_2:
+    case PiType::pi_3:
+        // RPI2,3 disable core timer IRQ
+        tint_core = sched_getcpu() + QA7_CORE0_TINTC;
+        tint_ctl = qa7_regs[tint_core];
+        qa7_regs[tint_core] = 0;
         break;
 
-    case PiType::pi_2_3:
-        // RPI2,3 disable core timer IRQ
-        tintcore = sched_getcpu() + QA7_CORE0_TINTC;
-        tintctl = qa7regs[tintcore];
-        qa7regs[tintcore] = 0;
+    case PiType::pi_4:
+        // RPI4 disables interrupts via the GIC
+        gicc_pmr_saved = *gicc_mpr;
+        *gicc_mpr = 0;
         break;
 
     default:
-        // Stop system timer interrupt with interrupt controller
-        irptenb = irpctl[IRPT_ENB_IRQ_1];
-        irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
+        // Currently do nothing
         break;
     }
 #endif
@@ -720,19 +559,24 @@ void RpiBus::EnableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_4:
-        // RPI4 enables interrupts via the GIC
-        gicc[GICC_PMR] = giccpmr;
+    case PiType::pi_1:
+        // Restart the system timer interrupt with the interrupt controller
+        irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
         break;
 
-    case PiType::pi_2_3:
+    case PiType::pi_2:
+    case PiType::pi_3:
         // RPI2,3 re-enable core timer IRQ
-        qa7regs[tintcore] = tintctl;
+        qa7_regs[tint_core] = tint_ctl;
+        break;
+
+    case PiType::pi_4:
+        // RPI4 enables interrupts via the GIC
+        *gicc_mpr = gicc_pmr_saved;
         break;
 
     default:
-        // Restart the system timer interrupt with the interrupt controller
-        irpctl[IRPT_ENB_IRQ_1] = irptenb & 0xf;
+        // Currently do nothing
         break;
     }
 #endif
@@ -740,7 +584,7 @@ void RpiBus::EnableIRQ()
 
 //---------------------------------------------------------------------------
 //
-//	Pin direction setting (input/output)
+// Pin direction setting (input/output)
 //
 // Used in Init() for ACT, TAD, IND, DTD, ENB to set direction (GPIO_OUTPUT vs GPIO_INPUT)
 // Also used on SignalTable
@@ -754,7 +598,7 @@ void RpiBus::PinConfig(int pin, int mode)
     }
 
     const int index = pin / 10;
-    uint32_t mask = ~(0x7 << ((pin % 10) * 3));
+    uint32_t mask = ~(7 << ((pin % 10) * 3));
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
@@ -766,15 +610,11 @@ void RpiBus::PullConfig(int pin, int mode)
         return;
     }
 
-    if (pi_type == PiType::pi_4) {
+    if (pi_type >= PiType::pi_4) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:
             pull = 0;
-            break;
-
-        case GPIO_PULLUP:
-            pull = 1;
             break;
 
         case GPIO_PULLDOWN:
@@ -782,6 +622,7 @@ void RpiBus::PullConfig(int pin, int mode)
             break;
 
         default:
+            assert(false);
             return;
         }
 
@@ -793,12 +634,12 @@ void RpiBus::PullConfig(int pin, int mode)
         gpio[GPIO_PUPPDN0 + (pin >> 4)] = bits;
     } else {
         // 2 us
-        const timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
+        constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
 
         pin &= 0x1f;
         gpio[GPIO_PUD] = mode & 0x3;
         nanosleep(&ts, nullptr);
-        gpio[GPIO_CLK_0] = 0x1 << pin;
+        gpio[GPIO_CLK_0] = 1 << pin;
         nanosleep(&ts, nullptr);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
@@ -825,7 +666,7 @@ inline uint32_t RpiBus::Acquire()
 {
     signals = *level;
 
-#if SIGNAL_CONTROL_MODE < 2
+#if SIGNAL_CONTROL_MODE == 0
     // Invert if negative logic (internal processing is unified to positive logic)
     signals = ~signals;
 #endif
@@ -837,33 +678,10 @@ inline uint32_t RpiBus::Acquire()
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 void RpiBus::WaitBusSettle() const
 {
-    if (const uint32_t diff = corefreq * 400 / 1000; diff) {
-        const uint32_t start = armtaddr[ARMT_FREERUN];
-        while (armtaddr[ARMT_FREERUN] - start < diff) {
+    if (const uint32_t diff = timer_core_freq * 400 / 1000; diff) {
+        const uint32_t start = armt_addr[ARMT_FREERUN];
+        while (armt_addr[ARMT_FREERUN] - start < diff) {
             // Intentionally empty
         }
     }
-}
-
-uint32_t RpiBus::GetDtRanges(const string &filename, uint32_t offset)
-{
-    if (ifstream in(filename, ios::binary); in.good()) {
-        in.seekg(offset, ios::beg);
-        array<char, 4> buf;
-        in.read(buf.data(), buf.size());
-        if (in.good()) {
-            return (int)buf[0] << 24 | (int)buf[1] << 16 | (int)buf[2] << 8 | (int)buf[3] << 0;
-        }
-    }
-
-    return ~0;
-}
-
-uint32_t RpiBus::GetPeripheralAddress()
-{
-    uint32_t address = GetDtRanges("/proc/device-tree/soc/ranges", 4);
-    if (!address) {
-        address = GetDtRanges("/proc/device-tree/soc/ranges", 8);
-    }
-    return address == (uint32_t)~0 ? 0x20000000 : address;
 }

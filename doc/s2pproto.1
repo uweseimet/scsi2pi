@@ -25,37 +25,37 @@ helps with advanced testing. It requires either two connected PiSCSI/RaSCSI boar
 
 .SH OPTIONS
 .TP
-.BR \--scsi-target/-i\fI " "\fIID[:LUN]
+.BR --scsi-target/-i\fI " "\fIID[:LUN]
 SCSI ID and optional LUN (0-31) of the target device.
 .TP
-.BR \--board-id/-B\fI " "\fIBOARD_ID
+.BR --board-id/-B\fI " "\fIBOARD_ID
 SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
 .TP
-.BR \--log-level/-L\fI " " \fILOG_LEVEL
+.BR --log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
 .TP
-.BR \--input-file/-f\fI " "\fIFILE
+.BR --input-file/-f\fI " "\fIFILE
 The protobuf data input file, by default in JSON format.
 .TP
-.BR \--output-file/-F\fI " "\fIFILE
+.BR --output-file/-F\fI " "\fIFILE
 The protobuf data output file, by default in JSON format. If not specified JSON data will be displayed on stdout.
 .TP
-.BR \--binary-input\fI
+.BR --binary-input\fI
 Signals that the input file is in protobuf binary format instead of JSON.
 .TP
-.BR \--binary-output\fI
+.BR --binary-output\fI
 Generate a protobuf binary format output file instead of JSON for the results.
 .TP
-.BR \--text-input\fI
+.BR --text-input\fI
 Signals that the input file is in protobuf text format instead of JSON.
 .TP
-.BR \--text-output\fI
+.BR --text-output\fI
 Generate a protobuf text format file instead of JSON for the results.
 .TP
-.BR \--help/-H\fI
+.BR --help/-H\fI
 Show a help text.
 .TP
-.BR \--version/-v\fI
+.BR --version/-v\fI
 Show the s2pproto version.
 
 .SH SEE ALSO

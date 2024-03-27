@@ -1,13 +1,12 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2023 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device.h"
 
 TEST(DeviceTest, GetDefaultParams)
 {

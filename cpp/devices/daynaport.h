@@ -1,11 +1,11 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2020 akuker
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -15,9 +15,6 @@
 // Special thanks to @PotatoFi for loaning me his Farallon EtherMac for
 // this development. (Farallon's EtherMac is a re-branded DaynaPort
 // SCSI/Link-T).
-//
-// This does NOT include the file system functionality that is present
-// in the Sharp X68000 host bridge.
 //
 // Note: This requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
 //
@@ -36,11 +33,6 @@
 
 class DaynaPort : public PrimaryDevice, private ScsiCommunicationsCommands
 {
-    uint64_t byte_read_count = 0;
-    uint64_t byte_write_count = 0;
-
-    inline static const string BYTE_READ_COUNT = "byte_read_count";
-    inline static const string BYTE_WRITE_COUNT = "byte_write_count";
 
 public:
 
@@ -55,39 +47,30 @@ public:
         return tap.GetDefaultParams();
     }
 
-    // Commands
     vector<uint8_t> InquiryInternal() const override;
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     int WriteData(span<const uint8_t>, scsi_command) override;
 
-    int RetrieveStats(cdb_t, vector<uint8_t>&) const;
-
     void TestUnitReady() override;
     void GetMessage6() override;
     void SendMessage6() const override;
-    void RetrieveStatistics() const;
+    void RetrieveStats() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
     void EnableInterface() const;
 
     vector<PbStatistics> GetStatistics() const override;
 
-    static const int CMD_SCSILINK_STATS = 0x09;
-    static const int CMD_SCSILINK_ENABLE = 0x0E;
-    static const int CMD_SCSILINK_SET = 0x0C;
-    static const int CMD_SCSILINK_SETMAC = 0x40;
-    static const int CMD_SCSILINK_SETMODE = 0x80;
-
-    // When we're reading the Linux tap device, most of the messages will not be for us, so we
-    // need to filter through those. However, we don't want to keep re-reading the packets
-    // indefinitely. So, we'll pick a large-ish number that will cause the emulated DaynaPort
-    // to respond with "no data" after MAX_READ_RETRIES tries.
-    static const int MAX_READ_RETRIES = 50;
+    static constexpr int CMD_SCSILINK_STATS = 0x09;
+    static constexpr int CMD_SCSILINK_ENABLE = 0x0e;
+    static constexpr int CMD_SCSILINK_SET = 0x0c;
+    static constexpr int CMD_SCSILINK_SETMAC = 0x40;
+    static constexpr int CMD_SCSILINK_SETMODE = 0x80;
 
     // The READ response has a header which consists of:
     //   2 bytes - payload size
     //   4 bytes - status flags
-    static const uint32_t DAYNAPORT_READ_HEADER_SZ = 2 + 4;
+    static constexpr uint32_t DAYNAPORT_READ_HEADER_SZ = 2 + 4;
 
 private:
 
@@ -123,4 +106,10 @@ private:
     TapDriver tap;
 
     bool tap_enabled = false;
+
+    uint64_t byte_read_count = 0;
+    uint64_t byte_write_count = 0;
+
+    inline static const string BYTE_READ_COUNT = "byte_read_count";
+    inline static const string BYTE_WRITE_COUNT = "byte_write_count";
 };

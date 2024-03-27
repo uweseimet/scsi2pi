@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -42,7 +42,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_DISK
-    if (shared_ptr<Disk> disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsSectorSizeConfigurable()) {
+    if (const auto disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsSectorSizeConfigurable()) {
         for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
             properties.add_block_sizes(sector_size);
         }
@@ -50,25 +50,18 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
 #endif
 }
 
-void CommandResponse::GetDeviceTypeProperties(PbDeviceTypesInfo &device_types_info, PbDeviceType type) const
-{
-    auto type_properties = device_types_info.add_properties();
-    type_properties->set_type(type);
-    const auto device = DeviceFactory::Instance().CreateDevice(type, 0, "");
-    GetDeviceProperties(device, *type_properties->mutable_properties());
-}
-
 void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) const
 {
     int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
-        PbDeviceType type = UNDEFINED;
-        PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
-        // Only report device types actually supported by the factory
-        if (DeviceFactory::Instance().CreateDevice(type, 0, "")) {
-            GetDeviceTypeProperties(device_types_info, type);
+        // Only report device types supported by the factory
+        if (const auto device = DeviceFactory::Instance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
+            auto type_properties = device_types_info.add_properties();
+            type_properties->set_type(device->GetType());
+            GetDeviceProperties(device, *type_properties->mutable_properties());
         }
-        ordinal++;
+
+        ++ordinal;
     }
 }
 
@@ -104,11 +97,8 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         pb_device.set_block_size(disk->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
         pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
         pb_device.set_caching_mode(disk->GetCachingMode());
-    }
 
-    const auto storage_device = dynamic_pointer_cast<const StorageDevice>(device);
-    if (storage_device) {
-        GetImageFile(*pb_device.mutable_file(), default_folder, device->IsReady() ? storage_device->GetFilename() : "");
+        GetImageFile(*pb_device.mutable_file(), default_folder, disk->IsReady() ? disk->GetFilename() : "");
     }
 #endif
 }

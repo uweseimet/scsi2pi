@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -12,6 +12,7 @@
 #include "primary_device.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 bool PrimaryDevice::Init(const param_map &params)
 {
@@ -109,7 +110,7 @@ void PrimaryDevice::Inquiry()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const vector<uint8_t> buf = InquiryInternal();
+    const vector<uint8_t> &buf = InquiryInternal();
 
     const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3)));
 
@@ -117,6 +118,7 @@ void PrimaryDevice::Inquiry()
 
     // Report if the device does not support the requested LUN
     if (!GetController()->GetDeviceForLun(GetController()->GetEffectiveLun())) {
+        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
@@ -152,7 +154,7 @@ void PrimaryDevice::RequestSense()
 {
     int effective_lun = GetController()->GetEffectiveLun();
 
-    // Note: According to the SCSI specs the LUN handling for REQUEST SENSE non-existing LUNs do *not* result
+    // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
     // in CHECK CONDITION. Only the Sense Key and ASC are set in order to signal the non-existing LUN.
     if (!GetController()->GetDeviceForLun(effective_lun)) {
         // LUN 0 can be assumed to be present (required to call RequestSense() below)
@@ -164,7 +166,7 @@ void PrimaryDevice::RequestSense()
         GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status::good);
     }
 
-    vector<byte> buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
+    const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4))));
     GetController()->CopyToBuffer(buf.data(), length);
@@ -207,14 +209,8 @@ void PrimaryDevice::CheckReady()
 
 vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable) const
 {
-    vector<uint8_t> buf(0x1F + 5);
+    vector<uint8_t> buf(0x1f + 5);
 
-    // Basic data
-    // buf[0] ... SCSI device type
-    // buf[1] ... Bit 7: Removable/not removable
-    // buf[2] ... SCSI compliance level of command system
-    // buf[3] ... SCSI compliance level of Inquiry response
-    // buf[4] ... Inquiry additional data
     buf[0] = static_cast<uint8_t>(type);
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
@@ -235,20 +231,17 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
 
-    // Set 18 bytes including extended sense data
-
+    // 18 bytes including extended sense data
     vector<byte> buf(18);
 
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)(sense_key);
-    buf[7] = (byte)10;
-    buf[12] = (byte)(asc);
+    buf[2] = (byte)sense_key;
+    buf[7] = byte { 10 };
+    buf[12] = (byte)asc;
 
-    LogTrace(
-        fmt::format("Status ${0:02x}, Sense Key ${1:02x}, ASC ${2:02x}", static_cast<int>(GetController()->GetStatus()),
-            static_cast<int>(buf[2]), static_cast<int>(buf[12])));
+    LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
 
     return buf;
 }
@@ -257,43 +250,31 @@ void PrimaryDevice::ReserveUnit()
 {
     reserving_initiator = GetController()->GetInitiatorId();
 
-    if (reserving_initiator != -1) {
-        LogTrace(fmt::format("Reserved device for initiator ID {}", reserving_initiator));
-    }
-    else {
-        LogTrace("Reserved device for unknown initiator");
-    }
-
     StatusPhase();
 }
 
 void PrimaryDevice::ReleaseUnit()
 {
-    if (reserving_initiator != -1) {
-        LogTrace(fmt::format("Released device reserved by initiator ID {}", reserving_initiator));
-    }
-    else {
-        LogTrace("Released device reserved by unknown initiator");
-    }
-
     DiscardReservation();
 
     StatusPhase();
 }
 
-bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool prevent_removal) const
+bool PrimaryDevice::CheckReservation(int initiator_id) const
 {
     if (reserving_initiator == NOT_RESERVED || reserving_initiator == initiator_id) {
         return true;
     }
 
     // A reservation is valid for all commands except those excluded below
+    const auto cmd = GetController()->GetOpcode();
     if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
         || cmd == scsi_command::cmd_release6) {
         return true;
     }
+
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !prevent_removal) {
+    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetController()->GetCdbByte(4) & 0x01)) {
         return true;
     }
 
@@ -303,6 +284,9 @@ bool PrimaryDevice::CheckReservation(int initiator_id, scsi_command cmd, bool pr
     else {
         LogTrace("Unknown initiator tries to access reserved device");
     }
+
+    GetController()->Error(sense_key::aborted_command, asc::no_additional_sense_information,
+        status::reservation_conflict);
 
     return false;
 }

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -18,6 +18,11 @@ void DeviceLogger::Trace(const string &message) const
 void DeviceLogger::Debug(const string &message) const
 {
     Log(level::debug, message);
+}
+
+void DeviceLogger::Info(const string &message) const
+{
+    Log(level::info, message);
 }
 
 void DeviceLogger::Warn(const string &message) const

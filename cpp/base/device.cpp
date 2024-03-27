@@ -1,13 +1,13 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include <stdexcept>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
 #include "device.h"
 
@@ -47,12 +47,10 @@ void Device::SetProduct(const string &p, bool force)
         throw invalid_argument("Product '" + p + "' must have between 1 and 16 characters");
     }
 
-    // Changing vital product data is not SCSI compliant
-    if (!product.empty() && !force) {
-        return;
+    // Changing existing vital product data is not SCSI compliant
+    if (product.empty() || force) {
+        product = p;
     }
-
-    product = p;
 }
 
 void Device::SetRevision(const string &r)

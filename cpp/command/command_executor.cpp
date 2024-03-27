@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -22,7 +22,13 @@ using namespace s2p_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    info((dryRun ? "Validating: " : "Executing: ") + PrintCommand(context.GetCommand(), pb_device));
+    const string &msg = PrintCommand(context.GetCommand(), pb_device);
+    if (dryRun) {
+        trace("Validating: " + msg);
+    }
+    else {
+        info("Executing: " + msg);
+    }
 
     const int id = pb_device.id();
     const int lun = pb_device.unit();
@@ -45,12 +51,6 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     }
 
     switch (operation) {
-    case START:
-        return Start(*device, dryRun);
-
-    case STOP:
-        return Stop(*device, dryRun);
-
     case ATTACH:
         return Attach(context, pb_device, dryRun);
 
@@ -60,15 +60,20 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     case INSERT:
         return Insert(context, pb_device, device, dryRun);
 
+    case START:
+        return dryRun ? true : Start(*device);
+
+    case STOP:
+        return dryRun ? true : Stop(*device);
+
     case EJECT:
-        return Eject(*device, dryRun);
+        return dryRun ? true : Eject(*device);
 
     case PROTECT:
-        return Protect(*device, dryRun);
+        return dryRun ? true : Protect(*device);
 
     case UNPROTECT:
-        return Unprotect(*device, dryRun);
-        break;
+        return dryRun ? true : Unprotect(*device);
 
     default:
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
@@ -118,8 +123,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    if (const string error = EnsureLun0(command); !error.empty()) {
-        return context.ReturnErrorStatus(error);
+    if (!EnsureLun0(context, command)) {
+        return false;
     }
 
     if (ranges::find_if_not(command.devices(), [&](const auto &device)
@@ -131,63 +136,53 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
 }
 
-bool CommandExecutor::Start(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Start(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Start requested for {}", GetIdentifier(device));
+    info("Start requested for {}", GetIdentifier(device));
 
-        if (!device.Start()) {
-            warn("Starting {} failed", GetIdentifier(device));
-        }
+    if (!device.Start()) {
+        warn("Starting {} failed", GetIdentifier(device));
     }
 
     return true;
 }
 
-bool CommandExecutor::Stop(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Stop(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Stop requested for {}", GetIdentifier(device));
+    info("Stop requested for {}", GetIdentifier(device));
 
-        device.Stop();
+    device.Stop();
 
-        device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+    device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+
+    return true;
+}
+
+bool CommandExecutor::Eject(PrimaryDevice &device) const
+{
+    info("Eject requested for {}", GetIdentifier(device));
+
+    if (!device.Eject(true)) {
+        warn("Ejecting {} failed", GetIdentifier(device));
     }
 
     return true;
 }
 
-bool CommandExecutor::Eject(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Protect(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Eject requested for {}", GetIdentifier(device));
+    info("Write protection requested for {}", GetIdentifier(device));
 
-        if (!device.Eject(true)) {
-            warn("Ejecting {} failed", GetIdentifier(device));
-        }
-    }
+    device.SetProtected(true);
 
     return true;
 }
 
-bool CommandExecutor::Protect(PrimaryDevice &device, bool dryRun) const
+bool CommandExecutor::Unprotect(PrimaryDevice &device) const
 {
-    if (!dryRun) {
-        info("Write protection requested for {}", GetIdentifier(device));
+    info("Write unprotection requested for {}", GetIdentifier(device));
 
-        device.SetProtected(true);
-    }
-
-    return true;
-}
-
-bool CommandExecutor::Unprotect(PrimaryDevice &device, bool dryRun) const
-{
-    if (!dryRun) {
-        info("Write unprotection requested for {}", GetIdentifier(device));
-
-        device.SetProtected(false);
-    }
+    device.SetProtected(false);
 
     return true;
 }
@@ -230,9 +225,6 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    // If no filename was provided the medium is considered not inserted
-    device->SetRemoved(device->SupportsFile() ? filename.empty() : false);
-
     if (!SetProductData(context, pb_device, *device)) {
         return false;
     }
@@ -244,6 +236,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #ifdef BUILD_DISK
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
+        // If no filename was provided the medium is considered not inserted
+        device->SetRemoved(filename.empty());
+
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
             disk->SetCachingMode(caching_mode);
@@ -272,7 +267,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    param_map params = { pb_device.params().begin(), pb_device.params().end() };
+    param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
     if (!device->SupportsFile()) {
         // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
@@ -295,15 +290,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     SetUpDeviceProperties(context, device);
 
-    string msg = "Attached ";
-    if (device->IsReadOnly()) {
-        msg += "read-only ";
-    }
-    else if (device->IsProtectable() && device->IsProtected()) {
-        msg += "protected ";
-    }
-    msg += GetIdentifier(*device);
-    info(msg);
+    DisplayDeviceInfo(*device);
 
     return true;
 }
@@ -348,9 +335,12 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    storage_device->SetProtected(pb_device.protected_());
-    storage_device->ReserveFile();
+    if (!storage_device->ReserveFile()) {
+        return false;
+    }
+
     storage_device->SetMediumChanged(true);
+    storage_device->SetProtected(pb_device.protected_());
 #endif
 
     return true;
@@ -370,8 +360,8 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
     }
 
     if (!dryRun) {
-        // Remember some device data before the device data become invalid on removal
-        const string identifier = GetIdentifier(device);
+        // Remember some device data before they become invalid on removal
+        const string &identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
 
@@ -433,6 +423,19 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
     }
 }
 
+void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device)
+{
+    string msg = "Attached ";
+    if (device.IsReadOnly()) {
+        msg += "read-only ";
+    }
+    else if (device.IsProtectable() && device.IsProtected()) {
+        msg += "protected ";
+    }
+    msg += GetIdentifier(device);
+    info(msg);
+}
+
 string CommandExecutor::SetReservedIds(string_view ids)
 {
     set<int> ids_to_reserve;
@@ -451,7 +454,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
         ids_to_reserve.insert(res_id);
     }
 
-    reserved_ids = { ids_to_reserve.begin(), ids_to_reserve.end() };
+    reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
 
     if (!ids_to_reserve.empty()) {
         info("Reserved ID(s) set to {}", Join(ids_to_reserve));
@@ -477,18 +480,18 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         return false;
     }
 
-    storage_device.SetFilename(filename);
+    string effective_filename = filename;
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        const string effective_filename = context.GetDefaultFolder() + "/" + filename;
+        effective_filename = context.GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
         }
-
-        storage_device.SetFilename(effective_filename);
     }
+
+    storage_device.SetFilename(effective_filename);
 
     try {
         storage_device.Open();
@@ -517,9 +520,9 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 }
 #pragma GCC diagnostic pop
 
-string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device) const
+string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    const map<string, string, less<>> params = { command.params().begin(), command.params().end() };
+    const map<string, string, less<>> params = { command.params().cbegin(), command.params().cend() };
 
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());
@@ -576,9 +579,9 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     return s.str();
 }
 
-string CommandExecutor::EnsureLun0(const PbCommand &command) const
+bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand &command) const
 {
-    // Mapping of available LUNs (bit vector) to devices
+    // Mapping of available LUNs (bit vector) to device IDs
     unordered_map<int32_t, int32_t> luns;
 
     // Collect LUN bit vectors of new devices
@@ -592,7 +595,9 @@ string CommandExecutor::EnsureLun0(const PbCommand &command) const
     }
 
     const auto &it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
-    return it == luns.end() ? "" : "LUN 0 is missing for device ID " + to_string((*it).first);
+    return
+        it == luns.end() ?
+            true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, to_string((*it).first));
 }
 
 bool CommandExecutor::VerifyExistingIdAndLun(const CommandContext &context, int id, int lun) const

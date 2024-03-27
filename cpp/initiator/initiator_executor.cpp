@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -28,8 +28,7 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
         warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
     }
 
-    if (const string &command_name = BusFactory::Instance().GetCommandName(cmd);
-    !command_name.empty()) {
+    if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
         trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
     }
     else {
@@ -202,7 +201,7 @@ void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf;
 
-    if (bus.ReceiveHandShake(buf.data(), 1) != static_cast<int>(buf.size())) {
+    if (bus.ReceiveHandShake(buf.data(), static_cast<int>(buf.size())) != static_cast<int>(buf.size())) {
         error("STATUS phase failed");
     }
     else {

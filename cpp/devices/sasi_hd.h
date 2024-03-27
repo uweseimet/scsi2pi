@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -9,7 +9,6 @@
 #pragma once
 
 #include <unordered_set>
-#include <vector>
 #include "disk.h"
 
 class SasiHd : public Disk
@@ -20,7 +19,6 @@ public:
     explicit SasiHd(int, const unordered_set<uint32_t>& = { 256, 512, 1024 });
     ~SasiHd() override = default;
 
-    void FinalizeSetup();
     void Open() override;
 
     void Inquiry() override;

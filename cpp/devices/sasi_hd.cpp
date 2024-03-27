@@ -1,27 +1,19 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
+#include "shared/shared_exceptions.h"
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false,
+SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false, false,
     sector_sizes)
 {
     SetProduct("SASI HD");
     SetProtectable(true);
-}
-
-void SasiHd::FinalizeSetup()
-{
-    Disk::ValidateFile();
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
 }
 
 void SasiHd::Open()
@@ -34,14 +26,14 @@ void SasiHd::Open()
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
-    FinalizeSetup();
+    Disk::ValidateFile();
 }
 
 void SasiHd::Inquiry()
 {
     // Byte 0 = 0: Direct access device
 
-    array<uint8_t, 2> buf = { };
+    const array<uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());
@@ -59,7 +51,7 @@ void SasiHd::RequestSense()
     //vector<uint8_t> buf(allocation_length ? allocation_length : 4);
 
     // SASI fixed to non-extended format
-    array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
+    const array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());

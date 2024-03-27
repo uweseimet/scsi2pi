@@ -34,55 +34,55 @@ helps with advanced testing. The board s2pexec is running on must be a FULLSPEC 
 
 .SH OPTIONS
 .TP
-.BR \--scsi-target/-i\fI " "\fIID[:LUN]
+.BR --scsi-target/-i\fI " "\fIID[:LUN]
 ID and optional LUN (0-31) of the SCSI target device.
 .TP
-.BR \--sasi-target/-h\fI " "\fIID[:LUN]
+.BR --sasi-target/-h\fI " "\fIID[:LUN]
 ID and optional LUN (0-1) of the SASI target device.
 .TP
-.BR \--board-id/-B\fI " "\fIBOARD_ID
+.BR --board-id/-B\fI " "\fIBOARD_ID
 Initiator ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7. Not relevant for SASI.
 .TP
-.BR \--cdb/-c\fI " "\fICDB
+.BR --cdb/-c\fI " "\fICDB
 Command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
 .TP
-.BR \--data/-d\fI " "\fIDATA
+.BR --data/-d\fI " "\fIDATA
 Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase.
 .TP
-.BR \--buffer-size/-b\fI " "\fIBUFFER_SIZE
+.BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 Buffer size for received data, the default is 131072 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
-.BR \--log-level/-L\fI " " \fILOG_LEVEL
+.BR --log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
 .TP
-.BR \--binary-input-file/-f\fI " "\fIFILE
+.BR --binary-input-file/-f\fI " "\fIFILE
 Optional file with binary data to send in the DATA OUT phase.
 .TP
-.BR \--binary-output-file/-F\fI " "\fIFILE
+.BR --binary-output-file/-F\fI " "\fIFILE
 Optional file for binary data received in the DATA IN phase.
 .TP
-.BR \--hex-input-file/-t\fI " "\fIFILE
+.BR --hex-input-file/-t\fI " "\fIFILE
 Optional file with data in hexadecimal (human-readable) format to send in the DATA OUT phase.
 .TP
 .BR \--hex-output-file/-T\fI " "\fIFILE
 Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
 .TP
-.BR \--timeout/-o\fI " "\fITIMEOUT
+.BR --timeout/-o\fI " "\fITIMEOUT
 The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer.
 .TP
-.BR \--no-request-sense/-n\fI
+.BR --no-request-sense/-n\fI
 Do not automatically send REQUEST SENSE after an error in order to get the sense data.
 .TP
-.BR \--reset-bus/-r\fI
+.BR --reset-bus/-r\fI
 Reset the bus.
 .TP
-.BR \--hex-only\fI
+.BR --hex-only\fI
 Do not display/save the offsets and the ASCII representantion of the received data.
 .TP
-.BR \--help/-H\fI
+.BR --help/-H\fI
 Show a help text.
 .TP
-.BR \--version/-v\fI
+.BR --version/-v\fI
 Show the s2pexec version.
 
 .SH EXIT STATUS

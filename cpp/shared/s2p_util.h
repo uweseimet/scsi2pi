@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -16,8 +16,9 @@
 
 namespace s2p_util
 {
+
 // Separator for compound options like ID:LUN
-static const char COMPONENT_SEPARATOR = ':';
+static constexpr char COMPONENT_SEPARATOR = ':';
 
 struct StringHash
 {
@@ -65,9 +66,5 @@ string FormatSenseData(scsi_defs::sense_key, scsi_defs::asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
 string FormatBytes(vector<uint8_t>&, int, bool = false);
-
-const unordered_map<char, int> HEX_TO_DEC = {
-    { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 }, { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 },
-    { '9', 9 }, { 'a', 10 }, { 'b', 11 }, { 'c', 12 }, { 'd', 13 }, { 'e', 14 }, { 'f', 15 }
-};
+int HexToDec(char);
 }

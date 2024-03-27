@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -14,8 +14,8 @@
 
 using namespace memory_util;
 
-ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, { 512,
-    2048 })
+ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, false,
+    { 512, 2048 })
 {
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
@@ -45,14 +45,9 @@ void ScsiCd::Open()
     if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
         throw io_exception("Invalid sector size");
     }
-
     SetBlockCount(GetFileSize() / GetSectorSizeInBytes());
 
     Disk::ValidateFile();
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
 
     SetReadOnly(true);
     SetProtectable(false);

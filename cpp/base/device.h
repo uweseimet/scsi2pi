@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <unordered_map>
 #include "generated/s2p_interface.pb.h"
 #include "shared/s2p_util.h"
 
@@ -42,6 +41,11 @@ public:
         return ready;
     }
     virtual void Reset();
+
+    void SetReset(bool b)
+    {
+        reset = b;
+    }
 
     bool IsProtectable() const
     {
@@ -156,10 +160,6 @@ protected:
     bool IsReset() const
     {
         return reset;
-    }
-    void SetReset(bool b)
-    {
-        reset = b;
     }
     bool IsAttn() const
     {

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,28 +8,27 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "base/device_factory.h"
 
 TEST(HostServicesTest, DeviceDefaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "services");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCHS, device->GetType());
-    EXPECT_FALSE(device->SupportsFile());
-    EXPECT_FALSE(device->SupportsParams());
-    EXPECT_FALSE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_FALSE(device->IsReadOnly());
-    EXPECT_FALSE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLockable());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_FALSE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    HostServices services(0);
 
-    EXPECT_EQ("SCSI2Pi", device->GetVendor());
-    EXPECT_EQ("Host Services", device->GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
+    EXPECT_EQ(SCHS, services.GetType());
+    EXPECT_FALSE(services.SupportsFile());
+    EXPECT_FALSE(services.SupportsParams());
+    EXPECT_FALSE(services.IsProtectable());
+    EXPECT_FALSE(services.IsProtected());
+    EXPECT_FALSE(services.IsReadOnly());
+    EXPECT_FALSE(services.IsRemovable());
+    EXPECT_FALSE(services.IsRemoved());
+    EXPECT_FALSE(services.IsLockable());
+    EXPECT_FALSE(services.IsLocked());
+    EXPECT_FALSE(services.IsStoppable());
+    EXPECT_FALSE(services.IsStopped());
+
+    EXPECT_EQ("SCSI2Pi", services.GetVendor());
+    EXPECT_EQ("Host Services", services.GetProduct());
+    EXPECT_EQ(TestShared::GetVersion(), services.GetRevision());
 }
 
 void HostServices_SetUpModePages(map<int, vector<byte>> &pages)

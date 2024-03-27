@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -12,8 +12,9 @@
 
 using namespace filesystem;
 
-StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_pages)
-: ModePageDevice(type, level, lun, supports_mode_pages)
+StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select,
+    bool supports_save_parameters)
+: ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters)
 {
     SupportsFile(true);
     SetStoppable(true);
@@ -26,36 +27,17 @@ void StorageDevice::CleanUp()
     ModePageDevice::CleanUp();
 }
 
-void StorageDevice::SetFilename(string_view f)
-{
-    filename = filesystem::path(f);
-
-    // Permanently write-protected
-    SetReadOnly(IsReadOnlyFile());
-
-    SetProtectable(!IsReadOnlyFile());
-
-    if (IsReadOnlyFile()) {
-        SetProtected(false);
-    }
-}
-
 void StorageDevice::ValidateFile()
 {
     if (!blocks) {
-        throw io_exception(string(GetTypeString()) + " device has 0 blocks");
-    }
-
-    if (!exists(filename)) {
-        throw file_not_found_exception(
-            "Image file '" + filename.string() + "' for " + GetTypeString() + " device does not exist");
+        throw io_exception(GetTypeString() + " device has 0 blocks");
     }
 
     if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
         throw io_exception("Image files > 2 TiB are not supported");
     }
 
-    // TODO Check for duplicate handling of these properties (-> S2pExecutor)
+    // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {
         // Permanently write-protected
         SetReadOnly(true);
@@ -69,12 +51,15 @@ void StorageDevice::ValidateFile()
     SetReady(true);
 }
 
-void StorageDevice::ReserveFile() const
+bool StorageDevice::ReserveFile() const
 {
-    assert(!filename.empty());
-    assert(!reserved_files.contains(filename.string()));
+    if (filename.empty() || reserved_files.contains(filename.string())) {
+        return false;
+    }
 
     reserved_files[filename.string()] = { GetId(), GetLun() };
+
+    return true;
 }
 
 void StorageDevice::UnreserveFile()

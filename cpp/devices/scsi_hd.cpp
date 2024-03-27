@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -13,7 +13,7 @@
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, sector_sizes)
+: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
@@ -26,7 +26,6 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
     SetProtectable(true);
     SetRemovable(removable);
     SetLockable(removable);
-    SupportsSaveParameters(true);
 }
 
 string ScsiHd::GetProductData() const
@@ -60,23 +59,17 @@ void ScsiHd::FinalizeSetup()
     if (!IsRemovable()) {
         SetProduct(GetProductData(), false);
     }
-
-    if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
-    }
 }
 
 void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetFileSize();
-
     // Sector size (default 512 bytes) and number of blocks
     if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(size / GetSectorSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
 
     FinalizeSetup();
 }
@@ -95,7 +88,7 @@ void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
         AddFormatPage(pages, changeable);
     }
 
-    // Page 4 (rigid drive page)
+    // Page 4 (rigid drive)
     if (page == 0x04 || page == 0x3f) {
         AddDrivePage(pages, changeable);
     }
@@ -111,9 +104,9 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(24);
 
     if (changeable) {
-        // The sector size is simulated to be changeable in multiples of 4,
-        // see the MODE SELECT implementation for details
-        SetInt16(buf, 12, 0xffff);
+        // The sector size is simulated to be changeable in multiples of 4 with a maximum of 4096 bytes per sector.
+        // See the MODE SELECT implementation for details.
+        SetInt16(buf, 12, 0x1ffc);
 
         pages[3] = buf;
 

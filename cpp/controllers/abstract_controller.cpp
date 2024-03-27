@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -15,34 +15,61 @@ AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : 
     max_luns)
 {
     // The initial buffer size is the size of the biggest supported sector
-    ctrl.buffer.resize(4096);
+    buffer.resize(4096);
 
     device_logger.SetIdAndLun(target_id, -1);
 }
 
-void AbstractController::SetCurrentLength(int length)
+void AbstractController::CleanUp() const
 {
-    if (length > static_cast<int>(ctrl.buffer.size())) {
-        ctrl.buffer.resize(length);
+    for (const auto& [_, device] : luns) {
+        device->CleanUp();
     }
-
-    ctrl.current_length = length;
 }
 
-void AbstractController::SetTransferSize(int length, int chunk_size)
+void AbstractController::Reset()
+{
+    SetPhase(phase_t::busfree);
+
+    offset = 0;
+    total_length = 0;
+    current_length = 0;
+    chunk_size = 0;
+
+    status = status::good;
+
+    initiator_id = UNKNOWN_INITIATOR_ID;
+
+    for (const auto& [_, device] : luns) {
+        device->Reset();
+    }
+
+    bus.Reset();
+}
+
+void AbstractController::SetCurrentLength(int length)
+{
+    if (length > static_cast<int>(buffer.size())) {
+        buffer.resize(length);
+    }
+
+    current_length = length;
+}
+
+void AbstractController::SetTransferSize(int length, int size)
 {
     // The total number of bytes to transfer for the current SCSI/SASI command
-    ctrl.total_length = length;
+    total_length = length;
 
     // The number of bytes to transfer in a single chunk
-    ctrl.chunk_size = chunk_size;
+    chunk_size = size;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
 {
     SetCurrentLength(static_cast<int>(size));
 
-    memcpy(ctrl.buffer.data(), src, size);
+    memcpy(buffer.data(), src, size);
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
@@ -61,41 +88,32 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-void AbstractController::Reset()
+AbstractController::shutdown_mode AbstractController::ProcessOnController(int ids)
 {
-    SetPhase(phase_t::busfree);
+    device_logger.SetIdAndLun(target_id, -1);
 
-    ctrl = { };
-
-    // Reset all LUNs
-    for (const auto& [_, device] : luns) {
-        device->Reset();
-    }
-
-    GetBus().Reset();
-}
-
-void AbstractController::ProcessOnController(int id_data)
-{
-    device_logger.SetIdAndLun(GetTargetId(), -1);
-
-    const int initiator_id = ExtractInitiatorId(id_data);
-    if (initiator_id != UNKNOWN_INITIATOR_ID) {
-        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
+    if (int ids_without_target = ids - (1 << target_id); ids_without_target) {
+        initiator_id = 0;
+        while (!(ids_without_target & (1 << initiator_id))) {
+            ++initiator_id;
+        }
+        LogTrace("++++ Starting processing for initiator ID " + to_string(initiator_id));
     }
     else {
+        initiator_id = UNKNOWN_INITIATOR_ID;
         LogTrace("++++ Starting processing for unknown initiator ID");
     }
 
-    while (Process(initiator_id)) {
+    while (Process()) {
         // Handle bus phases until the bus is free for the next command
     }
+
+    return sh_mode;
 }
 
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-
     if (lun < 0 || lun >= max_luns || GetDeviceForLun(lun) || device->GetController()) {
         return false;
     }
@@ -111,13 +129,4 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
-}
-
-int AbstractController::ExtractInitiatorId(int id_data) const
-{
-    if (const int id_data_without_target = id_data - (1 << target_id); id_data_without_target) {
-        return static_cast<int>(log2(id_data_without_target & -id_data_without_target));
-    }
-
-    return UNKNOWN_INITIATOR_ID;
 }

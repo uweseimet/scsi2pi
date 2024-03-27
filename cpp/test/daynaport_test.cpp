@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,37 +8,39 @@
 
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
-#include "base/device_factory.h"
 #include "devices/daynaport.h"
 
 TEST(ScsiDaynaportTest, Device_Defaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "daynaport");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCDP, device->GetType());
-    EXPECT_FALSE(device->SupportsFile());
-    EXPECT_TRUE(device->SupportsParams());
-    EXPECT_FALSE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_FALSE(device->IsReadOnly());
-    EXPECT_FALSE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLockable());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_FALSE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    DaynaPort daynaport(0);
 
-    EXPECT_EQ("Dayna", device->GetVendor());
-    EXPECT_EQ("SCSI/Link", device->GetProduct());
-    EXPECT_EQ("1.4a", device->GetRevision());
+    EXPECT_EQ(SCDP, daynaport.GetType());
+    EXPECT_FALSE(daynaport.SupportsFile());
+    EXPECT_TRUE(daynaport.SupportsParams());
+    EXPECT_FALSE(daynaport.IsProtectable());
+    EXPECT_FALSE(daynaport.IsProtected());
+    EXPECT_FALSE(daynaport.IsReadOnly());
+    EXPECT_FALSE(daynaport.IsRemovable());
+    EXPECT_FALSE(daynaport.IsRemoved());
+    EXPECT_FALSE(daynaport.IsLockable());
+    EXPECT_FALSE(daynaport.IsLocked());
+    EXPECT_FALSE(daynaport.IsStoppable());
+    EXPECT_FALSE(daynaport.IsStopped());
+
+    EXPECT_EQ("Dayna", daynaport.GetVendor());
+    EXPECT_EQ("SCSI/Link", daynaport.GetProduct());
+    EXPECT_EQ("1.4a", daynaport.GetRevision());
 }
 
 TEST(ScsiDaynaportTest, GetDefaultParams)
 {
-    const auto [controller, daynaport] = CreateDevice(SCDP);
+    DaynaPort daynaport(0);
 
-    const auto params = daynaport->GetDefaultParams();
-    EXPECT_EQ(2U, params.size());
+    const auto params = daynaport.GetDefaultParams();
+    EXPECT_EQ(3U, params.size());
+    EXPECT_TRUE(params.contains("interface"));
+    EXPECT_TRUE(params.contains("inet"));
+    EXPECT_TRUE(params.contains("bridge"));
 }
 
 TEST(ScsiDaynaportTest, Inquiry)
@@ -57,18 +59,19 @@ TEST(ScsiDaynaportTest, TestUnitReady)
 
 TEST(ScsiDaynaportTest, Read)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
+    DaynaPort daynaport(0);
+    vector<int> cdb(6);
 
     // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 1);
-    vector<uint8_t> buf(0);
-    EXPECT_EQ(0, dynamic_pointer_cast<DaynaPort>(daynaport)->Read(controller->GetCdb(), buf, 0))
-        << "Trying to read the root sector must fail";
+    cdb[4] = 1;
+    vector<uint8_t> buf;
+    EXPECT_EQ(0, daynaport.Read(cdb, buf, 0)) << "Trying to read the root sector must fail";
 }
 
 TEST(ScsiDaynaportTest, Write)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
+    vector<int> cdb(6);
 
     // Unknown data format
     controller->SetCdbByte(5, 0xff);
@@ -176,7 +179,6 @@ TEST(ScsiDaynaportTest, EnableInterface)
 TEST(ScsiDaynaportTest, GetDelayAfterBytes)
 {
     DaynaPort daynaport(0);
-    daynaport.Init( { });
 
     EXPECT_EQ(6, daynaport.GetDelayAfterBytes());
 }

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -183,26 +183,36 @@ TEST(DelegatingProcessBusTest, Acquire)
     EXPECT_EQ(0x45U, delegating_bus.Acquire());
 }
 
-TEST(DelegatingProcessBusTest, WaitACK)
+TEST(DelegatingProcessBusTest, SetGetSignal)
+{
+    MockInProcessBus bus;
+    DelegatingInProcessBus delegating_bus(bus, true);
+
+    delegating_bus.SetSignal(PIN_ACK, true);
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK));
+    delegating_bus.SetSignal(PIN_ACK, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK));
+
+    delegating_bus.SetSignal(PIN_IO, true);
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO));
+    delegating_bus.SetSignal(PIN_IO, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO));
+}
+
+TEST(DelegatingProcessBusTest, WaitSignal)
 {
     MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
     bus.SetACK(true);
-    EXPECT_TRUE(delegating_bus.WaitACK(true));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_ACK, true));
     bus.SetACK(false);
-    EXPECT_TRUE(delegating_bus.WaitACK(false));
-}
-
-TEST(DelegatingProcessBusTest, WaitREQ)
-{
-    MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_ACK, false));
 
     bus.SetREQ(true);
-    EXPECT_TRUE(delegating_bus.WaitREQ(true));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_REQ, true));
     bus.SetREQ(false);
-    EXPECT_TRUE(delegating_bus.WaitREQ(false));
+    EXPECT_TRUE(delegating_bus.WaitSignal(PIN_REQ, false));
 }
 
 TEST(DelegatingProcessBusTest, DAT)

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -351,7 +351,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
                 device->set_caching_mode(ParseCachingMode(optarg));
             }
             catch (const parser_exception &e) {
-                cerr << e.what() << endl;
+                cerr << "Error: " << e.what() << endl;
                 return EXIT_FAILURE;
             }
             break;
@@ -446,7 +446,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
     S2pCtlCommands s2pctl_commands(command, hostname, port, filename_binary, filename_json, filename_text);
 
-    bool status;
+    bool status = false;
     try {
         // Listing devices is a special case
         if (command.operation() == DEVICES_INFO) {
@@ -462,10 +462,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     }
     catch (const io_exception &e) {
         cerr << "Error: " << e.what() << endl;
-
-        status = false;
-
-        // Fall through
+        return EXIT_FAILURE;
     }
 
     return status ? EXIT_SUCCESS : EXIT_FAILURE;

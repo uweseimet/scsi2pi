@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -18,6 +18,7 @@
 #include "disk_cache.h"
 #include "disk.h"
 
+using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
@@ -137,10 +138,18 @@ void Disk::Dispatch(scsi_command cmd)
 
         SetMediumChanged(false);
 
-        GetController()->Error(sense_key::unit_attention, asc::not_ready_to_ready_change);
+        throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
     }
-    else {
-        PrimaryDevice::Dispatch(cmd);
+
+    StorageDevice::Dispatch(cmd);
+}
+
+void Disk::ValidateFile()
+{
+    StorageDevice::ValidateFile();
+
+    if (!SetUpCache()) {
+        throw io_exception("Can't initialize cache");
     }
 }
 
@@ -149,11 +158,11 @@ bool Disk::SetUpCache()
     assert(caching_mode != PbCachingMode::DEFAULT);
 
     if (!supported_sector_sizes.contains(sector_size)) {
-        spdlog::warn("Using non-standard sector size of {} bytes", sector_size);
-
+        warn("Using non-standard sector size of {} bytes", sector_size);
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
-            spdlog::info("Adjusted caching mode to '{}'", ToLower(PbCachingMode_Name(caching_mode)));
+            // LogInfo() does not work here because at initialization time the device ID is not yet set
+            info("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode));
         }
     }
 
@@ -276,10 +285,12 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
-        LogWarn(
-            "Full READ/WRITE LONG support requires a different caching mode than '"
-                + ToLower(PbCachingMode_Name(caching_mode)) + "'");
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        // FUll READ/WRITE LONG support requires an appropriate caching mode
+        FlushCache();
+        caching_mode = PbCachingMode::LINUX;
+        InitCache(GetFilename());
+        linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
+        LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
 
     if (length > sector_size) {
@@ -335,6 +346,15 @@ void Disk::StartStopUnit()
             FlushCache();
         }
     }
+    else if (load && !last_filename.empty()) {
+        SetFilename(last_filename);
+        if (!ReserveFile()) {
+            last_filename.clear();
+            throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
+        }
+
+        SetMediumChanged(true);
+    }
 
     StatusPhase();
 }
@@ -378,6 +398,8 @@ bool Disk::Eject(bool force)
     if (status) {
         FlushCache();
         cache.reset();
+
+        last_filename = GetFilename();
 
         // The image file for this drive is not in use anymore
         UnreserveFile();
@@ -610,9 +632,10 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
 
     int size = GetSectorSizeInBytes();
 
-    int offset = EvaluateBlockDescriptors(cmd, buf, length, size);
+    int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
     length -= offset;
 
+    // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
     SetUpModePages(pages, 0x3f, true);
 
@@ -628,71 +651,62 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
         if (length < 2) {
             throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
         }
-        const size_t page_size = buf[offset + 1];
+
+        // The page size field does not count itself and the page code field
+        const size_t page_size = buf[offset + 1] + 2;
 
         // The page size in the parameters must match the actual page size
-        if (it->second.size() - 2 != page_size || page_size + 2 > static_cast<size_t>(length)) {
+        if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
             throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
         }
 
         switch (page_code) {
-        // Read-write error recovery page
+        // Read-write/Verify error recovery and caching pages
         case 0x01:
-            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
+        case 0x07:
+        case 0x08:
+            // Simply ignore the requested changes in the error handling or caching, they are not relevant for SCSI2Pi
             break;
 
         // Format device page
-        case 0x03: {
+        case 0x03:
             // With this page the sector size for a subsequent FORMAT can be selected, but only a few drives
             // support this, e.g. FUJITSU M2624S.
             // We are fine as long as the permanent current sector size remains unchanged.
             VerifySectorSizeChange(GetInt16(buf, offset + 12), false);
             break;
-        }
-
-        // Verify error recovery page
-        case 0x07:
-            // Simply ignore the requested changes in the error handling, they are not relevant for SCSI2Pi
-            break;
 
         default:
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
-            break;
         }
 
-        // The page size field does not count itself and the page code field
-        length -= page_size + 2;
-        offset += page_size + 2;
+        length -= page_size;
+        offset += page_size;
     }
 
     ChangeSectorSize(size);
 }
 
-int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int length, int &size) const
+int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int &size) const
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
-    int required_length;
-    int block_descriptor_length;
-    if (cmd == scsi_command::cmd_mode_select10) {
-        block_descriptor_length = GetInt16(buf, 6);
-        required_length = 8;
-    }
-    else {
-        block_descriptor_length = buf[3];
-        required_length = 4;
+    const size_t required_length = cmd == scsi_command::cmd_mode_select10 ? 8 : 4;
+    if (buf.size() < required_length) {
+        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
-    if (length < block_descriptor_length + required_length) {
+    const size_t descriptor_length = cmd == scsi_command::cmd_mode_select10 ? GetInt16(buf, 6) : buf[3];
+    if (buf.size() < descriptor_length + required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
     // Check for temporary sector size change in first block descriptor
-    if (block_descriptor_length && length >= required_length + 8) {
-        size = VerifySectorSizeChange(GetInt16(buf, required_length + 6), true);
+    if (descriptor_length && buf.size() >= required_length + 8) {
+        size = VerifySectorSizeChange(GetInt16(buf, static_cast<int>(required_length) + 6), true);
     }
 
-    return block_descriptor_length + required_length;
+    return static_cast<int>(descriptor_length + required_length);
 }
 
 int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
@@ -800,15 +814,9 @@ void Disk::ReadCapacity10()
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
 
-    // Create end of logical block address (blocks-1)
-    uint64_t capacity = GetBlockCount() - 1;
-
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
-    if (capacity > 4294967295) {
-        capacity = -1;
-    }
-    SetInt32(buf, 0, static_cast<uint32_t>(capacity));
-
+    const uint64_t capacity = GetBlockCount() - 1;
+    SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
     SetInt32(buf, 4, sector_size);
 
     DataInPhase(8);
@@ -823,19 +831,12 @@ void Disk::ReadCapacity16()
     }
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
+    fill_n(buf.begin(), 32, 0);
 
-    // Create end of logical block address (blocks-1)
     SetInt64(buf, 0, GetBlockCount() - 1);
-
-    // Create block length (1 << size)
     SetInt32(buf, 8, sector_size);
 
-    buf[12] = 0;
-
-    // Logical blocks per physical block: not reported (1 or more)
-    buf[13] = 0;
-
-    DataInPhase(14);
+    DataInPhase(min(32, static_cast<int>(GetInt32(GetController()->GetCdb(), 10))));
 }
 
 void Disk::ReadCapacity16_ReadLong16()
@@ -885,7 +886,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
         count = GetController()->GetCdbByte(4);
         if (!count) {
-            count = 0x100;
+            count = 256;
         }
     }
     else {
@@ -905,7 +906,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {0}, sector count: {1}", start, count));
 
     // Check capacity
-    if (uint64_t capacity = GetBlockCount(); !capacity || start > capacity || start + count > capacity) {
+    if (const uint64_t capacity = GetBlockCount(); !capacity || start + count > capacity) {
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
                 start, count));
@@ -913,11 +914,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     }
 
     // Do not process 0 blocks
-    if (!count && (mode != SEEK6 && mode != SEEK10)) {
-        return tuple(false, start, count);
-    }
-
-    return tuple(true, start, count);
+    return tuple(count || mode == SEEK6 || mode == SEEK10, start, count);
 }
 
 void Disk::ChangeSectorSize(uint32_t new_size)

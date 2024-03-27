@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -13,7 +13,7 @@ using namespace spdlog;
 
 bool InProcessBus::Init(bool target)
 {
-    if (!GpioBus::Init(target)) {
+    if (!Bus::Init(target)) {
         return false;
     }
 
@@ -98,5 +98,5 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
 string DelegatingInProcessBus::GetSignalName(int pin) const
 {
     const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "????";
+    return it != SIGNALS.end() ? it->second : "???";
 }

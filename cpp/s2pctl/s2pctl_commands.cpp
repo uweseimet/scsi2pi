@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -308,8 +308,8 @@ bool S2pCtlCommands::CommandServerInfo()
     }
 
     if (server_info.has_devices_info() && server_info.devices_info().devices_size()) {
-        vector<PbDevice> sorted_devices = { server_info.devices_info().devices().begin(),
-            server_info.devices_info().devices().end() };
+        vector<PbDevice> sorted_devices = { server_info.devices_info().devices().cbegin(),
+            server_info.devices_info().devices().cend() };
         ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
         cout << "Attached devices:\n";

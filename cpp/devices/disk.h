@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -27,8 +27,9 @@ class Disk : public StorageDevice, private ScsiBlockCommands
 
 public:
 
-    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_pages, const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_pages), supported_sector_sizes(s)
+    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
+        const unordered_set<uint32_t> &s)
+    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
     {
     }
     ~Disk() override = default;
@@ -76,7 +77,8 @@ public:
 
 protected:
 
-    bool SetUpCache();
+    void ValidateFile() override;
+
     bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
@@ -88,7 +90,7 @@ protected:
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
     void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int, int&) const;
+    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int&) const;
     int VerifySectorSizeChange(int, bool) const;
 
     void ChangeSectorSize(uint32_t);
@@ -152,6 +154,8 @@ private:
     void WriteLong16();
     void ReadCapacity16_ReadLong16();
 
+    bool SetUpCache();
+
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
     uint64_t ValidateBlockAddress(access_mode) const;
@@ -175,6 +179,8 @@ private:
 
     uint64_t sector_read_count = 0;
     uint64_t sector_write_count = 0;
+
+    string last_filename;
 
     inline static const string SECTOR_READ_COUNT = "sector_read_count";
     inline static const string SECTOR_WRITE_COUNT = "sector_write_count";

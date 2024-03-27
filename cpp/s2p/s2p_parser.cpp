@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -9,6 +9,7 @@
 #include <fstream>
 #include <getopt.h>
 #include "controllers/controller_factory.h"
+#include "shared/shared_exceptions.h"
 #include "s2p/s2p_parser.h"
 
 using namespace s2p_util;
@@ -20,12 +21,10 @@ void S2pParser::Banner(bool usage) const
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and\n"
-            << "                              LUN (0-" << (ControllerFactory::GetScsiLunMax() - 1)
-            << "), default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and\n"
-            << "                              LUN (0-" << (ControllerFactory::GetSasiLunMax() - 1)
-            << "), default LUN is 0.\n"
+            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and LUN (0-7),\n"
+            << "                              default LUN is 0.\n"
+            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
+            << "                              default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
             << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
             << "                              default is device-specific and usually SCSI-2.\n"
@@ -118,7 +117,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:BH",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;

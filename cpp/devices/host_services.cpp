@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -86,7 +86,7 @@
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "controllers/scsi_controller.h"
+#include "controllers/controller.h"
 #include "base/memory_util.h"
 #include "host_services.h"
 
@@ -96,7 +96,7 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false)
+HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false, false)
 {
     SetProduct("Host Services");
 }
@@ -140,16 +140,11 @@ vector<uint8_t> HostServices::InquiryInternal() const
 
 void HostServices::StartStopUnit() const
 {
-    const bool start = GetController()->GetCdbByte(4) & 0x01;
     const bool load = GetController()->GetCdbByte(4) & 0x02;
 
-    if (!start) {
-        if (load) {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
-        }
-        else {
-            GetController()->ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
-        }
+    if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
+        GetController()->ScheduleShutdown(
+            load ? AbstractController::shutdown_mode::stop_pi : AbstractController::shutdown_mode::stop_s2p);
     }
     else if (load) {
         GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
@@ -236,7 +231,7 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
-    // 4 bytes basic information
+    // Basic information
     const int size = AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
@@ -255,7 +250,7 @@ int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
-    // 8 bytes basic information
+    // Basic information
     const int size = AddModePages(cdb, buf, 8, length, 65535);
 
     // The size fields do not count themselves

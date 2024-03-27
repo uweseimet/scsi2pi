@@ -29,12 +29,12 @@ ifeq ("$(shell uname -s)", "Linux")
 endif
 
 ifeq ("$(shell uname -s)", "FreeBSD")
-	AR = ar
+	AR = $(CROSS_COMPILE)ar
 	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
-	AR = ar
+	AR = $(CROSS_COMPILE)ar
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
@@ -373,6 +373,7 @@ install: $(BINARIES)
 $(INSTALL_BIN)%: $(BINDIR)/%
 	mkdir -p $(INSTALL_BIN)
 	cp $< $@
+	
 
 
 ##   help            Lists information about how to use the Makefile

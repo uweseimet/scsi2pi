@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -20,7 +20,7 @@ class StorageDevice : public ModePageDevice
 {
 public:
 
-    StorageDevice(PbDeviceType, scsi_level, int, bool);
+    StorageDevice(PbDeviceType, scsi_level, int, bool, bool);
     ~StorageDevice() override = default;
 
     void CleanUp() override;
@@ -31,14 +31,17 @@ public:
     {
         return filename.string();
     }
-    void SetFilename(string_view);
+    void SetFilename(string_view file)
+    {
+        filename = filesystem::path(file);
+    }
 
     uint64_t GetBlockCount() const
     {
         return blocks;
     }
 
-    void ReserveFile() const;
+    bool ReserveFile() const;
     void UnreserveFile();
 
     static bool FileExists(string_view);
@@ -60,7 +63,7 @@ public:
 
 protected:
 
-    void ValidateFile();
+    virtual void ValidateFile();
 
     bool IsMediumChanged() const
     {

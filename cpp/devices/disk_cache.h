@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -21,7 +21,7 @@
 class DiskCache : public Cache
 {
     // Number of tracks to cache
-    static const int CACHE_MAX = 16;
+    static constexpr int CACHE_MAX = 16;
 
 public:
 

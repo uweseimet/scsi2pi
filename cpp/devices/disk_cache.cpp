@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI target emulator and SCSI tools for the Raspberry Pi
+// SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -30,7 +30,7 @@ bool DiskCache::Init()
 bool DiskCache::Flush()
 {
     // Save valid tracks
-    return ranges::none_of(cache.begin(), cache.end(), [this](const cache_t &c)
+    return ranges::none_of(cache.cbegin(), cache.cend(), [this](const cache_t &c)
         {   return c.disktrk && !c.disktrk->Save(sec_path, cache_miss_write_count);});
 }
 
