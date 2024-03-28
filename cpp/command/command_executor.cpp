@@ -399,7 +399,7 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
-    PropertyHandler::Instance().AddProperty(identifier + "product",
+    PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
     const auto disk = dynamic_pointer_cast<Disk>(device);
     if (disk && disk->GetConfiguredSectorSize()) {

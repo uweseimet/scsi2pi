@@ -119,7 +119,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     SetUpArgs(args, "-i1", "-n", "a:b:c", "test.hds");
     properties = parser.ParseArguments(args, is_sasi, ignore_conf);
     EXPECT_EQ(2UL, properties.size());
-    EXPECT_EQ("a:b:c", properties["device.1.product"]);
+    EXPECT_EQ("a:b:c", properties["device.1.name"]);
     EXPECT_EQ("test.hds", properties["device.1.params"]);
 }
 
@@ -205,7 +205,7 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ(4UL, properties.size());
     EXPECT_EQ("schd", properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
-    EXPECT_EQ("vendor:product:revision", properties["device.2.product"]);
+    EXPECT_EQ("vendor:product:revision", properties["device.2.name"]);
     EXPECT_EQ("HD2_vendor:product:revision.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-B", "-n", "v:p:r", "HD2_vendor:product:revision.hds");
@@ -213,7 +213,7 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ(4UL, properties.size());
     EXPECT_EQ("schd", properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
-    EXPECT_EQ("v:p:r", properties["device.2.product"]) << "Explicit product data provided";
+    EXPECT_EQ("v:p:r", properties["device.2.name"]) << "Explicit product data provided";
     EXPECT_EQ("HD2_vendor:product:revision.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-B", "HD2vendor:product:revision.hds");
@@ -228,7 +228,7 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ(4UL, properties.size());
     EXPECT_EQ("schd", properties["device.2.type"]);
     EXPECT_EQ("4096", properties["device.2.block_size"]);
-    EXPECT_EQ("vendor:product:revision", properties["device.2.product"]);
+    EXPECT_EQ("vendor:product:revision", properties["device.2.name"]);
     EXPECT_EQ("HD2_4096_vendor:product:revision.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-B", "HD1.hds", "-B", "RE131.hds");
