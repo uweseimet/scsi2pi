@@ -98,11 +98,6 @@ public:
         return cdb[index];
     }
 
-    auto GetOpcode() const
-    {
-        return static_cast<scsi_defs::scsi_command>(cdb[0]);
-    }
-
 protected:
 
     virtual bool Process() = 0;

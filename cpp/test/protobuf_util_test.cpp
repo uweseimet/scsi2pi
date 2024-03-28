@@ -90,38 +90,41 @@ TEST(ProtobufUtil, ParseParameters)
 TEST(ProtobufUtil, SetCommandParams)
 {
     PbCommand command1;
-    SetCommandParams(command1, "file");
+
+    EXPECT_TRUE(SetCommandParams(command1, "").empty());
+
+    EXPECT_TRUE(SetCommandParams(command1, "file").empty());
     EXPECT_EQ("", GetParam(command1, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command1, "file_pattern"));
 
     PbCommand command2;
-    SetCommandParams(command2, ":file");
+    EXPECT_TRUE(SetCommandParams(command2, ":file").empty());
     EXPECT_EQ("", GetParam(command2, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command2, "file_pattern"));
 
     PbCommand command3;
-    SetCommandParams(command3, "file:");
+    EXPECT_TRUE(SetCommandParams(command3, "file:").empty());
     EXPECT_EQ("file", GetParam(command3, "file_pattern"));
     EXPECT_EQ("", GetParam(command3, "folder_pattern"));
 
     PbCommand command4;
-    SetCommandParams(command4, "folder:file");
+    EXPECT_TRUE(SetCommandParams(command4, "folder:file").empty());
     EXPECT_EQ("folder", GetParam(command4, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command4, "file_pattern"));
 
     PbCommand command5;
-    SetCommandParams(command5, "folder:file:");
+    EXPECT_TRUE(SetCommandParams(command5, "folder:file:").empty());
     EXPECT_EQ("folder", GetParam(command5, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command5, "file_pattern"));
 
     PbCommand command6;
-    SetCommandParams(command6, "folder:file:operations");
+    EXPECT_TRUE(SetCommandParams(command6, "folder:file:operations").empty());
     EXPECT_EQ("folder", GetParam(command6, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command6, "file_pattern"));
     EXPECT_EQ("operations", GetParam(command6, "operations"));
 
     PbCommand command7;
-    SetCommandParams(command7, "folder:file:operations:unparsed");
+    EXPECT_TRUE(SetCommandParams(command7, "folder:file:operations:unparsed").empty());
     EXPECT_EQ("folder", GetParam(command7, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command7, "file_pattern"));
     EXPECT_EQ("operations:unparsed", GetParam(command7, "operations"));

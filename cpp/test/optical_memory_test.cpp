@@ -32,7 +32,7 @@ TEST(OpticalMemoryTest, Inquiry)
 
 TEST(OpticalMemoryTest, GetSectorSizes)
 {
-    MockOpticalMemory mo(0);
+    OpticalMemory mo(0);
 
     const auto &sector_sizes = mo.GetSupportedSectorSizes();
     EXPECT_EQ(4U, sector_sizes.size());
@@ -126,37 +126,38 @@ TEST(OpticalMemoryTest, AddVendorPages)
 TEST(OpticalMemoryTest, ModeSelect)
 {
     MockOpticalMemory mo(0);
-    vector<int> cdb(10);
     vector<uint8_t> buf(32);
 
     mo.SetSectorSizeInBytes(2048);
 
-    // PF
-    cdb[1] = 0x10;
+    // PF (vendor-specific parameter format) must not fail but be ignored
+    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 28), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28), scsi_exception)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
     buf[4] = 0;
     buf[5] = 0;
+
+    cdb = CreateCdb(scsi_command::cmd_mode_select10, "10");
 
     // Page 3 (Format device page)
     buf[8] = 0x04;
     // Page length
     buf[9] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 32), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32), scsi_exception)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
 }

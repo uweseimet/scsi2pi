@@ -201,8 +201,7 @@ TEST(HostServicesTest, SetUpModePages)
 
 TEST(HostServicesTest, WriteData)
 {
-    auto [controller, services] = CreateDevice(SCHS);
+    auto [_, services] = CreateDevice(SCHS);
 
-    vector<uint8_t> buf;
-    EXPECT_EQ(0, services->WriteData(buf, scsi_command::cmd_execute_operation));
+    EXPECT_EQ(0, services->WriteData( { }, scsi_command::cmd_execute_operation));
 }

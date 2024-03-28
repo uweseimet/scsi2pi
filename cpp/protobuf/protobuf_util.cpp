@@ -62,6 +62,10 @@ void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &pa
 
 string protobuf_util::SetCommandParams(PbCommand &command, const string &params)
 {
+    if (params.empty()) {
+        return "";
+    }
+
     if (params.find(KEY_VALUE_SEPARATOR) != string::npos) {
         return SetFromGenericParams(command, params);
     }

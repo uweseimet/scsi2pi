@@ -24,7 +24,7 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
+    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
     int ReadData(span<uint8_t>) override;
 
 protected:

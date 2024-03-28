@@ -614,8 +614,9 @@ void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) co
     }
 }
 
-void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
+void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 {
+    const auto cmd = static_cast<scsi_command>(cdb[0]);
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
     // PF

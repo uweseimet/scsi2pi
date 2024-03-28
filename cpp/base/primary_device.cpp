@@ -267,7 +267,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     // A reservation is valid for all commands except those excluded below
-    const auto cmd = GetController()->GetOpcode();
+    const auto cmd = static_cast<scsi_command>(GetController()->GetCdbByte(0));
     if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
         || cmd == scsi_command::cmd_release6) {
         return true;

@@ -141,7 +141,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiCdTest, ReadToc);
     FRIEND_TEST(ScsiDaynaportTest, Read);
-    FRIEND_TEST(ScsiDaynaportTest, Write);
+    FRIEND_TEST(ScsiDaynaportTest, WriteData);
     FRIEND_TEST(ScsiDaynaportTest, Read6);
     FRIEND_TEST(ScsiDaynaportTest, Write6);
     FRIEND_TEST(ScsiDaynaportTest, TestRetrieveStats);

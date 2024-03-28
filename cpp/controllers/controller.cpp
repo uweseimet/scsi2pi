@@ -140,7 +140,7 @@ void Controller::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = GetOpcode();
+    const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0));
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
@@ -440,7 +440,7 @@ void Controller::Receive()
 bool Controller::XferIn(vector<uint8_t> &buf)
 {
     // Limited to read commands
-    switch (GetOpcode()) {
+    switch (static_cast<scsi_defs::scsi_command>(GetCdbByte(0))) {
     case scsi_command::cmd_read6:
     case scsi_command::cmd_read10:
     case scsi_command::cmd_read16:
@@ -475,7 +475,8 @@ bool Controller::XferOut(bool cont)
     auto device = GetDeviceForLun(GetEffectiveLun());
 
     // Limited to write/verify commands
-    switch (const auto opcode = GetOpcode(); opcode) {
+    switch (const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0)); opcode
+        ) {
     case scsi_command::cmd_mode_select6:
     case scsi_command::cmd_mode_select10:
         {
@@ -488,7 +489,7 @@ bool Controller::XferOut(bool cont)
         }
 
         try {
-            mode_page_device->ModeSelect(opcode, GetCdb(), GetBuffer(), GetOffset());
+            mode_page_device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
@@ -623,10 +624,11 @@ int Controller::GetEffectiveLun() const
 
 void Controller::LogCdb() const
 {
-    const string &command_name = BusFactory::Instance().GetCommandName(GetOpcode());
+    const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0));
+    const string &command_name = BusFactory::Instance().GetCommandName(opcode);
     string s = fmt::format("Controller is executing {}, CDB $",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(GetOpcode()); i++) {
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
         if (i) {
             s += ":";
         }

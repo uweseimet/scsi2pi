@@ -116,9 +116,9 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
     return HandleInquiry(device_type::cd_rom, true);
 }
 
-void ScsiCd::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
+void ScsiCd::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    Disk::ModeSelect(cmd, cdb, buf, length);
+    Disk::ModeSelect(cdb, buf, length);
 
     CreateDataTrack();
 }

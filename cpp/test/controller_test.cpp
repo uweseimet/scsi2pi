@@ -180,19 +180,19 @@ TEST(ControllerTest, DataOut)
 TEST(ControllerTest, RequestSense)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    auto controller = make_shared<MockController>(bus, 0);
+    MockController controller(bus, 0);
     auto device = make_shared<MockPrimaryDevice>(0);
     EXPECT_TRUE(device->Init( { }));
 
-    controller->AddDevice(device);
+    controller.AddDevice(device);
 
     // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
+    controller.SetCdbByte(4, 255);
     // Non-existing LUN
-    controller->SetCdbByte(1, 0x20);
+    controller.SetCdbByte(1, 0x20);
 
     device->SetReady(true);
-    EXPECT_CALL(*controller, Status);
+    EXPECT_CALL(controller, Status);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
-    EXPECT_EQ(status::good, controller->GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
+    EXPECT_EQ(status::good, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }

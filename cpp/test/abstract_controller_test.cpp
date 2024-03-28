@@ -42,18 +42,17 @@ TEST(AbstractControllerTest, SetCurrentLength)
 TEST(AbstractControllerTest, Reset)
 {
     auto bus = make_shared<MockBus>();
-    auto controller = make_shared<MockAbstractController>(bus, 0);
-    auto device = make_shared<MockPrimaryDevice>(0);
+    MockAbstractController controller(bus, 0);
 
-    controller->AddDevice(device);
+    controller.AddDevice(make_shared<MockPrimaryDevice>(0));
 
-    controller->SetPhase(phase_t::status);
-    EXPECT_EQ(phase_t::status, controller->GetPhase());
+    controller.SetPhase(phase_t::status);
+    EXPECT_EQ(phase_t::status, controller.GetPhase());
     EXPECT_CALL(*bus, Reset());
-    controller->Reset();
-    EXPECT_TRUE(controller->IsBusFree());
-    EXPECT_EQ(status::good, controller->GetStatus());
-    EXPECT_EQ(0, controller->GetCurrentLength());
+    controller.Reset();
+    EXPECT_TRUE(controller.IsBusFree());
+    EXPECT_EQ(status::good, controller.GetStatus());
+    EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
 TEST(AbstractControllerTest, Status)
@@ -69,31 +68,21 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     const int ID = 1;
     const int LUN = 4;
 
-    auto controller = make_shared<MockAbstractController>(ID);
+    MockAbstractController controller(ID);
 
-    auto device1 = make_shared<MockPrimaryDevice>(LUN);
-    auto device2 = make_shared<MockPrimaryDevice>(32);
-    auto device3 = make_shared<MockPrimaryDevice>(-1);
+    auto device = make_shared<MockPrimaryDevice>(LUN);
 
-    EXPECT_EQ(0U, controller->GetLunCount());
-    EXPECT_EQ(ID, controller->GetTargetId());
-    EXPECT_TRUE(controller->AddDevice(device1));
-    EXPECT_FALSE(controller->AddDevice(device2));
-    EXPECT_FALSE(controller->AddDevice(device3));
-    EXPECT_TRUE(controller->GetLunCount() > 0);
-    EXPECT_NE(nullptr, controller->GetDeviceForLun(LUN));
-    EXPECT_EQ(nullptr, controller->GetDeviceForLun(0));
-    EXPECT_TRUE(controller->RemoveDevice(*device1));
-    EXPECT_EQ(0U, controller->GetLunCount());
-    EXPECT_FALSE(controller->RemoveDevice(*device1));
-}
-
-TEST(AbstractControllerTest, GetOpcode)
-{
-    MockAbstractController controller;
-
-    controller.SetCdbByte(0, static_cast<int>(scsi_command::cmd_inquiry));
-    EXPECT_EQ(scsi_command::cmd_inquiry, controller.GetOpcode());
+    EXPECT_EQ(0U, controller.GetLunCount());
+    EXPECT_EQ(ID, controller.GetTargetId());
+    EXPECT_TRUE(controller.AddDevice(device));
+    EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(32)));
+    EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(-1)));
+    EXPECT_TRUE(controller.GetLunCount() > 0);
+    EXPECT_NE(nullptr, controller.GetDeviceForLun(LUN));
+    EXPECT_EQ(nullptr, controller.GetDeviceForLun(0));
+    EXPECT_TRUE(controller.RemoveDevice(*device));
+    EXPECT_EQ(0U, controller.GetLunCount());
+    EXPECT_FALSE(controller.RemoveDevice(*device));
 }
 
 TEST(AbstractControllerTest, TransferSize)
@@ -129,11 +118,10 @@ TEST(AbstractControllerTest, Offset)
 
 TEST(AbstractControllerTest, ProcessOnController)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller = make_shared<MockAbstractController>(bus, 1);
+    MockAbstractController controller(make_shared<MockBus>(), 1);
 
-    EXPECT_CALL(*controller, Process());
-    controller->ProcessOnController(0x02);
-    EXPECT_CALL(*controller, Process());
-    controller->ProcessOnController(0x06);
+    EXPECT_CALL(controller, Process());
+    controller.ProcessOnController(0x02);
+    EXPECT_CALL(controller, Process());
+    controller.ProcessOnController(0x06);
 }

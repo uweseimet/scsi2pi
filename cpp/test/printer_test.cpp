@@ -34,22 +34,23 @@ TEST(PrinterTest, Device_Defaults)
 
 TEST(PrinterTest, GetDefaultParams)
 {
-    const auto [controller, printer] = CreateDevice(SCLP);
-    const auto params = printer->GetDefaultParams();
+    Printer printer(0);
+
+    auto params = printer.GetDefaultParams();
     EXPECT_EQ(1U, params.size());
+    EXPECT_EQ("lp -oraw %f", params["cmd"]);
 }
 
 TEST(PrinterTest, Init)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
-    EXPECT_TRUE(printer->Init( { }));
+    Printer printer(0);
 
     param_map params;
     params["cmd"] = "missing_filename_specifier";
-    EXPECT_FALSE(printer->Init(params));
+    EXPECT_FALSE(printer.Init(params));
 
     params["cmd"] = "%f";
-    EXPECT_TRUE(printer->Init(params));
+    EXPECT_TRUE(printer.Init(params));
 }
 
 TEST(PrinterTest, TestUnitReady)
@@ -115,9 +116,9 @@ TEST(PrinterTest, StopPrint)
     EXPECT_EQ(status::good, controller->GetStatus());
 }
 
-TEST(PrinterTest, Synchronize_buffer)
+TEST(PrinterTest, SynchronizeBuffer)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [_, printer] = CreateDevice(SCLP);
 
     TestShared::Dispatch(*printer, scsi_command::cmd_synchronize_buffer, sense_key::aborted_command,
         asc::printer_nothing_to_print);
@@ -125,7 +126,7 @@ TEST(PrinterTest, Synchronize_buffer)
     // Further testing would use the printing system
 }
 
-TEST(PrinterTest, Write)
+TEST(PrinterTest, WriteData)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 

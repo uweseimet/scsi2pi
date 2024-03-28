@@ -38,7 +38,9 @@ vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
         cdb.emplace_back(static_cast<int>(b));
     }
 
-    EXPECT_EQ(BusFactory::Instance().GetCommandBytesCount(cmd), static_cast<int>(cdb.size()));
+    for (int i = cdb.size(); i < BusFactory::Instance().GetCommandBytesCount(cmd); i++) {
+        cdb.emplace_back(0);
+    }
 
     return cdb;
 }

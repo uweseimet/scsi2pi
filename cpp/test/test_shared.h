@@ -21,7 +21,7 @@ namespace testing
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
-vector<int> CreateCdb(scsi_command, const string&);
+vector<int> CreateCdb(scsi_command, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
 pair<int, path> OpenTempFile();

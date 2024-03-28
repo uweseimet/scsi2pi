@@ -68,7 +68,7 @@ TEST(ScsiDaynaportTest, Read)
     EXPECT_EQ(0, daynaport.Read(cdb, buf, 0)) << "Trying to read the root sector must fail";
 }
 
-TEST(ScsiDaynaportTest, Write)
+TEST(ScsiDaynaportTest, WriteData)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
     vector<int> cdb(6);
