@@ -711,7 +711,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
         cout << id_and_lun << "block_size=" << scsi_device_info.sector_size << "\n";
     }
 
-    cout << id_and_lun << "product_name=" << regex_replace(scsi_device_info.vendor, regex(" +$"), "") << ":"
+    cout << id_and_lun << "name=" << regex_replace(scsi_device_info.vendor, regex(" +$"), "") << ":"
         << regex_replace(scsi_device_info.product, regex(" +$"), "") << ":"
         << regex_replace(scsi_device_info.revision, regex(" +$"), "") << "\n" << flush;
 
