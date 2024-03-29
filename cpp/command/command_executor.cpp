@@ -407,12 +407,11 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
 
     }
     if (disk && !disk->GetFilename().empty()) {
-        if (string filename = disk->GetFilename(); filename.starts_with(context.GetDefaultFolder())) {
+        string filename = disk->GetFilename();
+        if (filename.starts_with(context.GetDefaultFolder())) {
             filename = filename.substr(context.GetDefaultFolder().length() + 1);
         }
-        else {
-            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
-        }
+        PropertyHandler::Instance().AddProperty(identifier + "params", filename);
     }
     else if (!device->GetParams().empty()) {
         vector<string> p;

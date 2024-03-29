@@ -118,7 +118,7 @@ TEST(PrinterTest, StopPrint)
 
 TEST(PrinterTest, SynchronizeBuffer)
 {
-    auto [_, printer] = CreateDevice(SCLP);
+    auto [controller, printer] = CreateDevice(SCLP);
 
     TestShared::Dispatch(*printer, scsi_command::cmd_synchronize_buffer, sense_key::aborted_command,
         asc::printer_nothing_to_print);

@@ -13,6 +13,7 @@
 
 class ModePageDevice : public PrimaryDevice
 {
+
 public:
 
     ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m, bool s)

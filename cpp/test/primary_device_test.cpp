@@ -50,7 +50,7 @@ TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
 
-    auto [__, device] = CreatePrimaryDevice(ID);
+    auto [controller, device] = CreatePrimaryDevice(ID);
 
     EXPECT_EQ(ID, device->GetId());
 }
@@ -83,7 +83,7 @@ TEST(PrimaryDeviceTest, DataOutPhase)
 
 TEST(PrimaryDeviceTest, Reset)
 {
-    auto [_, device] = CreatePrimaryDevice();
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
@@ -119,7 +119,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
 
 TEST(PrimaryDeviceTest, ReserveReleaseUnit)
 {
-    auto [_, device] = CreatePrimaryDevice();
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
@@ -136,7 +136,7 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
 
 TEST(PrimaryDeviceTest, DiscardReservation)
 {
-    auto [_, device] = CreatePrimaryDevice();
+    auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";

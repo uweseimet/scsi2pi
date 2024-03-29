@@ -64,3 +64,10 @@ TEST(ModePageDeviceTest, ModeSense)
     EXPECT_CALL(controller, DataIn());
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
 }
+
+TEST(ModePageDeviceTest, ModeSelect)
+{
+    MockModePageDevice device;
+
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0), scsi_exception);
+}
