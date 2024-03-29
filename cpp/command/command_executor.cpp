@@ -164,6 +164,13 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
 
     if (!device.Eject(true)) {
         warn("Ejecting {} failed", GetIdentifier(device));
+        return true;
+    }
+
+    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
+    if (!device.GetLun()) {
+            PropertyHandler::Instance().RemoveProperties(
+                fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
     }
 
     return true;
@@ -343,6 +350,8 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     storage_device->SetProtected(pb_device.protected_());
 #endif
 
+    SetUpDeviceProperties(context, device);
+
     return true;
 }
 #pragma GCC diagnostic pop
@@ -361,9 +370,9 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
     if (!dryRun) {
         // Remember some device data before they become invalid on removal
-        const string &identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
+        const string &identifier = GetIdentifier(device);
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
@@ -375,7 +384,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // Consider both potential identifiers if the LUN is 0
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", identifier));
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.", id, lun));
         if (!lun) {
             PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
