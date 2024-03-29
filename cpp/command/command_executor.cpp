@@ -167,10 +167,9 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
         return true;
     }
 
-    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
+    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
     if (!device.GetLun()) {
-            PropertyHandler::Instance().RemoveProperties(
-                fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
     }
 
     return true;
