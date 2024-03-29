@@ -402,7 +402,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     else if (key == "caching_mode") {
         device.set_caching_mode(ParseCachingMode(value));
     }
-    else if (key == "product_data") {
+    else if (key == "name") {
         SetProductData(device, value);
     }
     else if (key == "params") {

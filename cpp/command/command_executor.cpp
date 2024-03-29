@@ -164,6 +164,12 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
 
     if (!device.Eject(true)) {
         warn("Ejecting {} failed", GetIdentifier(device));
+        return true;
+    }
+
+    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
+    if (!device.GetLun()) {
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
     }
 
     return true;
@@ -343,6 +349,8 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     storage_device->SetProtected(pb_device.protected_());
 #endif
 
+    SetUpDeviceProperties(context, device);
+
     return true;
 }
 #pragma GCC diagnostic pop
@@ -361,9 +369,9 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
     if (!dryRun) {
         // Remember some device data before they become invalid on removal
-        const string &identifier = GetIdentifier(device);
         const int id = device.GetId();
         const int lun = device.GetLun();
+        const string &identifier = GetIdentifier(device);
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
@@ -375,7 +383,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // Consider both potential identifiers if the LUN is 0
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", identifier));
+        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.", id, lun));
         if (!lun) {
             PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
@@ -399,7 +407,7 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
-    PropertyHandler::Instance().AddProperty(identifier + "product",
+    PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
     const auto disk = dynamic_pointer_cast<Disk>(device);
     if (disk && disk->GetConfiguredSectorSize()) {
@@ -407,12 +415,11 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
 
     }
     if (disk && !disk->GetFilename().empty()) {
-        if (string filename = disk->GetFilename(); filename.starts_with(context.GetDefaultFolder())) {
+        string filename = disk->GetFilename();
+        if (filename.starts_with(context.GetDefaultFolder())) {
             filename = filename.substr(context.GetDefaultFolder().length() + 1);
         }
-        else {
-            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
-        }
+        PropertyHandler::Instance().AddProperty(identifier + "params", filename);
     }
     else if (!device->GetParams().empty()) {
         vector<string> p;
