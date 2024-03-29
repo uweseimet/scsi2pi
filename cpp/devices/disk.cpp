@@ -639,6 +639,14 @@ void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
     SetUpModePages(pages, 0x3f, true);
+    for (const auto& [p, data] : PropertyHandler::Instance().GetCustomModePages(GetVendor(), GetProduct())) {
+        if (data.empty()) {
+            pages.erase(p);
+        }
+        else {
+            pages[p] = data;
+        }
+    }
 
     // Parse the pages
     while (length > 0) {
@@ -647,6 +655,11 @@ void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         const auto &it = pages.find(page_code);
         if (it == pages.end()) {
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        // Page 0 can contain anything and can have any length
+        if (!page_code) {
+            break;
         }
 
         if (length < 2) {
