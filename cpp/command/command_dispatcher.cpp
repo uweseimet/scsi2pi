@@ -32,7 +32,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     switch (operation) {
     case LOG_LEVEL:
-        if (const string log_level = GetParam(command, "level"); !SetLogLevel(log_level)) {
+        if (const string &log_level = GetParam(command, "level"); !SetLogLevel(log_level)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
@@ -41,7 +41,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEFAULT_FOLDER:
-        if (const string error = s2p_image.SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = s2p_image.SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
             result.set_msg(error);
             context.WriteResult(result);
             return false;
@@ -78,8 +78,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case IMAGE_FILE_INFO:
-        if (string filename = GetParam(command, "file"); filename.empty()) {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
+        if (const string &filename = GetParam(command, "file"); filename.empty()) {
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
             auto image_file = make_unique<PbImageFile>();
@@ -91,7 +91,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
                 context.WriteResult(result);
             }
             else {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO);
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO);
             }
         }
         break;
@@ -139,7 +139,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return s2p_image.CopyImage(context);
 
     case PROTECT_IMAGE:
-        case UNPROTECT_IMAGE:
+    case UNPROTECT_IMAGE:
         return s2p_image.SetImagePermissions(context);
 
     case RESERVE_IDS:
