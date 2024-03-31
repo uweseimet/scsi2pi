@@ -122,13 +122,33 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ("a:b:c", properties["device.1.name"]);
     EXPECT_EQ("test.hds", properties["device.1.params"]);
 
+    SetUpArgs(args, "-i0", "--scsi-level", "3", "test.hds");
+    properties = parser.ParseArguments(args, is_sasi, ignore_conf);
+    EXPECT_EQ(2UL, properties.size());
+    EXPECT_EQ("3", properties["device.0.scsi_level"]);
+    EXPECT_EQ("test.hds", properties["device.0.params"]);
+
+    SetUpArgs(args, "-i1", "--caching-mode", "linux", "test.hds");
+    properties = parser.ParseArguments(args, is_sasi, ignore_conf);
+    EXPECT_EQ(2UL, properties.size());
+    EXPECT_EQ("linux", properties["device.1.caching_mode"]);
+    EXPECT_EQ("test.hds", properties["device.1.params"]);
+
     SetUpArgs(args, "-c", "key1=value1", "-c", "key2=value2");
     properties = parser.ParseArguments(args, is_sasi, ignore_conf);
     EXPECT_EQ(2UL, properties.size());
     EXPECT_EQ("value1", properties["key1"]);
     EXPECT_EQ("value2", properties["key2"]);
 
+    SetUpArgs(args, "-c", "key=");
+    properties = parser.ParseArguments(args, is_sasi, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("", properties["key"]);
+
     SetUpArgs(args, "-c", "xyz");
+    EXPECT_THROW(parser.ParseArguments(args, is_sasi, ignore_conf), parser_exception);
+
+    SetUpArgs(args, "-c", "=xyz");
     EXPECT_THROW(parser.ParseArguments(args, is_sasi, ignore_conf), parser_exception);
 }
 

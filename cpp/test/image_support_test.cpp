@@ -52,14 +52,20 @@ TEST(ImageSupportTest, CreateImage)
     EXPECT_FALSE(image.CreateImage(context3)) << "Size must be reported as invalid";
 
     PbCommand command4;
-    SetParam(command4, "size", "1");
+    SetParam(command4, "file", "filename");
+    SetParam(command4, "size", "");
     CommandContext context4(command4, "", "");
-    EXPECT_FALSE(image.CreateImage(context4)) << "Size must be reported as invalid";
+    EXPECT_FALSE(image.CreateImage(context4)) << "Size must be reported as missing";
 
     PbCommand command5;
-    SetParam(command5, "size", "513");
+    SetParam(command5, "size", "1");
     CommandContext context5(command5, "", "");
-    EXPECT_FALSE(image.CreateImage(context4)) << "Size must be reported as not a multiple of 512";
+    EXPECT_FALSE(image.CreateImage(context5)) << "Size must be reported as invalid";
+
+    PbCommand command6;
+    SetParam(command6, "size", "513");
+    CommandContext context6(command6, "", "");
+    EXPECT_FALSE(image.CreateImage(context6)) << "Size must be reported as not a multiple of 512";
 
     // Further tests would modify the filesystem
 }

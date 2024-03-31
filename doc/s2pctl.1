@@ -166,7 +166,7 @@ eject, protect and unprotect are idempotent.
 .TP 
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
 The optional block size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
-s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
+s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms. Note that image file sizes must be a multiple of 512.
 .TP
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
