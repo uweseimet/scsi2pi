@@ -11,24 +11,28 @@
 #include "controllers/controller_factory.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
+#include "command_response.h"
 #include "command_dispatcher.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result, const string &identifier)
+bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {
     const PbCommand &command = context.GetCommand();
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        trace("Ignored unknown command with operation opcode " + to_string(operation));
+        trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION, to_string(operation));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
+            to_string(static_cast<int>(operation)));
     }
 
-    trace("{0}Executing {1} command", identifier, PbOperation_Name(operation));
+    trace("Executing {} command", PbOperation_Name(operation));
+
+    CommandResponse response;
 
     switch (operation) {
     case LOG_LEVEL:
@@ -82,16 +86,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
-            auto image_file = make_unique<PbImageFile>();
-            const bool status = response.GetImageFile(*image_file.get(), s2p_image.GetDefaultFolder(),
-                filename);
-            if (status) {
+            if (const auto &image_file = make_unique<PbImageFile>(); response.GetImageFile(*image_file.get(),
+                s2p_image.GetDefaultFolder(), filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
                 context.WriteResult(result);
             }
             else {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO);
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
             }
         }
         break;
@@ -121,10 +123,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SHUT_DOWN:
-        return ShutDown(context, GetParam(command, "mode"));
-
-    case NO_OPERATION:
-        return context.ReturnSuccessStatus();
+        return ShutDown(context);
 
     case CREATE_IMAGE:
         return s2p_image.CreateImage(context);
@@ -142,24 +141,16 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     case UNPROTECT_IMAGE:
         return s2p_image.SetImagePermissions(context);
 
-    case RESERVE_IDS:
-        return executor.ProcessCmd(context);
-
     case PERSIST_CONFIGURATION:
-        if (PropertyHandler::Instance().Persist()) {
-            return context.ReturnSuccessStatus();
-        }
-        else {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
-        }
+        return PropertyHandler::Instance().Persist() ?
+                context.ReturnSuccessStatus() : context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
+
+    case NO_OPERATION:
+        return context.ReturnSuccessStatus();
 
     default:
         // The remaining commands may only be executed when the target is idle
-        if (!ExecuteWithLock(context)) {
-            return false;
-        }
-
-        return HandleDeviceListChange(context, operation);
+        return ExecuteWithLock(context) ? HandleDeviceListChange(context) : false;
     }
 
     return true;
@@ -171,13 +162,14 @@ bool CommandDispatcher::ExecuteWithLock(const CommandContext &context)
     return executor.ProcessCmd(context);
 }
 
-bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context, PbOperation operation) const
+bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const
 {
     // ATTACH and DETACH return the resulting device list
-    if (operation == ATTACH || operation == DETACH) {
+    if (const PbOperation operation = context.GetCommand().operation(); operation == ATTACH || operation == DETACH) {
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;
+        CommandResponse response;
         response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
         context.WriteResult(result);
         return result.status();
@@ -187,13 +179,11 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context, Pb
 }
 
 // Shutdown on a remote interface command
-bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m) const
+bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
-    if (m.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING);
-    }
-
     AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::none;
+
+    const string &m = GetParam(context.GetCommand(), "mode");
     if (m == "rascsi") {
         mode = AbstractController::shutdown_mode::stop_s2p;
     }
@@ -207,7 +197,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m)
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
-    // Shutdown modes other than rascsi require root permissions
+    // Shutdown modes other than "rascsi" require root permissions
     if (mode != AbstractController::shutdown_mode::stop_s2p && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
@@ -228,21 +218,19 @@ bool CommandDispatcher::ShutDown(AbstractController::shutdown_mode mode) const
         return true;
 
     case AbstractController::shutdown_mode::stop_pi:
-        info("Raspberry Pi shutdown requested");
-        if (system("init 0") == -1) {
-            error("Raspberry Pi shutdown failed");
-        }
+        info("Pi shutdown requested");
+        system("init 0");
+        error("Pi shutdown failed");
         break;
 
     case AbstractController::shutdown_mode::restart_pi:
-        info("Raspberry Pi restart requested");
-        if (system("init 6") == -1) {
-            error("Raspberry Pi restart failed");
-        }
+        info("Pi restart requested");
+        system("init 6");
+        error("Pi restart failed");
         break;
 
-    case AbstractController::shutdown_mode::none:
-        assert(false);
+    default:
+        error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 

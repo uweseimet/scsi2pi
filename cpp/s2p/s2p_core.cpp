@@ -19,6 +19,7 @@
 #include "shared/shared_exceptions.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
+#include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
@@ -444,7 +445,7 @@ bool S2p::ExecuteCommand(CommandContext &context)
 
     context.SetDefaultFolder(s2p_image.GetDefaultFolder());
     PbResult result;
-    const bool status = dispatcher->DispatchCommand(context, result, "");
+    const bool status = dispatcher->DispatchCommand(context, result);
     if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
         exit(EXIT_SUCCESS);

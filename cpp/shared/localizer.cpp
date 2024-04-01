@@ -140,13 +140,6 @@ Localizer::Localizer()
         "Una vez establecido el nombre del dispositivo ya no se puede cambiar");
     Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "zh", "设备名称设置后不能再更改");
 
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "en", "Missing shutdown mode");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "de", "Fehlender Shutdown-Modus");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "sv", "Avstängningsläge saknas");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "fr", "Mode d'extinction manquant");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "es", "Falta el modo de apagado");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "zh", "缺少关机模式");
-
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "en", "Invalid shutdown mode '%1'");
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "de", "Ungültiger Shutdown-Modus '%1'");
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "sv", "Ogiltigt avstängsningsläge: '%1'");

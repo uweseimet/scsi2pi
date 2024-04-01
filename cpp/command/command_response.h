@@ -9,6 +9,7 @@
 #pragma once
 
 #include <set>
+#include <filesystem>
 
 using namespace filesystem;
 using namespace s2p_interface;

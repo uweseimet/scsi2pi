@@ -8,10 +8,8 @@
 
 #pragma once
 
-#include "protobuf/command_context.h"
 #include "command_executor.h"
 #include "image_support.h"
-#include "command_response.h"
 
 class CommandDispatcher
 {
@@ -23,7 +21,7 @@ public:
     }
     ~CommandDispatcher() = default;
 
-    bool DispatchCommand(const CommandContext&, PbResult&, const string&);
+    bool DispatchCommand(const CommandContext&, PbResult&);
 
     bool ShutDown(AbstractController::shutdown_mode) const;
 
@@ -32,10 +30,8 @@ public:
 private:
 
     bool ExecuteWithLock(const CommandContext&);
-    bool HandleDeviceListChange(const CommandContext&, PbOperation) const;
-    bool ShutDown(const CommandContext&, const string&) const;
-
-    [[no_unique_address]] CommandResponse response;
+    bool HandleDeviceListChange(const CommandContext&) const;
+    bool ShutDown(const CommandContext&) const;
 
     S2pImage &s2p_image;
 

@@ -107,6 +107,11 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     CommandContext context_no_operation(command, "", "");
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
+
+    command.set_operation(static_cast<PbOperation>(-1));
+    CommandContext context_invalid_command(command, "", "");
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
 }
 
 TEST(CommandExecutorTest, ProcessCmd)
@@ -155,7 +160,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     device1->set_type(SCHS);
     device1->set_id(-1);
     CommandContext context_attach1(command_attach1, "", "");
-    EXPECT_FALSE(executor->ProcessCmd(context_attach1));
+    EXPECT_FALSE(executor->ProcessCmd(context_attach1)) << "Invalid device ID";
 
     PbCommand command_attach2;
     command_attach2.set_operation(ATTACH);
@@ -172,7 +177,6 @@ TEST(CommandExecutorTest, Attach)
     const int ID = 3;
     const int LUN = 0;
 
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -183,7 +187,7 @@ TEST(CommandExecutorTest, Attach)
     definition.set_unit(32);
     EXPECT_FALSE(executor->Attach(context, definition, false));
 
-    auto device = device_factory.CreateDevice(SCHD, LUN, "");
+    auto device = DeviceFactory::Instance().CreateDevice(SCHD, LUN, "");
     definition.set_id(ID);
     definition.set_unit(LUN);
 
@@ -304,16 +308,15 @@ TEST(CommandExecutorTest, Detach)
     const int LUN1 = 0;
     const int LUN2 = 1;
 
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
 
-    auto device1 = device_factory.CreateDevice(SCHS, LUN1, "");
+    auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device1));
-    auto device2 = device_factory.CreateDevice(SCHS, LUN2, "");
+    auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device2));
 
     auto d1 = controller_factory->GetDeviceForIdAndLun(ID, LUN1);
@@ -330,12 +333,11 @@ TEST(CommandExecutorTest, DetachAll)
 {
     const int ID = 4;
 
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
 
-    auto device = device_factory.CreateDevice(SCHS, 0, "");
+    auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device));
     EXPECT_TRUE(controller_factory->HasController(ID));
     EXPECT_FALSE(controller_factory->GetAllDevices().empty());
@@ -385,14 +387,13 @@ TEST(CommandExecutorTest, SetReservedIds)
 
 TEST(CommandExecutorTest, ValidateImageFile)
 {
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command, "", "");
 
-    auto device = dynamic_pointer_cast<StorageDevice>(device_factory.CreateDevice(SCHD, 0, "test"));
+    auto device = dynamic_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
 
     EXPECT_FALSE(executor->ValidateImageFile(context, *device, "/non_existing_file"));
@@ -422,7 +423,6 @@ TEST(CommandExecutorTest, PrintCommand)
 
 TEST(CommandExecutorTest, EnsureLun0)
 {
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -436,7 +436,7 @@ TEST(CommandExecutorTest, EnsureLun0)
     device1->set_unit(1);
     EXPECT_FALSE(executor->EnsureLun0(context, command));
 
-    auto device2 = device_factory.CreateDevice(SCHS, 0, "");
+    auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 0, device2));
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 }
@@ -447,7 +447,6 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
     const int LUN1 = 0;
     const int LUN2 = 3;
 
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
     auto bus = make_shared<MockBus>();
     auto controller_factory = make_shared<ControllerFactory>(false);
     auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
@@ -455,7 +454,7 @@ TEST(CommandExecutorTest, VerifyExistingIdAndLun)
     CommandContext context(command, "", "");
 
     EXPECT_FALSE(executor->VerifyExistingIdAndLun(context, ID, LUN1));
-    auto device = device_factory.CreateDevice(SCHS, LUN1, "");
+    auto device = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device));
     EXPECT_TRUE(executor->VerifyExistingIdAndLun(context, ID, LUN1));
     EXPECT_FALSE(executor->VerifyExistingIdAndLun(context, ID, LUN2));

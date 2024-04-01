@@ -336,7 +336,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 
     PbResult result;
     if (CommandContext context(cmd, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(cmd, "locale"));
-    !dispatcher->DispatchCommand(context, result, fmt::format("(ID:LUN {0}:{1}) - ", GetId(), GetLun()))) {
+    !dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw scsi_exception(sense_key::aborted_command);
     }

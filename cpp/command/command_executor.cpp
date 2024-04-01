@@ -57,14 +57,14 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     case DETACH:
         return Detach(context, *device, dryRun);
 
-    case INSERT:
-        return Insert(context, pb_device, device, dryRun);
-
     case START:
         return dryRun ? true : Start(*device);
 
     case STOP:
         return dryRun ? true : Stop(*device);
+
+    case INSERT:
+        return Insert(context, pb_device, device, dryRun);
 
     case EJECT:
         return dryRun ? true : Eject(*device);
@@ -76,7 +76,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return dryRun ? true : Unprotect(*device);
 
     default:
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(static_cast<int>(operation)));
     }
 
     return true;
