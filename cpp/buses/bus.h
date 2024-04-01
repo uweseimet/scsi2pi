@@ -12,6 +12,8 @@
 
 #include <cstdint>
 #include <vector>
+#include <array>
+#include <string>
 #include "shared/scsi.h"
 
 #if defined BOARD_STANDARD
@@ -25,8 +27,6 @@
 #else
 #error Invalid connection type or none specified
 #endif
-
-using namespace scsi_defs;
 
 //---------------------------------------------------------------------------
 //
@@ -221,9 +221,9 @@ public:
         SetSignal(PIN_CD, state);
     }
 
-    phase_t GetPhase();
+    bus_phase GetPhase();
 
-    static string GetPhaseName(phase_t phase)
+    static string GetPhaseName(bus_phase phase)
     {
         return phase_names[static_cast<int>(phase)];
     }
@@ -245,7 +245,7 @@ protected:
 
 private:
 
-    static const array<phase_t, 8> phases;
+    static const array<bus_phase, 8> phases;
 
     static const array<string, 11> phase_names;
 

@@ -16,7 +16,6 @@
 #include "controller.h"
 
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
 
 void Controller::Reset()
@@ -50,7 +49,7 @@ void Controller::BusFree()
 {
     if (!IsBusFree()) {
         LogTrace("BUS FREE phase");
-        SetPhase(phase_t::busfree);
+        SetPhase(bus_phase::busfree);
 
         GetBus().SetREQ(false);
         GetBus().SetMSG(false);
@@ -58,7 +57,7 @@ void Controller::BusFree()
         GetBus().SetIO(false);
         GetBus().SetBSY(false);
 
-        SetStatus(status::good);
+        SetStatus(status_code::good);
 
         identified_lun = -1;
 
@@ -76,7 +75,7 @@ void Controller::Selection()
 {
     if (!IsSelection()) {
         LogTrace("SELECTION phase");
-        SetPhase(phase_t::selection);
+        SetPhase(bus_phase::selection);
 
         GetBus().SetBSY(true);
         return;
@@ -96,7 +95,7 @@ void Controller::Command()
 {
     if (!IsCommand()) {
         LogTrace("COMMAND phase");
-        SetPhase(phase_t::command);
+        SetPhase(bus_phase::command);
 
         GetBus().SetMSG(false);
         GetBus().SetCD(true);
@@ -140,7 +139,7 @@ void Controller::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
@@ -155,7 +154,7 @@ void Controller::Execute()
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (opcode != scsi_command::cmd_request_sense) {
-        SetStatus(status::good);
+        SetStatus(status_code::good);
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
 
@@ -175,7 +174,7 @@ void Controller::Status()
         LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
                 static_cast<int>(GetStatus())));
 
-        SetPhase(phase_t::status);
+        SetPhase(bus_phase::status);
 
         GetBus().SetMSG(false);
         GetBus().SetCD(true);
@@ -196,7 +195,7 @@ void Controller::MsgIn()
 {
     if (!IsMsgIn()) {
         LogTrace("MESSAGE IN phase");
-        SetPhase(phase_t::msgin);
+        SetPhase(bus_phase::msgin);
 
         GetBus().SetMSG(true);
         GetBus().SetCD(true);
@@ -221,7 +220,7 @@ void Controller::MsgOut()
             msg_bytes.clear();
         }
 
-        SetPhase(phase_t::msgout);
+        SetPhase(bus_phase::msgout);
 
         GetBus().SetMSG(true);
         GetBus().SetCD(true);
@@ -246,7 +245,7 @@ void Controller::DataIn()
         }
 
         LogTrace("DATA IN phase");
-        SetPhase(phase_t::datain);
+        SetPhase(bus_phase::datain);
 
         GetBus().SetMSG(false);
         GetBus().SetCD(false);
@@ -269,7 +268,7 @@ void Controller::DataOut()
         }
 
         LogTrace("DATA OUT phase");
-        SetPhase(phase_t::dataout);
+        SetPhase(bus_phase::dataout);
 
         GetBus().SetMSG(false);
         GetBus().SetCD(false);
@@ -283,7 +282,7 @@ void Controller::DataOut()
     Receive();
 }
 
-void Controller::Error(sense_key sense_key, asc asc, scsi_defs::status status)
+void Controller::Error(sense_key sense_key, asc asc, status_code status)
 {
     GetBus().Acquire();
     if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
@@ -348,15 +347,15 @@ void Controller::Send()
     LogTrace("All data transferred");
 
     switch (GetPhase()) {
-    case phase_t::msgin:
+    case bus_phase::msgin:
         ProcessExtendedMessage();
         break;
 
-    case phase_t::datain:
+    case bus_phase::datain:
         Status();
         break;
 
-    case phase_t::status:
+    case bus_phase::status:
         SetCurrentLength(1);
         SetTransferSize(1, 1);
         // Message byte
@@ -398,13 +397,13 @@ void Controller::Receive()
 
     // Processing after receiving data
     switch (GetPhase()) {
-    case phase_t::dataout:
+    case bus_phase::dataout:
         if (!XferOut(pending_data)) {
             return;
         }
         break;
 
-    case phase_t::msgout:
+    case bus_phase::msgout:
         XferMsg(GetBuffer()[0]);
         break;
 
@@ -420,11 +419,11 @@ void Controller::Receive()
     }
 
     switch (GetPhase()) {
-    case phase_t::msgout:
+    case bus_phase::msgout:
         ProcessMessage();
         break;
 
-    case phase_t::dataout:
+    case bus_phase::dataout:
         // All data have been transferred
         Status();
         break;
@@ -440,7 +439,7 @@ void Controller::Receive()
 bool Controller::XferIn(vector<uint8_t> &buf)
 {
     // Limited to read commands
-    switch (static_cast<scsi_defs::scsi_command>(GetCdbByte(0))) {
+    switch (static_cast<scsi_command>(GetCdbByte(0))) {
     case scsi_command::cmd_read6:
     case scsi_command::cmd_read10:
     case scsi_command::cmd_read16:
@@ -475,7 +474,7 @@ bool Controller::XferOut(bool cont)
     auto device = GetDeviceForLun(GetEffectiveLun());
 
     // Limited to write/verify commands
-    switch (const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0)); opcode
+    switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode
         ) {
     case scsi_command::cmd_mode_select6:
     case scsi_command::cmd_mode_select10:
@@ -624,7 +623,7 @@ int Controller::GetEffectiveLun() const
 
 void Controller::LogCdb() const
 {
-    const auto opcode = static_cast<scsi_defs::scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
     const string &command_name = BusFactory::Instance().GetCommandName(opcode);
     string s = fmt::format("Controller is executing {}, CDB $",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));

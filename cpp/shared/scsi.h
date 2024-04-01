@@ -8,14 +8,10 @@
 
 #pragma once
 
-#include <array>
 #include <unordered_map>
-#include <string>
 
 using namespace std;
 
-namespace scsi_defs
-{
 enum class scsi_level
 {
     none = 0,
@@ -29,7 +25,7 @@ enum class scsi_level
     spc_6 = 8
 };
 
-enum class phase_t
+enum class bus_phase
 {
     busfree = 0,
     arbitration = 1,
@@ -108,7 +104,7 @@ enum class scsi_command
     cmd_receive_operation_results = 0xc1
 };
 
-enum class status
+enum class status_code
 {
     good = 0x00,
     check_condition = 0x02,
@@ -119,19 +115,6 @@ enum class status
     reservation_conflict = 0x18,
     command_terminated = 0x22,
     queue_full = 0x28
-};
-
-static const unordered_map<status, string> STATUS_MAPPING = {
-    { status::good, "GOOD" },
-    { status::check_condition, "CHECK CONDITION" },
-    { status::condition_met, "CONDITION MET" },
-    { status::busy, "CONDITION MET" },
-    { status::intermediate, "INTERMEDIATE" },
-    { status::condition_met, "CONDITION MET" },
-    { status::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
-    { status::reservation_conflict, "RESERVATION CONFLICT" },
-    { status::command_terminated, "COMMAND TERMINATED" },
-    { status::queue_full, "QUEUE FULL" }
 };
 
 enum class sense_key
@@ -152,25 +135,6 @@ enum class sense_key
     volume_overflow = 0x0d,
     miscompare = 0x0e,
     reserved = 0x0f
-};
-
-static const array<string, 16> SENSE_KEYS = {
-    "NO SENSE",
-    "RECOVERED ERROR",
-    "NOT READY",
-    "MEDIUM ERROR",
-    "HARDWARE ERROR",
-    "ILLEGAL REQUEST",
-    "UNIT ATTENTION",
-    "DATA_PROTECT",
-    "BLANK CHECK",
-    "VENDOR SPECIFIC",
-    "COPY ABORTED",
-    "ABORTED COMMAND",
-    "EQUAL",
-    "VOLUME OVERFLOW",
-    "MISCOMPARE",
-    "RESERVED"
 };
 
 enum class asc
@@ -204,23 +168,15 @@ enum class asc
     host_services_receive_operation_results = 0xf8
 };
 
-// This map only contains mappings for ASCs used by s2p
-static const unordered_map<asc, string> ASC_MAPPING = {
-    { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
-    { asc::write_fault, "WRITE FAULT" },
-    { asc::read_fault, "READ ERROR" },
-    { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
-    { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
-    { asc::lba_out_of_range, "LBA OUT OF RANGE" },
-    { asc::invalid_field_in_cdb, "INVALID FIELD IN CDB" },
-    { asc::invalid_lun, "LOGICAL UNIT NOT SUPPORTED" },
-    { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
-    { asc::write_protected, "WRITE PROTECTED" },
-    { asc::not_ready_to_ready_change, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
-    { asc::power_on_or_reset, "POWER ON, RESET, OR BUS DEVICE RESET OCCURRED" },
-    { asc::medium_not_present, "MEDIUM NOT PRESENT" },
-    { asc::command_phase_error, "COMMAND PHASE ERROR" },
-    { asc::data_phase_error, "DATA PHASE ERROR" },
-    { asc::load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
+static const unordered_map<status_code, const char*> STATUS_MAPPING = {
+    { status_code::good, "GOOD" },
+    { status_code::check_condition, "CHECK CONDITION" },
+    { status_code::condition_met, "CONDITION MET" },
+    { status_code::busy, "BUSY" },
+    { status_code::intermediate, "INTERMEDIATE" },
+    { status_code::condition_met, "CONDITION MET" },
+    { status_code::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
+    { status_code::reservation_conflict, "RESERVATION CONFLICT" },
+    { status_code::command_terminated, "COMMAND TERMINATED" },
+    { status_code::queue_full, "QUEUE FULL" }
 };
-}

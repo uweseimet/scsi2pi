@@ -15,8 +15,6 @@
 #include "controllers/abstract_controller.h"
 #include "device.h"
 
-using namespace scsi_defs;
-
 class PrimaryDevice : private ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
@@ -41,15 +39,15 @@ public:
     }
     bool SetScsiLevel(scsi_level);
 
-    scsi_defs::sense_key GetSenseKey() const
+    enum sense_key GetSenseKey() const
     {
         return sense_key;
     }
-    scsi_defs::asc GetAsc() const
+    enum asc GetAsc() const
     {
         return asc;
     }
-    void SetStatus(scsi_defs::sense_key s, scsi_defs::asc a)
+    void SetStatus(enum sense_key s, enum asc a)
     {
         sense_key = s;
         asc = a;
@@ -106,7 +104,7 @@ protected:
         commands[static_cast<int>(cmd)] = c;
     }
 
-    vector<uint8_t> HandleInquiry(scsi_defs::device_type, bool) const;
+    vector<uint8_t> HandleInquiry(device_type, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
@@ -173,8 +171,8 @@ private:
 
     scsi_level level = scsi_level::none;
 
-    scsi_defs::sense_key sense_key = scsi_defs::sense_key::no_sense;
-    scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information;
+    enum sense_key sense_key = sense_key::no_sense;
+    enum asc asc = asc::no_additional_sense_information;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

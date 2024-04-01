@@ -12,8 +12,6 @@
 #include <functional>
 #include "shared/scsi.h"
 
-using namespace scsi_defs;
-
 class PhaseHandler
 {
 
@@ -35,45 +33,45 @@ public:
 
 protected:
 
-    inline phase_t GetPhase() const
+    inline bus_phase GetPhase() const
     {
         return phase;
     }
-    inline void SetPhase(phase_t p)
+    inline void SetPhase(bus_phase p)
     {
         phase = p;
     }
     inline bool IsSelection() const
     {
-        return phase == phase_t::selection;
+        return phase == bus_phase::selection;
     }
     inline bool IsBusFree() const
     {
-        return phase == phase_t::busfree;
+        return phase == bus_phase::busfree;
     }
     inline bool IsCommand() const
     {
-        return phase == phase_t::command;
+        return phase == bus_phase::command;
     }
     inline bool IsStatus() const
     {
-        return phase == phase_t::status;
+        return phase == bus_phase::status;
     }
     inline bool IsDataIn() const
     {
-        return phase == phase_t::datain;
+        return phase == bus_phase::datain;
     }
     inline bool IsDataOut() const
     {
-        return phase == phase_t::dataout;
+        return phase == bus_phase::dataout;
     }
     inline bool IsMsgIn() const
     {
-        return phase == phase_t::msgin;
+        return phase == bus_phase::msgin;
     }
     inline bool IsMsgOut() const
     {
-        return phase == phase_t::msgout;
+        return phase == bus_phase::msgout;
     }
 
     bool ProcessPhase() const
@@ -90,7 +88,7 @@ protected:
 
 private:
 
-    phase_t phase = phase_t::busfree;
+    bus_phase phase = bus_phase::busfree;
 
     array<function<void()>, 11> phase_executors;
 };

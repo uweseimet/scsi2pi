@@ -35,8 +35,8 @@ public:
     AbstractController(Bus&, int, int);
     ~AbstractController() override = default;
 
-    virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
-        scsi_defs::status = scsi_defs::status::check_condition) = 0;
+    virtual void Error(sense_key, asc = asc::no_additional_sense_information,
+        status_code = status_code::check_condition) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
@@ -118,7 +118,7 @@ protected:
         return total_length != 0;
     }
 
-    void SetStatus(scsi_defs::status s)
+    void SetStatus(status_code s)
     {
         status = s;
     }
@@ -165,7 +165,7 @@ private:
     // The number of bytes to be transferred with the current handshake cycle
     int chunk_size = 0;
 
-    scsi_defs::status status = status::good;
+    status_code status = status_code::good;
 
     Bus &bus;
 

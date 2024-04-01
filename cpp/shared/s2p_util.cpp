@@ -19,7 +19,6 @@
 
 using namespace filesystem;
 using namespace spdlog;
-using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
 {

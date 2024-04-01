@@ -9,8 +9,6 @@
 #include <cstring>
 #include "base/primary_device.h"
 
-using namespace scsi_defs;
-
 AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : bus(bus), target_id(target_id), max_luns(
     max_luns)
 {
@@ -29,14 +27,14 @@ void AbstractController::CleanUp() const
 
 void AbstractController::Reset()
 {
-    SetPhase(phase_t::busfree);
+    SetPhase(bus_phase::busfree);
 
     offset = 0;
     total_length = 0;
     current_length = 0;
     chunk_size = 0;
 
-    status = status::good;
+    status = status_code::good;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 

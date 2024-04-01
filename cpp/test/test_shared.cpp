@@ -30,7 +30,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     return {controller, device};
 }
 
-vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
+vector<int> testing::CreateCdb(scsi_command cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));

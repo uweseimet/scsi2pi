@@ -38,15 +38,13 @@ public:
 
 private:
 
-    inline static const vector<string> EMPTY_VECTOR;
-
     void GetDeviceProperties(shared_ptr<PrimaryDevice>, PbDeviceProperties&) const;
     void GetDevice(shared_ptr<PrimaryDevice>, PbDevice&, const string&) const;
     void GetAvailableImages(PbImageFilesInfo&, const string&, const string&, const string&, int) const;
     void GetAvailableImages(PbServerInfo&, const string&, const string&, const string&, int) const;
     PbOperationMetaData* CreateOperation(PbOperationInfo&, const PbOperation&, const string&) const;
     void AddOperationParameter(PbOperationMetaData&, const string&, const string&,
-        const string& = "", bool = false, const vector<string>& = EMPTY_VECTOR) const;
+        const string& = "", bool = false, const vector<string>& = { }) const;
     set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&) const;
 
     static bool ValidateImageFile(const path&);

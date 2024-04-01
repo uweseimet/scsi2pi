@@ -11,7 +11,6 @@
 #include "base/device_factory.h"
 #include "base/memory_util.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePrimaryDevice(int id = 0)
@@ -177,7 +176,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrimaryDeviceTest, Inquiry)
@@ -257,7 +256,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     device->SetReady(true);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrimaryDeviceTest, SendDiagnostic)
@@ -266,7 +265,7 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
     TestShared::Dispatch(*device, scsi_command::cmd_send_diagnostic, sense_key::illegal_request,

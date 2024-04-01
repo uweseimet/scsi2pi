@@ -59,7 +59,7 @@ TEST(PrinterTest, TestUnitReady)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Inquiry)
@@ -73,7 +73,7 @@ TEST(PrinterTest, ReserveUnit)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, ReleaseUnit)
@@ -82,7 +82,7 @@ TEST(PrinterTest, ReleaseUnit)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_release6));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, SendDiagnostic)
@@ -91,7 +91,7 @@ TEST(PrinterTest, SendDiagnostic)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Print)
@@ -113,7 +113,7 @@ TEST(PrinterTest, StopPrint)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_stop_print));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, SynchronizeBuffer)

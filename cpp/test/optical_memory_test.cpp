@@ -10,7 +10,6 @@
 #include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
 
 void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)

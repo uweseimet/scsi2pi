@@ -163,7 +163,7 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status::good);
+        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status_code::good);
     }
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -227,7 +227,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
     // Return not ready only if there are no errors
-    if (sense_key == scsi_defs::sense_key::no_sense && !IsReady()) {
+    if (sense_key == sense_key::no_sense && !IsReady()) {
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
 
@@ -286,7 +286,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     GetController()->Error(sense_key::aborted_command, asc::no_additional_sense_information,
-        status::reservation_conflict);
+        status_code::reservation_conflict);
 
     return false;
 }

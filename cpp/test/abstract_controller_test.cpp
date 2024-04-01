@@ -9,8 +9,6 @@
 #include "mocks.h"
 #include "shared/shared_exceptions.h"
 
-using namespace scsi_defs;
-
 TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
@@ -46,12 +44,12 @@ TEST(AbstractControllerTest, Reset)
 
     controller.AddDevice(make_shared<MockPrimaryDevice>(0));
 
-    controller.SetPhase(phase_t::status);
-    EXPECT_EQ(phase_t::status, controller.GetPhase());
+    controller.SetPhase(bus_phase::status);
+    EXPECT_EQ(bus_phase::status, controller.GetPhase());
     EXPECT_CALL(*bus, Reset());
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
-    EXPECT_EQ(status::good, controller.GetStatus());
+    EXPECT_EQ(status_code::good, controller.GetStatus());
     EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
@@ -59,8 +57,8 @@ TEST(AbstractControllerTest, Status)
 {
     MockAbstractController controller;
 
-    controller.SetStatus(status::reservation_conflict);
-    EXPECT_EQ(status::reservation_conflict, controller.GetStatus());
+    controller.SetStatus(status_code::reservation_conflict);
+    EXPECT_EQ(status_code::reservation_conflict, controller.GetStatus());
 }
 
 TEST(AbstractControllerTest, DeviceLunLifeCycle)

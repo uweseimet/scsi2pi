@@ -74,28 +74,28 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
 
 bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int &length)
 {
-    const phase_t phase = bus.GetPhase();
+    const bus_phase phase = bus.GetPhase();
 
     trace("Current phase is {}", Bus::GetPhaseName(phase));
 
     switch (phase) {
-    case phase_t::command:
+    case bus_phase::command:
         Command(cmd, cdb);
         break;
 
-    case phase_t::status:
+    case bus_phase::status:
         Status();
         break;
 
-    case phase_t::datain:
+    case bus_phase::datain:
         DataIn(buffer, length);
         break;
 
-    case phase_t::dataout:
+    case bus_phase::dataout:
         DataOut(buffer, length);
         break;
 
-    case phase_t::msgin:
+    case bus_phase::msgin:
         MsgIn();
         if (next_message == 0x80) {
             // Done with this command cycle unless there is a pending MESSAGE REJECT
@@ -103,7 +103,7 @@ bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8
         }
         break;
 
-    case phase_t::msgout:
+    case bus_phase::msgout:
         MsgOut();
         break;
 
@@ -310,7 +310,7 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 void InitiatorExecutor::LogStatus() const
 {
     if (status) {
-        if (const auto &it_status = STATUS_MAPPING.find(static_cast<scsi_defs::status>(status)); it_status
+        if (const auto &it_status = STATUS_MAPPING.find(static_cast<status_code>(status)); it_status
             != STATUS_MAPPING.end()) {
             warn("Device reported {0} (status code ${1:02x})", it_status->second, status);
         }

@@ -162,7 +162,7 @@ public:
 
     MOCK_METHOD(bool, Process, (), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
-    MOCK_METHOD(void, Error, (scsi_defs::sense_key, scsi_defs::asc, scsi_defs::status), (override));
+    MOCK_METHOD(void, Error, (sense_key, asc, status_code), (override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, DataIn, (), (override));
     MOCK_METHOD(void, DataOut, (), (override));

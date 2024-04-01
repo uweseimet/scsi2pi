@@ -11,7 +11,6 @@
 #include "initiator_util.h"
 
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
 
 void initiator_util::ResetBus(Bus &bus)

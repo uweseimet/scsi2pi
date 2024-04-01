@@ -30,25 +30,24 @@ class file_not_found_exception : public io_exception
 
 class scsi_exception : public exception
 {
-    scsi_defs::sense_key sense_key;
-    scsi_defs::asc asc;
+    enum sense_key sense_key;
+    enum asc asc;
 
     string message;
 
 public:
 
-    explicit scsi_exception(scsi_defs::sense_key sense_key,
-        scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
+    explicit scsi_exception(enum sense_key sense_key, enum asc asc = asc::no_additional_sense_information)
     : sense_key(sense_key), asc(asc), message(s2p_util::FormatSenseData(sense_key, asc))
     {
     }
     ~scsi_exception() override = default;
 
-    scsi_defs::sense_key get_sense_key() const
+    enum sense_key get_sense_key() const
     {
         return sense_key;
     }
-    scsi_defs::asc get_asc() const
+    enum asc get_asc() const
     {
         return asc;
     }

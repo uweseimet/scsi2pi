@@ -9,8 +9,6 @@
 #include <gtest/gtest.h>
 #include "shared/shared_exceptions.h"
 
-using namespace scsi_defs;
-
 TEST(SharedExceptionsTest, IoException)
 {
     try {

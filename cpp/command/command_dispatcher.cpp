@@ -183,8 +183,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
     AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::none;
 
-    const string &m = GetParam(context.GetCommand(), "mode");
-    if (m == "rascsi") {
+    if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
         mode = AbstractController::shutdown_mode::stop_s2p;
     }
     else if (m == "system") {

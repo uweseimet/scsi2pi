@@ -90,7 +90,7 @@ protected:
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
     void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int&) const;
+    int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
     int VerifySectorSizeChange(int, bool) const;
 
     void ChangeSectorSize(uint32_t);

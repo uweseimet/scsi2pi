@@ -30,7 +30,6 @@
 using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
-using namespace scsi_defs;
 
 bool S2p::InitBus(bool in_process, bool is_sasi)
 {
