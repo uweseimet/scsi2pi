@@ -125,7 +125,7 @@ static const unordered_map<status, string> STATUS_MAPPING = {
     { status::good, "GOOD" },
     { status::check_condition, "CHECK CONDITION" },
     { status::condition_met, "CONDITION MET" },
-    { status::busy, "CONDITION MET" },
+    { status::busy, "BUSY" },
     { status::intermediate, "INTERMEDIATE" },
     { status::condition_met, "CONDITION MET" },
     { status::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
