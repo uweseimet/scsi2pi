@@ -276,7 +276,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     EXPECT_THAT([&] {hd.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 12);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, 16));
     EXPECT_EQ(512U, hd.GetSectorSizeInBytes());
@@ -309,7 +309,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     EXPECT_THAT([&] {hd.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, buf.size() - 10);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
     << "Not enough command parameters";
 
     EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select6, cdb, buf, buf.size()));
@@ -392,7 +392,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     EXPECT_THAT([&] {hd.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 16);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, 20));
     EXPECT_EQ(512U, hd.GetSectorSizeInBytes());
@@ -425,7 +425,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     EXPECT_THAT([&] {hd.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, buf.size() - 10);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
     << "Not enough command parameters";
 
     EXPECT_NO_THROW(hd.ModeSelect(scsi_command::cmd_mode_select10, cdb, buf, buf.size()));
