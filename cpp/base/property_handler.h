@@ -22,16 +22,16 @@ class PropertyHandler
 public:
 
     // Non device-specific property keys
-    inline static const string IMAGE_FOLDER = "image_folder";
-    inline static const string LOCALE = "locale";
-    inline static const string LOG_LEVEL = "log_level";
-    inline static const string LOG_PATTERN = "log_pattern";
-    inline static const string MODE_PAGE = "mode_page";
-    inline static const string PORT = "port";
-    inline static const string PROPERTY_FILES = "property_files";
-    inline static const string RESERVED_IDS = "reserved_ids";
-    inline static const string SCAN_DEPTH = "scan_depth";
-    inline static const string TOKEN_FILE = "token_file";
+    inline static const char *IMAGE_FOLDER = "image_folder";
+    inline static const char *LOCALE = "locale";
+    inline static const char *LOG_LEVEL = "log_level";
+    inline static const char *LOG_PATTERN = "log_pattern";
+    inline static const char *MODE_PAGE = "mode_page";
+    inline static const char *PORT = "port";
+    inline static const char *PROPERTY_FILES = "property_files";
+    inline static const char *RESERVED_IDS = "reserved_ids";
+    inline static const char *SCAN_DEPTH = "scan_depth";
+    inline static const char *TOKEN_FILE = "token_file";
 
     static PropertyHandler& Instance()
     {

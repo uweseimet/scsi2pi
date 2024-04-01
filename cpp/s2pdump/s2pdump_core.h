@@ -95,7 +95,7 @@ private:
 
     static inline const string DIVIDER = "----------------------------------------";
 
-    static inline const unordered_map<byte, string> S2P_DEVICE_TYPES = {
+    static inline const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
         { byte { 0 }, "SCHD" },
         { byte { 2 }, "SCLP" },
         { byte { 3 }, "SCHS" },
@@ -103,7 +103,7 @@ private:
         { byte { 7 }, "SCMO" }
     };
 
-    static inline const unordered_map<byte, string> SCSI_DEVICE_TYPES = {
+    static inline const unordered_map<byte, const char*> SCSI_DEVICE_TYPES = {
         { byte { 0 }, "Direct Access" },
         { byte { 1 }, "Sequential Access" },
         { byte { 2 }, "Printer" },

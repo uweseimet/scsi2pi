@@ -696,7 +696,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     cout << id_and_lun << "type=";
     if (const auto &type = S2P_DEVICE_TYPES.find(scsi_device_info.type & byte { 0x1f }); type != S2P_DEVICE_TYPES.end()) {
-        if ((*type).second != "SCHD") {
+        if (string((*type).second) != "SCHD") {
             cout << (*type).second << "\n";
         }
         else {

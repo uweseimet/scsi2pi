@@ -669,9 +669,10 @@ void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         // The page size field does not count itself and the page code field
         const size_t page_size = buf[offset + 1] + 2;
 
-        // The page size in the parameters must match the actual page size
+        // The page size in the parameters must match the actual page size, otherwise report
+        // INVALID FIELD IN PARAMETER LIST (SCSI-2 8.2.8).
         if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
-            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
         }
 
         switch (page_code) {
