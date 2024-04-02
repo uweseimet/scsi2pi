@@ -57,8 +57,7 @@ private:
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
 
-    int depth = 1;
-
     // Must be shared across instances
+    inline static int depth = 1;
     inline static string default_folder;
 };
