@@ -76,7 +76,7 @@ private:
 
     shared_ptr<CommandDispatcher> dispatcher;
 
-    S2pImage s2p_image;
+    [[no_unique_address]] S2pImage s2p_image;
 
     protobuf_format input_format = protobuf_format::binary;
 
