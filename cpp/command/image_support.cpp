@@ -18,8 +18,10 @@ using namespace protobuf_util;
 
 S2pImage::S2pImage()
 {
-    // ~/images is the default folder for device image files, for the root user it is /home/pi/images
-    default_folder = GetHomeDir() + "/images";
+    if (default_folder.empty()) {
+        // ~/images is the default folder for device image files, for the root user it is /home/pi/images
+        default_folder = GetHomeDir() + "/images";
+    }
 }
 
 bool S2pImage::CheckDepth(string_view filename) const

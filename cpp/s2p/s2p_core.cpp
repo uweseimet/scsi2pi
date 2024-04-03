@@ -121,11 +121,13 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_SUCCESS;
     }
 
-    s2p_parser.Banner(false);
+    S2pParser parser;
+
+    parser.Banner(false);
 
     bool is_sasi = false;
     bool ignore_conf = false;
-    const auto &properties = s2p_parser.ParseArguments(args, is_sasi, ignore_conf);
+    const auto &properties = parser.ParseArguments(args, is_sasi, ignore_conf);
     int port;
     if (!ParseProperties(properties, port, ignore_conf)) {
         return EXIT_FAILURE;
@@ -205,7 +207,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
             ignore_conf);
 
-        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL);
+        if (const string &log_level = property_handler.GetProperty(PropertyHandler::LOG_LEVEL, "info");
         !CommandDispatcher::SetLogLevel(log_level)) {
             throw parser_exception("Invalid log level: '" + log_level + "'");
         }
@@ -223,7 +225,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
             }
         }
 
-        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH); !scan_depth.empty()) {
+        if (const string &scan_depth = property_handler.GetProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
             if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
                 throw parser_exception(
                     "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
@@ -233,7 +235,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
             }
         }
 
-        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT); !GetAsUnsignedInt(p, port)
+        if (const string &p = property_handler.GetProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p, port)
             || port <= 0 || port > 65535) {
             throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
         }
@@ -348,7 +350,7 @@ void S2p::AttachDevices(PbCommand &command)
         command.set_operation(ATTACH);
 
         if (const CommandContext context(command, s2p_image.GetDefaultFolder(),
-                property_handler.GetProperty(PropertyHandler::LOCALE)); !executor->ProcessCmd(context)) {
+            property_handler.GetProperty(PropertyHandler::LOCALE, GetLocale())); !executor->ProcessCmd(context)) {
             throw parser_exception("Can't attach devices");
         }
 

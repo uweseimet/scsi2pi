@@ -42,7 +42,7 @@ public:
     void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
-    string GetProperty(string_view) const;
+    string GetProperty(string_view, const string& = "") const;
     void AddProperty(const string &key, string_view value)
     {
         property_cache[key] = value;

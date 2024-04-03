@@ -22,10 +22,6 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     property_cache.clear();
 
     property_map properties;
-    properties[PropertyHandler::LOCALE] = GetLocale();
-    properties[PropertyHandler::LOG_LEVEL] = "info";
-    properties[PropertyHandler::PORT] = "6868";
-    properties[PropertyHandler::SCAN_DEPTH] = "1";
 
     // Always parse the optional global property file
     if (!ignore_conf && exists(path(GLOBAL_CONFIGURATION))) {
@@ -102,7 +98,7 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
-string PropertyHandler::GetProperty(string_view key) const
+string PropertyHandler::GetProperty(string_view key, const string &def) const
 {
     for (const auto& [k, v] : property_cache) {
         if (k == key) {
@@ -110,7 +106,7 @@ string PropertyHandler::GetProperty(string_view key) const
         }
     }
 
-    return "";
+    return def;
 }
 
 void PropertyHandler::RemoveProperties(const string &filter)

@@ -9,7 +9,6 @@
 #pragma once
 
 #include "command/command_dispatcher.h"
-#include "s2p_parser.h"
 #include "s2p_thread.h"
 
 using namespace s2p_interface;
@@ -44,8 +43,6 @@ private:
     static void TerminationHandler(int);
 
     string access_token;
-
-    [[no_unique_address]] S2pParser s2p_parser;
 
     S2pImage s2p_image;
 

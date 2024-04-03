@@ -238,7 +238,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename, bool is_sasi)
 {
-    const unordered_map<string, const char*> BLUE_SCSI_TO_S2P_TYPES = {
+    const unordered_map<string, const char*, s2p_util::StringHash, equal_to<>> BLUE_SCSI_TO_S2P_TYPES = {
         { "CD", "sccd" },
         { "FD", "schd" },
         { "HD", "schd" },

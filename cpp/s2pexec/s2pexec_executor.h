@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <cstdint>
-#include <array>
 #include "initiator/initiator_util.h"
 
 using namespace std;

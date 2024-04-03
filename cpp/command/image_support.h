@@ -57,8 +57,7 @@ private:
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
 
-    // ~/images is the default folder for device image files, for the root user it is /home/pi/images
-    string default_folder;
-
-    int depth = 1;
+    // Must be shared across instances
+    inline static int depth = 1;
+    inline static string default_folder;
 };

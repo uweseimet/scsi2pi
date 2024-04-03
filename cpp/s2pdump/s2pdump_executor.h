@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <set>
 #include "initiator/initiator_executor.h"
 

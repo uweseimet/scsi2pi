@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <span>
-#include <vector>
 #include "buses/bus_factory.h"
 #include "s2pexec_executor.h"
 

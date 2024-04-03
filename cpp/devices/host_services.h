@@ -11,7 +11,6 @@
 #pragma once
 
 #include "command/command_dispatcher.h"
-#include "command/image_support.h"
 #include "mode_page_device.h"
 
 class HostServices : public ModePageDevice
@@ -75,8 +74,6 @@ private:
     unordered_map<int, string> execution_results;
 
     shared_ptr<CommandDispatcher> dispatcher;
-
-    S2pImage s2p_image;
 
     protobuf_format input_format = protobuf_format::binary;
 
