@@ -23,7 +23,7 @@ public:
     S2pImage();
     ~S2pImage() = default;
 
-    void SetDepth(int d)
+    void SetDepth(int d) const
     {
         depth = d;
     }
@@ -35,7 +35,7 @@ public:
     {
         return default_folder;
     }
-    string SetDefaultFolder(string_view);
+    string SetDefaultFolder(string_view) const;
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;
     bool RenameImage(const CommandContext&) const;

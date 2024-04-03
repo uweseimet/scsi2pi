@@ -47,7 +47,7 @@ private:
 
     [[no_unique_address]] S2pParser s2p_parser;
 
-    S2pImage s2p_image;
+    [[no_unique_address]] S2pImage s2p_image;
 
     S2pThread service_thread;
 

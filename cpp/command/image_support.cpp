@@ -50,7 +50,7 @@ bool S2pImage::CreateImageFolder(const CommandContext &context, string_view file
     return true;
 }
 
-string S2pImage::SetDefaultFolder(string_view f)
+string S2pImage::SetDefaultFolder(string_view f) const
 {
     if (f.empty()) {
         return "Can't set default image folder: Missing folder name";
