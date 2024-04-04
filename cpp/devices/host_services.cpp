@@ -85,10 +85,10 @@
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
 #include "shared/shared_exceptions.h"
+#include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller.h"
 #include "base/memory_util.h"
-#include "command/image_support.h"
 #include "host_services.h"
 
 using namespace std::chrono;
@@ -335,10 +335,9 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
         throw scsi_exception(sense_key::aborted_command);
     }
 
-    S2pImage s2p_image;
     PbResult result;
-    if (CommandContext context(cmd, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(cmd, "locale"));
-    !dispatcher->DispatchCommand(context, result)) {
+    if (CommandContext context(cmd, protobuf_util::GetParam(cmd, "locale")); !dispatcher->DispatchCommand(context,
+        result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw scsi_exception(sense_key::aborted_command);
     }

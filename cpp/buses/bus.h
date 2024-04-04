@@ -115,6 +115,8 @@ constexpr static int OUT = GPIO_OUTPUT;
 constexpr static int ON = 1;
 constexpr static int OFF = 0;
 
+using namespace std;
+
 class Bus // NOSONAR The number of convenience methods is justified
 {
 

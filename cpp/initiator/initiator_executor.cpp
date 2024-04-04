@@ -8,12 +8,14 @@
 
 #include <chrono>
 #include <spdlog/spdlog.h>
+#include "shared/s2p_util.h"
 #include "buses/bus_factory.h"
 #include "initiator_util.h"
 #include "initiator_executor.h"
 
 using namespace std;
 using namespace spdlog;
+using namespace s2p_util;
 using namespace initiator_util;
 
 int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
@@ -315,7 +317,7 @@ void InitiatorExecutor::LogStatus() const
             warn("Device reported {0} (status code ${1:02x})", it_status->second, status);
         }
         else if (status != 0xff) {
-            warn("Device reported an unknown status (status code ${0:02x})", status);
+            warn("Device reported an unknown status (status code ${:02x})", status);
         }
         else {
             warn("Device did not respond");

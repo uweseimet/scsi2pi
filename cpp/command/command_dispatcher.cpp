@@ -10,7 +10,9 @@
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/shared_exceptions.h"
+#include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
+#include "image_support.h"
 #include "command_response.h"
 #include "command_dispatcher.h"
 
@@ -45,7 +47,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEFAULT_FOLDER:
-        if (const string &error = s2p_image.SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = S2pImage::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
             result.set_msg(error);
             context.WriteResult(result);
             return false;
@@ -56,7 +58,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -65,7 +67,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case SERVER_INFO:
         response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
-            executor.GetReservedIds(), s2p_image.GetDefaultFolder(), s2p_image.GetDepth());
+            executor.GetReservedIds());
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -77,8 +79,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case DEFAULT_IMAGE_FILES_INFO:
-        response.GetImageFilesInfo(*result.mutable_image_files_info(), s2p_image.GetDefaultFolder(),
-            GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"), s2p_image.GetDepth());
+        response.GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
+            GetParam(command, "file_pattern"));
         return context.WriteSuccessResult(result);
 
     case IMAGE_FILE_INFO:
@@ -87,7 +89,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
         else {
             if (const auto &image_file = make_unique<PbImageFile>(); response.GetImageFile(*image_file.get(),
-                s2p_image.GetDefaultFolder(), filename)) {
+                filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
                 context.WriteResult(result);
@@ -115,7 +117,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case OPERATION_INFO:
-        response.GetOperationInfo(*result.mutable_operation_info(), s2p_image.GetDepth());
+        response.GetOperationInfo(*result.mutable_operation_info());
         return context.WriteSuccessResult(result);
 
     case RESERVED_IDS_INFO:
@@ -126,20 +128,20 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return s2p_image.CreateImage(context);
+        return S2pImage::Instance().CreateImage(context);
 
     case DELETE_IMAGE:
-        return s2p_image.DeleteImage(context);
+        return S2pImage::Instance().DeleteImage(context);
 
     case RENAME_IMAGE:
-        return s2p_image.RenameImage(context);
+        return S2pImage::Instance().RenameImage(context);
 
     case COPY_IMAGE:
-        return s2p_image.CopyImage(context);
+        return S2pImage::Instance().CopyImage(context);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return s2p_image.SetImagePermissions(context);
+        return S2pImage::Instance().SetImagePermissions(context);
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::Instance().Persist() ?
@@ -170,7 +172,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
         PbCommand command;
         PbResult result;
         CommandResponse response;
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
         context.WriteResult(result);
         return result.status();
     }

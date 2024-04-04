@@ -9,14 +9,13 @@
 #pragma once
 
 #include "command_executor.h"
-#include "image_support.h"
 
 class CommandDispatcher
 {
 
 public:
 
-    CommandDispatcher(S2pImage &i, CommandExecutor &e) : s2p_image(i), executor(e)
+    CommandDispatcher(CommandExecutor &e) : executor(e)
     {
     }
     ~CommandDispatcher() = default;
@@ -32,8 +31,6 @@ private:
     bool ExecuteWithLock(const CommandContext&);
     bool HandleDeviceListChange(const CommandContext&) const;
     bool ShutDown(const CommandContext&) const;
-
-    S2pImage &s2p_image;
 
     CommandExecutor &executor;
 };

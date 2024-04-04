@@ -9,6 +9,7 @@
 #include "mocks.h"
 #include "shared/s2p_version.h"
 #include "base/device_factory.h"
+#include "command/image_support.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller_factory.h"
@@ -21,7 +22,7 @@ TEST(CommandResponseTest, Operation_Count)
     CommandResponse response;
 
     PbOperationInfo info;
-    response.GetOperationInfo(info, 0);
+    response.GetOperationInfo(info);
     EXPECT_EQ(34, info.operations_size());
 }
 
@@ -37,7 +38,7 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));
 
     PbServerInfo info;
-    response.GetDevices(controller_factory.GetAllDevices(), info, "image_folder");
+    response.GetDevices(controller_factory.GetAllDevices(), info);
 
     EXPECT_EQ(1, info.devices_info().devices().size());
 
@@ -71,10 +72,10 @@ TEST(CommandResponseTest, GetImageFile)
     CommandResponse response;
     PbImageFile image_file;
 
-    EXPECT_FALSE(response.GetImageFile(image_file, "default_folder", ""));
+    EXPECT_FALSE(response.GetImageFile(image_file, ""));
 
     // Even though the call fails (non-existing file) some properties must be set
-    EXPECT_FALSE(response.GetImageFile(image_file, "default_folder", "filename.hds"));
+    EXPECT_FALSE(response.GetImageFile(image_file, "filename.hds"));
     EXPECT_EQ("filename.hds", image_file.name());
     EXPECT_EQ(SCHD, image_file.type());
 }
@@ -84,7 +85,7 @@ TEST(CommandResponseTest, GetImageFilesInfo)
     CommandResponse response;
 
     PbImageFilesInfo info;
-    response.GetImageFilesInfo(info, "default_folder", "", "", 1);
+    response.GetImageFilesInfo(info, "", "");
     EXPECT_TRUE(info.image_files().empty());
 }
 
@@ -117,14 +118,14 @@ TEST(CommandResponseTest, GetDevicesInfo)
     PbCommand command;
 
     PbResult result1;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command, "");
+    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
     auto device1 = make_shared<MockHostServices>(LUN1);
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
 
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command, "");
+    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
     auto &devices1 = result1.devices_info().devices();
     EXPECT_EQ(1, devices1.size());
@@ -136,7 +137,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device2));
 
     PbResult result2;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result2, command, "");
+    response.GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
     EXPECT_TRUE(result2.status());
     auto &devices2 = result2.devices_info().devices();
     EXPECT_EQ(2, devices2.size()) << "Device count mismatch";
@@ -145,7 +146,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     requested_device->set_id(ID);
     requested_device->set_unit(LUN1);
     PbResult result3;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result3, command, "");
+    response.GetDevicesInfo(controller_factory.GetAllDevices(), result3, command);
     EXPECT_TRUE(result3.status());
     auto &devices3 = result3.devices_info().devices();
     EXPECT_EQ(1, devices3.size()) << "Only data for the specified ID and LUN must be returned";
@@ -156,7 +157,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     requested_device->set_id(ID);
     requested_device->set_unit(LUN3);
     PbResult result4;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result4, command, "");
+    response.GetDevicesInfo(controller_factory.GetAllDevices(), result4, command);
     EXPECT_FALSE(result4.status()) << "Only data for the specified ID and LUN must be returned";
 }
 
@@ -178,7 +179,9 @@ TEST(CommandResponseTest, GetServerInfo)
 
     PbCommand command;
     PbServerInfo info1;
-    response.GetServerInfo(info1, command, devices, ids, "default_folder", 1234);
+    S2pImage::Instance().SetDepth(1234);
+
+    response.GetServerInfo(info1, command, devices, ids);
     EXPECT_TRUE(info1.has_version_info());
     EXPECT_TRUE(info1.has_log_level_info());
     EXPECT_TRUE(info1.has_device_types_info());
@@ -194,13 +197,12 @@ TEST(CommandResponseTest, GetServerInfo)
     EXPECT_EQ(s2p_minor_version, info1.version_info().minor_version());
     EXPECT_EQ(s2p_revision, info1.version_info().patch_version());
     EXPECT_EQ(level::level_string_views[get_level()], info1.log_level_info().current_log_level());
-    EXPECT_EQ("default_folder", info1.image_files_info().default_image_folder());
     EXPECT_EQ(1234, info1.image_files_info().depth());
     EXPECT_EQ(2, info1.reserved_ids_info().ids().size());
 
     SetParam(command, "operations", "log_level_info,mapping_info");
     PbServerInfo info2;
-    response.GetServerInfo(info2, command, devices, ids, "default_folder", 1234);
+    response.GetServerInfo(info2, command, devices, ids);
     EXPECT_FALSE(info2.has_version_info());
     EXPECT_TRUE(info2.has_log_level_info());
     EXPECT_FALSE(info2.has_device_types_info());

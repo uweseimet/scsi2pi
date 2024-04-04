@@ -13,7 +13,10 @@
 #include <sstream>
 #include <vector>
 #include <array>
+#include <unordered_map>
 #include "scsi.h"
+
+using namespace std;
 
 namespace s2p_util
 {
@@ -106,5 +109,18 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::command_phase_error, "COMMAND PHASE ERROR" },
     { asc::data_phase_error, "DATA PHASE ERROR" },
     { asc::load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
+};
+
+static const unordered_map<status_code, const char*> STATUS_MAPPING = {
+    { status_code::good, "GOOD" },
+    { status_code::check_condition, "CHECK CONDITION" },
+    { status_code::condition_met, "CONDITION MET" },
+    { status_code::busy, "BUSY" },
+    { status_code::intermediate, "INTERMEDIATE" },
+    { status_code::condition_met, "CONDITION MET" },
+    { status_code::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
+    { status_code::reservation_conflict, "RESERVATION CONFLICT" },
+    { status_code::command_terminated, "COMMAND TERMINATED" },
+    { status_code::queue_full, "QUEUE FULL" }
 };
 }

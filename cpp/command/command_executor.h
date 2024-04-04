@@ -75,7 +75,7 @@ private:
 
     static void DisplayDeviceInfo(const PrimaryDevice&);
     static bool CheckForReservedFile(const CommandContext&, const string&);
-    static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
+    static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 
     Bus &bus;
 

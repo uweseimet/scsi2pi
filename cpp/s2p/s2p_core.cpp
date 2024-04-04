@@ -19,6 +19,7 @@
 #include "shared/shared_exceptions.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
+#include "command/image_support.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
@@ -42,7 +43,7 @@ bool S2p::InitBus(bool in_process, bool is_sasi)
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
-    dispatcher = make_shared<CommandDispatcher>(s2p_image, *executor);
+    dispatcher = make_shared<CommandDispatcher>(*executor);
 
     return true;
 }
@@ -175,7 +176,7 @@ int S2p::Run(span<char*> args, bool in_process)
     // Display and log the device list
     PbServerInfo server_info;
     CommandResponse response;
-    response.GetDevices(executor->GetAllDevices(), server_info, s2p_image.GetDefaultFolder());
+    response.GetDevices(executor->GetAllDevices(), server_info);
     const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
@@ -220,7 +221,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string error = s2p_image.SetDefaultFolder(image_folder); !error.empty()) {
+            if (const string error = S2pImage::Instance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw parser_exception(error);
             }
         }
@@ -231,7 +232,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
                     "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
-                s2p_image.SetDepth(depth);
+                S2pImage::Instance().SetDepth(depth);
             }
         }
 
@@ -349,8 +350,8 @@ void S2p::AttachDevices(PbCommand &command)
     if (command.devices_size()) {
         command.set_operation(ATTACH);
 
-        if (const CommandContext context(command, s2p_image.GetDefaultFolder(),
-            property_handler.GetProperty(PropertyHandler::LOCALE, GetLocale())); !executor->ProcessCmd(context)) {
+        if (const CommandContext context(command, property_handler.GetProperty(PropertyHandler::LOCALE, GetLocale())); !executor->ProcessCmd(
+            context)) {
             throw parser_exception("Can't attach devices");
         }
 
@@ -444,7 +445,6 @@ bool S2p::ExecuteCommand(CommandContext &context)
         return context.ReturnLocalizedError(LocalizationKey::ERROR_AUTHENTICATION, UNAUTHORIZED);
     }
 
-    context.SetDefaultFolder(s2p_image.GetDefaultFolder());
     PbResult result;
     const bool status = dispatcher->DispatchCommand(context, result);
     if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {

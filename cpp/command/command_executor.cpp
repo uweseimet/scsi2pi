@@ -14,6 +14,7 @@
 #include "protobuf/protobuf_util.h"
 #include "protobuf/command_context.h"
 #include "devices/disk.h"
+#include "image_support.h"
 #include "command_executor.h"
 
 using namespace spdlog;
@@ -294,7 +295,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 #endif
 
-    SetUpDeviceProperties(context, device);
+    SetUpDeviceProperties(device);
 
     DisplayDeviceInfo(*device);
 
@@ -349,7 +350,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     storage_device->SetProtected(pb_device.protected_());
 #endif
 
-    SetUpDeviceProperties(context, device);
+    SetUpDeviceProperties(device);
 
     return true;
 }
@@ -403,7 +404,7 @@ void CommandExecutor::DetachAll() const
     }
 }
 
-void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, shared_ptr<PrimaryDevice> device)
+void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
@@ -416,8 +417,8 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
     }
     if (disk && !disk->GetFilename().empty()) {
         string filename = disk->GetFilename();
-        if (filename.starts_with(context.GetDefaultFolder())) {
-            filename = filename.substr(context.GetDefaultFolder().length() + 1);
+        if (filename.starts_with(S2pImage::Instance().GetDefaultFolder())) {
+            filename = filename.substr(S2pImage::Instance().GetDefaultFolder().length() + 1);
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", filename);
     }
@@ -491,7 +492,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        effective_filename = context.GetDefaultFolder() + "/" + filename;
+        effective_filename = S2pImage::Instance().GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;

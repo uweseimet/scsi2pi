@@ -20,8 +20,11 @@ class S2pImage
 
 public:
 
-    S2pImage();
-    ~S2pImage() = default;
+    static S2pImage& Instance()
+    {
+        static S2pImage instance; // NOSONAR instance cannot be inlined
+        return instance;
+    }
 
     void SetDepth(int d)
     {
@@ -44,6 +47,8 @@ public:
 
 private:
 
+    S2pImage();
+
     bool CheckDepth(string_view) const;
     string GetFullName(const string &filename) const
     {
@@ -57,7 +62,7 @@ private:
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
 
-    // Must be shared across instances
-    inline static int depth = 1;
-    inline static string default_folder;
+    int depth = 1;
+
+    string default_folder;
 };

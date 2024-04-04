@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include <filesystem>
 #include "command/command_dispatcher.h"
 #include "s2p_thread.h"
 
+using namespace filesystem;
 using namespace s2p_interface;
 
 class S2p
@@ -43,8 +45,6 @@ private:
     static void TerminationHandler(int);
 
     string access_token;
-
-    S2pImage s2p_image;
 
     S2pThread service_thread;
 

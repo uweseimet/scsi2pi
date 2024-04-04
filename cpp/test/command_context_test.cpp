@@ -17,16 +17,6 @@
 using namespace testing;
 using namespace protobuf_util;
 
-TEST(CommandContext, SetGetDefaultFolder)
-{
-    PbCommand command;
-    CommandContext context(command, "folder1", "");
-
-    EXPECT_EQ("folder1", context.GetDefaultFolder());
-    context.SetDefaultFolder("folder2");
-    EXPECT_EQ("folder2", context.GetDefaultFolder());
-}
-
 TEST(CommandContext, ReadCommand)
 {
     int fd = open(CreateTempFile(0).string().c_str(), O_RDONLY);
@@ -79,7 +69,7 @@ TEST(CommandContext, GetCommand)
 {
     PbCommand command;
     command.set_operation(PbOperation::SERVER_INFO);
-    CommandContext context(command, "", "");
+    CommandContext context(command, "");
     EXPECT_EQ(PbOperation::SERVER_INFO, context.GetCommand().operation());
 }
 
@@ -118,7 +108,7 @@ TEST(CommandContext, WriteSuccessResult)
 TEST(CommandContext, ReturnLocalizedError)
 {
     PbCommand command;
-    CommandContext context(command, "", "en_US");
+    CommandContext context(command, "en_US");
 
     EXPECT_FALSE(context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL));
 }
@@ -127,7 +117,7 @@ TEST(CommandContext, ReturnSuccessStatus)
 {
     PbCommand command;
 
-    CommandContext context1(command, "", "");
+    CommandContext context1(command, "");
     EXPECT_TRUE(context1.ReturnSuccessStatus());
 
     const int fd = open("/dev/null", O_RDWR);
@@ -140,7 +130,7 @@ TEST(CommandContext, ReturnErrorStatus)
 {
     PbCommand command;
 
-    CommandContext context1(command, "", "");
+    CommandContext context1(command, "");
     EXPECT_FALSE(context1.ReturnErrorStatus("error"));
 
     const int fd = open("/dev/null", O_RDWR);

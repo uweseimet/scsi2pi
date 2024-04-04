@@ -19,7 +19,7 @@ class CommandContext
 
 public:
 
-    CommandContext(const PbCommand &cmd, string_view f, string_view l) : command(cmd), default_folder(f), locale(l)
+    CommandContext(const PbCommand &cmd, string_view l) : command(cmd), locale(l)
     {
     }
     explicit CommandContext(int f) : fd(f)
@@ -27,14 +27,6 @@ public:
     }
     ~CommandContext() = default;
 
-    string GetDefaultFolder() const
-    {
-        return default_folder;
-    }
-    void SetDefaultFolder(string_view f)
-    {
-        default_folder = f;
-    }
     void SetLocale(string_view l)
     {
         locale = l;
@@ -60,8 +52,6 @@ private:
     const Localizer localizer;
 
     PbCommand command;
-
-    string default_folder;
 
     string locale;
 

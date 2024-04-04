@@ -101,6 +101,8 @@ key2=value2
     EXPECT_TRUE(property_handler.GetProperty("key3").empty());
     EXPECT_EQ("value1", property_handler.GetProperty("key1"));
     EXPECT_EQ("value2", property_handler.GetProperty("key2"));
+
+    EXPECT_EQ("default_value", property_handler.GetProperty("key", "default_value"));
 }
 
 TEST(PropertyHandlerTest, GetCustomModePages)

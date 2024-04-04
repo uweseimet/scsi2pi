@@ -12,6 +12,8 @@
 #include <functional>
 #include "shared/scsi.h"
 
+using namespace std;
+
 class PhaseHandler
 {
 

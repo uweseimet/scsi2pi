@@ -14,6 +14,7 @@
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 #include "devices/disk.h"
+#include "image_support.h"
 #include "command_response.h"
 
 using namespace spdlog;
@@ -67,8 +68,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device,
-    const string &default_folder) const
+void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device) const
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
@@ -98,19 +98,19 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
         pb_device.set_caching_mode(disk->GetCachingMode());
 
-        GetImageFile(*pb_device.mutable_file(), default_folder, disk->IsReady() ? disk->GetFilename() : "");
+        GetImageFile(*pb_device.mutable_file(), disk->IsReady() ? disk->GetFilename() : "");
     }
 #endif
 }
 #pragma GCC diagnostic pop
 
-bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &default_folder, const string &filename) const
+bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filename) const
 {
     if (!filename.empty()) {
         image_file.set_name(filename);
         image_file.set_type(DeviceFactory::Instance().GetTypeForFile(filename));
 
-        const path p(filename[0] == '/' ? filename : default_folder + "/" + filename);
+        const path p(filename[0] == '/' ? filename : S2pImage::Instance().GetDefaultFolder() + "/" + filename);
 
         image_file.set_read_only(access(p.c_str(), W_OK));
 
@@ -124,9 +124,11 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &defaul
     return false;
 }
 
-void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &default_folder,
-    const string &folder_pattern, const string &file_pattern, int scan_depth) const
+void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
+    const string &file_pattern) const
 {
+    const string &default_folder = S2pImage::Instance().GetDefaultFolder();
+
     const path default_path(default_folder);
     if (!is_directory(default_path)) {
         return;
@@ -137,7 +139,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
         it != recursive_directory_iterator(); it++) {
-        if (it.depth() > scan_depth) {
+        if (it.depth() > S2pImage::Instance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
         }
@@ -158,28 +160,27 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
         const string filename = folder.empty() ?
                                                  it->path().filename().string() :
                                                  folder + "/" + it->path().filename().string();
-        if (PbImageFile image_file; GetImageFile(image_file, default_folder, filename)) {
-            GetImageFile(*image_files_info.add_image_files(), default_folder, filename);
+        if (PbImageFile image_file; GetImageFile(image_file, filename)) {
+            GetImageFile(*image_files_info.add_image_files(), filename);
         }
     }
 }
 
-void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &default_folder,
-    const string &folder_pattern, const string &file_pattern, int scan_depth) const
+void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
+    const string &file_pattern) const
 {
-    image_files_info.set_default_image_folder(default_folder);
-    image_files_info.set_depth(scan_depth);
+    image_files_info.set_default_image_folder(S2pImage::Instance().GetDefaultFolder());
+    image_files_info.set_depth(S2pImage::Instance().GetDepth());
 
-    GetAvailableImages(image_files_info, default_folder, folder_pattern, file_pattern, scan_depth);
+    GetAvailableImages(image_files_info, folder_pattern, file_pattern);
 }
 
-void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &default_folder,
-    const string &folder_pattern, const string &file_pattern, int scan_depth) const
+void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
+    const string &file_pattern) const
 {
-    server_info.mutable_image_files_info()->set_default_image_folder(default_folder);
+    server_info.mutable_image_files_info()->set_default_image_folder(S2pImage::Instance().GetDefaultFolder());
 
-    GetImageFilesInfo(*server_info.mutable_image_files_info(), default_folder, folder_pattern, file_pattern,
-        scan_depth);
+    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern);
 }
 
 void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids) const
@@ -189,17 +190,17 @@ void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const
     }
 }
 
-void CommandResponse::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbServerInfo &server_info,
-    const string &default_folder) const
+void CommandResponse::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices,
+    PbServerInfo &server_info) const
 {
     for (const auto &device : devices) {
         PbDevice *pb_device = server_info.mutable_devices_info()->add_devices();
-        GetDevice(device, *pb_device, default_folder);
+        GetDevice(device, *pb_device);
     }
 }
 
 void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
-    const PbCommand &command, const string &default_folder) const
+    const PbCommand &command) const
 {
     set<id_set> id_sets;
 
@@ -221,7 +222,7 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
     for (const auto& [id, lun] : id_sets) {
         for (const auto &d : devices) {
             if (d->GetId() == id && d->GetLun() == lun) {
-                GetDevice(d, *devices_info->add_devices(), default_folder);
+                GetDevice(d, *devices_info->add_devices());
                 break;
             }
         }
@@ -231,8 +232,7 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
 }
 
 void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
-    const string &default_folder, int scan_depth) const
+    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids) const
 {
     const vector<string> command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -257,8 +257,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::DEFAULT_IMAGE_FILES_INFO)) {
-        GetAvailableImages(server_info, default_folder, GetParam(command, "folder_pattern"),
-            GetParam(command, "file_pattern"), scan_depth);
+        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"));
     }
 
     if (HasOperation(operations, PbOperation::NETWORK_INTERFACES_INFO)) {
@@ -278,7 +277,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::DEVICES_INFO)) {
-        GetDevices(devices, server_info, default_folder);
+        GetDevices(devices, server_info);
     }
 
     if (HasOperation(operations, PbOperation::RESERVED_IDS_INFO)) {
@@ -286,7 +285,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::OPERATION_INFO)) {
-        GetOperationInfo(*server_info.mutable_operation_info(), scan_depth);
+        GetOperationInfo(*server_info.mutable_operation_info());
     }
 }
 
@@ -344,7 +343,7 @@ void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
     }
 }
 
-void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int depth) const
+void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
 {
     auto operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
     AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
@@ -370,7 +369,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
     CreateOperation(operation_info, UNPROTECT, "Unprotect medium, device-specific parameters are required");
 
     operation = CreateOperation(operation_info, SERVER_INFO, "Get server information");
-    if (depth) {
+    if (S2pImage::Instance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
@@ -382,7 +381,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info, int dept
     CreateOperation(operation_info, DEVICE_TYPES_INFO, "Get device properties by device type");
 
     operation = CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
-    if (depth) {
+    if (S2pImage::Instance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");

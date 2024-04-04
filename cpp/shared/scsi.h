@@ -8,10 +8,6 @@
 
 #pragma once
 
-#include <unordered_map>
-
-using namespace std;
-
 enum class scsi_level
 {
     none = 0,
@@ -166,17 +162,4 @@ enum class asc
     printer_printing_failed = 0xf5,
     printer_write_failed = 0xf6,
     host_services_receive_operation_results = 0xf8
-};
-
-static const unordered_map<status_code, const char*> STATUS_MAPPING = {
-    { status_code::good, "GOOD" },
-    { status_code::check_condition, "CHECK CONDITION" },
-    { status_code::condition_met, "CONDITION MET" },
-    { status_code::busy, "BUSY" },
-    { status_code::intermediate, "INTERMEDIATE" },
-    { status_code::condition_met, "CONDITION MET" },
-    { status_code::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
-    { status_code::reservation_conflict, "RESERVATION CONFLICT" },
-    { status_code::command_terminated, "COMMAND TERMINATED" },
-    { status_code::queue_full, "QUEUE FULL" }
 };
