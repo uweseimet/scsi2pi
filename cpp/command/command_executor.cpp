@@ -12,7 +12,6 @@
 #include "shared/localizer.h"
 #include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "protobuf/command_context.h"
 #include "devices/disk.h"
 #include "image_support.h"
 #include "command_executor.h"

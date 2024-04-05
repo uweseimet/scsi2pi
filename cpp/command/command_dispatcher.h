@@ -15,7 +15,7 @@ class CommandDispatcher
 
 public:
 
-    CommandDispatcher(CommandExecutor &e) : executor(e)
+    explicit CommandDispatcher(CommandExecutor &e) : executor(e)
     {
     }
     ~CommandDispatcher() = default;

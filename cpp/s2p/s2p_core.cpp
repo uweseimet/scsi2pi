@@ -350,8 +350,9 @@ void S2p::AttachDevices(PbCommand &command)
     if (command.devices_size()) {
         command.set_operation(ATTACH);
 
-        if (const CommandContext context(command, property_handler.GetProperty(PropertyHandler::LOCALE, GetLocale())); !executor->ProcessCmd(
-            context)) {
+        CommandContext context(command);
+        context.SetLocale(property_handler.GetProperty(PropertyHandler::LOCALE, GetLocale()));
+        if (!executor->ProcessCmd(context)) {
             throw parser_exception("Can't attach devices");
         }
 

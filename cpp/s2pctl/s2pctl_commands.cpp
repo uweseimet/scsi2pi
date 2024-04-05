@@ -47,10 +47,8 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
         return CommandDeleteImage(image_params);
 
     case RENAME_IMAGE:
-        return CommandRenameImage(image_params);
-
     case COPY_IMAGE:
-        return CommandCopyImage(image_params);
+        return CommandRenameCopyImage(image_params);
 
     case DEVICES_INFO:
         return CommandDeviceInfo();
@@ -201,18 +199,7 @@ bool S2pCtlCommands::CommandDeleteImage(string_view filename)
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandRenameImage(string_view image_params)
-{
-    if (!EvaluateParams(image_params, "from", "to")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;
-
-        return false;
-    }
-
-    return SendCommand();
-}
-
-bool S2pCtlCommands::CommandCopyImage(string_view image_params)
+bool S2pCtlCommands::CommandRenameCopyImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "from", "to")) {
         cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;

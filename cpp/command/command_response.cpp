@@ -516,7 +516,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            warn("Image file symlink '" + path.string() + "' is broken");
+            warn("Image file symlink '{}' is broken", path.string());
             return false;
         }
     }
@@ -526,7 +526,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        warn("Image file '" + p.string() + "' is invalid");
+        warn("Image file '{}' is invalid", p.string());
         return false;
     }
 

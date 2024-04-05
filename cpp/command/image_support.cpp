@@ -8,7 +8,9 @@
 
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "devices/disk.h"
+#ifdef BUILD_DISK
+#include "devices/storage_device.h"
+#endif
 #include "protobuf/protobuf_util.h"
 #include "image_support.h"
 
@@ -18,10 +20,8 @@ using namespace protobuf_util;
 
 S2pImage::S2pImage()
 {
-    if (default_folder.empty()) {
-        // ~/images is the default folder for device image files, for the root user it is /home/pi/images
-        default_folder = GetHomeDir() + "/images";
-    }
+    // ~/images is the default folder for device image files, for the root user it is /home/pi/images
+    default_folder = GetHomeDir() + "/images";
 }
 
 bool S2pImage::CheckDepth(string_view filename) const
@@ -53,7 +53,7 @@ bool S2pImage::CreateImageFolder(const CommandContext &context, string_view file
 string S2pImage::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
-        return "Can't set default image folder: Missing folder name";
+        return "Missing default folder name";
     }
 
     // If a relative path is specified, the path is assumed to be relative to the user's home directory

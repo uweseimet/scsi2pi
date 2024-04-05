@@ -336,8 +336,9 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
     }
 
     PbResult result;
-    if (CommandContext context(cmd, protobuf_util::GetParam(cmd, "locale")); !dispatcher->DispatchCommand(context,
-        result)) {
+    CommandContext context(cmd);
+    context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
+    if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw scsi_exception(sense_key::aborted_command);
     }

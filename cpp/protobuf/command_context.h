@@ -19,7 +19,7 @@ class CommandContext
 
 public:
 
-    CommandContext(const PbCommand &cmd, string_view l) : command(cmd), locale(l)
+    explicit CommandContext(const PbCommand &cmd) : command(cmd)
     {
     }
     explicit CommandContext(int f) : fd(f)
@@ -48,8 +48,6 @@ public:
 private:
 
     bool ReturnStatus(bool, const string&, PbErrorCode, bool) const;
-
-    const Localizer localizer;
 
     PbCommand command;
 

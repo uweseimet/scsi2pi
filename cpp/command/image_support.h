@@ -13,7 +13,6 @@
 
 using namespace std;
 using namespace filesystem;
-using namespace s2p_interface;
 
 class S2pImage
 {
@@ -39,6 +38,7 @@ public:
         return default_folder;
     }
     string SetDefaultFolder(string_view);
+
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;
     bool RenameImage(const CommandContext&) const;
@@ -55,9 +55,9 @@ private:
         return default_folder + "/" + filename;
     }
     bool CreateImageFolder(const CommandContext&, string_view) const;
-    static bool IsReservedFile(const CommandContext&, const string&, const string&);
     bool ValidateParams(const CommandContext&, const string&, string&, string&) const;
 
+    static bool IsReservedFile(const CommandContext&, const string&, const string&);
     static bool IsValidSrcFilename(string_view);
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);

@@ -36,8 +36,7 @@ private:
     bool CommandReserveIds(string_view);
     bool CommandCreateImage(string_view);
     bool CommandDeleteImage(string_view);
-    bool CommandRenameImage(string_view);
-    bool CommandCopyImage(string_view);
+    bool CommandRenameCopyImage(string_view);
     bool CommandDefaultImageFolder(string_view);
     bool CommandDeviceInfo();
     bool CommandDeviceTypesInfo();
