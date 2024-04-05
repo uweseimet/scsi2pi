@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <gtest/gtest.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "protobuf/command_context.h"
 #include "test_shared.h"

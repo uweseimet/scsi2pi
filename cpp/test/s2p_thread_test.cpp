@@ -15,7 +15,7 @@
 #include <netdb.h>
 #include <gtest/gtest.h>
 #include "shared/network_util.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "protobuf/command_context.h"
 #include "s2p/s2p_thread.h"

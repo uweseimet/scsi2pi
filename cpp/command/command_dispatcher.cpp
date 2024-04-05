@@ -9,7 +9,7 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
 #include "image_support.h"

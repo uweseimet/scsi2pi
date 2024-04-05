@@ -2,12 +2,12 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "shared/localizer.h"
+#include "protobuf/localizer.h"
 
 TEST(Localizer, Localize)
 {

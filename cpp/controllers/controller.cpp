@@ -12,7 +12,7 @@
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
 #endif
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "controller.h"
 
 using namespace spdlog;

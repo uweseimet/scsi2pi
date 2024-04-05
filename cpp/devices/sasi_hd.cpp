@@ -6,7 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "sasi_hd.h"
 
 SasiHd::SasiHd(int lun, const unordered_set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false, false,

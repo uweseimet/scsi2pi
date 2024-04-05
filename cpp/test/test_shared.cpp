@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "mocks.h"
 #include "shared/s2p_version.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 

@@ -9,7 +9,7 @@
 #include <fstream>
 #include <filesystem>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "property_handler.h"
 
 using namespace filesystem;

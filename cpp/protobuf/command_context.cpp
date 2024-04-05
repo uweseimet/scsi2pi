@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf_util.h"
 #include "command_context.h"
 
@@ -57,7 +57,7 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, const string &arg
 bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error_code, const string &arg1,
     const string &arg2, const string &arg3) const
 {
-    const Localizer localizer;
+    static const Localizer localizer;
 
     // For the logfile always use English
     // Do not log unknown operations as an error for backward/forward compatibility with old/new clients

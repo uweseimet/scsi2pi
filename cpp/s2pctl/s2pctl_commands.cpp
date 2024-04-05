@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 #include "shared/network_util.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
 

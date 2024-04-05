@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "s2p/s2p_parser.h"
 
 // getopt() on BSD differs from Linux, so these tests cannot pass on BSD

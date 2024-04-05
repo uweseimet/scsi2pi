@@ -9,7 +9,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "base/memory_util.h"
 #include "optical_memory.h"
 

@@ -13,7 +13,7 @@
 #include <filesystem>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "s2pexec_core.h"
 
 using namespace filesystem;

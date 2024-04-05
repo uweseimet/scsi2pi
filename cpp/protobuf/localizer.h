@@ -8,9 +8,8 @@
 
 #pragma once
 
-#include <unordered_set>
 #include <regex>
-#include "s2p_util.h"
+#include "shared/s2p_util.h"
 
 using namespace std;
 
@@ -55,6 +54,7 @@ enum class LocalizationKey
 
 class Localizer
 {
+
 public:
 
     Localizer();
@@ -65,10 +65,8 @@ public:
 private:
 
     void Add(LocalizationKey, const string&, string_view);
-    unordered_map<string, unordered_map<LocalizationKey, string>, s2p_util::StringHash, equal_to<>> localized_messages;
 
-    // Supported locales, always lower case
-    unordered_set<string, s2p_util::StringHash, equal_to<>> supported_languages = { "en", "de", "sv", "fr", "es", "zh" };
+    unordered_map<string, unordered_map<LocalizationKey, string>, s2p_util::StringHash, equal_to<>> localized_messages;
 
     const regex regex1 = regex("%1");
     const regex regex2 = regex("%2");

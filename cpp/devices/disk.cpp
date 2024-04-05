@@ -12,7 +12,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "base/memory_util.h"
 #include "linux_cache.h"
 #include "disk_cache.h"

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <cassert>
+#include <unordered_set>
 #include <algorithm>
 #include "localizer.h"
 
@@ -278,42 +279,32 @@ Localizer::Localizer()
 void Localizer::Add(LocalizationKey key, const string &locale, string_view value)
 {
     // Safeguards against empty messages, duplicate entries and unsupported locales
-    assert(locale.size());
-    assert(value.size());
-    assert(supported_languages.contains(locale));
-    assert(localized_messages[locale][key].empty());
+    assert(!locale.empty());
+    assert(!value.empty());
+    assert(!localized_messages[locale].contains(key));
+    assert((unordered_set<string, s2p_util::StringHash, equal_to<>>( { "en", "de", "sv", "fr", "es", "zh" })).contains(
+        locale));
+
     localized_messages[locale][key] = value;
 }
 
 string Localizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
-    const string locale_lower = ToLower(locale);
-
-    auto it = localized_messages.find(locale_lower);
+    auto it = localized_messages.find(ToLower(locale).substr(0, 2));
     if (it == localized_messages.end()) {
-        // Try to fall back to country-indepedent locale (e.g. "en" instead of "en_US")
-        if (locale_lower.length() > 2) {
-            it = localized_messages.find(locale_lower.substr(0, 2));
-        }
-        if (it == localized_messages.end()) {
-            it = localized_messages.find("en");
-        }
+        // Use English as fallback language
+        it = localized_messages.find("en");
     }
-
     assert(it != localized_messages.end());
 
-    auto messages = it->second;
-
-    const auto &m = messages.find(key);
-    if (m == messages.end()) {
+    const auto &m = it->second.find(key);
+    if (m == it->second.end()) {
         return "Missing localization for enum value " + to_string(static_cast<int>(key));
     }
 
     string message = m->second;
     message = regex_replace(message, regex1, arg1);
     message = regex_replace(message, regex2, arg2);
-    message = regex_replace(message, regex3, arg3);
-
-    return message;
+    return regex_replace(message, regex3, arg3);
 }

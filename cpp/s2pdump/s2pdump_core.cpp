@@ -17,7 +17,7 @@
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "s2pdump_core.h"

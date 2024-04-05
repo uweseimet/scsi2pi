@@ -9,8 +9,7 @@
 #include <sstream>
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
-#include "shared/localizer.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "devices/disk.h"
 #include "image_support.h"

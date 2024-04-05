@@ -10,7 +10,7 @@
 #include <sstream>
 #include <array>
 #include <iomanip>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 #include "protobuf_util.h"
 
@@ -153,7 +153,7 @@ string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const
 string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 {
     if (pb_devices.empty()) {
-        return "No devices currently attached.\n";
+        return "No devices currently attached\n";
     }
 
     ostringstream s;

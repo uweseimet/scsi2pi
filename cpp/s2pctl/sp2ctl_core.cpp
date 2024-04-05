@@ -11,7 +11,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <getopt.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"

@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include <cstddef>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "base/memory_util.h"
 #include "mode_page_device.h"
 

@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "buses/bus_factory.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 #include "memory_util.h"
 #include "primary_device.h"
 

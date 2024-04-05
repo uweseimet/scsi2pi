@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <spdlog/spdlog.h>
-#include "shared_exceptions.h"
+#include "s2p_exceptions.h"
 #include "s2p_version.h"
 
 using namespace filesystem;
