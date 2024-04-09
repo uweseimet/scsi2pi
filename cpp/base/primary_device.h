@@ -179,7 +179,7 @@ private:
 
     array<command, 256> commands = { };
 
-    // Number of bytes during a transfer after which to delay for the DaynaPort driver
+    // Number of bytes during a transfer after which to delay for the Mac DaynaPort driver
     int delay_after_bytes = Bus::SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;

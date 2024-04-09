@@ -12,24 +12,25 @@
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
-#include "image_support.h"
+#include "command_image_support.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-S2pImage::S2pImage()
+CommandImageSupport::CommandImageSupport()
 {
-    // ~/images is the default folder for device image files, for the root user it is /home/pi/images
+    // ~/images is the default folder for device image files,
+    // for the root user it is /home/pi/images for PiSCSI backward compatibility
     default_folder = GetHomeDir() + "/images";
 }
 
-bool S2pImage::CheckDepth(string_view filename) const
+bool CommandImageSupport::CheckDepth(string_view filename) const
 {
     return ranges::count(filename, '/') <= depth;
 }
 
-bool S2pImage::CreateImageFolder(const CommandContext &context, string_view filename) const
+bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename) const
 {
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
         // Checking for existence first prevents an error if the top-level folder is a softlink
@@ -50,7 +51,7 @@ bool S2pImage::CreateImageFolder(const CommandContext &context, string_view file
     return true;
 }
 
-string S2pImage::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -82,7 +83,7 @@ string S2pImage::SetDefaultFolder(string_view f)
     return "";
 }
 
-bool S2pImage::CreateImage(const CommandContext &context) const
+bool CommandImageSupport::CreateImage(const CommandContext &context) const
 {
     const string filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -147,7 +148,7 @@ bool S2pImage::CreateImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool S2pImage::DeleteImage(const CommandContext &context) const
+bool CommandImageSupport::DeleteImage(const CommandContext &context) const
 {
     const string filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -193,7 +194,7 @@ bool S2pImage::DeleteImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool S2pImage::RenameImage(const CommandContext &context) const
+bool CommandImageSupport::RenameImage(const CommandContext &context) const
 {
     string from;
     string to;
@@ -213,7 +214,7 @@ bool S2pImage::RenameImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool S2pImage::CopyImage(const CommandContext &context) const
+bool CommandImageSupport::CopyImage(const CommandContext &context) const
 {
     string from;
     string to;
@@ -256,7 +257,7 @@ bool S2pImage::CopyImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool S2pImage::SetImagePermissions(const CommandContext &context) const
+bool CommandImageSupport::SetImagePermissions(const CommandContext &context) const
 {
     const string filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -296,7 +297,7 @@ bool S2pImage::SetImagePermissions(const CommandContext &context) const
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool S2pImage::IsReservedFile(const CommandContext &context, const string &file, const string &op)
+bool CommandImageSupport::IsReservedFile(const CommandContext &context, const string &file, const string &op)
 {
 #ifdef BUILD_DISK
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
@@ -312,7 +313,7 @@ bool S2pImage::IsReservedFile(const CommandContext &context, const string &file,
 }
 #pragma GCC diagnostic pop
 
-bool S2pImage::ValidateParams(const CommandContext &context, const string &op, string &from, string &to) const
+bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from, string &to) const
 {
     from = GetParam(context.GetCommand(), "from");
     if (from.empty()) {
@@ -354,7 +355,7 @@ bool S2pImage::ValidateParams(const CommandContext &context, const string &op, s
     return true;
 }
 
-bool S2pImage::IsValidSrcFilename(string_view filename)
+bool CommandImageSupport::IsValidSrcFilename(string_view filename)
 {
     // Source file must exist and must be a regular file or a symlink
     path file(filename);
@@ -363,7 +364,7 @@ bool S2pImage::IsValidSrcFilename(string_view filename)
     return is_regular_file(file, error) || is_symlink(file, error);
 }
 
-bool S2pImage::IsValidDstFilename(string_view filename)
+bool CommandImageSupport::IsValidDstFilename(string_view filename)
 {
     // Destination file must not yet exist
     try {
@@ -374,7 +375,7 @@ bool S2pImage::IsValidDstFilename(string_view filename)
     }
 }
 
-bool S2pImage::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
+bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
 {
     const auto [uid, gid] = GetUidAndGid();
     if (chown(filename.c_str(), uid, gid)) {

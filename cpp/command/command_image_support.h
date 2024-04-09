@@ -9,19 +9,19 @@
 #pragma once
 
 #include <filesystem>
-#include "protobuf/command_context.h"
+#include "command_context.h"
 
 using namespace std;
 using namespace filesystem;
 
-class S2pImage
+class CommandImageSupport
 {
 
 public:
 
-    static S2pImage& Instance()
+    static CommandImageSupport& Instance()
     {
-        static S2pImage instance; // NOSONAR instance cannot be inlined
+        static CommandImageSupport instance; // NOSONAR instance cannot be inlined
         return instance;
     }
 
@@ -47,7 +47,7 @@ public:
 
 private:
 
-    S2pImage();
+    CommandImageSupport();
 
     bool CheckDepth(string_view) const;
     string GetFullName(const string &filename) const

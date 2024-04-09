@@ -101,7 +101,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
 {
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
+    DeviceFactory &device_factory = DeviceFactory::Instance();
 
     EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
     auto mapping = device_factory.GetExtensionMapping();

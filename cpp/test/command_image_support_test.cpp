@@ -8,21 +8,21 @@
 
 #include "mocks.h"
 #include "protobuf/protobuf_util.h"
-#include "command/image_support.h"
+#include "command/command_image_support.h"
 
 using namespace protobuf_util;
 
-TEST(ImageSupportTest, SetGetDepth)
+TEST(CommandImageSupportTest, SetGetDepth)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     image.SetDepth(1);
     EXPECT_EQ(1, image.GetDepth());
 }
 
-TEST(ImageSupportTest, SetGetDefaultFolder)
+TEST(CommandImageSupportTest, SetGetDefaultFolder)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     EXPECT_NE(string::npos, image.GetDefaultFolder().find("/images"));
 
@@ -30,9 +30,9 @@ TEST(ImageSupportTest, SetGetDefaultFolder)
     EXPECT_FALSE(image.SetDefaultFolder("/not_in_home").empty());
 }
 
-TEST(ImageSupportTest, CreateImage)
+TEST(CommandImageSupportTest, CreateImage)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -70,9 +70,9 @@ TEST(ImageSupportTest, CreateImage)
     // Further tests would modify the filesystem
 }
 
-TEST(ImageSupportTest, DeleteImage)
+TEST(CommandImageSupportTest, DeleteImage)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -96,9 +96,9 @@ TEST(ImageSupportTest, DeleteImage)
     // Further testing would modify the filesystem
 }
 
-TEST(ImageSupportTest, RenameImage)
+TEST(CommandImageSupportTest, RenameImage)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -119,9 +119,9 @@ TEST(ImageSupportTest, RenameImage)
     // Further testing would modify the filesystem
 }
 
-TEST(ImageSupportTest, CopyImage)
+TEST(CommandImageSupportTest, CopyImage)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -142,9 +142,9 @@ TEST(ImageSupportTest, CopyImage)
     // Further testing would modify the filesystem
 }
 
-TEST(ImageSupportTest, SetImagePermissions)
+TEST(CommandImageSupportTest, SetImagePermissions)
 {
-    S2pImage &image = S2pImage::Instance();
+    CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 

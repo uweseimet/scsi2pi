@@ -9,7 +9,7 @@
 #include "mocks.h"
 #include "shared/s2p_version.h"
 #include "base/device_factory.h"
-#include "command/image_support.h"
+#include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller_factory.h"
@@ -179,7 +179,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     PbCommand command;
     PbServerInfo info1;
-    S2pImage::Instance().SetDepth(1234);
+    CommandImageSupport::Instance().SetDepth(1234);
 
     response.GetServerInfo(info1, command, devices, ids);
     EXPECT_TRUE(info1.has_version_info());

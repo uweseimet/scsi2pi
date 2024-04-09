@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 #include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "protobuf/command_context.h"
+#include "command/command_context.h"
 #include "test_shared.h"
 
 using namespace testing;

@@ -9,7 +9,7 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"
-#include "protobuf_util.h"
+#include "protobuf/protobuf_util.h"
 #include "command_context.h"
 
 using namespace spdlog;
@@ -57,18 +57,18 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, const string &arg
 bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error_code, const string &arg1,
     const string &arg2, const string &arg3) const
 {
-    static const Localizer localizer;
+    static const CommandLocalizer command_localizer;
 
     // For the logfile always use English
     // Do not log unknown operations as an error for backward/forward compatibility with old/new clients
     if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
-        trace(localizer.Localize(key, "en", arg1, arg2, arg3));
+        trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
     else {
-        error(localizer.Localize(key, "en", arg1, arg2, arg3));
+        error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
 
-    return ReturnStatus(false, localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
+    return ReturnStatus(false, command_localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
 }
 
 bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool log) const

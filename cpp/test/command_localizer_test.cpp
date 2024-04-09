@@ -7,25 +7,25 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "protobuf/localizer.h"
+#include "../command/command_commandlocalizer.h"
 
-TEST(Localizer, Localize)
+TEST(CinnabdLocalizer, Localize)
 {
-    Localizer localizer;
+    CommandLocalizer command_localizer;
 
-    string message = localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "");
+    string message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "de_DE");
+    message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "de_DE");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "en");
+    message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "en");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = localizer.Localize((LocalizationKey)1234, "");
+    message = command_localizer.Localize((LocalizationKey)1234, "");
     EXPECT_FALSE(message.empty());
     EXPECT_NE(string::npos, message.find("enum value"));
 }

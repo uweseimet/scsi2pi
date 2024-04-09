@@ -52,13 +52,13 @@ enum class LocalizationKey
     ERROR_PERSIST
 };
 
-class Localizer
+class CommandLocalizer
 {
 
 public:
 
-    Localizer();
-    ~Localizer() = default;
+    CommandLocalizer();
+    ~CommandLocalizer() = default;
 
     string Localize(LocalizationKey, const string&, const string& = "", const string& = "", const string& = "") const;
 

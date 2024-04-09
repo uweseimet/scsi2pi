@@ -85,7 +85,7 @@
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
 #include "shared/s2p_exceptions.h"
-#include "protobuf/command_context.h"
+#include "command/command_context.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller.h"
 #include "base/memory_util.h"

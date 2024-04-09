@@ -19,24 +19,27 @@ using namespace s2p_interface;
 
 class DeviceFactory
 {
-    using extension_mapping = unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>>;
 
 public:
 
-    static DeviceFactory& Instance();
+    static DeviceFactory& Instance()
+    {
+        static DeviceFactory instance; // NOSONAR instance cannot be inlined
+        return instance;
+    }
 
     shared_ptr<PrimaryDevice> CreateDevice(PbDeviceType, int, const string&) const;
     PbDeviceType GetTypeForFile(const string&) const;
 
-    extension_mapping GetExtensionMapping() const
+    auto GetExtensionMapping() const
     {
         return mapping;
     }
-    bool AddExtensionMapping(const string&, PbDeviceType) const;
+    bool AddExtensionMapping(const string&, PbDeviceType);
 
 private:
 
-    DeviceFactory() = default;
+    DeviceFactory();
 
     const inline static unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DEVICE_MAPPING = {
         { "daynaport", SCDP },
@@ -44,5 +47,5 @@ private:
         { "services", SCHS }
     };
 
-    inline static extension_mapping mapping;
+    unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> mapping;
 };

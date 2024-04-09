@@ -128,6 +128,11 @@ TEST(ProtobufUtil, SetCommandParams)
     EXPECT_EQ("folder", GetParam(command7, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command7, "file_pattern"));
     EXPECT_EQ("operations:unparsed", GetParam(command7, "operations"));
+
+    PbCommand command_generic;
+    EXPECT_TRUE(SetCommandParams(command_generic, "operations=mapping_info:folder_pattern=pattern").empty());
+    EXPECT_EQ("mapping_info", GetParam(command_generic, "operations"));
+    EXPECT_EQ("pattern", GetParam(command_generic, "folder_pattern"));
 }
 
 TEST(ProtobufUtil, SetFromGenericParams)

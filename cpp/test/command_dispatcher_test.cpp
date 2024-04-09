@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
+#include "command/command_context.h"
 #include "command/command_dispatcher.h"
 
 using namespace protobuf_util;
@@ -81,15 +81,15 @@ TEST(CommandDispatcherTest, DispatchCommand)
     const auto &image_files_info = result.image_files_info();
     EXPECT_EQ(1, image_files_info.depth());
 
-    PbCommand command_image_file_info1;
-    command_image_file_info1.set_operation(IMAGE_FILE_INFO);
-    SetParam(command_image_file_info1, "file", "");
-    CommandContext context_image_file_info1(command_image_file_info1);
+    PbCommand image_support_file_info1;
+    image_support_file_info1.set_operation(IMAGE_FILE_INFO);
+    SetParam(image_support_file_info1, "file", "");
+    CommandContext context_image_file_info1(image_support_file_info1);
     EXPECT_FALSE(dispatcher.DispatchCommand(context_image_file_info1, result)) << "Missing filename";
-    PbCommand command_image_file_info2;
-    command_image_file_info2.set_operation(IMAGE_FILE_INFO);
-    SetParam(command_image_file_info2, "file", "invalid");
-    CommandContext context_image_file_info2(command_image_file_info2);
+    PbCommand image_support_file_info2;
+    image_support_file_info2.set_operation(IMAGE_FILE_INFO);
+    SetParam(image_support_file_info2, "file", "invalid");
+    CommandContext context_image_file_info2(image_support_file_info2);
     EXPECT_FALSE(dispatcher.DispatchCommand(context_image_file_info2, result)) << "Non-existing file";
 
 #ifdef __linux__

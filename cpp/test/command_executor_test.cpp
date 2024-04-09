@@ -8,8 +8,8 @@
 
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
-#include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
+#include "command/command_context.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
 #include "base/device_factory.h"

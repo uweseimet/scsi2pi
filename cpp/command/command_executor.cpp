@@ -12,7 +12,7 @@
 #include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "devices/disk.h"
-#include "image_support.h"
+#include "command_image_support.h"
 #include "command_executor.h"
 
 using namespace spdlog;
@@ -415,8 +415,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     }
     if (disk && !disk->GetFilename().empty()) {
         string filename = disk->GetFilename();
-        if (filename.starts_with(S2pImage::Instance().GetDefaultFolder())) {
-            filename = filename.substr(S2pImage::Instance().GetDefaultFolder().length() + 1);
+        if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
+            filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", filename);
     }
@@ -490,7 +490,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        effective_filename = S2pImage::Instance().GetDefaultFolder() + "/" + filename;
+        effective_filename = CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;

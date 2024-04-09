@@ -31,11 +31,8 @@
 
 using namespace s2p_util;
 
-DeviceFactory& DeviceFactory::Instance()
+DeviceFactory::DeviceFactory()
 {
-    static DeviceFactory instance; // NOSONAR instance cannot be inlined
-
-    if (mapping.empty()) {
 #if defined BUILD_SCHD || defined BUILD_SCRM
         mapping["hd1"] = SCHD;
         mapping["hds"] = SCHD;
@@ -51,9 +48,6 @@ DeviceFactory& DeviceFactory::Instance()
         mapping["cdr"] = SCCD;
         mapping["toast"] = SCCD;
 #endif
-    }
-
-    return instance;
 }
 
 shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const string &filename) const
@@ -130,7 +124,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
     return UNDEFINED;
 }
 
-bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type) const
+bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)
 {
     if (mapping.contains(extension)) {
         return false;

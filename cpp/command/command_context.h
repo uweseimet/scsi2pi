@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "localizer.h"
+#include "command_commandlocalizer.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

@@ -19,7 +19,7 @@
 #include "shared/s2p_exceptions.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
-#include "command/image_support.h"
+#include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
@@ -221,7 +221,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string error = S2pImage::Instance().SetDefaultFolder(image_folder); !error.empty()) {
+            if (const string error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw parser_exception(error);
             }
         }
@@ -232,7 +232,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
                     "Invalid image file scan depth " + property_handler.GetProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
-                S2pImage::Instance().SetDepth(depth);
+                CommandImageSupport::Instance().SetDepth(depth);
             }
         }
 

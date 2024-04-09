@@ -13,7 +13,7 @@
 #include <cassert>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"
-#include "protobuf/command_context.h"
+#include "command/command_context.h"
 #include "s2p_thread.h"
 
 using namespace spdlog;

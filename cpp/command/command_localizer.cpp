@@ -9,11 +9,11 @@
 #include <cassert>
 #include <unordered_set>
 #include <algorithm>
-#include "localizer.h"
+#include "command_commandlocalizer.h"
 
 using namespace s2p_util;
 
-Localizer::Localizer()
+CommandLocalizer::CommandLocalizer()
 {
     Add(LocalizationKey::ERROR_AUTHENTICATION, "en", "Authentication failed");
     Add(LocalizationKey::ERROR_AUTHENTICATION, "de", "Authentifizierung fehlgeschlagen");
@@ -276,7 +276,7 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_PERSIST, "zh", "无法保存'/etc/s2p.conf'");
 }
 
-void Localizer::Add(LocalizationKey key, const string &locale, string_view value)
+void CommandLocalizer::Add(LocalizationKey key, const string &locale, string_view value)
 {
     // Safeguards against empty messages, duplicate entries and unsupported locales
     assert(!locale.empty());
@@ -288,7 +288,7 @@ void Localizer::Add(LocalizationKey key, const string &locale, string_view value
     localized_messages[locale][key] = value;
 }
 
-string Localizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
+string CommandLocalizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
     auto it = localized_messages.find(ToLower(locale).substr(0, 2));

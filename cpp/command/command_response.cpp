@@ -14,7 +14,7 @@
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 #include "devices/disk.h"
-#include "image_support.h"
+#include "command_image_support.h"
 #include "command_response.h"
 
 using namespace spdlog;
@@ -110,7 +110,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
         image_file.set_name(filename);
         image_file.set_type(DeviceFactory::Instance().GetTypeForFile(filename));
 
-        const path p(filename[0] == '/' ? filename : S2pImage::Instance().GetDefaultFolder() + "/" + filename);
+        const path p(filename[0] == '/' ? filename : CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename);
 
         image_file.set_read_only(access(p.c_str(), W_OK));
 
@@ -127,7 +127,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern) const
 {
-    const string &default_folder = S2pImage::Instance().GetDefaultFolder();
+    const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
     const path default_path(default_folder);
     if (!is_directory(default_path)) {
@@ -139,7 +139,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
         it != recursive_directory_iterator(); it++) {
-        if (it.depth() > S2pImage::Instance().GetDepth()) {
+        if (it.depth() > CommandImageSupport::Instance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
         }
@@ -169,8 +169,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern) const
 {
-    image_files_info.set_default_image_folder(S2pImage::Instance().GetDefaultFolder());
-    image_files_info.set_depth(S2pImage::Instance().GetDepth());
+    image_files_info.set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
+    image_files_info.set_depth(CommandImageSupport::Instance().GetDepth());
 
     GetAvailableImages(image_files_info, folder_pattern, file_pattern);
 }
@@ -178,7 +178,7 @@ void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, cons
 void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
     const string &file_pattern) const
 {
-    server_info.mutable_image_files_info()->set_default_image_folder(S2pImage::Instance().GetDefaultFolder());
+    server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
 
     GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern);
 }
@@ -369,7 +369,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
     CreateOperation(operation_info, UNPROTECT, "Unprotect medium, device-specific parameters are required");
 
     operation = CreateOperation(operation_info, SERVER_INFO, "Get server information");
-    if (S2pImage::Instance().GetDepth()) {
+    if (CommandImageSupport::Instance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
@@ -381,7 +381,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
     CreateOperation(operation_info, DEVICE_TYPES_INFO, "Get device properties by device type");
 
     operation = CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
-    if (S2pImage::Instance().GetDepth()) {
+    if (CommandImageSupport::Instance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");

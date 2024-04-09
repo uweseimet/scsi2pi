@@ -10,9 +10,9 @@
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
-#include "protobuf/command_context.h"
 #include "protobuf/protobuf_util.h"
-#include "image_support.h"
+#include "command_image_support.h"
+#include "command_context.h"
 #include "command_response.h"
 #include "command_dispatcher.h"
 
@@ -47,7 +47,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEFAULT_FOLDER:
-        if (const string &error = S2pImage::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
             result.set_msg(error);
             context.WriteResult(result);
             return false;
@@ -128,20 +128,20 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return S2pImage::Instance().CreateImage(context);
+        return CommandImageSupport::Instance().CreateImage(context);
 
     case DELETE_IMAGE:
-        return S2pImage::Instance().DeleteImage(context);
+        return CommandImageSupport::Instance().DeleteImage(context);
 
     case RENAME_IMAGE:
-        return S2pImage::Instance().RenameImage(context);
+        return CommandImageSupport::Instance().RenameImage(context);
 
     case COPY_IMAGE:
-        return S2pImage::Instance().CopyImage(context);
+        return CommandImageSupport::Instance().CopyImage(context);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return S2pImage::Instance().SetImagePermissions(context);
+        return CommandImageSupport::Instance().SetImagePermissions(context);
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::Instance().Persist() ?
