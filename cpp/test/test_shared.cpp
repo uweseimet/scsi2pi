@@ -21,8 +21,8 @@ using namespace s2p_util;
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
-    auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
-    auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
+    const auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
+    const auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
     device->Init( { });
 
     EXPECT_TRUE(controller->AddDevice(device));
@@ -61,13 +61,13 @@ string testing::TestShared::GetVersion()
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
-    auto [controller, device] = CreateDevice(type, 0, extension);
+    const auto [controller, device] = CreateDevice(type, 0, extension);
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
     device->Dispatch(scsi_command::cmd_inquiry);
-    span<uint8_t> buffer = controller->GetBuffer();
+    const span<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
     EXPECT_EQ(l, static_cast<scsi_level>(buffer[2]));
@@ -84,7 +84,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
+    const auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
@@ -119,7 +119,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 
 pair<int, path> testing::OpenTempFile()
 {
-    const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
+    const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.cbegin(), filename.cend());
     f.emplace_back(0);
 
@@ -128,20 +128,19 @@ pair<int, path> testing::OpenTempFile()
 
     TestShared::RememberTempFile(f.data());
 
-    return make_pair(fd, path(f.data()));
+    return {fd, path(f.data())};
 }
 
 path testing::CreateTempFile(size_t size)
 {
-    const auto data = vector<byte>(size);
-    return CreateTempFileWithData(data);
+    return CreateTempFileWithData(vector<byte>(size));
 }
 
 path testing::CreateTempFileWithData(const span<const byte> data)
 {
-    const auto [fd, filename] = OpenTempFile();
+    const auto& [fd, filename] = OpenTempFile();
 
-    const size_t count = write(fd, data.data(), data.size());
+    const auto count = write(fd, data.data(), data.size());
     close(fd);
     EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
 

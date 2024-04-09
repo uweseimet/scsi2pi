@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "../command/command_commandlocalizer.h"
+#include "command/command_localizer.h"
 
 TEST(CinnabdLocalizer, Localize)
 {

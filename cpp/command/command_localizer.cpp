@@ -9,7 +9,7 @@
 #include <cassert>
 #include <unordered_set>
 #include <algorithm>
-#include "command_commandlocalizer.h"
+#include "command_localizer.h"
 
 using namespace s2p_util;
 
