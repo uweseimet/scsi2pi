@@ -39,7 +39,7 @@ TEST(AbstractControllerTest, SetCurrentLength)
 
 TEST(AbstractControllerTest, Reset)
 {
-    auto bus = make_shared<MockBus>();
+    const auto bus = make_shared<MockBus>();
     MockAbstractController controller(bus, 0);
 
     controller.AddDevice(make_shared<MockPrimaryDevice>(0));
@@ -68,7 +68,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
 
     MockAbstractController controller(ID);
 
-    auto device = make_shared<MockPrimaryDevice>(LUN);
+    const auto device = make_shared<MockPrimaryDevice>(LUN);
 
     EXPECT_EQ(0U, controller.GetLunCount());
     EXPECT_EQ(ID, controller.GetTargetId());

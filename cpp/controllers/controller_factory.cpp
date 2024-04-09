@@ -13,8 +13,7 @@ using namespace std;
 
 shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int id) const
 {
-    shared_ptr<AbstractController> controller = make_shared<Controller>(bus, id,
-        is_sasi ? GetSasiLunMax() : GetScsiLunMax());
+    shared_ptr<AbstractController> controller = make_shared<Controller>(bus, id);
     controller->Init();
 
     return controller;
@@ -22,15 +21,7 @@ shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
-    if ((!is_sasi && device->GetType() == PbDeviceType::SAHD) || (is_sasi && device->GetType() != PbDeviceType::SAHD)) {
-        return false;
-    }
-
     if (auto controller = FindController(id); controller) {
-        if (device->GetLun() > GetLunMax() || controller->GetDeviceForLun(device->GetLun())) {
-            return false;
-        }
-
         return controller->AddDevice(device);
     }
 

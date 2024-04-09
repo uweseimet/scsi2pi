@@ -146,7 +146,7 @@ bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
     return true;
 }
 
-string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun)
+string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -165,10 +165,10 @@ string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun
             return "";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= lun_max) {
+        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= 32) {
             id = -1;
             lun = -1;
-            return "Invalid LUN (0-" + to_string(lun_max - 1) + ")";
+            return "Invalid LUN (0-31)";
         }
     }
 

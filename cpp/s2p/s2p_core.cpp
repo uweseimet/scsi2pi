@@ -32,14 +32,14 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-bool S2p::InitBus(bool in_process, bool is_sasi)
+bool S2p::InitBus(bool in_process)
 {
     bus = BusFactory::Instance().CreateBus(true, in_process);
     if (!bus) {
         return false;
     }
 
-    controller_factory = make_shared<ControllerFactory>(is_sasi);
+    controller_factory = make_shared<ControllerFactory>();
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
@@ -126,9 +126,8 @@ int S2p::Run(span<char*> args, bool in_process)
 
     parser.Banner(false);
 
-    bool is_sasi = false;
     bool ignore_conf = false;
-    const auto &properties = parser.ParseArguments(args, is_sasi, ignore_conf);
+    const auto &properties = parser.ParseArguments(args, ignore_conf);
     int port;
     if (!ParseProperties(properties, port, ignore_conf)) {
         return EXIT_FAILURE;
@@ -139,7 +138,7 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!InitBus(in_process, is_sasi)) {
+    if (!InitBus(in_process)) {
         cerr << "Error: Can't initialize bus" << endl;
         return EXIT_FAILURE;
     }
@@ -315,7 +314,7 @@ void S2p::CreateDevices()
         }
 
         const auto &id_and_lun = key_components[1];
-        if (const string error = SetIdAndLun( ControllerFactory::GetLunMax(), device_definition, id_and_lun);
+        if (const string& error = SetIdAndLun(device_definition, id_and_lun);
             !error.empty()) {
             throw parser_exception(error);
         }

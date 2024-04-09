@@ -439,8 +439,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     }
 
     if (!id_and_lun.empty()) {
-        if (const string error = SetIdAndLun(device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun);
-        !error.empty()) {
+        if (const string &error = SetIdAndLun(*device, id_and_lun); !error.empty()) {
             cerr << "Error: " << error << endl;
             return EXIT_FAILURE;
         }

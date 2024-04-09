@@ -172,14 +172,14 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0, 32)
+    MockAbstractController() : AbstractController(*mock_bus, 0)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, 32)
+    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id)
     {
         SetCurrentLength(512);
     }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, 32)
+    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id)
     {
         SetCurrentLength(512);
     }
@@ -207,10 +207,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, 32)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, 32)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0)
     {
     }
     ~MockController() override = default;

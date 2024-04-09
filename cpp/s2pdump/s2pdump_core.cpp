@@ -233,7 +233,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (scsi && sasi) {
-        throw parser_exception("SCSI and SASI devices cannot be mixed");
+        throw parser_exception("SCSI and SASI functionality cannot be mixed");
     }
 
     if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
@@ -241,7 +241,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!run_bus_scan) {
-        if (const string error = ProcessId(sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
+        if (const string error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
 

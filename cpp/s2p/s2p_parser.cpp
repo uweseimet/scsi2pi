@@ -49,7 +49,6 @@ void S2pParser::Banner(bool usage) const
             << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
             << "  --version/-v                Display the program version.\n"
             << "  --help                      Display this help.\n"
-            << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
             << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -62,7 +61,7 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
     const int OPT_IGNORE_CONF = 3;
@@ -114,7 +113,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
     string block_size;
     string caching_mode;
     bool blue_scsi_mode = false;
-    bool has_scsi = false;
 
     property_map properties;
 
@@ -148,13 +146,11 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
 
         case 'h':
             id_lun = optarg;
-            has_sasi = true;
             type = "sahd";
             continue;
 
         case 'i':
             id_lun = optarg;
-            has_scsi = true;
             continue;
 
         case 'm':
@@ -192,10 +188,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
             break;
         }
 
-        if ((has_scsi && type == "sahd") || (has_sasi && (type.empty() || type != "sahd"))) {
-            throw parser_exception("SCSI and SASI devices cannot be mixed");
-        }
-
         string device_key;
         if (!id_lun.empty()) {
             device_key = fmt::format("device.{}.", id_lun);
@@ -203,7 +195,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
 
         const string &params = optarg;
         if (blue_scsi_mode && !params.empty()) {
-            device_key = ParseBlueScsiFilename(properties, device_key, params, has_sasi);
+            device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
 
         if (!block_size.empty()) {
@@ -236,7 +228,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi,
     return properties;
 }
 
-string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename, bool is_sasi)
+string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
     const unordered_map<string, const char*, s2p_util::StringHash, equal_to<>> BLUE_SCSI_TO_S2P_TYPES = {
         { "CD", "sccd" },
@@ -276,12 +268,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (!t->second) {
         throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
     }
-    if (string(t->second) != "schd") {
-        properties[device_key + "type"] = t->second;
-    }
-    else {
-        properties[device_key + "type"] = is_sasi ? "sahd" : "schd";
-    }
+    properties[device_key + "type"] = t->second;
 
     string block_size = "512";
     if (components.size() > 1) {

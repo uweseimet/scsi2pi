@@ -28,7 +28,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
-In the arguments to s2p one or more SCSI (-i n[:u]) or SASI (-h n[:u]) devices can be specified. SCSI and SASI devices cannot be mixed.
+In the arguments to s2p one or more SCSI (-i n[:u]) or SASI (-h n[:u]) devices can be specified. SCSI and SASI devices cannot be mixed on the same controller.
 The number (n) after the device identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
 The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
 .PP

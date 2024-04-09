@@ -188,7 +188,7 @@ bool S2pProto::ParseArguments(span<char*> args)
         throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string error = ProcessId(32, target, target_id, target_lun); !error.empty()) {
+    if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
         throw parser_exception(error);
     }
 

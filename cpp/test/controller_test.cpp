@@ -15,7 +15,7 @@ TEST(ControllerTest, Reset)
     const int INITIATOR_ID = 7;
 
     NiceMock<MockBus> bus;
-    auto controller = make_shared<Controller>(bus, TARGET_ID, 32);
+    auto controller = make_shared<Controller>(bus, TARGET_ID);
     auto device = make_shared<MockPrimaryDevice>(0);
 
     controller->Init();
@@ -46,7 +46,7 @@ TEST(ControllerTest, GetInitiatorId)
 TEST(ControllerTest, BusFree)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
 
     controller.SetPhase(bus_phase::busfree);
     controller.BusFree();
@@ -98,7 +98,7 @@ TEST(ControllerTest, Selection)
 TEST(ControllerTest, Command)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
     auto device = make_shared<MockPrimaryDevice>(0);
 
     controller.AddDevice(device);
@@ -120,7 +120,7 @@ TEST(ControllerTest, Command)
 TEST(ControllerTest, MsgIn)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
 
     controller.SetPhase(bus_phase::reserved);
     controller.MsgIn();
@@ -132,7 +132,7 @@ TEST(ControllerTest, MsgIn)
 TEST(ControllerTest, MsgOut)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
 
     controller.SetPhase(bus_phase::reserved);
     controller.MsgOut();
@@ -144,7 +144,7 @@ TEST(ControllerTest, MsgOut)
 TEST(ControllerTest, DataIn)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
 
     controller.SetPhase(bus_phase::reserved);
     controller.SetCurrentLength(0);
@@ -161,7 +161,7 @@ TEST(ControllerTest, DataIn)
 TEST(ControllerTest, DataOut)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
 
     controller.SetPhase(bus_phase::reserved);
     controller.SetCurrentLength(0);
@@ -178,7 +178,7 @@ TEST(ControllerTest, DataOut)
 TEST(ControllerTest, RequestSense)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, 0);
+    MockController controller(bus);
     auto device = make_shared<MockPrimaryDevice>(0);
     EXPECT_TRUE(device->Init( { }));
 

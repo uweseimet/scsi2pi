@@ -70,32 +70,24 @@ string protobuf_util::SetCommandParams(PbCommand &command, const string &params)
         return SetFromGenericParams(command, params);
     }
 
-    string folder_pattern;
-    string file_pattern;
-    string operations;
-
     switch (const auto &components = Split(params, COMPONENT_SEPARATOR, 3); components.size()) {
     case 3:
-        operations = components[2];
+        SetParam(command, "operations", components[2]);
         [[fallthrough]];
 
     case 2:
-        folder_pattern = components[0];
-        file_pattern = components[1];
+        SetParam(command, "file_pattern", components[1]);
+        SetParam(command, "folder_pattern", components[0]);
         break;
 
     case 1:
-        file_pattern = components[0];
+        SetParam(command, "file_pattern", components[0]);
         break;
 
     default:
         assert(false);
         break;
     }
-
-    SetParam(command, "folder_pattern", folder_pattern);
-    SetParam(command, "file_pattern", file_pattern);
-    SetParam(command, "operations", operations);
 
     return "";
 }
@@ -136,11 +128,11 @@ void protobuf_util::SetProductData(PbDeviceDefinition &device, const string &dat
     }
 }
 
-string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const string &value)
+string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &value)
 {
     int id;
     int lun;
-    if (const string error = ProcessId(lun_max, value, id, lun); !error.empty()) {
+    if (const string &error = ProcessId(value, id, lun); !error.empty()) {
         return error;
     }
 

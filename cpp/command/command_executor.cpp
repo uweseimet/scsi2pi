@@ -32,7 +32,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     const int id = pb_device.id();
     const int lun = pb_device.unit();
 
-    if (!ValidateIdAndLun(context, id, lun)) {
+    if (!ValidateIdAndLun(context, pb_device.type() == PbDeviceType::SAHD, id, lun)) {
         return false;
     }
 
@@ -710,7 +710,7 @@ bool CommandExecutor::ValidateOperationAgainstDevice(const CommandContext &conte
     return true;
 }
 
-bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, int id, int lun)
+bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, bool sasi, int id, int lun)
 {
     if (id < 0) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_ID);
@@ -718,9 +718,10 @@ bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, int id, in
     if (id >= 8) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id));
     }
-    if (lun < 0 || lun >= ControllerFactory::GetLunMax()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun),
-            to_string(ControllerFactory::GetLunMax() - 1));
+
+    if (const int lun_max = sasi ? ControllerFactory::GetSasiLunMax() : ControllerFactory::GetScsiLunMax(); lun < 0
+        || lun >= lun_max) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 
     return true;

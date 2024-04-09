@@ -32,7 +32,7 @@ TEST(CommandImageSupportTest, SetGetDefaultFolder)
 
 TEST(CommandImageSupportTest, CreateImage)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -72,7 +72,7 @@ TEST(CommandImageSupportTest, CreateImage)
 
 TEST(CommandImageSupportTest, DeleteImage)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -98,7 +98,7 @@ TEST(CommandImageSupportTest, DeleteImage)
 
 TEST(CommandImageSupportTest, RenameImage)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 

@@ -24,7 +24,7 @@ public:
 
 private:
 
-    bool InitBus(bool, bool);
+    bool InitBus(bool);
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;

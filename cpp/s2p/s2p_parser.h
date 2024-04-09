@@ -17,11 +17,11 @@ class S2pParser
 public:
 
     void Banner(bool) const;
-    property_map ParseArguments(span<char*>, bool&, bool&) const;
+    property_map ParseArguments(span<char*>, bool&) const;
 
 private:
 
-    static string ParseBlueScsiFilename(property_map&, const string&, const string&, bool);
+    static string ParseBlueScsiFilename(property_map&, const string&, const string&);
     static vector<char*> ConvertLegacyOptions(const span<char*>&);
     static string ParseNumber(const string&);
 };

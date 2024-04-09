@@ -62,7 +62,7 @@ public:
     }
 
     static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
-    static bool ValidateIdAndLun(const CommandContext&, int, int);
+    static bool ValidateIdAndLun(const CommandContext&, bool, int, int);
     static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
 

@@ -16,7 +16,7 @@ using namespace protobuf_util;
 TEST(CommandDispatcherTest, DispatchCommand)
 {
     auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>(false);
+    auto controller_factory = make_shared<ControllerFactory>();
     MockCommandExecutor executor(*bus, controller_factory);
     CommandDispatcher dispatcher(executor);
     PbResult result;

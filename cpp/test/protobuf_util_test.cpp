@@ -200,10 +200,10 @@ TEST(ProtobufUtil, SetIdAndLun)
 {
     PbDeviceDefinition device;
 
-    EXPECT_NE("", SetIdAndLun(32, device, ""));
-    EXPECT_EQ("", SetIdAndLun(32, device, "1"));
+    EXPECT_NE("", SetIdAndLun(device, ""));
+    EXPECT_EQ("", SetIdAndLun(device, "1"));
     EXPECT_EQ(1, device.id());
-    EXPECT_EQ("", SetIdAndLun(32, device, "2:0"));
+    EXPECT_EQ("", SetIdAndLun(device, "2:0"));
     EXPECT_EQ(2, device.id());
     EXPECT_EQ(0, device.unit());
 }

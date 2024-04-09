@@ -18,56 +18,43 @@ TEST(ControllerFactoryTest, LifeCycle)
     const int LUN2 = 1;
 
     MockBus bus;
-    ControllerFactory controller_factory_scsi(false);
+    ControllerFactory controller_factory;
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
-    EXPECT_FALSE(controller_factory_scsi.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, -1, "")));
+    EXPECT_FALSE(controller_factory.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, -1, "")));
 
-    EXPECT_TRUE(controller_factory_scsi.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, LUN1, "")));
-    EXPECT_TRUE(controller_factory_scsi.HasController(ID1));
-    auto controller = controller_factory_scsi.FindController(ID1);
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, LUN1, "")));
+    EXPECT_TRUE(controller_factory.HasController(ID1));
+    auto controller = controller_factory.FindController(ID1);
     EXPECT_NE(nullptr, controller);
     EXPECT_EQ(1U, controller->GetLunCount());
-    EXPECT_FALSE(controller_factory_scsi.HasController(0));
-    EXPECT_EQ(nullptr, controller_factory_scsi.FindController(0));
-    EXPECT_TRUE(controller_factory_scsi.HasDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_NE(nullptr, controller_factory_scsi.GetDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_FALSE(controller_factory_scsi.HasDeviceForIdAndLun(0, 0));
-    EXPECT_EQ(nullptr, controller_factory_scsi.GetDeviceForIdAndLun(0, 0));
+    EXPECT_FALSE(controller_factory.HasController(0));
+    EXPECT_EQ(nullptr, controller_factory.FindController(0));
+    EXPECT_TRUE(controller_factory.HasDeviceForIdAndLun(ID1, LUN1));
+    EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
+    EXPECT_FALSE(controller_factory.HasDeviceForIdAndLun(0, 0));
+    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
 
-    EXPECT_TRUE(controller_factory_scsi.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, LUN2, "")));
-    EXPECT_TRUE(controller_factory_scsi.HasController(ID1));
-    controller = controller_factory_scsi.FindController(ID1);
-    EXPECT_NE(nullptr, controller_factory_scsi.FindController(ID1));
-    EXPECT_TRUE(controller_factory_scsi.DeleteController(*controller));
-    EXPECT_EQ(nullptr, controller_factory_scsi.FindController(ID1));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device_factory.CreateDevice(SCHS, LUN2, "")));
+    EXPECT_TRUE(controller_factory.HasController(ID1));
+    controller = controller_factory.FindController(ID1);
+    EXPECT_NE(nullptr, controller_factory.FindController(ID1));
+    EXPECT_TRUE(controller_factory.DeleteController(*controller));
+    EXPECT_EQ(nullptr, controller_factory.FindController(ID1));
 
     const auto disk = make_shared<MockDisk>();
-    EXPECT_TRUE(controller_factory_scsi.AttachToController(bus, ID2, disk));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID2, disk));
     EXPECT_CALL(*disk, FlushCache);
-    controller_factory_scsi.DeleteAllControllers();
-    EXPECT_FALSE(controller_factory_scsi.HasController(ID1));
-    EXPECT_EQ(nullptr, controller_factory_scsi.FindController(ID1));
-    EXPECT_EQ(nullptr, controller_factory_scsi.GetDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_FALSE(controller_factory_scsi.HasDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_FALSE(controller_factory_scsi.HasController(ID2));
-    EXPECT_EQ(nullptr, controller_factory_scsi.FindController(ID2));
-    EXPECT_EQ(nullptr, controller_factory_scsi.GetDeviceForIdAndLun(ID2, LUN1));
-    EXPECT_FALSE(controller_factory_scsi.HasDeviceForIdAndLun(ID2, LUN1));
-
-    const auto device = device_factory.CreateDevice(SAHD, LUN1, "");
-    EXPECT_FALSE(controller_factory_scsi.AttachToController(bus, ID1, device));
-    EXPECT_FALSE(controller_factory_scsi.HasController(ID1));
-
-    ControllerFactory controller_factory_sasi(true);
-    EXPECT_TRUE(controller_factory_sasi.AttachToController(bus, ID1, device));
-    EXPECT_TRUE(controller_factory_sasi.HasController(ID1));
-
-    EXPECT_FALSE(controller_factory_sasi.AttachToController(bus, ID2, device_factory.CreateDevice(SAHD, 7, "")));
-    EXPECT_FALSE(controller_factory_sasi.HasController(ID2));
-
-    EXPECT_FALSE(controller_factory_sasi.AttachToController(bus, ID2, device_factory.CreateDevice(SCHD, LUN2, "")));
-    EXPECT_FALSE(controller_factory_sasi.HasController(ID2));
+    controller_factory.DeleteAllControllers();
+    EXPECT_FALSE(controller_factory.HasController(ID1));
+    EXPECT_EQ(nullptr, controller_factory.FindController(ID1));
+    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
+    EXPECT_FALSE(controller_factory.HasDeviceForIdAndLun(ID1, LUN1));
+    EXPECT_FALSE(controller_factory.HasController(ID2));
+    EXPECT_EQ(nullptr, controller_factory.FindController(ID2));
+    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID2, LUN1));
+    EXPECT_FALSE(controller_factory.HasDeviceForIdAndLun(ID2, LUN1));
+    EXPECT_FALSE(controller_factory.HasController(ID1));
 }
 
 TEST(ControllerFactoryTest, AttachToController)
@@ -77,7 +64,7 @@ TEST(ControllerFactoryTest, AttachToController)
     const int LUN2 = 0;
 
     MockBus bus;
-    ControllerFactory controller_factory(false);
+    ControllerFactory controller_factory;
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
     const auto device = device_factory.CreateDevice(SCHS, LUN1, "");
@@ -90,18 +77,9 @@ TEST(ControllerFactoryTest, AttachToController)
 
 TEST(ControllerFactory, ProcessOnController)
 {
-    ControllerFactory controller_factory(false);
+    ControllerFactory controller_factory;
 
     EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
-}
-
-TEST(ControllerFactory, GetLunMax)
-{
-    ControllerFactory controller_factory1(false);
-    EXPECT_EQ(32, ControllerFactory::GetLunMax());
-
-    ControllerFactory controller_factory2(true);
-    EXPECT_EQ(2, ControllerFactory::GetLunMax());
 }
 
 TEST(ControllerFactory, GetScsiLunMax)

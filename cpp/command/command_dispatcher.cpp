@@ -248,7 +248,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         level = components[0];
 
         if (components.size() > 1) {
-            if (const string error = ProcessId(ControllerFactory::GetLunMax(), components[1], id, lun); !error.empty()) {
+            if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
                 warn("Error setting log level: " + error);
                 return false;
             }

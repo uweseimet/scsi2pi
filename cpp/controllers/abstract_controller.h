@@ -32,7 +32,7 @@ public:
         restart_pi
     };
 
-    AbstractController(Bus&, int, int);
+    AbstractController(Bus&, int);
     ~AbstractController() override = default;
 
     virtual void Error(sense_key, asc = asc::no_additional_sense_information,
@@ -180,8 +180,6 @@ private:
 
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;
-
-    int max_luns;
 
     shutdown_mode sh_mode = shutdown_mode::none;
 };

@@ -59,7 +59,7 @@ string ToLower(const string&);
 string GetLocale();
 string GetLine(const string&);
 bool GetAsUnsignedInt(const string&, int&);
-string ProcessId(int, const string&, int&, int&);
+string ProcessId(const string&, int&, int&);
 string Banner(string_view);
 
 string GetExtensionLowerCase(string_view);

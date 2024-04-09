@@ -16,12 +16,6 @@ class ControllerFactory
 
 public:
 
-    explicit ControllerFactory(bool b)
-    {
-        is_sasi = b;
-    }
-    ~ControllerFactory() = default;
-
     bool AttachToController(Bus&, int, shared_ptr<PrimaryDevice>);
     bool DeleteController(const AbstractController&);
     bool DeleteAllControllers();
@@ -32,10 +26,6 @@ public:
     bool HasDeviceForIdAndLun(int, int) const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    static int GetLunMax()
-    {
-        return is_sasi ? GetSasiLunMax() : GetScsiLunMax();
-    }
     static int GetScsiLunMax()
     {
         return 32;
@@ -51,6 +41,4 @@ private:
 
     // Controllers mapped to their device IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
-
-    inline static bool is_sasi = false;
 };

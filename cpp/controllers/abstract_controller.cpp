@@ -9,8 +9,7 @@
 #include <cstring>
 #include "base/primary_device.h"
 
-AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : bus(bus), target_id(target_id), max_luns(
-    max_luns)
+AbstractController::AbstractController(Bus &bus, int target_id) : bus(bus), target_id(target_id)
 {
     // The initial buffer size is the size of the biggest supported sector
     buffer.resize(4096);
@@ -112,8 +111,16 @@ AbstractController::shutdown_mode AbstractController::ProcessOnController(int id
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-    if (lun < 0 || lun >= max_luns || GetDeviceForLun(lun) || device->GetController()) {
+    if (lun < 0 || lun >= 32 || GetDeviceForLun(lun) || device->GetController()) {
         return false;
+    }
+
+    const bool sasi = device->GetType() == PbDeviceType::SAHD;
+    for (const auto& [_, d] : luns) {
+        if ((sasi && d->GetType() != PbDeviceType::SAHD) || (!sasi && d->GetType() == PbDeviceType::SAHD)) {
+            LogTrace("SCSI and SASI devices cannot share the same controller");
+            return false;
+        }
     }
 
     luns[lun] = device;
