@@ -35,6 +35,11 @@ public:
 
     int GetEffectiveLun() const override;
 
+    static int GetLunMax(bool sasi)
+    {
+        return sasi ? 2 : 32;
+    }
+
 private:
 
     void Execute();

@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
-#include "controllers/controller_factory.h"
+#include "controllers/controller.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
@@ -24,8 +24,7 @@ using namespace protobuf_util;
 
 void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
 {
-    properties.set_luns(device->GetType() == PbDeviceType::SAHD ?
-            ControllerFactory::GetSasiLunMax() : ControllerFactory::GetScsiLunMax());
+    properties.set_luns(Controller::GetLunMax(device->GetType() == SAHD));
     properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());

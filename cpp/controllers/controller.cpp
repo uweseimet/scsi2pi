@@ -624,7 +624,7 @@ int Controller::GetEffectiveLun() const
 void Controller::LogCdb() const
 {
     const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
-    const string &command_name = BusFactory::Instance().GetCommandName(opcode);
+    const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
     string s = fmt::format("Controller is executing {}, CDB $",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
     for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {

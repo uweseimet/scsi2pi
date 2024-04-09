@@ -30,7 +30,7 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
         warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
     }
 
-    if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+    if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
         trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
     }
     else {
@@ -190,7 +190,7 @@ void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     }
 
     if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
-        if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+        if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
             error("Command {} failed", command_name);
         }
         else {

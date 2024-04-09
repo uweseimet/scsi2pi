@@ -55,7 +55,7 @@ void AbstractController::SetCurrentLength(int length)
 
 void AbstractController::SetTransferSize(int length, int size)
 {
-    // The total number of bytes to transfer for the current SCSI/SASI command
+    // The total number of bytes to transfer for the current command
     total_length = length;
 
     // The number of bytes to transfer in a single chunk
@@ -115,9 +115,9 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
         return false;
     }
 
-    const bool sasi = device->GetType() == PbDeviceType::SAHD;
     for (const auto& [_, d] : luns) {
-        if ((sasi && d->GetType() != PbDeviceType::SAHD) || (!sasi && d->GetType() == PbDeviceType::SAHD)) {
+        if ((device->GetType() == SAHD && d->GetType() != SAHD)
+            || (device->GetType() != SAHD && d->GetType() == SAHD)) {
             LogTrace("SCSI and SASI devices cannot share the same controller");
             return false;
         }

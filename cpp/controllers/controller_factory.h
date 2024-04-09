@@ -26,15 +26,6 @@ public:
     bool HasDeviceForIdAndLun(int, int) const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    static int GetScsiLunMax()
-    {
-        return 32;
-    }
-    static int GetSasiLunMax()
-    {
-        return 2;
-    }
-
 private:
 
     shared_ptr<AbstractController> CreateController(Bus&, int) const;

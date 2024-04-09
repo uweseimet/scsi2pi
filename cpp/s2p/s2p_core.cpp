@@ -144,7 +144,7 @@ int S2p::Run(span<char*> args, bool in_process)
     }
 
     if (const string &reserved_ids = property_handler.GetProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
-        if (const string error = executor->SetReservedIds(reserved_ids); !error.empty()) {
+        if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
             cerr << "Error: " << error << endl;
             CleanUp();
             return EXIT_FAILURE;
@@ -155,7 +155,7 @@ int S2p::Run(span<char*> args, bool in_process)
         ReadAccessToken(path(token_file));
     }
 
-    if (const string error = service_thread.Init([this](CommandContext &context) {
+    if (const string &error = service_thread.Init([this](CommandContext &context) {
         return ExecuteCommand(context);
     }, port); !error.empty()) {
         cerr << "Error: " << error << endl;
@@ -220,7 +220,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.GetProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
+            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw parser_exception(error);
             }
         }
@@ -271,7 +271,7 @@ string S2p::MapExtensions() const
         }
 
         PbDeviceType type = UNDEFINED;
-        if (PbDeviceType_Parse(ToUpper(components[1]), &type) && type == PbDeviceType::UNDEFINED) {
+        if (PbDeviceType_Parse(ToUpper(components[1]), &type) && type == UNDEFINED) {
             continue;
         }
 

@@ -376,7 +376,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case 's':
             command.set_operation(SERVER_INFO);
-            if (const string error = SetCommandParams(command, optarg ? optarg : ""); !error.empty()) {
+            if (const string &error = SetCommandParams(command, optarg ? optarg : ""); !error.empty()) {
                 cerr << "Error: " << error << endl;
                 return EXIT_FAILURE;
             }

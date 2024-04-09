@@ -31,7 +31,7 @@ public:
         return command_byte_counts[static_cast<int>(opcode)];
     }
 
-    string GetCommandName(scsi_command opcode) const
+    auto GetCommandName(scsi_command opcode) const
     {
         return command_names[static_cast<int>(opcode)];
     }
@@ -45,7 +45,7 @@ private:
 
     BusFactory();
 
-    void AddCommand(scsi_command, int, string_view);
+    void AddCommand(scsi_command, int, const char*);
 
     bool CheckForPi();
 
@@ -53,5 +53,5 @@ private:
 
     array<int, 256> command_byte_counts;
 
-    array<string, 256> command_names;
+    array<string_view, 256> command_names;
 };

@@ -21,10 +21,10 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     const int ID = 3;
     const int LUN = 0;
 
-    auto bus = make_shared<MockBus>();
+    const auto bus = make_shared<MockBus>();
     MockAbstractController controller(bus, ID);
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
     CommandContext context(command);
@@ -48,7 +48,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_attach, definition, true))
     << "Operation for unknown device type must fail";
 
-    auto device1 = make_shared<MockPrimaryDevice>(LUN);
+    const auto device1 = make_shared<MockPrimaryDevice>(LUN);
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device1));
 
     definition.set_type(SCHS);
@@ -59,7 +59,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     controller_factory->DeleteAllControllers();
     definition.set_type(SCRM);
 
-    auto device2 = make_shared<MockScsiHd>(LUN, false);
+    const auto device2 = make_shared<MockScsiHd>(LUN, false);
     device2->SetRemovable(true);
     device2->SetProtectable(true);
     device2->SetReady(true);
@@ -116,10 +116,10 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
 
 TEST(CommandExecutorTest, ProcessCmd)
 {
-    auto bus = make_shared<MockBus>();
+    const auto bus = make_shared<MockBus>();
     MockAbstractController controller(bus, 0);
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
 
     PbCommand command_detach_all;
     command_detach_all.set_operation(DETACH_ALL);
@@ -156,7 +156,7 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_attach1;
     command_attach1.set_operation(ATTACH);
-    auto device1 = command_attach1.add_devices();
+    const auto device1 = command_attach1.add_devices();
     device1->set_type(SCHS);
     device1->set_id(-1);
     CommandContext context_attach1(command_attach1);
@@ -164,7 +164,7 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_attach2;
     command_attach2.set_operation(ATTACH);
-    auto device2 = command_attach2.add_devices();
+    const auto device2 = command_attach2.add_devices();
     device2->set_type(SCHS);
     device2->set_id(0);
     device2->set_unit(1);
@@ -177,9 +177,9 @@ TEST(CommandExecutorTest, Attach)
     const int ID = 3;
     const int LUN = 0;
 
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
     CommandContext context(command);
@@ -187,7 +187,7 @@ TEST(CommandExecutorTest, Attach)
     definition.set_unit(32);
     EXPECT_FALSE(executor->Attach(context, definition, false));
 
-    auto device = DeviceFactory::Instance().CreateDevice(SCHD, LUN, "");
+    const auto device = DeviceFactory::Instance().CreateDevice(SCHD, LUN, "");
     definition.set_id(ID);
     definition.set_unit(LUN);
 
@@ -197,11 +197,11 @@ TEST(CommandExecutorTest, Attach)
     executor->SetReservedIds("");
     EXPECT_FALSE(executor->Attach(context, definition, false)) << "Unknown device type not rejected";
 
-    definition.set_type(PbDeviceType::SCHS);
+    definition.set_type(SCHS);
     EXPECT_TRUE(executor->Attach(context, definition, false));
     controller_factory->DeleteAllControllers();
 
-    definition.set_type(PbDeviceType::SCHD);
+    definition.set_type(SCHD);
     EXPECT_FALSE(executor->Attach(context, definition, false)) << "Drive without sectors not rejected";
 
     definition.set_revision("invalid revision");
@@ -232,14 +232,14 @@ TEST(CommandExecutorTest, Attach)
     result = executor->Attach(context, definition, false);
     EXPECT_TRUE(result);
 
-    definition.set_type(PbDeviceType::SCCD);
+    definition.set_type(SCCD);
     definition.set_unit(LUN + 1);
     filename = CreateTempFile(2048);
     SetParam(definition, "file", filename.string());
     result = executor->Attach(context, definition, false);
     EXPECT_TRUE(result);
 
-    definition.set_type(PbDeviceType::SCMO);
+    definition.set_type(SCMO);
     definition.set_unit(LUN + 2);
     SetParam(definition, "read_only", "true");
     filename = CreateTempFile(4096);
@@ -252,10 +252,10 @@ TEST(CommandExecutorTest, Attach)
 
 TEST(CommandExecutorTest, Insert)
 {
-    auto bus = make_shared<MockBus>();
-    auto [controller, device] = CreateDevice(SCHD);
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto [controller, device] = CreateDevice(SCHD);
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
     CommandContext context(command);
@@ -308,20 +308,20 @@ TEST(CommandExecutorTest, Detach)
     const int LUN1 = 0;
     const int LUN2 = 1;
 
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
 
-    auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
+    const auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device1));
-    auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, LUN2, "");
+    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device2));
 
-    auto d1 = controller_factory->GetDeviceForIdAndLun(ID, LUN1);
+    const auto d1 = controller_factory->GetDeviceForIdAndLun(ID, LUN1);
     EXPECT_FALSE(executor->Detach(context, *d1, false)) << "LUNs > 0 have to be detached first";
-    auto d2 = controller_factory->GetDeviceForIdAndLun(ID, LUN2);
+    const auto d2 = controller_factory->GetDeviceForIdAndLun(ID, LUN2);
     EXPECT_TRUE(executor->Detach(context, *d2, false));
     EXPECT_TRUE(executor->Detach(context, *d1, false));
     EXPECT_TRUE(controller_factory->GetAllDevices().empty());
@@ -333,11 +333,11 @@ TEST(CommandExecutorTest, DetachAll)
 {
     const int ID = 4;
 
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
 
-    auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device));
     EXPECT_TRUE(controller_factory->HasController(ID));
     EXPECT_FALSE(controller_factory->GetAllDevices().empty());
@@ -349,9 +349,9 @@ TEST(CommandExecutorTest, DetachAll)
 
 TEST(CommandExecutorTest, SetReservedIds)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
 
     string error = executor->SetReservedIds("xyz");
     EXPECT_FALSE(error.empty());
@@ -379,7 +379,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     EXPECT_TRUE(reserved_ids.contains(5));
     EXPECT_TRUE(reserved_ids.contains(7));
 
-    auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 5, device));
     error = executor->SetReservedIds("5");
     EXPECT_FALSE(error.empty());
@@ -387,13 +387,13 @@ TEST(CommandExecutorTest, SetReservedIds)
 
 TEST(CommandExecutorTest, ValidateImageFile)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
 
-    auto device = dynamic_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
+    const auto device = dynamic_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
 
     EXPECT_FALSE(executor->ValidateImageFile(context, *device, "/non_existing_file"));
@@ -423,48 +423,29 @@ TEST(CommandExecutorTest, PrintCommand)
 
 TEST(CommandExecutorTest, EnsureLun0)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
 
-    auto device1 = command.add_devices();
+    const auto device1 = command.add_devices();
     device1->set_unit(0);
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 
     device1->set_unit(1);
     EXPECT_FALSE(executor->EnsureLun0(context, command));
 
-    auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory->AttachToController(*bus, 0, device2));
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 }
 
-TEST(CommandExecutorTest, VerifyExistingIdAndLun)
-{
-    const int ID = 1;
-    const int LUN1 = 0;
-    const int LUN2 = 3;
-
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
-    PbCommand command;
-    CommandContext context(command);
-
-    EXPECT_FALSE(executor->VerifyExistingIdAndLun(context, ID, LUN1));
-    auto device = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
-    EXPECT_TRUE(controller_factory->AttachToController(*bus, ID, device));
-    EXPECT_TRUE(executor->VerifyExistingIdAndLun(context, ID, LUN1));
-    EXPECT_FALSE(executor->VerifyExistingIdAndLun(context, ID, LUN2));
-}
-
 TEST(CommandExecutorTest, CreateDevice)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
 
@@ -479,9 +460,9 @@ TEST(CommandExecutorTest, CreateDevice)
 
 TEST(CommandExecutorTest, SetSectorSize)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
 
@@ -500,87 +481,134 @@ TEST(CommandExecutorTest, SetSectorSize)
     EXPECT_TRUE(executor->SetSectorSize(context, hd, 512));
 }
 
-TEST(CommandExecutorTest, ValidateOperationAgainstDevice)
+TEST(CommandExecutorTest, ValidateOperation)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
-    PbCommand command;
-    CommandContext context(command);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    PbCommand command_attach;
+    command_attach.set_operation(ATTACH);
+    CommandContext context_attach(command_attach);
+    PbCommand command_detach;
+    command_detach.set_operation(DETACH);
+    CommandContext context_detach(command_detach);
+    PbCommand command_start;
+    command_start.set_operation(START);
+    CommandContext context_start(command_start);
+    PbCommand command_stop;
+    command_stop.set_operation(STOP);
+    CommandContext context_stop(command_stop);
+    PbCommand command_insert;
+    command_insert.set_operation(INSERT);
+    CommandContext context_insert(command_insert);
+    PbCommand command_eject;
+    command_eject.set_operation(EJECT);
+    CommandContext context_eject(command_eject);
+    PbCommand command_protect;
+    command_protect.set_operation(PROTECT);
+    CommandContext context_protect(command_protect);
+    PbCommand command_unprotect;
+    command_unprotect.set_operation(UNPROTECT);
+    CommandContext context_unprotect(command_unprotect);
 
-    auto device = make_shared<MockPrimaryDevice>(0);
+    const auto device = make_shared<MockPrimaryDevice>(0);
 
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, ATTACH));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, DETACH));
+    EXPECT_TRUE(executor->ValidateOperation(context_attach, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_detach, *device));
 
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, START));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, STOP));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, INSERT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, EJECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, PROTECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, UNPROTECT));
+    EXPECT_FALSE(executor->ValidateOperation(context_start, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_stop, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_insert, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_eject, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_protect, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_unprotect, *device));
 
     device->SetStoppable(true);
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, START));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, STOP));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, INSERT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, EJECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, PROTECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, UNPROTECT));
+    EXPECT_TRUE(executor->ValidateOperation(context_start, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_stop, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_insert, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_eject, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_protect, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_unprotect, *device));
 
     device->SetRemovable(true);
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, START));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, STOP));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, INSERT));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, EJECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, PROTECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, UNPROTECT));
+    EXPECT_TRUE(executor->ValidateOperation(context_start, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_stop, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_insert, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_eject, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_protect, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_unprotect, *device));
 
     device->SetProtectable(true);
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, START));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, STOP));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, INSERT));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, EJECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, PROTECT));
-    EXPECT_FALSE(executor->ValidateOperationAgainstDevice(context, *device, UNPROTECT));
+    EXPECT_TRUE(executor->ValidateOperation(context_start, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_stop, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_insert, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_eject, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_protect, *device));
+    EXPECT_FALSE(executor->ValidateOperation(context_unprotect, *device));
 
     device->SetReady(true);
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, START));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, STOP));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, INSERT));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, EJECT));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, PROTECT));
-    EXPECT_TRUE(executor->ValidateOperationAgainstDevice(context, *device, UNPROTECT));
+    EXPECT_TRUE(executor->ValidateOperation(context_start, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_stop, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_insert, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_eject, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_protect, *device));
+    EXPECT_TRUE(executor->ValidateOperation(context_unprotect, *device));
 }
 
-TEST(CommandExecutorTest, ValidateIdAndLun)
+TEST(CommandExecutorTest, ValidateDevice)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
-    CommandContext context(command);
+    command.set_operation(ATTACH);
+    CommandContext context_attach(command);
+    PbDeviceDefinition device;
 
-    EXPECT_FALSE(executor->ValidateIdAndLun(context, false, -1, 0));
-    EXPECT_FALSE(executor->ValidateIdAndLun(context, false, 8, 0));
-    EXPECT_FALSE(executor->ValidateIdAndLun(context, false, 7, -1));
-    EXPECT_FALSE(executor->ValidateIdAndLun(context, false, 7, 32));
-    EXPECT_TRUE(executor->ValidateIdAndLun(context, false, 7, 0));
-    EXPECT_TRUE(executor->ValidateIdAndLun(context, false, 7, 31));
-    EXPECT_TRUE(executor->ValidateIdAndLun(context, true, 7, 1));
-    EXPECT_FALSE(executor->ValidateIdAndLun(context, true, 7, 2));
+    device.set_type(SCHD);
+    device.set_id(-1);
+    EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
+    device.set_id(8);
+    EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
+    device.set_id(7);
+    device.set_unit(-1);
+    EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
+    device.set_unit(32);
+    EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
+    device.set_unit(0);
+    EXPECT_TRUE(executor->ValidateDevice(context_attach, device));
+    device.set_unit(31);
+    EXPECT_TRUE(executor->ValidateDevice(context_attach, device));
+    device.set_type(SAHD);
+    device.set_unit(1);
+    EXPECT_TRUE(executor->ValidateDevice(context_attach, device));
+    device.set_unit(2);
+    EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
+
+    const auto d = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    EXPECT_TRUE(controller_factory->AttachToController(*bus, 1, d));
+    command.set_operation(DETACH);
+    CommandContext context_detach(command);
+    device.set_id(1);
+    device.set_unit(4);
+    EXPECT_FALSE(executor->ValidateDevice(context_detach, device));
+    device.set_id(1);
+    EXPECT_FALSE(executor->ValidateDevice(context_detach, device));
+    device.set_unit(0);
+    EXPECT_TRUE(executor->ValidateDevice(context_detach, device));
 }
 
 TEST(CommandExecutorTest, SetProductData)
 {
-    auto bus = make_shared<MockBus>();
-    auto controller_factory = make_shared<ControllerFactory>();
-    auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto bus = make_shared<MockBus>();
+    const auto controller_factory = make_shared<ControllerFactory>();
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
     PbCommand command;
     CommandContext context(command);
     PbDeviceDefinition definition;
 
-    auto device = make_shared<MockPrimaryDevice>(0);
+    const auto device = make_shared<MockPrimaryDevice>(0);
 
     EXPECT_TRUE(executor->SetProductData(context, definition, *device));
 

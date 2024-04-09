@@ -967,7 +967,7 @@ bool Disk::SetSectorSizeInBytes(uint32_t size)
 bool Disk::SetConfiguredSectorSize(uint32_t configured_size)
 {
     if (!configured_size || configured_size % 4
-        || (!supported_sector_sizes.contains(configured_size) && GetType() != PbDeviceType::SCHD)) {
+        || (!supported_sector_sizes.contains(configured_size) && GetType() != SCHD)) {
         return false;
     }
 

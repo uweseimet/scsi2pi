@@ -248,7 +248,7 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(ControllerTest, RequestSense);
-    FRIEND_TEST(CommandExecutorTest, ValidateOperationAgainstDevice);
+    FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
 public:
 

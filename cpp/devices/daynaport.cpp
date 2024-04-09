@@ -387,7 +387,7 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetController()->GetCdbByte(5) & 0x80) {
-        if (const string error = TapDriver::IpLink(true); !error.empty()) {
+        if (const string &error = TapDriver::IpLink(true); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
@@ -397,7 +397,7 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string error = TapDriver::IpLink(false); !error.empty()) {
+        if (const string &error = TapDriver::IpLink(false); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }

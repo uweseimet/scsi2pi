@@ -253,7 +253,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
 int S2pProto::GenerateOutput(const string &input_filename, const string &output_filename)
 {
     PbResult result;
-    if (string error = executor->Execute(input_filename, input_format, result); !error.empty()) {
+    if (const string &error = executor->Execute(input_filename, input_format, result); !error.empty()) {
         cerr << "Error: " << error << endl;
 
         return EXIT_FAILURE;

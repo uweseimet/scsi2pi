@@ -75,19 +75,9 @@ TEST(ControllerFactoryTest, AttachToController)
     EXPECT_FALSE(controller_factory.AttachToController(bus, ID, device));
 }
 
-TEST(ControllerFactory, ProcessOnController)
+TEST(ControllerFactoryTest, ProcessOnController)
 {
     ControllerFactory controller_factory;
 
     EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
-}
-
-TEST(ControllerFactory, GetScsiLunMax)
-{
-    EXPECT_EQ(32, ControllerFactory::GetScsiLunMax());
-}
-
-TEST(ControllerFactory, GetSasiLunMax)
-{
-    EXPECT_EQ(2, ControllerFactory::GetSasiLunMax());
 }

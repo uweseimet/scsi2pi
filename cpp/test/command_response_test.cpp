@@ -80,15 +80,6 @@ TEST(CommandResponseTest, GetImageFile)
     EXPECT_EQ(SCHD, image_file.type());
 }
 
-TEST(CommandResponseTest, GetImageFilesInfo)
-{
-    CommandResponse response;
-
-    PbImageFilesInfo info;
-    response.GetImageFilesInfo(info, "", "");
-    EXPECT_TRUE(info.image_files().empty());
-}
-
 TEST(CommandResponseTest, GetReservedIds)
 {
     CommandResponse response;

@@ -241,7 +241,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!run_bus_scan) {
-        if (const string error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
+        if (const string &error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
 
@@ -330,7 +330,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         }
     }
     else {
-        if (const string error = DumpRestore(); !error.empty()) {
+        if (const string &error = DumpRestore(); !error.empty()) {
             cerr << "Error: " << error << endl;
             CleanUp();
             return EXIT_FAILURE;
@@ -531,7 +531,7 @@ string S2pDump::DumpRestore()
         debug("Data transfer size: " + to_string(sector_count * sector_size));
         debug("Image file chunk size: " + to_string(byte_count));
 
-        if (const string error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
         }
 

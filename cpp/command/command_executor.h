@@ -46,7 +46,7 @@ public:
     string SetReservedIds(string_view);
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
-    bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
+    bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
     bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
     bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
@@ -61,8 +61,7 @@ public:
         return controller_factory->GetAllDevices();
     }
 
-    static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
-    static bool ValidateIdAndLun(const CommandContext&, bool, int, int);
+    static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
     static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
 
@@ -86,7 +85,7 @@ private:
     unordered_set<int> reserved_ids;
 
     const inline static unordered_set<PbDeviceType> UNIQUE_DEVICE_TYPES = {
-        PbDeviceType::SCDP,
-        PbDeviceType::SCHS
+        SCDP,
+        SCHS
     };
 };
