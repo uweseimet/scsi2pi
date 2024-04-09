@@ -247,3 +247,26 @@ TEST(CommandResponseTest, GetMappingInfo)
     response.GetMappingInfo(info);
     EXPECT_EQ(9U, info.mapping().size());
 }
+
+TEST(CommandResponseTest, GetStatisticsInfo)
+{
+    CommandResponse response;
+    unordered_set<shared_ptr<PrimaryDevice>> devices;
+
+    PbStatisticsInfo info;
+    devices.insert(make_shared<MockPrimaryDevice>(0));
+    response.GetStatisticsInfo(info, devices);
+    EXPECT_EQ(0, info.statistics().size());
+
+    devices.insert(make_shared<MockScsiHd>(0, false));
+    response.GetStatisticsInfo(info, devices);
+    const auto &statistics = info.statistics();
+    EXPECT_EQ(2U, statistics.size());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics.Get(0).category());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics.Get(1).category());
+    EXPECT_EQ(0, statistics.Get(0).unit());
+    EXPECT_EQ(0, statistics.Get(1).unit());
+    EXPECT_EQ(0, statistics.Get(0).value());
+    EXPECT_EQ(0, statistics.Get(1).value());
+
+}

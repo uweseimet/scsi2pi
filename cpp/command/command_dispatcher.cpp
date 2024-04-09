@@ -42,18 +42,17 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
-            PropertyHandler::Instance().AddProperty("log_level", log_level);
+            PropertyHandler::Instance().AddProperty(PropertyHandler::LOG_LEVEL, log_level);
             return context.ReturnSuccessStatus();
         }
 
     case DEFAULT_FOLDER:
         if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
             result.set_msg(error);
-            context.WriteResult(result);
-            return false;
+            return context.WriteResult(result);
         }
         else {
-            PropertyHandler::Instance().AddProperty("image_folder", GetParam(command, "folder"));
+            PropertyHandler::Instance().AddProperty(PropertyHandler::IMAGE_FOLDER, GetParam(command, "folder"));
             return context.WriteSuccessResult(result);
         }
 
@@ -92,7 +91,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
                 filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
-                context.WriteResult(result);
+                return context.WriteResult(result);
             }
             else {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
@@ -173,8 +172,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
         PbResult result;
         CommandResponse response;
         response.GetDevicesInfo(executor.GetAllDevices(), result, command);
-        context.WriteResult(result);
-        return result.status();
+        return context.WriteResult(result);
     }
 
     return true;

@@ -40,8 +40,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    const PbOperation operation = context.GetCommand().operation();
-    switch (operation) {
+    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
     case ATTACH:
         return Attach(context, pb_device, dryRun);
 
@@ -187,9 +186,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 {
     const PbDeviceType type = pb_device.type();
     const int lun = pb_device.unit();
-    const int lun_max = Controller::GetLunMax(type == SAHD);
 
-    if (lun >= lun_max) {
+    if (const int lun_max = Controller::GetLunMax(type == SAHD); lun >= lun_max) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 

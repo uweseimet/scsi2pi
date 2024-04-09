@@ -80,15 +80,13 @@ TEST(S2pThreadTest, Execute)
 
     S2pThread service_thread;
     service_thread.Init([](const CommandContext &context) {
-        if (context.GetCommand().operation() == PbOperation::NO_OPERATION) {
-            PbResult result;
-            result.set_status(true);
-            context.WriteResult(result);
-        }
-        else {
+        if (context.GetCommand().operation() != PbOperation::NO_OPERATION) {
             throw io_exception("error");
         }
-        return true;
+
+        PbResult result;
+        result.set_status(true);
+        return context.WriteResult(result);
     }, 9999);
 
     service_thread.Start();

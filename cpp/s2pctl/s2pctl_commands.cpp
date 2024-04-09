@@ -408,10 +408,11 @@ bool S2pCtlCommands::EvaluateParams(string_view image_params, const string &key1
 
 void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename) const
 {
-    const string binary = cmd.SerializeAsString();
+    vector<uint8_t> data(cmd.ByteSizeLong());
+    cmd.SerializeToArray(data.data(), data.size());
 
     ofstream out(filename, ios::binary);
-    out << binary;
+    out.write((const char*)data.data(), data.size());
     if (out.fail()) {
         throw io_exception("Error: Can't create protobuf binary file '" + filename + "'");
     }

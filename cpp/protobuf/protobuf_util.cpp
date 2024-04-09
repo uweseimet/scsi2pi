@@ -190,17 +190,12 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
     return s.str();
 }
 
-//---------------------------------------------------------------------------
-//
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
 // A little endian platform is assumed.
-//
-//---------------------------------------------------------------------------
-
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
-    const string s = message.SerializeAsString();
-    vector<uint8_t> data(s.cbegin(), s.cend());
+    vector<uint8_t> data(message.ByteSizeLong());
+    message.SerializeToArray(data.data(), data.size());
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
@@ -219,7 +214,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
 {
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
-    if (ReadBytes(fd, header) < header.size()) {
+    if (ReadBytes(fd, header) != header.size()) {
         throw io_exception("Can't read message size: " + string(strerror(errno)));
     }
 

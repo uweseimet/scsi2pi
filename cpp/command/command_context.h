@@ -32,7 +32,7 @@ public:
         locale = l;
     }
     bool ReadCommand();
-    void WriteResult(const PbResult&) const;
+    bool WriteResult(const PbResult&) const;
     bool WriteSuccessResult(PbResult&) const;
     const PbCommand& GetCommand() const
     {

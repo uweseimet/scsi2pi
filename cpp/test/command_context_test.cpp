@@ -78,10 +78,9 @@ TEST(CommandContext, WriteResult)
     const string filename = CreateTempFile(0);
     int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
-    result.set_status(false);
     result.set_error_code(PbErrorCode::UNAUTHORIZED);
     CommandContext context(fd);
-    context.WriteResult(result);
+    EXPECT_FALSE(context.WriteResult(result));
     close(fd);
     EXPECT_FALSE(result.status());
 
@@ -95,13 +94,10 @@ TEST(CommandContext, WriteResult)
 
 TEST(CommandContext, WriteSuccessResult)
 {
-    const string filename = CreateTempFile(0);
-    int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
-    result.set_status(false);
-    CommandContext context(fd);
-    context.WriteSuccessResult(result);
-    close(fd);
+    PbCommand command;
+    CommandContext context(command);
+    EXPECT_TRUE(context.WriteSuccessResult(result));
     EXPECT_TRUE(result.status());
 }
 
