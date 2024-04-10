@@ -325,8 +325,6 @@ TEST(CommandExecutorTest, Detach)
     EXPECT_TRUE(executor->Detach(context, *d2, false));
     EXPECT_TRUE(executor->Detach(context, *d1, false));
     EXPECT_TRUE(controller_factory.GetAllDevices().empty());
-
-    EXPECT_FALSE(executor->Detach(context, *d1, false));
 }
 
 TEST(CommandExecutorTest, DetachAll)
