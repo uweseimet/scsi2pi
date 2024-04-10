@@ -79,7 +79,7 @@ void Device::SetParams(const param_map &set_params)
 
     // Devices with image file support implicitly support the "file" parameter
     if (SupportsFile()) {
-        params["file"] = "";
+        params["file"].clear();
     }
 
     for (const auto& [key, value] : set_params) {

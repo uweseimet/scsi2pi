@@ -89,7 +89,7 @@ void Printer::CleanUp()
         error_code error;
         filesystem::remove(path(filename), error);
 
-        filename = "";
+        filename.clear();
     }
 }
 

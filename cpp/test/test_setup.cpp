@@ -27,7 +27,9 @@ int main(int argc, char*[])
 
     testing::TestShared::CleanUp();
 
-    close(fd);
+    if (fd != -1) {
+        close(fd);
+    }
 
     return result;
 }

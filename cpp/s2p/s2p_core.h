@@ -48,11 +48,11 @@ private:
 
     S2pThread service_thread;
 
-    unique_ptr<CommandExecutor> executor;
+    ControllerFactory controller_factory;
 
     shared_ptr<CommandDispatcher> dispatcher;
 
-    shared_ptr<ControllerFactory> controller_factory;
+    unique_ptr<CommandExecutor> executor;
 
     unique_ptr<Bus> bus;
 

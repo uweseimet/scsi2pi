@@ -34,7 +34,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    auto device = controller_factory->GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
+    auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
 
     if (!ValidateOperation(context, *device)) {
         return false;
@@ -192,7 +192,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     const int id = pb_device.id();
-    if (controller_factory->HasDeviceForIdAndLun(id, lun)) {
+    if (controller_factory.HasDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DUPLICATE_ID, to_string(id), to_string(lun));
     }
 
@@ -271,7 +271,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
             fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
     }
 
-    if (!controller_factory->AttachToController(bus, id, device)) {
+    if (!controller_factory.AttachToController(bus, id, device)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
@@ -344,7 +344,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
-    auto controller = controller_factory->FindController(device.GetId());
+    auto controller = controller_factory.FindController(device.GetId());
     if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }
@@ -365,7 +365,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // If no LUN is left also delete the controller
-        if (!controller->GetLunCount() && !controller_factory->DeleteController(*controller)) {
+        if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
         }
 
@@ -383,7 +383,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
 void CommandExecutor::DetachAll() const
 {
-    if (controller_factory->DeleteAllControllers()) {
+    if (controller_factory.DeleteAllControllers()) {
         PropertyHandler::Instance().RemoveProperties("device.");
 
         info("Detached all devices");
@@ -441,7 +441,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
             return "Invalid ID " + id;
         }
 
-        if (controller_factory->HasController(res_id)) {
+        if (controller_factory.HasController(res_id)) {
             return "ID " + id + " is currently in use";
         }
 
@@ -706,11 +706,11 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
         return true;
     }
 
-    if (!controller_factory->HasController(id)) {
+    if (!controller_factory.HasController(id)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
     }
 
-    if (!controller_factory->HasDeviceForIdAndLun(id, lun)) {
+    if (!controller_factory.HasDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
     }
 

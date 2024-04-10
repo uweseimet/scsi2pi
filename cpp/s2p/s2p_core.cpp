@@ -39,8 +39,6 @@ bool S2p::InitBus(bool in_process)
         return false;
     }
 
-    controller_factory = make_shared<ControllerFactory>();
-
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
     dispatcher = make_shared<CommandDispatcher>(*executor);
@@ -357,7 +355,7 @@ void S2p::AttachDevices(PbCommand &command)
 
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
-        for (auto d : controller_factory->GetAllDevices()) {
+        for (auto d : controller_factory.GetAllDevices()) {
             if (auto host_services = dynamic_pointer_cast<HostServices>(d); host_services) {
                 host_services->SetDispatcher(dispatcher);
             }
@@ -381,14 +379,14 @@ bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
 
 void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, const string &value)
 {
-    if (key == "active") {
+    if (key == PropertyHandler::ACTIVE) {
         // "active" has already been handled separately
         return;
     }
-    else if (key == "type") {
+    else if (key == PropertyHandler::TYPE) {
         device.set_type(ParseDeviceType(value));
     }
-    else if (key == "scsi_level") {
+    else if (key == PropertyHandler::SCSI_LEVEL) {
         if (int scsi_level; !GetAsUnsignedInt(value, scsi_level) || !scsi_level) {
             throw parser_exception(fmt::format("Invalid SCSI level: '{}'", value));
         }
@@ -396,7 +394,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
             device.set_scsi_level(scsi_level);
         }
     }
-    else if (key == "block_size") {
+    else if (key == PropertyHandler::BLOCK_SIZE) {
         if (int block_size; !GetAsUnsignedInt(value, block_size)) {
             throw parser_exception(fmt::format("Invalid block size: '{}'", value));
         }
@@ -404,13 +402,13 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
             device.set_block_size(block_size);
         }
     }
-    else if (key == "caching_mode") {
+    else if (key == PropertyHandler::CACHING_MODE) {
         device.set_caching_mode(ParseCachingMode(value));
     }
-    else if (key == "name") {
+    else if (key == PropertyHandler::NAME) {
         SetProductData(device, value);
     }
-    else if (key == "params") {
+    else if (key == PropertyHandler::PARAMS) {
         ParseParameters(device, value);
     }
     else {
@@ -426,7 +424,7 @@ void S2p::ProcessScsiCommands()
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
-            if (const auto shutdown_mode = controller_factory->ProcessOnController(bus->GetDAT());
+            if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT());
             shutdown_mode != AbstractController::shutdown_mode::none) {
                 // When the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);

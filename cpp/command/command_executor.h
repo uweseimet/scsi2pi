@@ -19,7 +19,7 @@ class CommandExecutor
 
 public:
 
-    CommandExecutor(Bus &bus, shared_ptr<ControllerFactory> controller_factory)
+    CommandExecutor(Bus &bus, ControllerFactory &controller_factory)
     : bus(bus), controller_factory(controller_factory)
     {
     }
@@ -58,7 +58,7 @@ public:
 
     auto GetAllDevices() const
     {
-        return controller_factory->GetAllDevices();
+        return controller_factory.GetAllDevices();
     }
 
     static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
@@ -78,7 +78,7 @@ private:
 
     Bus &bus;
 
-    shared_ptr<ControllerFactory> controller_factory;
+    ControllerFactory &controller_factory;
 
     mutex execution_locker;
 

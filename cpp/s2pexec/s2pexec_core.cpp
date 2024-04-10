@@ -121,14 +121,14 @@ bool S2pExec::ParseArguments(span<char*> args)
     string tout = "3";
 
     // Resetting these is important for the interactive mode
-    command = "";
-    data = "";
+    command.clear();
+    data.clear();
     request_sense = true;
     reset_bus = false;
-    binary_input_filename = "";
-    binary_output_filename = "";
-    hex_input_filename = "";
-    hex_output_filename = "";
+    binary_input_filename.clear();
+    binary_output_filename.clear();
+    hex_input_filename.clear();
+    hex_output_filename.clear();
 
     optind = 1;
     int opt;

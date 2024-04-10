@@ -34,14 +34,8 @@ vector<int> testing::CreateCdb(scsi_command cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    for (const auto b : HexToBytes(hex)) {
-        cdb.emplace_back(static_cast<int>(b));
-    }
-
-    for (auto i = static_cast<int>(cdb.size()); i < BusFactory::Instance().GetCommandBytesCount(cmd); i++) {
-        cdb.emplace_back(0);
-    }
-
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
+    cdb.resize(BusFactory::Instance().GetCommandBytesCount(cmd));
     return cdb;
 }
 
@@ -49,7 +43,6 @@ vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
     ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
-
     return parameters;
 }
 

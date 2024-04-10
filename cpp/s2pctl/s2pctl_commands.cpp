@@ -409,7 +409,7 @@ bool S2pCtlCommands::EvaluateParams(string_view image_params, const string &key1
 void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename) const
 {
     vector<uint8_t> data(cmd.ByteSizeLong());
-    cmd.SerializeToArray(data.data(), data.size());
+    cmd.SerializeToArray(data.data(), static_cast<int>(data.size()));
 
     ofstream out(filename, ios::binary);
     out.write((const char*)data.data(), data.size());

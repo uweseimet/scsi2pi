@@ -11,21 +11,18 @@
 #include <array>
 #include <iomanip>
 #include "shared/s2p_exceptions.h"
-#include "shared/s2p_util.h"
 #include "protobuf_util.h"
 
 using namespace s2p_util;
 
-#define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
-
-PbDeviceType protobuf_util::ParseDeviceType(const string &type)
+PbDeviceType protobuf_util::ParseDeviceType(const string &value)
 {
-    if (PbDeviceType parsed_type; PbDeviceType_Parse(ToUpper(type), &parsed_type)) {
-        return parsed_type;
+    if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
+        return type;
     }
 
     // Handle convenience device types (shortcuts)
-    const auto &it = DEVICE_TYPES.find(tolower(type[0]));
+    const auto &it = DEVICE_TYPES.find(tolower(value[0]));
     return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
 }
 
@@ -153,7 +150,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
         << "| ID | LUN | TYPE | IMAGE FILE\n"
         << "+----+-----+------+-------------------------------------\n";
 
-    vector<PbDevice> devices = pb_devices;
+    vector<PbDevice> devices(pb_devices);
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
     for (const auto &device : devices) {
@@ -195,7 +192,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
     vector<uint8_t> data(message.ByteSizeLong());
-    message.SerializeToArray(data.data(), data.size());
+    message.SerializeToArray(data.data(), static_cast<int>(data.size()));
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),

@@ -92,7 +92,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         { nullptr, 0, nullptr, 0 }
     };
 
-    const unordered_map<int, string> OPTIONS_TO_PROPERTIES = {
+    const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'z', PropertyHandler::LOCALE },
@@ -199,30 +199,30 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         }
 
         if (!block_size.empty()) {
-            properties[device_key + "block_size"] = block_size;
+            properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
+            block_size.clear();
         }
         if (!caching_mode.empty()) {
-            properties[device_key + "caching_mode"] = caching_mode;
+            properties[device_key + PropertyHandler::CACHING_MODE] = caching_mode;
+            caching_mode.clear();
         }
         if (!type.empty()) {
-            properties[device_key + "type"] = type;
+            properties[device_key + PropertyHandler::TYPE] = type;
+            type.clear();
         }
         if (!scsi_level.empty()) {
-            properties[device_key + "scsi_level"] = scsi_level;
+            properties[device_key + PropertyHandler::SCSI_LEVEL] = scsi_level;
+            scsi_level.clear();
         }
         if (!name.empty()) {
-            properties[device_key + "name"] = name;
+            properties[device_key + PropertyHandler::NAME] = name;
+            name.clear();
         }
         if (!params.empty()) {
-            properties[device_key + "params"] = params;
+            properties[device_key + PropertyHandler::PARAMS] = params;
         }
 
-        id_lun = "";
-        type = "";
-        scsi_level = "";
-        name = "";
-        block_size = "";
-        caching_mode = "";
+        id_lun.clear();
     }
 
     return properties;
@@ -252,7 +252,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     string device_key = d;
     if (d.empty()) {
         const char id = type_id_lun[2];
-        string lun = "";
+        string lun;
         if (type_id_lun.size() > 3) {
             lun = ParseNumber(type_id_lun.substr(3));
         }
@@ -268,7 +268,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (!t->second) {
         throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
     }
-    properties[device_key + "type"] = t->second;
+    properties[device_key + PropertyHandler::TYPE] = t->second;
 
     string block_size = "512";
     if (components.size() > 1) {
@@ -277,13 +277,13 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
         }
         // When there is no block_size number after the "_" separator the string is the product data
         else {
-            properties[device_key + "name"] = components[1];
+            properties[device_key + PropertyHandler::NAME] = components[1];
         }
     }
-    properties[device_key + "block_size"] = block_size;
+    properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
 
     if (components.size() > 2) {
-        properties[device_key + "name"] = components[2];
+        properties[device_key + PropertyHandler::NAME] = components[2];
     }
 
     return device_key;
@@ -291,12 +291,12 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
 
 vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
 {
-    // Convert some legacy RaSCSI/PiSCSI options to a consistent getopt() format:
+    // Convert legacy RaSCSI/PiSCSI ID options to a consistent getopt() format:
     //   -id|-ID -> -i
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string arg : initial_args) {
+    for (const string &arg : initial_args) {
         int start_of_ids = -1;
         for (int i = 0; i < static_cast<int>(arg.length()); i++) {
             if (isdigit(arg[i])) {
@@ -305,17 +305,11 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
             }
         }
 
-        const string ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
+        const string &ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
 
-        const string arg_lower = ToLower(arg);
-        if (arg_lower.starts_with("-h")) {
-            args.emplace_back(strdup("-h"));
-            if (!ids.empty()) {
-                args.emplace_back(strdup(ids.c_str()));
-            }
-        }
-        else if (arg_lower.starts_with("-i")) {
-            args.emplace_back(strdup("-i"));
+        const string &arg_lower = ToLower(arg);
+        if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
+            args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
             if (!ids.empty()) {
                 args.emplace_back(strdup(ids.c_str()));
             }

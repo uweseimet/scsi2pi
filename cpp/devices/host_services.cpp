@@ -301,7 +301,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 
     const auto length = GetInt16(GetController()->GetCdb(), 7);
     if (!length) {
-        execution_results[GetController()->GetInitiatorId()] = "";
+        execution_results[GetController()->GetInitiatorId()].clear();
         return 0;
     }
 

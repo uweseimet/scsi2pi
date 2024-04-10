@@ -22,16 +22,25 @@ class PropertyHandler
 public:
 
     // Non device-specific property keys
-    inline static const char *IMAGE_FOLDER = "image_folder";
-    inline static const char *LOCALE = "locale";
-    inline static const char *LOG_LEVEL = "log_level";
-    inline static const char *LOG_PATTERN = "log_pattern";
-    inline static const char *MODE_PAGE = "mode_page";
-    inline static const char *PORT = "port";
-    inline static const char *PROPERTY_FILES = "property_files";
-    inline static const char *RESERVED_IDS = "reserved_ids";
-    inline static const char *SCAN_DEPTH = "scan_depth";
-    inline static const char *TOKEN_FILE = "token_file";
+    static constexpr const char *IMAGE_FOLDER = "image_folder";
+    static constexpr const char *LOCALE = "locale";
+    static constexpr const char *LOG_LEVEL = "log_level";
+    static constexpr const char *LOG_PATTERN = "log_pattern";
+    static constexpr const char *MODE_PAGE = "mode_page";
+    static constexpr const char *PORT = "port";
+    static constexpr const char *PROPERTY_FILES = "property_files";
+    static constexpr const char *RESERVED_IDS = "reserved_ids";
+    static constexpr const char *SCAN_DEPTH = "scan_depth";
+    static constexpr const char *TOKEN_FILE = "token_file";
+
+    // Device-specific property keys
+    static constexpr const char *ACTIVE = "active";
+    static constexpr const char *TYPE = "type";
+    static constexpr const char *SCSI_LEVEL = "scsi_level";
+    static constexpr const char *BLOCK_SIZE = "block_size";
+    static constexpr const char *CACHING_MODE = "caching_mode";
+    static constexpr const char *NAME = "name";
+    static constexpr const char *PARAMS = "params";
 
     static PropertyHandler& Instance()
     {

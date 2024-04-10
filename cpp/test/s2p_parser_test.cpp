@@ -95,11 +95,11 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ("sahd", properties["device.2.type"]);
     EXPECT_EQ("test.hds", properties["device.2.params"]);
 
-    SetUpArgs(args, "-i1", "-n", "a:b:c", "test.hds");
+    SetUpArgs(args, "-ID1:0", "-n", "a:b:c", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(2UL, properties.size());
-    EXPECT_EQ("a:b:c", properties["device.1.name"]);
-    EXPECT_EQ("test.hds", properties["device.1.params"]);
+    EXPECT_EQ("a:b:c", properties["device.1:0.name"]);
+    EXPECT_EQ("test.hds", properties["device.1:0.params"]);
 
     SetUpArgs(args, "-i0", "--scsi-level", "3", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
