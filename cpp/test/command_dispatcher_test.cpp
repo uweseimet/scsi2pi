@@ -138,12 +138,26 @@ TEST(CommandDispatcherTest, DispatchCommand)
 
     PbCommand command_shut_down;
     command_shut_down.set_operation(SHUT_DOWN);
-    CommandContext context_shut_down1(command_shut_down);
-    EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down1, result));
+    CommandContext context_shut_down(command_shut_down);
+    EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down, result));
+
+    SetParam(command_shut_down, "mode", "rascsi");
+    CommandContext context_shut_down_rascsi(command_shut_down);
+    EXPECT_TRUE(dispatcher.DispatchCommand(context_shut_down_rascsi, result));
+
+    if (getuid()) {
+        SetParam(command_shut_down, "mode", "system");
+        CommandContext context_shut_down_system(command_shut_down);
+        EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_system, result));
+
+        SetParam(command_shut_down, "mode", "reboot");
+        CommandContext context_shut_down_reboot(command_shut_down);
+        EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_reboot, result));
+    }
 
     SetParam(command_shut_down, "mode", "invalid");
-    CommandContext context_shut_down2(command_shut_down);
-    EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down2, result));
+    CommandContext context_shut_down_invalid(command_shut_down);
+    EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_invalid, result));
 
     PbCommand command_no_operation;
     command_no_operation.set_operation(NO_OPERATION);

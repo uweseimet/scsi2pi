@@ -133,7 +133,7 @@ path testing::CreateTempFileWithData(const span<const byte> data)
 {
     const auto& [fd, filename] = OpenTempFile();
 
-    const auto count = write(fd, data.data(), data.size());
+    const size_t count = write(fd, data.data(), data.size());
     close(fd);
     EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
 

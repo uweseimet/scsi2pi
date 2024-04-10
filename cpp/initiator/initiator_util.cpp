@@ -17,7 +17,7 @@ void initiator_util::ResetBus(Bus &bus)
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us
-    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
     nanosleep(&ts, nullptr);
     bus.Reset();
 }

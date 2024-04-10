@@ -304,7 +304,7 @@ string CommandLocalizer::Localize(LocalizationKey key, const string &locale, con
     }
 
     string message = m->second;
-    message = regex_replace(message, regex1, arg1);
-    message = regex_replace(message, regex2, arg2);
-    return regex_replace(message, regex3, arg3);
+    message = regex_replace(message, REGEX1, arg1);
+    message = regex_replace(message, REGEX2, arg2);
+    return regex_replace(message, REGEX3, arg3);
 }

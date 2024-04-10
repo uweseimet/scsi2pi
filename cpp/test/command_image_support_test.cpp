@@ -121,7 +121,7 @@ TEST(CommandImageSupportTest, RenameImage)
 
 TEST(CommandImageSupportTest, CopyImage)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -144,7 +144,7 @@ TEST(CommandImageSupportTest, CopyImage)
 
 TEST(CommandImageSupportTest, SetImagePermissions)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::Instance();
 
     StorageDevice::SetReservedFiles( { });
 

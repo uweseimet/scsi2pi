@@ -14,8 +14,7 @@ using namespace std;
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
-    const auto &it = controllers.find(id);
-    if (it != controllers.end()) {
+    if (const auto &it = controllers.find(id); it != controllers.end()) {
         return it->second->AddDevice(device);
     }
 

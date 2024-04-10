@@ -34,7 +34,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
+    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
 
     if (!ValidateOperation(context, *device)) {
         return false;
@@ -69,7 +69,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(static_cast<int>(operation)));
     }
 
-    return true;
+    return false;
 }
 
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
@@ -200,9 +200,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_RESERVED_ID, to_string(id));
     }
 
-    const string filename = GetParam(pb_device, "file");
+    const string &filename = GetParam(pb_device, "file");
 
-    auto device = CreateDevice(context, type, lun, filename);
+    const auto device = CreateDevice(context, type, lun, filename);
     if (!device) {
         return false;
     }
@@ -239,6 +239,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
+            // GetIdentifier() cannot be used here because the device ID has not yet been set
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
                 fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
         }
@@ -268,7 +269,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     if (!device->Init(params)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
+            fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
     }
 
     if (!controller_factory.AttachToController(bus, id, device)) {
@@ -305,7 +306,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_NAME_UPDATE);
     }
 
-    const string filename = GetParam(pb_device, "file");
+    const string &filename = GetParam(pb_device, "file");
     if (filename.empty()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
     }
@@ -613,8 +614,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
         for (const auto &d : GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE,
-                    PbDeviceType_Name(device->GetType()));
+                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, device->GetTypeString());
                 return nullptr;
             }
         }

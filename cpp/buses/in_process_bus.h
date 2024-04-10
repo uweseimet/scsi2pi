@@ -148,7 +148,7 @@ private:
 
     bool log_signals = true;
 
-    inline static const unordered_map<int, const char*> SIGNALS {
+    inline static const unordered_map<int, const char*> SIGNALS = {
         { PIN_BSY, "BSY" },
         { PIN_SEL, "SEL" },
         { PIN_ATN, "ATN" },

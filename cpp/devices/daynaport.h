@@ -95,7 +95,7 @@ private:
         uint32_t frames_lost;
     };
 
-    scsi_resp_link_stats_t m_scsi_link_stats = {
+    static constexpr scsi_resp_link_stats_t SCSI_LINK_STATS = {
         // The last 3 bytes of this MAC address are replaced by those of the bridge interface
         .mac_address = { byte { 0x00 }, byte { 0x80 }, byte { 0x19 }, byte { 0x10 }, byte { 0x98 }, byte { 0xe3 } },
         .frame_alignment_errors = 0,

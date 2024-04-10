@@ -103,6 +103,11 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, false));
 
+    command.set_operation(SERVER_INFO);
+    CommandContext context_server_info(command);
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, true));
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, false));
+
     command.set_operation(NO_OPERATION);
     CommandContext context_no_operation(command);
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));

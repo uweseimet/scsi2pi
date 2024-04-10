@@ -312,9 +312,8 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 void InitiatorExecutor::LogStatus() const
 {
     if (status) {
-        if (const auto &it_status = STATUS_MAPPING.find(static_cast<status_code>(status)); it_status
-            != STATUS_MAPPING.end()) {
-            warn("Device reported {0} (status code ${1:02x})", it_status->second, status);
+        if (const auto &it = STATUS_MAPPING.find(static_cast<status_code>(status)); it != STATUS_MAPPING.end()) {
+            warn("Device reported {0} (status code ${1:02x})", it->second, status);
         }
         else if (status != 0xff) {
             warn("Device reported an unknown status (status code ${:02x})", status);

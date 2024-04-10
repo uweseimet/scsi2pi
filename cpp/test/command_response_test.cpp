@@ -261,12 +261,12 @@ TEST(CommandResponseTest, GetStatisticsInfo)
     devices.insert(make_shared<MockScsiHd>(0, false));
     response.GetStatisticsInfo(info, devices);
     const auto &statistics = info.statistics();
-    EXPECT_EQ(2U, statistics.size());
+    EXPECT_EQ(2, statistics.size());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics.Get(0).category());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics.Get(1).category());
     EXPECT_EQ(0, statistics.Get(0).unit());
     EXPECT_EQ(0, statistics.Get(1).unit());
-    EXPECT_EQ(0, statistics.Get(0).value());
-    EXPECT_EQ(0, statistics.Get(1).value());
+    EXPECT_EQ(0U, statistics.Get(0).value());
+    EXPECT_EQ(0U, statistics.Get(1).value());
 
 }

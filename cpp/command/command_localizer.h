@@ -68,7 +68,7 @@ private:
 
     unordered_map<string, unordered_map<LocalizationKey, string>, s2p_util::StringHash, equal_to<>> localized_messages;
 
-    const regex regex1 = regex("%1");
-    const regex regex2 = regex("%2");
-    const regex regex3 = regex("%3");
+    inline static const regex REGEX1 = regex("%1");
+    inline static const regex REGEX2 = regex("%2");
+    inline static const regex REGEX3 = regex("%3");
 };

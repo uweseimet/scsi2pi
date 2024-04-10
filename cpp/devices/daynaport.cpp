@@ -253,7 +253,7 @@ void DaynaPort::RetrieveStats() const
 {
     auto &buf = GetController()->GetBuffer();
 
-    memcpy(buf.data(), &m_scsi_link_stats, sizeof(m_scsi_link_stats));
+    memcpy(buf.data(), &SCSI_LINK_STATS, sizeof(SCSI_LINK_STATS));
 
     // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
     // on different Pis in the same network do not have identical MAC addresses.
@@ -266,7 +266,7 @@ void DaynaPort::RetrieveStats() const
     LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
         buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
-    const auto length = static_cast<int>(min(sizeof(m_scsi_link_stats),
+    const auto length = static_cast<int>(min(sizeof(SCSI_LINK_STATS),
         static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3))));
     GetController()->SetTransferSize(length, length);
 

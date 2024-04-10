@@ -297,7 +297,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string &arg : initial_args) {
+    for (const string arg : initial_args) {
         int start_of_ids = -1;
         for (int i = 0; i < static_cast<int>(arg.length()); i++) {
             if (isdigit(arg[i])) {
