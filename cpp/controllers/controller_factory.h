@@ -9,7 +9,12 @@
 #pragma once
 
 #include <unordered_map>
-#include "base/primary_device.h"
+#include "abstract_controller.h"
+
+class Bus;
+class PrimaryDevice;
+
+using namespace std;
 
 class ControllerFactory
 {
@@ -20,16 +25,12 @@ public:
     bool DeleteController(const AbstractController&);
     bool DeleteAllControllers();
     AbstractController::shutdown_mode ProcessOnController(int) const;
-    shared_ptr<AbstractController> FindController(int) const;
     bool HasController(int) const;
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
-    bool HasDeviceForIdAndLun(int, int) const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
 private:
 
-    shared_ptr<AbstractController> CreateController(Bus&, int) const;
-
-    // Controllers mapped to their device IDs
+    // Controllers mapped to their target IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
 };

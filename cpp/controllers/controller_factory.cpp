@@ -6,28 +6,25 @@
 //
 //---------------------------------------------------------------------------
 
+#include "base/primary_device.h"
 #include "controller.h"
 #include "controller_factory.h"
 
 using namespace std;
 
-shared_ptr<AbstractController> ControllerFactory::CreateController(Bus &bus, int id) const
-{
-    shared_ptr<AbstractController> controller = make_shared<Controller>(bus, id);
-    controller->Init();
-
-    return controller;
-}
-
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
-    if (auto controller = FindController(id); controller) {
-        return controller->AddDevice(device);
+    const auto &it = controllers.find(id);
+    if (it != controllers.end()) {
+        return it->second->AddDevice(device);
     }
 
     // If this is LUN 0 create a new controller
     if (!device->GetLun()) {
-        if (auto controller = CreateController(bus, id); controller->AddDevice(device)) {
+        if (auto controller = make_shared<Controller>(bus, id); controller->AddDevice(device)) {
+            controller->Init();
+
+            assert(!controllers[id]);
             controllers[id] = controller;
 
             return true;
@@ -69,12 +66,6 @@ AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int ids
     return AbstractController::shutdown_mode::none;
 }
 
-shared_ptr<AbstractController> ControllerFactory::FindController(int target_id) const
-{
-    const auto &it = controllers.find(target_id);
-    return it == controllers.end() ? nullptr : it->second;
-}
-
 bool ControllerFactory::HasController(int target_id) const
 {
     return controllers.contains(target_id);
@@ -92,16 +83,8 @@ unordered_set<shared_ptr<PrimaryDevice>> ControllerFactory::GetAllDevices() cons
     return devices;
 }
 
-bool ControllerFactory::HasDeviceForIdAndLun(int id, int lun) const
-{
-    return GetDeviceForIdAndLun(id, lun) != nullptr;
-}
-
 shared_ptr<PrimaryDevice> ControllerFactory::GetDeviceForIdAndLun(int id, int lun) const
 {
-    if (const auto &controller = FindController(id); controller) {
-        return controller->GetDeviceForLun(lun);
-    }
-
-    return nullptr;
+    const auto &it = controllers.find(id);
+    return it == controllers.end() ? nullptr : it->second->GetDeviceForLun(lun);
 }

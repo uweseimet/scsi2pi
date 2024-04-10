@@ -33,6 +33,11 @@ public:
 
     virtual void Dispatch(scsi_command);
 
+    inline auto GetController() const
+    {
+        return controller;
+    }
+
     scsi_level GetScsiLevel() const
     {
         return level;
@@ -128,11 +133,6 @@ protected:
     {
         controller->SetCurrentLength(length);
         controller->DataOut();
-    }
-
-    inline auto GetController() const
-    {
-        return controller;
     }
 
     void LogTrace(const string &s) const

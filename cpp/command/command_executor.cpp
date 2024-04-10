@@ -192,7 +192,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     const int id = pb_device.id();
-    if (controller_factory.HasDeviceForIdAndLun(id, lun)) {
+    if (controller_factory.GetDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DUPLICATE_ID, to_string(id), to_string(lun));
     }
 
@@ -344,7 +344,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
-    auto controller = controller_factory.FindController(device.GetId());
+    auto controller = device.GetController();
     if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }
@@ -710,7 +710,7 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
         return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
     }
 
-    if (!controller_factory.HasDeviceForIdAndLun(id, lun)) {
+    if (!controller_factory.GetDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
     }
 

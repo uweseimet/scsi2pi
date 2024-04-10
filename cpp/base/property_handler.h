@@ -70,6 +70,7 @@ private:
 
     property_map property_cache;
 
-    inline static const string GLOBAL_CONFIGURATION = "/etc/s2p.conf";
-    inline static const string LOCAL_CONFIGURATION = ".config/s2p.conf";
+    static constexpr const char *GLOBAL_CONFIGURATION = "/etc/s2p.conf";
+    static constexpr const char *GLOBAL_CONFIGURATION_OLD = "/etc/s2p.conf.old";
+    static constexpr const char *LOCAL_CONFIGURATION = "/.config/s2p.conf";
 };

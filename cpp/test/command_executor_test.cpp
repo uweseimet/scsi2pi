@@ -339,11 +339,10 @@ TEST(CommandExecutorTest, DetachAll)
 
     const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
-    EXPECT_TRUE(controller_factory.HasController(ID));
+    EXPECT_NE(nullptr, device->GetController());
     EXPECT_FALSE(controller_factory.GetAllDevices().empty());
 
     executor->DetachAll();
-    EXPECT_EQ(nullptr, controller_factory.FindController(ID));
     EXPECT_TRUE(controller_factory.GetAllDevices().empty());
 }
 

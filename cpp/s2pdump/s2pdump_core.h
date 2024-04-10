@@ -93,7 +93,7 @@ private:
     static constexpr int MINIMUM_BUFFER_SIZE = 1024 * 64;
     static constexpr int DEFAULT_BUFFER_SIZE = 1024 * 1024;
 
-    static inline const string DIVIDER = "----------------------------------------";
+    static constexpr const char *DIVIDER = "----------------------------------------";
 
     static inline const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
         { byte { 0 }, "SCHD" },

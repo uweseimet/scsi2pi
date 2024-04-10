@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <iostream>
 #include <fstream>
 #include <getopt.h>
 #include "controllers/controller_factory.h"

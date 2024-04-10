@@ -56,8 +56,8 @@ private:
 
     static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
 
-    inline static const string FILE_PRINT_COUNT = "file_print_count";
-    inline static const string BYTE_RECEIVE_COUNT = "byte_receive_count";
-    inline static const string PRINT_ERROR_COUNT = "print_error_count";
-    inline static const string PRINT_WARNING_COUNT = "print_warning_count";
+    static constexpr const char *FILE_PRINT_COUNT = "file_print_count";
+    static constexpr const char *BYTE_RECEIVE_COUNT = "byte_receive_count";
+    static constexpr const char *PRINT_ERROR_COUNT = "print_error_count";
+    static constexpr const char *PRINT_WARNING_COUNT = "print_warning_count";
 };

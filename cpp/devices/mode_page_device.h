@@ -16,10 +16,6 @@ class ModePageDevice : public PrimaryDevice
 
 public:
 
-    ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m, bool s)
-    : PrimaryDevice(type, level, lun), supports_mode_select(m), supports_save_parameters(s)
-    {
-    }
     ~ModePageDevice() override = default;
 
     bool Init(const param_map&) override;
@@ -27,6 +23,11 @@ public:
     virtual void ModeSelect(cdb_t, span<const uint8_t>, int);
 
 protected:
+
+    ModePageDevice(PbDeviceType type, scsi_level level, int lun, bool m, bool s)
+    : PrimaryDevice(type, level, lun), supports_mode_select(m), supports_save_parameters(s)
+    {
+    }
 
     int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
     virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const = 0;

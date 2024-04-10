@@ -10,6 +10,7 @@
 
 #include <set>
 #include <filesystem>
+#include "base/device.h"
 
 using namespace filesystem;
 using namespace s2p_interface;

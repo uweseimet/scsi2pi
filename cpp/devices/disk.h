@@ -27,11 +27,6 @@ class Disk : public StorageDevice, private ScsiBlockCommands
 
 public:
 
-    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-        const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
-    {
-    }
     ~Disk() override = default;
 
     bool Init(const param_map&) override;
@@ -76,6 +71,12 @@ public:
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
+
+    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
+        const unordered_set<uint32_t> &s)
+    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
+    {
+    }
 
     void ValidateFile() override;
 
@@ -182,6 +183,6 @@ private:
 
     string last_filename;
 
-    inline static const string SECTOR_READ_COUNT = "sector_read_count";
-    inline static const string SECTOR_WRITE_COUNT = "sector_write_count";
+    static constexpr const char *SECTOR_READ_COUNT = "sector_read_count";
+    static constexpr const char *SECTOR_WRITE_COUNT = "sector_write_count";
 };

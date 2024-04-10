@@ -122,7 +122,6 @@ class Bus // NOSONAR The number of convenience methods is justified
 
 public:
 
-    Bus() = default;
     virtual ~Bus() = default;
 
     virtual bool Init(bool = true);
@@ -234,6 +233,8 @@ public:
     static constexpr int SEND_NO_DELAY = -1;
 
 protected:
+
+    Bus() = default;
 
     virtual void WaitBusSettle() const = 0;
 

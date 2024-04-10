@@ -19,7 +19,6 @@ class PhaseHandler
 
 public:
 
-    PhaseHandler() = default;
     virtual ~PhaseHandler() = default;
 
     void Init();
@@ -34,6 +33,8 @@ public:
     virtual void MsgOut() = 0;
 
 protected:
+
+    PhaseHandler() = default;
 
     inline bus_phase GetPhase() const
     {

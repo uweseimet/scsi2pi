@@ -31,7 +31,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     // When there is no explicit property file list parse the local property file
     if (filenames.empty()) {
         if (!ignore_conf) {
-            ParsePropertyFile(properties, GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
+            ParsePropertyFile(properties, GetHomeDir() + LOCAL_CONFIGURATION, true);
         }
     }
     else {
@@ -172,8 +172,8 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
 bool PropertyHandler::Persist() const
 {
     error_code error;
-    remove(GLOBAL_CONFIGURATION + ".old", error);
-    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION + ".old"), error);
+    remove(GLOBAL_CONFIGURATION_OLD, error);
+    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION_OLD), error);
 
     ofstream out(GLOBAL_CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {
