@@ -19,6 +19,7 @@
 #include "shared/s2p_exceptions.h"
 #include "buses/bus_factory.h"
 #include "base/device_factory.h"
+#include "command/command_context.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "protobuf/protobuf_util.h"
@@ -424,8 +425,8 @@ void S2p::ProcessScsiCommands()
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
-            if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT());
-            shutdown_mode != AbstractController::shutdown_mode::none) {
+            if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT()); shutdown_mode
+                != shutdown_mode::none) {
                 // When the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);
             }

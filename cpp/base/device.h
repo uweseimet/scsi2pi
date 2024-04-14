@@ -8,13 +8,10 @@
 
 #pragma once
 
-#include "generated/s2p_interface.pb.h"
 #include "shared/s2p_util.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace s2p_interface;
-
-// A combination of device ID and LUN
-using id_set = pair<int, int>;
 
 // The map used for storing/passing device parameters
 using param_map = unordered_map<string, string, s2p_util::StringHash, equal_to<>>;

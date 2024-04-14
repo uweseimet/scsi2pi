@@ -8,22 +8,23 @@
 
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
+#include "base/s2p_defs.h"
 
 TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
 
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(AbstractController::shutdown_mode::none, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
+    EXPECT_EQ(shutdown_mode::none, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(shutdown_mode::stop_s2p);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(AbstractController::shutdown_mode::stop_s2p, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
+    EXPECT_EQ(shutdown_mode::stop_s2p, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(shutdown_mode::stop_pi);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(AbstractController::shutdown_mode::stop_pi, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+    EXPECT_EQ(shutdown_mode::stop_pi, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(shutdown_mode::restart_pi);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(AbstractController::shutdown_mode::restart_pi, controller.ProcessOnController(0));
+    EXPECT_EQ(shutdown_mode::restart_pi, controller.ProcessOnController(0));
 }
 
 TEST(AbstractControllerTest, SetCurrentLength)

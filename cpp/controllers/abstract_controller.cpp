@@ -85,7 +85,7 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-AbstractController::shutdown_mode AbstractController::ProcessOnController(int ids)
+shutdown_mode AbstractController::ProcessOnController(int ids)
 {
     device_logger.SetIdAndLun(target_id, -1);
 

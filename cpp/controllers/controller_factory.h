@@ -8,10 +8,13 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <unordered_map>
-#include "abstract_controller.h"
+#include <memory>
+#include "base/s2p_defs.h"
 
 class Bus;
+class AbstractController;
 class PrimaryDevice;
 
 using namespace std;
@@ -24,7 +27,7 @@ public:
     bool AttachToController(Bus&, int, shared_ptr<PrimaryDevice>);
     bool DeleteController(const AbstractController&);
     bool DeleteAllControllers();
-    AbstractController::shutdown_mode ProcessOnController(int) const;
+    shutdown_mode ProcessOnController(int) const;
     bool HasController(int) const;
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;

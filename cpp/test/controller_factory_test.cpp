@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "base/s2p_defs.h"
 #include "base/device_factory.h"
 #include "controllers/controller_factory.h"
 
@@ -73,5 +74,5 @@ TEST(ControllerFactoryTest, ProcessOnController)
 {
     ControllerFactory controller_factory;
 
-    EXPECT_EQ(AbstractController::shutdown_mode::none, controller_factory.ProcessOnController(0));
+    EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(0));
 }

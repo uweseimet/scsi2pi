@@ -27,15 +27,6 @@ TEST(S2pExceptionsTest, IoException)
     }
 }
 
-TEST(S2pExceptionsTest, FileNotFoundException)
-{
-    try {
-        throw file_not_found_exception("msg");
-    } catch (const file_not_found_exception &e) {
-        EXPECT_STREQ("msg", e.what());
-    }
-}
-
 TEST(S2pExceptionsTest, ScsiException)
 {
     try {

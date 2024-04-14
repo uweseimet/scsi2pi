@@ -10,8 +10,9 @@
 
 #pragma once
 
-#include "command/command_dispatcher.h"
 #include "mode_page_device.h"
+
+class CommandDispatcher;
 
 class HostServices : public ModePageDevice
 {

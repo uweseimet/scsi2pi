@@ -86,6 +86,7 @@
 #include <google/protobuf/text_format.h>
 #include "shared/s2p_exceptions.h"
 #include "command/command_context.h"
+#include "command/command_dispatcher.h"
 #include "protobuf/protobuf_util.h"
 #include "controllers/controller.h"
 #include "base/memory_util.h"
@@ -144,11 +145,10 @@ void HostServices::StartStopUnit() const
     const bool load = GetController()->GetCdbByte(4) & 0x02;
 
     if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
-        GetController()->ScheduleShutdown(
-            load ? AbstractController::shutdown_mode::stop_pi : AbstractController::shutdown_mode::stop_s2p);
+        GetController()->ScheduleShutdown(load ? shutdown_mode::stop_pi : shutdown_mode::stop_s2p);
     }
     else if (load) {
-        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+        GetController()->ScheduleShutdown(shutdown_mode::restart_pi);
     }
     else {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);

@@ -14,6 +14,7 @@
 #include "protobuf/protobuf_util.h"
 #include "devices/disk.h"
 #include "command_image_support.h"
+#include "command_context.h"
 #include "command_executor.h"
 
 using namespace spdlog;

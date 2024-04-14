@@ -15,8 +15,9 @@
 
 #include <array>
 #include <memory>
-#include "disk_track.h"
 #include "cache.h"
+
+class DiskTrack;
 
 class DiskCache : public Cache
 {

@@ -15,6 +15,7 @@
 #include <array>
 #include <string>
 #include "shared/scsi.h"
+#include "base/s2p_defs.h"
 
 #if defined BOARD_STANDARD
 #include "buses/connection_type/connection_standard.h"
@@ -228,9 +229,6 @@ public:
     {
         return phase_names[static_cast<int>(phase)];
     }
-
-    // For work-around required by the DaynaPort emulation
-    static constexpr int SEND_NO_DELAY = -1;
 
 protected:
 

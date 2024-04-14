@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "base/s2p_defs.h"
 #include "shared/s2p_exceptions.h"
 
 TEST(ControllerTest, Reset)
@@ -58,19 +59,19 @@ TEST(ControllerTest, BusFree)
     EXPECT_EQ(bus_phase::busfree, controller.GetPhase());
     EXPECT_EQ(status_code::good, controller.GetStatus());
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::none);
+    controller.ScheduleShutdown(shutdown_mode::none);
     controller.SetPhase(bus_phase::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_pi);
+    controller.ScheduleShutdown(shutdown_mode::stop_pi);
     controller.SetPhase(bus_phase::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+    controller.ScheduleShutdown(shutdown_mode::restart_pi);
     controller.SetPhase(bus_phase::reserved);
     controller.BusFree();
 
-    controller.ScheduleShutdown(AbstractController::shutdown_mode::stop_s2p);
+    controller.ScheduleShutdown(shutdown_mode::stop_s2p);
     controller.SetPhase(bus_phase::reserved);
     controller.BusFree();
 }

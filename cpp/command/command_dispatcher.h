@@ -22,7 +22,7 @@ public:
 
     bool DispatchCommand(const CommandContext&, PbResult&);
 
-    bool ShutDown(AbstractController::shutdown_mode) const;
+    bool ShutDown(shutdown_mode) const;
 
     static bool SetLogLevel(const string&);
 

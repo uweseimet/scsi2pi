@@ -9,7 +9,7 @@
 #pragma once
 
 #include <cstdint>
-#include <climits>
+#include <limits>
 #include <sstream>
 #include <vector>
 #include <array>
@@ -53,7 +53,7 @@ string Join(const auto &collection, const string_view separator = ", ")
 string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
-vector<string> Split(const string&, char, int = INT_MAX);
+vector<string> Split(const string&, char, int = numeric_limits<int>::max());
 string ToUpper(const string&);
 string ToLower(const string&);
 string GetLocale();

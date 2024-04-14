@@ -12,6 +12,7 @@
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
+#include "command_context.h"
 #include "command_image_support.h"
 
 using namespace spdlog;

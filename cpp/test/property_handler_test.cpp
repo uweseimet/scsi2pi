@@ -22,13 +22,13 @@ PropertyHandler SetUpProperties(string_view properties1, string_view properties2
     string filenames;
     auto [fd1, filename1] = OpenTempFile();
     filenames = filename1;
-    write(fd1, properties1.data(), properties1.size());
+    (void)write(fd1, properties1.data(), properties1.size());
     close(fd1);
     if (!properties2.empty()) {
         auto [fd2, filename2] = OpenTempFile();
         filenames += ",";
         filenames += filename2;
-        write(fd2, properties2.data(), properties2.size());
+        (void)write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
     property_handler.Init(filenames, cmd_properties, true);

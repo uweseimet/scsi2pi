@@ -13,9 +13,7 @@
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
-
-// Command Descriptor Block
-using cdb_t = span<const int>;
+#include "base/s2p_defs.h"
 
 class PrimaryDevice;
 
@@ -23,14 +21,6 @@ class AbstractController : public PhaseHandler
 {
 
 public:
-
-    enum class shutdown_mode
-    {
-        none,
-        stop_s2p,
-        stop_pi,
-        restart_pi
-    };
 
     AbstractController(Bus&, int);
     ~AbstractController() override = default;

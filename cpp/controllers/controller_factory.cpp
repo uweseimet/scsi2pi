@@ -54,7 +54,7 @@ bool ControllerFactory::DeleteAllControllers()
     return true;
 }
 
-AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int ids) const
+shutdown_mode ControllerFactory::ProcessOnController(int ids) const
 {
     if (const auto &it = ranges::find_if(controllers, [&](const auto &c) {
         return (ids & (1 << c.first));
@@ -62,7 +62,7 @@ AbstractController::shutdown_mode ControllerFactory::ProcessOnController(int ids
         return (*it).second->ProcessOnController(ids);
     }
 
-    return AbstractController::shutdown_mode::none;
+    return shutdown_mode::none;
 }
 
 bool ControllerFactory::HasController(int target_id) const

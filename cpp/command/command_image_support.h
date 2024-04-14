@@ -9,10 +9,11 @@
 #pragma once
 
 #include <filesystem>
-#include "command_context.h"
 
 using namespace std;
 using namespace filesystem;
+
+class CommandContext;
 
 class CommandImageSupport
 {

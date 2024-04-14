@@ -8,13 +8,15 @@
 
 #include <gtest/gtest.h>
 #include "shared/s2p_exceptions.h"
+#include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
 
-// getopt() on BSD differs from Linux, so these tests cannot pass on BSD
-#if !defined __FreeBSD__ && !defined __NetBSD__
 void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
     nullptr)
 {
+    for (const auto &arg : args) {
+        free(arg); // NOSONAR free() must be used here because of allocation with strdup()
+    }
     args.clear();
     args.emplace_back(strdup("s2p"));
     args.emplace_back(strdup(arg1));
@@ -129,6 +131,10 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
 
     SetUpArgs(args, "-c", "=xyz");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+
+    for (const auto &arg : args) {
+        free(arg); // NOSONAR free() must be used here because of allocation with strdup()
+    }
 }
 
 TEST(S2pParserTest, ParseArguments_BlueSCSI)
@@ -253,5 +259,8 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
 
     SetUpArgs(args, "-B", "HD.hds");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+
+    for (const auto &arg : args) {
+        free(arg); // NOSONAR free() must be used here because of allocation with strdup()
+    }
 }
-#endif

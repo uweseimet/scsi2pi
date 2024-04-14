@@ -13,6 +13,7 @@
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
+#include "s2p_defs.h"
 #include "device.h"
 
 class PrimaryDevice : private ScsiPrimaryCommands, public Device
@@ -99,7 +100,7 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
+    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = SEND_NO_DELAY)
     : Device(type, lun), level(l), delay_after_bytes(delay)
     {
     }
@@ -180,7 +181,7 @@ private:
     array<command, 256> commands = { };
 
     // Number of bytes during a transfer after which to delay for the Mac DaynaPort driver
-    int delay_after_bytes = Bus::SEND_NO_DELAY;
+    int delay_after_bytes = SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
 };

@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <getopt.h>
+#include <spdlog/spdlog.h>
+#include "base/property_handler.h"
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
 #include "s2p/s2p_parser.h"

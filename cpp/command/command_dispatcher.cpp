@@ -181,23 +181,23 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
 // Shutdown on a remote interface command
 bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
-    AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::none;
+    shutdown_mode mode = shutdown_mode::none;
 
     if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
-        mode = AbstractController::shutdown_mode::stop_s2p;
+        mode = shutdown_mode::stop_s2p;
     }
     else if (m == "system") {
-        mode = AbstractController::shutdown_mode::stop_pi;
+        mode = shutdown_mode::stop_pi;
     }
     else if (m == "reboot") {
-        mode = AbstractController::shutdown_mode::restart_pi;
+        mode = shutdown_mode::restart_pi;
     }
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != AbstractController::shutdown_mode::stop_s2p && getuid()) {
+    if (mode != shutdown_mode::stop_s2p && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -209,22 +209,22 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
 }
 
 // Shutdown on a SCSI command
-bool CommandDispatcher::ShutDown(AbstractController::shutdown_mode mode) const
+bool CommandDispatcher::ShutDown(shutdown_mode mode) const
 {
     switch (mode) {
-    case AbstractController::shutdown_mode::stop_s2p:
+    case shutdown_mode::stop_s2p:
         info("s2p shutdown requested");
         return true;
 
-    case AbstractController::shutdown_mode::stop_pi:
+    case shutdown_mode::stop_pi:
         info("Pi shutdown requested");
-        system("init 0");
+        (void)system("init 0");
         error("Pi shutdown failed");
         break;
 
-    case AbstractController::shutdown_mode::restart_pi:
+    case shutdown_mode::restart_pi:
         info("Pi restart requested");
-        system("init 6");
+        (void)system("init 6");
         error("Pi restart failed");
         break;
 

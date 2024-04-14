@@ -6,7 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include <clocale>
+#include <locale>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>

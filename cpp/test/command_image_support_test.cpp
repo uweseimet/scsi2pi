@@ -8,6 +8,7 @@
 
 #include "mocks.h"
 #include "protobuf/protobuf_util.h"
+#include "command/command_context.h"
 #include "command/command_image_support.h"
 
 using namespace protobuf_util;
