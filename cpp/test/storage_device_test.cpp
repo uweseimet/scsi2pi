@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_exceptions.h"
 #include "devices/storage_device.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(StorageDeviceTest, SetGetFilename)
 {

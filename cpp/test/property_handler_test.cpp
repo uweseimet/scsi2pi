@@ -9,9 +9,9 @@
 // Note that this test depends on no conflicting global properties being defined in /etc/s2p.conf
 
 #include <gtest/gtest.h>
-#include "test/test_shared.h"
-#include "shared/s2p_exceptions.h"
 #include "base/property_handler.h"
+#include "shared/s2p_exceptions.h"
+#include "test_shared.h"
 
 using namespace testing;
 

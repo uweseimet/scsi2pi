@@ -8,17 +8,17 @@
 //
 //---------------------------------------------------------------------------
 
-#include <unistd.h>
-#include <poll.h>
-#include <arpa/inet.h>
-#include <spdlog/spdlog.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
 #include <sstream>
+#include <arpa/inet.h>
 #ifdef __linux__
 #include <linux/if_tun.h>
 #include <linux/sockios.h>
 #endif
+#include <net/if.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <spdlog/spdlog.h>
 #include "shared/network_util.h"
 #include "tap_driver.h"
 

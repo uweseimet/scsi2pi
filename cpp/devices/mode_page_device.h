@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "base/property_handler.h"
 #include "base/primary_device.h"
+#include "base/property_handler.h"
 
 class ModePageDevice : public PrimaryDevice
 {

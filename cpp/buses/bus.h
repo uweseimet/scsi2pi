@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include <cstdint>
-#include <vector>
 #include <array>
+#include <cstdint>
 #include <string>
+#include <vector>
 #include "shared/scsi.h"
 #include "base/s2p_defs.h"
 

@@ -6,11 +6,11 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
-#include <fstream>
 #include <csignal>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"

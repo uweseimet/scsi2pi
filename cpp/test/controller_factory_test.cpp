@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/s2p_defs.h"
 #include "base/device_factory.h"
+#include "base/s2p_defs.h"
 #include "controllers/controller_factory.h"
 
 TEST(ControllerFactoryTest, LifeCycle)

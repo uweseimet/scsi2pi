@@ -6,12 +6,12 @@
 //
 //---------------------------------------------------------------------------
 
-#include <set>
-#include <map>
 #include <iomanip>
+#include <map>
+#include <set>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_util.h"
 #include "protobuf/protobuf_util.h"
+#include "shared/s2p_util.h"
 #include "s2pctl_display.h"
 
 using namespace s2p_util;

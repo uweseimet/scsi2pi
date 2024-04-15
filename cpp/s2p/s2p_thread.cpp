@@ -6,14 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <csignal>
 #include <cassert>
+#include <csignal>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_exceptions.h"
 #include "command/command_context.h"
+#include "shared/s2p_exceptions.h"
 #include "s2p_thread.h"
 
 using namespace spdlog;

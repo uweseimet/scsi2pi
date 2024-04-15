@@ -8,11 +8,10 @@
 
 #include <cassert>
 #include <cstring>
-#include <iostream>
 #include <filesystem>
-#include <algorithm>
-#include <unistd.h>
+#include <iostream>
 #include <pwd.h>
+#include <unistd.h>
 #include <spdlog/spdlog.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"

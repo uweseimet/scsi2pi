@@ -9,9 +9,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <gtest/gtest.h>
-#include "shared/s2p_exceptions.h"
-#include "protobuf/protobuf_util.h"
 #include "command/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
 using namespace testing;

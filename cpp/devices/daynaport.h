@@ -22,11 +22,11 @@
 
 #pragma once
 
+#include <array>
+#include <unordered_map>
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif
-#include <unordered_map>
-#include <array>
 #include "base/interfaces/scsi_communications_commands.h"
 #include "base/primary_device.h"
 #include "tap_driver.h"

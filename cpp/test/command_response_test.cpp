@@ -7,12 +7,12 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_version.h"
 #include "base/device_factory.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
-#include "protobuf/protobuf_util.h"
 #include "controllers/controller_factory.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_version.h"
 
 using namespace spdlog;
 using namespace protobuf_util;

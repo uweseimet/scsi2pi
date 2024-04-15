@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_exceptions.h"
 #include "devices/printer.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(PrinterTest, Device_Defaults)
 {

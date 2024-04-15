@@ -6,18 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/json_util.h>
+#include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
-#include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
 
 using namespace google::protobuf;

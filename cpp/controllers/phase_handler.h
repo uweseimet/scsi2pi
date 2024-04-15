@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 #include "shared/scsi.h"
 
 using namespace std;

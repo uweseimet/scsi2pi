@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <mutex>
 #include <atomic>
+#include <mutex>
 #include "bus.h"
 
 class InProcessBus : public Bus

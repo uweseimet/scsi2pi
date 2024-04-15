@@ -8,12 +8,12 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <limits>
 #include <sstream>
-#include <vector>
-#include <array>
 #include <unordered_map>
+#include <vector>
 #include "scsi.h"
 
 using namespace std;

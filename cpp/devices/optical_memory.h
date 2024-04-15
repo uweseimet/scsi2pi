@@ -11,9 +11,9 @@
 
 #pragma once
 
+#include <map>
 #include <span>
 #include <vector>
-#include <map>
 #include "disk.h"
 
 using Geometry = pair<uint32_t, uint32_t>;

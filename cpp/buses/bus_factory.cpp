@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <spdlog/spdlog.h>
 #include "in_process_bus.h"
 #include "bus_factory.h"

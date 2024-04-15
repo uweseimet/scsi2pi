@@ -6,14 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
-#include <locale>
 #include <iostream>
 #include <fstream>
-#include <unistd.h>
+#include <locale>
 #include <getopt.h>
+#include <unistd.h>
+#include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
-#include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
 #include "s2pctl_core.h"
 

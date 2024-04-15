@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/s2p_exceptions.h"
 #include "base/memory_util.h"
+#include "shared/s2p_exceptions.h"
 #include "scsi_hd.h"
 
 using namespace memory_util;

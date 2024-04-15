@@ -6,17 +6,17 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
-#include <fstream>
 #include <csignal>
 #include <cstring>
+#include <fstream>
+#include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
-#include "shared/s2p_exceptions.h"
+#include <google/protobuf/util/json_util.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
+#include "shared/s2p_exceptions.h"
 #include "s2pproto_core.h"
 
 using namespace google::protobuf;

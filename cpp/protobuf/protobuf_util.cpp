@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <unistd.h>
-#include <sstream>
 #include <array>
 #include <iomanip>
+#include <sstream>
+#include <unistd.h>
 #include "shared/s2p_exceptions.h"
 #include "protobuf_util.h"
 

@@ -7,9 +7,9 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "protobuf/protobuf_util.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
+#include "protobuf/protobuf_util.h"
 
 using namespace protobuf_util;
 

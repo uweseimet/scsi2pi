@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_exceptions.h"
 #include "devices/daynaport.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ScsiDaynaportTest, Device_Defaults)
 {

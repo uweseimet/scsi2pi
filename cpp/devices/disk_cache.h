@@ -14,7 +14,6 @@
 #pragma once
 
 #include <array>
-#include <memory>
 #include "cache.h"
 
 class DiskTrack;

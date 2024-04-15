@@ -9,14 +9,14 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "command/command_executor.h"
 #include "buses/in_process_bus.h"
+#include "command/command_executor.h"
 #include "controllers/controller.h"
-#include "devices/sasi_hd.h"
-#include "devices/scsi_hd.h"
-#include "devices/scsi_cd.h"
-#include "devices/optical_memory.h"
 #include "devices/host_services.h"
+#include "devices/optical_memory.h"
+#include "devices/sasi_hd.h"
+#include "devices/scsi_cd.h"
+#include "devices/scsi_hd.h"
 #include "test_shared.h"
 
 using namespace testing;

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
+#include <spdlog/spdlog.h>
 #include "test_shared.h"
 
 int main(int argc, char*[])

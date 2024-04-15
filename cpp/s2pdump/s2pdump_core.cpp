@@ -6,20 +6,20 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
 #include <chrono>
 #include <csignal>
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_exceptions.h"
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
+#include "shared/s2p_exceptions.h"
 #include "s2pdump_core.h"
 
 using namespace filesystem;

@@ -7,9 +7,9 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "shared/s2p_exceptions.h"
 #include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
+#include "shared/s2p_exceptions.h"
 
 void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
     nullptr)

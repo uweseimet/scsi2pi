@@ -9,8 +9,8 @@
 //---------------------------------------------------------------------------
 
 #include <cstddef>
-#include "shared/s2p_exceptions.h"
 #include "base/memory_util.h"
+#include "shared/s2p_exceptions.h"
 #include "mode_page_device.h"
 
 using namespace memory_util;

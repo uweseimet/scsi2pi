@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace protobuf_util;
 

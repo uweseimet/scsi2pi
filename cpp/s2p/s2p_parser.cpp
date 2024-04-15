@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "base/property_handler.h"

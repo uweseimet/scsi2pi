@@ -10,10 +10,10 @@
 #include <iostream>
 #include <unistd.h>
 #include "mocks.h"
-#include "shared/s2p_version.h"
-#include "shared/s2p_exceptions.h"
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
+#include "shared/s2p_exceptions.h"
+#include "shared/s2p_version.h"
 
 using namespace filesystem;
 using namespace s2p_util;

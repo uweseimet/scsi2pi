@@ -8,24 +8,24 @@
 //
 //---------------------------------------------------------------------------
 
-#include <csignal>
-#include <sstream>
-#include <iostream>
-#include <fstream>
 #include <chrono>
+#include <csignal>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_version.h"
-#include "shared/s2p_exceptions.h"
-#include "buses/bus_factory.h"
 #include "base/device_factory.h"
+#include "buses/bus_factory.h"
 #include "command/command_context.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
-#include "protobuf/protobuf_util.h"
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
 #endif
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
+#include "shared/s2p_version.h"
 #include "s2p_parser.h"
 #include "s2p_core.h"
 

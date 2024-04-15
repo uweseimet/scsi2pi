@@ -9,16 +9,16 @@
 //---------------------------------------------------------------------------
 
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <gtest/gtest.h>
+#include "command/command_context.h"
+#include "protobuf/protobuf_util.h"
+#include "s2p/s2p_thread.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
-#include "protobuf/protobuf_util.h"
-#include "command/command_context.h"
-#include "s2p/s2p_thread.h"
 
 using namespace protobuf_util;
 using namespace network_util;
