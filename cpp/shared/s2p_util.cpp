@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2p_util.h"
 #include <cassert>
 #include <cstring>
 #include <filesystem>
@@ -185,14 +186,6 @@ string s2p_util::Banner(string_view app)
         << "Copyright (C) 2021-2024 Uwe Seimet\n";
 
     return s.str();
-}
-
-string s2p_util::GetExtensionLowerCase(string_view filename)
-{
-    const string &ext = ToLower(path(filename).extension().string());
-
-    // Remove the leading dot
-    return ext.empty() ? "" : ext.substr(1);
 }
 
 string s2p_util::GetScsiLevel(int scsi_level)

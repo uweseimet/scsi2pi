@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2pctl_commands.h"
 #include <fstream>
 #include <iostream>
 #include <arpa/inet.h>
@@ -18,7 +19,6 @@
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
-#include "s2pctl_commands.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;

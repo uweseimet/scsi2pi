@@ -9,9 +9,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "optical_memory.h"
 #include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
-#include "optical_memory.h"
 
 using namespace memory_util;
 

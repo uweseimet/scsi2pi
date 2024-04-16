@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "bus.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include "bus_factory.h"

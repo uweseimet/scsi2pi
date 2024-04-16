@@ -6,11 +6,11 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_context.h"
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_exceptions.h"
 #include "protobuf/protobuf_util.h"
-#include "command_context.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace protobuf_util;

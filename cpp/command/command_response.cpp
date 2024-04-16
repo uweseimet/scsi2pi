@@ -6,16 +6,16 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_response.h"
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
+#include "command_image_support.h"
 #include "controllers/controller.h"
+#include "devices/disk.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
-#include "devices/disk.h"
-#include "command_image_support.h"
-#include "command_response.h"
 
 using namespace spdlog;
 using namespace s2p_util;
@@ -36,8 +36,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
 
     if (device->SupportsParams()) {
         for (const auto& [key, value] : device->GetDefaultParams()) {
-            auto &map = *properties.mutable_default_params();
-            map[key] = value;
+            (*properties.mutable_default_params())[key] = value;
         }
     }
 
@@ -217,13 +216,13 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
         }
     }
 
-    auto devices_info = result.mutable_devices_info();
-    for (const auto& [id, lun] : id_sets) {
-        for (const auto &d : devices) {
-            if (d->GetId() == id && d->GetLun() == lun) {
-                GetDevice(d, *devices_info->add_devices());
-                break;
-            }
+    for (const auto& [i, l] : id_sets) {
+        // Work-around for old compilers that have issues with directly referencing id/lun in the lambda below
+        const int id = i;
+        const int lun = l;
+        if (const auto &it = ranges::find_if(devices,
+            [&id, &lun](const auto &d) {return d->GetId() == id && d->GetLun() == lun;}); it != devices.end()) {
+            GetDevice(*it, *result.mutable_devices_info()->add_devices());
         }
     }
 
@@ -233,7 +232,7 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
 void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
     const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids) const
 {
-    const vector<string> command_operations = Split(GetParam(command, "operations"), ',');
+    const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
     for (const string &operation : command_operations) {
         operations.insert(ToUpper(operation));
@@ -482,12 +481,10 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
 
     for (const auto &device : command.devices()) {
         bool has_device = false;
-        for (const auto &d : devices) {
-            if (d->GetId() == device.id() && d->GetLun() == device.unit()) {
-                id_sets.insert( { device.id(), device.unit() });
-                has_device = true;
-                break;
-            }
+        if (ranges::any_of(devices,
+            [&device](const auto &d) {return d->GetId() == device.id() && d->GetLun() == device.unit();})) {
+            id_sets.insert( { device.id(), device.unit() });
+            has_device = true;
         }
 
         if (!has_device) {

@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include "in_process_bus.h"
+#include <spdlog/spdlog.h>
 
 using namespace spdlog;
 
@@ -17,20 +17,20 @@ bool InProcessBus::Init(bool target)
         return false;
     }
 
-    if (!target) {
-        const auto now = chrono::steady_clock::now();
-
-        // Wait for the target up to 1 s
-        do {
-            if (target_enabled) {
-                return true;
-            }
-        } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
-
-        return false;
+    if (target) {
+        return true;
     }
 
-    return true;
+    const auto now = chrono::steady_clock::now();
+
+    // Wait for the target up to 1 s
+    do {
+        if (target_enabled) {
+            return true;
+        }
+    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
+
+    return false;
 }
 
 void InProcessBus::CleanUp()
@@ -95,7 +95,7 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
     bus.SetSignal(pin, state);
 }
 
-string DelegatingInProcessBus::GetSignalName(int pin) const
+string DelegatingInProcessBus::GetSignalName(int pin)
 {
     const auto &it = SIGNALS.find(pin);
     return it != SIGNALS.end() ? it->second : "???";

@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_localizer.h"
 #include <cassert>
 #include <unordered_set>
-#include "command_localizer.h"
 
 using namespace s2p_util;
 

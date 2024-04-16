@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "initiator_util.h"
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
-#include "initiator_util.h"
 
 using namespace spdlog;
 using namespace s2p_util;

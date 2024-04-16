@@ -18,7 +18,8 @@ enum class scsi_level
     spc_3 = 5,
     spc_4 = 6,
     spc_5 = 7,
-    spc_6 = 8
+    spc_6 = 8,
+    last = 9
 };
 
 enum class bus_phase

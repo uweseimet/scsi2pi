@@ -6,8 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
+#include "s2pctl_core.h"
 #include <fstream>
+#include <iostream>
 #include <locale>
 #include <getopt.h>
 #include <unistd.h>
@@ -15,7 +16,6 @@
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2pctl_commands.h"
-#include "s2pctl_core.h"
 
 using namespace s2p_util;
 using namespace protobuf_util;

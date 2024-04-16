@@ -145,17 +145,6 @@ TEST(S2pUtilTest, GetScsiLevel)
     EXPECT_EQ("SPC-6", GetScsiLevel(8));
 }
 
-TEST(S2pUtilTest, GetExtensionLowerCase)
-{
-    EXPECT_EQ("", GetExtensionLowerCase(""));
-    EXPECT_EQ("", GetExtensionLowerCase("."));
-    EXPECT_EQ("", GetExtensionLowerCase(".ext"));
-    EXPECT_EQ("", GetExtensionLowerCase(".ext_long"));
-    EXPECT_EQ("ext", GetExtensionLowerCase("file.ext"));
-    EXPECT_EQ("ext", GetExtensionLowerCase("FILE.EXT"));
-    EXPECT_EQ("ext", GetExtensionLowerCase(".XYZ.EXT"));
-}
-
 TEST(S2pUtilTest, GetHexBytes)
 {
     auto bytes = HexToBytes("");

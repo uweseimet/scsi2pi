@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2p_core.h"
 #include <chrono>
 #include <csignal>
 #include <fstream>
@@ -27,7 +28,6 @@
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
-#include "s2p_core.h"
 
 using namespace spdlog;
 using namespace s2p_util;
@@ -181,7 +181,7 @@ int S2p::Run(span<char*> args, bool in_process)
     LogDevices(device_list);
     cout << device_list << flush;
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
     }
 

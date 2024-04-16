@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
+#include "device.h"
 #include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
-#include "device.h"
 
 using namespace spdlog;
 

@@ -62,8 +62,6 @@ bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(const string&, int&, int&);
 string Banner(string_view);
 
-string GetExtensionLowerCase(string_view);
-
 string GetScsiLevel(int);
 
 string FormatSenseData(sense_key, asc, int = 0);

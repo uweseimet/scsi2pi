@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include "phase_handler.h"
+#include <cassert>
 
 void PhaseHandler::Init()
 {

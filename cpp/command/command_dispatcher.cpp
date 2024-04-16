@@ -6,15 +6,15 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_dispatcher.h"
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "controllers/controller_factory.h"
-#include "shared/s2p_exceptions.h"
-#include "protobuf/protobuf_util.h"
-#include "command_image_support.h"
 #include "command_context.h"
+#include "command_image_support.h"
 #include "command_response.h"
-#include "command_dispatcher.h"
+#include "controllers/controller_factory.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace s2p_util;

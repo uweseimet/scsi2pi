@@ -12,11 +12,11 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/s2p_exceptions.h"
+#include "disk.h"
 #include "base/memory_util.h"
 #include "disk_cache.h"
 #include "linux_cache.h"
-#include "disk.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;

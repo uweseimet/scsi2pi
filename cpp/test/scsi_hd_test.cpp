@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <spdlog/spdlog.h>
 #include "mocks.h"
 #include "base/device_factory.h"
 #include "base/memory_util.h"
@@ -319,21 +320,31 @@ TEST(ScsiHdTest, ModeSelect6_Single)
 
 TEST(ScsiHdTest, ModeSelect6_Multiple)
 {
-    const string &format_device_page_1 =
+    const string &format_device_1 =
         R"(00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
-    const string &format_device_page_2 =
+    const string &format_device_2 =
         R"(00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
-    const string &format_device_page_3 =
+    const string &format_device_3 =
         R"(00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
+03:16:00:08:00:00:00:00:00:00:00:19:04:00:00:01:00:0b:00:14:00:00:00:00
+)";
+
+    const string &format_device_4 =
+        R"(00:00:00:00
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
 03:16:00:08:00:00:00:00:00:00:00:19:04:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
@@ -341,20 +352,26 @@ TEST(ScsiHdTest, ModeSelect6_Multiple)
     hd.SetSectorSizeInBytes(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10:00:00:1c");
-    vector<uint8_t> buf = CreateParameters(format_device_page_1);
+    vector<uint8_t> buf = CreateParameters(format_device_1);
+    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 
     // Select sector size of 2048 bytes, which is the current size, twice
-    cdb = CreateCdb(scsi_command::cmd_mode_select6, "10:00:00:34");
-    buf = CreateParameters(format_device_page_2);
+    buf = CreateParameters(format_device_2);
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes
-    cdb = CreateCdb(scsi_command::cmd_mode_select6, "10:00:00:4c");
-    buf = CreateParameters(format_device_page_3);
+    buf = CreateParameters(format_device_3);
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
+
+    // Select sector size of 2048 bytes after a sequence of other mode pages
+    buf = CreateParameters(format_device_4);
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
     EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 }
@@ -435,21 +452,31 @@ TEST(ScsiHdTest, ModeSelect10_Single)
 
 TEST(ScsiHdTest, ModeSelect10_Multiple)
 {
-    const string &format_device_page_1 =
+    const string &format_device_1 =
         R"(00:00:00:00:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
-    const string &format_device_page_2 =
+    const string &format_device_2 =
         R"(00:00:00:00:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
-    const string &format_device_page_3 =
+    const string &format_device_3 =
         R"(00:00:00:00:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
 03:16:00:08:00:00:00:00:00:00:00:19:08:00:00:01:00:0b:00:14:00:00:00:00
+03:16:00:08:00:00:00:00:00:00:00:19:04:00:00:01:00:0b:00:14:00:00:00:00
+)";
+
+    const string &format_device_4 =
+        R"(00:00:00:00:00:00:00:00
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
+08:0a:01:02:03:04:05:06:07:08:09:0a
 03:16:00:08:00:00:00:00:00:00:00:19:04:00:00:01:00:0b:00:14:00:00:00:00
 )";
 
@@ -457,20 +484,27 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     hd.SetSectorSizeInBytes(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select10, "10:00:00:00:00:00:00:20");
-    vector<uint8_t> buf = CreateParameters(format_device_page_1);
+    vector<uint8_t> buf = CreateParameters(format_device_1);
+    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select10,
+        fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 
     // Select sector size of 2048 bytes, which is the current size, twice
-    cdb = CreateCdb(scsi_command::cmd_mode_select10, "10:00:00:00:00:00:00:3a");
-    buf = CreateParameters(format_device_page_2);
+    buf = CreateParameters(format_device_2);
+    cdb = CreateCdb(scsi_command::cmd_mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes
-    cdb = CreateCdb(scsi_command::cmd_mode_select10, "10:00:00:00:00:00:00:5e");
-    buf = CreateParameters(format_device_page_3);
+    buf = CreateParameters(format_device_3);
+    cdb = CreateCdb(scsi_command::cmd_mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
+
+    // Select sector size of 2048 bytes after a sequence of other mode pages
+    buf = CreateParameters(format_device_4);
+    cdb = CreateCdb(scsi_command::cmd_mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
     EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
     EXPECT_EQ(2048U, hd.GetSectorSizeInBytes());
 }

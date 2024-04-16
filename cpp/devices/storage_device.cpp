@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "storage_device.h"
 #include <unistd.h>
 #include "shared/s2p_exceptions.h"
-#include "storage_device.h"
 
 using namespace filesystem;
 

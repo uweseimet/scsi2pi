@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "network_util.h"
 #include <cstring>
 #include <ifaddrs.h>
 #include <netdb.h>
@@ -13,7 +14,6 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include "network_util.h"
 
 using namespace std;
 

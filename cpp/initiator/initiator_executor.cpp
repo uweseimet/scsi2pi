@@ -6,12 +6,12 @@
 //
 //---------------------------------------------------------------------------
 
+#include "initiator_executor.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator_util.h"
 #include "shared/s2p_util.h"
-#include "initiator_executor.h"
 
 using namespace std;
 using namespace spdlog;

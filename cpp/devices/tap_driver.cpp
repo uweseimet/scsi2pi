@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "tap_driver.h"
 #include <sstream>
 #include <arpa/inet.h>
 #ifdef __linux__
@@ -20,7 +21,6 @@
 #include <unistd.h>
 #include <spdlog/spdlog.h>
 #include "shared/network_util.h"
-#include "tap_driver.h"
 
 using namespace spdlog;
 using namespace s2p_util;

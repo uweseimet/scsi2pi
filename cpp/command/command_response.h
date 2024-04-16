@@ -11,9 +11,12 @@
 #include <filesystem>
 #include <set>
 #include "base/device.h"
+#include "base/s2p_defs.h"
 
 using namespace filesystem;
 using namespace s2p_interface;
+
+class PrimaryDevice;
 
 class CommandResponse
 {

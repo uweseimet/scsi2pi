@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "controller_factory.h"
 #include "base/primary_device.h"
 #include "controller.h"
-#include "controller_factory.h"
 
 using namespace std;
 

@@ -42,6 +42,10 @@ public:
 private:
 
     DeviceFactory();
+    DeviceFactory(const DeviceFactory&) = delete;
+    DeviceFactory operator&(const DeviceFactory&) = delete;
+
+    static string GetExtensionLowerCase(string_view);
 
     inline static const unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DEVICE_MAPPING = {
         { "daynaport", SCDP },

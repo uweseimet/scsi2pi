@@ -6,11 +6,11 @@
 //
 //---------------------------------------------------------------------------
 
+#include "property_handler.h"
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"
-#include "property_handler.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -40,9 +40,9 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         }
     }
 
-    // Merge properties from property files and from the command line
-    for (const auto& [k, v] : cmd_properties) {
-        properties[k] = v;
+    // Merge properties from property files and from the command line, giving the command line priority
+    for (const auto& [key, value] : cmd_properties) {
+        properties[key] = value;
     }
 
     // Normalize properties by adding an explicit LUN where required

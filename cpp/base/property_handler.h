@@ -65,6 +65,8 @@ public:
 private:
 
     PropertyHandler() = default;
+    PropertyHandler(const PropertyHandler&) = delete;
+    PropertyHandler operator&(const PropertyHandler&) = delete;
 
     static void ParsePropertyFile(property_map&, const string&, bool);
 

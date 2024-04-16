@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2pexec_core.h"
 #include <csignal>
 #include <cstring>
 #include <filesystem>
@@ -14,7 +15,6 @@
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"
-#include "s2pexec_core.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -288,7 +288,7 @@ bool S2pExec::RunInteractive(bool in_process)
         return false;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return false;
     }
@@ -358,7 +358,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return -1;
     }

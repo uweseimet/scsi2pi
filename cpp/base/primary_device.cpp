@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include "buses/bus_factory.h"
-#include "shared/s2p_exceptions.h"
-#include "memory_util.h"
 #include "primary_device.h"
+#include "buses/bus_factory.h"
+#include "memory_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -55,13 +55,13 @@ bool PrimaryDevice::Init(const param_map &params)
 
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
-    const auto c = static_cast<int>(cmd);
-    if (const auto &command = commands[c]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd), c));
+    if (const auto &command = commands[static_cast<int>(cmd)]; command) {
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd),
+                static_cast<int>(cmd)));
         command();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", c));
+        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
@@ -80,7 +80,7 @@ int PrimaryDevice::GetId() const
 
 bool PrimaryDevice::SetScsiLevel(scsi_level l)
 {
-    if (l == scsi_level::none || l > scsi_level::spc_6) {
+    if (l == scsi_level::none || l >= scsi_level::last) {
         return false;
     }
 

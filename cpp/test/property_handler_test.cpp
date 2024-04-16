@@ -15,10 +15,8 @@
 
 using namespace testing;
 
-PropertyHandler SetUpProperties(string_view properties1, string_view properties2 = "",
-    const property_map &cmd_properties = { })
+void SetUpProperties(string_view properties1, string_view properties2 = "", const property_map &cmd_properties = { })
 {
-    auto &property_handler = PropertyHandler::Instance();
     string filenames;
     auto [fd1, filename1] = OpenTempFile();
     filenames = filename1;
@@ -31,8 +29,7 @@ PropertyHandler SetUpProperties(string_view properties1, string_view properties2
         (void)write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
-    property_handler.Init(filenames, cmd_properties, true);
-    return property_handler;
+    PropertyHandler::Instance().Init(filenames, cmd_properties, true);
 }
 
 TEST(PropertyHandlerTest, Init)
@@ -49,21 +46,20 @@ device.3.params=params3
         R"(key
 )";
 
-    auto property_handler = PropertyHandler::Instance();
-    property_handler.Init("", { }, true);
-    EXPECT_THROW(property_handler.Init("non_existing_file", { }, true), parser_exception);
+    PropertyHandler::Instance().Init("", { }, true);
+    EXPECT_THROW(PropertyHandler::Instance().Init("non_existing_file", { }, true), parser_exception);
 
     property_map cmd_properties;
     cmd_properties["key1"] = "value2";
     cmd_properties["device.1.params"] = "params1";
     cmd_properties["device.2:1.params"] = "params2";
-    property_handler = SetUpProperties(properties1, properties2, cmd_properties);
-    EXPECT_EQ("value2", property_handler.GetProperty("key1"));
-    EXPECT_EQ("value2", property_handler.GetProperty("key2"));
-    EXPECT_EQ("value3", property_handler.GetProperty("key3"));
-    EXPECT_EQ("params1", property_handler.GetProperty("device.1:0.params"));
-    EXPECT_EQ("params2", property_handler.GetProperty("device.2:1.params"));
-    EXPECT_EQ("params3", property_handler.GetProperty("device.3:0.params"));
+    SetUpProperties(properties1, properties2, cmd_properties);
+    EXPECT_EQ("value2", PropertyHandler::Instance().GetProperty("key1"));
+    EXPECT_EQ("value2", PropertyHandler::Instance().GetProperty("key2"));
+    EXPECT_EQ("value3", PropertyHandler::Instance().GetProperty("key3"));
+    EXPECT_EQ("params1", PropertyHandler::Instance().GetProperty("device.1:0.params"));
+    EXPECT_EQ("params2", PropertyHandler::Instance().GetProperty("device.2:1.params"));
+    EXPECT_EQ("params3", PropertyHandler::Instance().GetProperty("device.3:0.params"));
 
     EXPECT_THROW(SetUpProperties(properties3), parser_exception);
 }
@@ -76,13 +72,13 @@ key2=value2
 key11=value2
 )";
 
-    const auto &property_handler = SetUpProperties(properties);
+    SetUpProperties(properties);
 
-    auto p = property_handler.GetProperties("key2");
+    auto p = PropertyHandler::Instance().GetProperties("key2");
     EXPECT_EQ(1U, p.size());
     EXPECT_TRUE(p.contains("key2"));
 
-    p = property_handler.GetProperties("key1");
+    p = PropertyHandler::Instance().GetProperties("key1");
     EXPECT_EQ(2U, p.size());
     EXPECT_TRUE(p.contains("key1"));
     EXPECT_TRUE(p.contains("key11"));
@@ -95,14 +91,14 @@ TEST(PropertyHandlerTest, GetProperty)
 key2=value2
 )";
 
-    const auto &property_handler = SetUpProperties(properties);
+    SetUpProperties(properties);
 
-    EXPECT_TRUE(property_handler.GetProperty("key").empty());
-    EXPECT_TRUE(property_handler.GetProperty("key3").empty());
-    EXPECT_EQ("value1", property_handler.GetProperty("key1"));
-    EXPECT_EQ("value2", property_handler.GetProperty("key2"));
+    EXPECT_TRUE(PropertyHandler::Instance().GetProperty("key").empty());
+    EXPECT_TRUE(PropertyHandler::Instance().GetProperty("key3").empty());
+    EXPECT_EQ("value1", PropertyHandler::Instance().GetProperty("key1"));
+    EXPECT_EQ("value2", PropertyHandler::Instance().GetProperty("key2"));
 
-    EXPECT_EQ("default_value", property_handler.GetProperty("key", "default_value"));
+    EXPECT_EQ("default_value", PropertyHandler::Instance().GetProperty("key", "default_value"));
 }
 
 TEST(PropertyHandlerTest, GetCustomModePages)
@@ -137,9 +133,9 @@ mode_page.1._:PRODUCT2=
 )";
 
 
-    auto property_handler = SetUpProperties(properties1);
+    SetUpProperties(properties1);
 
-    auto mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
+    auto mode_pages = PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT");
     EXPECT_EQ(3UL, mode_pages.size());
     auto value = mode_pages.at(0);
     EXPECT_EQ(6UL, value.size());
@@ -157,8 +153,8 @@ mode_page.1._:PRODUCT2=
     value = mode_pages.at(3);
     EXPECT_TRUE(value.empty());
 
-    property_handler = SetUpProperties(properties_savable);
-    mode_pages = property_handler.GetCustomModePages("VENDOR", "PRODUCT");
+    SetUpProperties(properties_savable);
+    mode_pages = PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT");
     EXPECT_EQ(1UL, mode_pages.size());
     value = mode_pages.at(1);
     EXPECT_EQ(4UL, value.size());
@@ -167,15 +163,15 @@ mode_page.1._:PRODUCT2=
     EXPECT_EQ(byte { 0xef }, value[2]);
     EXPECT_EQ(byte { 0xff }, value[3]);
 
-    property_handler = SetUpProperties(properties_codes_inconsistent);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
+    SetUpProperties(properties_codes_inconsistent);
+    EXPECT_TRUE(PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT").empty());
 
-    property_handler = SetUpProperties(properties_length_wrong);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
+    SetUpProperties(properties_length_wrong);
+    EXPECT_TRUE(PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT").empty());
 
-    property_handler = SetUpProperties(properties_code_invalid);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
+    SetUpProperties(properties_code_invalid);
+    EXPECT_TRUE(PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT").empty());
 
-    property_handler = SetUpProperties(properties_format_invalid);
-    EXPECT_TRUE(property_handler.GetCustomModePages("VENDOR", "PRODUCT").empty());
+    SetUpProperties(properties_format_invalid);
+    EXPECT_TRUE(PropertyHandler::Instance().GetCustomModePages("VENDOR", "PRODUCT").empty());
 }

@@ -29,10 +29,10 @@
 // With STOP PRINT printing can be cancelled before SYNCHRONIZE BUFFER was sent.
 //
 
+#include "printer.h"
 #include <filesystem>
 #include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
-#include "printer.h"
 
 using namespace filesystem;
 using namespace memory_util;

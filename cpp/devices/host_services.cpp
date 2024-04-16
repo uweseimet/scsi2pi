@@ -80,6 +80,7 @@
 // ReceiveOperationResults returns the result of the last operation executed.
 //
 
+#include "host_services.h"
 #include <chrono>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
@@ -89,7 +90,6 @@
 #include "controllers/controller.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
-#include "host_services.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;

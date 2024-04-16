@@ -6,21 +6,21 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2pdump_core.h"
 #include <chrono>
 #include <csignal>
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
-#include "s2pdump_core.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -310,7 +310,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             throw parser_exception("Can't initialize bus");
         }
 
-        if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+        if (!in_process && !bus->IsRaspberryPi()) {
             throw parser_exception("There is no board hardware support");
         }
     }

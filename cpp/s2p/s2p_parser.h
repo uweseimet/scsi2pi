@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "base/property_handler.h"
 #include <span>
 
 class S2pParser

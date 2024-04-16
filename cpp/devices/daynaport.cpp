@@ -20,10 +20,10 @@
 //
 //---------------------------------------------------------------------------
 
+#include "daynaport.h"
 #include "base/memory_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
-#include "daynaport.h"
 
 using namespace spdlog;
 using namespace memory_util;

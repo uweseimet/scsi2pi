@@ -6,16 +6,16 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_executor.h"
 #include <sstream>
 #include <spdlog/spdlog.h>
-#include "controllers/controller.h"
 #include "base/device_factory.h"
-#include "shared/s2p_exceptions.h"
-#include "protobuf/protobuf_util.h"
-#include "devices/disk.h"
-#include "command_image_support.h"
 #include "command_context.h"
-#include "command_executor.h"
+#include "command_image_support.h"
+#include "controllers/controller.h"
+#include "devices/disk.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace protobuf_util;

@@ -43,6 +43,7 @@ public:
     MOCK_METHOD(void, WaitBusSettle, (), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));
     MOCK_METHOD(void, DisableIRQ, (), (override));
+    MOCK_METHOD(bool, IsRaspberryPi, (), (const, override));
 };
 
 class MockInProcessBus : public InProcessBus

@@ -36,20 +36,15 @@ public:
         return command_names[static_cast<int>(opcode)];
     }
 
-    bool IsRaspberryPi() const
-    {
-        return pi_type != RpiBus::PiType::unknown;
-    }
-
 private:
 
     BusFactory();
+    BusFactory(const BusFactory&) = delete;
+    BusFactory operator&(const BusFactory&) = delete;
 
     void AddCommand(scsi_command, int, const char*);
 
-    bool CheckForPi();
-
-    RpiBus::PiType pi_type = RpiBus::PiType::unknown;
+    static RpiBus::PiType CheckForPi();
 
     array<int, 256> command_byte_counts;
 

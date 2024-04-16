@@ -57,6 +57,11 @@ public:
 
     void WaitBusSettle() const override;
 
+    bool IsRaspberryPi() const override
+    {
+        return true;
+    }
+
 private:
 
     void InitializeSignals(int);

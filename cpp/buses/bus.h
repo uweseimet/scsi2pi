@@ -146,6 +146,8 @@ public:
     virtual bool GetSignal(int) const = 0;
     virtual void SetSignal(int, bool) = 0;
 
+    virtual bool IsRaspberryPi() const = 0;
+
     virtual bool WaitSignal(int, bool);
 
     int CommandHandShake(vector<uint8_t>&);

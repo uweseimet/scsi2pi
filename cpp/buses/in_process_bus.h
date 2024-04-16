@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <unordered_map>
 #include "bus.h"
 
 class InProcessBus : public Bus
@@ -72,9 +73,16 @@ public:
         // Nothing to do
     }
 
+    bool IsRaspberryPi() const override
+    {
+        return false;
+    }
+
 protected:
 
     InProcessBus() = default;
+    InProcessBus(const InProcessBus&) = delete;
+    InProcessBus operator&(const InProcessBus&) = delete;
 
 private:
 
@@ -142,7 +150,7 @@ private:
         return IsTarget() ? "target" : "initiator";
     }
 
-    string GetSignalName(int) const;
+    static string GetSignalName(int);
 
     InProcessBus &bus;
 

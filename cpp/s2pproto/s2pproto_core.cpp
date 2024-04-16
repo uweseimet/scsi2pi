@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2pproto_core.h"
 #include <csignal>
 #include <cstring>
 #include <fstream>
@@ -17,7 +18,6 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
-#include "s2pproto_core.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
@@ -236,7 +236,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return EXIT_FAILURE;
     }

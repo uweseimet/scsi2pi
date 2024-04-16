@@ -6,14 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_image_support.h"
 #include <fstream>
 #include <spdlog/spdlog.h>
+#include "command_context.h"
 #ifdef BUILD_DISK
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
-#include "command_context.h"
-#include "command_image_support.h"
 
 using namespace spdlog;
 using namespace s2p_util;
