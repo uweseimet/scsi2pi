@@ -1,13 +1,14 @@
 # What is SCSI2Pi?
 
-SCSI2Pi is an advanced alternative to the <a href="https://github.com/PiSCSI/piscsi">PiSCSI software</a> for the PiSCSI/RaSCSI board. SCSI2Pi provides an improved device emulation, higher transfer rates, new tools for the board's initiator mode and <a href="https://www.scsi2pi.net/en/piscsi_comparison.html">numerous new features</a>. These add to the <a href="https://www.scsi2pi.net/en/scsi2pi.html">extensive improvements</a> I contributed to the PiSCSI project in the past. SCSI2Pi is compatible with the PiSCSI web UI and the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a>.<br />
+SCSI2Pi is the advanced and more performant alternative to the <a href="https://github.com/PiSCSI/piscsi">PiSCSI software</a> for the PiSCSI/RaSCSI board. SCSI2Pi provides an improved device emulation, higher transfer rates, new tools for the board's initiator mode and <a href="https://www.scsi2pi.net/en/piscsi_comparison.html">numerous new features</a>. SCSI2Pi is compatible with the PiSCSI web UI and the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a>.<br />
 You can switch from PiSCSI to SCSI2Pi in seconds, simply by installing a <a href="https://www.scsi2pi.net/en/downloads.html">package with the SCSI2Pi binaries</a>. No time-consuming compilation is required.<br />
-SCSI2Pi emulates several SCSI or SASI devices like hard drives, CD-ROM drives, printers or network adapters at the same time. You can easily add a range of devices to computers like 68k Macs, Atari ST/TT/Falcon030, Amiga, Unix workstations, samplers or other computers with SCSI port.
+SCSI2Pi emulates several SCSI or SASI devices like hard drives, CD-ROM drives, printers or network adapters at the same time. You can easily add a range of devices to computers like 68k Macs, Atari ST/TT/Falcon030, Amiga, Unix workstations, samplers or other computers with SCSI port.<br />
+The <a href="https://www.scsi2pi.net">SCSI2Pi website</a> addresses regular users and developers, whereas the information on GitHub is rather developer-centric. The website also provides <a href="https://www.scsi2pi.net/en/downloads.html">binary development and release packages</a> and information on the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android.
 
 # Who am I?
 
-In the past I was the main contributor for the PiSCSI SCSI emulation. I revised the backend architecture, added a remote interface and re-engineered most of the legacy C++ code. The code was updated to C++-20, which is the latest C++ standard you can currently use on the Pi. All in all this resulted in more modular code and drastically improved <a href="https://sonarcloud.io/project/overview?id=uweseimet_scsi2pi>SonarQube code metrics</a>. Besides adding numerous <a href="https://www.scsi2pi.net/en/scsi2pi.html">new features</a> and improving the compatibility with many platforms, I also fixed a range of bugs in the legacy codebase and added an extensive set of unit tests.<br />
-I am also the author of the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android, which is the remote control for your PiSCSI/RaSCSI boards. SCSI Control supports both SCSI2Pi and PiSCSI. The full range of app features requires SCSI2Pi, though.
+In the past I was the <a href="https://www.scsi2pi.net/en/scsi2pi.html">main contributor</a> to the PiSCSI SCSI emulation. I revised the backend architecture, added a remote interface and re-engineered most of the legacy C++ code so that it uses modern C++. This resulted in more modular code and drastically improved <a href="https://sonarcloud.io/project/overview?id=uweseimet_scsi2pi">SonarQube code metrics</a>. Besides adding numerous <a href="https://www.scsi2pi.net/en/scsi2pi.html">new features</a> and improving the compatibility with many platforms, I also fixed a range of bugs and added an extensive set of unit tests.<br />
+I am also the author of the <a href="https://www.hddriver.net">HDDRIVER driver software for Atari computers</a> and the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android, which is the remote control for your PiSCSI/RaSCSI boards. SCSI Control supports both SCSI2Pi and PiSCSI. The full range of app features requires SCSI2Pi, though.
 
 # How is SCSI2Pi related to PiSCSI?
 
@@ -18,11 +19,6 @@ There was also not much interest in further developing the SCSI emulation and ex
 
 SCSI2Pi is not meant to completely replace the PiSCSI software, but only the device emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media.<br />
 There is no SCSI2Pi support for the X68000 platform, in particular not for the host bridge (SCBR) device. In PiSCSI the respective code has always been in a bad shape, and nobody has been interested in testing it. The other PiSCSI features (and many more) are supported by SCSI2Pi - most of these I implemented anyway ;-).
-
-# SCSI2Pi website
-
-The <a href="https://www.scsi2pi.net">SCSI2Pi website</a> addresses regular users and developers, whereas the information on GitHub is rather developer-centric. The website also provides <a href="https://www.scsi2pi.net/en/downloads.html">regular development and release</a> packages. These packages contain the SCSI2Pi binaries, i.e. no time-consuming compilation is required. Installing SCSI2Pi on your Pi is just a matter of seconds.<br />
-The website also provides information on the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android.
 
 # Contributing to SCSI2Pi
 
