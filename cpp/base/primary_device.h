@@ -16,7 +16,7 @@
 #include "s2p_defs.h"
 #include "device.h"
 
-class PrimaryDevice : private ScsiPrimaryCommands, public Device
+class PrimaryDevice : public ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
 
@@ -34,7 +34,7 @@ public:
 
     virtual void Dispatch(scsi_command);
 
-    inline auto GetController() const
+    auto GetController() const
     {
         return controller;
     }

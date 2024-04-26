@@ -16,7 +16,7 @@
 
 using namespace std;
 
-class Printer : public PrimaryDevice, private ScsiPrinterCommands
+class Printer : public PrimaryDevice, public ScsiPrinterCommands
 {
 
 public:

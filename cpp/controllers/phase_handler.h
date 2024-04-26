@@ -36,43 +36,43 @@ protected:
 
     PhaseHandler() = default;
 
-    inline bus_phase GetPhase() const
+    bus_phase GetPhase() const
     {
         return phase;
     }
-    inline void SetPhase(bus_phase p)
+    void SetPhase(bus_phase p)
     {
         phase = p;
     }
-    inline bool IsSelection() const
+    bool IsSelection() const
     {
         return phase == bus_phase::selection;
     }
-    inline bool IsBusFree() const
+    bool IsBusFree() const
     {
         return phase == bus_phase::busfree;
     }
-    inline bool IsCommand() const
+    bool IsCommand() const
     {
         return phase == bus_phase::command;
     }
-    inline bool IsStatus() const
+    bool IsStatus() const
     {
         return phase == bus_phase::status;
     }
-    inline bool IsDataIn() const
+    bool IsDataIn() const
     {
         return phase == bus_phase::datain;
     }
-    inline bool IsDataOut() const
+    bool IsDataOut() const
     {
         return phase == bus_phase::dataout;
     }
-    inline bool IsMsgIn() const
+    bool IsMsgIn() const
     {
         return phase == bus_phase::msgin;
     }
-    inline bool IsMsgOut() const
+    bool IsMsgOut() const
     {
         return phase == bus_phase::msgout;
     }

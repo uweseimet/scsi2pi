@@ -21,7 +21,7 @@ using namespace std;
 
 class Cache;
 
-class Disk : public StorageDevice, private ScsiBlockCommands
+class Disk : public StorageDevice, public ScsiBlockCommands
 {
 
 public:
