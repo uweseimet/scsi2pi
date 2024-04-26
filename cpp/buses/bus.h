@@ -215,7 +215,7 @@ public:
         SetSignal(PIN_MSG, state);
     }
 
-    inline bool GetCD() const
+    bool GetCD() const
     {
         return GetSignal(PIN_CD);
     }
@@ -241,7 +241,7 @@ protected:
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    inline bool IsTarget() const
+    bool IsTarget() const
     {
         return target_mode;
     }
