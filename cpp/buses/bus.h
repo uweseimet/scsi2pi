@@ -165,12 +165,12 @@ public:
         return GetSignal(PIN_SEL);
     }
 
-    inline bool GetREQ() const
+    bool GetREQ() const
     {
         return GetSignal(PIN_REQ);
     }
 
-    inline void SetREQ(bool state)
+    void SetREQ(bool state)
     {
         SetSignal(PIN_REQ, state);
     }
@@ -185,17 +185,17 @@ public:
         SetSignal(PIN_ATN, state);
     }
 
-    inline bool GetACK() const
+    bool GetACK() const
     {
         return GetSignal(PIN_ACK);
     }
 
-    inline void SetACK(bool state)
+    void SetACK(bool state)
     {
         SetSignal(PIN_ACK, state);
     }
 
-    inline bool GetRST() const
+    bool GetRST() const
     {
         return GetSignal(PIN_RST);
     }
@@ -205,7 +205,7 @@ public:
         SetSignal(PIN_RST, state);
     }
 
-    inline bool GetMSG() const
+    bool GetMSG() const
     {
         return GetSignal(PIN_MSG);
     }
@@ -215,7 +215,7 @@ public:
         SetSignal(PIN_MSG, state);
     }
 
-    inline bool GetCD() const
+    bool GetCD() const
     {
         return GetSignal(PIN_CD);
     }
@@ -241,7 +241,7 @@ protected:
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    inline bool IsTarget() const
+    bool IsTarget() const
     {
         return target_mode;
     }

@@ -31,7 +31,7 @@
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice, private ScsiCommunicationsCommands
+class DaynaPort : public PrimaryDevice, public ScsiCommunicationsCommands
 {
 
 public:

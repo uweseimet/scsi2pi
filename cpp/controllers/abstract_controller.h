@@ -92,7 +92,7 @@ protected:
 
     virtual bool Process() = 0;
 
-    inline Bus& GetBus() const
+    Bus& GetBus() const
     {
         return bus;
     }
