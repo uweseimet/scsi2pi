@@ -12,7 +12,7 @@ I am also the author of the <a href="https://www.hddriver.net">HDDRIVER driver s
 
 # How is SCSI2Pi related to PiSCSI?
 
-In the PiSCSI project there was not much interest in replacing old, often buggy or unnecessary code, or to improve the data transfer rates. Long promised features on the roadmap and user requests in tickets were not addressed and progress was slow. This is why I started to work on the emulation in a separate project, while staying compatible with the PiSCSI web interface. The major part of the PiSCSI C++ codebase has been contributed by me anyway.<br />
+In the PiSCSI project there was not much interest in replacing old, often buggy or unnecessary code, or to improve the data transfer rates. Long promised features on the roadmap and user requests in tickets were not addressed, and it took long for features or bug fixes to make it into a release. This is why I started to work on the emulation in a separate project, while staying compatible with the PiSCSI web interface. The major part of the PiSCSI C++ codebase has been contributed by me anyway.<br />
 With PiSCSI there was also not much interest in further developing the SCSI emulation and exploiting the initiator mode feature of the FULLSPEC board. This mode, together with new SCSI2Pi command line tools, offers solutions for use cases that have never been addressed before. These tools also help with advanced testing, making the emulation more robust and reliable.
 
 # SCSI2Pi goals
