@@ -19,8 +19,3 @@ With PiSCSI there was also not much interest in further developing the SCSI emul
 
 SCSI2Pi is not meant to completely replace the PiSCSI software, but only the device emulation and the tools. For the PiSCSI project great work is still being done on the web interface, and on supporting users in social media.<br />
 There is no SCSI2Pi support for the X68000 platform, in particular not for the host bridge (SCBR) device. In PiSCSI the respective code has always been in a bad shape, and nobody has been interested in testing it. The other PiSCSI features (and many more) are supported by SCSI2Pi - most of these I implemented anyway ;-).
-
-# Contributing to SCSI2Pi
-
-If you are interested in SCSI on the Pi and in modern C++ and platform-independent programming you are welcome as a contributor, be it as a developer or a code reviewer.<br />
-Have I just said "platform-independent", even though SCSI2Pi is about the Pi? I did indeed, because I ensure that the PiSCSI code also compiles and partially runs on regular Linux PCs and on BSD. This is relevant for developers and for testing, because the faster your development machine, the better. A PC provides a much better development environment than a Pi. My primary development platform is Eclipse CDT on a Linux PC, by the way. Thanks to the <a href="https://github.com/uweseimet/scsi2pi/wiki/Advanced-Testing">SCSI2Pi in-process bus</a> most of the testing does not even require a Pi.
