@@ -1,6 +1,6 @@
 .DEFAULT_GOAL: all
 
-TARGETS := all clean install
+TARGETS := all test clean install
 
 SUBDIRS := cpp doc
 
