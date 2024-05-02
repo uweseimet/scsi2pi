@@ -6,15 +6,15 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
-#include <fstream>
+#include "s2pexec_core.h"
 #include <csignal>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
-#include "s2pexec_core.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -121,14 +121,14 @@ bool S2pExec::ParseArguments(span<char*> args)
     string tout = "3";
 
     // Resetting these is important for the interactive mode
-    command = "";
-    data = "";
+    command.clear();
+    data.clear();
     request_sense = true;
     reset_bus = false;
-    binary_input_filename = "";
-    binary_output_filename = "";
-    hex_input_filename = "";
-    hex_output_filename = "";
+    binary_input_filename.clear();
+    binary_output_filename.clear();
+    hex_input_filename.clear();
+    hex_output_filename.clear();
 
     optind = 1;
     int opt;
@@ -235,7 +235,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!target.empty()) {
-        if (const string error = ProcessId(sasi ? 2 : 32, target, target_id, target_lun); !error.empty()) {
+        if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
     }
@@ -288,7 +288,7 @@ bool S2pExec::RunInteractive(bool in_process)
         return false;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return false;
     }
@@ -358,7 +358,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return -1;
     }
@@ -435,7 +435,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
             return executor->GetSenseData();
         }
         else {
-            const string &command_name = BusFactory::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]));
+            const string_view &command_name = BusFactory::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]));
             throw execution_exception(
                 fmt::format("Can't execute command {}",
                     !command_name.empty() ?

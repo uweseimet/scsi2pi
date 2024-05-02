@@ -15,7 +15,6 @@ class ScsiCommunicationsCommands
 
 public:
 
-    ScsiCommunicationsCommands() = default;
     virtual ~ScsiCommunicationsCommands() = default;
 
     // Mandatory commands
@@ -23,4 +22,8 @@ public:
 
     // Optional commands
     virtual void GetMessage6() = 0;
+
+protected:
+
+    ScsiCommunicationsCommands() = default;
 };

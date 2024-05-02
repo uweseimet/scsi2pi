@@ -6,26 +6,23 @@
 //
 //---------------------------------------------------------------------------
 
-#include <unistd.h>
-#include <sstream>
+#include "protobuf_util.h"
 #include <array>
 #include <iomanip>
-#include "shared/shared_exceptions.h"
-#include "shared/s2p_util.h"
-#include "protobuf_util.h"
+#include <sstream>
+#include <unistd.h>
+#include "shared/s2p_exceptions.h"
 
 using namespace s2p_util;
 
-#define FPRT(fp, ...) fprintf(fp, __VA_ARGS__ )
-
-PbDeviceType protobuf_util::ParseDeviceType(const string &type)
+PbDeviceType protobuf_util::ParseDeviceType(const string &value)
 {
-    if (PbDeviceType parsed_type; PbDeviceType_Parse(ToUpper(type), &parsed_type)) {
-        return parsed_type;
+    if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
+        return type;
     }
 
     // Handle convenience device types (shortcuts)
-    const auto &it = DEVICE_TYPES.find(tolower(type[0]));
+    const auto &it = DEVICE_TYPES.find(tolower(value[0]));
     return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
 }
 
@@ -62,36 +59,32 @@ void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &pa
 
 string protobuf_util::SetCommandParams(PbCommand &command, const string &params)
 {
+    if (params.empty()) {
+        return "";
+    }
+
     if (params.find(KEY_VALUE_SEPARATOR) != string::npos) {
         return SetFromGenericParams(command, params);
     }
 
-    string folder_pattern;
-    string file_pattern;
-    string operations;
-
     switch (const auto &components = Split(params, COMPONENT_SEPARATOR, 3); components.size()) {
     case 3:
-        operations = components[2];
+        SetParam(command, "operations", components[2]);
         [[fallthrough]];
 
     case 2:
-        folder_pattern = components[0];
-        file_pattern = components[1];
+        SetParam(command, "file_pattern", components[1]);
+        SetParam(command, "folder_pattern", components[0]);
         break;
 
     case 1:
-        file_pattern = components[0];
+        SetParam(command, "file_pattern", components[0]);
         break;
 
     default:
         assert(false);
         break;
     }
-
-    SetParam(command, "folder_pattern", folder_pattern);
-    SetParam(command, "file_pattern", file_pattern);
-    SetParam(command, "operations", operations);
 
     return "";
 }
@@ -132,11 +125,11 @@ void protobuf_util::SetProductData(PbDeviceDefinition &device, const string &dat
     }
 }
 
-string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const string &value)
+string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &value)
 {
     int id;
     int lun;
-    if (const string error = ProcessId(lun_max, value, id, lun); !error.empty()) {
+    if (const string &error = ProcessId(value, id, lun); !error.empty()) {
         return error;
     }
 
@@ -149,7 +142,7 @@ string protobuf_util::SetIdAndLun(int lun_max, PbDeviceDefinition &device, const
 string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 {
     if (pb_devices.empty()) {
-        return "No devices currently attached.\n";
+        return "No devices currently attached\n";
     }
 
     ostringstream s;
@@ -157,7 +150,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
         << "| ID | LUN | TYPE | IMAGE FILE\n"
         << "+----+-----+------+-------------------------------------\n";
 
-    vector<PbDevice> devices = pb_devices;
+    vector<PbDevice> devices(pb_devices);
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
     for (const auto &device : devices) {
@@ -194,17 +187,12 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
     return s.str();
 }
 
-//---------------------------------------------------------------------------
-//
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
 // A little endian platform is assumed.
-//
-//---------------------------------------------------------------------------
-
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
-    const string s = message.SerializeAsString();
-    vector<uint8_t> data(s.cbegin(), s.cend());
+    vector<uint8_t> data(message.ByteSizeLong());
+    message.SerializeToArray(data.data(), static_cast<int>(data.size()));
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
@@ -223,7 +211,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
 {
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
-    if (ReadBytes(fd, header) < header.size()) {
+    if (ReadBytes(fd, header) != header.size()) {
         throw io_exception("Can't read message size: " + string(strerror(errno)));
     }
 

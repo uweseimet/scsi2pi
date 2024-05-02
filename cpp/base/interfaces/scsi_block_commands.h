@@ -2,7 +2,7 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2022 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 // Interface for SCSI block commands (see https://www.t10.org/drafts.htm, SBC-5)
 //
@@ -15,7 +15,6 @@ class ScsiBlockCommands
 
 public:
 
-    ScsiBlockCommands() = default;
     virtual ~ScsiBlockCommands() = default;
 
     // Mandatory commands
@@ -26,4 +25,8 @@ public:
     virtual void Read16() = 0;
     virtual void Write10() = 0;
     virtual void Write16() = 0;
+
+protected:
+
+    ScsiBlockCommands() = default;
 };

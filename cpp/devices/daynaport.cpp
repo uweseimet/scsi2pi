@@ -20,10 +20,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
-#include "shared/network_util.h"
-#include "base/memory_util.h"
 #include "daynaport.h"
+#include "base/memory_util.h"
+#include "shared/network_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;
@@ -253,7 +253,7 @@ void DaynaPort::RetrieveStats() const
 {
     auto &buf = GetController()->GetBuffer();
 
-    memcpy(buf.data(), &m_scsi_link_stats, sizeof(m_scsi_link_stats));
+    memcpy(buf.data(), &SCSI_LINK_STATS, sizeof(SCSI_LINK_STATS));
 
     // Take the last 3 MAC address bytes from the bridge's MAC address, so that several DaynaPort emulations
     // on different Pis in the same network do not have identical MAC addresses.
@@ -266,7 +266,7 @@ void DaynaPort::RetrieveStats() const
     LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
         buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
-    const auto length = static_cast<int>(min(sizeof(m_scsi_link_stats),
+    const auto length = static_cast<int>(min(sizeof(SCSI_LINK_STATS),
         static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3))));
     GetController()->SetTransferSize(length, length);
 
@@ -387,7 +387,7 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetController()->GetCdbByte(5) & 0x80) {
-        if (const string error = TapDriver::IpLink(true); !error.empty()) {
+        if (const string &error = TapDriver::IpLink(true); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
@@ -397,7 +397,7 @@ void DaynaPort::EnableInterface() const
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string error = TapDriver::IpLink(false); !error.empty()) {
+        if (const string &error = TapDriver::IpLink(false); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
         }

@@ -9,14 +9,14 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "command/command_executor.h"
 #include "buses/in_process_bus.h"
+#include "command/command_executor.h"
 #include "controllers/controller.h"
-#include "devices/sasi_hd.h"
-#include "devices/scsi_hd.h"
-#include "devices/scsi_cd.h"
-#include "devices/optical_memory.h"
 #include "devices/host_services.h"
+#include "devices/optical_memory.h"
+#include "devices/sasi_hd.h"
+#include "devices/scsi_cd.h"
+#include "devices/scsi_hd.h"
 #include "test_shared.h"
 
 using namespace testing;
@@ -43,6 +43,7 @@ public:
     MOCK_METHOD(void, WaitBusSettle, (), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));
     MOCK_METHOD(void, DisableIRQ, (), (override));
+    MOCK_METHOD(bool, IsRaspberryPi, (), (const, override));
 };
 
 class MockInProcessBus : public InProcessBus
@@ -141,7 +142,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiCdTest, ReadToc);
     FRIEND_TEST(ScsiDaynaportTest, Read);
-    FRIEND_TEST(ScsiDaynaportTest, Write);
+    FRIEND_TEST(ScsiDaynaportTest, WriteData);
     FRIEND_TEST(ScsiDaynaportTest, Read6);
     FRIEND_TEST(ScsiDaynaportTest, Write6);
     FRIEND_TEST(ScsiDaynaportTest, TestRetrieveStats);
@@ -162,7 +163,7 @@ public:
 
     MOCK_METHOD(bool, Process, (), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
-    MOCK_METHOD(void, Error, (scsi_defs::sense_key, scsi_defs::asc, scsi_defs::status), (override));
+    MOCK_METHOD(void, Error, (sense_key, asc, status_code), (override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, DataIn, (), (override));
     MOCK_METHOD(void, DataOut, (), (override));
@@ -172,14 +173,14 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0, 32)
+    MockAbstractController() : AbstractController(*mock_bus, 0)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, 32)
+    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id)
     {
         SetCurrentLength(512);
     }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, 32)
+    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id)
     {
         SetCurrentLength(512);
     }
@@ -207,10 +208,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, 32)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, 32)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0)
     {
     }
     ~MockController() override = default;
@@ -248,7 +249,7 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(ControllerTest, RequestSense);
-    FRIEND_TEST(CommandExecutorTest, ValidateOperationAgainstDevice);
+    FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
 public:
 

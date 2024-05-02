@@ -6,15 +6,16 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_executor.h"
 #include <sstream>
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
-#include "shared/localizer.h"
-#include "shared/shared_exceptions.h"
-#include "protobuf/protobuf_util.h"
-#include "protobuf/command_context.h"
+#include "command_context.h"
+#include "command_image_support.h"
+#include "controllers/controller.h"
 #include "devices/disk.h"
-#include "command_executor.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace protobuf_util;
@@ -30,41 +31,31 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         info("Executing: " + msg);
     }
 
-    const int id = pb_device.id();
-    const int lun = pb_device.unit();
-
-    if (!ValidateIdAndLun(context, id, lun)) {
+    if (!ValidateDevice(context, pb_device)) {
         return false;
     }
 
-    const PbOperation operation = context.GetCommand().operation();
+    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
 
-    // For all commands except ATTACH the device and LUN must exist
-    if (operation != ATTACH && !VerifyExistingIdAndLun(context, id, lun)) {
+    if (!ValidateOperation(context, *device)) {
         return false;
     }
 
-    auto device = controller_factory->GetDeviceForIdAndLun(id, lun);
-
-    if (!ValidateOperationAgainstDevice(context, *device, operation)) {
-        return false;
-    }
-
-    switch (operation) {
+    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
     case ATTACH:
         return Attach(context, pb_device, dryRun);
 
     case DETACH:
         return Detach(context, *device, dryRun);
 
-    case INSERT:
-        return Insert(context, pb_device, device, dryRun);
-
     case START:
         return dryRun ? true : Start(*device);
 
     case STOP:
         return dryRun ? true : Stop(*device);
+
+    case INSERT:
+        return Insert(context, pb_device, device, dryRun);
 
     case EJECT:
         return dryRun ? true : Eject(*device);
@@ -76,10 +67,10 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return dryRun ? true : Unprotect(*device);
 
     default:
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(operation));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(static_cast<int>(operation)));
     }
 
-    return true;
+    return false;
 }
 
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
@@ -92,20 +83,19 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         DetachAll();
         return context.ReturnSuccessStatus();
 
-    case RESERVE_IDS: {
-        if (const string error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
+    case RESERVE_IDS:
+        if (const string &error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
             return context.ReturnErrorStatus(error);
         }
         else {
             PropertyHandler::Instance().AddProperty("reserved_ids", Join(reserved_ids, ","));
             return context.ReturnSuccessStatus();
         }
-    }
 
     case CHECK_AUTHENTICATION:
     case NO_OPERATION:
         // Do nothing, just log
-        trace("Received %s command", PbOperation_Name(command.operation()));
+        trace("Received {} command", PbOperation_Name(command.operation()));
         return context.ReturnSuccessStatus();
 
     default:
@@ -195,15 +185,15 @@ bool CommandExecutor::Unprotect(PrimaryDevice &device) const
 
 bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    const int id = pb_device.id();
+    const PbDeviceType type = pb_device.type();
     const int lun = pb_device.unit();
 
-    if (lun >= ControllerFactory::GetScsiLunMax()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun),
-            to_string(ControllerFactory::GetScsiLunMax()));
+    if (const int lun_max = Controller::GetLunMax(type == SAHD); lun >= lun_max) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 
-    if (controller_factory->HasDeviceForIdAndLun(id, lun)) {
+    const int id = pb_device.id();
+    if (controller_factory.GetDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DUPLICATE_ID, to_string(id), to_string(lun));
     }
 
@@ -211,11 +201,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_RESERVED_ID, to_string(id));
     }
 
-    const string filename = GetParam(pb_device, "file");
+    const string &filename = GetParam(pb_device, "file");
 
-    const PbDeviceType type = pb_device.type();
-
-    auto device = CreateDevice(context, type, lun, filename);
+    const auto device = CreateDevice(context, type, lun, filename);
     if (!device) {
         return false;
     }
@@ -252,6 +240,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
+            // GetIdentifier() cannot be used here because the device ID has not yet been set
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
                 fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
         }
@@ -281,10 +270,10 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     if (!device->Init(params)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", PbDeviceType_Name(device->GetType()), id, lun));
+            fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
     }
 
-    if (!controller_factory->AttachToController(bus, id, device)) {
+    if (!controller_factory.AttachToController(bus, id, device)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
@@ -294,7 +283,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 #endif
 
-    SetUpDeviceProperties(context, device);
+    SetUpDeviceProperties(device);
 
     DisplayDeviceInfo(*device);
 
@@ -318,7 +307,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_NAME_UPDATE);
     }
 
-    const string filename = GetParam(pb_device, "file");
+    const string &filename = GetParam(pb_device, "file");
     if (filename.empty()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
     }
@@ -349,7 +338,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     storage_device->SetProtected(pb_device.protected_());
 #endif
 
-    SetUpDeviceProperties(context, device);
+    SetUpDeviceProperties(device);
 
     return true;
 }
@@ -357,7 +346,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
-    auto controller = controller_factory->FindController(device.GetId());
+    auto controller = device.GetController();
     if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }
@@ -378,7 +367,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // If no LUN is left also delete the controller
-        if (!controller->GetLunCount() && !controller_factory->DeleteController(*controller)) {
+        if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
         }
 
@@ -396,14 +385,14 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 
 void CommandExecutor::DetachAll() const
 {
-    if (controller_factory->DeleteAllControllers()) {
+    if (controller_factory.DeleteAllControllers()) {
         PropertyHandler::Instance().RemoveProperties("device.");
 
         info("Detached all devices");
     }
 }
 
-void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, shared_ptr<PrimaryDevice> device)
+void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
@@ -416,8 +405,8 @@ void CommandExecutor::SetUpDeviceProperties(const CommandContext &context, share
     }
     if (disk && !disk->GetFilename().empty()) {
         string filename = disk->GetFilename();
-        if (filename.starts_with(context.GetDefaultFolder())) {
-            filename = filename.substr(context.GetDefaultFolder().length() + 1);
+        if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
+            filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", filename);
     }
@@ -454,7 +443,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
             return "Invalid ID " + id;
         }
 
-        if (controller_factory->HasController(res_id)) {
+        if (controller_factory.HasController(res_id)) {
             return "ID " + id + " is currently in use";
         }
 
@@ -491,7 +480,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        effective_filename = context.GetDefaultFolder() + "/" + filename;
+        effective_filename = CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
@@ -549,7 +538,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
 
     s << ", device=" << pb_device.id() << ":" << pb_device.unit();
 
-    if (pb_device.type() != PbDeviceType::UNDEFINED) {
+    if (pb_device.type() != UNDEFINED) {
         s << ", type=" << PbDeviceType_Name(pb_device.type());
     }
 
@@ -607,19 +596,6 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand 
             true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, to_string((*it).first));
 }
 
-bool CommandExecutor::VerifyExistingIdAndLun(const CommandContext &context, int id, int lun) const
-{
-    if (!controller_factory->HasController(id)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
-    }
-
-    if (!controller_factory->HasDeviceForIdAndLun(id, lun)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
-    }
-
-    return true;
-}
-
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context, const PbDeviceType type,
     int lun, const string &filename) const
 {
@@ -639,8 +615,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
         for (const auto &d : GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE,
-                    PbDeviceType_Name(device->GetType()));
+                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, device->GetTypeString());
                 return nullptr;
             }
         }
@@ -682,9 +657,10 @@ bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<Pr
 }
 #pragma GCC diagnostic pop
 
-bool CommandExecutor::ValidateOperationAgainstDevice(const CommandContext &context, const PrimaryDevice &device,
-    PbOperation operation)
+bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {
+    const PbOperation operation = context.GetCommand().operation();
+
     if ((operation == START || operation == STOP) && !device.IsStoppable()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE,
             PbOperation_Name(operation),
@@ -711,17 +687,32 @@ bool CommandExecutor::ValidateOperationAgainstDevice(const CommandContext &conte
     return true;
 }
 
-bool CommandExecutor::ValidateIdAndLun(const CommandContext &context, int id, int lun)
+bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDeviceDefinition &device) const
 {
+    const int id = device.id();
     if (id < 0) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_ID);
     }
     if (id >= 8) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id));
     }
-    if (lun < 0 || lun >= ControllerFactory::GetLunMax()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun),
-            to_string(ControllerFactory::GetLunMax() - 1));
+
+    const int lun = device.unit();
+    if (const int lun_max = Controller::GetLunMax(device.type() == SAHD); lun < 0 || lun >= lun_max) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
+    }
+
+    // For all commands except ATTACH the device and LUN must exist
+    if (context.GetCommand().operation() == ATTACH) {
+        return true;
+    }
+
+    if (!controller_factory.HasController(id)) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
+    }
+
+    if (!controller_factory.GetDeviceForIdAndLun(id, lun)) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
     }
 
     return true;

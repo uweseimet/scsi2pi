@@ -13,25 +13,19 @@
 
 #pragma once
 
-#include <unordered_set>
 #include <tuple>
 #include "base/interfaces/scsi_block_commands.h"
-#include "cache.h"
-#include "disk_track.h"
 #include "storage_device.h"
 
 using namespace std;
 
-class Disk : public StorageDevice, private ScsiBlockCommands
+class Cache;
+
+class Disk : public StorageDevice, public ScsiBlockCommands
 {
 
 public:
 
-    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-        const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
-    {
-    }
     ~Disk() override = default;
 
     bool Init(const param_map&) override;
@@ -77,6 +71,12 @@ public:
 
 protected:
 
+    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
+        const unordered_set<uint32_t> &s)
+    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
+    {
+    }
+
     void ValidateFile() override;
 
     bool InitCache(const string&);
@@ -89,8 +89,8 @@ protected:
     void AddControlModePage(map<int, vector<byte>>&, bool) const;
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
-    void ModeSelect(scsi_defs::scsi_command, cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_defs::scsi_command, span<const uint8_t>, int&) const;
+    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
+    int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
     int VerifySectorSizeChange(int, bool) const;
 
     void ChangeSectorSize(uint32_t);
@@ -182,6 +182,6 @@ private:
 
     string last_filename;
 
-    inline static const string SECTOR_READ_COUNT = "sector_read_count";
-    inline static const string SECTOR_WRITE_COUNT = "sector_write_count";
+    static constexpr const char *SECTOR_READ_COUNT = "sector_read_count";
+    static constexpr const char *SECTOR_WRITE_COUNT = "sector_write_count";
 };

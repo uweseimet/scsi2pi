@@ -6,15 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
+#include "network_util.h"
 #include <cstring>
 #include <ifaddrs.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <unistd.h>
 #include <netdb.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
-#include "network_util.h"
 
 using namespace std;
 

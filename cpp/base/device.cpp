@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
+#include "device.h"
 #include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_version.h"
-#include "device.h"
 
 using namespace spdlog;
 
@@ -79,7 +79,7 @@ void Device::SetParams(const param_map &set_params)
 
     // Devices with image file support implicitly support the "file" parameter
     if (SupportsFile()) {
-        params["file"] = "";
+        params["file"].clear();
     }
 
     for (const auto& [key, value] : set_params) {

@@ -11,15 +11,15 @@
 
 TEST(BusTest, GetPhaseName)
 {
-    EXPECT_EQ("BUS FREE", Bus::GetPhaseName(phase_t::busfree));
-    EXPECT_EQ("ARBITRATION", Bus::GetPhaseName(phase_t::arbitration));
-    EXPECT_EQ("SELECTION", Bus::GetPhaseName(phase_t::selection));
-    EXPECT_EQ("RESELECTION", Bus::GetPhaseName(phase_t::reselection));
-    EXPECT_EQ("COMMAND", Bus::GetPhaseName(phase_t::command));
-    EXPECT_EQ("DATA IN", Bus::GetPhaseName(phase_t::datain));
-    EXPECT_EQ("DATA OUT", Bus::GetPhaseName(phase_t::dataout));
-    EXPECT_EQ("STATUS", Bus::GetPhaseName(phase_t::status));
-    EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(phase_t::msgin));
-    EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(phase_t::msgout));
-    EXPECT_EQ("???", Bus::GetPhaseName(phase_t::reserved));
+    EXPECT_EQ("BUS FREE", Bus::GetPhaseName(bus_phase::busfree));
+    EXPECT_EQ("ARBITRATION", Bus::GetPhaseName(bus_phase::arbitration));
+    EXPECT_EQ("SELECTION", Bus::GetPhaseName(bus_phase::selection));
+    EXPECT_EQ("RESELECTION", Bus::GetPhaseName(bus_phase::reselection));
+    EXPECT_EQ("COMMAND", Bus::GetPhaseName(bus_phase::command));
+    EXPECT_EQ("DATA IN", Bus::GetPhaseName(bus_phase::datain));
+    EXPECT_EQ("DATA OUT", Bus::GetPhaseName(bus_phase::dataout));
+    EXPECT_EQ("STATUS", Bus::GetPhaseName(bus_phase::status));
+    EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(bus_phase::msgin));
+    EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(bus_phase::msgout));
+    EXPECT_EQ("???", Bus::GetPhaseName(bus_phase::reserved));
 }

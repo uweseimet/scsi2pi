@@ -6,22 +6,20 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include "phase_handler.h"
-
-using namespace scsi_defs;
+#include <cassert>
 
 void PhaseHandler::Init()
 {
-    phase_executors[static_cast<int>(phase_t::busfree)] = [this]() {BusFree();};
-    phase_executors[static_cast<int>(phase_t::arbitration)] = []() {throw invalid_argument("");};
-    phase_executors[static_cast<int>(phase_t::selection)] = [this]() {Selection();};
-    phase_executors[static_cast<int>(phase_t::reselection)] = []() {throw invalid_argument("");};
-    phase_executors[static_cast<int>(phase_t::command)] = [this]() {Command();};
-    phase_executors[static_cast<int>(phase_t::datain)] = [this]() {DataIn();};
-    phase_executors[static_cast<int>(phase_t::dataout)] = [this]() {DataOut();};
-    phase_executors[static_cast<int>(phase_t::status)] = [this]() {Status();};
-    phase_executors[static_cast<int>(phase_t::msgin)] = [this]() {MsgIn();};
-    phase_executors[static_cast<int>(phase_t::msgout)] = [this]() {MsgOut();};
-    phase_executors[static_cast<int>(phase_t::reserved)] = []() {throw invalid_argument("");};
+    phase_executors[static_cast<int>(bus_phase::busfree)] = [this]() {BusFree();};
+    phase_executors[static_cast<int>(bus_phase::arbitration)] = []() {throw invalid_argument("");};
+    phase_executors[static_cast<int>(bus_phase::selection)] = [this]() {Selection();};
+    phase_executors[static_cast<int>(bus_phase::reselection)] = []() {throw invalid_argument("");};
+    phase_executors[static_cast<int>(bus_phase::command)] = [this]() {Command();};
+    phase_executors[static_cast<int>(bus_phase::datain)] = [this]() {DataIn();};
+    phase_executors[static_cast<int>(bus_phase::dataout)] = [this]() {DataOut();};
+    phase_executors[static_cast<int>(bus_phase::status)] = [this]() {Status();};
+    phase_executors[static_cast<int>(bus_phase::msgin)] = [this]() {MsgIn();};
+    phase_executors[static_cast<int>(bus_phase::msgout)] = [this]() {MsgOut();};
+    phase_executors[static_cast<int>(bus_phase::reserved)] = []() {throw invalid_argument("");};
 }

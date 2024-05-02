@@ -40,6 +40,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--list-settings/-s\fR \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]\fR] |
 [\fB\--type/-t\fR \fITYPE\fR] |
 [\fB\--copy/-x\fR \fICURRENT_NAME:NEW_NAME\fR] |
+[\fB\--persist\fR]
 [\fB\--locale\fR \fILOCALE\fR]
 .SH DESCRIPTION
 .B s2pctl
@@ -113,10 +114,10 @@ Comma-separated list of IDs to reserve. Pass an empty list in order to not reser
 Display all s2p settings. Filenames are optionally filtered by folder and file patterns.
 OPERATIONS is an optional comma-seperated list of server operations to take into account, in order to limit the amount of output. 
 .TP
-.BR --list-statistics/-S\fI
+.BR --list-statistics/-S\fI " " \fI
 Display s2p statistics.
 .TP
-.BR --list-device-types/-T\fI
+.BR --list-device-types/-T\fI " " \fI
 Display available device types and their properties.
 .TP
 .BR --help/-h\fI " " \fI
@@ -146,6 +147,9 @@ Do not send the command to s2p but write it to a protobuf JSON file.
 .BR --text-protobuf\fI " "\fIFILENAME
 Do not send the command to s2p but write it to a protobuf text format file.
 .TP
+.BR --persist\fI " " \fI
+Write the current configuration to /etc/s2p.conf. The old configuration, if any, is saved to /etc/s2p.conf.old.
+.TP
 .BR --locale\fI " "\fILOCALE
 Overrides the default locale (language) for client-facing error messages.
 .TP 
@@ -162,7 +166,7 @@ eject, protect and unprotect are idempotent.
 .TP 
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
 The optional block size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
-s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms.
+s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms. Note that image file sizes must be a multiple of 512.
 .TP
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.

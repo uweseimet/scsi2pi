@@ -70,10 +70,10 @@ private:
 
     bool bridge_created = false;
 
-    const inline static string BRIDGE_INTERFACE_NAME = "piscsi0";
-    const inline static string BRIDGE_NAME = "piscsi_bridge";
+    inline static const string BRIDGE_INTERFACE_NAME = "piscsi0";
+    inline static const string BRIDGE_NAME = "piscsi_bridge";
 
-    const inline static string DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
-    const inline static string DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
+    static constexpr const char *DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
+    static constexpr const char *DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
 };
 

@@ -1,4 +1,4 @@
-.TH s2pexec 1
+.TH s2pproto 1
 .SH NAME
 s2pproto \- SCSI2Pi custom SCSI command executor
 .SH SYNOPSIS
@@ -17,11 +17,6 @@ s2pproto \- SCSI2Pi custom SCSI command executor
 .SH DESCRIPTION
 .B s2pproto
 wraps protobuf input data into a custom SCSI2Pi SCSI command. The input data must be a legal command defined in the SCSI2Pi protobuf interface. See the file s2p_interface.proto for details.
-
-.SH NOTES
-
-.B s2pproto
-helps with advanced testing. It requires either two connected PiSCSI/RaSCSI boards or an in-process bus. The board s2pexec is running on must be a FULLSPEC board because s2pexec requires SCSI initiator support.
 
 .SH OPTIONS
 .TP

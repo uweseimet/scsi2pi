@@ -9,8 +9,8 @@
 #pragma once
 
 #include <functional>
-#include <thread>
 #include <string>
+#include <thread>
 
 class CommandContext;
 

@@ -7,11 +7,18 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 
-using namespace scsi_defs;
+TEST(S2pExceptionsTest, ParserException)
+{
+    try {
+        throw parser_exception("msg");
+    } catch (const parser_exception &e) {
+        EXPECT_STREQ("msg", e.what());
+    }
+}
 
-TEST(SharedExceptionsTest, IoException)
+TEST(S2pExceptionsTest, IoException)
 {
     try {
         throw io_exception("msg");
@@ -20,16 +27,7 @@ TEST(SharedExceptionsTest, IoException)
     }
 }
 
-TEST(SharedExceptionsTest, FileNotFoundException)
-{
-    try {
-        throw file_not_found_exception("msg");
-    } catch (const file_not_found_exception &e) {
-        EXPECT_STREQ("msg", e.what());
-    }
-}
-
-TEST(SharedExceptionsTest, ScsiException)
+TEST(S2pExceptionsTest, ScsiException)
 {
     try {
         throw scsi_exception(sense_key::unit_attention);

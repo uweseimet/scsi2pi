@@ -7,11 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "base/device_factory.h"
 #include "base/memory_util.h"
+#include "shared/s2p_exceptions.h"
 
-using namespace scsi_defs;
 using namespace memory_util;
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePrimaryDevice(int id = 0)
@@ -33,6 +32,8 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
     EXPECT_FALSE(device.SetScsiLevel(scsi_level::none));
     EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(9)));
 
+    EXPECT_TRUE(device.SetScsiLevel(scsi_level::scsi_1_ccs));
+    EXPECT_EQ(scsi_level::scsi_1_ccs, device.GetScsiLevel());
     EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_6));
     EXPECT_EQ(scsi_level::spc_6, device.GetScsiLevel());
 }
@@ -50,7 +51,7 @@ TEST(PrimaryDeviceTest, GetId)
 {
     const int ID = 5;
 
-    auto [_, device] = CreatePrimaryDevice(ID);
+    auto [controller, device] = CreatePrimaryDevice(ID);
 
     EXPECT_EQ(ID, device->GetId());
 }
@@ -177,7 +178,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrimaryDeviceTest, Inquiry)
@@ -257,7 +258,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     device->SetReady(true);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrimaryDeviceTest, SendDiagnostic)
@@ -266,7 +267,7 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
     TestShared::Dispatch(*device, scsi_command::cmd_send_diagnostic, sense_key::illegal_request,

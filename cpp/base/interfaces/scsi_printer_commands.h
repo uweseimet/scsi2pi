@@ -15,11 +15,14 @@ class ScsiPrinterCommands
 
 public:
 
-    ScsiPrinterCommands() = default;
     virtual ~ScsiPrinterCommands() = default;
 
     // Mandatory commands
     virtual void Print() = 0;
 
     // ReleaseUnit(), ReserveUnit() and SendDiagnostic() are contributed by PrimaryDevice
+
+protected:
+
+    ScsiPrinterCommands() = default;
 };

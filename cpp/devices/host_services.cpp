@@ -80,15 +80,16 @@
 // ReceiveOperationResults returns the result of the last operation executed.
 //
 
-#include <algorithm>
-#include <chrono>
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
-#include "shared/shared_exceptions.h"
-#include "protobuf/protobuf_util.h"
-#include "controllers/controller.h"
-#include "base/memory_util.h"
 #include "host_services.h"
+#include <chrono>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/json_util.h>
+#include "base/memory_util.h"
+#include "command/command_context.h"
+#include "command/command_dispatcher.h"
+#include "controllers/controller.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
@@ -143,11 +144,10 @@ void HostServices::StartStopUnit() const
     const bool load = GetController()->GetCdbByte(4) & 0x02;
 
     if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
-        GetController()->ScheduleShutdown(
-            load ? AbstractController::shutdown_mode::stop_pi : AbstractController::shutdown_mode::stop_s2p);
+        GetController()->ScheduleShutdown(load ? shutdown_mode::stop_pi : shutdown_mode::stop_s2p);
     }
     else if (load) {
-        GetController()->ScheduleShutdown(AbstractController::shutdown_mode::restart_pi);
+        GetController()->ScheduleShutdown(shutdown_mode::restart_pi);
     }
     else {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -300,7 +300,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 
     const auto length = GetInt16(GetController()->GetCdb(), 7);
     if (!length) {
-        execution_results[GetController()->GetInitiatorId()] = "";
+        execution_results[GetController()->GetInitiatorId()].clear();
         return 0;
     }
 
@@ -335,8 +335,9 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
     }
 
     PbResult result;
-    if (CommandContext context(cmd, s2p_image.GetDefaultFolder(), protobuf_util::GetParam(cmd, "locale"));
-    !dispatcher->DispatchCommand(context, result, fmt::format("(ID:LUN {0}:{1}) - ", GetId(), GetLun()))) {
+    CommandContext context(cmd);
+    context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
+    if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw scsi_exception(sense_key::aborted_command);
     }

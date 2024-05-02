@@ -7,11 +7,11 @@
 //
 //---------------------------------------------------------------------------
 
+#include "rpi_bus.h"
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <spdlog/spdlog.h>
-#include "rpi_bus.h"
 
 using namespace spdlog;
 

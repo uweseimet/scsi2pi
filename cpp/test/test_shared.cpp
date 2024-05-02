@@ -10,10 +10,10 @@
 #include <iostream>
 #include <unistd.h>
 #include "mocks.h"
-#include "shared/s2p_version.h"
-#include "shared/shared_exceptions.h"
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
+#include "shared/s2p_exceptions.h"
+#include "shared/s2p_version.h"
 
 using namespace filesystem;
 using namespace s2p_util;
@@ -21,8 +21,8 @@ using namespace s2p_util;
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
-    auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
-    auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
+    const auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
+    const auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
     device->Init( { });
 
     EXPECT_TRUE(controller->AddDevice(device));
@@ -30,16 +30,12 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     return {controller, device};
 }
 
-vector<int> testing::CreateCdb(scsi_defs::scsi_command cmd, const string &hex)
+vector<int> testing::CreateCdb(scsi_command cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    for (const auto b : HexToBytes(hex)) {
-        cdb.emplace_back(static_cast<int>(b));
-    }
-
-    EXPECT_EQ(BusFactory::Instance().GetCommandBytesCount(cmd), static_cast<int>(cdb.size()));
-
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
+    cdb.resize(BusFactory::Instance().GetCommandBytesCount(cmd));
     return cdb;
 }
 
@@ -47,7 +43,6 @@ vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
     ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
-
     return parameters;
 }
 
@@ -59,13 +54,13 @@ string testing::TestShared::GetVersion()
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
-    auto [controller, device] = CreateDevice(type, 0, extension);
+    const auto [controller, device] = CreateDevice(type, 0, extension);
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
     device->Dispatch(scsi_command::cmd_inquiry);
-    span<uint8_t> buffer = controller->GetBuffer();
+    const span<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
     EXPECT_EQ(l, static_cast<scsi_level>(buffer[2]));
@@ -82,7 +77,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
+    const auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
@@ -117,7 +112,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
 
 pair<int, path> testing::OpenTempFile()
 {
-    const string filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
+    const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.cbegin(), filename.cend());
     f.emplace_back(0);
 
@@ -126,18 +121,17 @@ pair<int, path> testing::OpenTempFile()
 
     TestShared::RememberTempFile(f.data());
 
-    return make_pair(fd, path(f.data()));
+    return {fd, path(f.data())};
 }
 
 path testing::CreateTempFile(size_t size)
 {
-    const auto data = vector<byte>(size);
-    return CreateTempFileWithData(data);
+    return CreateTempFileWithData(vector<byte>(size));
 }
 
 path testing::CreateTempFileWithData(const span<const byte> data)
 {
-    const auto [fd, filename] = OpenTempFile();
+    const auto& [fd, filename] = OpenTempFile();
 
     const size_t count = write(fd, data.data(), data.size());
     close(fd);

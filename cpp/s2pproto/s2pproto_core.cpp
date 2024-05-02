@@ -6,18 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
-#include <iostream>
-#include <fstream>
+#include "s2pproto_core.h"
 #include <csignal>
 #include <cstring>
+#include <fstream>
+#include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
-#include "shared/shared_exceptions.h"
+#include <google/protobuf/util/json_util.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
-#include "s2pproto_core.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
@@ -188,7 +188,7 @@ bool S2pProto::ParseArguments(span<char*> args)
         throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string error = ProcessId(32, target, target_id, target_lun); !error.empty()) {
+    if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
         throw parser_exception(error);
     }
 
@@ -236,7 +236,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+    if (!in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return EXIT_FAILURE;
     }
@@ -253,9 +253,8 @@ int S2pProto::Run(span<char*> args, bool in_process)
 int S2pProto::GenerateOutput(const string &input_filename, const string &output_filename)
 {
     PbResult result;
-    if (string error = executor->Execute(input_filename, input_format, result); !error.empty()) {
+    if (const string &error = executor->Execute(input_filename, input_format, result); !error.empty()) {
         cerr << "Error: " << error << endl;
-
         return EXIT_FAILURE;
     }
 
@@ -263,28 +262,24 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
         string json;
         (void)MessageToJsonString(result, &json);
         cout << json << '\n';
-
         return EXIT_SUCCESS;
+    }
+
+    ofstream out(output_filename, output_format == S2pProtoExecutor::protobuf_format::binary ? ios::binary : ios::out);
+    if (out.fail()) {
+        cerr << "Error: Can't open protobuf data output file '" << output_filename << "'" << endl;
+        return EXIT_FAILURE;
     }
 
     switch (output_format) {
     case S2pProtoExecutor::protobuf_format::binary: {
-        ofstream out(output_filename, ios::binary);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf binary output file '" << output_filename << "'" << endl;
-        }
-
-        const string data = result.SerializeAsString();
-        out.write(data.data(), data.size());
+        vector<uint8_t> data(result.ByteSizeLong());
+        result.SerializeToArray(data.data(), data.size());
+        out.write((const char*)data.data(), data.size());
         break;
     }
 
     case S2pProtoExecutor::protobuf_format::json: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf JSON output file '" << output_filename << "'" << endl;
-        }
-
         string json;
         (void)MessageToJsonString(result, &json);
         out << json << '\n';
@@ -292,11 +287,6 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     }
 
     case S2pProtoExecutor::protobuf_format::text: {
-        ofstream out(output_filename);
-        if (out.fail()) {
-            cerr << "Error: " << "Can't open protobuf text format output file '" << output_filename << "'" << endl;
-        }
-
         string text;
         TextFormat::PrintToString(result, &text);
         out << text << '\n';
@@ -306,6 +296,11 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     default:
         assert(false);
         break;
+    }
+
+    if (out.fail()) {
+        cerr << "Error: Can't write protobuf data to output file '" << output_filename << "'" << endl;
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

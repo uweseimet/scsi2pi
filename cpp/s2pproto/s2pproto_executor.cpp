@@ -6,12 +6,12 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2pproto_executor.h"
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <filesystem>
-#include <google/protobuf/util/json_util.h>
 #include <google/protobuf/text_format.h>
-#include "s2pproto_executor.h"
+#include <google/protobuf/util/json_util.h>
 
 using namespace filesystem;
 using namespace google::protobuf;

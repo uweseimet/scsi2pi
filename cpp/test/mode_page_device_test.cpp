@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "devices/mode_page_device.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ModePageDeviceTest, AddModePages)
 {
@@ -16,14 +16,14 @@ TEST(ModePageDeviceTest, AddModePages)
     MockModePageDevice device;
 
     // Page 0
-    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:00:00:00:00");
+    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6);
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, 255);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb))))
     << "Data were returned for non-existing mode page 0";
 
     // All pages, non changeable
-    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f:00:00:00");
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:3f");
     EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
     EXPECT_EQ(3, device.AddModePages(cdb, buf, 0, 3, 255));
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, -1);}, Throws<scsi_exception>(AllOf(
@@ -31,7 +31,7 @@ TEST(ModePageDeviceTest, AddModePages)
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Maximum size was ignored";
 
     // All pages, changeable
-    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:7f:00:00:00");
+    cdb = CreateCdb(scsi_command::cmd_mode_select6, "00:7f");
     EXPECT_EQ(0, device.AddModePages(cdb, buf, 0, 0, 255));
     EXPECT_EQ(3, device.AddModePages(cdb, buf, 0, 3, 255));
     EXPECT_THAT([&] {device.AddModePages(cdb, buf, 0, 12, -1);}, Throws<scsi_exception>(AllOf(
@@ -50,26 +50,24 @@ TEST(ModePageDeviceTest, AddVendorPages)
     EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
 }
 
-TEST(ModePageDeviceTest, ModeSense6)
+TEST(ModePageDeviceTest, ModeSense)
 {
-    auto controller = make_shared<MockAbstractController>(0);
-    auto device = make_shared<NiceMock<MockModePageDevice>>();
+    MockAbstractController controller(0);
+    const auto device = make_shared<NiceMock<MockModePageDevice>>();
     EXPECT_TRUE(device->Init( { }));
 
-    controller->AddDevice(device);
+    controller.AddDevice(device);
 
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(controller, DataIn());
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+
+    EXPECT_CALL(controller, DataIn());
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
 }
 
-TEST(ModePageDeviceTest, ModeSense10)
+TEST(ModePageDeviceTest, ModeSelect)
 {
-    auto controller = make_shared<MockAbstractController>(0);
-    auto device = make_shared<NiceMock<MockModePageDevice>>();
-    EXPECT_TRUE(device->Init( { }));
+    MockModePageDevice device;
 
-    controller->AddDevice(device);
-
-    EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0), scsi_exception);
 }

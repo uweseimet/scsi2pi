@@ -6,36 +6,33 @@
 //
 //---------------------------------------------------------------------------
 
-#if defined BUILD_SCHD || defined BUILD_SCRM
-#include "devices/scsi_hd.h"
-#endif
-#ifdef BUILD_SCMO
-#include "devices/optical_memory.h"
-#endif
-#ifdef BUILD_SCCD
-#include "devices/scsi_cd.h"
-#endif
+#include "device_factory.h"
+#include <filesystem>
 #ifdef BUILD_SCDP
 #include "devices/daynaport.h"
-#endif
-#ifdef BUILD_SCLP
-#include "devices/printer.h"
 #endif
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
 #endif
+#ifdef BUILD_SCMO
+#include "devices/optical_memory.h"
+#endif
+#ifdef BUILD_SCLP
+#include "devices/printer.h"
+#endif
 #ifdef BUILD_SAHD
 #include "devices/sasi_hd.h"
 #endif
-#include "device_factory.h"
+#ifdef BUILD_SCCD
+#include "devices/scsi_cd.h"
+#endif
+#if defined BUILD_SCHD || defined BUILD_SCRM
+#include "devices/scsi_hd.h"
+#endif
+#include "shared/s2p_util.h"
 
-using namespace s2p_util;
-
-DeviceFactory& DeviceFactory::Instance()
+DeviceFactory::DeviceFactory()
 {
-    static DeviceFactory instance; // NOSONAR instance cannot be inlined
-
-    if (mapping.empty()) {
 #if defined BUILD_SCHD || defined BUILD_SCRM
         mapping["hd1"] = SCHD;
         mapping["hds"] = SCHD;
@@ -51,9 +48,6 @@ DeviceFactory& DeviceFactory::Instance()
         mapping["cdr"] = SCCD;
         mapping["toast"] = SCCD;
 #endif
-    }
-
-    return instance;
 }
 
 shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const string &filename) const
@@ -70,7 +64,7 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
 #if defined BUILD_SCHD || defined BUILD_SCRM
     case SCHD: {
-        const string ext = GetExtensionLowerCase(filename);
+        const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");
     }
 
@@ -85,7 +79,7 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
 #ifdef BUILD_SCCD
     case SCCD: {
-        const string ext = GetExtensionLowerCase(filename);
+        const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiCd>(lun, ext == "is1");
     }
 #endif
@@ -130,7 +124,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
     return UNDEFINED;
 }
 
-bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type) const
+bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)
 {
     if (mapping.contains(extension)) {
         return false;
@@ -139,4 +133,12 @@ bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType ty
     mapping[extension] = type;
 
     return true;
+}
+
+string DeviceFactory::GetExtensionLowerCase(string_view filename)
+{
+    const string &ext = s2p_util::ToLower(filesystem::path(filename).extension().string());
+
+    // Remove the leading dot
+    return ext.empty() ? "" : ext.substr(1);
 }

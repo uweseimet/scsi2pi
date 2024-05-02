@@ -13,9 +13,7 @@
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
-
-// Command Descriptor Block
-using cdb_t = span<const int>;
+#include "base/s2p_defs.h"
 
 class PrimaryDevice;
 
@@ -24,19 +22,11 @@ class AbstractController : public PhaseHandler
 
 public:
 
-    enum class shutdown_mode
-    {
-        none,
-        stop_s2p,
-        stop_pi,
-        restart_pi
-    };
-
-    AbstractController(Bus&, int, int);
+    AbstractController(Bus&, int);
     ~AbstractController() override = default;
 
-    virtual void Error(scsi_defs::sense_key, scsi_defs::asc = scsi_defs::asc::no_additional_sense_information,
-        scsi_defs::status = scsi_defs::status::check_condition) = 0;
+    virtual void Error(sense_key, asc = asc::no_additional_sense_information,
+        status_code = status_code::check_condition) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
@@ -98,16 +88,11 @@ public:
         return cdb[index];
     }
 
-    auto GetOpcode() const
-    {
-        return static_cast<scsi_defs::scsi_command>(cdb[0]);
-    }
-
 protected:
 
     virtual bool Process() = 0;
 
-    inline Bus& GetBus() const
+    Bus& GetBus() const
     {
         return bus;
     }
@@ -123,7 +108,7 @@ protected:
         return total_length != 0;
     }
 
-    void SetStatus(scsi_defs::status s)
+    void SetStatus(status_code s)
     {
         status = s;
     }
@@ -170,7 +155,7 @@ private:
     // The number of bytes to be transferred with the current handshake cycle
     int chunk_size = 0;
 
-    scsi_defs::status status = status::good;
+    status_code status = status_code::good;
 
     Bus &bus;
 
@@ -185,8 +170,6 @@ private:
 
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;
-
-    int max_luns;
 
     shutdown_mode sh_mode = shutdown_mode::none;
 };

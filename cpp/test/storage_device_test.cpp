@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "devices/storage_device.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(StorageDeviceTest, SetGetFilename)
 {
@@ -90,7 +90,7 @@ TEST(StorageDeviceTest, GetIdsForReservedFile)
     const int ID = 1;
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory(false);
+    ControllerFactory controller_factory;
     MockAbstractController controller(bus, ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");
@@ -118,7 +118,7 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     const int ID = 1;
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
-    ControllerFactory controller_factory(false);
+    ControllerFactory controller_factory;
     MockAbstractController controller(bus, ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");

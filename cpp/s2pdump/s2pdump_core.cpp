@@ -6,21 +6,21 @@
 //
 //---------------------------------------------------------------------------
 
-#include <filesystem>
+#include "s2pdump_core.h"
 #include <chrono>
 #include <csignal>
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <regex>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
-#include "s2pdump_core.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -233,7 +233,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (scsi && sasi) {
-        throw parser_exception("SCSI and SASI devices cannot be mixed");
+        throw parser_exception("SCSI and SASI functionality cannot be mixed");
     }
 
     if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
@@ -241,7 +241,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!run_bus_scan) {
-        if (const string error = ProcessId(sasi ? 2 : 32, id_and_lun, target_id, target_lun); !error.empty()) {
+        if (const string &error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
 
@@ -310,7 +310,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             throw parser_exception("Can't initialize bus");
         }
 
-        if (!in_process && !BusFactory::Instance().IsRaspberryPi()) {
+        if (!in_process && !bus->IsRaspberryPi()) {
             throw parser_exception("There is no board hardware support");
         }
     }
@@ -330,7 +330,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         }
     }
     else {
-        if (const string error = DumpRestore(); !error.empty()) {
+        if (const string &error = DumpRestore(); !error.empty()) {
             cerr << "Error: " << error << endl;
             CleanUp();
             return EXIT_FAILURE;
@@ -531,7 +531,7 @@ string S2pDump::DumpRestore()
         debug("Data transfer size: " + to_string(sector_count * sector_size));
         debug("Image file chunk size: " + to_string(byte_count));
 
-        if (const string error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
         }
 
@@ -696,7 +696,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     cout << id_and_lun << "type=";
     if (const auto &type = S2P_DEVICE_TYPES.find(scsi_device_info.type & byte { 0x1f }); type != S2P_DEVICE_TYPES.end()) {
-        if ((*type).second != "SCHD") {
+        if (string((*type).second) != "SCHD") {
             cout << (*type).second << "\n";
         }
         else {

@@ -6,20 +6,19 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2p_util.h"
 #include <cassert>
 #include <cstring>
-#include <iostream>
 #include <filesystem>
-#include <algorithm>
-#include <unistd.h>
+#include <iostream>
 #include <pwd.h>
+#include <unistd.h>
 #include <spdlog/spdlog.h>
-#include "shared_exceptions.h"
+#include "s2p_exceptions.h"
 #include "s2p_version.h"
 
 using namespace filesystem;
 using namespace spdlog;
-using namespace scsi_defs;
 
 string s2p_util::GetVersionString()
 {
@@ -147,7 +146,7 @@ bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
     return true;
 }
 
-string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun)
+string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -166,10 +165,10 @@ string s2p_util::ProcessId(int lun_max, const string &id_spec, int &id, int &lun
             return "";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= lun_max) {
+        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= 32) {
             id = -1;
             lun = -1;
-            return "Invalid LUN (0-" + to_string(lun_max - 1) + ")";
+            return "Invalid LUN (0-31)";
         }
     }
 
@@ -187,14 +186,6 @@ string s2p_util::Banner(string_view app)
         << "Copyright (C) 2021-2024 Uwe Seimet\n";
 
     return s.str();
-}
-
-string s2p_util::GetExtensionLowerCase(string_view filename)
-{
-    const string &ext = ToLower(path(filename).extension().string());
-
-    // Remove the leading dot
-    return ext.empty() ? "" : ext.substr(1);
 }
 
 string s2p_util::GetScsiLevel(int scsi_level)

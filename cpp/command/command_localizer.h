@@ -8,9 +8,8 @@
 
 #pragma once
 
-#include <unordered_set>
 #include <regex>
-#include "s2p_util.h"
+#include "shared/s2p_util.h"
 
 using namespace std;
 
@@ -33,7 +32,6 @@ enum class LocalizationKey
     ERROR_DETACH,
     ERROR_EJECT_REQUIRED,
     ERROR_DEVICE_NAME_UPDATE,
-    ERROR_SHUTDOWN_MODE_MISSING,
     ERROR_SHUTDOWN_MODE_INVALID,
     ERROR_SHUTDOWN_PERMISSION,
     ERROR_FILE_OPEN,
@@ -50,27 +48,27 @@ enum class LocalizationKey
     ERROR_OPERATION_DENIED_REMOVABLE,
     ERROR_OPERATION_DENIED_PROTECTABLE,
     ERROR_OPERATION_DENIED_READY,
-    ERROR_UNIQUE_DEVICE_TYPE
+    ERROR_UNIQUE_DEVICE_TYPE,
+    ERROR_PERSIST
 };
 
-class Localizer
+class CommandLocalizer
 {
+
 public:
 
-    Localizer();
-    ~Localizer() = default;
+    CommandLocalizer();
+    ~CommandLocalizer() = default;
 
     string Localize(LocalizationKey, const string&, const string& = "", const string& = "", const string& = "") const;
 
 private:
 
     void Add(LocalizationKey, const string&, string_view);
+
     unordered_map<string, unordered_map<LocalizationKey, string>, s2p_util::StringHash, equal_to<>> localized_messages;
 
-    // Supported locales, always lower case
-    unordered_set<string, s2p_util::StringHash, equal_to<>> supported_languages = { "en", "de", "sv", "fr", "es", "zh" };
-
-    const regex regex1 = regex("%1");
-    const regex regex2 = regex("%2");
-    const regex regex3 = regex("%3");
+    inline static const regex REGEX1 = regex("%1");
+    inline static const regex REGEX2 = regex("%2");
+    inline static const regex REGEX3 = regex("%3");
 };

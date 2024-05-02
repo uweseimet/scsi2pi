@@ -6,19 +6,19 @@
 //
 //---------------------------------------------------------------------------
 
-#include <google/protobuf/util/json_util.h>
-#include <google/protobuf/text_format.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <iostream>
-#include <fstream>
-#include "shared/network_util.h"
-#include "shared/shared_exceptions.h"
-#include "protobuf/protobuf_util.h"
 #include "s2pctl_commands.h"
+#include <fstream>
+#include <iostream>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/json_util.h>
+#include "protobuf/protobuf_util.h"
+#include "shared/network_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
@@ -47,10 +47,8 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
         return CommandDeleteImage(image_params);
 
     case RENAME_IMAGE:
-        return CommandRenameImage(image_params);
-
     case COPY_IMAGE:
-        return CommandCopyImage(image_params);
+        return CommandRenameCopyImage(image_params);
 
     case DEVICES_INFO:
         return CommandDeviceInfo();
@@ -201,18 +199,7 @@ bool S2pCtlCommands::CommandDeleteImage(string_view filename)
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandRenameImage(string_view image_params)
-{
-    if (!EvaluateParams(image_params, "from", "to")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;
-
-        return false;
-    }
-
-    return SendCommand();
-}
-
-bool S2pCtlCommands::CommandCopyImage(string_view image_params)
+bool S2pCtlCommands::CommandRenameCopyImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "from", "to")) {
         cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;
@@ -421,10 +408,11 @@ bool S2pCtlCommands::EvaluateParams(string_view image_params, const string &key1
 
 void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename) const
 {
-    const string binary = cmd.SerializeAsString();
+    vector<uint8_t> data(cmd.ByteSizeLong());
+    cmd.SerializeToArray(data.data(), static_cast<int>(data.size()));
 
     ofstream out(filename, ios::binary);
-    out << binary;
+    out.write((const char*)data.data(), data.size());
     if (out.fail()) {
         throw io_exception("Error: Can't create protobuf binary file '" + filename + "'");
     }

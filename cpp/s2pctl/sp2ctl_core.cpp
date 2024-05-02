@@ -6,16 +6,16 @@
 //
 //---------------------------------------------------------------------------
 
-#include <clocale>
-#include <iostream>
-#include <fstream>
-#include <unistd.h>
-#include <getopt.h>
-#include "shared/shared_exceptions.h"
-#include "shared/s2p_version.h"
-#include "protobuf/protobuf_util.h"
-#include "s2pctl_commands.h"
 #include "s2pctl_core.h"
+#include <fstream>
+#include <iostream>
+#include <locale>
+#include <getopt.h>
+#include <unistd.h>
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
+#include "shared/s2p_version.h"
+#include "s2pctl_commands.h"
 
 using namespace s2p_util;
 using namespace protobuf_util;
@@ -77,6 +77,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 s2p requires authentication.\n"
             << "  --list-settings/-s             List s2p settings.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
+            << "  --persist                      Save the current configuration to /etc/s2p.conf.\n"
             << "  --version/-v                   Display the program version.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n";
@@ -132,6 +133,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_LOCALE = 7;
     const int OPT_SCSI_LEVEL = 8;
     const int OPT_LIST_EXTENSIONS = 9;
+    const int OPT_PERSIST = 10;
 
     const vector<option> options = {
         { "prompt", no_argument, nullptr, OPT_PROMPT },
@@ -164,6 +166,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { "locale", required_argument, nullptr, OPT_LOCALE },
         { "log-level", required_argument, nullptr, 'L' },
         { "name", required_argument, nullptr, 'n' },
+        { "persist", no_argument, nullptr, OPT_PERSIST },
         { "port", required_argument, nullptr, 'p' },
         { "rename", required_argument, nullptr, 'R' },
         { "reserve-ids", optional_argument, nullptr, 'r' },
@@ -328,6 +331,10 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             command.set_operation(PROPERTIES_INFO);
             break;
 
+        case OPT_PERSIST:
+            command.set_operation(PERSIST_CONFIGURATION);
+            break;
+
         case 't':
             device->set_type(ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
@@ -369,11 +376,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case 's':
             command.set_operation(SERVER_INFO);
-            if (optarg) {
-                if (const string error = SetCommandParams(command, optarg); !error.empty()) {
-                    cerr << "Error: " << error << endl;
-                    return EXIT_FAILURE;
-                }
+            if (const string &error = SetCommandParams(command, optarg ? optarg : ""); !error.empty()) {
+                cerr << "Error: " << error << endl;
+                return EXIT_FAILURE;
             }
             break;
 
@@ -434,8 +439,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     }
 
     if (!id_and_lun.empty()) {
-        if (const string error = SetIdAndLun(device->type() == PbDeviceType::SAHD ? 2 : 32, *device, id_and_lun);
-        !error.empty()) {
+        if (const string &error = SetIdAndLun(*device, id_and_lun); !error.empty()) {
             cerr << "Error: " << error << endl;
             return EXIT_FAILURE;
         }

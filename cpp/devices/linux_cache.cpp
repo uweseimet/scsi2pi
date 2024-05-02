@@ -43,11 +43,6 @@ int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)
     assert(length);
 
     file.seekg(sector_size * start, ios::beg);
-    if (file.fail()) {
-        ++read_error_count;
-        return 0;
-    }
-
     file.read((char*)buf.data(), length);
     if (file.fail()) {
         ++read_error_count;
@@ -62,11 +57,6 @@ int LinuxCache::Write(span<const uint8_t> buf, uint64_t start, int length)
     assert(length);
 
     file.seekp(sector_size * start, ios::beg);
-    if (file.fail()) {
-        ++write_error_count;
-        return 0;
-    }
-
     file.write((const char*)buf.data(), length);
     if (file.fail()) {
         ++write_error_count;
@@ -74,11 +64,7 @@ int LinuxCache::Write(span<const uint8_t> buf, uint64_t start, int length)
     }
 
     if (write_through) {
-        file.flush();
-        if (file.fail()) {
-            ++write_error_count;
-            return 0;
-        }
+        return Flush() ? length : 0;
     }
 
     return length;

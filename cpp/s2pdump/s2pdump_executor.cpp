@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
+#include <spdlog/spdlog.h>
 
 using namespace spdlog;
 

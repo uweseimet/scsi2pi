@@ -13,7 +13,7 @@ TEST(PhaseHandlerTest, Phases)
 {
     MockPhaseHandler handler;
 
-    handler.SetPhase(phase_t::selection);
+    handler.SetPhase(bus_phase::selection);
     EXPECT_TRUE(handler.IsSelection());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsCommand());
@@ -23,7 +23,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::busfree);
+    handler.SetPhase(bus_phase::busfree);
     EXPECT_TRUE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
     EXPECT_FALSE(handler.IsCommand());
@@ -33,7 +33,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::command);
+    handler.SetPhase(bus_phase::command);
     EXPECT_TRUE(handler.IsCommand());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -43,7 +43,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::status);
+    handler.SetPhase(bus_phase::status);
     EXPECT_TRUE(handler.IsStatus());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -53,7 +53,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::datain);
+    handler.SetPhase(bus_phase::datain);
     EXPECT_TRUE(handler.IsDataIn());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -63,7 +63,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::dataout);
+    handler.SetPhase(bus_phase::dataout);
     EXPECT_TRUE(handler.IsDataOut());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -73,7 +73,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::msgin);
+    handler.SetPhase(bus_phase::msgin);
     EXPECT_TRUE(handler.IsMsgIn());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -83,7 +83,7 @@ TEST(PhaseHandlerTest, Phases)
     EXPECT_FALSE(handler.IsDataOut());
     EXPECT_FALSE(handler.IsMsgOut());
 
-    handler.SetPhase(phase_t::msgout);
+    handler.SetPhase(bus_phase::msgout);
     EXPECT_TRUE(handler.IsMsgOut());
     EXPECT_FALSE(handler.IsBusFree());
     EXPECT_FALSE(handler.IsSelection());
@@ -99,44 +99,44 @@ TEST(PhaseHandlerTest, ProcessPhase)
     MockPhaseHandler handler;
     handler.Init();
 
-    handler.SetPhase(phase_t::selection);
+    handler.SetPhase(bus_phase::selection);
     EXPECT_CALL(handler, Selection);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::busfree);
+    handler.SetPhase(bus_phase::busfree);
     EXPECT_CALL(handler, BusFree);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::datain);
+    handler.SetPhase(bus_phase::datain);
     EXPECT_CALL(handler, DataIn);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::dataout);
+    handler.SetPhase(bus_phase::dataout);
     EXPECT_CALL(handler, DataOut);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::command);
+    handler.SetPhase(bus_phase::command);
     EXPECT_CALL(handler, Command);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::status);
+    handler.SetPhase(bus_phase::status);
     EXPECT_CALL(handler, Status);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::msgin);
+    handler.SetPhase(bus_phase::msgin);
     EXPECT_CALL(handler, MsgIn);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::msgout);
+    handler.SetPhase(bus_phase::msgout);
     EXPECT_CALL(handler, MsgOut);
     EXPECT_TRUE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::arbitration);
+    handler.SetPhase(bus_phase::arbitration);
     EXPECT_FALSE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::reselection);
+    handler.SetPhase(bus_phase::reselection);
     EXPECT_FALSE(handler.ProcessPhase());
 
-    handler.SetPhase(phase_t::reserved);
+    handler.SetPhase(bus_phase::reserved);
     EXPECT_FALSE(handler.ProcessPhase());
 }

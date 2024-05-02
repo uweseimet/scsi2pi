@@ -9,23 +9,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <gtest/gtest.h>
-#include "shared/shared_exceptions.h"
+#include "command/command_context.h"
 #include "protobuf/protobuf_util.h"
-#include "protobuf/command_context.h"
+#include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
 using namespace testing;
 using namespace protobuf_util;
-
-TEST(CommandContext, SetGetDefaultFolder)
-{
-    PbCommand command;
-    CommandContext context(command, "folder1", "");
-
-    EXPECT_EQ("folder1", context.GetDefaultFolder());
-    context.SetDefaultFolder("folder2");
-    EXPECT_EQ("folder2", context.GetDefaultFolder());
-}
 
 TEST(CommandContext, ReadCommand)
 {
@@ -79,7 +69,7 @@ TEST(CommandContext, GetCommand)
 {
     PbCommand command;
     command.set_operation(PbOperation::SERVER_INFO);
-    CommandContext context(command, "", "");
+    CommandContext context(command);
     EXPECT_EQ(PbOperation::SERVER_INFO, context.GetCommand().operation());
 }
 
@@ -88,10 +78,9 @@ TEST(CommandContext, WriteResult)
     const string filename = CreateTempFile(0);
     int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
-    result.set_status(false);
     result.set_error_code(PbErrorCode::UNAUTHORIZED);
     CommandContext context(fd);
-    context.WriteResult(result);
+    EXPECT_FALSE(context.WriteResult(result));
     close(fd);
     EXPECT_FALSE(result.status());
 
@@ -105,20 +94,18 @@ TEST(CommandContext, WriteResult)
 
 TEST(CommandContext, WriteSuccessResult)
 {
-    const string filename = CreateTempFile(0);
-    int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
-    result.set_status(false);
-    CommandContext context(fd);
-    context.WriteSuccessResult(result);
-    close(fd);
+    PbCommand command;
+    CommandContext context(command);
+    EXPECT_TRUE(context.WriteSuccessResult(result));
     EXPECT_TRUE(result.status());
 }
 
 TEST(CommandContext, ReturnLocalizedError)
 {
     PbCommand command;
-    CommandContext context(command, "", "en_US");
+    CommandContext context(command);
+    context.SetLocale("en_US");
 
     EXPECT_FALSE(context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL));
 }
@@ -127,7 +114,7 @@ TEST(CommandContext, ReturnSuccessStatus)
 {
     PbCommand command;
 
-    CommandContext context1(command, "", "");
+    CommandContext context1(command);
     EXPECT_TRUE(context1.ReturnSuccessStatus());
 
     const int fd = open("/dev/null", O_RDWR);
@@ -140,7 +127,7 @@ TEST(CommandContext, ReturnErrorStatus)
 {
     PbCommand command;
 
-    CommandContext context1(command, "", "");
+    CommandContext context1(command);
     EXPECT_FALSE(context1.ReturnErrorStatus("error"));
 
     const int fd = open("/dev/null", O_RDWR);

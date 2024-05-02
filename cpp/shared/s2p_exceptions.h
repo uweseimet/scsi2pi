@@ -11,8 +11,6 @@
 #include <stdexcept>
 #include "s2p_util.h"
 
-using namespace std;
-
 class parser_exception : public runtime_error
 {
     using runtime_error::runtime_error;
@@ -23,38 +21,25 @@ class io_exception : public runtime_error
     using runtime_error::runtime_error;
 };
 
-class file_not_found_exception : public io_exception
+class scsi_exception : public runtime_error
 {
-    using io_exception::io_exception;
-};
-
-class scsi_exception : public exception
-{
-    scsi_defs::sense_key sense_key;
-    scsi_defs::asc asc;
-
-    string message;
+    enum sense_key sense_key;
+    enum asc asc;
 
 public:
 
-    explicit scsi_exception(scsi_defs::sense_key sense_key,
-        scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information)
-    : sense_key(sense_key), asc(asc), message(s2p_util::FormatSenseData(sense_key, asc))
+    explicit scsi_exception(enum sense_key sense_key, enum asc asc = asc::no_additional_sense_information)
+    : runtime_error(s2p_util::FormatSenseData(sense_key, asc)), sense_key(sense_key), asc(asc)
     {
     }
     ~scsi_exception() override = default;
 
-    scsi_defs::sense_key get_sense_key() const
+    enum sense_key get_sense_key() const
     {
         return sense_key;
     }
-    scsi_defs::asc get_asc() const
+    enum asc get_asc() const
     {
         return asc;
-    }
-
-    const char* what() const noexcept override
-    {
-        return message.c_str();
     }
 };

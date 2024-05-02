@@ -9,10 +9,10 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "test/test_shared.h"
-#include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
 #include "s2pctl/s2pctl_commands.h"
+#include "shared/s2p_exceptions.h"
+#include "test_shared.h"
 
 using namespace testing;
 using namespace protobuf_util;

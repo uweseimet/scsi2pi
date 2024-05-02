@@ -7,28 +7,28 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#if defined BUILD_SCHD || defined BUILD_SCRM
-#include "devices/scsi_hd.h"
-#endif
-#ifdef BUILD_SCMO
-#include "devices/optical_memory.h"
-#endif
-#ifdef BUILD_SCCD
-#include "devices/scsi_cd.h"
-#endif
+#include "base/device_factory.h"
 #ifdef BUILD_SCDP
 #include "devices/daynaport.h"
-#endif
-#ifdef BUILD_SCLP
-#include "devices/printer.h"
 #endif
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
 #endif
+#ifdef BUILD_SCMO
+#include "devices/optical_memory.h"
+#endif
+#ifdef BUILD_SCLP
+#include "devices/printer.h"
+#endif
 #ifdef BUILD_SAHD
 #include "devices/sasi_hd.h"
 #endif
-#include "base/device_factory.h"
+#ifdef BUILD_SCCD
+#include "devices/scsi_cd.h"
+#endif
+#if defined BUILD_SCHD || defined BUILD_SCRM
+#include "devices/scsi_hd.h"
+#endif
 
 TEST(DeviceFactoryTest, CreateDevice)
 {
@@ -101,7 +101,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
 {
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
+    DeviceFactory &device_factory = DeviceFactory::Instance();
 
     EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
     auto mapping = device_factory.GetExtensionMapping();

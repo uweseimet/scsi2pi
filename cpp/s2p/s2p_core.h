@@ -8,10 +8,11 @@
 
 #pragma once
 
+#include <filesystem>
 #include "command/command_dispatcher.h"
-#include "s2p_parser.h"
 #include "s2p_thread.h"
 
+using namespace filesystem;
 using namespace s2p_interface;
 
 class S2p
@@ -23,11 +24,11 @@ public:
 
 private:
 
-    bool InitBus(bool, bool);
+    bool InitBus(bool);
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;
-    bool ParseProperties(const property_map&, int&);
+    bool ParseProperties(const property_map&, int&, bool);
     void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;
@@ -45,17 +46,13 @@ private:
 
     string access_token;
 
-    [[no_unique_address]] S2pParser s2p_parser;
-
-    S2pImage s2p_image;
-
     S2pThread service_thread;
 
-    unique_ptr<CommandExecutor> executor;
+    ControllerFactory controller_factory;
 
     shared_ptr<CommandDispatcher> dispatcher;
 
-    shared_ptr<ControllerFactory> controller_factory;
+    unique_ptr<CommandExecutor> executor;
 
     unique_ptr<Bus> bus;
 

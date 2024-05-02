@@ -31,27 +31,22 @@ public:
         return command_byte_counts[static_cast<int>(opcode)];
     }
 
-    string GetCommandName(scsi_command opcode) const
+    auto GetCommandName(scsi_command opcode) const
     {
         return command_names[static_cast<int>(opcode)];
-    }
-
-    bool IsRaspberryPi() const
-    {
-        return pi_type != RpiBus::PiType::unknown;
     }
 
 private:
 
     BusFactory();
+    BusFactory(const BusFactory&) = delete;
+    BusFactory operator&(const BusFactory&) = delete;
 
-    void AddCommand(scsi_command, int, string_view);
+    void AddCommand(scsi_command, int, const char*);
 
-    bool CheckForPi();
-
-    RpiBus::PiType pi_type = RpiBus::PiType::unknown;
+    static RpiBus::PiType CheckForPi();
 
     array<int, 256> command_byte_counts;
 
-    array<string, 256> command_names;
+    array<string_view, 256> command_names;
 };

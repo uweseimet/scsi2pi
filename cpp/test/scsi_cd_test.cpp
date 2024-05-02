@@ -7,11 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
-    MockScsiCd cd(0);
+    ScsiCd cd(0);
 
     EXPECT_EQ(SCCD, cd.GetType());
     EXPECT_TRUE(cd.SupportsFile());
@@ -53,7 +53,7 @@ TEST(ScsiCdTest, Inquiry)
 
 TEST(ScsiCdTest, GetSectorSizes)
 {
-    MockScsiCd cd(0);
+    ScsiCd cd(0);
 
     const auto &sector_sizes = cd.GetSupportedSectorSizes();
     EXPECT_EQ(2U, sector_sizes.size());
@@ -97,33 +97,33 @@ TEST(ScsiCdTest, Open)
 
 TEST(ScsiCdTest, ReadToc)
 {
-    auto controller = make_shared<MockAbstractController>();
+    MockAbstractController controller;
     auto cd = make_shared<MockScsiCd>(0);
     EXPECT_TRUE(cd->Init( { }));
 
-    controller->AddDevice(cd);
+    controller.AddDevice(cd);
 
     TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::not_ready, asc::medium_not_present,
         "Drive is not ready");
 
     cd->SetReady(true);
 
-    controller->SetCdbByte(6, 2);
+    controller.SetCdbByte(6, 2);
     TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
-    controller->SetCdbByte(6, 1);
+    controller.SetCdbByte(6, 1);
     TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
-    controller->SetCdbByte(6, 0);
-    EXPECT_CALL(*controller, DataIn());
+    controller.SetCdbByte(6, 0);
+    EXPECT_CALL(controller, DataIn());
     EXPECT_NO_THROW(cd->Dispatch(scsi_command::cmd_read_toc));
 }
 
 TEST(ScsiCdTest, ReadData)
 {
-    MockScsiCd cd(0);
+    ScsiCd cd(0);
 
     EXPECT_THROW(cd.ReadData( {}), scsi_exception)<< "Drive is not ready";
 }

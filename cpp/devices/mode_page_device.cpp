@@ -8,10 +8,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cstddef>
-#include "shared/shared_exceptions.h"
-#include "base/memory_util.h"
 #include "mode_page_device.h"
+#include <cstddef>
+#include "base/memory_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -112,11 +112,9 @@ void ModePageDevice::ModeSense10() const
     DataInPhase(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
 }
 
-void ModePageDevice::ModeSelect(scsi_command, cdb_t, span<const uint8_t>, int)
+void ModePageDevice::ModeSelect(cdb_t, span<const uint8_t>, int)
 {
     // There is no default implementation of MODE SELECT
-    assert(false);
-
     throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 

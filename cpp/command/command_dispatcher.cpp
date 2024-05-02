@@ -6,52 +6,58 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
-#include "controllers/controller_factory.h"
-#include "shared/shared_exceptions.h"
-#include "protobuf/protobuf_util.h"
 #include "command_dispatcher.h"
+#include <fstream>
+#include <spdlog/spdlog.h>
+#include "command_context.h"
+#include "command_image_support.h"
+#include "command_response.h"
+#include "controllers/controller_factory.h"
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result, const string &identifier)
+bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {
     const PbCommand &command = context.GetCommand();
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        trace("Ignored unknown command with operation opcode " + to_string(operation));
+        trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION, to_string(operation));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
+            to_string(static_cast<int>(operation)));
     }
 
-    trace("{0}Executing {1} command", identifier, PbOperation_Name(operation));
+    trace("Executing {} command", PbOperation_Name(operation));
+
+    CommandResponse response;
 
     switch (operation) {
     case LOG_LEVEL:
-        if (const string log_level = GetParam(command, "level"); !SetLogLevel(log_level)) {
+        if (const string &log_level = GetParam(command, "level"); !SetLogLevel(log_level)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
-            PropertyHandler::Instance().AddProperty("log_level", log_level);
+            PropertyHandler::Instance().AddProperty(PropertyHandler::LOG_LEVEL, log_level);
             return context.ReturnSuccessStatus();
         }
 
     case DEFAULT_FOLDER:
-        if (const string error = s2p_image.SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
             result.set_msg(error);
-            context.WriteResult(result);
-            return false;
+            return context.WriteResult(result);
         }
         else {
-            PropertyHandler::Instance().AddProperty("image_folder", GetParam(command, "folder"));
+            PropertyHandler::Instance().AddProperty(PropertyHandler::IMAGE_FOLDER, GetParam(command, "folder"));
             return context.WriteSuccessResult(result);
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -60,7 +66,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case SERVER_INFO:
         response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
-            executor.GetReservedIds(), s2p_image.GetDefaultFolder(), s2p_image.GetDepth());
+            executor.GetReservedIds());
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -72,25 +78,23 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case DEFAULT_IMAGE_FILES_INFO:
-        response.GetImageFilesInfo(*result.mutable_image_files_info(), s2p_image.GetDefaultFolder(),
-            GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"), s2p_image.GetDepth());
+        response.GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
+            GetParam(command, "file_pattern"));
         return context.WriteSuccessResult(result);
 
     case IMAGE_FILE_INFO:
-        if (string filename = GetParam(command, "file"); filename.empty()) {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
+        if (const string &filename = GetParam(command, "file"); filename.empty()) {
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
-            auto image_file = make_unique<PbImageFile>();
-            const bool status = response.GetImageFile(*image_file.get(), s2p_image.GetDefaultFolder(),
-                filename);
-            if (status) {
+            if (const auto &image_file = make_unique<PbImageFile>(); response.GetImageFile(*image_file.get(),
+                filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
-                context.WriteResult(result);
+                return context.WriteResult(result);
             }
             else {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO);
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
             }
         }
         break;
@@ -112,7 +116,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case OPERATION_INFO:
-        response.GetOperationInfo(*result.mutable_operation_info(), s2p_image.GetDepth());
+        response.GetOperationInfo(*result.mutable_operation_info());
         return context.WriteSuccessResult(result);
 
     case RESERVED_IDS_INFO:
@@ -120,37 +124,34 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SHUT_DOWN:
-        return ShutDown(context, GetParam(command, "mode"));
+        return ShutDown(context);
+
+    case CREATE_IMAGE:
+        return CommandImageSupport::Instance().CreateImage(context);
+
+    case DELETE_IMAGE:
+        return CommandImageSupport::Instance().DeleteImage(context);
+
+    case RENAME_IMAGE:
+        return CommandImageSupport::Instance().RenameImage(context);
+
+    case COPY_IMAGE:
+        return CommandImageSupport::Instance().CopyImage(context);
+
+    case PROTECT_IMAGE:
+    case UNPROTECT_IMAGE:
+        return CommandImageSupport::Instance().SetImagePermissions(context);
+
+    case PERSIST_CONFIGURATION:
+        return PropertyHandler::Instance().Persist() ?
+                context.ReturnSuccessStatus() : context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
 
     case NO_OPERATION:
         return context.ReturnSuccessStatus();
 
-    case CREATE_IMAGE:
-        return s2p_image.CreateImage(context);
-
-    case DELETE_IMAGE:
-        return s2p_image.DeleteImage(context);
-
-    case RENAME_IMAGE:
-        return s2p_image.RenameImage(context);
-
-    case COPY_IMAGE:
-        return s2p_image.CopyImage(context);
-
-    case PROTECT_IMAGE:
-        case UNPROTECT_IMAGE:
-        return s2p_image.SetImagePermissions(context);
-
-    case RESERVE_IDS:
-        return executor.ProcessCmd(context);
-
     default:
         // The remaining commands may only be executed when the target is idle
-        if (!ExecuteWithLock(context)) {
-            return false;
-        }
-
-        return HandleDeviceListChange(context, operation);
+        return ExecuteWithLock(context) ? HandleDeviceListChange(context) : false;
     }
 
     return true;
@@ -162,44 +163,41 @@ bool CommandDispatcher::ExecuteWithLock(const CommandContext &context)
     return executor.ProcessCmd(context);
 }
 
-bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context, PbOperation operation) const
+bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const
 {
     // ATTACH and DETACH return the resulting device list
-    if (operation == ATTACH || operation == DETACH) {
+    if (const PbOperation operation = context.GetCommand().operation(); operation == ATTACH || operation == DETACH) {
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command, s2p_image.GetDefaultFolder());
-        context.WriteResult(result);
-        return result.status();
+        CommandResponse response;
+        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
+        return context.WriteResult(result);
     }
 
     return true;
 }
 
 // Shutdown on a remote interface command
-bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m) const
+bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
-    if (m.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING);
-    }
+    shutdown_mode mode = shutdown_mode::none;
 
-    AbstractController::shutdown_mode mode = AbstractController::shutdown_mode::none;
-    if (m == "rascsi") {
-        mode = AbstractController::shutdown_mode::stop_s2p;
+    if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
+        mode = shutdown_mode::stop_s2p;
     }
     else if (m == "system") {
-        mode = AbstractController::shutdown_mode::stop_pi;
+        mode = shutdown_mode::stop_pi;
     }
     else if (m == "reboot") {
-        mode = AbstractController::shutdown_mode::restart_pi;
+        mode = shutdown_mode::restart_pi;
     }
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
-    // Shutdown modes other than rascsi require root permissions
-    if (mode != AbstractController::shutdown_mode::stop_s2p && getuid()) {
+    // Shutdown modes other than "rascsi" require root permissions
+    if (mode != shutdown_mode::stop_s2p && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -211,29 +209,27 @@ bool CommandDispatcher::ShutDown(const CommandContext &context, const string &m)
 }
 
 // Shutdown on a SCSI command
-bool CommandDispatcher::ShutDown(AbstractController::shutdown_mode mode) const
+bool CommandDispatcher::ShutDown(shutdown_mode mode) const
 {
     switch (mode) {
-    case AbstractController::shutdown_mode::stop_s2p:
+    case shutdown_mode::stop_s2p:
         info("s2p shutdown requested");
         return true;
 
-    case AbstractController::shutdown_mode::stop_pi:
-        info("Raspberry Pi shutdown requested");
-        if (system("init 0") == -1) {
-            error("Raspberry Pi shutdown failed");
-        }
+    case shutdown_mode::stop_pi:
+        info("Pi shutdown requested");
+        (void)system("init 0");
+        error("Pi shutdown failed");
         break;
 
-    case AbstractController::shutdown_mode::restart_pi:
-        info("Raspberry Pi restart requested");
-        if (system("init 6") == -1) {
-            error("Raspberry Pi restart failed");
-        }
+    case shutdown_mode::restart_pi:
+        info("Pi restart requested");
+        (void)system("init 6");
+        error("Pi restart failed");
         break;
 
-    case AbstractController::shutdown_mode::none:
-        assert(false);
+    default:
+        error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 
@@ -250,7 +246,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         level = components[0];
 
         if (components.size() > 1) {
-            if (const string error = ProcessId(ControllerFactory::GetLunMax(), components[1], id, lun); !error.empty()) {
+            if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
                 warn("Error setting log level: " + error);
                 return false;
             }

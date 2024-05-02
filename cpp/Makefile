@@ -318,7 +318,7 @@ in_process_test: $(BINDIR)/$(IN_PROCESS_TEST)
 coverage: CXXFLAGS += --coverage
 coverage: test
 
-$(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO): $(OBJ_GENERATED)
+$(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_IN_PROCESS_TEST): $(OBJ_GENERATED)
 
 $(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) -lpthread -lprotobuf
@@ -346,9 +346,8 @@ $(BINDIR)/$(IN_PROCESS_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LI
 		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) -lpthread -lprotobuf
 
 # Phony rules for building individual utilities
-.PHONY: s2p $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2P_TEST) $(IN_PROCESS_TEST)
+.PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2P_TEST) $(IN_PROCESS_TEST)
 
-s2p: $(BINDIR)/$(S2P)
 $(S2P): $(BINDIR)/$(S2P) 
 $(S2PCTL): $(BINDIR)/$(S2PCTL) 
 $(S2PDUMP): $(BINDIR)/$(S2PDUMP) 
@@ -363,7 +362,7 @@ $(IN_PROCESS_TEST): $(BINDIR)/$(IN_PROCESS_TEST)
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR)
 
-##   install         Installs the stripped binaries, usually to /usr/local/bin
+##   install         Installs the stripped binaries, usually to /opt/s2p/bin
 .PHONY: install
 install: $(BINARIES)
 	$(STRIP) $^

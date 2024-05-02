@@ -9,19 +9,22 @@
 #pragma once
 
 #include <filesystem>
-#include "protobuf/command_context.h"
 
 using namespace std;
 using namespace filesystem;
-using namespace s2p_interface;
 
-class S2pImage
+class CommandContext;
+
+class CommandImageSupport
 {
 
 public:
 
-    S2pImage();
-    ~S2pImage() = default;
+    static CommandImageSupport& Instance()
+    {
+        static CommandImageSupport instance; // NOSONAR instance cannot be inlined
+        return instance;
+    }
 
     void SetDepth(int d)
     {
@@ -36,6 +39,7 @@ public:
         return default_folder;
     }
     string SetDefaultFolder(string_view);
+
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;
     bool RenameImage(const CommandContext&) const;
@@ -44,21 +48,24 @@ public:
 
 private:
 
+    CommandImageSupport();
+    CommandImageSupport(const CommandImageSupport&) = delete;
+    CommandImageSupport operator&(const CommandImageSupport&) = delete;
+
     bool CheckDepth(string_view) const;
     string GetFullName(const string &filename) const
     {
         return default_folder + "/" + filename;
     }
     bool CreateImageFolder(const CommandContext&, string_view) const;
-    static bool IsReservedFile(const CommandContext&, const string&, const string&);
     bool ValidateParams(const CommandContext&, const string&, string&, string&) const;
 
+    static bool IsReservedFile(const CommandContext&, const string&, const string&);
     static bool IsValidSrcFilename(string_view);
     static bool IsValidDstFilename(string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
 
-    // ~/images is the default folder for device image files, for the root user it is /home/pi/images
-    string default_folder;
-
     int depth = 1;
+
+    string default_folder;
 };

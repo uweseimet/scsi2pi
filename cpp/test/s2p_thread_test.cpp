@@ -9,16 +9,16 @@
 //---------------------------------------------------------------------------
 
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <gtest/gtest.h>
-#include "shared/network_util.h"
-#include "shared/shared_exceptions.h"
+#include "command/command_context.h"
 #include "protobuf/protobuf_util.h"
-#include "protobuf/command_context.h"
 #include "s2p/s2p_thread.h"
+#include "shared/network_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace protobuf_util;
 using namespace network_util;
@@ -80,15 +80,13 @@ TEST(S2pThreadTest, Execute)
 
     S2pThread service_thread;
     service_thread.Init([](const CommandContext &context) {
-        if (context.GetCommand().operation() == PbOperation::NO_OPERATION) {
-            PbResult result;
-            result.set_status(true);
-            context.WriteResult(result);
-        }
-        else {
+        if (context.GetCommand().operation() != PbOperation::NO_OPERATION) {
             throw io_exception("error");
         }
-        return true;
+
+        PbResult result;
+        result.set_status(true);
+        return context.WriteResult(result);
     }, 9999);
 
     service_thread.Start();

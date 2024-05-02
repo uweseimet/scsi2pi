@@ -7,9 +7,9 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "base/memory_util.h"
 #include "devices/disk.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -32,7 +32,7 @@ TEST(DiskTest, Dispatch)
     disk->SetReady(true);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     disk->SetMediumChanged(true);
     EXPECT_THROW(disk->Dispatch(scsi_command::cmd_test_unit_ready), scsi_exception);
@@ -50,7 +50,7 @@ TEST(DiskTest, Rezero)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_rezero));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, FormatUnit)
@@ -64,7 +64,7 @@ TEST(DiskTest, FormatUnit)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_format_unit));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(1, 0x10);
     controller->SetCdbByte(4, 1);
@@ -82,7 +82,7 @@ TEST(DiskTest, ReassignBlocks)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_reassign_blocks));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, Seek6)
@@ -102,7 +102,7 @@ TEST(DiskTest, Seek6)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_seek6));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, Seek10)
@@ -122,7 +122,7 @@ TEST(DiskTest, Seek10)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_seek10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadCapacity10)
@@ -205,7 +205,7 @@ TEST(DiskTest, Read10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 }
@@ -220,7 +220,7 @@ TEST(DiskTest, Read16)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 }
@@ -252,7 +252,7 @@ TEST(DiskTest, Write10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 }
@@ -267,7 +267,7 @@ TEST(DiskTest, Write16)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 }
@@ -285,7 +285,7 @@ TEST(DiskTest, Verify10)
     EXPECT_CALL(*disk, FlushCache());
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, Verify16)
@@ -301,7 +301,7 @@ TEST(DiskTest, Verify16)
     EXPECT_CALL(*disk, FlushCache());
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_verify16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadLong10)
@@ -311,7 +311,7 @@ TEST(DiskTest, ReadLong10)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_long10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_long10, sense_key::illegal_request,
@@ -338,7 +338,7 @@ TEST(DiskTest, ReadLong16)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity16_read_long16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(2, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::illegal_request,
@@ -357,7 +357,7 @@ TEST(DiskTest, WriteLong10)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long10, sense_key::illegal_request,
@@ -386,7 +386,7 @@ TEST(DiskTest, WriteLong16)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(12, 255);
     TestShared::Dispatch(*disk, scsi_command::cmd_write_long16, sense_key::illegal_request, asc::invalid_field_in_cdb,
@@ -404,7 +404,7 @@ TEST(DiskTest, StartStopUnit)
     EXPECT_CALL(*controller, Status);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(disk->IsStopped());
 
     // Stop/Load
@@ -414,7 +414,7 @@ TEST(DiskTest, StartStopUnit)
     EXPECT_CALL(*controller, Status);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     disk->SetReady(false);
     EXPECT_CALL(*disk, FlushCache).Times(0);
@@ -431,14 +431,14 @@ TEST(DiskTest, StartStopUnit)
     controller->SetCdbByte(4, 0x01);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(disk->IsStopped());
 
     // Start/Load
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // Start/Load with previous medium
     controller->SetCdbByte(4, 0x02);
@@ -448,13 +448,13 @@ TEST(DiskTest, StartStopUnit)
     EXPECT_CALL(*disk, FlushCache);
     // Eject existing medium
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(disk->GetFilename().empty());
     // Re-load medium
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ("filename", disk->GetFilename());
 }
 
@@ -469,13 +469,13 @@ TEST(DiskTest, PreventAllowMediumRemoval)
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(disk->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(disk->IsLocked());
 }
 
@@ -737,12 +737,12 @@ TEST(DiskTest, SynchronizeCache)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_synchronize_cache10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_synchronize_cache16));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadDefectData)
@@ -751,7 +751,7 @@ TEST(DiskTest, ReadDefectData)
 
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_defect_data10));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(DiskTest, ConfiguredSectorSize)

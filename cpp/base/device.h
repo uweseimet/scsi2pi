@@ -8,14 +8,10 @@
 
 #pragma once
 
-#include "generated/s2p_interface.pb.h"
 #include "shared/s2p_util.h"
+#include "generated/s2p_interface.pb.h"
 
-using namespace std;
 using namespace s2p_interface;
-
-// A combination of device ID and LUN
-using id_set = pair<int, int>;
 
 // The map used for storing/passing device parameters
 using param_map = unordered_map<string, string, s2p_util::StringHash, equal_to<>>;
@@ -229,12 +225,10 @@ private:
     bool supports_file = false;
 
     // Device identifier (for INQUIRY)
-    string vendor = DEFAULT_VENDOR;
+    string vendor = "SCSI2Pi";
     string product;
     string revision;
 
     // The parameters the device was created with
     param_map params;
-
-    inline static const string DEFAULT_VENDOR = "SCSI2Pi";
 };

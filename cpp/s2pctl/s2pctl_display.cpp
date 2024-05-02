@@ -6,26 +6,22 @@
 //
 //---------------------------------------------------------------------------
 
-#include <set>
-#include <map>
-#include <iomanip>
-#include <spdlog/spdlog.h>
-#include "shared/s2p_util.h"
-#include "protobuf/protobuf_util.h"
 #include "s2pctl_display.h"
+#include <iomanip>
+#include <map>
+#include <set>
+#include <spdlog/spdlog.h>
+#include "protobuf/protobuf_util.h"
+#include "shared/s2p_util.h"
 
 using namespace s2p_util;
 using namespace protobuf_util;
 
 string S2pCtlDisplay::DisplayDevicesInfo(const PbDevicesInfo &devices_info) const
 {
-    ostringstream s;
-
     const vector<PbDevice> devices(devices_info.devices().cbegin(), devices_info.devices().cend());
 
-    s << ListDevices(devices);
-
-    return s.str();
+    return ListDevices(devices);
 }
 
 string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
@@ -345,16 +341,12 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
 
 string S2pCtlDisplay::DisplayParams(const PbDevice &pb_device) const
 {
-    ostringstream s;
-
     set<string, less<>> params;
     for (const auto& [key, value] : pb_device.params()) {
         params.insert(key + "=" + value);
     }
 
-    s << Join(params, ":");
-
-    return s.str();
+    return Join(params, ":");
 }
 
 string S2pCtlDisplay::DisplayAttributes(const PbDeviceProperties &props) const

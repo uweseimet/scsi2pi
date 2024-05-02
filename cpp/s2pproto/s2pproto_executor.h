@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include "initiator/initiator_executor.h"
 #include "generated/s2p_interface.pb.h"
 

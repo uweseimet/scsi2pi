@@ -10,9 +10,12 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
 #include "shared/scsi.h"
+#include "base/s2p_defs.h"
 
 #if defined BOARD_STANDARD
 #include "buses/connection_type/connection_standard.h"
@@ -25,8 +28,6 @@
 #else
 #error Invalid connection type or none specified
 #endif
-
-using namespace scsi_defs;
 
 //---------------------------------------------------------------------------
 //
@@ -115,12 +116,13 @@ constexpr static int OUT = GPIO_OUTPUT;
 constexpr static int ON = 1;
 constexpr static int OFF = 0;
 
-class Bus
+using namespace std;
+
+class Bus // NOSONAR The number of convenience methods is justified
 {
 
 public:
 
-    Bus() = default;
     virtual ~Bus() = default;
 
     virtual bool Init(bool = true);
@@ -144,6 +146,8 @@ public:
     virtual bool GetSignal(int) const = 0;
     virtual void SetSignal(int, bool) = 0;
 
+    virtual bool IsRaspberryPi() const = 0;
+
     virtual bool WaitSignal(int, bool);
 
     int CommandHandShake(vector<uint8_t>&);
@@ -161,12 +165,12 @@ public:
         return GetSignal(PIN_SEL);
     }
 
-    inline bool GetREQ() const
+    bool GetREQ() const
     {
         return GetSignal(PIN_REQ);
     }
 
-    inline void SetREQ(bool state)
+    void SetREQ(bool state)
     {
         SetSignal(PIN_REQ, state);
     }
@@ -181,17 +185,17 @@ public:
         SetSignal(PIN_ATN, state);
     }
 
-    inline bool GetACK() const
+    bool GetACK() const
     {
         return GetSignal(PIN_ACK);
     }
 
-    inline void SetACK(bool state)
+    void SetACK(bool state)
     {
         SetSignal(PIN_ACK, state);
     }
 
-    inline bool GetRST() const
+    bool GetRST() const
     {
         return GetSignal(PIN_RST);
     }
@@ -201,7 +205,7 @@ public:
         SetSignal(PIN_RST, state);
     }
 
-    inline bool GetMSG() const
+    bool GetMSG() const
     {
         return GetSignal(PIN_MSG);
     }
@@ -211,7 +215,7 @@ public:
         SetSignal(PIN_MSG, state);
     }
 
-    inline bool GetCD() const
+    bool GetCD() const
     {
         return GetSignal(PIN_CD);
     }
@@ -221,31 +225,30 @@ public:
         SetSignal(PIN_CD, state);
     }
 
-    phase_t GetPhase();
+    bus_phase GetPhase();
 
-    static string GetPhaseName(phase_t phase)
+    static string GetPhaseName(bus_phase phase)
     {
         return phase_names[static_cast<int>(phase)];
     }
 
-    // For work-around required by the DaynaPort emulation
-    static constexpr int SEND_NO_DELAY = -1;
-
 protected:
+
+    Bus() = default;
 
     virtual void WaitBusSettle() const = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    inline bool IsTarget() const
+    bool IsTarget() const
     {
         return target_mode;
     }
 
 private:
 
-    static const array<phase_t, 8> phases;
+    static const array<bus_phase, 8> phases;
 
     static const array<string, 11> phase_names;
 

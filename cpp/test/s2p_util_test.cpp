@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace s2p_util;
 
@@ -42,6 +42,9 @@ TEST(S2pUtilTest, Split)
     EXPECT_EQ(2U, v.size());
     EXPECT_EQ("this", v[0]);
     EXPECT_EQ("is:a:test", v[1]);
+
+    v = Split("", ':', 1);
+    EXPECT_EQ(1U, v.size());
 }
 
 TEST(S2pUtilTest, ToUpper)
@@ -59,52 +62,52 @@ TEST(S2pUtilTest, ProcessId)
     int id = -1;
     int lun = -1;
 
-    string error = ProcessId(32, "", id, lun);
+    string error = ProcessId("", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "8", id, lun);
+    error = ProcessId("8", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "0:32", id, lun);
+    error = ProcessId("0:32", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "-1:", id, lun);
+    error = ProcessId("-1:", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "0:-1", id, lun);
+    error = ProcessId("0:-1", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "a", id, lun);
+    error = ProcessId("a", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "a:0", id, lun);
+    error = ProcessId("a:0", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "0:a", id, lun);
+    error = ProcessId("0:a", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "0", id, lun);
+    error = ProcessId("0", id, lun);
     EXPECT_TRUE(error.empty());
     EXPECT_EQ(0, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId(32, "7:31", id, lun);
+    error = ProcessId("7:31", id, lun);
     EXPECT_TRUE(error.empty());
     EXPECT_EQ(7, id);
     EXPECT_EQ(31, lun);
@@ -140,17 +143,6 @@ TEST(S2pUtilTest, GetScsiLevel)
     EXPECT_EQ("SPC-4", GetScsiLevel(6));
     EXPECT_EQ("SPC-5", GetScsiLevel(7));
     EXPECT_EQ("SPC-6", GetScsiLevel(8));
-}
-
-TEST(S2pUtilTest, GetExtensionLowerCase)
-{
-    EXPECT_EQ("", GetExtensionLowerCase(""));
-    EXPECT_EQ("", GetExtensionLowerCase("."));
-    EXPECT_EQ("", GetExtensionLowerCase(".ext"));
-    EXPECT_EQ("", GetExtensionLowerCase(".ext_long"));
-    EXPECT_EQ("ext", GetExtensionLowerCase("file.ext"));
-    EXPECT_EQ("ext", GetExtensionLowerCase("FILE.EXT"));
-    EXPECT_EQ("ext", GetExtensionLowerCase(".XYZ.EXT"));
 }
 
 TEST(S2pUtilTest, GetHexBytes)

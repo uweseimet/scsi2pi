@@ -6,35 +6,33 @@
 //
 //---------------------------------------------------------------------------
 
-#include <fstream>
-#include <filesystem>
-#include <spdlog/spdlog.h>
-#include "shared/shared_exceptions.h"
 #include "property_handler.h"
+#include <filesystem>
+#include <fstream>
+#include <spdlog/spdlog.h>
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace spdlog;
 using namespace s2p_util;
 
-void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties)
+void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties, bool ignore_conf)
 {
-    // A clear property cache helps with testing because Init() can be called for different files
+    // A clear property cache helps with unit testing because Init() can be called for different files
     property_cache.clear();
 
     property_map properties;
-    properties[PropertyHandler::LOCALE] = GetLocale();
-    properties[PropertyHandler::LOG_LEVEL] = "info";
-    properties[PropertyHandler::PORT] = "6868";
-    properties[PropertyHandler::SCAN_DEPTH] = "1";
 
     // Always parse the optional global property file
-    if (exists(path(GLOBAL_CONFIGURATION))) {
+    if (!ignore_conf && exists(path(GLOBAL_CONFIGURATION))) {
         ParsePropertyFile(properties, GLOBAL_CONFIGURATION, true);
     }
 
     // When there is no explicit property file list parse the local property file
     if (filenames.empty()) {
-        ParsePropertyFile(properties, GetHomeDir() + "/" + LOCAL_CONFIGURATION, true);
+        if (!ignore_conf) {
+            ParsePropertyFile(properties, GetHomeDir() + LOCAL_CONFIGURATION, true);
+        }
     }
     else {
         for (const auto &filename : Split(filenames, ',')) {
@@ -42,9 +40,9 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         }
     }
 
-    // Merge properties from property files and from the command line
-    for (const auto& [k, v] : cmd_properties) {
-        properties[k] = v;
+    // Merge properties from property files and from the command line, giving the command line priority
+    for (const auto& [key, value] : cmd_properties) {
+        properties[key] = value;
     }
 
     // Normalize properties by adding an explicit LUN where required
@@ -100,7 +98,7 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
-string PropertyHandler::GetProperty(string_view key) const
+string PropertyHandler::GetProperty(string_view key, const string &def) const
 {
     for (const auto& [k, v] : property_cache) {
         if (k == key) {
@@ -108,7 +106,7 @@ string PropertyHandler::GetProperty(string_view key) const
         }
     }
 
-    return "";
+    return def;
 }
 
 void PropertyHandler::RemoveProperties(const string &filter)
@@ -170,3 +168,21 @@ map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor,
 
     return pages;
 }
+
+bool PropertyHandler::Persist() const
+{
+    error_code error;
+    remove(GLOBAL_CONFIGURATION_OLD, error);
+    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION_OLD), error);
+
+    ofstream out(GLOBAL_CONFIGURATION);
+    for (const auto& [key, value] : GetProperties()) {
+        out << key << "=" << value << "\n";
+        if (out.fail()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+

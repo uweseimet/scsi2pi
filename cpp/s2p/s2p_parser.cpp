@@ -6,11 +6,13 @@
 //
 //---------------------------------------------------------------------------
 
-#include <fstream>
-#include <getopt.h>
-#include "controllers/controller_factory.h"
-#include "shared/shared_exceptions.h"
 #include "s2p/s2p_parser.h"
+#include <fstream>
+#include <iostream>
+#include <getopt.h>
+#include <spdlog/spdlog.h>
+#include "controllers/controller_factory.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace s2p_util;
 
@@ -46,9 +48,9 @@ void S2pParser::Banner(bool usage) const
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
+            << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
             << "  --version/-v                Display the program version.\n"
             << "  --help                      Display this help.\n"
-            << "  Attaching a SASI drive automatically selects SASI compatibility.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
             << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -61,10 +63,11 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi) const // NOSONAR Acceptable complexity for parsing
+property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_HELP = 3;
+    const int OPT_IGNORE_CONF = 3;
+    const int OPT_HELP = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
@@ -72,6 +75,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, OPT_HELP },
+        { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-pattern", required_argument, nullptr, 'l' },
@@ -90,7 +94,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
         { nullptr, 0, nullptr, 0 }
     };
 
-    const unordered_map<int, string> OPTIONS_TO_PROPERTIES = {
+    const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'z', PropertyHandler::LOCALE },
@@ -111,7 +115,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
     string block_size;
     string caching_mode;
     bool blue_scsi_mode = false;
-    bool has_scsi = false;
 
     property_map properties;
 
@@ -135,7 +138,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             continue;
 
         case 'c':
-            if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2) {
+            if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
                 throw parser_exception("Invalid property '" + string(optarg) + "'");
             }
             else {
@@ -145,13 +148,11 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         case 'h':
             id_lun = optarg;
-            has_sasi = true;
             type = "sahd";
             continue;
 
         case 'i':
             id_lun = optarg;
-            has_scsi = true;
             continue;
 
         case 'm':
@@ -170,6 +171,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             scsi_level = optarg;
             continue;
 
+        case OPT_IGNORE_CONF:
+            ignore_conf = true;
+            continue;
+
         case OPT_HELP:
             Banner(true);
             exit(EXIT_SUCCESS);
@@ -185,10 +190,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
             break;
         }
 
-        if ((has_scsi && type == "sahd") || (has_sasi && (type.empty() || type != "sahd"))) {
-            throw parser_exception("SCSI and SASI devices cannot be mixed");
-        }
-
         string device_key;
         if (!id_lun.empty()) {
             device_key = fmt::format("device.{}.", id_lun);
@@ -196,48 +197,48 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &has_sasi)
 
         const string &params = optarg;
         if (blue_scsi_mode && !params.empty()) {
-            device_key = ParseBlueScsiFilename(properties, device_key, params, has_sasi);
+            device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
 
         if (!block_size.empty()) {
-            properties[device_key + "block_size"] = block_size;
+            properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
+            block_size.clear();
         }
         if (!caching_mode.empty()) {
-            properties[device_key + "caching_mode"] = caching_mode;
+            properties[device_key + PropertyHandler::CACHING_MODE] = caching_mode;
+            caching_mode.clear();
         }
         if (!type.empty()) {
-            properties[device_key + "type"] = type;
+            properties[device_key + PropertyHandler::TYPE] = type;
+            type.clear();
         }
         if (!scsi_level.empty()) {
-            properties[device_key + "scsi_level"] = scsi_level;
+            properties[device_key + PropertyHandler::SCSI_LEVEL] = scsi_level;
+            scsi_level.clear();
         }
         if (!name.empty()) {
-            properties[device_key + "name"] = name;
+            properties[device_key + PropertyHandler::NAME] = name;
+            name.clear();
         }
         if (!params.empty()) {
-            properties[device_key + "params"] = params;
+            properties[device_key + PropertyHandler::PARAMS] = params;
         }
 
-        id_lun = "";
-        type = "";
-        scsi_level = "";
-        name = "";
-        block_size = "";
-        caching_mode = "";
+        id_lun.clear();
     }
 
     return properties;
 }
 
-string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename, bool is_sasi)
+string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string, string, s2p_util::StringHash, equal_to<>> BLUE_SCSI_TO_S2P_TYPES = {
+    const unordered_map<string, const char*, s2p_util::StringHash, equal_to<>> BLUE_SCSI_TO_S2P_TYPES = {
         { "CD", "sccd" },
         { "FD", "schd" },
         { "HD", "schd" },
         { "MO", "scmo" },
         { "RE", "scrm" },
-        { "TP", "" }
+        { "TP", nullptr }
     };
 
     const auto index = filename.find(".");
@@ -253,7 +254,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     string device_key = d;
     if (d.empty()) {
         const char id = type_id_lun[2];
-        string lun = "";
+        string lun;
         if (type_id_lun.size() > 3) {
             lun = ParseNumber(type_id_lun.substr(3));
         }
@@ -266,15 +267,10 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
-    if (t->second.empty()) {
+    if (!t->second) {
         throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
     }
-    if (t->second != "schd") {
-        properties[device_key + "type"] = t->second;
-    }
-    else {
-        properties[device_key + "type"] = is_sasi ? "sahd" : "schd";
-    }
+    properties[device_key + PropertyHandler::TYPE] = t->second;
 
     string block_size = "512";
     if (components.size() > 1) {
@@ -283,13 +279,13 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
         }
         // When there is no block_size number after the "_" separator the string is the product data
         else {
-            properties[device_key + "name"] = components[1];
+            properties[device_key + PropertyHandler::NAME] = components[1];
         }
     }
-    properties[device_key + "block_size"] = block_size;
+    properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
 
     if (components.size() > 2) {
-        properties[device_key + "name"] = components[2];
+        properties[device_key + PropertyHandler::NAME] = components[2];
     }
 
     return device_key;
@@ -297,7 +293,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
 
 vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
 {
-    // Convert some legacy RaSCSI/PiSCSI options to a consistent getopt() format:
+    // Convert legacy RaSCSI/PiSCSI ID options to a consistent getopt() format:
     //   -id|-ID -> -i
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
@@ -311,17 +307,11 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
             }
         }
 
-        const string ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
+        const string &ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
 
-        const string arg_lower = ToLower(arg);
-        if (arg_lower.starts_with("-h")) {
-            args.emplace_back(strdup("-h"));
-            if (!ids.empty()) {
-                args.emplace_back(strdup(ids.c_str()));
-            }
-        }
-        else if (arg_lower.starts_with("-i")) {
-            args.emplace_back(strdup("-i"));
+        const string &arg_lower = ToLower(arg);
+        if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
+            args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
             if (!ids.empty()) {
                 args.emplace_back(strdup(ids.c_str()));
             }

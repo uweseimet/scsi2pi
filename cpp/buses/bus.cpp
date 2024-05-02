@@ -8,11 +8,10 @@
 //
 //---------------------------------------------------------------------------
 
+#include "bus.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include "bus_factory.h"
-
-using namespace scsi_defs;
 
 bool Bus::Init(bool mode)
 {
@@ -108,7 +107,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
 // Initiator MESSAGE IN
 int Bus::MsgInHandShake()
 {
-    const phase_t phase = GetPhase();
+    const bus_phase phase = GetPhase();
 
     if (!WaitSignal(PIN_REQ, true)) {
         return -1;
@@ -166,7 +165,7 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
             buf++;
         }
     } else {
-        const phase_t phase = GetPhase();
+        const bus_phase phase = GetPhase();
 
         for (bytes_received = 0; bytes_received < count; bytes_received++) {
             if (!WaitSignal(PIN_REQ, true)) {
@@ -244,7 +243,7 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
 
         WaitSignal(PIN_ACK, false);
     } else {
-        const phase_t phase = GetPhase();
+        const bus_phase phase = GetPhase();
 
         for (bytes_sent = 0; bytes_sent < count; bytes_sent++) {
             SetDAT(*buf);
@@ -254,7 +253,7 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
             }
 
             // Signal the last MESSAGE OUT byte
-            if (phase == phase_t::msgout && bytes_sent == count - 1) {
+            if (phase == bus_phase::msgout && bytes_sent == count - 1) {
                 SetATN(false);
             }
 
@@ -305,16 +304,16 @@ bool Bus::WaitSignal(int pin, bool state)
     return false;
 }
 
-phase_t Bus::GetPhase()
+bus_phase Bus::GetPhase()
 {
     Acquire();
 
     if (GetSEL()) {
-        return phase_t::selection;
+        return bus_phase::selection;
     }
 
     if (!GetBSY()) {
-        return phase_t::busfree;
+        return bus_phase::busfree;
     }
 
     // Get phase from bus signal lines
@@ -333,15 +332,15 @@ phase_t Bus::GetPhase()
 // | 1 | 1 | 0 | MESSAGE OUT
 // | 1 | 1 | 1 | MESSAGE IN
 //
-constexpr array<phase_t, 8> Bus::phases = {
-    phase_t::dataout,
-    phase_t::datain,
-    phase_t::command,
-    phase_t::status,
-    phase_t::reserved,
-    phase_t::reserved,
-    phase_t::msgout,
-    phase_t::msgin
+constexpr array<bus_phase, 8> Bus::phases = {
+    bus_phase::dataout,
+    bus_phase::datain,
+    bus_phase::command,
+    bus_phase::status,
+    bus_phase::reserved,
+    bus_phase::reserved,
+    bus_phase::msgout,
+    bus_phase::msgin
 };
 
 const array<string, 11> Bus::phase_names = {

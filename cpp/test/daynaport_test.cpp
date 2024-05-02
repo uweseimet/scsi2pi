@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "devices/daynaport.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ScsiDaynaportTest, Device_Defaults)
 {
@@ -54,7 +54,7 @@ TEST(ScsiDaynaportTest, TestUnitReady)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(ScsiDaynaportTest, Read)
@@ -68,7 +68,7 @@ TEST(ScsiDaynaportTest, Read)
     EXPECT_EQ(0, daynaport.Read(cdb, buf, 0)) << "Trying to read the root sector must fail";
 }
 
-TEST(ScsiDaynaportTest, Write)
+TEST(ScsiDaynaportTest, WriteData)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
     vector<int> cdb(6);
@@ -130,7 +130,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_set_iface_mode));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
     EXPECT_CALL(*controller, DataOut());

@@ -19,7 +19,7 @@ class CommandExecutor
 
 public:
 
-    CommandExecutor(Bus &bus, shared_ptr<ControllerFactory> controller_factory)
+    CommandExecutor(Bus &bus, ControllerFactory &controller_factory)
     : bus(bus), controller_factory(controller_factory)
     {
     }
@@ -46,7 +46,7 @@ public:
     string SetReservedIds(string_view);
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
-    bool VerifyExistingIdAndLun(const CommandContext&, int, int) const;
+    bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
     bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
     bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
@@ -58,11 +58,10 @@ public:
 
     auto GetAllDevices() const
     {
-        return controller_factory->GetAllDevices();
+        return controller_factory.GetAllDevices();
     }
 
-    static bool ValidateOperationAgainstDevice(const CommandContext&, const PrimaryDevice&, PbOperation);
-    static bool ValidateIdAndLun(const CommandContext&, int, int);
+    static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
     static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
 
@@ -75,18 +74,18 @@ private:
 
     static void DisplayDeviceInfo(const PrimaryDevice&);
     static bool CheckForReservedFile(const CommandContext&, const string&);
-    static void SetUpDeviceProperties(const CommandContext&, shared_ptr<PrimaryDevice>);
+    static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 
     Bus &bus;
 
-    shared_ptr<ControllerFactory> controller_factory;
+    ControllerFactory &controller_factory;
 
     mutex execution_locker;
 
     unordered_set<int> reserved_ids;
 
     const inline static unordered_set<PbDeviceType> UNIQUE_DEVICE_TYPES = {
-        PbDeviceType::SCDP,
-        PbDeviceType::SCHS
+        SCDP,
+        SCHS
     };
 };

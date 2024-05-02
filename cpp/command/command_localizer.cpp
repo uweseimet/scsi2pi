@@ -6,13 +6,13 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_localizer.h"
 #include <cassert>
-#include <algorithm>
-#include "localizer.h"
+#include <unordered_set>
 
 using namespace s2p_util;
 
-Localizer::Localizer()
+CommandLocalizer::CommandLocalizer()
 {
     Add(LocalizationKey::ERROR_AUTHENTICATION, "en", "Authentication failed");
     Add(LocalizationKey::ERROR_AUTHENTICATION, "de", "Authentifizierung fehlgeschlagen");
@@ -140,13 +140,6 @@ Localizer::Localizer()
         "Una vez establecido el nombre del dispositivo ya no se puede cambiar");
     Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "zh", "设备名称设置后不能再更改");
 
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "en", "Missing shutdown mode");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "de", "Fehlender Shutdown-Modus");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "sv", "Avstängningsläge saknas");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "fr", "Mode d'extinction manquant");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "es", "Falta el modo de apagado");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_MISSING, "zh", "缺少关机模式");
-
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "en", "Invalid shutdown mode '%1'");
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "de", "Ungültiger Shutdown-Modus '%1'");
     Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "sv", "Ogiltigt avstängsningsläge: '%1'");
@@ -273,47 +266,44 @@ Localizer::Localizer()
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "fr", "Il ne peut y avoir qu'un seul périphérique %1");
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "es", "Sólo puede haber un único dispositivo %1");
     Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "zh", "只能有一个%1设备");
+
+    Add(LocalizationKey::ERROR_PERSIST, "en", "Couldn't save '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "de", "'/etc/s2p.conf' konnte nicht gespeichert werden");
+    Add(LocalizationKey::ERROR_PERSIST, "sv", "Kunde inte spara '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "fr", "Impossible d'enregistrer '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "es", "No se pudo guardar '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, "zh", "无法保存'/etc/s2p.conf'");
 }
 
-void Localizer::Add(LocalizationKey key, const string &locale, string_view value)
+void CommandLocalizer::Add(LocalizationKey key, const string &locale, string_view value)
 {
     // Safeguards against empty messages, duplicate entries and unsupported locales
-    assert(locale.size());
-    assert(value.size());
-    assert(supported_languages.contains(locale));
-    assert(localized_messages[locale][key].empty());
+    assert(!locale.empty());
+    assert(!value.empty());
+    assert(!localized_messages[locale].contains(key));
+    assert((unordered_set<string, s2p_util::StringHash, equal_to<>>( { "en", "de", "sv", "fr", "es", "zh" })).contains(
+        locale));
+
     localized_messages[locale][key] = value;
 }
 
-string Localizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
+string CommandLocalizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
-    const string locale_lower = ToLower(locale);
-
-    auto it = localized_messages.find(locale_lower);
+    auto it = localized_messages.find(ToLower(locale).substr(0, 2));
     if (it == localized_messages.end()) {
-        // Try to fall back to country-indepedent locale (e.g. "en" instead of "en_US")
-        if (locale_lower.length() > 2) {
-            it = localized_messages.find(locale_lower.substr(0, 2));
-        }
-        if (it == localized_messages.end()) {
-            it = localized_messages.find("en");
-        }
+        // Use English as fallback language
+        it = localized_messages.find("en");
     }
-
     assert(it != localized_messages.end());
 
-    auto messages = it->second;
-
-    const auto &m = messages.find(key);
-    if (m == messages.end()) {
+    const auto &m = it->second.find(key);
+    if (m == it->second.end()) {
         return "Missing localization for enum value " + to_string(static_cast<int>(key));
     }
 
     string message = m->second;
-    message = regex_replace(message, regex1, arg1);
-    message = regex_replace(message, regex2, arg2);
-    message = regex_replace(message, regex3, arg3);
-
-    return message;
+    message = regex_replace(message, REGEX1, arg1);
+    message = regex_replace(message, REGEX2, arg2);
+    return regex_replace(message, REGEX3, arg3);
 }

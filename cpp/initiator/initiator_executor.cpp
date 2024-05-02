@@ -6,14 +6,16 @@
 //
 //---------------------------------------------------------------------------
 
+#include "initiator_executor.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator_util.h"
-#include "initiator_executor.h"
+#include "shared/s2p_util.h"
 
 using namespace std;
 using namespace spdlog;
+using namespace s2p_util;
 using namespace initiator_util;
 
 int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
@@ -28,7 +30,7 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
         warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
     }
 
-    if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+    if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
         trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
     }
     else {
@@ -74,28 +76,28 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
 
 bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int &length)
 {
-    const phase_t phase = bus.GetPhase();
+    const bus_phase phase = bus.GetPhase();
 
     trace("Current phase is {}", Bus::GetPhaseName(phase));
 
     switch (phase) {
-    case phase_t::command:
+    case bus_phase::command:
         Command(cmd, cdb);
         break;
 
-    case phase_t::status:
+    case bus_phase::status:
         Status();
         break;
 
-    case phase_t::datain:
+    case bus_phase::datain:
         DataIn(buffer, length);
         break;
 
-    case phase_t::dataout:
+    case bus_phase::dataout:
         DataOut(buffer, length);
         break;
 
-    case phase_t::msgin:
+    case bus_phase::msgin:
         MsgIn();
         if (next_message == 0x80) {
             // Done with this command cycle unless there is a pending MESSAGE REJECT
@@ -103,7 +105,7 @@ bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8
         }
         break;
 
-    case phase_t::msgout:
+    case bus_phase::msgout:
         MsgOut();
         break;
 
@@ -188,7 +190,7 @@ void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
     }
 
     if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
-        if (const string &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+        if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
             error("Command {} failed", command_name);
         }
         else {
@@ -310,12 +312,11 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 void InitiatorExecutor::LogStatus() const
 {
     if (status) {
-        if (const auto &it_status = STATUS_MAPPING.find(static_cast<scsi_defs::status>(status)); it_status
-            != STATUS_MAPPING.end()) {
-            warn("Device reported {0} (status code ${1:02x})", it_status->second, status);
+        if (const auto &it = STATUS_MAPPING.find(static_cast<status_code>(status)); it != STATUS_MAPPING.end()) {
+            warn("Device reported {0} (status code ${1:02x})", it->second, status);
         }
         else if (status != 0xff) {
-            warn("Device reported an unknown status (status code ${0:02x})", status);
+            warn("Device reported an unknown status (status code ${:02x})", status);
         }
         else {
             warn("Device did not respond");

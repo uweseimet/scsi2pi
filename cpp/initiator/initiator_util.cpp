@@ -6,19 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
+#include "initiator_util.h"
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
-#include "initiator_util.h"
 
 using namespace spdlog;
-using namespace scsi_defs;
 using namespace s2p_util;
 
 void initiator_util::ResetBus(Bus &bus)
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us
-    constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
     nanosleep(&ts, nullptr);
     bus.Reset();
 }

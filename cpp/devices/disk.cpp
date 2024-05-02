@@ -12,11 +12,11 @@
 //
 //---------------------------------------------------------------------------
 
-#include "shared/shared_exceptions.h"
-#include "base/memory_util.h"
-#include "linux_cache.h"
-#include "disk_cache.h"
 #include "disk.h"
+#include "base/memory_util.h"
+#include "disk_cache.h"
+#include "linux_cache.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;
@@ -614,8 +614,9 @@ void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) co
     }
 }
 
-void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int length)
+void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 {
+    const auto cmd = static_cast<scsi_command>(cdb[0]);
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
     // PF
@@ -668,9 +669,10 @@ void Disk::ModeSelect(scsi_command cmd, cdb_t cdb, span<const uint8_t> buf, int 
         // The page size field does not count itself and the page code field
         const size_t page_size = buf[offset + 1] + 2;
 
-        // The page size in the parameters must match the actual page size
+        // The page size in the parameters must match the actual page size, otherwise report
+        // INVALID FIELD IN PARAMETER LIST (SCSI-2 8.2.8).
         if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
-            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
         }
 
         switch (page_code) {
@@ -965,7 +967,7 @@ bool Disk::SetSectorSizeInBytes(uint32_t size)
 bool Disk::SetConfiguredSectorSize(uint32_t configured_size)
 {
     if (!configured_size || configured_size % 4
-        || (!supported_sector_sizes.contains(configured_size) && GetType() != PbDeviceType::SCHD)) {
+        || (!supported_sector_sizes.contains(configured_size) && GetType() != SCHD)) {
         return false;
     }
 

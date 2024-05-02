@@ -13,11 +13,10 @@
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
+#include "s2p_defs.h"
 #include "device.h"
 
-using namespace scsi_defs;
-
-class PrimaryDevice : private ScsiPrimaryCommands, public Device
+class PrimaryDevice : public ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
 
@@ -35,21 +34,26 @@ public:
 
     virtual void Dispatch(scsi_command);
 
+    auto GetController() const
+    {
+        return controller;
+    }
+
     scsi_level GetScsiLevel() const
     {
         return level;
     }
     bool SetScsiLevel(scsi_level);
 
-    scsi_defs::sense_key GetSenseKey() const
+    enum sense_key GetSenseKey() const
     {
         return sense_key;
     }
-    scsi_defs::asc GetAsc() const
+    enum asc GetAsc() const
     {
         return asc;
     }
-    void SetStatus(scsi_defs::sense_key s, scsi_defs::asc a)
+    void SetStatus(enum sense_key s, enum asc a)
     {
         sense_key = s;
         asc = a;
@@ -96,7 +100,7 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = Bus::SEND_NO_DELAY)
+    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = SEND_NO_DELAY)
     : Device(type, lun), level(l), delay_after_bytes(delay)
     {
     }
@@ -106,7 +110,7 @@ protected:
         commands[static_cast<int>(cmd)] = c;
     }
 
-    vector<uint8_t> HandleInquiry(scsi_defs::device_type, bool) const;
+    vector<uint8_t> HandleInquiry(device_type, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
@@ -130,11 +134,6 @@ protected:
     {
         controller->SetCurrentLength(length);
         controller->DataOut();
-    }
-
-    inline auto GetController() const
-    {
-        return controller;
     }
 
     void LogTrace(const string &s) const
@@ -173,16 +172,16 @@ private:
 
     scsi_level level = scsi_level::none;
 
-    scsi_defs::sense_key sense_key = scsi_defs::sense_key::no_sense;
-    scsi_defs::asc asc = scsi_defs::asc::no_additional_sense_information;
+    enum sense_key sense_key = sense_key::no_sense;
+    enum asc asc = asc::no_additional_sense_information;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
     array<command, 256> commands = { };
 
-    // Number of bytes during a transfer after which to delay for the DaynaPort driver
-    int delay_after_bytes = Bus::SEND_NO_DELAY;
+    // Number of bytes during a transfer after which to delay for the Mac DaynaPort driver
+    int delay_after_bytes = SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
 };

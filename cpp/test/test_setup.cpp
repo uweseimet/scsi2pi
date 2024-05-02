@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
+#include <spdlog/spdlog.h>
 #include "test_shared.h"
 
 int main(int argc, char*[])
@@ -27,7 +28,9 @@ int main(int argc, char*[])
 
     testing::TestShared::CleanUp();
 
-    close(fd);
+    if (fd != -1) {
+        close(fd);
+    }
 
     return result;
 }

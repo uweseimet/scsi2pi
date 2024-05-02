@@ -12,11 +12,11 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
+#include "disk_track.h"
 #include <cassert>
 #include <cstdlib>
 #include <fstream>
-#include "disk_track.h"
+#include <spdlog/spdlog.h>
 
 DiskTrack::~DiskTrack()
 {

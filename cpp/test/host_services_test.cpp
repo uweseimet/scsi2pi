@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(HostServicesTest, DeviceDefaults)
 {
@@ -43,7 +43,7 @@ TEST(HostServicesTest, TestUnitReady)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(HostServicesTest, Inquiry)
@@ -58,19 +58,19 @@ TEST(HostServicesTest, StartStopUnit)
     // STOP
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
@@ -203,6 +203,5 @@ TEST(HostServicesTest, WriteData)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    vector<uint8_t> buf;
-    EXPECT_EQ(0, services->WriteData(buf, scsi_command::cmd_execute_operation));
+    EXPECT_EQ(0, services->WriteData( { }, scsi_command::cmd_execute_operation));
 }

@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "devices/printer.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(PrinterTest, Device_Defaults)
 {
@@ -34,22 +34,23 @@ TEST(PrinterTest, Device_Defaults)
 
 TEST(PrinterTest, GetDefaultParams)
 {
-    const auto [controller, printer] = CreateDevice(SCLP);
-    const auto params = printer->GetDefaultParams();
+    Printer printer(0);
+
+    auto params = printer.GetDefaultParams();
     EXPECT_EQ(1U, params.size());
+    EXPECT_EQ("lp -oraw %f", params["cmd"]);
 }
 
 TEST(PrinterTest, Init)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
-    EXPECT_TRUE(printer->Init( { }));
+    Printer printer(0);
 
     param_map params;
     params["cmd"] = "missing_filename_specifier";
-    EXPECT_FALSE(printer->Init(params));
+    EXPECT_FALSE(printer.Init(params));
 
     params["cmd"] = "%f";
-    EXPECT_TRUE(printer->Init(params));
+    EXPECT_TRUE(printer.Init(params));
 }
 
 TEST(PrinterTest, TestUnitReady)
@@ -58,7 +59,7 @@ TEST(PrinterTest, TestUnitReady)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_test_unit_ready));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Inquiry)
@@ -72,7 +73,7 @@ TEST(PrinterTest, ReserveUnit)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_reserve6));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, ReleaseUnit)
@@ -81,7 +82,7 @@ TEST(PrinterTest, ReleaseUnit)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_release6));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, SendDiagnostic)
@@ -90,7 +91,7 @@ TEST(PrinterTest, SendDiagnostic)
 
     EXPECT_CALL(*controller, Status()).Times(1);
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
 TEST(PrinterTest, Print)
@@ -112,10 +113,10 @@ TEST(PrinterTest, StopPrint)
 
     EXPECT_CALL(*controller, Status());
     EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_stop_print));
-    EXPECT_EQ(status::good, controller->GetStatus());
+    EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(PrinterTest, Synchronize_buffer)
+TEST(PrinterTest, SynchronizeBuffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
@@ -125,7 +126,7 @@ TEST(PrinterTest, Synchronize_buffer)
     // Further testing would use the printing system
 }
 
-TEST(PrinterTest, Write)
+TEST(PrinterTest, WriteData)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 

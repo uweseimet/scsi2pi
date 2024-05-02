@@ -9,10 +9,7 @@
 #include <cstring>
 #include "base/primary_device.h"
 
-using namespace scsi_defs;
-
-AbstractController::AbstractController(Bus &bus, int target_id, int max_luns) : bus(bus), target_id(target_id), max_luns(
-    max_luns)
+AbstractController::AbstractController(Bus &bus, int target_id) : bus(bus), target_id(target_id)
 {
     // The initial buffer size is the size of the biggest supported sector
     buffer.resize(4096);
@@ -29,14 +26,14 @@ void AbstractController::CleanUp() const
 
 void AbstractController::Reset()
 {
-    SetPhase(phase_t::busfree);
+    SetPhase(bus_phase::busfree);
 
     offset = 0;
     total_length = 0;
     current_length = 0;
     chunk_size = 0;
 
-    status = status::good;
+    status = status_code::good;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 
@@ -58,7 +55,7 @@ void AbstractController::SetCurrentLength(int length)
 
 void AbstractController::SetTransferSize(int length, int size)
 {
-    // The total number of bytes to transfer for the current SCSI/SASI command
+    // The total number of bytes to transfer for the current command
     total_length = length;
 
     // The number of bytes to transfer in a single chunk
@@ -88,7 +85,7 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-AbstractController::shutdown_mode AbstractController::ProcessOnController(int ids)
+shutdown_mode AbstractController::ProcessOnController(int ids)
 {
     device_logger.SetIdAndLun(target_id, -1);
 
@@ -114,8 +111,16 @@ AbstractController::shutdown_mode AbstractController::ProcessOnController(int id
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-    if (lun < 0 || lun >= max_luns || GetDeviceForLun(lun) || device->GetController()) {
+    if (lun < 0 || lun >= 32 || GetDeviceForLun(lun) || device->GetController()) {
         return false;
+    }
+
+    for (const auto& [_, d] : luns) {
+        if ((device->GetType() == SAHD && d->GetType() != SAHD)
+            || (device->GetType() != SAHD && d->GetType() == SAHD)) {
+            LogTrace("SCSI and SASI devices cannot share the same controller");
+            return false;
+        }
     }
 
     luns[lun] = device;

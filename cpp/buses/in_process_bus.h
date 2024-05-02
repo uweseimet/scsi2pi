@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <unordered_map>
 #include "bus.h"
 
 class InProcessBus : public Bus
@@ -72,9 +73,16 @@ public:
         // Nothing to do
     }
 
+    bool IsRaspberryPi() const override
+    {
+        return false;
+    }
+
 protected:
 
     InProcessBus() = default;
+    InProcessBus(const InProcessBus&) = delete;
+    InProcessBus operator&(const InProcessBus&) = delete;
 
 private:
 
@@ -142,13 +150,13 @@ private:
         return IsTarget() ? "target" : "initiator";
     }
 
-    string GetSignalName(int) const;
+    static string GetSignalName(int);
 
     InProcessBus &bus;
 
     bool log_signals = true;
 
-    inline static const unordered_map<int, string> SIGNALS {
+    inline static const unordered_map<int, const char*> SIGNALS = {
         { PIN_BSY, "BSY" },
         { PIN_SEL, "SEL" },
         { PIN_ATN, "ATN" },

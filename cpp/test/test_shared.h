@@ -9,11 +9,15 @@
 #pragma once
 
 #include <filesystem>
-#include "base/primary_device.h"
+#include <span>
+#include "shared/s2p_util.h"
 #include "shared/scsi.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
+using namespace s2p_interface;
 
+class PrimaryDevice;
 class MockAbstractController;
 
 namespace testing
@@ -21,7 +25,7 @@ namespace testing
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
-vector<int> CreateCdb(scsi_command, const string&);
+vector<int> CreateCdb(scsi_command, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
 pair<int, path> OpenTempFile();

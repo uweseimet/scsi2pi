@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include "buses/bus_factory.h"
-#include "shared/shared_exceptions.h"
-#include "memory_util.h"
 #include "primary_device.h"
+#include "buses/bus_factory.h"
+#include "memory_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -55,13 +55,13 @@ bool PrimaryDevice::Init(const param_map &params)
 
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
-    const auto c = static_cast<int>(cmd);
-    if (const auto &command = commands[c]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd), c));
+    if (const auto &command = commands[static_cast<int>(cmd)]; command) {
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd),
+                static_cast<int>(cmd)));
         command();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", c));
+        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
@@ -80,7 +80,7 @@ int PrimaryDevice::GetId() const
 
 bool PrimaryDevice::SetScsiLevel(scsi_level l)
 {
-    if (l == scsi_level::none || l > scsi_level::spc_6) {
+    if (l == scsi_level::none || l >= scsi_level::last) {
         return false;
     }
 
@@ -163,7 +163,7 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status::good);
+        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status_code::good);
     }
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -227,7 +227,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
     // Return not ready only if there are no errors
-    if (sense_key == scsi_defs::sense_key::no_sense && !IsReady()) {
+    if (sense_key == sense_key::no_sense && !IsReady()) {
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
 
@@ -267,7 +267,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     // A reservation is valid for all commands except those excluded below
-    const auto cmd = GetController()->GetOpcode();
+    const auto cmd = static_cast<scsi_command>(GetController()->GetCdbByte(0));
     if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
         || cmd == scsi_command::cmd_release6) {
         return true;
@@ -286,7 +286,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     GetController()->Error(sense_key::aborted_command, asc::no_additional_sense_information,
-        status::reservation_conflict);
+        status_code::reservation_conflict);
 
     return false;
 }

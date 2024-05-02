@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/shared_exceptions.h"
 #include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace protobuf_util;
 
@@ -90,41 +90,49 @@ TEST(ProtobufUtil, ParseParameters)
 TEST(ProtobufUtil, SetCommandParams)
 {
     PbCommand command1;
-    SetCommandParams(command1, "file");
+
+    EXPECT_TRUE(SetCommandParams(command1, "").empty());
+
+    EXPECT_TRUE(SetCommandParams(command1, "file").empty());
     EXPECT_EQ("", GetParam(command1, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command1, "file_pattern"));
 
     PbCommand command2;
-    SetCommandParams(command2, ":file");
+    EXPECT_TRUE(SetCommandParams(command2, ":file").empty());
     EXPECT_EQ("", GetParam(command2, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command2, "file_pattern"));
 
     PbCommand command3;
-    SetCommandParams(command3, "file:");
+    EXPECT_TRUE(SetCommandParams(command3, "file:").empty());
     EXPECT_EQ("file", GetParam(command3, "file_pattern"));
     EXPECT_EQ("", GetParam(command3, "folder_pattern"));
 
     PbCommand command4;
-    SetCommandParams(command4, "folder:file");
+    EXPECT_TRUE(SetCommandParams(command4, "folder:file").empty());
     EXPECT_EQ("folder", GetParam(command4, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command4, "file_pattern"));
 
     PbCommand command5;
-    SetCommandParams(command5, "folder:file:");
+    EXPECT_TRUE(SetCommandParams(command5, "folder:file:").empty());
     EXPECT_EQ("folder", GetParam(command5, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command5, "file_pattern"));
 
     PbCommand command6;
-    SetCommandParams(command6, "folder:file:operations");
+    EXPECT_TRUE(SetCommandParams(command6, "folder:file:operations").empty());
     EXPECT_EQ("folder", GetParam(command6, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command6, "file_pattern"));
     EXPECT_EQ("operations", GetParam(command6, "operations"));
 
     PbCommand command7;
-    SetCommandParams(command7, "folder:file:operations:unparsed");
+    EXPECT_TRUE(SetCommandParams(command7, "folder:file:operations:unparsed").empty());
     EXPECT_EQ("folder", GetParam(command7, "folder_pattern"));
     EXPECT_EQ("file", GetParam(command7, "file_pattern"));
     EXPECT_EQ("operations:unparsed", GetParam(command7, "operations"));
+
+    PbCommand command_generic;
+    EXPECT_TRUE(SetCommandParams(command_generic, "operations=mapping_info:folder_pattern=pattern").empty());
+    EXPECT_EQ("mapping_info", GetParam(command_generic, "operations"));
+    EXPECT_EQ("pattern", GetParam(command_generic, "folder_pattern"));
 }
 
 TEST(ProtobufUtil, SetFromGenericParams)
@@ -192,10 +200,10 @@ TEST(ProtobufUtil, SetIdAndLun)
 {
     PbDeviceDefinition device;
 
-    EXPECT_NE("", SetIdAndLun(32, device, ""));
-    EXPECT_EQ("", SetIdAndLun(32, device, "1"));
+    EXPECT_NE("", SetIdAndLun(device, ""));
+    EXPECT_EQ("", SetIdAndLun(device, "1"));
     EXPECT_EQ(1, device.id());
-    EXPECT_EQ("", SetIdAndLun(32, device, "2:0"));
+    EXPECT_EQ("", SetIdAndLun(device, "2:0"));
     EXPECT_EQ(2, device.id());
     EXPECT_EQ(0, device.unit());
 }

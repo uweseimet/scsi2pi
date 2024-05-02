@@ -65,6 +65,14 @@ TEST(BusFactoryTest, GetCommandBytesCount)
     EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0xc0)));
     EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0xc1)));
     EXPECT_EQ(0, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x1f)));
+
+    int command_count = 0;
+    for (int i = 0; i < 256; i++) {
+        if (bus_factory.GetCommandBytesCount(static_cast<scsi_command>(i))) {
+            ++command_count;
+        }
+    }
+    EXPECT_EQ(42, command_count);
 }
 
 TEST(BusFactoryTest, GetCommandName)

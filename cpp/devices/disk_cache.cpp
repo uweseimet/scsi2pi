@@ -12,11 +12,10 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cstdlib>
-#include <cassert>
-#include <algorithm>
-#include "disk_track.h"
 #include "disk_cache.h"
+#include <cassert>
+#include <cstdlib>
+#include "disk_track.h"
 
 bool DiskCache::Init()
 {

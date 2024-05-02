@@ -29,10 +29,10 @@
 // With STOP PRINT printing can be cancelled before SYNCHRONIZE BUFFER was sent.
 //
 
-#include <filesystem>
-#include "shared/shared_exceptions.h"
-#include "base/memory_util.h"
 #include "printer.h"
+#include <filesystem>
+#include "base/memory_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;
@@ -89,7 +89,7 @@ void Printer::CleanUp()
         error_code error;
         filesystem::remove(path(filename), error);
 
-        filename = "";
+        filename.clear();
     }
 }
 
