@@ -53,6 +53,11 @@ bool PrimaryDevice::Init(const param_map &params)
     return true;
 }
 
+void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
+{
+    commands[static_cast<int>(cmd)] = c;
+}
+
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
@@ -94,6 +99,23 @@ void PrimaryDevice::SetController(AbstractController *c)
     controller = c;
 
     device_logger.SetIdAndLun(GetId(), GetLun());
+}
+
+void PrimaryDevice::StatusPhase() const
+{
+    controller->Status();
+}
+
+void PrimaryDevice::DataInPhase(int length) const
+{
+    controller->SetCurrentLength(length);
+    controller->DataIn();
+}
+
+void PrimaryDevice::DataOutPhase(int length) const
+{
+    controller->SetCurrentLength(length);
+    controller->DataOut();
 }
 
 void PrimaryDevice::TestUnitReady()

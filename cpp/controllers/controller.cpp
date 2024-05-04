@@ -104,9 +104,14 @@ void Controller::Command()
         auto &buf = GetBuffer();
 
         const int actual_count = GetBus().CommandHandShake(buf);
-        if (!actual_count) {
-            LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
-            Error(sense_key::illegal_request, asc::invalid_command_operation_code);
+        if (actual_count <= 0) {
+            if (!actual_count) {
+                LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
+                Error(sense_key::illegal_request, asc::invalid_command_operation_code);
+            }
+            else {
+                Error(sense_key::aborted_command, asc::command_phase_error);
+            }
             return;
         }
 
@@ -170,116 +175,111 @@ void Controller::Execute()
 
 void Controller::Status()
 {
-    if (!IsStatus()) {
-        LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
-                static_cast<int>(GetStatus())));
-
-        SetPhase(bus_phase::status);
-
-        GetBus().SetMSG(false);
-        GetBus().SetCD(true);
-        GetBus().SetIO(true);
-
-        ResetOffset();
-        SetCurrentLength(1);
-        SetTransferSize(1, 1);
-        GetBuffer()[0] = (uint8_t)GetStatus();
-
+    if (IsStatus()) {
+        Send();
         return;
     }
 
-    Send();
+    LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
+        static_cast<int>(GetStatus())));
+
+    SetPhase(bus_phase::status);
+
+    GetBus().SetMSG(false);
+    GetBus().SetCD(true);
+    GetBus().SetIO(true);
+
+    ResetOffset();
+    SetCurrentLength(1);
+    SetTransferSize(1, 1);
+    GetBuffer()[0] = (uint8_t)GetStatus();
 }
 
 void Controller::MsgIn()
 {
-    if (!IsMsgIn()) {
-        LogTrace("MESSAGE IN phase");
-        SetPhase(bus_phase::msgin);
-
-        GetBus().SetMSG(true);
-        GetBus().SetCD(true);
-        GetBus().SetIO(true);
-
-        ResetOffset();
-
+    if (IsMsgIn()) {
+        Send();
         return;
     }
 
-    Send();
+    LogTrace("MESSAGE IN phase");
+    SetPhase(bus_phase::msgin);
+
+    GetBus().SetMSG(true);
+    GetBus().SetCD(true);
+    GetBus().SetIO(true);
+
+    ResetOffset();
 }
 
 void Controller::MsgOut()
 {
-    if (!IsMsgOut()) {
-        LogTrace("MESSAGE OUT phase");
-
-        // Process the IDENTIFY message
-        if (IsSelection()) {
-            atn_msg = true;
-            msg_bytes.clear();
-        }
-
-        SetPhase(bus_phase::msgout);
-
-        GetBus().SetMSG(true);
-        GetBus().SetCD(true);
-        GetBus().SetIO(false);
-
-        ResetOffset();
-        SetCurrentLength(1);
-        SetTransferSize(1, 1);
-
+    if (IsMsgOut()) {
+        Receive();
         return;
     }
 
-    Receive();
+    LogTrace("MESSAGE OUT phase");
+
+    // Process the IDENTIFY message
+    if (IsSelection()) {
+        atn_msg = true;
+        msg_bytes.clear();
+    }
+
+    SetPhase(bus_phase::msgout);
+
+    GetBus().SetMSG(true);
+    GetBus().SetCD(true);
+    GetBus().SetIO(false);
+
+    ResetOffset();
+    SetCurrentLength(1);
+    SetTransferSize(1, 1);
 }
 
 void Controller::DataIn()
 {
-    if (!IsDataIn()) {
-        if (!GetCurrentLength()) {
-            Status();
-            return;
-        }
-
-        LogTrace("DATA IN phase");
-        SetPhase(bus_phase::datain);
-
-        GetBus().SetMSG(false);
-        GetBus().SetCD(false);
-        GetBus().SetIO(true);
-
-        ResetOffset();
-
+    if (IsDataIn()) {
+        Send();
         return;
     }
 
-    Send();
+    if (!GetCurrentLength()) {
+        Status();
+        return;
+    }
+
+    LogTrace("DATA IN phase");
+    SetPhase(bus_phase::datain);
+
+    GetBus().SetMSG(false);
+    GetBus().SetCD(false);
+    GetBus().SetIO(true);
+
+    ResetOffset();
 }
 
 void Controller::DataOut()
 {
-    if (!IsDataOut()) {
-        if (!GetCurrentLength()) {
-            Status();
-            return;
-        }
-
-        LogTrace("DATA OUT phase");
-        SetPhase(bus_phase::dataout);
-
-        GetBus().SetMSG(false);
-        GetBus().SetCD(false);
-        GetBus().SetIO(false);
-
-        ResetOffset();
-
+    if (IsDataOut()) {
+        Receive();
         return;
     }
 
-    Receive();
+    if (!GetCurrentLength()) {
+        Status();
+        return;
+    }
+
+    LogTrace("DATA OUT phase");
+    SetPhase(bus_phase::dataout);
+
+    GetBus().SetMSG(false);
+    GetBus().SetCD(false);
+    GetBus().SetIO(false);
+
+    ResetOffset();
 }
 
 void Controller::Error(sense_key sense_key, asc asc, status_code status)
@@ -419,17 +419,17 @@ void Controller::Receive()
     }
 
     switch (GetPhase()) {
-    case bus_phase::msgout:
-        ProcessMessage();
-        break;
-
     case bus_phase::dataout:
         // All data have been transferred
         Status();
         break;
 
+    case bus_phase::msgout:
+        ProcessMessage();
+        break;
+
     default:
-        error("Unexpected bus phase: " + Bus::GetPhaseName(GetPhase()));
+        assert(false);
         break;
     }
 }
@@ -438,7 +438,7 @@ void Controller::Receive()
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool Controller::XferIn(vector<uint8_t> &buf)
 {
-    // Limited to read commands
+    // Limited to read commands (DATA IN phase)
     switch (static_cast<scsi_command>(GetCdbByte(0))) {
     case scsi_command::cmd_read6:
     case scsi_command::cmd_read10:
@@ -462,7 +462,6 @@ bool Controller::XferIn(vector<uint8_t> &buf)
     }
 
     Error(sense_key::aborted_command, asc::controller_xfer_in);
-
     return false;
 }
 #pragma GCC diagnostic pop
@@ -471,16 +470,16 @@ bool Controller::XferIn(vector<uint8_t> &buf)
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool Controller::XferOut(bool cont)
 {
-    auto device = GetDeviceForLun(GetEffectiveLun());
+    const auto device = GetDeviceForLun(GetEffectiveLun());
 
-    // Limited to write/verify commands
+    // Limited to write/verify commands (DATA OUT phase)
     switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode
         ) {
     case scsi_command::cmd_mode_select6:
     case scsi_command::cmd_mode_select10:
         {
 #ifdef BUILD_MODE_PAGE_DEVICE
-        auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
+        const auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
         assert(mode_page_device);
         if (!mode_page_device) {
             Error(sense_key::aborted_command, asc::controller_xfer_out);
@@ -508,10 +507,8 @@ bool Controller::XferOut(bool cont)
     case scsi_command::cmd_write_long10:
     case scsi_command::cmd_write_long16:
     case scsi_command::cmd_execute_operation:
-        {
         try {
             const auto length = device->WriteData(GetBuffer(), opcode);
-
             if (cont) {
                 SetCurrentLength(length);
                 ResetOffset();
@@ -521,10 +518,7 @@ bool Controller::XferOut(bool cont)
             Error(e.get_sense_key(), e.get_asc());
             return false;
         }
-
         return true;
-    }
-        break;
 
     default:
         assert(false);
@@ -532,7 +526,6 @@ bool Controller::XferOut(bool cont)
     }
 
     Error(sense_key::aborted_command, asc::controller_xfer_out);
-
     return false;
 }
 #pragma GCC diagnostic pop
@@ -568,7 +561,7 @@ void Controller::ParseMessage()
 
         case 0x0c: {
             LogTrace("Received BUS DEVICE RESET message");
-            if (auto device = GetDeviceForLun(GetEffectiveLun()); device) {
+            if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->SetReset(true);
                 device->DiscardReservation();
             }

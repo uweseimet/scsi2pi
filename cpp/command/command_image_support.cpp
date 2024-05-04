@@ -86,21 +86,21 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
 bool CommandImageSupport::CreateImage(const CommandContext &context) const
 {
-    const string filename = GetParam(context.GetCommand(), "file");
+    const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
         return context.ReturnErrorStatus("Missing image filename");
     }
 
     if (!CheckDepth(filename)) {
-        return context.ReturnErrorStatus(("Invalid folder hierarchy depth '" + filename + "'").c_str());
+        return context.ReturnErrorStatus(("Invalid folder hierarchy depth '" + filename + "'"));
     }
 
-    const string full_filename = GetFullName(filename);
+    const string &full_filename = GetFullName(filename);
     if (!IsValidDstFilename(full_filename)) {
         return context.ReturnErrorStatus("Can't create image file: '" + full_filename + "': File already exists");
     }
 
-    const string size = GetParam(context.GetCommand(), "size");
+    const string &size = GetParam(context.GetCommand(), "size");
     if (size.empty()) {
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Missing file size");
     }
@@ -151,7 +151,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
 
 bool CommandImageSupport::DeleteImage(const CommandContext &context) const
 {
-    const string filename = GetParam(context.GetCommand(), "file");
+    const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
         return context.ReturnErrorStatus("Missing image filename");
     }
@@ -176,8 +176,8 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
     // Delete empty subfolders
     size_t last_slash = filename.rfind('/');
     while (last_slash != string::npos) {
-        const string folder = filename.substr(0, last_slash);
-        const auto full_folder = path(GetFullName(folder));
+        const string &folder = filename.substr(0, last_slash);
+        const auto &full_folder = path(GetFullName(folder));
 
         if (error_code error; !filesystem::is_empty(full_folder, error) || error) {
             break;
@@ -260,7 +260,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
 
 bool CommandImageSupport::SetImagePermissions(const CommandContext &context) const
 {
-    const string filename = GetParam(context.GetCommand(), "file");
+    const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
         return context.ReturnErrorStatus("Missing image filename");
     }
@@ -269,7 +269,7 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
         return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + filename + "'");
     }
 
-    const string full_filename = GetFullName(filename);
+    const string &full_filename = GetFullName(filename);
     if (!IsValidSrcFilename(full_filename)) {
         return context.ReturnErrorStatus("Can't modify image file '" + full_filename + "': Invalid name or type");
     }

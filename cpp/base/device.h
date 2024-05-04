@@ -27,10 +27,6 @@ public:
     {
         return type;
     }
-    string GetTypeString() const
-    {
-        return PbDeviceType_Name(type);
-    }
 
     bool IsReady() const
     {

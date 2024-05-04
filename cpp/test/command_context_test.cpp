@@ -26,33 +26,33 @@ TEST(CommandContext, ReadCommand)
 
     // Invalid magic with wrong length
     vector data = { byte { '1' }, byte { '2' }, byte { '3' } };
-    fd = open(CreateTempFileWithData(data).string().c_str(), O_RDONLY);
+    fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context2(fd);
     EXPECT_THROW(context2.ReadCommand(), io_exception);
     close(fd);
 
     // Invalid magic with right length
     data = { byte { '1' }, byte { '2' }, byte { '3' }, byte { '4' }, byte { '5' }, byte { '6' } };
-    fd = open(CreateTempFileWithData(data).string().c_str(), O_RDONLY);
+    fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context3(fd);
     EXPECT_THROW(context3.ReadCommand(), io_exception);
     close(fd);
 
     data = { byte { 'R' }, byte { 'A' }, byte { 'S' }, byte { 'C' }, byte { 'S' }, byte { 'I' }, byte { '1' } };
     // Valid magic but invalid command
-    fd = open(CreateTempFileWithData(data).string().c_str(), O_RDONLY);
+    fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context4(fd);
     EXPECT_THROW(context4.ReadCommand(), io_exception);
     close(fd);
 
     data = { byte { 'R' }, byte { 'A' }, byte { 'S' }, byte { 'C' }, byte { 'S' }, byte { 'I' } };
     // Valid magic but missing command
-    fd = open(CreateTempFileWithData(data).string().c_str(), O_RDONLY);
+    fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context5(fd);
     EXPECT_THROW(context5.ReadCommand(), io_exception);
     close(fd);
 
-    const string filename = CreateTempFileWithData(data).string();
+    const string &filename = CreateTempFileWithData(data);
     fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbCommand command;
     command.set_operation(PbOperation::SERVER_INFO);

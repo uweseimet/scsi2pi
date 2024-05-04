@@ -120,33 +120,6 @@ TEST(DeviceTest, Properties)
     EXPECT_EQ(LUN, device.GetLun());
 }
 
-TEST(DeviceTest, GetTypeString)
-{
-    MockDevice schd(SCHD);
-    EXPECT_EQ("SCHD", schd.GetTypeString());
-
-    MockDevice scrm(SCRM);
-    EXPECT_EQ("SCRM", scrm.GetTypeString());
-
-    MockDevice scmo(SCMO);
-    EXPECT_EQ("SCMO", scmo.GetTypeString());
-
-    MockDevice sccd(SCCD);
-    EXPECT_EQ("SCCD", sccd.GetTypeString());
-
-    MockDevice schs(SCHS);
-    EXPECT_EQ("SCHS", schs.GetTypeString());
-
-    MockDevice scdp(SCDP);
-    EXPECT_EQ("SCDP", scdp.GetTypeString());
-
-    MockDevice sclp(SCLP);
-    EXPECT_EQ("SCLP", sclp.GetTypeString());
-
-    MockDevice sahd(SAHD);
-    EXPECT_EQ("SAHD", sahd.GetTypeString());
-}
-
 TEST(DeviceTest, Vendor)
 {
     MockDevice device(0);

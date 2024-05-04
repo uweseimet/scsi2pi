@@ -147,7 +147,7 @@ TEST(StorageDeviceTest, GetFileSize)
     MockStorageDevice device;
 
     const path filename = CreateTempFile(512);
-    device.SetFilename(filename.c_str());
+    device.SetFilename(filename.string());
     const off_t size = device.GetFileSize();
     EXPECT_EQ(512, size);
 
