@@ -17,13 +17,18 @@
 #include <cstdlib>
 #include "disk_track.h"
 
+DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), sec_blocks(
+    static_cast<int>(sectors))
+{
+    while ((1 << sec_size) != size) {
+        ++sec_size;
+    }
+    assert(sec_size >= 8 && sec_size <= 12);
+}
+
 bool DiskCache::Init()
 {
-    if (!sec_blocks || sec_path.empty()) {
-        return false;
-    }
-
-    return true;
+    return sec_blocks && !sec_path.empty();
 }
 
 bool DiskCache::Flush()
@@ -80,7 +85,6 @@ int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t c
 // Track Assignment
 shared_ptr<DiskTrack> DiskCache::Assign(int track)
 {
-    assert(sec_size != 0);
     assert(track >= 0);
 
     // First, check if it is already assigned

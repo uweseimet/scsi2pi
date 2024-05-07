@@ -25,8 +25,7 @@ public:
     AbstractController(Bus&, int);
     ~AbstractController() override = default;
 
-    virtual void Error(sense_key, asc = asc::no_additional_sense_information,
-        status_code = status_code::check_condition) = 0;
+    virtual void Error(sense_key, asc, status_code) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 

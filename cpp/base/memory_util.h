@@ -24,25 +24,8 @@ int GetInt16(const auto &buf, int offset)
     return (static_cast<int>(buf[offset]) << 8) | buf[offset + 1];
 }
 
-template<typename T>
-void SetInt16(vector<T> &buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 1);
-
-    buf[offset] = static_cast<T>(value >> 8);
-    buf[offset + 1] = static_cast<T>(value);
-}
-
-template<typename T>
-void SetInt32(vector<T> &buf, int offset, uint32_t value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    buf[offset] = static_cast<T>(value >> 24);
-    buf[offset + 1] = static_cast<T>(value >> 16);
-    buf[offset + 2] = static_cast<T>(value >> 8);
-    buf[offset + 3] = static_cast<T>(value);
-}
+template<typename T> void SetInt16(vector<T>&, int, int);
+template<typename T> void SetInt32(vector<T>&, int, uint32_t);
 
 int GetInt24(span<const int>, int);
 uint32_t GetInt32(span<const int>, int);

@@ -25,10 +25,7 @@ public:
     string Init(const callback&, int);
     void Start();
     void Stop();
-    bool IsRunning() const
-    {
-        return service_socket != -1 && service_thread.joinable();
-    }
+    bool IsRunning() const;
 
 private:
 

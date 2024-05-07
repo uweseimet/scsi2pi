@@ -518,7 +518,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    const map<string, string, less<>> params = { command.params().cbegin(), command.params().cend() };
+    const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() };
 
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());

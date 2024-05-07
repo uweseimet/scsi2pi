@@ -79,6 +79,11 @@ void S2pThread::Stop()
     }
 }
 
+bool S2pThread::IsRunning() const
+{
+    return service_socket != -1 && service_thread.joinable();
+}
+
 void S2pThread::Execute() const
 {
     while (service_socket != -1) {

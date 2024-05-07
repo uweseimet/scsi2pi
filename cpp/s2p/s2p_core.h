@@ -33,7 +33,7 @@ private:
     string MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
-    void AttachDevices(PbCommand&);
+    void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
     bool WaitForNotBusy() const;
 

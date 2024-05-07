@@ -13,27 +13,16 @@
 
 #pragma once
 
-#include <array>
 #include "cache.h"
 
 class DiskTrack;
 
 class DiskCache : public Cache
 {
-    // Number of tracks to cache
-    static constexpr int CACHE_MAX = 16;
 
 public:
 
-    using cache_t = struct {
-        shared_ptr<DiskTrack> disktrk;
-        uint32_t serial;
-    };
-
-    DiskCache(const string &path, int size, uint64_t sectors)
-    : sec_path(path), sec_size(SHIFT_COUNTS.at(size)), sec_blocks(static_cast<int>(sectors))
-    {
-    }
+    DiskCache(const string&, int, uint64_t);
     ~DiskCache() override = default;
 
     bool Init() override;
@@ -45,24 +34,32 @@ public:
 
 private:
 
+    using cache_t = struct {
+        shared_ptr<DiskTrack> disktrk;
+        uint32_t serial;
+    };
+
     shared_ptr<DiskTrack> Assign(int);
     shared_ptr<DiskTrack> GetTrack(uint32_t);
     bool Load(int index, int track, shared_ptr<DiskTrack>);
     void UpdateSerialNumber();
 
-    // Internal datay
-    array<cache_t, CACHE_MAX> cache = { }; // Cache management
-    uint32_t serial = 0; // Last serial number
-    string sec_path; // Path
-    int sec_size; // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
-    int sec_blocks; // Blocks per sector
+    // Number of tracks to cache
+    static constexpr int CACHE_MAX = 16;
+
+    array<cache_t, CACHE_MAX> cache = { };
+    // Last serial number
+    uint32_t serial = 0;
+    // Path
+    string sec_path;
+    // Sector size shift (8=256, 9=512, 10=1024, 11=2048, 12=4096)
+    int sec_size = 0;
+    // Blocks
+    int sec_blocks;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;
     uint64_t cache_miss_read_count = 0;
     uint64_t cache_miss_write_count = 0;
-
-    static inline const unordered_map<uint32_t, uint32_t> SHIFT_COUNTS =
-        { { 256, 8 }, { 512, 9 }, { 1024, 10 }, { 2048, 11 }, { 4096, 12 } };
 };
 

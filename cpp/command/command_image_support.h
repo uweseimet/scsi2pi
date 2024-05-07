@@ -53,10 +53,7 @@ private:
     CommandImageSupport operator&(const CommandImageSupport&) = delete;
 
     bool CheckDepth(string_view) const;
-    string GetFullName(const string &filename) const
-    {
-        return default_folder + "/" + filename;
-    }
+    string GetFullName(const string&) const;
     bool CreateImageFolder(const CommandContext&, string_view) const;
     bool ValidateParams(const CommandContext&, const string&, string&, string&) const;
 

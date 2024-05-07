@@ -31,6 +31,11 @@ bool CommandImageSupport::CheckDepth(string_view filename) const
     return ranges::count(filename, '/') <= depth;
 }
 
+string CommandImageSupport::GetFullName(const string &filename) const
+{
+    return default_folder + "/" + filename;
+}
+
 bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename) const
 {
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {

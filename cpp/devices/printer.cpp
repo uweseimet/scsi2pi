@@ -47,6 +47,11 @@ bool Printer::Init(const param_map &params)
 {
     PrimaryDevice::Init(params);
 
+    if (GetParam("cmd").find("%f") == string::npos) {
+        LogTrace("Missing filename specifier '%f'");
+        return false;
+    }
+
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {
             TestUnitReady();
@@ -64,11 +69,6 @@ bool Printer::Init(const param_map &params)
         {
             TestUnitReady();
         });
-
-    if (GetParam("cmd").find("%f") == string::npos) {
-        LogTrace("Missing filename specifier %f");
-        return false;
-    }
 
     error_code error;
     file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here

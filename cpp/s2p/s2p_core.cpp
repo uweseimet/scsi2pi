@@ -340,10 +340,10 @@ void S2p::CreateDevices()
         SetDeviceProperties(*device, key_components[2], value);
     }
 
-    AttachDevices(command);
+    AttachInitialDevices(command);
 }
 
-void S2p::AttachDevices(PbCommand &command)
+void S2p::AttachInitialDevices(PbCommand &command)
 {
     if (command.devices_size()) {
         command.set_operation(ATTACH);
@@ -356,8 +356,8 @@ void S2p::AttachDevices(PbCommand &command)
 
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
-        for (auto d : controller_factory.GetAllDevices()) {
-            if (auto host_services = dynamic_pointer_cast<HostServices>(d); host_services) {
+        for (auto device : controller_factory.GetAllDevices()) {
+            if (auto host_services = dynamic_pointer_cast<HostServices>(device); host_services) {
                 host_services->SetDispatcher(dispatcher);
             }
         }

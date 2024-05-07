@@ -111,7 +111,9 @@ enum class status_code
     intermediate_condition_met = 0x14,
     reservation_conflict = 0x18,
     command_terminated = 0x22,
-    queue_full = 0x28
+    queue_full = 0x28,
+    aca_active = 0x30,
+    task_aborted = 0x40
 };
 
 enum class sense_key

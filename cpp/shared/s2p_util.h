@@ -35,8 +35,9 @@ struct StringHash
     }
 };
 
-string Join(const auto &collection, const string_view separator = ", ")
+string Join(const auto &collection, const char *separator = ", ")
 {
+    // Using a stream (and not a string) is required in order to correctly convert the element data
     ostringstream s;
 
     for (const auto &element : collection) {
@@ -115,10 +116,11 @@ static const unordered_map<status_code, const char*> STATUS_MAPPING = {
     { status_code::condition_met, "CONDITION MET" },
     { status_code::busy, "BUSY" },
     { status_code::intermediate, "INTERMEDIATE" },
-    { status_code::condition_met, "CONDITION MET" },
     { status_code::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
     { status_code::reservation_conflict, "RESERVATION CONFLICT" },
     { status_code::command_terminated, "COMMAND TERMINATED" },
-    { status_code::queue_full, "QUEUE FULL" }
+    { status_code::queue_full, "QUEUE FULL" },
+    { status_code::aca_active, "ACA ACTIVE" },
+    { status_code::task_aborted, "TASK ABORTED" }
 };
 }

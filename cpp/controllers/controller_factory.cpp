@@ -23,7 +23,6 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
         if (auto controller = make_shared<Controller>(bus, id); controller->AddDevice(device)) {
             controller->Init();
 
-            assert(!controllers[id]);
             controllers[id] = controller;
 
             return true;
