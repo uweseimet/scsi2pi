@@ -398,6 +398,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+#ifdef BUILD_DISK
     const auto disk = dynamic_pointer_cast<Disk>(device);
     if (disk && disk->GetConfiguredSectorSize()) {
         PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
@@ -409,8 +410,11 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
             filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+        return;
     }
-    else if (!device->GetParams().empty()) {
+#endif
+
+    if (!device->GetParams().empty()) {
         vector<string> p;
         for (const auto& [param, value] : device->GetParams()) {
             p.emplace_back(param + "=" + value);

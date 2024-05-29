@@ -12,6 +12,8 @@
 #include "buses/bus_factory.h"
 #ifdef BUILD_MODE_PAGE_DEVICE
 #include "devices/mode_page_device.h"
+#else
+#include "base/primary_device.h"
 #endif
 #include "shared/s2p_exceptions.h"
 

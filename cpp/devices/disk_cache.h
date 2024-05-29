@@ -53,7 +53,7 @@ private:
     // Path
     string sec_path;
     // Sector size shift (8=256, 9=512, 10=1024, 11=2048, 12=4096)
-    int sec_size = 0;
+    int sec_size = 8;
     // Blocks
     int sec_blocks;
 

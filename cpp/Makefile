@@ -52,8 +52,9 @@ BOARD ?= FULLSPEC
 
 CXXFLAGS += -DBOARD_$(BOARD)
 
-##   BUILD_*=1
-##     Specifies the device types to build, default is all. Supported types:
+##   ENABLE_*=1
+##   DISABLE_*=1
+##     Specifies the device types to build or not to build, default is to build all. Supported types:
 ##       SCHD SCSI Removable and non-removable Hard Drive
 ##       SCCD SCSI CD-Rom Drive
 ##       SCMO SCSI Optical Memory
@@ -61,34 +62,79 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCLP SCSI Printer
 ##       SCHS Host Services
 ##       SAHD SASI Hard Drive
-ifeq ($(or $(BUILD_SCHD),$(BUILD_SCMO),$(BUILD_SCCD),$(BUILD_SCDP),$(BUILD_SCLP),$(BUILD_SCHS),$(BUILD_SAHD)),)
-	BUILD_SCHD = 1
-	BUILD_SCMO = 1
-	BUILD_SCCD = 1
-	BUILD_SCDP = 1
-	BUILD_SCLP = 1
-	BUILD_SCHS = 1
-	BUILD_SAHD = 1
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
+	ENABLE_SCHD = 1
+	ENABLE_SCMO = 1
+	ENABLE_SCCD = 1
+	ENABLE_SCDP = 1
+	ENABLE_SCLP = 1
+	ENABLE_SCHS = 1
+	ENABLE_SAHD = 1
 endif
-ifdef BUILD_SCHD
+
+ifdef ENABLE_SCHD
+	ENABLE_SCHD = 1
+endif
+ifdef ENABLE_SCMO
+	ENABLE_SCMO = 1
+endif
+ifdef ENABLE_SCCD
+	ENABLE_SCCD = 1
+endif
+ifdef ENABLE_SCDP
+	ENABLE_SCDP = 1
+endif
+ifdef ENABLE_SCLP
+	ENABLE_SCLP = 1
+endif
+ifdef ENABLE_SCHS
+	ENABLE_SCHS = 1
+endif
+ifdef ENABLE_SAHD
+	ENABLE_SAHD = 1
+endif
+
+ifdef DISABLE_SCHD
+	ENABLE_SCHD = 0
+endif
+ifdef DISABLE_SCMO
+	ENABLE_SCMO = 0
+endif
+ifdef DISABLE_SCCD
+	ENABLE_SCCD = 0
+endif
+ifdef DISABLE_SCDP
+	ENABLE_SCDP = 0
+endif
+ifdef DISABLE_SCLP
+	ENABLE_SCLP = 0
+endif
+ifdef DISABLE_SCHS
+	ENABLE_SCHS = 0
+endif
+ifdef DISABLE_SAHD
+	ENABLE_SAHD = 0
+endif
+
+ifeq ($(ENABLE_SCHD),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCHD
 endif
-ifdef BUILD_SCMO
+ifeq ($(ENABLE_SCMO),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCMO
 endif
-ifdef BUILD_SCCD
+ifeq ($(ENABLE_SCCD),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCCD
 endif
-ifdef BUILD_SCDP
+ifeq ($(ENABLE_SCDP),1)
 	CXXFLAGS += -DBUILD_SCDP
 endif
-ifdef BUILD_SCLP
+ifeq ($(ENABLE_SCLP),1)
 	CXXFLAGS += -DBUILD_SCLP
 endif
-ifdef BUILD_SCHS
+ifeq ($(ENABLE_SCHS),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_SCHS
 endif
-ifdef BUILD_SAHD
+ifeq ($(ENABLE_SAHD),1)
 	CXXFLAGS += -DBUILD_DISK -DBUILD_SAHD
 endif
 
@@ -146,42 +192,42 @@ SRC_DISK = \
 	$(DIR_DEVICES)/storage_device.cpp \
 	$(DIR_DEVICES)/mode_page_device.cpp
 
-ifdef BUILD_SCHD
+ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD = \
 	$(DIR_DEVICES)/scsi_hd.cpp
 SRC_SCHD += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCMO
+ifeq ($(ENABLE_SCMO),1)
 SRC_SCMO = \
 	$(DIR_DEVICES)/optical_memory.cpp
 SRC_SCMO += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCCD
+ifeq ($(ENABLE_SCCD),1)
 SRC_SCCD = \
 	$(DIR_DEVICES)/scsi_cd.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCDP
+ifeq ($(ENABLE_SCDP),1)
 SRC_SCDP = \
 	$(DIR_DEVICES)/daynaport.cpp \
 	$(DIR_DEVICES)/tap_driver.cpp
 endif
 
-ifdef BUILD_SCLP
+ifeq ($(ENABLE_SCLP),1)
 SRC_SCLP = \
 	$(DIR_DEVICES)/printer.cpp
 endif
 
-ifdef BUILD_SCHS
+ifeq ($(ENABLE_SCHS),1)
 SRC_SCHS = \
 	$(DIR_DEVICES)/host_services.cpp \
 	$(DIR_DEVICES)/mode_page_device.cpp
 endif
 
-ifdef BUILD_SAHD
+ifeq ($(ENABLE_SAHD),1)
 SRC_SAHD = \
 	$(DIR_DEVICES)/sasi_hd.cpp
 SRC_SAHD += $(SRC_DISK)
