@@ -55,7 +55,7 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##   ENABLE_*=1
 ##   DISABLE_*=1
 ##     Specifies the device types to build or not to build, default is to build all. Supported types:
-##       SCHD SCSI Removable and non-removable Hard Drive
+##       SCHD SCSI Removable and Non-removable Hard Drive
 ##       SCCD SCSI CD-Rom Drive
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
@@ -135,7 +135,7 @@ ifeq ($(ENABLE_SCHS),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_SCHS
 endif
 ifeq ($(ENABLE_SAHD),1)
-	CXXFLAGS += -DBUILD_DISK -DBUILD_SAHD
+	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SAHD
 endif
 
 S2P = s2p
