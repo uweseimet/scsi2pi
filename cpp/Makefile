@@ -43,7 +43,7 @@ CXXFLAGS += $(EXTRA_FLAGS)
 
 ## Installation path
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
-TARGET=/opt/scsi2pi
+TARGET := /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
 ##     Specifies the board type that you are using. Typically this is 
@@ -72,81 +72,71 @@ ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCDP),$(ENABLE_
 	ENABLE_SAHD = 1
 endif
 
-ifdef ENABLE_SCHD
+ifdef ENABLE_SCRM
 	ENABLE_SCHD = 1
-endif
-ifdef ENABLE_SCMO
-	ENABLE_SCMO = 1
-endif
-ifdef ENABLE_SCCD
-	ENABLE_SCCD = 1
-endif
-ifdef ENABLE_SCDP
-	ENABLE_SCDP = 1
-endif
-ifdef ENABLE_SCLP
-	ENABLE_SCLP = 1
-endif
-ifdef ENABLE_SCHS
-	ENABLE_SCHS = 1
-endif
-ifdef ENABLE_SAHD
-	ENABLE_SAHD = 1
 endif
 
 ifdef DISABLE_SCHD
-	ENABLE_SCHD = 0
+	ENABLE_SCHD =
 endif
 ifdef DISABLE_SCMO
-	ENABLE_SCMO = 0
+	ENABLE_SCMO =
 endif
 ifdef DISABLE_SCCD
-	ENABLE_SCCD = 0
+	ENABLE_SCCD =
 endif
 ifdef DISABLE_SCDP
-	ENABLE_SCDP = 0
+	ENABLE_SCDP =
 endif
 ifdef DISABLE_SCLP
-	ENABLE_SCLP = 0
+	ENABLE_SCLP =
 endif
 ifdef DISABLE_SCHS
-	ENABLE_SCHS = 0
+	ENABLE_SCHS =
 endif
 ifdef DISABLE_SAHD
-	ENABLE_SAHD = 0
+	ENABLE_SAHD =
 endif
 
-ifeq ($(ENABLE_SCHD),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCHD
+ifdef ENABLE_SCHD
+	CXXFLAGS += -DBUILD_SCHD
 endif
-ifeq ($(ENABLE_SCMO),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCMO
+ifdef ENABLE_SCMO
+	CXXFLAGS += -DBUILD_SCMO
 endif
-ifeq ($(ENABLE_SCCD),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCCD
+ifdef ENABLE_SCCD
+	CXXFLAGS += -DBUILD_SCCD
 endif
-ifeq ($(ENABLE_SCDP),1)
+ifdef ENABLE_SCDP
 	CXXFLAGS += -DBUILD_SCDP
 endif
-ifeq ($(ENABLE_SCLP),1)
+ifdef ENABLE_SCLP
 	CXXFLAGS += -DBUILD_SCLP
 endif
-ifeq ($(ENABLE_SCHS),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_SCHS
+ifdef ENABLE_SCHS
+	CXXFLAGS += -DBUILD_SCHS
 endif
-ifeq ($(ENABLE_SAHD),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SAHD
+ifdef ENABLE_SAHD
+	CXXFLAGS += -DBUILD_SAHD
 endif
 
-S2P = s2p
-S2PCTL = s2pctl
-S2PDUMP = s2pdump
-S2PEXEC = s2pexec
-S2PPROTO = s2pproto
-S2P_TEST = s2p_test
-IN_PROCESS_TEST = in_process_test
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCHS)),1)
+	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE
+endif
 
-INSTALL_BIN = $(TARGET)/bin
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
+	CXXFLAGS += -DBUILD_DISK
+endif
+
+S2P := s2p
+S2PCTL := s2pctl
+S2PDUMP := s2pdump
+S2PEXEC := s2pexec
+S2PPROTO := s2pproto
+S2P_TEST := s2p_test
+IN_PROCESS_TEST := in_process_test
+
+INSTALL_BIN := $(TARGET)/bin
 
 OBJDIR := obj
 LIBDIR := lib
@@ -172,7 +162,7 @@ DIR_BUSES := buses
 DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
 
-SRC_PROTOC = ../proto/s2p_interface.proto
+SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
