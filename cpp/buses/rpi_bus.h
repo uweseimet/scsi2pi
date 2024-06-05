@@ -139,17 +139,10 @@ private:
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
-#if SIGNAL_CONTROL_MODE == 0
     // Data mask table
     array<array<uint32_t, 256>, 3> tblDatMsk;
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
-#else
-    // Data mask table
-    array<uint32_t, 256> tblDatMsk = {};
-    // Table setting table
-    array<uint32_t, 256> tblDatSet = {};
-#endif
 
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };

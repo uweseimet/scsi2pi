@@ -14,9 +14,6 @@
 // SCSI2Pi/PiSCSI standard (SCSI logic, standard pin assignment)
 //
 
-// Select signal control mode
-constexpr static int SIGNAL_CONTROL_MODE = 0; // SCSI logical specification
-
 // Control signal pin assignment (-1 means no control)
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE

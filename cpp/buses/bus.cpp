@@ -15,8 +15,6 @@
 
 bool Bus::Init(bool mode)
 {
-    static_assert(SIGNAL_CONTROL_MODE == 0 || SIGNAL_CONTROL_MODE == 2);
-
     target_mode = mode;
 
     return true;
