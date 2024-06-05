@@ -522,10 +522,11 @@ void RpiBus::EnableIRQ()
 //---------------------------------------------------------------------------
 void RpiBus::PinConfig(int pin, int mode)
 {
-    // Check for invalid pin
+#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
+#endif
 
     const int index = pin / 10;
     uint32_t mask = ~(7 << ((pin % 10) * 3));
@@ -535,10 +536,11 @@ void RpiBus::PinConfig(int pin, int mode)
 // Pin pull-up/pull-down setting
 void RpiBus::PullConfig(int pin, int mode)
 {
-    // Check for invalid pin
+#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
+#endif
 
     if (pi_type >= PiType::pi_4) {
         uint32_t pull;
@@ -579,10 +581,13 @@ void RpiBus::PullConfig(int pin, int mode)
 // Set output pin
 void RpiBus::PinSetSignal(int pin, bool state)
 {
-    // Check for invalid pin
-    if (pin >= 0) {
-        gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+#ifdef BOARD_STANDARD
+    if (pin < 0) {
+        return;
     }
+#endif
+
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
 }
 
 void RpiBus::SetSignalDriveStrength(uint32_t drive)
