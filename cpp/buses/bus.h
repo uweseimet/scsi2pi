@@ -16,18 +16,7 @@
 #include <vector>
 #include "shared/scsi.h"
 #include "base/s2p_defs.h"
-
-#if defined BOARD_STANDARD
-#include "buses/connection_type/connection_standard.h"
-#elif defined BOARD_FULLSPEC
-#include "buses/connection_type/connection_fullspec.h"
-#elif defined BOARD_AIBOM
-#include "buses/connection_type/connection_aibom.h"
-#elif defined BOARD_GAMERNIUM
-#include "buses/connection_type/connection_gamernium.h"
-#else
-#error Invalid connection type or none specified
-#endif
+#include "board.h"
 
 //---------------------------------------------------------------------------
 //
