@@ -17,11 +17,11 @@
 // Control signal pin assignment (-1 means no control)
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE
-#ifdef BOARD_FULLSPEC
+#if defined BOARD_FULLSPEC
 constexpr static int PIN_IND = 6; // INITIATOR CTRL DIRECTION
 constexpr static int PIN_TAD = 7; // TARGET CTRL DIRECTION
 constexpr static int PIN_DTD = 8; // DATA DIRECTION
-#elif
+#elif defined BOARD_STANDARD
 constexpr static int PIN_IND = -1; // INITIATOR CTRL DIRECTION
 constexpr static int PIN_TAD = -1; // TARGET CTRL DIRECTION
 constexpr static int PIN_DTD = -1; // DATA DIRECTION
