@@ -126,10 +126,10 @@ pair<int, path> testing::OpenTempFile()
 
 path testing::CreateTempFile(size_t size)
 {
-    return CreateTempFileWithData(vector<byte>(size));
+    return path(CreateTempFileWithData(vector<byte>(size)));
 }
 
-path testing::CreateTempFileWithData(const span<const byte> data)
+string testing::CreateTempFileWithData(const span<const byte> data)
 {
     const auto& [fd, filename] = OpenTempFile();
 
@@ -139,7 +139,7 @@ path testing::CreateTempFileWithData(const span<const byte> data)
 
     TestShared::RememberTempFile(filename);
 
-    return path(filename);
+    return filename;
 }
 
 string testing::ReadTempFileToString(const string &filename)

@@ -43,7 +43,7 @@ CXXFLAGS += $(EXTRA_FLAGS)
 
 ## Installation path
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
-TARGET=/opt/scsi2pi
+TARGET := /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
 ##     Specifies the board type that you are using. Typically this is 
@@ -52,55 +52,91 @@ BOARD ?= FULLSPEC
 
 CXXFLAGS += -DBOARD_$(BOARD)
 
-##   BUILD_*=1
-##     Specifies the device types to build, default is all. Supported types:
-##       SCHD SCSI Removable and non-removable Hard Drive
+##   ENABLE_*=1
+##   DISABLE_*=1
+##     Specifies the device types to build or not to build, default is to build all. Supported types:
+##       SCHD SCSI Removable and Non-removable Hard Drive
 ##       SCCD SCSI CD-Rom Drive
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
 ##       SCHS Host Services
 ##       SAHD SASI Hard Drive
-ifeq ($(or $(BUILD_SCHD),$(BUILD_SCMO),$(BUILD_SCCD),$(BUILD_SCDP),$(BUILD_SCLP),$(BUILD_SCHS),$(BUILD_SAHD)),)
-	BUILD_SCHD = 1
-	BUILD_SCMO = 1
-	BUILD_SCCD = 1
-	BUILD_SCDP = 1
-	BUILD_SCLP = 1
-	BUILD_SCHS = 1
-	BUILD_SAHD = 1
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
+	ENABLE_SCHD = 1
+	ENABLE_SCMO = 1
+	ENABLE_SCCD = 1
+	ENABLE_SCDP = 1
+	ENABLE_SCLP = 1
+	ENABLE_SCHS = 1
+	ENABLE_SAHD = 1
 endif
-ifdef BUILD_SCHD
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCHD
+
+ifdef ENABLE_SCRM
+	ENABLE_SCHD = 1
 endif
-ifdef BUILD_SCMO
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCMO
+
+ifdef DISABLE_SCHD
+	ENABLE_SCHD =
 endif
-ifdef BUILD_SCCD
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_DISK -DBUILD_SCCD
+ifdef DISABLE_SCMO
+	ENABLE_SCMO =
 endif
-ifdef BUILD_SCDP
+ifdef DISABLE_SCCD
+	ENABLE_SCCD =
+endif
+ifdef DISABLE_SCDP
+	ENABLE_SCDP =
+endif
+ifdef DISABLE_SCLP
+	ENABLE_SCLP =
+endif
+ifdef DISABLE_SCHS
+	ENABLE_SCHS =
+endif
+ifdef DISABLE_SAHD
+	ENABLE_SAHD =
+endif
+
+ifdef ENABLE_SCHD
+	CXXFLAGS += -DBUILD_SCHD
+endif
+ifdef ENABLE_SCMO
+	CXXFLAGS += -DBUILD_SCMO
+endif
+ifdef ENABLE_SCCD
+	CXXFLAGS += -DBUILD_SCCD
+endif
+ifdef ENABLE_SCDP
 	CXXFLAGS += -DBUILD_SCDP
 endif
-ifdef BUILD_SCLP
+ifdef ENABLE_SCLP
 	CXXFLAGS += -DBUILD_SCLP
 endif
-ifdef BUILD_SCHS
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE -DBUILD_SCHS
+ifdef ENABLE_SCHS
+	CXXFLAGS += -DBUILD_SCHS
 endif
-ifdef BUILD_SAHD
-	CXXFLAGS += -DBUILD_DISK -DBUILD_SAHD
+ifdef ENABLE_SAHD
+	CXXFLAGS += -DBUILD_SAHD
 endif
 
-S2P = s2p
-S2PCTL = s2pctl
-S2PDUMP = s2pdump
-S2PEXEC = s2pexec
-S2PPROTO = s2pproto
-S2P_TEST = s2p_test
-IN_PROCESS_TEST = in_process_test
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCHS)),1)
+	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE
+endif
 
-INSTALL_BIN = $(TARGET)/bin
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
+	CXXFLAGS += -DBUILD_DISK
+endif
+
+S2P := s2p
+S2PCTL := s2pctl
+S2PDUMP := s2pdump
+S2PEXEC := s2pexec
+S2PPROTO := s2pproto
+S2P_TEST := s2p_test
+IN_PROCESS_TEST := in_process_test
+
+INSTALL_BIN := $(TARGET)/bin
 
 OBJDIR := obj
 LIBDIR := lib
@@ -126,7 +162,7 @@ DIR_BUSES := buses
 DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
 
-SRC_PROTOC = ../proto/s2p_interface.proto
+SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
@@ -146,42 +182,42 @@ SRC_DISK = \
 	$(DIR_DEVICES)/storage_device.cpp \
 	$(DIR_DEVICES)/mode_page_device.cpp
 
-ifdef BUILD_SCHD
+ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD = \
 	$(DIR_DEVICES)/scsi_hd.cpp
 SRC_SCHD += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCMO
+ifeq ($(ENABLE_SCMO),1)
 SRC_SCMO = \
 	$(DIR_DEVICES)/optical_memory.cpp
 SRC_SCMO += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCCD
+ifeq ($(ENABLE_SCCD),1)
 SRC_SCCD = \
 	$(DIR_DEVICES)/scsi_cd.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 
-ifdef BUILD_SCDP
+ifeq ($(ENABLE_SCDP),1)
 SRC_SCDP = \
 	$(DIR_DEVICES)/daynaport.cpp \
 	$(DIR_DEVICES)/tap_driver.cpp
 endif
 
-ifdef BUILD_SCLP
+ifeq ($(ENABLE_SCLP),1)
 SRC_SCLP = \
 	$(DIR_DEVICES)/printer.cpp
 endif
 
-ifdef BUILD_SCHS
+ifeq ($(ENABLE_SCHS),1)
 SRC_SCHS = \
 	$(DIR_DEVICES)/host_services.cpp \
 	$(DIR_DEVICES)/mode_page_device.cpp
 endif
 
-ifdef BUILD_SAHD
+ifeq ($(ENABLE_SAHD),1)
 SRC_SAHD = \
 	$(DIR_DEVICES)/sasi_hd.cpp
 SRC_SAHD += $(SRC_DISK)

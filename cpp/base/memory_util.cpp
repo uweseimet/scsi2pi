@@ -2,11 +2,35 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "memory_util.h"
+
+template<typename T>
+void memory_util::SetInt16(vector<T> &buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 1);
+
+    buf[offset] = static_cast<T>(value >> 8);
+    buf[offset + 1] = static_cast<T>(value);
+}
+template void memory_util::SetInt16(vector<byte>&, int, int);
+template void memory_util::SetInt16(vector<uint8_t>&, int, int);
+
+template<typename T>
+void memory_util::SetInt32(vector<T> &buf, int offset, uint32_t value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 3);
+
+    buf[offset] = static_cast<T>(value >> 24);
+    buf[offset + 1] = static_cast<T>(value >> 16);
+    buf[offset + 2] = static_cast<T>(value >> 8);
+    buf[offset + 3] = static_cast<T>(value);
+}
+template void memory_util::SetInt32(vector<byte>&, int, uint32_t);
+template void memory_util::SetInt32(vector<uint8_t>&, int, uint32_t);
 
 int memory_util::GetInt24(span<const int> buf, int offset)
 {

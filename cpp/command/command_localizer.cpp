@@ -281,8 +281,7 @@ void CommandLocalizer::Add(LocalizationKey key, const string &locale, string_vie
     assert(!locale.empty());
     assert(!value.empty());
     assert(!localized_messages[locale].contains(key));
-    assert((unordered_set<string, s2p_util::StringHash, equal_to<>>( { "en", "de", "sv", "fr", "es", "zh" })).contains(
-        locale));
+    assert((unordered_set<string_view>( { "en", "de", "sv", "fr", "es", "zh" })).contains(locale));
 
     localized_messages[locale][key] = value;
 }

@@ -90,7 +90,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
 
 string S2pCtlDisplay::DisplayVersionInfo(const PbVersionInfo &version_info) const
 {
-    string version = "Device server version: " + version_info.identifier();
+    string version = "Server version: " + version_info.identifier();
     if (version_info.identifier().empty() || version_info.major_version() >= 21) {
         if (version_info.major_version() == 21 && version_info.minor_version() < 12) {
             version += "RaSCSI";

@@ -2,18 +2,12 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
-// Copyright (C) akuker
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <map>
-#include <span>
-#include <vector>
 #include "disk.h"
 
 using Geometry = pair<uint32_t, uint32_t>;

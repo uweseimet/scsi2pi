@@ -44,8 +44,8 @@ bool RpiBus::Init(bool target)
 
     case RpiBus::PiType::pi_5:
         base_addr = 0x1f00000000;
-        gpio_offset = GPIO_OFFSET_PI5;
-        pads_offset = PADS_OFFSET_PI5;
+        gpio_offset = GPIO_OFFSET_RP1;
+        pads_offset = PADS_OFFSET_RP1;
         break;
 
     default:

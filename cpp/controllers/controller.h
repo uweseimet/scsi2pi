@@ -16,12 +16,11 @@ class Controller : public AbstractController
 public:
 
     using AbstractController::AbstractController;
-    ~Controller() override = default;
 
     bool Process() override;
 
-    void Error(sense_key, asc asc = asc::no_additional_sense_information,
-        status_code status = status_code::check_condition) override;
+    void Error(sense_key, asc asc = asc::no_additional_sense_information, status_code status =
+        status_code::check_condition) override;
     void Reset() override;
 
     void BusFree() override;

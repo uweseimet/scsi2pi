@@ -39,7 +39,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
     // Timeout waiting for ACK to change
     if (!ack || !WaitSignal(PIN_ACK, false)) {
         EnableIRQ();
-        return 0;
+        return -1;
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
@@ -65,7 +65,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
         // Timeout waiting for ACK to change
         if (!ack || !WaitSignal(PIN_ACK, false)) {
             EnableIRQ();
-            return 0;
+            return -1;
         }
     }
 
@@ -95,7 +95,8 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
 
         // Timeout waiting for ACK to change
         if (!ack || !WaitSignal(PIN_ACK, false)) {
-            break;
+            EnableIRQ();
+            return -1;
         }
     }
 

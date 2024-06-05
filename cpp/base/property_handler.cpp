@@ -98,7 +98,7 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
-string PropertyHandler::GetProperty(string_view key, const string &def) const
+const string& PropertyHandler::GetProperty(string_view key, const string &def) const
 {
     for (const auto& [k, v] : property_cache) {
         if (k == key) {

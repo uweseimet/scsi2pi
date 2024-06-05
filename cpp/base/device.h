@@ -27,10 +27,6 @@ public:
     {
         return type;
     }
-    string GetTypeString() const
-    {
-        return PbDeviceType_Name(type);
-    }
 
     bool IsReady() const
     {
@@ -99,17 +95,17 @@ public:
         return lun;
     }
 
-    string GetVendor() const
+    const string& GetVendor() const
     {
         return vendor;
     }
     void SetVendor(const string&);
-    string GetProduct() const
+    const string& GetProduct() const
     {
         return product;
     }
     void SetProduct(const string&, bool = true);
-    string GetRevision() const
+    const string& GetRevision() const
     {
         return revision;
     }

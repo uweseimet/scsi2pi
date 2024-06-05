@@ -30,7 +30,7 @@ void StorageDevice::CleanUp()
 void StorageDevice::ValidateFile()
 {
     if (!blocks) {
-        throw io_exception(GetTypeString() + " device has 0 blocks");
+        throw io_exception("Device has 0 blocks");
     }
 
     if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {

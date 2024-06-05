@@ -120,7 +120,7 @@ string s2p_util::GetLine(const string &prompt)
             return "";
         }
 
-        if (!line.empty() && !line.starts_with("#")) {
+        if (!line.empty() && line[0] != '#') {
             return line;
         }
     }

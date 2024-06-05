@@ -30,7 +30,7 @@ vector<uint8_t> CreateParameters(const string&);
 
 pair<int, path> OpenTempFile();
 path CreateTempFile(size_t);
-path CreateTempFileWithData(span<const byte>);
+string CreateTempFileWithData(span<const byte>);
 string ReadTempFileToString(const string&);
 
 int GetInt16(const vector<byte>&, int);

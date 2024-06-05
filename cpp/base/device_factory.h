@@ -47,7 +47,7 @@ private:
 
     static string GetExtensionLowerCase(string_view);
 
-    inline static const unordered_map<string, PbDeviceType, s2p_util::StringHash, equal_to<>> DEVICE_MAPPING = {
+    inline static const unordered_map<string_view, PbDeviceType> DEVICE_MAPPING = {
         { "daynaport", SCDP },
         { "printer", SCLP },
         { "services", SCHS }

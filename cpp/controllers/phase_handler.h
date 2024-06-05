@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include <cassert>
 #include <functional>
-#include <stdexcept>
 #include "shared/scsi.h"
 
 using namespace std;
@@ -79,19 +79,13 @@ protected:
 
     bool ProcessPhase() const
     {
-        try {
-            phase_executors[static_cast<int>(phase)]();
-        }
-        catch (const invalid_argument&) {
-            return false;
-        }
-
-        return true;
+        assert(phase <= bus_phase::reserved);
+        return phase_executors[static_cast<int>(phase)]();
     }
 
 private:
 
     bus_phase phase = bus_phase::busfree;
 
-    array<function<void()>, 11> phase_executors;
+    array<function<bool()>, static_cast<int>(bus_phase::reserved) + 1> phase_executors;
 };

@@ -242,7 +242,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         if (!device->IsRemovable() && filename.empty()) {
             // GetIdentifier() cannot be used here because the device ID has not yet been set
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
-                fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
+                fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
         }
 
         if (!ValidateImageFile(context, *storage_device, filename)) {
@@ -270,7 +270,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     if (!device->Init(params)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", device->GetTypeString(), id, lun));
+            fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
     }
 
     if (!controller_factory.AttachToController(bus, id, device)) {
@@ -395,9 +395,10 @@ void CommandExecutor::DetachAll() const
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
-    PropertyHandler::Instance().AddProperty(identifier + "type", device->GetTypeString());
+    PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+#ifdef BUILD_DISK
     const auto disk = dynamic_pointer_cast<Disk>(device);
     if (disk && disk->GetConfiguredSectorSize()) {
         PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
@@ -409,8 +410,11 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
             filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
         }
         PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+        return;
     }
-    else if (!device->GetParams().empty()) {
+#endif
+
+    if (!device->GetParams().empty()) {
         vector<string> p;
         for (const auto& [param, value] : device->GetParams()) {
             p.emplace_back(param + "=" + value);
@@ -518,7 +522,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    const map<string, string, less<>> params = { command.params().cbegin(), command.params().cend() };
+    const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() };
 
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());
@@ -615,7 +619,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
         for (const auto &d : GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, device->GetTypeString());
+                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));
                 return nullptr;
             }
         }
@@ -648,7 +652,7 @@ bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<Pr
         }
         else {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE,
-                device->GetTypeString());
+                GetTypeString(*device));
         }
     }
 #endif
@@ -663,25 +667,22 @@ bool CommandExecutor::ValidateOperation(const CommandContext &context, const Pri
 
     if ((operation == START || operation == STOP) && !device.IsStoppable()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE,
-            PbOperation_Name(operation),
-            device.GetTypeString());
+            PbOperation_Name(operation), GetTypeString(device));
     }
 
     if ((operation == INSERT || operation == EJECT) && !device.IsRemovable()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE,
-            PbOperation_Name(operation),
-            device.GetTypeString());
+            PbOperation_Name(operation), GetTypeString(device));
     }
 
     if ((operation == PROTECT || operation == UNPROTECT) && !device.IsProtectable()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE,
-            PbOperation_Name(operation),
-            device.GetTypeString());
+            PbOperation_Name(operation), GetTypeString(device));
     }
 
     if ((operation == PROTECT || operation == UNPROTECT) && !device.IsReady()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION_DENIED_READY, PbOperation_Name(operation),
-            device.GetTypeString());
+            GetTypeString(device));
     }
 
     return true;
@@ -737,4 +738,14 @@ bool CommandExecutor::SetProductData(const CommandContext &context, const PbDevi
     }
 
     return true;
+}
+
+string CommandExecutor::GetTypeString(const Device &device)
+{
+    return PbDeviceType_Name(device.GetType());
+}
+
+string CommandExecutor::GetIdentifier(const Device &device)
+{
+    return GetTypeString(device) + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());
 }

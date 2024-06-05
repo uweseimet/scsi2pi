@@ -7,19 +7,18 @@
 //---------------------------------------------------------------------------
 
 #include "phase_handler.h"
-#include <cassert>
 
 void PhaseHandler::Init()
 {
-    phase_executors[static_cast<int>(bus_phase::busfree)] = [this]() {BusFree();};
-    phase_executors[static_cast<int>(bus_phase::arbitration)] = []() {throw invalid_argument("");};
-    phase_executors[static_cast<int>(bus_phase::selection)] = [this]() {Selection();};
-    phase_executors[static_cast<int>(bus_phase::reselection)] = []() {throw invalid_argument("");};
-    phase_executors[static_cast<int>(bus_phase::command)] = [this]() {Command();};
-    phase_executors[static_cast<int>(bus_phase::datain)] = [this]() {DataIn();};
-    phase_executors[static_cast<int>(bus_phase::dataout)] = [this]() {DataOut();};
-    phase_executors[static_cast<int>(bus_phase::status)] = [this]() {Status();};
-    phase_executors[static_cast<int>(bus_phase::msgin)] = [this]() {MsgIn();};
-    phase_executors[static_cast<int>(bus_phase::msgout)] = [this]() {MsgOut();};
-    phase_executors[static_cast<int>(bus_phase::reserved)] = []() {throw invalid_argument("");};
+    phase_executors[static_cast<int>(bus_phase::busfree)] = [this]() {BusFree(); return true;};
+    phase_executors[static_cast<int>(bus_phase::arbitration)] = []() {return false;};
+    phase_executors[static_cast<int>(bus_phase::selection)] = [this]() {Selection(); return true;};
+    phase_executors[static_cast<int>(bus_phase::reselection)] = []() {return false;};
+    phase_executors[static_cast<int>(bus_phase::command)] = [this]() {Command(); return true;};
+    phase_executors[static_cast<int>(bus_phase::datain)] = [this]() {DataIn(); return true;};
+    phase_executors[static_cast<int>(bus_phase::dataout)] = [this]() {DataOut(); return true;};
+    phase_executors[static_cast<int>(bus_phase::status)] = [this]() {Status(); return true;};
+    phase_executors[static_cast<int>(bus_phase::msgin)] = [this]() {MsgIn(); return true;};
+    phase_executors[static_cast<int>(bus_phase::msgout)] = [this]() {MsgOut(); return true;};
+    phase_executors[static_cast<int>(bus_phase::reserved)] = []() {return false;};
 }

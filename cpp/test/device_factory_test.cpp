@@ -8,56 +8,26 @@
 
 #include <gtest/gtest.h>
 #include "base/device_factory.h"
-#ifdef BUILD_SCDP
 #include "devices/daynaport.h"
-#endif
-#ifdef BUILD_SCHS
 #include "devices/host_services.h"
-#endif
-#ifdef BUILD_SCMO
 #include "devices/optical_memory.h"
-#endif
-#ifdef BUILD_SCLP
 #include "devices/printer.h"
-#endif
-#ifdef BUILD_SAHD
 #include "devices/sasi_hd.h"
-#endif
-#ifdef BUILD_SCCD
 #include "devices/scsi_cd.h"
-#endif
-#if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
-#endif
 
 TEST(DeviceFactoryTest, CreateDevice)
 {
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
-#ifdef BUILD_SCHD
     EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCHD, 0, "")));
-#endif
-#ifdef BUILD_SCRM
     EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCRM, 0, "")));
-#endif
-#ifdef BUILD_SCMO
     EXPECT_NE(nullptr, dynamic_pointer_cast<OpticalMemory>(device_factory.CreateDevice(SCMO, 0, "")));
-#endif
-#ifdef BUILD_SCCD
     EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiCd>(device_factory.CreateDevice(SCCD, 0, "")));
-#endif
-#ifdef BUILD_SCDP
     EXPECT_NE(nullptr, dynamic_pointer_cast<DaynaPort>(device_factory.CreateDevice(SCDP, 0, "")));
-#endif
-#ifdef BUILD_SCLP
-    EXPECT_NE(nullptr, dynamic_pointer_cast<HostServices>(device_factory.CreateDevice(SCHS, 0, "")));
-#endif
-#ifdef BUILD_SCHS
     EXPECT_NE(nullptr, dynamic_pointer_cast<Printer>(device_factory.CreateDevice(SCLP, 0, "")));
-#endif
-#ifdef BUILD_SAHD
+    EXPECT_NE(nullptr, dynamic_pointer_cast<HostServices>(device_factory.CreateDevice(SCHS, 0, "")));
     EXPECT_NE(nullptr, dynamic_pointer_cast<SasiHd>(device_factory.CreateDevice(SAHD, 0, "")));
-#endif
 
     EXPECT_EQ(nullptr, device_factory.CreateDevice(UNDEFINED, 0, ""));
 }

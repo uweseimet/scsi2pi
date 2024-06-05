@@ -105,10 +105,7 @@ protected:
     {
     }
 
-    void AddCommand(scsi_command cmd, const command &c)
-    {
-        commands[static_cast<int>(cmd)] = c;
-    }
+    void AddCommand(scsi_command, const command&);
 
     vector<uint8_t> HandleInquiry(device_type, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
@@ -121,20 +118,9 @@ protected:
     void ReserveUnit() override;
     void ReleaseUnit() override;
 
-    void StatusPhase() const
-    {
-        controller->Status();
-    }
-    void DataInPhase(int length) const
-    {
-        controller->SetCurrentLength(length);
-        controller->DataIn();
-    }
-    void DataOutPhase(int length) const
-    {
-        controller->SetCurrentLength(length);
-        controller->DataOut();
-    }
+    void StatusPhase() const;
+    void DataInPhase(int) const;
+    void DataOutPhase(int) const;
 
     void LogTrace(const string &s) const
     {

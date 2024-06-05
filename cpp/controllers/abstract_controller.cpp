@@ -89,7 +89,7 @@ shutdown_mode AbstractController::ProcessOnController(int ids)
 {
     device_logger.SetIdAndLun(target_id, -1);
 
-    if (int ids_without_target = ids - (1 << target_id); ids_without_target) {
+    if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
         initiator_id = 0;
         while (!(ids_without_target & (1 << initiator_id))) {
             ++initiator_id;
