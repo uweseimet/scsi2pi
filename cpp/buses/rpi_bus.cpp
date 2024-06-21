@@ -602,7 +602,9 @@ inline uint32_t RpiBus::Acquire()
     signals = *level;
 
     // Invert because of negative logic (internal processing is unified to positive logic)
-    return ~signals;
+    signals = ~signals;
+
+    return signals;
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).
