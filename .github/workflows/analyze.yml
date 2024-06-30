@@ -41,7 +41,7 @@ jobs:
           mkdir -p $HOME/.sonar
           curl -sSLo /tmp/wrapper.zip $SONAR_SERVER_URL/static/cpp/build-wrapper-linux-x86.zip
           unzip -o /tmp/wrapper.zip -d $HOME/.sonar/
-          curl -sSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+          curl -sSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
           unzip -o /tmp/scanner.zip -d $HOME/.sonar/
 
       - name: Compile with coverage data
