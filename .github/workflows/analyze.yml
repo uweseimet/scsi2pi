@@ -56,7 +56,7 @@ jobs:
 
       - name: Run sonar-scanner
         run: |
-          $HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner \
+          $HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64/bin/sonar-scanner \
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
