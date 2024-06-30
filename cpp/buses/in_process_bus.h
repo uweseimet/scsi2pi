@@ -81,8 +81,6 @@ public:
 protected:
 
     InProcessBus() = default;
-    InProcessBus(const InProcessBus&) = delete;
-    InProcessBus operator&(const InProcessBus&) = delete;
 
 private:
 

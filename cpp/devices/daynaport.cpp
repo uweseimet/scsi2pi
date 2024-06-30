@@ -224,7 +224,7 @@ int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 
     if (buf.size() && get_level() == level::trace) {
         vector<uint8_t> data;
-        ranges::copy(buf.begin(), buf.end(), back_inserter(data));
+        ranges::copy(buf, back_inserter(data));
         LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length)));
     }
 

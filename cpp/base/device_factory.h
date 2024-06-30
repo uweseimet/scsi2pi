@@ -42,8 +42,6 @@ public:
 private:
 
     DeviceFactory();
-    DeviceFactory(const DeviceFactory&) = delete;
-    DeviceFactory operator&(const DeviceFactory&) = delete;
 
     static string GetExtensionLowerCase(string_view);
 
