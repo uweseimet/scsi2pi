@@ -11,18 +11,23 @@
 #pragma once
 
 //
-// PiSCSI/SCSI2Pi standard (SCSI logic, standard pin assignment)
+// SCSI2Pi/PiSCSI standard (SCSI logic, standard pin assignment)
 //
-
-// Select signal control mode
-constexpr static int SIGNAL_CONTROL_MODE = 0; // SCSI logical specification
 
 // Control signal pin assignment (-1 means no control)
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE
+#if defined BOARD_FULLSPEC
 constexpr static int PIN_IND = 6; // INITIATOR CTRL DIRECTION
 constexpr static int PIN_TAD = 7; // TARGET CTRL DIRECTION
 constexpr static int PIN_DTD = 8; // DATA DIRECTION
+#elif defined BOARD_STANDARD
+constexpr static int PIN_IND = -1; // INITIATOR CTRL DIRECTION
+constexpr static int PIN_TAD = -1; // TARGET CTRL DIRECTION
+constexpr static int PIN_DTD = -1; // DATA DIRECTION
+#else
+#error Invalid connection type or none specified
+#endif
 
 // Control signal output logic
 #define ACT_ON ON // ACTIVE SIGNAL ON

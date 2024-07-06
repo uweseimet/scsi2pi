@@ -39,8 +39,6 @@ public:
 private:
 
     BusFactory();
-    BusFactory(const BusFactory&) = delete;
-    BusFactory operator&(const BusFactory&) = delete;
 
     void AddCommand(scsi_command, int, const char*);
 

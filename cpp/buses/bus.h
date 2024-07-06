@@ -16,41 +16,7 @@
 #include <vector>
 #include "shared/scsi.h"
 #include "base/s2p_defs.h"
-
-#if defined BOARD_STANDARD
-#include "buses/connection_type/connection_standard.h"
-#elif defined BOARD_FULLSPEC
-#include "buses/connection_type/connection_fullspec.h"
-#elif defined BOARD_AIBOM
-#include "buses/connection_type/connection_aibom.h"
-#elif defined BOARD_GAMERNIUM
-#include "buses/connection_type/connection_gamernium.h"
-#else
-#error Invalid connection type or none specified
-#endif
-
-//---------------------------------------------------------------------------
-//
-// SIGNAL_CONTROL_MODE: Signal control mode selection
-//  You can customize the signal control logic from Version 1.22
-//
-// 0: SCSI logical specification
-//     Conversion board using 74LS641-1 etc. directly connected or published on HP
-//   True  : 0V
-//   False : Open collector output (disconnect from bus)
-//
-// 1: Negative logic specification (when using conversion board for negative logic -> SCSI logic)
-//     There is no conversion board with this specification at this time
-//   True  : 0V   -> (CONVERT) -> 0V
-//   False : 3.3V -> (CONVERT) -> Open collector output
-//
-// 2: Positive logic specification (when using the conversion board for positive logic -> SCSI logic)
-//     PiSCSI Adapter Rev.C @132sync etc.
-//
-//   True  : 3.3V -> (CONVERT) -> 0V
-//   False : 0V   -> (CONVERT) -> Open collector output
-//
-//---------------------------------------------------------------------------
+#include "board.h"
 
 //---------------------------------------------------------------------------
 //

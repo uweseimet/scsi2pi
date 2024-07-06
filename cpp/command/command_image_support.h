@@ -49,8 +49,6 @@ public:
 private:
 
     CommandImageSupport();
-    CommandImageSupport(const CommandImageSupport&) = delete;
-    CommandImageSupport operator&(const CommandImageSupport&) = delete;
 
     bool CheckDepth(string_view) const;
     string GetFullName(const string&) const;

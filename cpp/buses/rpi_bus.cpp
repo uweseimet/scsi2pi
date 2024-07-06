@@ -121,11 +121,7 @@ bool RpiBus::Init(bool target)
     SetSignalDriveStrength(7);
 
     // Set pull up/pull down
-#if SIGNAL_CONTROL_MODE == 0
     InitializeSignals(GPIO_PULLNONE);
-#else
-    InitializeSignals(GPIO_PULLDOWN);
-#endif
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
@@ -157,11 +153,7 @@ bool RpiBus::Init(bool target)
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
     selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
-#if SIGNAL_CONTROL_MODE == 0
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
-#else
-    selevreq.eventflags = GPIOEVENT_REQUEST_RISING_EDGE;
-#endif
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
         critical("Can't register event request. If s2p is running (e.g. as a service), shut it down first.");
@@ -345,37 +337,12 @@ inline uint8_t RpiBus::GetDAT()
 
 inline void RpiBus::SetDAT(uint8_t dat)
 {
-#if SIGNAL_CONTROL_MODE == 0
-#if defined BOARD_STANDARD || defined BOARD_FULLSPEC
     uint32_t fsel = gpfsel[1];
     // Mask for the DT0-DT7 and DP pins
     fsel &= 0b11111000000000000000000000000000;
     fsel |= tblDatSet[1][dat];
     gpfsel[1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
-#else
-    uint32_t fsel = gpfsel[0];
-    fsel &= tblDatMsk[0][dat];
-    fsel |= tblDatSet[0][dat];
-    gpfsel[0] = fsel;
-    gpio[GPIO_FSEL_0] = fsel;
-
-    fsel = gpfsel[1];
-    fsel &= tblDatMsk[1][dat];
-    fsel |= tblDatSet[1][dat];
-    gpfsel[1] = fsel;
-    gpio[GPIO_FSEL_1] = fsel;
-
-    fsel = gpfsel[2];
-    fsel &= tblDatMsk[2][dat];
-    fsel |= tblDatSet[2][dat];
-    gpfsel[2] = fsel;
-    gpio[GPIO_FSEL_2] = fsel;
-#endif
-#else
-    gpio[GPIO_CLR_0] = tblDatMsk[dat];
-    gpio[GPIO_SET_0] = tblDatSet[dat];
-#endif
 }
 
 void RpiBus::CreateWorkTable(void)
@@ -394,7 +361,6 @@ void RpiBus::CreateWorkTable(void)
         tblParity[i] = parity & 1;
     }
 
-#if SIGNAL_CONTROL_MODE == 0
     // Mask data defaults
     for (auto &tbl : tblDatMsk) {
         tbl.fill(-1);
@@ -426,32 +392,6 @@ void RpiBus::CreateWorkTable(void)
             bits >>= 1;
         }
     }
-#else
-    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
-        // Bit string for inspection
-        uint32_t bits = i;
-
-        // Get parity
-        if (tblParity[i]) {
-            bits |= (1 << 8);
-        }
-
-        // Create GPIO register information
-        uint32_t gpclr = 0;
-        uint32_t gpset = 0;
-        for (int j = 0; j < static_cast<int>(DATA_PINS.size()); j++) {
-            if (bits & 1) {
-                gpset |= (1 << pins[j]);
-            } else {
-                gpclr |= (1 << pins[j]);
-            }
-            bits >>= 1;
-        }
-
-        tblDatMsk[i] = gpclr;
-        tblDatSet[i] = gpset;
-    }
-#endif
 }
 
 void RpiBus::SetControl(int pin, bool state)
@@ -469,12 +409,10 @@ void RpiBus::SetControl(int pin, bool state)
 //---------------------------------------------------------------------------
 void RpiBus::SetMode(int pin, int mode)
 {
-#if SIGNAL_CONTROL_MODE == 0
     // Pins are implicitly set to OUT when applying the mask
     if (mode == OUT) {
         return;
     }
-#endif
 
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
@@ -504,7 +442,6 @@ inline bool RpiBus::GetSignal(int pin) const
 //---------------------------------------------------------------------------
 void RpiBus::SetSignal(int pin, bool state)
 {
-#if SIGNAL_CONTROL_MODE == 0
     const int index = pin / 10;
     assert(index <= 2);
     const int shift = (pin % 10) * 3;
@@ -516,13 +453,6 @@ void RpiBus::SetSignal(int pin, bool state)
     }
     gpio[index] = data;
     gpfsel[index] = data;
-#else
-    if (state) {
-        gpio[GPIO_SET_0] = 1 << pin;
-    } else {
-        gpio[GPIO_CLR_0] = 1 << pin;
-    }
-#endif
 }
 
 void RpiBus::DisableIRQ()
@@ -592,10 +522,11 @@ void RpiBus::EnableIRQ()
 //---------------------------------------------------------------------------
 void RpiBus::PinConfig(int pin, int mode)
 {
-    // Check for invalid pin
+#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
+#endif
 
     const int index = pin / 10;
     uint32_t mask = ~(7 << ((pin % 10) * 3));
@@ -605,10 +536,11 @@ void RpiBus::PinConfig(int pin, int mode)
 // Pin pull-up/pull-down setting
 void RpiBus::PullConfig(int pin, int mode)
 {
-    // Check for invalid pin
+#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
+#endif
 
     if (pi_type >= PiType::pi_4) {
         uint32_t pull;
@@ -649,10 +581,13 @@ void RpiBus::PullConfig(int pin, int mode)
 // Set output pin
 void RpiBus::PinSetSignal(int pin, bool state)
 {
-    // Check for invalid pin
-    if (pin >= 0) {
-        gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+#ifdef BOARD_STANDARD
+    if (pin < 0) {
+        return;
     }
+#endif
+
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
 }
 
 void RpiBus::SetSignalDriveStrength(uint32_t drive)
@@ -666,10 +601,8 @@ inline uint32_t RpiBus::Acquire()
 {
     signals = *level;
 
-#if SIGNAL_CONTROL_MODE == 0
-    // Invert if negative logic (internal processing is unified to positive logic)
+    // Invert because of negative logic (internal processing is unified to positive logic)
     signals = ~signals;
-#endif
 
     return signals;
 }

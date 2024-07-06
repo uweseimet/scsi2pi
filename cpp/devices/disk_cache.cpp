@@ -34,7 +34,7 @@ bool DiskCache::Init()
 bool DiskCache::Flush()
 {
     // Save valid tracks
-    return ranges::none_of(cache.cbegin(), cache.cend(), [this](const cache_t &c)
+    return ranges::none_of(cache, [this](const cache_t &c)
         {   return c.disktrk && !c.disktrk->Save(sec_path, cache_miss_write_count);});
 }
 
