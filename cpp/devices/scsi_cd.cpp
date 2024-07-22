@@ -98,14 +98,15 @@ void ScsiCd::ReadToc()
     buf[2] = 1;
     // Last track number
     buf[3] = 1;
-
+    // Data track, not audio track
+    buf[5] = 0x14;
     buf[6] = track_number;
 
     // Track address in the requested format (MSF)
     if (cdb[1] & 0x02) {
-        LBAtoMSF(track_address + 1, &buf[8]);
+        LBAtoMSF(track_address, &buf[8]);
     } else {
-        SetInt16(buf, 10, track_address + 1);
+        SetInt16(buf, 10, track_address);
     }
 
     DataInPhase(length);
