@@ -13,8 +13,8 @@
 using namespace filesystem;
 
 StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select,
-    bool supports_save_parameters)
-: ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters)
+    bool supports_save_parameters, const unordered_set<uint32_t> &s)
+: ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_block_sizes(s)
 {
     SupportsFile(true);
     SetStoppable(true);
@@ -25,6 +25,29 @@ void StorageDevice::CleanUp()
     UnreserveFile();
 
     ModePageDevice::CleanUp();
+}
+
+bool StorageDevice::SetBlockSizeInBytes(uint32_t size)
+{
+    if (!supported_block_sizes.contains(size) && configured_block_size != size) {
+        return false;
+    }
+
+    block_size = size;
+
+    return true;
+}
+
+bool StorageDevice::SetConfiguredBlockSize(uint32_t configured_size)
+{
+    if (!configured_size || configured_size % 4
+        || (!supported_block_sizes.contains(configured_size) && GetType() != SCHD)) {
+        return false;
+    }
+
+    configured_block_size = configured_size;
+
+    return true;
 }
 
 void StorageDevice::ValidateFile()

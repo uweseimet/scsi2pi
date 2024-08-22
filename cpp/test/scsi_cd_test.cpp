@@ -51,11 +51,11 @@ TEST(ScsiCdTest, Inquiry)
         "file.is1");
 }
 
-TEST(ScsiCdTest, GetSectorSizes)
+TEST(ScsiCdTest, GetBlockSizes)
 {
     ScsiCd cd(0);
 
-    const auto &sector_sizes = cd.GetSupportedSectorSizes();
+    const auto &sector_sizes = cd.GetSupportedBlockSizes();
     EXPECT_EQ(2U, sector_sizes.size());
 
     EXPECT_TRUE(sector_sizes.contains(512));

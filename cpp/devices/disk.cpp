@@ -157,8 +157,8 @@ bool Disk::SetUpCache()
 {
     assert(caching_mode != PbCachingMode::DEFAULT);
 
-    if (!supported_sector_sizes.contains(sector_size)) {
-        warn("Using non-standard sector size of {} bytes", sector_size);
+    if (!GetSupportedBlockSizes().contains(GetBlockSizeInBytes())) {
+        warn("Using non-standard sector size of {} bytes", GetBlockSizeInBytes());
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
             // LogInfo() does not work here because at initialization time the device ID is not yet set
@@ -172,10 +172,10 @@ bool Disk::SetUpCache()
 bool Disk::InitCache(const string &path)
 {
     if (caching_mode == PbCachingMode::PISCSI) {
-        cache = make_shared<DiskCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()));
+        cache = make_shared<DiskCache>(path, GetBlockSizeInBytes(), static_cast<uint32_t>(GetBlockCount()));
     }
     else {
-        cache = make_shared<LinuxCache>(path, sector_size, static_cast<uint32_t>(GetBlockCount()),
+        cache = make_shared<LinuxCache>(path, GetBlockSizeInBytes(), static_cast<uint32_t>(GetBlockCount()),
             caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
@@ -209,9 +209,9 @@ void Disk::Read(access_mode mode)
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
-        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
+        GetController()->SetTransferSize(count * GetBlockSizeInBytes(), sector_transfer_count * GetBlockSizeInBytes());
 
-        GetController()->SetCurrentLength(count * GetSectorSizeInBytes());
+        GetController()->SetCurrentLength(count * GetBlockSizeInBytes());
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
@@ -247,9 +247,9 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
-        GetController()->SetTransferSize(count * GetSectorSizeInBytes(), sector_transfer_count * GetSectorSizeInBytes());
+        GetController()->SetTransferSize(count * GetBlockSizeInBytes(), sector_transfer_count * GetBlockSizeInBytes());
 
-        DataOutPhase(sector_transfer_count * GetSectorSizeInBytes());
+        DataOutPhase(sector_transfer_count * GetBlockSizeInBytes());
     }
     else {
         StatusPhase();
@@ -293,7 +293,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
 
-    if (length > sector_size) {
+    if (length > GetBlockSizeInBytes()) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -431,7 +431,7 @@ int Disk::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
         // Short LBA mode parameter block descriptor (number of blocks and block length)
         SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
-        SetInt32(buf, 8, GetSectorSizeInBytes());
+        SetInt32(buf, 8, GetBlockSizeInBytes());
 
         size = 12;
     }
@@ -460,7 +460,7 @@ int Disk::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     // Add block descriptor if DBD is 0, only if ready
     if (!(cdb[1] & 0x08) && IsReady()) {
         const uint64_t disk_blocks = GetBlockCount();
-        const uint32_t disk_size = GetSectorSizeInBytes();
+        const uint32_t disk_size = GetBlockSizeInBytes();
 
         // Check LLBAA for short or long block descriptor
         if (!(cdb[1] & 0x10) || disk_blocks <= 0xffffffff) {
@@ -631,7 +631,7 @@ void Disk::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         return;
     }
 
-    int size = GetSectorSizeInBytes();
+    int size = GetBlockSizeInBytes();
 
     int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
     length -= offset;
@@ -726,7 +726,7 @@ int Disk::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, in
 
 int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
 {
-    if (requested_size == static_cast<int>(GetSectorSizeInBytes())) {
+    if (requested_size == static_cast<int>(GetBlockSizeInBytes())) {
         return requested_size;
     }
 
@@ -738,7 +738,7 @@ int Disk::VerifySectorSizeChange(int requested_size, bool temporary) const
         else {
             LogWarn(fmt::format(
                 "Sector size change from {0} to {1} bytes requested. Configure the sector size in the s2p settings.",
-                GetSectorSizeInBytes(), requested_size));
+                GetBlockSizeInBytes(), requested_size));
         }
     }
 
@@ -758,7 +758,7 @@ int Disk::ReadData(span<uint8_t> buf)
     next_sector += sector_transfer_count;
     sector_read_count += sector_transfer_count;
 
-    return GetSectorSizeInBytes() * sector_transfer_count;
+    return GetBlockSizeInBytes() * sector_transfer_count;
 }
 
 int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
@@ -789,7 +789,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
     next_sector += sector_transfer_count;
     sector_write_count += sector_transfer_count;
 
-    return GetSectorSizeInBytes() * sector_transfer_count;
+    return GetBlockSizeInBytes() * sector_transfer_count;
 }
 
 void Disk::ReAssignBlocks()
@@ -832,7 +832,7 @@ void Disk::ReadCapacity10()
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
     const uint64_t capacity = GetBlockCount() - 1;
     SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
-    SetInt32(buf, 4, sector_size);
+    SetInt32(buf, 4, GetBlockSizeInBytes());
 
     DataInPhase(8);
 }
@@ -849,7 +849,7 @@ void Disk::ReadCapacity16()
     fill_n(buf.begin(), 32, 0);
 
     SetInt64(buf, 0, GetBlockCount() - 1);
-    SetInt32(buf, 8, sector_size);
+    SetInt32(buf, 8, GetBlockSizeInBytes());
 
     DataInPhase(min(32, static_cast<int>(GetInt32(GetController()->GetCdb(), 10))));
 }
@@ -891,6 +891,27 @@ uint64_t Disk::ValidateBlockAddress(access_mode mode) const
     return sector;
 }
 
+void Disk::ChangeSectorSize(uint32_t new_size)
+{
+    if (!GetSupportedBlockSizes().contains(new_size) && new_size % 4) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    }
+
+    const auto current_size = GetBlockSizeInBytes();
+    if (new_size != current_size) {
+        const uint64_t capacity = current_size * GetBlockCount();
+        SetBlockSizeInBytes(new_size);
+        SetBlockCount(static_cast<uint32_t>(capacity / new_size));
+
+        FlushCache();
+        if (cache) {
+            SetUpCache();
+        }
+
+        LogTrace(fmt::format("Changed sector size from {0} to {1} bytes", current_size, new_size));
+    }
+}
+
 tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode) const
 {
     uint64_t start;
@@ -930,50 +951,6 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
     // Do not process 0 blocks
     return tuple(count || mode == SEEK6 || mode == SEEK10, start, count);
-}
-
-void Disk::ChangeSectorSize(uint32_t new_size)
-{
-    if (!supported_sector_sizes.contains(new_size) && new_size % 4) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
-    }
-
-    const auto current_size = GetSectorSizeInBytes();
-    if (new_size != current_size) {
-        const uint64_t capacity = current_size * GetBlockCount();
-        SetSectorSizeInBytes(new_size);
-        SetBlockCount(static_cast<uint32_t>(capacity / new_size));
-
-        FlushCache();
-        if (cache) {
-            SetUpCache();
-        }
-
-        LogTrace(fmt::format("Changed sector size from {0} to {1} bytes", current_size, new_size));
-    }
-}
-
-bool Disk::SetSectorSizeInBytes(uint32_t size)
-{
-    if (!supported_sector_sizes.contains(size) && configured_sector_size != size) {
-        return false;
-    }
-
-    sector_size = size;
-
-    return true;
-}
-
-bool Disk::SetConfiguredSectorSize(uint32_t configured_size)
-{
-    if (!configured_size || configured_size % 4
-        || (!supported_sector_sizes.contains(configured_size) && GetType() != SCHD)) {
-        return false;
-    }
-
-    configured_sector_size = configured_size;
-
-    return true;
 }
 
 vector<PbStatistics> Disk::GetStatistics() const

@@ -38,11 +38,11 @@ void OpticalMemory::Open()
 
     // For some capacities there are hard-coded, well-defined sector sizes and block counts
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
-        // Sector size (default 512 bytes) and number of blocks
-        if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+        // Sector size (default 512 bytes) and number of sectors
+        if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
             throw io_exception("Invalid sector size");
         }
-        SetBlockCount(size / GetSectorSizeInBytes());
+        SetBlockCount(size / GetBlockSizeInBytes());
     }
 
     Disk::ValidateFile();
@@ -117,7 +117,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
         unsigned bands = 0;
         const uint64_t block_count = GetBlockCount();
 
-        if (GetSectorSizeInBytes() == 512) {
+        if (GetBlockSizeInBytes() == 512) {
             switch (block_count) {
             // 128MB
             case 248826:
@@ -142,7 +142,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
             }
         }
 
-        if (GetSectorSizeInBytes() == 2048) {
+        if (GetBlockSizeInBytes() == 2048) {
             switch (block_count) {
             // 640MB
             case 310352:
@@ -178,7 +178,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
 bool OpticalMemory::SetGeometryForCapacity(uint64_t capacity)
 {
     if (const auto &geometry = geometries.find(capacity); geometry != geometries.end()) {
-        SetSectorSizeInBytes(geometry->second.first);
+        SetBlockSizeInBytes(geometry->second.first);
         SetBlockCount(geometry->second.second);
 
         return true;

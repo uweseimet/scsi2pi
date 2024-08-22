@@ -29,11 +29,11 @@ TEST(OpticalMemoryTest, Inquiry)
     TestShared::Inquiry(SCMO, device_type::optical_memory, scsi_level::scsi_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
 }
 
-TEST(OpticalMemoryTest, GetSectorSizes)
+TEST(OpticalMemoryTest, GetBlockSizes)
 {
     OpticalMemory mo(0);
 
-    const auto &sector_sizes = mo.GetSupportedSectorSizes();
+    const auto &sector_sizes = mo.GetSupportedBlockSizes();
     EXPECT_EQ(4U, sector_sizes.size());
 
     EXPECT_TRUE(sector_sizes.contains(512));
@@ -77,7 +77,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(0, GetInt16(page_32, 10));
 
-    mo.SetSectorSizeInBytes(512);
+    mo.SetBlockSizeInBytes(512);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(0, GetInt16(page_32, 10));
@@ -97,7 +97,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     EXPECT_EQ(2250, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(18, GetInt16(page_32, 10));
 
-    mo.SetSectorSizeInBytes(2048);
+    mo.SetBlockSizeInBytes(2048);
     mo.SetBlockCount(0x12345678);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
@@ -127,7 +127,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     MockOpticalMemory mo(0);
     vector<uint8_t> buf(32);
 
-    mo.SetSectorSizeInBytes(2048);
+    mo.SetBlockSizeInBytes(2048);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
     vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10");

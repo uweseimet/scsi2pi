@@ -400,8 +400,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
 #ifdef BUILD_DISK
     const auto disk = dynamic_pointer_cast<Disk>(device);
-    if (disk && disk->GetConfiguredSectorSize()) {
-        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
+    if (disk && disk->GetConfiguredBlockSize()) {
+        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredBlockSize()));
 
     }
     if (disk && !disk->GetFilename().empty()) {
@@ -645,8 +645,8 @@ bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<Pr
 #ifdef BUILD_DISK
     if (sector_size) {
         const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk && disk->IsSectorSizeConfigurable()) {
-            if (!disk->SetConfiguredSectorSize(sector_size)) {
+        if (disk && disk->IsBlockSizeConfigurable()) {
+            if (!disk->SetConfiguredBlockSize(sector_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
             }
         }

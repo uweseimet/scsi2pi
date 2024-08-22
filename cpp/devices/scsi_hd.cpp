@@ -30,7 +30,7 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
 
 string ScsiHd::GetProductData() const
 {
-    uint64_t capacity = GetBlockCount() * GetSectorSizeInBytes();
+    uint64_t capacity = GetBlockCount() * GetBlockSizeInBytes();
     string unit;
 
     // 10,000 MiB and more
@@ -65,11 +65,11 @@ void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    // Sector size (default 512 bytes) and number of blocks
-    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+    // Sector size (default 512 bytes) and number of sectors
+    if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSizeInBytes()));
 
     FinalizeSetup();
 }
@@ -121,7 +121,7 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
         SetInt16(buf, 10, 25);
 
         // The current sector size
-        SetInt16(buf, 12, GetSectorSizeInBytes());
+        SetInt16(buf, 12, GetBlockSizeInBytes());
 
         // Interleave 1
         SetInt16(buf, 14, 1);

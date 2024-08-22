@@ -296,6 +296,7 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
+    FRIEND_TEST(StorageDeviceTest, SetBlockSizeInBytes);
 
 public:
 
@@ -305,7 +306,7 @@ public:
     MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
     MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
+    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
     {
     }
     ~MockStorageDevice() override = default;
@@ -346,7 +347,6 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
     FRIEND_TEST(DiskTest, BlockCount);
-    FRIEND_TEST(DiskTest, SetSectorSizeInBytes);
     FRIEND_TEST(DiskTest, ChangeSectorSize);
 
 public:

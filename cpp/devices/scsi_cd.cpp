@@ -42,10 +42,10 @@ void ScsiCd::Open()
     track_initialized = false;
 
     // Default sector size is 2048 bytes
-    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
+    if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(GetFileSize() / GetSectorSizeInBytes());
+    SetBlockCount(GetFileSize() / GetBlockSizeInBytes());
 
     Disk::ValidateFile();
 

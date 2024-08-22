@@ -171,7 +171,7 @@ TEST(DiskTest, ReadCapacity16)
         asc::medium_not_present, "READ CAPACITY(16) must fail because the medium has no capacity");
 
     disk->SetBlockCount(0x1234567887654321);
-    disk->SetSectorSizeInBytes(1024);
+    disk->SetBlockSizeInBytes(1024);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity16_read_long16));
     const auto &buf = controller->GetBuffer();
@@ -596,7 +596,7 @@ TEST(DiskTest, ModeSense10)
     // Return short block descriptor
     controller->SetCdbByte(1, 0x00);
     disk->SetBlockCount(0x1234);
-    disk->SetSectorSizeInBytes(1024);
+    disk->SetBlockSizeInBytes(1024);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x00, buf[4]) << "Wrong LONGLBA field";
@@ -683,7 +683,7 @@ TEST(DiskTest, EvaluateBlockDescriptors)
 TEST(DiskTest, VerifySectorSizeChange)
 {
     MockDisk disk;
-    disk.SetSectorSizeInBytes(512);
+    disk.SetBlockSizeInBytes(512);
 
     EXPECT_EQ(512, disk.VerifySectorSizeChange(512, false));
 
@@ -754,17 +754,6 @@ TEST(DiskTest, ReadDefectData)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(DiskTest, ConfiguredSectorSize)
-{
-    MockScsiHd disk(0, false);
-
-    EXPECT_TRUE(disk.SetConfiguredSectorSize(512));
-    EXPECT_EQ(512U, disk.GetConfiguredSectorSize());
-
-    EXPECT_FALSE(disk.SetConfiguredSectorSize(1234));
-    EXPECT_EQ(512U, disk.GetConfiguredSectorSize());
-}
-
 TEST(DiskTest, BlockCount)
 {
     MockDisk disk;
@@ -773,29 +762,21 @@ TEST(DiskTest, BlockCount)
     EXPECT_EQ(0x1234567887654321U, disk.GetBlockCount());
 }
 
-TEST(DiskTest, SetSectorSizeInBytes)
-{
-    MockDisk disk;
-
-    EXPECT_TRUE(disk.SetSectorSizeInBytes(512));
-    EXPECT_FALSE(disk.SetSectorSizeInBytes(520));
-}
-
 TEST(DiskTest, ChangeSectorSize)
 {
     MockDisk disk;
 
-    disk.SetSectorSizeInBytes(1024);
+    disk.SetBlockSizeInBytes(1024);
     disk.ChangeSectorSize(1024);
-    EXPECT_EQ(1024U, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
 
     EXPECT_THROW(disk.ChangeSectorSize(513), scsi_exception);
-    EXPECT_EQ(1024U, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
 
     disk.SetBlockCount(10);
     EXPECT_CALL(disk, FlushCache());
     disk.ChangeSectorSize(512);
-    EXPECT_EQ(512U, disk.GetSectorSizeInBytes());
+    EXPECT_EQ(512U, disk.GetBlockSizeInBytes());
 }
 
 TEST(DiskTest, GetStatistics)

@@ -39,24 +39,6 @@ public:
 
     int ReadData(span<uint8_t>) override;
 
-    uint32_t GetSectorSizeInBytes() const
-    {
-        return sector_size;
-    }
-    bool IsSectorSizeConfigurable() const
-    {
-        return supported_sector_sizes.size() > 1;
-    }
-    const auto& GetSupportedSectorSizes() const
-    {
-        return supported_sector_sizes;
-    }
-    uint32_t GetConfiguredSectorSize() const
-    {
-        return configured_sector_size;
-    }
-    bool SetConfiguredSectorSize(uint32_t);
-
     PbCachingMode GetCachingMode() const
     {
         return caching_mode;
@@ -73,7 +55,7 @@ protected:
 
     Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
         const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
+    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters, s)
     {
     }
 
@@ -94,8 +76,6 @@ protected:
     int VerifySectorSizeChange(int, bool) const;
 
     void ChangeSectorSize(uint32_t);
-    unordered_set<uint32_t> GetSectorSizes() const;
-    bool SetSectorSizeInBytes(uint32_t);
 
     uint64_t GetNextSector() const
     {
@@ -168,14 +148,9 @@ private:
 
     PbCachingMode caching_mode = PbCachingMode::DEFAULT;
 
-    unordered_set<uint32_t> supported_sector_sizes;
-    uint32_t configured_sector_size = 0;
-
     uint64_t next_sector = 0;
 
     uint32_t sector_transfer_count = 0;
-
-    uint32_t sector_size = 0;
 
     uint64_t sector_read_count = 0;
     uint64_t sector_write_count = 0;

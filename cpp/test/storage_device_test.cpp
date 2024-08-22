@@ -65,6 +65,25 @@ TEST(StorageDeviceTest, MediumChanged)
     EXPECT_FALSE(device.IsMediumChanged());
 }
 
+TEST(StorageDeviceTest, ConfiguredSectorSize)
+{
+    MockScsiHd device(0, false);
+
+    EXPECT_TRUE(device.SetConfiguredBlockSize(512));
+    EXPECT_EQ(512U, device.GetConfiguredBlockSize());
+
+    EXPECT_FALSE(device.SetConfiguredBlockSize(1234));
+    EXPECT_EQ(512U, device.GetConfiguredBlockSize());
+}
+
+TEST(StorageDeviceTest, SetBlockSizeInBytes)
+{
+    MockStorageDevice device;
+
+    EXPECT_TRUE(device.SetBlockSizeInBytes(512));
+    EXPECT_FALSE(device.SetBlockSizeInBytes(520));
+}
+
 TEST(StorageDeviceTest, ReserveUnreserveFile)
 {
     MockStorageDevice device1;
