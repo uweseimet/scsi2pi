@@ -18,12 +18,18 @@ using namespace std;
 
 class StorageDevice : public ModePageDevice
 {
+
 public:
 
     StorageDevice(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t> &s);
     ~StorageDevice() override = default;
 
+    bool Init(const param_map&) override;
     void CleanUp() override;
+
+    void Dispatch(scsi_command) override;
+
+    bool Eject(bool) override;
 
     virtual void Open() = 0;
 
@@ -79,6 +85,8 @@ public:
     }
     static id_set GetIdsForReservedFile(const string&);
 
+    vector<PbStatistics> GetStatistics() const override;
+
 protected:
 
     virtual void ValidateFile();
@@ -98,7 +106,21 @@ protected:
 
     off_t GetFileSize() const;
 
+    void UpdateReadCount(uint64_t count)
+    {
+        block_read_count += count;
+    }
+    void UpdateWriteCount(uint64_t count)
+    {
+        block_write_count += count;
+    }
+
 private:
+
+    // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
+
+    void StartStopUnit();
+    void PreventAllowMediumRemoval();
 
     bool IsReadOnlyFile() const;
 
@@ -110,7 +132,16 @@ private:
 
     filesystem::path filename;
 
+    string last_filename;
+
     bool medium_changed = false;
+
+    uint64_t block_read_count = 0;
+    uint64_t block_write_count = 0;
+
+    // "sector_*" for backwards compatibility with clients that display statistics
+    static constexpr const char *BLOCK_READ_COUNT = "sector_read_count";
+    static constexpr const char *BLOCK_WRITE_COUNT = "sector_write_count";
 
     // The list of image files in use and the IDs and LUNs using these files
     static inline unordered_map<string, id_set, s2p_util::StringHash, equal_to<>> reserved_files;

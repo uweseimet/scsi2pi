@@ -51,14 +51,6 @@ bool Disk::Init(const param_map &params)
         {
             Seek6();
         });
-    AddCommand(scsi_command::cmd_start_stop, [this]
-        {
-            StartStopUnit();
-        });
-    AddCommand(scsi_command::cmd_prevent_allow_medium_removal, [this]
-        {
-            PreventAllowMediumRemoval();
-        });
     AddCommand(scsi_command::cmd_read_capacity10, [this]
         {
             ReadCapacity10();
@@ -128,20 +120,6 @@ void Disk::CleanUp()
     FlushCache();
 
     StorageDevice::CleanUp();
-}
-
-void Disk::Dispatch(scsi_command cmd)
-{
-    // Media changes must be reported on the next access, i.e. not only for TEST UNIT READY
-    if (cmd != scsi_command::cmd_inquiry && cmd != scsi_command::cmd_request_sense && IsMediumChanged()) {
-        assert(IsRemovable());
-
-        SetMediumChanged(false);
-
-        throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
-    }
-
-    StorageDevice::Dispatch(cmd);
 }
 
 void Disk::ValidateFile()
@@ -307,69 +285,11 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         DataOutPhase(length);
     }
     else {
-        ++sector_read_count;
+        UpdateReadCount(1);
 
         GetController()->SetCurrentLength(length);
         DataInPhase(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
     }
-}
-
-
-void Disk::StartStopUnit()
-{
-    const bool start = GetController()->GetCdbByte(4) & 0x01;
-    const bool load = GetController()->GetCdbByte(4) & 0x02;
-
-    if (load) {
-        LogTrace(start ? "Loading medium" : "Ejecting medium");
-    }
-    else {
-        LogTrace(start ? "Starting unit" : "Stopping unit");
-
-        SetStopped(!start);
-    }
-
-    if (!start) {
-        // Look at the eject bit and eject if necessary
-        if (load) {
-            if (IsLocked()) {
-                // Cannot be ejected because it is locked
-                throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
-            }
-
-            // Eject
-            if (!Eject(false)) {
-                throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
-            }
-        }
-        else {
-            FlushCache();
-        }
-    }
-    else if (load && !last_filename.empty()) {
-        SetFilename(last_filename);
-        if (!ReserveFile()) {
-            last_filename.clear();
-            throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
-        }
-
-        SetMediumChanged(true);
-    }
-
-    StatusPhase();
-}
-
-void Disk::PreventAllowMediumRemoval()
-{
-    CheckReady();
-
-    const bool lock = GetController()->GetCdbByte(4) & 0x01;
-
-    LogTrace(lock ? "Locking medium" : "Unlocking medium");
-
-    SetLocked(lock);
-
-    StatusPhase();
 }
 
 void Disk::SynchronizeCache()
@@ -394,18 +314,9 @@ void Disk::ReadDefectData10() const
 
 bool Disk::Eject(bool force)
 {
-    const bool status = PrimaryDevice::Eject(force);
+    const bool status = StorageDevice::Eject(force);
     if (status) {
-        FlushCache();
         cache.reset();
-
-        last_filename = GetFilename();
-
-        // The image file for this drive is not in use anymore
-        UnreserveFile();
-
-        sector_read_count = 0;
-        sector_write_count = 0;
     }
 
     return status;
@@ -756,7 +667,8 @@ int Disk::ReadData(span<uint8_t> buf)
     }
 
     next_sector += sector_transfer_count;
-    sector_read_count += sector_transfer_count;
+
+    UpdateReadCount(sector_transfer_count);
 
     return GetBlockSizeInBytes() * sector_transfer_count;
 }
@@ -776,7 +688,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
             throw scsi_exception(sense_key::medium_error, asc::write_fault);
         }
 
-        ++sector_write_count;
+        UpdateWriteCount(1);
 
         return length;
     }
@@ -787,7 +699,8 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
     }
 
     next_sector += sector_transfer_count;
-    sector_write_count += sector_transfer_count;
+
+    UpdateWriteCount(sector_transfer_count);
 
     return GetBlockSizeInBytes() * sector_transfer_count;
 }
@@ -955,7 +868,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 
 vector<PbStatistics> Disk::GetStatistics() const
 {
-    vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
+    vector<PbStatistics> statistics = StorageDevice::GetStatistics();
 
     // Enrich cache statistics with device information before adding them to device statistics
     if (cache) {
@@ -964,22 +877,6 @@ vector<PbStatistics> Disk::GetStatistics() const
             s.set_unit(GetLun());
             statistics.push_back(s);
         }
-    }
-
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(SECTOR_READ_COUNT);
-    s.set_value(sector_read_count);
-    statistics.push_back(s);
-
-    if (!IsReadOnly()) {
-        s.set_key(SECTOR_WRITE_COUNT);
-        s.set_value(sector_write_count);
-        statistics.push_back(s);
     }
 
     return statistics;

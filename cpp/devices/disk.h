@@ -31,8 +31,6 @@ public:
     bool Init(const param_map&) override;
     void CleanUp() override;
 
-    void Dispatch(scsi_command) override;
-
     bool Eject(bool) override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
@@ -91,8 +89,6 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void StartStopUnit();
-    void PreventAllowMediumRemoval();
     void SynchronizeCache();
     void ReadDefectData10() const;
     virtual void Read6()
@@ -151,12 +147,4 @@ private:
     uint64_t next_sector = 0;
 
     uint32_t sector_transfer_count = 0;
-
-    uint64_t sector_read_count = 0;
-    uint64_t sector_write_count = 0;
-
-    string last_filename;
-
-    static constexpr const char *SECTOR_READ_COUNT = "sector_read_count";
-    static constexpr const char *SECTOR_WRITE_COUNT = "sector_write_count";
 };
