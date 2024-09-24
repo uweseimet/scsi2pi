@@ -137,9 +137,6 @@ private:
     uint64_t ValidateBlockAddress(access_mode) const;
     tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
-
     shared_ptr<Cache> cache;
 
     PbCachingMode caching_mode = PbCachingMode::DEFAULT;

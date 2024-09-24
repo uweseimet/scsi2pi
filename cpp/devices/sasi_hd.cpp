@@ -26,7 +26,7 @@ void SasiHd::Open()
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSizeInBytes()));
 
-    Disk::ValidateFile();
+    ValidateFile();
 }
 
 void SasiHd::Inquiry()

@@ -53,7 +53,7 @@ string ScsiHd::GetProductData() const
 
 void ScsiHd::FinalizeSetup()
 {
-    Disk::ValidateFile();
+    ValidateFile();
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {

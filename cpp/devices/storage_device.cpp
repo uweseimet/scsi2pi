@@ -7,10 +7,12 @@
 //---------------------------------------------------------------------------
 
 #include "storage_device.h"
+#include "base/memory_util.h"
 #include <unistd.h>
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
+using namespace memory_util;
 
 StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select,
     bool supports_save_parameters, const unordered_set<uint32_t> &s)
@@ -224,6 +226,88 @@ off_t StorageDevice::GetFileSize() const
     catch (const filesystem_error &e) {
         throw io_exception("Can't get size of '" + filename.string() + "': " + e.what());
     }
+}
+
+int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
+{
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
+    fill_n(buf.begin(), length, 0);
+
+    // DEVICE SPECIFIC PARAMETER
+    if (IsProtected()) {
+        buf[2] = 0x80;
+    }
+
+    // Basic information
+    int size = 4;
+
+    // Add block descriptor if DBD is 0, only if ready
+    if (!(cdb[1] & 0x08) && IsReady()) {
+        // Mode parameter header, block descriptor length
+        buf[3] = 0x08;
+
+        // Short LBA mode parameter block descriptor (number of blocks and block length)
+        SetInt32(buf, 4, static_cast<uint32_t>(blocks));
+        SetInt32(buf, 8, block_size);
+
+        size = 12;
+    }
+
+    size = AddModePages(cdb, buf, size, length, 255);
+
+    // The size field does not count itself
+    buf[0] = (uint8_t)(size - 1);
+
+    return size;
+}
+
+int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
+{
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
+    fill_n(buf.begin(), length, 0);
+
+    // DEVICE SPECIFIC PARAMETER
+    if (IsProtected()) {
+        buf[3] = 0x80;
+    }
+
+    // Basic Information
+    int size = 8;
+
+    // Add block descriptor if DBD is 0, only if ready
+    if (!(cdb[1] & 0x08) && IsReady()) {
+        // Check LLBAA for short or long block descriptor
+        if (!(cdb[1] & 0x10) || blocks <= 0xffffffff) {
+            // Mode parameter header, block descriptor length
+            buf[7] = 0x08;
+
+            // Short LBA mode parameter block descriptor (number of blocks and block length)
+            SetInt32(buf, 8, static_cast<uint32_t>(blocks));
+            SetInt32(buf, 12, block_size);
+
+            size = 16;
+        }
+        else {
+            // Mode parameter header, LONGLBA
+            buf[4] = 0x01;
+
+            // Mode parameter header, block descriptor length
+            buf[7] = 0x10;
+
+            // Long LBA mode parameter block descriptor (number of blocks and block length)
+            SetInt64(buf, 8, blocks);
+            SetInt32(buf, 20, block_size);
+
+            size = 24;
+        }
+    }
+
+    size = AddModePages(cdb, buf, size, length, 65535);
+
+    // The size fields do not count themselves
+    SetInt16(buf, 0, size - 2);
+
+    return size;
 }
 
 vector<PbStatistics> StorageDevice::GetStatistics() const

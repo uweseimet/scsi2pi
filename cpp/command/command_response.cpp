@@ -41,8 +41,9 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_DISK
-    if (const auto disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsBlockSizeConfigurable()) {
-        for (const auto &block_size : disk->GetSupportedBlockSizes()) {
+    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device
+        && storage_device->IsBlockSizeConfigurable()) {
+        for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
             properties.add_block_sizes(block_size);
         }
     }

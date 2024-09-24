@@ -47,7 +47,7 @@ void ScsiCd::Open()
     }
     SetBlockCount(GetFileSize() / GetBlockSizeInBytes());
 
-    Disk::ValidateFile();
+    ValidateFile();
 
     SetReadOnly(true);
     SetProtectable(false);

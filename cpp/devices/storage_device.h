@@ -124,6 +124,9 @@ private:
 
     bool IsReadOnlyFile() const;
 
+    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
+    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
+
     uint64_t blocks = 0;
 
     unordered_set<uint32_t> supported_block_sizes;

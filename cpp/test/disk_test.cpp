@@ -779,6 +779,22 @@ TEST(DiskTest, ChangeSectorSize)
     EXPECT_EQ(512U, disk.GetBlockSizeInBytes());
 }
 
+TEST(DiskTest, CachingMode)
+{
+    MockDisk disk;
+
+    EXPECT_EQ(PbCachingMode::PISCSI, disk.GetCachingMode());
+
+    disk.SetCachingMode(PbCachingMode::PISCSI);
+    EXPECT_EQ(PbCachingMode::PISCSI, disk.GetCachingMode());
+
+    disk.SetCachingMode(PbCachingMode::LINUX);
+    EXPECT_EQ(PbCachingMode::LINUX, disk.GetCachingMode());
+
+    disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
+    EXPECT_EQ(PbCachingMode::WRITE_THROUGH, disk.GetCachingMode());
+}
+
 TEST(DiskTest, GetStatistics)
 {
     MockDisk disk;

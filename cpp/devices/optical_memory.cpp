@@ -45,7 +45,7 @@ void OpticalMemory::Open()
         SetBlockCount(size / GetBlockSizeInBytes());
     }
 
-    Disk::ValidateFile();
+    ValidateFile();
 
     if (IsReady()) {
         SetAttn(true);
