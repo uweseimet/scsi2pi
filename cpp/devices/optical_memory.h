@@ -30,7 +30,7 @@ protected:
 
 private:
 
-    void AddOptionPage(map<int, vector<byte>>&, bool) const;
+    void AddOptionPage(map<int, vector<byte>>&) const;
 
     bool SetGeometryForCapacity(uint64_t);
 

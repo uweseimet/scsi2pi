@@ -134,6 +134,153 @@ bool StorageDevice::Eject(bool force)
     return status;
 }
 
+void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
+{
+    const auto cmd = static_cast<scsi_command>(cdb[0]);
+    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
+
+    // PF
+    if (!(cdb[1] & 0x10)) {
+        // Vendor-specific parameters (SCSI-1) are not supported.
+        // Do not report an error in order to support Apple's HD SC Setup.
+        return;
+    }
+
+    // The page data are optional
+    if (!length) {
+        return;
+    }
+
+    int size = GetBlockSizeInBytes();
+
+    int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
+    length -= offset;
+
+    // Set up the available pages in order to check for the right page size below
+    map<int, vector<byte>> pages;
+    SetUpModePages(pages, 0x3f, true);
+    for (const auto& [p, data] : PropertyHandler::Instance().GetCustomModePages(GetVendor(), GetProduct())) {
+        if (data.empty()) {
+            pages.erase(p);
+        }
+        else {
+            pages[p] = data;
+        }
+    }
+
+    // Parse the pages
+    while (length > 0) {
+        const int page_code = buf[offset];
+
+        const auto &it = pages.find(page_code);
+        if (it == pages.end()) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        // Page 0 can contain anything and can have any length
+        if (!page_code) {
+            break;
+        }
+
+        if (length < 2) {
+            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        }
+
+        // The page size field does not count itself and the page code field
+        const size_t page_size = buf[offset + 1] + 2;
+
+        // The page size in the parameters must match the actual page size, otherwise report
+        // INVALID FIELD IN PARAMETER LIST (SCSI-2 8.2.8).
+        if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        switch (page_code) {
+        // Read-write/Verify error recovery and caching pages
+        case 0x01:
+            case 0x07:
+            case 0x08:
+            // Simply ignore the requested changes in the error handling or caching, they are not relevant for SCSI2Pi
+            break;
+
+            // Format device page
+        case 0x03:
+            // With this page the sector size for a subsequent FORMAT can be selected, but only a few devices
+            // support this, e.g. FUJITSU M2624S.
+            // We are fine as long as the permanent current block size remains unchanged.
+            VerifyBlockSizeChange(GetInt16(buf, offset + 12), false);
+            break;
+
+        default:
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        }
+
+        length -= page_size;
+        offset += page_size;
+    }
+
+    ChangeBlockSize(size);
+}
+
+int StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int &size) const
+{
+    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
+
+    const size_t required_length = cmd == scsi_command::cmd_mode_select10 ? 8 : 4;
+    if (buf.size() < required_length) {
+        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+    }
+
+    const size_t descriptor_length = cmd == scsi_command::cmd_mode_select10 ? GetInt16(buf, 6) : buf[3];
+    if (buf.size() < descriptor_length + required_length) {
+        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+    }
+
+    // Check for temporary block size change in first block descriptor
+    if (descriptor_length && buf.size() >= required_length + 8) {
+        size = VerifyBlockSizeChange(GetInt16(buf, static_cast<int>(required_length) + 6), true);
+    }
+
+    return static_cast<int>(descriptor_length + required_length);
+}
+
+int StorageDevice::VerifyBlockSizeChange(int requested_size, bool temporary) const
+{
+    if (requested_size == static_cast<int>(GetBlockSizeInBytes())) {
+        return requested_size;
+    }
+
+    // Simple consistency check
+    if (requested_size && !(requested_size % 4)) {
+        if (temporary) {
+            return requested_size;
+        }
+        else {
+            LogWarn(fmt::format(
+                "Block size change from {0} to {1} bytes requested. Configure the block size in the s2p settings.",
+                GetBlockSizeInBytes(), requested_size));
+        }
+    }
+
+    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+}
+
+void StorageDevice::ChangeBlockSize(uint32_t new_size)
+{
+    if (!GetSupportedBlockSizes().contains(new_size) && new_size % 4) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    }
+
+    const auto current_size = GetBlockSizeInBytes();
+    if (new_size != current_size) {
+        const uint64_t capacity = current_size * GetBlockCount();
+        SetBlockSizeInBytes(new_size);
+        SetBlockCount(static_cast<uint32_t>(capacity / new_size));
+
+        LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, new_size));
+    }
+}
+
 bool StorageDevice::SetBlockSizeInBytes(uint32_t size)
 {
     if (!supported_block_sizes.contains(size) && configured_block_size != size) {

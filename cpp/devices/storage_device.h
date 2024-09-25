@@ -101,8 +101,13 @@ protected:
         blocks = b;
     }
 
+    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
+    int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
+    int VerifyBlockSizeChange(int, bool) const;
     unordered_set<uint32_t> GetBlockSizes() const;
     bool SetBlockSizeInBytes(uint32_t);
+
+    virtual void ChangeBlockSize(uint32_t);
 
     off_t GetFileSize() const;
 

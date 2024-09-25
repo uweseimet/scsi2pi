@@ -62,18 +62,14 @@ protected:
     bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
-    void AddDisconnectReconnectPage(map<int, vector<byte>>&, bool) const;
-    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
+    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
+    void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&) const;
     void AddCachingPage(map<int, vector<byte>>&, bool) const;
-    void AddControlModePage(map<int, vector<byte>>&, bool) const;
+    void AddControlModePage(map<int, vector<byte>>&) const;
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
-    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
-    int VerifySectorSizeChange(int, bool) const;
-
-    void ChangeSectorSize(uint32_t);
+    void ChangeBlockSize(uint32_t) override;
 
     uint64_t GetNextSector() const
     {

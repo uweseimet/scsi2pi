@@ -63,11 +63,11 @@ void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool
 
     // Page code 6
     if (page == 0x06 || page == 0x3f) {
-        AddOptionPage(pages, changeable);
+        AddOptionPage(pages);
     }
 }
 
-void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
+void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages) const
 {
     vector<byte> buf(4);
     pages[6] = buf;

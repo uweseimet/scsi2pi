@@ -680,33 +680,33 @@ TEST(DiskTest, EvaluateBlockDescriptors)
     EXPECT_EQ(1020, sector_size);
 }
 
-TEST(DiskTest, VerifySectorSizeChange)
+TEST(DiskTest, VerifyBlockSizeChange)
 {
     MockDisk disk;
     disk.SetBlockSizeInBytes(512);
 
-    EXPECT_EQ(512, disk.VerifySectorSizeChange(512, false));
+    EXPECT_EQ(512, disk.VerifyBlockSizeChange(512, false));
 
-    EXPECT_EQ(1024, disk.VerifySectorSizeChange(1024, true));
+    EXPECT_EQ(1024, disk.VerifyBlockSizeChange(1024, true));
 
-    EXPECT_THAT([&] {disk.VerifySectorSizeChange(2048, false);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(2048, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
 
-    EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, false);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(0, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, false);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(513, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifySectorSizeChange(0, true);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(0, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifySectorSizeChange(513, true);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(513, true);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
         << "Parameter list is invalid";
@@ -762,20 +762,20 @@ TEST(DiskTest, BlockCount)
     EXPECT_EQ(0x1234567887654321U, disk.GetBlockCount());
 }
 
-TEST(DiskTest, ChangeSectorSize)
+TEST(DiskTest, ChangeBlockSize)
 {
     MockDisk disk;
 
     disk.SetBlockSizeInBytes(1024);
-    disk.ChangeSectorSize(1024);
+    disk.ChangeBlockSize(1024);
     EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
 
-    EXPECT_THROW(disk.ChangeSectorSize(513), scsi_exception);
+    EXPECT_THROW(disk.ChangeBlockSize(513), scsi_exception);
     EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
 
     disk.SetBlockCount(10);
     EXPECT_CALL(disk, FlushCache());
-    disk.ChangeSectorSize(512);
+    disk.ChangeBlockSize(512);
     EXPECT_EQ(512U, disk.GetBlockSizeInBytes());
 }
 

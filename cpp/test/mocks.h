@@ -343,11 +343,11 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(DiskTest, EvaluateBlockDescriptors);
-    FRIEND_TEST(DiskTest, VerifySectorSizeChange);
+    FRIEND_TEST(DiskTest, VerifyBlockSizeChange);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
     FRIEND_TEST(DiskTest, BlockCount);
-    FRIEND_TEST(DiskTest, ChangeSectorSize);
+    FRIEND_TEST(DiskTest, ChangeBlockSize);
 
 public:
 
