@@ -629,89 +629,6 @@ TEST(DiskTest, ModeSense10)
     ValidateCachePage(*controller, 16);
 }
 
-TEST(DiskTest, EvaluateBlockDescriptors)
-{
-    vector<uint8_t> buf(14);
-    int sector_size = 512;
-    MockDisk disk;
-
-    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, sector_size);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
-        << "Parameter list is too short";
-    EXPECT_EQ(512, sector_size);
-
-    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, sector_size);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
-        << "Parameter list is too short";
-    EXPECT_EQ(512, sector_size);
-
-    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, sector_size);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
-        << "Parameter list is too short";
-    EXPECT_EQ(512, sector_size);
-
-    EXPECT_THAT([&] {disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, sector_size);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
-        << "Parameter list is too short";
-    EXPECT_EQ(512, sector_size);
-
-    buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08:00");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, sector_size));
-    EXPECT_EQ(2048, sector_size);
-
-    buf = CreateParameters("00:00:00:04:00:00:00:00:00:00:08:04");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, buf, sector_size));
-    EXPECT_EQ(2052, sector_size);
-
-    buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04:00");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, sector_size));
-    EXPECT_EQ(1024, sector_size);
-
-    buf = CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:03:fc");
-    EXPECT_NO_THROW(disk.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, buf, sector_size));
-    EXPECT_EQ(1020, sector_size);
-}
-
-TEST(DiskTest, VerifyBlockSizeChange)
-{
-    MockDisk disk;
-    disk.SetBlockSizeInBytes(512);
-
-    EXPECT_EQ(512, disk.VerifyBlockSizeChange(512, false));
-
-    EXPECT_EQ(1024, disk.VerifyBlockSizeChange(1024, true));
-
-    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(2048, false);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-        << "Parameter list is invalid";
-
-    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(0, false);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-        << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(513, false);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-        << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(0, true);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-        << "Parameter list is invalid";
-    EXPECT_THAT([&] {disk.VerifyBlockSizeChange(513, true);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
-        << "Parameter list is invalid";
-}
-
 TEST(DiskTest, ReadData)
 {
     MockDisk disk;
@@ -754,25 +671,11 @@ TEST(DiskTest, ReadDefectData)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(DiskTest, BlockCount)
-{
-    MockDisk disk;
-
-    disk.SetBlockCount(0x1234567887654321);
-    EXPECT_EQ(0x1234567887654321U, disk.GetBlockCount());
-}
-
 TEST(DiskTest, ChangeBlockSize)
 {
     MockDisk disk;
 
     disk.SetBlockSizeInBytes(1024);
-    disk.ChangeBlockSize(1024);
-    EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
-
-    EXPECT_THROW(disk.ChangeBlockSize(513), scsi_exception);
-    EXPECT_EQ(1024U, disk.GetBlockSizeInBytes());
-
     disk.SetBlockCount(10);
     EXPECT_CALL(disk, FlushCache());
     disk.ChangeBlockSize(512);

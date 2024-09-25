@@ -259,6 +259,14 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
+    const auto &data = controller->GetBuffer();
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(0x00, data[2]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0, data[3]);
+    EXPECT_EQ(0, data[4]);
+    EXPECT_EQ(0, data[5]);
+    EXPECT_EQ(0, data[6]);
 }
 
 TEST(PrimaryDeviceTest, SendDiagnostic)

@@ -297,6 +297,10 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
     FRIEND_TEST(StorageDeviceTest, SetBlockSizeInBytes);
+    FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
+    FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
+    FRIEND_TEST(StorageDeviceTest, BlockCount);
+    FRIEND_TEST(StorageDeviceTest, ChangeBlockSize);
 
 public:
 
@@ -342,11 +346,8 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, AddAppleVendorPage);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
-    FRIEND_TEST(DiskTest, EvaluateBlockDescriptors);
-    FRIEND_TEST(DiskTest, VerifyBlockSizeChange);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, BlockCount);
     FRIEND_TEST(DiskTest, ChangeBlockSize);
 
 public:
