@@ -51,22 +51,13 @@ public:
 
 protected:
 
-    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-        const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters, s)
-    {
-    }
+    Disk(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t>&);
 
     void ValidateFile() override;
 
     bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
-    void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;
-    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&) const;
-    void AddCachingPage(map<int, vector<byte>>&, bool) const;
-    void AddControlModePage(map<int, vector<byte>>&) const;
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
     void ChangeBlockSize(uint32_t) override;
@@ -125,6 +116,9 @@ private:
     void WriteLong10();
     void WriteLong16();
     void ReadCapacity16_ReadLong16();
+
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&) const;
+    void AddCachingPage(map<int, vector<byte>>&, bool) const;
 
     bool SetUpCache();
 

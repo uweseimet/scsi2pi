@@ -171,7 +171,7 @@ TEST(DiskTest, ReadCapacity16)
         asc::medium_not_present, "READ CAPACITY(16) must fail because the medium has no capacity");
 
     disk->SetBlockCount(0x1234567887654321);
-    disk->SetBlockSizeInBytes(1024);
+    disk->SetBlockSize(1024);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity16_read_long16));
     const auto &buf = controller->GetBuffer();
@@ -596,7 +596,7 @@ TEST(DiskTest, ModeSense10)
     // Return short block descriptor
     controller->SetCdbByte(1, 0x00);
     disk->SetBlockCount(0x1234);
-    disk->SetBlockSizeInBytes(1024);
+    disk->SetBlockSize(1024);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x00, buf[4]) << "Wrong LONGLBA field";
@@ -675,11 +675,11 @@ TEST(DiskTest, ChangeBlockSize)
 {
     MockDisk disk;
 
-    disk.SetBlockSizeInBytes(1024);
+    disk.SetBlockSize(1024);
     disk.SetBlockCount(10);
     EXPECT_CALL(disk, FlushCache());
     disk.ChangeBlockSize(512);
-    EXPECT_EQ(512U, disk.GetBlockSizeInBytes());
+    EXPECT_EQ(512U, disk.GetBlockSize());
 }
 
 TEST(DiskTest, CachingMode)

@@ -21,21 +21,21 @@ bool ModePageDevice::Init(const param_map &params)
 
     AddCommand(scsi_command::cmd_mode_sense6, [this]
         {
-            ModeSense6();
+            DataInPhase(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
         });
     AddCommand(scsi_command::cmd_mode_sense10, [this]
         {
-            ModeSense10();
+            DataInPhase(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
         });
 
     // Devices that implement MODE SENSE must also implement MODE SELECT
     AddCommand(scsi_command::cmd_mode_select6, [this]
         {
-            ModeSelect6();
+            SaveParametersCheck(GetController()->GetCdbByte(4));
         });
     AddCommand(scsi_command::cmd_mode_select10, [this]
         {
-            ModeSelect10();
+            SaveParametersCheck(GetInt16(GetController()->GetCdb(), 7));
         });
 
     return true;
@@ -102,43 +102,15 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     return size + offset < length ? size + offset : length;
 }
 
-void ModePageDevice::ModeSense6() const
-{
-    DataInPhase(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
-}
-
-void ModePageDevice::ModeSense10() const
-{
-    DataInPhase(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
-}
-
 void ModePageDevice::ModeSelect(cdb_t, span<const uint8_t>, int)
 {
     // There is no default implementation of MODE SELECT
     throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
-void ModePageDevice::ModeSelect6() const
-{
-    if (!supports_mode_select) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
-    SaveParametersCheck(GetController()->GetCdbByte(4));
-}
-
-void ModePageDevice::ModeSelect10() const
-{
-    if (!supports_mode_select) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
-    SaveParametersCheck(GetInt16(GetController()->GetCdb(), 7));
-}
-
 void ModePageDevice::SaveParametersCheck(int length) const
 {
-    if (!supports_save_parameters && (GetController()->GetCdbByte(1) & 0x01)) {
+    if (!supports_mode_select || (!supports_save_parameters && (GetController()->GetCdbByte(1) & 0x01))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

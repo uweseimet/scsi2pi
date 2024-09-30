@@ -28,7 +28,6 @@ public:
 protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddVendorPages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 

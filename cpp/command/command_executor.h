@@ -49,7 +49,7 @@ public:
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
     bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
-    bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
+    bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     mutex& GetExecutionLocker()
     {

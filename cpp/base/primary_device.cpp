@@ -195,6 +195,9 @@ void PrimaryDevice::RequestSense()
 
     // Clear the previous status
     SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+    valid = false;
+    filemark = false;
+    eom = false;
 
     DataInPhase(length);
 }
@@ -259,9 +262,14 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)sense_key;
-    buf[7] = byte { 10 };
+    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (eom ? (byte)0x40 : (byte)0x00);
+    buf[7] = (byte)10;
     buf[12] = (byte)asc;
+
+    if (valid) {
+        buf[0] |= (byte)0x80;
+        SetInt32(buf, 3, information);
+    }
 
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
 

@@ -55,6 +55,7 @@ inline static const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
     { 'l', SCLP },
     { 'm', SCMO },
     { 'r', SCRM },
-    { 's', SCHS }
+    { 's', SCHS },
+    { 't', SCTP }
 };
 }

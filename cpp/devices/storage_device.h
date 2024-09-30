@@ -47,7 +47,7 @@ public:
         return blocks;
     }
 
-    uint32_t GetBlockSizeInBytes() const
+    uint32_t GetBlockSize() const
     {
         return block_size;
     }
@@ -91,6 +91,8 @@ protected:
 
     virtual void ValidateFile();
 
+    void CheckWritePreconditions() const;
+
     bool IsMediumChanged() const
     {
         return medium_changed;
@@ -105,7 +107,7 @@ protected:
     int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
     int VerifyBlockSizeChange(int, bool) const;
     unordered_set<uint32_t> GetBlockSizes() const;
-    bool SetBlockSizeInBytes(uint32_t);
+    bool SetBlockSize(uint32_t);
 
     virtual void ChangeBlockSize(uint32_t);
 
@@ -120,6 +122,8 @@ protected:
         block_write_count += count;
     }
 
+    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
+
 private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -132,8 +136,13 @@ private:
     int ModeSense6(cdb_t, vector<uint8_t>&) const override;
     int ModeSense10(cdb_t, vector<uint8_t>&) const override;
 
+    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
+    void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;
+    void AddControlModePage(map<int, vector<byte>>&) const;
+
     uint64_t blocks = 0;
 
+    // Block sizes in bytes
     unordered_set<uint32_t> supported_block_sizes;
     uint32_t configured_block_size = 0;
     uint32_t block_size = 0;
@@ -147,9 +156,8 @@ private:
     uint64_t block_read_count = 0;
     uint64_t block_write_count = 0;
 
-    // "sector_*" for backwards compatibility with clients that display statistics
-    static constexpr const char *BLOCK_READ_COUNT = "sector_read_count";
-    static constexpr const char *BLOCK_WRITE_COUNT = "sector_write_count";
+    static constexpr const char *BLOCK_READ_COUNT = "block_read_count";
+    static constexpr const char *BLOCK_WRITE_COUNT = "block_write_count";
 
     // The list of image files in use and the IDs and LUNs using these files
     static inline unordered_map<string, id_set, s2p_util::StringHash, equal_to<>> reserved_files;

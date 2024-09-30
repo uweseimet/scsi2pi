@@ -2,7 +2,7 @@
 //
 // SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -26,6 +26,9 @@
 #ifdef BUILD_SCCD
 #include "devices/scsi_cd.h"
 #endif
+#ifdef BUILD_SCTP
+#include "devices/tape.h"
+#endif
 #if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
 #endif
@@ -47,6 +50,10 @@ DeviceFactory::DeviceFactory()
         mapping["iso"] = SCCD;
         mapping["cdr"] = SCCD;
         mapping["toast"] = SCCD;
+#endif
+#ifdef BUILD_SCTP
+        mapping["tap"] = SCTP;
+        mapping["tar"] = SCTP;
 #endif
 }
 
@@ -81,6 +88,13 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     case SCCD: {
         const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiCd>(lun, ext == "is1");
+    }
+#endif
+
+#ifdef BUILD_SCTP
+    case SCTP: {
+        const string &ext = GetExtensionLowerCase(filename);
+        return make_shared<Tape>(lun, ext == "tar");
     }
 #endif
 

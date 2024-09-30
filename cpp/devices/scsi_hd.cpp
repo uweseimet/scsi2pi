@@ -30,7 +30,7 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
 
 string ScsiHd::GetProductData() const
 {
-    uint64_t capacity = GetBlockCount() * GetBlockSizeInBytes();
+    uint64_t capacity = GetBlockCount() * GetBlockSize();
     string unit;
 
     // 10,000 MiB and more
@@ -66,10 +66,10 @@ void ScsiHd::Open()
     assert(!IsReady());
 
     // Sector size (default 512 bytes) and number of sectors
-    if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
+    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
     FinalizeSetup();
 }
@@ -97,6 +97,10 @@ void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     if (page == 0x0c || page == 0x3f) {
         AddNotchPage(pages, changeable);
     }
+
+    if (page == 0x25 || page == 0x3f) {
+        AddDecVendorPage(pages, changeable);
+    }
 }
 
 void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
@@ -121,7 +125,7 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
         SetInt16(buf, 10, 25);
 
         // The current sector size
-        SetInt16(buf, 12, GetBlockSizeInBytes());
+        SetInt16(buf, 12, GetBlockSize());
 
         // Interleave 1
         SetInt16(buf, 14, 1);
@@ -177,14 +181,6 @@ void ScsiHd::AddNotchPage(map<int, vector<byte>> &pages, bool) const
     // Not having a notched drive (i.e. not setting anything) probably provides the best compatibility
 
     pages[12] = buf;
-}
-
-void ScsiHd::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
-{
-    // Page code 37
-    if (page == 0x25 || page == 0x3f) {
-        AddDecVendorPage(pages, changeable);
-    }
 }
 
 // See https://manx-docs.org/collections/antonio/dec/dec-scsi.pdf

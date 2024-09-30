@@ -10,7 +10,7 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include "command_context.h"
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
@@ -305,7 +305,7 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandImageSupport::IsReservedFile(const CommandContext &context, const string &file, const string &op)
 {
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
     if (id != -1) {
         return context.ReturnErrorStatus("Can't " + op + " image file '" + file +

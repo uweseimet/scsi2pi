@@ -39,10 +39,10 @@ void OpticalMemory::Open()
     // For some capacities there are hard-coded, well-defined sector sizes and block counts
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
         // Sector size (default 512 bytes) and number of sectors
-        if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
+        if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
             throw io_exception("Invalid sector size");
         }
-        SetBlockCount(size / GetBlockSizeInBytes());
+        SetBlockCount(size / GetBlockSize());
     }
 
     ValidateFile();
@@ -61,9 +61,13 @@ void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool
 {
     Disk::SetUpModePages(pages, page, changeable);
 
-    // Page code 6
+    // Page code 6 (option page)
     if (page == 0x06 || page == 0x3f) {
         AddOptionPage(pages);
+    }
+
+    if (page == 0x20 || page == 0x3f) {
+        AddVendorPage(pages, changeable);
     }
 }
 
@@ -97,12 +101,8 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages) const
 //
 // Further information: https://r2089.blog36.fc2.com/blog-entry-177.html
 //
-void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
+void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    if (page != 0x20 && page != 0x3f) {
-        return;
-    }
-
     vector<byte> buf(12);
 
     // No changeable area
@@ -117,7 +117,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
         unsigned bands = 0;
         const uint64_t block_count = GetBlockCount();
 
-        if (GetBlockSizeInBytes() == 512) {
+        if (GetBlockSize() == 512) {
             switch (block_count) {
             // 128MB
             case 248826:
@@ -142,7 +142,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
             }
         }
 
-        if (GetBlockSizeInBytes() == 2048) {
+        if (GetBlockSize() == 2048) {
             switch (block_count) {
             // 640MB
             case 310352:
@@ -178,7 +178,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
 bool OpticalMemory::SetGeometryForCapacity(uint64_t capacity)
 {
     if (const auto &geometry = geometries.find(capacity); geometry != geometries.end()) {
-        SetBlockSizeInBytes(geometry->second.first);
+        SetBlockSize(geometry->second.first);
         SetBlockCount(geometry->second.second);
 
         return true;

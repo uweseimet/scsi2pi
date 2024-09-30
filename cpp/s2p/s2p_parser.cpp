@@ -59,7 +59,9 @@ void S2pParser::Banner(bool usage) const
             << "    hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
             << "    mos: SCSI MO image (SCSI-2 MO image)\n"
             << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n";
+            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
+            << "    tar: SCSI Tape image (SCSI-2 tar image)\n"
+            << "    tap: SCSI Tape image (SCSI-2 raw image)\n";
     }
 }
 
@@ -238,7 +240,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
         { "HD", "schd" },
         { "MO", "scmo" },
         { "RE", "scrm" },
-        { "TP", nullptr }
+        { "TP", "sctp" }
     };
 
     const auto index = filename.find(".");

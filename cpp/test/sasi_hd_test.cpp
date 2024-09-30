@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "shared/s2p_exceptions.h"
 
 TEST(SasiHdTest, Inquiry)
 {

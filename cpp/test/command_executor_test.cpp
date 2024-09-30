@@ -460,7 +460,7 @@ TEST(CommandExecutorTest, CreateDevice)
     EXPECT_NE(nullptr, executor->CreateDevice(context, SCHS, 0, ""));
 }
 
-TEST(CommandExecutorTest, SetSectorSize)
+TEST(CommandExecutorTest, SetBlockSize)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
@@ -470,17 +470,17 @@ TEST(CommandExecutorTest, SetSectorSize)
 
     unordered_set<uint32_t> sizes;
     auto hd = make_shared<MockScsiHd>(sizes);
-    EXPECT_FALSE(executor->SetSectorSize(context, hd, 512));
+    EXPECT_FALSE(executor->SetBlockSize(context, hd, 512));
 
     sizes.insert(512);
     hd = make_shared<MockScsiHd>(sizes);
-    EXPECT_TRUE(executor->SetSectorSize(context, hd, 0));
-    EXPECT_FALSE(executor->SetSectorSize(context, hd, 1));
-    EXPECT_FALSE(executor->SetSectorSize(context, hd, 512));
+    EXPECT_TRUE(executor->SetBlockSize(context, hd, 0));
+    EXPECT_FALSE(executor->SetBlockSize(context, hd, 1));
+    EXPECT_FALSE(executor->SetBlockSize(context, hd, 512));
 
     sizes.insert(1024);
     hd = make_shared<MockScsiHd>(sizes);
-    EXPECT_TRUE(executor->SetSectorSize(context, hd, 512));
+    EXPECT_TRUE(executor->SetBlockSize(context, hd, 512));
 }
 
 TEST(CommandExecutorTest, ValidateOperation)

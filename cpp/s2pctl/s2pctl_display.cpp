@@ -46,7 +46,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     }
 
     if (pb_device.block_size()) {
-        s << "  " << pb_device.block_size() << " bytes per sector";
+        s << "  " << pb_device.block_size() << " bytes per block";
 
         if (pb_device.block_count()) {
             s << "  " << pb_device.block_size() * pb_device.block_count() << " bytes capacity";
@@ -165,7 +165,7 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
 
         s << DisplayDefaultParameters(properties);
 
-        s << DisplaySectorSizes(properties);
+        s << DisplayBlockSizes(properties);
     }
 
     s << '\n';
@@ -395,13 +395,13 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
     return s.str();
 }
 
-string S2pCtlDisplay::DisplaySectorSizes(const PbDeviceProperties &properties) const
+string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) const
 {
     ostringstream s;
 
     if (properties.block_sizes_size()) {
         const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
-        s << "Configurable sector sizes in bytes: " << Join(sorted_sizes);
+        s << "Configurable block sizes in bytes: " << Join(sorted_sizes);
     }
 
     return s.str();

@@ -58,6 +58,19 @@ public:
         sense_key = s;
         asc = a;
     }
+    void SetFilemark()
+    {
+        filemark = true;
+    }
+    void SetEom()
+    {
+        eom = true;
+    }
+    void SetInformation(uint32_t value)
+    {
+        information = value;
+        valid = true;
+    }
 
     int GetId() const override;
 
@@ -160,6 +173,11 @@ private:
 
     enum sense_key sense_key = sense_key::no_sense;
     enum asc asc = asc::no_additional_sense_information;
+
+    bool valid = false;
+    bool filemark = false;
+    bool eom = false;
+    uint32_t information = 0;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

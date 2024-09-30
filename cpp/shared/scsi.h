@@ -40,6 +40,7 @@ enum class bus_phase
 enum class device_type
 {
     direct_access = 0,
+    sequential_access = 1,
     printer = 2,
     processor = 3,
     cd_rom = 5,
@@ -50,8 +51,10 @@ enum class scsi_command
 {
     cmd_test_unit_ready = 0x00,
     cmd_rezero = 0x01,
+    cmd_rewind = 0x01,
     cmd_request_sense = 0x03,
     cmd_format_unit = 0x04,
+    cmd_read_block_limits = 0x05,
     cmd_reassign_blocks = 0x07,
     cmd_read6 = 0x08,
     cmd_get_message6 = 0x08,
@@ -68,10 +71,13 @@ enum class scsi_command
     // DaynaPort specific command
     cmd_enable_interface = 0x0e,
     cmd_synchronize_buffer = 0x10,
+    cmd_write_filemarks = 0x10,
+    cmd_space = 0x11,
     cmd_inquiry = 0x12,
     cmd_mode_select6 = 0x15,
     cmd_reserve6 = 0x16,
     cmd_release6 = 0x17,
+    cmd_erase = 0x19,
     cmd_mode_sense6 = 0x1a,
     cmd_start_stop = 0x1b,
     cmd_stop_print = 0x1b,
@@ -81,7 +87,9 @@ enum class scsi_command
     cmd_read10 = 0x28,
     cmd_write10 = 0x2a,
     cmd_seek10 = 0x2b,
+    cmd_locate = 0x2b,
     cmd_verify10 = 0x2f,
+    cmd_read_position = 0x34,
     cmd_synchronize_cache10 = 0x35,
     cmd_read_defect_data10 = 0x37,
     cmd_read_long10 = 0x3e,

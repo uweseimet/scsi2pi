@@ -20,6 +20,18 @@ template void memory_util::SetInt16(vector<byte>&, int, int);
 template void memory_util::SetInt16(vector<uint8_t>&, int, int);
 
 template<typename T>
+void memory_util::SetInt24(vector<T> &buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
+
+    buf[offset] = static_cast<T>(value >> 16);
+    buf[offset + 1] = static_cast<T>(value >> 8);
+    buf[offset + 2] = static_cast<T>(value);
+}
+template void memory_util::SetInt24(vector<byte>&, int, int);
+template void memory_util::SetInt24(vector<uint8_t>&, int, int);
+
+template<typename T>
 void memory_util::SetInt32(vector<T> &buf, int offset, uint32_t value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
@@ -37,6 +49,13 @@ int memory_util::GetInt24(span<const int> buf, int offset)
     assert(buf.size() > static_cast<size_t>(offset) + 2);
 
     return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
+}
+
+int memory_util::GetSignedInt24(span<const int> buf, int offset)
+{
+    const int value = GetInt24(buf, offset);
+
+    return value >= 0x800000 ? value - 0x1000000 : value;
 }
 
 uint32_t memory_util::GetInt32(span<const int> buf, int offset)

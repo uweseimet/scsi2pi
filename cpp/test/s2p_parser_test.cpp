@@ -251,9 +251,6 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     SetUpArgs(args, "-B", "H1.hds");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
 
-    SetUpArgs(args, "-B", "TP5.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
-
     SetUpArgs(args, "-B", "XX2.hds");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
 

@@ -52,6 +52,18 @@ TEST(StorageDeviceTest, ValidateFile)
     EXPECT_FALSE(device.IsLocked());
 }
 
+TEST(StorageDeviceTest, CheckWritePreconditions)
+{
+    MockStorageDevice device;
+    device.SetProtectable(true);
+
+    device.SetProtected(false);
+    EXPECT_NO_THROW(device.CheckWritePreconditions());
+
+    device.SetProtected(true);
+    EXPECT_THROW(device.CheckWritePreconditions(), scsi_exception);
+}
+
 TEST(StorageDeviceTest, MediumChanged)
 {
     MockStorageDevice device;
@@ -76,12 +88,12 @@ TEST(StorageDeviceTest, ConfiguredBlockSize)
     EXPECT_EQ(512U, device.GetConfiguredBlockSize());
 }
 
-TEST(StorageDeviceTest, SetBlockSizeInBytes)
+TEST(StorageDeviceTest, SetBlockSize)
 {
     MockStorageDevice device;
 
-    EXPECT_TRUE(device.SetBlockSizeInBytes(512));
-    EXPECT_FALSE(device.SetBlockSizeInBytes(520));
+    EXPECT_TRUE(device.SetBlockSize(512));
+    EXPECT_FALSE(device.SetBlockSize(520));
 }
 
 TEST(StorageDeviceTest, ReserveUnreserveFile)
@@ -187,15 +199,15 @@ TEST(StorageDeviceTest, ChangeBlockSize)
 {
     MockStorageDevice device;
 
-    device.SetBlockSizeInBytes(1024);
+    device.SetBlockSize(1024);
     device.ChangeBlockSize(1024);
-    EXPECT_EQ(1024U, device.GetBlockSizeInBytes());
+    EXPECT_EQ(1024U, device.GetBlockSize());
 
     EXPECT_THROW(device.ChangeBlockSize(513), scsi_exception);
-    EXPECT_EQ(1024U, device.GetBlockSizeInBytes());
+    EXPECT_EQ(1024U, device.GetBlockSize());
 
     device.ChangeBlockSize(512);
-    EXPECT_EQ(512U, device.GetBlockSizeInBytes());
+    EXPECT_EQ(512U, device.GetBlockSize());
 }
 
 TEST(StorageDeviceTest, EvaluateBlockDescriptors)
@@ -252,7 +264,7 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
 TEST(StorageDeviceTest, VerifyBlockSizeChange)
 {
     MockStorageDevice device;
-    device.SetBlockSizeInBytes(512);
+    device.SetBlockSize(512);
 
     EXPECT_EQ(512, device.VerifyBlockSizeChange(512, false));
 

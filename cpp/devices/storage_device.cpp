@@ -19,7 +19,6 @@ StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool 
 : ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_block_sizes(s)
 {
     SupportsFile(true);
-    SetStoppable(true);
 }
 
 bool StorageDevice::Init(const param_map &params)
@@ -57,6 +56,13 @@ void StorageDevice::Dispatch(scsi_command cmd)
     }
 
     ModePageDevice::Dispatch(cmd);
+}
+
+void StorageDevice::CheckWritePreconditions() const
+{
+    if (IsProtected()) {
+        throw scsi_exception(sense_key::data_protect, asc::write_protected);
+    }
 }
 
 void StorageDevice::StartStopUnit()
@@ -151,7 +157,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         return;
     }
 
-    int size = GetBlockSizeInBytes();
+    int size = GetBlockSize();
 
     int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
     length -= offset;
@@ -246,7 +252,7 @@ int StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t
 
 int StorageDevice::VerifyBlockSizeChange(int requested_size, bool temporary) const
 {
-    if (requested_size == static_cast<int>(GetBlockSizeInBytes())) {
+    if (requested_size == static_cast<int>(GetBlockSize())) {
         return requested_size;
     }
 
@@ -258,7 +264,7 @@ int StorageDevice::VerifyBlockSizeChange(int requested_size, bool temporary) con
         else {
             LogWarn(fmt::format(
                 "Block size change from {0} to {1} bytes requested. Configure the block size in the s2p settings.",
-                GetBlockSizeInBytes(), requested_size));
+                GetBlockSize(), requested_size));
         }
     }
 
@@ -271,17 +277,17 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
     }
 
-    const auto current_size = GetBlockSizeInBytes();
+    const auto current_size = GetBlockSize();
     if (new_size != current_size) {
         const uint64_t capacity = current_size * GetBlockCount();
-        SetBlockSizeInBytes(new_size);
+        SetBlockSize(new_size);
         SetBlockCount(static_cast<uint32_t>(capacity / new_size));
 
         LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, new_size));
     }
 }
 
-bool StorageDevice::SetBlockSizeInBytes(uint32_t size)
+bool StorageDevice::SetBlockSize(uint32_t size)
 {
     if (!supported_block_sizes.contains(size) && configured_block_size != size) {
         return false;
@@ -380,30 +386,39 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
-    // DEVICE SPECIFIC PARAMETER
-    if (IsProtected()) {
-        buf[2] = 0x80;
-    }
+    const bool page_0 = !(cdb[2] & 0x3f);
 
-    // Basic information
-    int size = 4;
+    int size = 0;
 
-    // Add block descriptor if DBD is 0, only if ready
-    if (!(cdb[1] & 0x08) && IsReady()) {
-        // Mode parameter header, block descriptor length
-        buf[3] = 0x08;
+    // Page 0 has no standardized fields
+    if (!page_0) {
+        // DEVICE SPECIFIC PARAMETER
+        if (IsProtected()) {
+            buf[2] = 0x80;
+        }
 
-        // Short LBA mode parameter block descriptor (number of blocks and block length)
-        SetInt32(buf, 4, static_cast<uint32_t>(blocks));
-        SetInt32(buf, 8, block_size);
+        // Basic information
+        size = 4;
 
-        size = 12;
+        // Only add block descriptor if DBD is 0
+        if (!(cdb[1] & 0x08) && IsReady()) {
+            // Mode parameter header, block descriptor length
+            buf[3] = 0x08;
+
+            // Short LBA mode parameter block descriptor (number of blocks and block length)
+            SetInt32(buf, 4, static_cast<uint32_t>(blocks));
+            SetInt32(buf, 8, block_size);
+
+            size = 12;
+        }
     }
 
     size = AddModePages(cdb, buf, size, length, 255);
 
-    // The size field does not count itself
-    buf[0] = (uint8_t)(size - 1);
+    if (!page_0) {
+        // The size field does not count itself
+        buf[0] = (uint8_t)(size - 1);
+    }
 
     return size;
 }
@@ -413,48 +428,108 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
-    // DEVICE SPECIFIC PARAMETER
-    if (IsProtected()) {
-        buf[3] = 0x80;
-    }
+    const bool page_0 = !(cdb[2] & 0x3f);
 
-    // Basic Information
-    int size = 8;
+    int size = 0;
 
-    // Add block descriptor if DBD is 0, only if ready
-    if (!(cdb[1] & 0x08) && IsReady()) {
-        // Check LLBAA for short or long block descriptor
-        if (!(cdb[1] & 0x10) || blocks <= 0xffffffff) {
-            // Mode parameter header, block descriptor length
-            buf[7] = 0x08;
-
-            // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 8, static_cast<uint32_t>(blocks));
-            SetInt32(buf, 12, block_size);
-
-            size = 16;
+    // Page 0 has no standardized fields
+    if (!page_0) {
+        // DEVICE SPECIFIC PARAMETER
+        if (IsProtected()) {
+            buf[3] = 0x80;
         }
-        else {
-            // Mode parameter header, LONGLBA
-            buf[4] = 0x01;
 
-            // Mode parameter header, block descriptor length
-            buf[7] = 0x10;
+        // Basic information
+        size = 8;
 
-            // Long LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt64(buf, 8, blocks);
-            SetInt32(buf, 20, block_size);
+        // Only add block descriptor if DBD is 0
+        if (!(cdb[1] & 0x08) && IsReady()) {
+            // Check LLBAA for short or long block descriptor
+            if (!(cdb[1] & 0x10) || blocks <= 0xffffffff) {
+                // Mode parameter header, block descriptor length
+                buf[7] = 0x08;
 
-            size = 24;
+                // Short LBA mode parameter block descriptor (number of blocks and block length)
+                SetInt32(buf, 8, static_cast<uint32_t>(blocks));
+                SetInt32(buf, 12, block_size);
+
+                size = 16;
+            }
+            else {
+                // Mode parameter header, LONGLBA
+                buf[4] = 0x01;
+
+                // Mode parameter header, block descriptor length
+                buf[7] = 0x10;
+
+                // Long LBA mode parameter block descriptor (number of blocks and block length)
+                SetInt64(buf, 8, blocks);
+                SetInt32(buf, 20, block_size);
+
+                size = 24;
+            }
         }
     }
 
     size = AddModePages(cdb, buf, size, length, 65535);
 
-    // The size fields do not count themselves
-    SetInt16(buf, 0, size - 2);
+    if (!page_0) {
+        // The size fields do not count themselves
+        SetInt16(buf, 0, size - 2);
+    }
 
     return size;
+}
+
+void StorageDevice::SetUpModePages(map<int, vector<byte>> &pages, int page, bool) const
+{
+    // Page 1 (read-write error recovery)
+    if (page == 0x01 || page == 0x3f) {
+        AddReadWriteErrorRecoveryPage(pages);
+    }
+
+    // Page 2 (disconnect-reconnect)
+    if (page == 0x02 || page == 0x3f) {
+        AddDisconnectReconnectPage(pages);
+    }
+
+    // Page 10 (control mode)
+    if (page == 0x0a || page == 0x3f) {
+        AddControlModePage(pages);
+    }
+}
+
+void StorageDevice::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages) const
+{
+    vector<byte> buf(12);
+
+    // TB, PER, DTE (required for OpenVMS/VAX compatibility, see PiSCSI issue #1117)
+    buf[2] = (byte)0x26;
+
+    // Read/write retry count and recovery time limit are those of an IBM DORS-39130 drive
+    buf[3] = (byte)1;
+    buf[8] = (byte)1;
+    buf[11] = (byte)218;
+
+    pages[1] = buf;
+}
+
+void StorageDevice::AddDisconnectReconnectPage(map<int, vector<byte>> &pages) const
+{
+    vector<byte> buf(16);
+
+    // For an IBM DORS-39130 drive all fields are 0
+
+    pages[2] = buf;
+}
+
+void StorageDevice::AddControlModePage(map<int, vector<byte>> &pages) const
+{
+    vector<byte> buf(8);
+
+    // For an IBM DORS-39130 drive all fields are 0
+
+    pages[10] = buf;
 }
 
 vector<PbStatistics> StorageDevice::GetStatistics() const

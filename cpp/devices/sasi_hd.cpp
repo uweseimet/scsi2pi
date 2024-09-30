@@ -21,10 +21,10 @@ void SasiHd::Open()
     assert(!IsReady());
 
     // Sector size (default 256 bytes) and number of sectors
-    if (!SetBlockSizeInBytes(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256)) {
+    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
     ValidateFile();
 }

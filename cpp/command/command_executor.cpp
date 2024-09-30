@@ -223,11 +223,11 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    if (!SetSectorSize(context, device, pb_device.block_size())) {
+    if (!SetBlockSize(context, device, pb_device.block_size())) {
         return false;
     }
 
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
         // If no filename was provided the medium is considered not inserted
@@ -277,7 +277,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (storage_device && !storage_device->IsRemoved()) {
         storage_device->ReserveFile();
     }
@@ -320,11 +320,11 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
         + GetIdentifier(*device));
 
-    if (!SetSectorSize(context, device, pb_device.block_size())) {
+    if (!SetBlockSize(context, device, pb_device.block_size())) {
         return false;
     }
 
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (!ValidateImageFile(context, *storage_device, filename)) {
         return false;
@@ -398,7 +398,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     const auto disk = dynamic_pointer_cast<Disk>(device);
     if (disk && disk->GetConfiguredBlockSize()) {
         PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredBlockSize()));
@@ -471,7 +471,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
 bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &storage_device,
     const string &filename) const
 {
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (filename.empty()) {
         return true;
     }
@@ -509,7 +509,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const string &filename)
 {
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
             to_string(id) + ":" + to_string(lun));
@@ -639,15 +639,15 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<Pri
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
-    int sector_size) const
+bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
+    int block_size) const
 {
-#ifdef BUILD_DISK
-    if (sector_size) {
-        const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk && disk->IsBlockSizeConfigurable()) {
-            if (!disk->SetConfiguredBlockSize(sector_size)) {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
+#ifdef BUILD_STORAGE_DEVICE
+    if (block_size) {
+        const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
+        if (storage_device && storage_device->IsBlockSizeConfigurable()) {
+            if (!storage_device->SetConfiguredBlockSize(block_size)) {
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
             }
         }
         else {

@@ -40,7 +40,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
         }
     }
 
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device
         && storage_device->IsBlockSizeConfigurable()) {
         for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
@@ -91,13 +91,16 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         }
     }
 
+#ifdef BUILD_STORAGE_DEVICE
+    if (const auto storage_device = dynamic_pointer_cast<const StorageDevice>(device); storage_device) {
+        pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
+        pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
+        GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
+    }
+#endif
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
-        pb_device.set_block_size(disk->IsRemoved() ? 0 : disk->GetBlockSizeInBytes());
-        pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
         pb_device.set_caching_mode(disk->GetCachingMode());
-
-        GetImageFile(*pb_device.mutable_file(), disk->IsReady() ? disk->GetFilename() : "");
     }
 #endif
 }

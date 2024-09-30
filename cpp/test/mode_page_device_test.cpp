@@ -39,17 +39,6 @@ TEST(ModePageDeviceTest, AddModePages)
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_cdb)))) << "Maximum size was ignored";
 }
 
-TEST(ModePageDeviceTest, AddVendorPages)
-{
-    map<int, vector<byte>> pages;
-    MockModePageDevice device;
-
-    device.AddVendorPages(pages, 0x3f, false);
-    EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
-    device.AddVendorPages(pages, 0x3f, true);
-    EXPECT_TRUE(pages.empty()) << "Unexpected default vendor mode page";
-}
-
 TEST(ModePageDeviceTest, ModeSense)
 {
     MockAbstractController controller(0);

@@ -17,6 +17,7 @@
 #include "devices/sasi_hd.h"
 #include "devices/scsi_cd.h"
 #include "devices/scsi_hd.h"
+#include "devices/tape.h"
 #include "test_shared.h"
 
 using namespace testing;
@@ -292,11 +293,12 @@ public:
 class MockStorageDevice : public StorageDevice
 {
     FRIEND_TEST(StorageDeviceTest, ValidateFile);
+    FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
-    FRIEND_TEST(StorageDeviceTest, SetBlockSizeInBytes);
+    FRIEND_TEST(StorageDeviceTest, SetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
     FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
     FRIEND_TEST(StorageDeviceTest, BlockCount);
@@ -437,6 +439,13 @@ class MockHostServices : public HostServices
     FRIEND_TEST(HostServicesTest, SetUpModePages);
 
     using HostServices::HostServices;
+};
+
+class MockTape : public Tape
+{
+    FRIEND_TEST(TapeTest, SetUpModePages);
+
+    using Tape::Tape;
 };
 
 class MockCommandExecutor : public CommandExecutor

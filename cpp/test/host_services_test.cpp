@@ -9,6 +9,12 @@
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
 
+void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
+{
+    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(10U, pages[32].size());
+}
+
 TEST(HostServicesTest, DeviceDefaults)
 {
     HostServices services(0);
@@ -29,12 +35,6 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_EQ("SCSI2Pi", services.GetVendor());
     EXPECT_EQ("Host Services", services.GetProduct());
     EXPECT_EQ(TestShared::GetVersion(), services.GetRevision());
-}
-
-void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
-{
-    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(10U, pages[32].size());
 }
 
 TEST(HostServicesTest, TestUnitReady)

@@ -9,6 +9,18 @@
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
 
+void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
+{
+    EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(12U, pages[1].size());
+    EXPECT_EQ(16U, pages[2].size());
+    EXPECT_EQ(12U, pages[7].size());
+    EXPECT_EQ(12U, pages[8].size());
+    EXPECT_EQ(8U, pages[10].size());
+    EXPECT_EQ(8U, pages[13].size());
+    EXPECT_EQ(24U, pages[48].size());
+}
+
 TEST(ScsiCdTest, DeviceDefaults)
 {
     ScsiCd cd(0);
@@ -29,18 +41,6 @@ TEST(ScsiCdTest, DeviceDefaults)
     EXPECT_EQ("SCSI2Pi", cd.GetVendor());
     EXPECT_EQ("SCSI CD-ROM", cd.GetProduct());
     EXPECT_EQ(TestShared::GetVersion(), cd.GetRevision());
-}
-
-void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
-{
-    EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(12U, pages[1].size());
-    EXPECT_EQ(16U, pages[2].size());
-    EXPECT_EQ(12U, pages[7].size());
-    EXPECT_EQ(12U, pages[8].size());
-    EXPECT_EQ(8U, pages[10].size());
-    EXPECT_EQ(8U, pages[13].size());
-    EXPECT_EQ(24U, pages[48].size());
 }
 
 TEST(ScsiCdTest, Inquiry)

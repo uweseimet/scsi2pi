@@ -252,21 +252,42 @@ TEST(PrimaryDeviceTest, RequestSense)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
 
+    const auto &data = controller->GetBuffer();
+
     device->SetReady(false);
     TestShared::Dispatch(*device, scsi_command::cmd_request_sense, sense_key::not_ready, asc::medium_not_present);
 
     device->SetReady(true);
-    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
-    const auto &data = controller->GetBuffer();
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
     EXPECT_EQ(10, data[7]);
-    EXPECT_EQ(0, data[3]);
-    EXPECT_EQ(0, data[4]);
-    EXPECT_EQ(0, data[5]);
-    EXPECT_EQ(0, data[6]);
+    EXPECT_EQ(0, GetInt32(data, 3));
+
+    device->SetFilemark();
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(0x80, data[2]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0, GetInt32(data, 3));
+
+    device->SetEom();
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(0x40, data[2]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0, GetInt32(data, 3));
+
+    device->SetInformation(0x12345678);
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0xf0, data[0]);
+    EXPECT_EQ(0x00, data[2]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0x12345678, GetInt32(data, 3));
 }
 
 TEST(PrimaryDeviceTest, SendDiagnostic)

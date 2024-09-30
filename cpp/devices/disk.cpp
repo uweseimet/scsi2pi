@@ -22,6 +22,13 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
+Disk::Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
+    const unordered_set<uint32_t> &s)
+: StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters, s)
+{
+    SetStoppable(true);
+}
+
 bool Disk::Init(const param_map &params)
 {
     StorageDevice::Init(params);
@@ -135,8 +142,8 @@ bool Disk::SetUpCache()
 {
     assert(caching_mode != PbCachingMode::DEFAULT);
 
-    if (!GetSupportedBlockSizes().contains(GetBlockSizeInBytes())) {
-        warn("Using non-standard sector size of {} bytes", GetBlockSizeInBytes());
+    if (!GetSupportedBlockSizes().contains(GetBlockSize())) {
+        warn("Using non-standard sector size of {} bytes", GetBlockSize());
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
             // LogInfo() does not work here because at initialization time the device ID is not yet set
@@ -150,10 +157,10 @@ bool Disk::SetUpCache()
 bool Disk::InitCache(const string &path)
 {
     if (caching_mode == PbCachingMode::PISCSI) {
-        cache = make_shared<DiskCache>(path, GetBlockSizeInBytes(), static_cast<uint32_t>(GetBlockCount()));
+        cache = make_shared<DiskCache>(path, GetBlockSize(), static_cast<uint32_t>(GetBlockCount()));
     }
     else {
-        cache = make_shared<LinuxCache>(path, GetBlockSizeInBytes(), static_cast<uint32_t>(GetBlockCount()),
+        cache = make_shared<LinuxCache>(path, GetBlockSize(), static_cast<uint32_t>(GetBlockCount()),
             caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
@@ -187,9 +194,9 @@ void Disk::Read(access_mode mode)
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
-        GetController()->SetTransferSize(count * GetBlockSizeInBytes(), sector_transfer_count * GetBlockSizeInBytes());
+        GetController()->SetTransferSize(count * GetBlockSize(), sector_transfer_count * GetBlockSize());
 
-        GetController()->SetCurrentLength(count * GetBlockSizeInBytes());
+        GetController()->SetCurrentLength(count * GetBlockSize());
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
@@ -199,9 +206,7 @@ void Disk::Read(access_mode mode)
 
 void Disk::Write(access_mode mode)
 {
-    if (IsProtected()) {
-        throw scsi_exception(sense_key::data_protect, asc::write_protected);
-    }
+    CheckWritePreconditions();
 
     const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
     WriteVerify(start, count, valid);
@@ -225,9 +230,9 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
 
-        GetController()->SetTransferSize(count * GetBlockSizeInBytes(), sector_transfer_count * GetBlockSizeInBytes());
+        GetController()->SetTransferSize(count * GetBlockSize(), sector_transfer_count * GetBlockSize());
 
-        DataOutPhase(sector_transfer_count * GetBlockSizeInBytes());
+        DataOutPhase(sector_transfer_count * GetBlockSize());
     }
     else {
         StatusPhase();
@@ -241,6 +246,8 @@ void Disk::ReadLong10()
 
 void Disk::WriteLong10()
 {
+    CheckWritePreconditions();
+
     ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), true);
 }
 
@@ -251,6 +258,8 @@ void Disk::ReadLong16()
 
 void Disk::WriteLong16()
 {
+    CheckWritePreconditions();
+
     ReadWriteLong(ValidateBlockAddress(RW16), GetInt16(GetController()->GetCdb(), 12), true);
 }
 
@@ -271,7 +280,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
 
-    if (length > GetBlockSizeInBytes()) {
+    if (length > GetBlockSize()) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -324,15 +333,7 @@ bool Disk::Eject(bool force)
 
 void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
-    // Page 1 (read-write error recovery)
-    if (page == 0x01 || page == 0x3f) {
-        AddReadWriteErrorRecoveryPage(pages);
-    }
-
-    // Page 2 (disconnect-reconnect)
-    if (page == 0x02 || page == 0x3f) {
-        AddDisconnectReconnectPage(pages);
-    }
+    StorageDevice::SetUpModePages(pages, page, changeable);
 
     // Page 7 (verify error recovery)
     if (page == 0x07 || page == 0x3f) {
@@ -344,42 +345,10 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddCachingPage(pages, changeable);
     }
 
-    // Page 10 (control mode)
-    if (page == 0x0a || page == 0x3f) {
-        AddControlModePage(pages);
-    }
-
     // Page code 48
     if (page == 0x30 || page == 0x3f) {
         AddAppleVendorPage(pages, changeable);
     }
-
-    // Page (vendor-specific)
-    AddVendorPages(pages, page, changeable);
-}
-
-void Disk::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages) const
-{
-    vector<byte> buf(12);
-
-    // TB, PER, DTE (required for OpenVMS/VAX compatibility, see PiSCSI issue #1117)
-    buf[2] = (byte)0x26;
-
-    // Read/write retry count and recovery time limit are those of an IBM DORS-39130 drive
-    buf[3] = (byte)1;
-    buf[8] = (byte)1;
-    buf[11] = (byte)218;
-
-    pages[1] = buf;
-}
-
-void Disk::AddDisconnectReconnectPage(map<int, vector<byte>> &pages) const
-{
-    vector<byte> buf(16);
-
-    // For an IBM DORS-39130 drive all fields are 0
-
-    pages[2] = buf;
 }
 
 void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages) const
@@ -419,15 +388,6 @@ void Disk::AddCachingPage(map<int, vector<byte>> &pages, bool changeable) const
     pages[8] = buf;
 }
 
-void Disk::AddControlModePage(map<int, vector<byte>> &pages) const
-{
-    vector<byte> buf(8);
-
-    // For an IBM DORS-39130 drive all fields are 0
-
-    pages[10] = buf;
-}
-
 void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     // Needed for SCCD for stock Apple driver support and stock Apple HD SC Setup
@@ -454,7 +414,7 @@ int Disk::ReadData(span<uint8_t> buf)
 
     UpdateReadCount(sector_transfer_count);
 
-    return GetBlockSizeInBytes() * sector_transfer_count;
+    return GetBlockSize() * sector_transfer_count;
 }
 
 int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
@@ -486,7 +446,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     UpdateWriteCount(sector_transfer_count);
 
-    return GetBlockSizeInBytes() * sector_transfer_count;
+    return GetBlockSize() * sector_transfer_count;
 }
 
 void Disk::ReAssignBlocks()
@@ -529,7 +489,7 @@ void Disk::ReadCapacity10()
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
     const uint64_t capacity = GetBlockCount() - 1;
     SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
-    SetInt32(buf, 4, GetBlockSizeInBytes());
+    SetInt32(buf, 4, GetBlockSize());
 
     DataInPhase(8);
 }
@@ -546,7 +506,7 @@ void Disk::ReadCapacity16()
     fill_n(buf.begin(), 32, 0);
 
     SetInt64(buf, 0, GetBlockCount() - 1);
-    SetInt32(buf, 8, GetBlockSizeInBytes());
+    SetInt32(buf, 8, GetBlockSize());
 
     DataInPhase(min(32, static_cast<int>(GetInt32(GetController()->GetCdb(), 10))));
 }
@@ -590,7 +550,7 @@ uint64_t Disk::ValidateBlockAddress(access_mode mode) const
 
 void Disk::ChangeBlockSize(uint32_t new_size)
 {
-    const auto current_size = GetBlockSizeInBytes();
+    const auto current_size = GetBlockSize();
 
     StorageDevice::ChangeBlockSize(new_size);
 

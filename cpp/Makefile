@@ -57,15 +57,17 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##     Specifies the device types to build or not to build, default is to build all. Supported types:
 ##       SCHD SCSI Removable and Non-removable Hard Drive
 ##       SCCD SCSI CD-Rom Drive
+##       SCTP SCSI Tape Drive
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
 ##       SCHS Host Services
 ##       SAHD SASI Hard Drive
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
 	ENABLE_SCMO = 1
 	ENABLE_SCCD = 1
+	ENABLE_SCTP = 1
 	ENABLE_SCDP = 1
 	ENABLE_SCLP = 1
 	ENABLE_SCHS = 1
@@ -84,6 +86,9 @@ ifdef DISABLE_SCMO
 endif
 ifdef DISABLE_SCCD
 	ENABLE_SCCD =
+endif
+ifdef DISABLE_SCTP
+	ENABLE_SCTP =
 endif
 ifdef DISABLE_SCDP
 	ENABLE_SCDP =
@@ -107,6 +112,9 @@ endif
 ifdef ENABLE_SCCD
 	CXXFLAGS += -DBUILD_SCCD
 endif
+ifdef ENABLE_SCTP
+	CXXFLAGS += -DBUILD_SCTP
+endif
 ifdef ENABLE_SCDP
 	CXXFLAGS += -DBUILD_SCDP
 endif
@@ -120,8 +128,12 @@ ifdef ENABLE_SAHD
 	CXXFLAGS += -DBUILD_SAHD
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCHS)),1)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SAHD),$(ENABLE_SCHS)),1)
 	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE
+endif
+
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
+	CXXFLAGS += -DBUILD_STORAGE_DEVICE
 endif
 
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
@@ -200,6 +212,12 @@ SRC_SCCD = \
 SRC_SCCD += $(SRC_DISK)
 endif
 
+ifeq ($(ENABLE_SCTP),1)
+SRC_SCTP = \
+	$(DIR_DEVICES)/tape.cpp \
+	$(DIR_DEVICES)/storage_device.cpp
+endif
+
 ifeq ($(ENABLE_SCDP),1)
 SRC_SCDP = \
 	$(DIR_DEVICES)/daynaport.cpp \
@@ -262,6 +280,7 @@ LIB_DEVICE := $(LIBDIR)/libdevice.a
 OBJ_SCHD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHD:%.cpp=%.o)))
 OBJ_SCMO := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCMO:%.cpp=%.o)))
 OBJ_SCCD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCCD:%.cpp=%.o)))
+OBJ_SCTP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCTP:%.cpp=%.o)))
 OBJ_SCDP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCDP:%.cpp=%.o)))
 OBJ_SCLP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCLP:%.cpp=%.o)))
 OBJ_SCHS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHS:%.cpp=%.o)))
@@ -273,7 +292,7 @@ OBJ_SHARED_INITIATOR := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_INITIATOR:%
 OBJ_BASE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BASE:%.cpp=%.o)))
 OBJ_BUSES := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BUSES:%.cpp=%.o)))
 OBJ_CONTROLLERS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_CONTROLLERS:%.cpp=%.o)))
-OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
+OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
 OBJ_S2P_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_CORE:%.cpp=%.o)))
 OBJ_S2P := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P:%.cpp=%.o)))
 OBJ_S2PCTL_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL_CORE:%.cpp=%.o)))

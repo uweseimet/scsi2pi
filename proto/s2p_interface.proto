@@ -41,6 +41,8 @@ enum PbDeviceType {
     SCHS = 8;
     // Printer device
     SCLP = 9;
+    // Tape device
+    SCTP = 10;
 }
 
 // Remote operations, returning PbResult
@@ -350,12 +352,12 @@ message PbStatistics {
     int32 id = 2;
     int32 unit = 3;
     // A symbolic unique item name, may be used for I18N. Supported values and their categories:
-    //  "read_error_count" (ERROR, SCHD/SCRM/SCMO/SCCD)
-    //  "write_error_count" (ERROR, SCHD/SCRM/SCMO)
+    //  "read_error_count" (ERROR, SCHD/SCRM/SCMO/SCCD/SCTP)
+    //  "write_error_count" (ERROR, SCHD/SCRM/SCMO/SCTP)
     //  "cache_miss_read_count" (INFO, SCHD/SCRM/SCMO/SCCD)
     //  "cache_miss_write_count" (INFO, SCHD/SCRM/SCMO)
-    //  "sector_read_count" (INFO, SCHD/SCRM/SCMO/SCCD)
-    //  "sector_write_count" (INFO, SCHD/SCRM/SCMO)
+    //  "sector_read_count" (INFO, SCHD/SCRM/SCMO/SCCD/SCTP)
+    //  "sector_write_count" (INFO, SCHD/SCRM/SCMO/SCTP)
     //  "byte_read_count" (INFO, SCDP)
     //  "byte_write_count" (INFO, SCDP)
     //  "print_error_count" (ERROR, SCLP)

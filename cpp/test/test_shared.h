@@ -35,6 +35,7 @@ string ReadTempFileToString(const string&);
 
 int GetInt16(const vector<byte>&, int);
 uint32_t GetInt32(const vector<byte>&, int);
+uint32_t GetInt32(const vector<uint8_t>&, int);
 
 class TestShared
 {

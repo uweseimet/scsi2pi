@@ -108,7 +108,7 @@ void Controller::Command()
         const int actual_count = GetBus().CommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
-                LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
+                LogDebug(fmt::format("Received unknown command: ${:02x}", buf[0]));
                 Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             }
             else {
