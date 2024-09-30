@@ -43,10 +43,8 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
     SupportsParams(true);
 }
 
-bool Printer::Init(const param_map &params)
+bool Printer::InitDevice()
 {
-    PrimaryDevice::Init(params);
-
     if (GetParam("cmd").find("%f") == string::npos) {
         LogTrace("Missing filename specifier '%f'");
         return false;

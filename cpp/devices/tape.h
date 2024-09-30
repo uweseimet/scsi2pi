@@ -22,7 +22,7 @@ public:
     Tape(int, bool);
     ~Tape() override = default;
 
-    bool Init(const param_map&) override;
+    bool InitDevice() override;
     void CleanUp() override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;

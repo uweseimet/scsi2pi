@@ -508,7 +508,7 @@ TEST(DiskTest, Eject)
     EXPECT_TRUE(disk.Eject(true));
 }
 
-void ValidateCachePage(AbstractController &controller, int offset)
+void ValidateCachingPage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0xffff, GetInt16(buf, offset + 4)) << "Wrong pre-fetch transfer length";
@@ -543,28 +543,11 @@ TEST(DiskTest, ModeSense6)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
-    EXPECT_EQ(0x08, controller->GetBuffer()[3]) << "Wrong block descriptor length";
-
-    // No block descriptor
-    controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
-    EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
-
-    disk->SetReadOnly(false);
-    disk->SetProtectable(true);
-    disk->SetProtected(true);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
-    const auto &buf = controller->GetBuffer();
-    EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
-
-    // Return short block descriptor
-    controller->SetCdbByte(1, 0x00);
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
-    ValidateCachePage(*controller, 12);
+    ValidateCachingPage(*controller, 12);
 }
 
 TEST(DiskTest, ModeSense10)
@@ -577,56 +560,11 @@ TEST(DiskTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    EXPECT_EQ(0x08, controller->GetBuffer()[7]) << "Wrong block descriptor length";
-
-    // No block descriptor
-    controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    auto &buf = controller->GetBuffer();
-    EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
-
-    disk->SetReadOnly(false);
-    disk->SetProtectable(true);
-    disk->SetProtected(true);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    buf = controller->GetBuffer();
-    EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
-
-    // Return short block descriptor
-    controller->SetCdbByte(1, 0x00);
-    disk->SetBlockCount(0x1234);
-    disk->SetBlockSize(1024);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    buf = controller->GetBuffer();
-    EXPECT_EQ(0x00, buf[4]) << "Wrong LONGLBA field";
-    EXPECT_EQ(0x08, buf[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00, GetInt16(buf, 8));
-    EXPECT_EQ(0x1234, GetInt16(buf, 10));
-    EXPECT_EQ(0x00, GetInt16(buf, 12));
-    EXPECT_EQ(1024, GetInt16(buf, 14));
-
-    // Return long block descriptor
-    controller->SetCdbByte(1, 0x10);
-    disk->SetBlockCount((uint64_t)0xffffffff + 1);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    buf = controller->GetBuffer();
-    EXPECT_EQ(0x01, buf[4]) << "Wrong LONGLBA field";
-    EXPECT_EQ(0x10, buf[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00, GetInt16(buf, 8));
-    EXPECT_EQ(0x01, GetInt16(buf, 10));
-    EXPECT_EQ(0x00, GetInt16(buf, 12));
-    EXPECT_EQ(0x00, GetInt16(buf, 14));
-    EXPECT_EQ(0x00, GetInt16(buf, 20));
-    EXPECT_EQ(1024, GetInt16(buf, 22));
-
-    // Return short block descriptor
-    controller->SetCdbByte(1, 0x00);
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
-    ValidateCachePage(*controller, 16);
+    ValidateCachingPage(*controller, 16);
 }
 
 TEST(DiskTest, ReadData)

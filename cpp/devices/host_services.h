@@ -23,7 +23,7 @@ public:
     explicit HostServices(int);
     ~HostServices() override = default;
 
-    bool Init(const param_map&) override;
+    bool InitDevice() override;
 
     vector<uint8_t> InquiryInternal() const override;
     void TestUnitReady() override;

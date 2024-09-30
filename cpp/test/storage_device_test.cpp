@@ -10,6 +10,16 @@
 #include "devices/storage_device.h"
 #include "shared/s2p_exceptions.h"
 
+pair<shared_ptr<MockAbstractController>, shared_ptr<MockStorageDevice>> CreateStorageDevice()
+{
+    auto controller = make_shared<NiceMock<MockAbstractController>>(0);
+    auto device = make_shared<MockStorageDevice>();
+    EXPECT_TRUE(device->Init( { }));
+    EXPECT_TRUE(controller->AddDevice(device));
+
+    return {controller, device};
+}
+
 TEST(StorageDeviceTest, SetGetFilename)
 {
     MockStorageDevice device;
@@ -291,4 +301,100 @@ TEST(StorageDeviceTest, VerifyBlockSizeChange)
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
                 Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
     << "Parameter list is invalid";
+}
+
+TEST(StorageDeviceTest, ModeSense6)
+{
+    auto [controller, disk] = CreateStorageDevice();
+
+    // Drive must be ready in order to return all data
+    disk->SetReady(true);
+
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+
+    disk->SetBlockCount(0x00000001);
+    disk->SetBlockSize(1024);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00000001, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    disk->SetBlockCount(0xffffffff);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    disk->SetBlockCount(0x100000000);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
+
+    disk->SetReadOnly(false);
+    disk->SetProtectable(true);
+    disk->SetProtected(true);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense6));
+    const auto &buf = controller->GetBuffer();
+    EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
+
+    // Return short block descriptor
+    controller->SetCdbByte(1, 0x00);
+}
+
+TEST(StorageDeviceTest, ModeSense10)
+{
+    auto [controller, disk] = CreateStorageDevice();
+
+    // Drive must be ready in order to return all data
+    disk->SetReady(true);
+
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+
+    disk->SetBlockCount(0x00000001);
+    disk->SetBlockSize(1024);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00000001, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    disk->SetBlockCount(0xffffffff);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    disk->SetBlockCount(0x100000000);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    // LLBAA
+    controller->SetCdbByte(1, 0x10);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_EQ(0x100000000, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
+    EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
+
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    auto &buf = controller->GetBuffer();
+    EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
+
+    disk->SetReadOnly(false);
+    disk->SetProtectable(true);
+    disk->SetProtected(true);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_mode_sense10));
+    buf = controller->GetBuffer();
+    EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
+
+    // Return short block descriptor
+    controller->SetCdbByte(1, 0x00);
 }

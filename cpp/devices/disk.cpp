@@ -29,10 +29,8 @@ Disk::Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_sele
     SetStoppable(true);
 }
 
-bool Disk::Init(const param_map &params)
+bool Disk::InitDevice()
 {
-    StorageDevice::Init(params);
-
     // REZERO implementation is identical with Seek
     AddCommand(scsi_command::cmd_rezero, [this]
         {
@@ -119,7 +117,7 @@ bool Disk::Init(const param_map &params)
             ReadCapacity16_ReadLong16();
         });
 
-    return true;
+    return StorageDevice::InitDevice();
 }
 
 void Disk::CleanUp()

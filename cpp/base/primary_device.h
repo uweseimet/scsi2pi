@@ -28,7 +28,8 @@ public:
 
     ~PrimaryDevice() override = default;
 
-    virtual bool Init(const param_map&);
+    bool Init(const param_map&);
+    virtual bool InitDevice() = 0;
     virtual void CleanUp()
     {
         // Override if cleanup work is required for a derived device

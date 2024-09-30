@@ -16,6 +16,8 @@ using namespace s2p_util;
 
 bool PrimaryDevice::Init(const param_map &params)
 {
+    SetParams(params);
+
     // Mandatory SCSI primary commands
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {
@@ -48,9 +50,7 @@ bool PrimaryDevice::Init(const param_map &params)
             SendDiagnostic();
         });
 
-    SetParams(params);
-
-    return true;
+    return InitDevice();
 }
 
 void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)

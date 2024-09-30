@@ -23,16 +23,14 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs 
     SetLockable(true);
 }
 
-bool ScsiCd::Init(const param_map &params)
+bool ScsiCd::InitDevice()
 {
-    Disk::Init(params);
-
     AddCommand(scsi_command::cmd_read_toc, [this]
         {
             ReadToc();
         });
 
-    return true;
+    return Disk::InitDevice();
 }
 
 void ScsiCd::Open()

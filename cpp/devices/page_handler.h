@@ -25,7 +25,7 @@ public:
 
 private:
 
-    void SaveParametersCheck(int) const;
+    void ModeSelect(int) const;
 
     PrimaryDevice &device;
 

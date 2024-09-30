@@ -42,10 +42,8 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAY
     SupportsParams(true);
 }
 
-bool DaynaPort::Init(const param_map &params)
+bool DaynaPort::InitDevice()
 {
-    PrimaryDevice::Init(params);
-
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {
             TestUnitReady();

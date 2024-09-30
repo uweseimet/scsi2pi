@@ -102,12 +102,8 @@ HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun
     SetProduct("Host Services");
 }
 
-bool HostServices::Init(const param_map &params)
+bool HostServices::InitDevice()
 {
-    PrimaryDevice::Init(params);
-
-    page_handler = make_unique<PageHandler>(*this, false, false);
-
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {
             TestUnitReady();
@@ -124,6 +120,8 @@ bool HostServices::Init(const param_map &params)
         {
             ReceiveOperationResults();
         });
+
+    page_handler = make_unique<PageHandler>(*this, false, false);
 
     SetReady(true);
 

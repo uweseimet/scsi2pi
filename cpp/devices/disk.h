@@ -28,7 +28,7 @@ public:
 
     ~Disk() override = default;
 
-    bool Init(const param_map&) override;
+    bool InitDevice() override;
     void CleanUp() override;
 
     bool Eject(bool) override;

@@ -21,12 +21,8 @@ StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool 
     SupportsFile(true);
 }
 
-bool StorageDevice::Init(const param_map &params)
+bool StorageDevice::InitDevice()
 {
-    PrimaryDevice::Init(params);
-
-    page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters);
-
     AddCommand(scsi_command::cmd_start_stop, [this]
         {
             StartStopUnit();
@@ -35,6 +31,8 @@ bool StorageDevice::Init(const param_map &params)
         {
             PreventAllowMediumRemoval();
         });
+
+    page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters);
 
     return true;
 }
@@ -213,7 +211,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 
             // Format device page
         case 0x03:
-            // With this page the sector size for a subsequent FORMAT can be selected, but only a few devices
+            // With this page the block size for a subsequent FORMAT can be selected, but only a few devices
             // support this, e.g. FUJITSU M2624S.
             // We are fine as long as the permanent current block size remains unchanged.
             VerifyBlockSizeChange(GetInt16(buf, offset + 12), false);
@@ -408,10 +406,10 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
             buf[3] = 0x08;
 
             // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 4, static_cast<uint32_t>(blocks));
-            SetInt32(buf, 8, block_size);
+            SetInt32(buf, 4, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
+            SetInt24(buf, 9, block_size);
 
-            size = 12;
+            size += 8;
         }
     }
 
@@ -447,15 +445,15 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
         // Only add block descriptor if DBD is 0
         if (!(cdb[1] & 0x08) && IsReady()) {
             // Check LLBAA for short or long block descriptor
-            if (!(cdb[1] & 0x10) || blocks <= 0xffffffff) {
+            if (!(cdb[1] & 0x10)) {
                 // Mode parameter header, block descriptor length
                 buf[7] = 0x08;
 
                 // Short LBA mode parameter block descriptor (number of blocks and block length)
-                SetInt32(buf, 8, static_cast<uint32_t>(blocks));
-                SetInt32(buf, 12, block_size);
+                SetInt32(buf, 8, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
+                SetInt24(buf, 13, block_size);
 
-                size = 16;
+                size += 8;
             }
             else {
                 // Mode parameter header, LONGLBA
@@ -468,7 +466,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
                 SetInt64(buf, 8, blocks);
                 SetInt32(buf, 20, block_size);
 
-                size = 24;
+                size += 16;
             }
         }
     }

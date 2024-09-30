@@ -25,7 +25,7 @@ public:
     StorageDevice(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t> &s);
     ~StorageDevice() override = default;
 
-    bool Init(const param_map&) override;
+    bool InitDevice() override;
     void CleanUp() override;
 
     void Dispatch(scsi_command) override;

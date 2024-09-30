@@ -19,7 +19,7 @@ public:
     explicit ScsiCd(int, bool = false);
     ~ScsiCd() override = default;
 
-    bool Init(const param_map&) override;
+    bool InitDevice() override;
 
     void Open() override;
 

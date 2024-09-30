@@ -39,6 +39,7 @@ void SetUpProperties(string_view, string_view = "", const property_map& = { });
 int GetInt16(const vector<byte>&, int);
 uint32_t GetInt32(const vector<byte>&, int);
 uint32_t GetInt32(const vector<uint8_t>&, int);
+uint64_t GetInt64(const vector<uint8_t>&, int);
 
 class TestShared
 {

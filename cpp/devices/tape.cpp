@@ -36,10 +36,8 @@ Tape::Tape(int lun, bool tar) : StorageDevice(SCTP, scsi_level::scsi_2, lun, tru
     SetLockable(true);
 }
 
-bool Tape::Init(const param_map &params)
+bool Tape::InitDevice()
 {
-    StorageDevice::Init(params);
-
     AddCommand(scsi_command::cmd_read6, [this]
         {
             Read();
@@ -77,7 +75,7 @@ bool Tape::Init(const param_map &params)
             ReadPosition();
         });
 
-    return true;
+    return StorageDevice::InitDevice();
 }
 
 void Tape::CleanUp()

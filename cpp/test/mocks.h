@@ -133,6 +133,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
     FRIEND_TEST(DiskTest, StartStopUnit);
+    FRIEND_TEST(StorageDeviceTest, ModeSense6);
+    FRIEND_TEST(StorageDeviceTest, ModeSense10);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
@@ -257,6 +259,11 @@ public:
     {
     }
     ~MockPrimaryDevice() override = default;
+
+    bool InitDevice() override
+    {
+        return true;
+    }
 };
 
 class MockStorageDevice : public StorageDevice
@@ -272,14 +279,13 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
     FRIEND_TEST(StorageDeviceTest, BlockCount);
     FRIEND_TEST(StorageDeviceTest, ChangeBlockSize);
+    FRIEND_TEST(StorageDeviceTest, ModeSense6);
+    FRIEND_TEST(StorageDeviceTest, ModeSense10);
 
 public:
 
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
     MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
     {
