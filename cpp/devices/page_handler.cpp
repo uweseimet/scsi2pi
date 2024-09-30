@@ -4,44 +4,40 @@
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
-// A basic device with mode page support, to be used for subclassing
-//
 //---------------------------------------------------------------------------
 
-#include "mode_page_device.h"
-#include <cstddef>
+#include "page_handler.h"
 #include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
-bool ModePageDevice::Init(const param_map &params)
+PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
+    p)
 {
-    PrimaryDevice::Init(params);
-
-    AddCommand(scsi_command::cmd_mode_sense6, [this]
+    device.AddCommand(scsi_command::cmd_mode_sense6, [this]
         {
-            DataInPhase(ModeSense6(GetController()->GetCdb(), GetController()->GetBuffer()));
+            device.DataInPhase(
+                device.ModeSense6(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
-    AddCommand(scsi_command::cmd_mode_sense10, [this]
+    device.AddCommand(scsi_command::cmd_mode_sense10, [this]
         {
-            DataInPhase(ModeSense10(GetController()->GetCdb(), GetController()->GetBuffer()));
-        });
-
-    // Devices that implement MODE SENSE must also implement MODE SELECT
-    AddCommand(scsi_command::cmd_mode_select6, [this]
-        {
-            SaveParametersCheck(GetController()->GetCdbByte(4));
-        });
-    AddCommand(scsi_command::cmd_mode_select10, [this]
-        {
-            SaveParametersCheck(GetInt16(GetController()->GetCdb(), 7));
+            device.DataInPhase(
+                device.ModeSense10(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
 
-    return true;
+    // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
+    device.AddCommand(scsi_command::cmd_mode_select6, [this]
+        {
+            SaveParametersCheck(device.GetController()->GetCdbByte(4));
+        });
+    device.AddCommand(scsi_command::cmd_mode_select10, [this]
+        {
+            SaveParametersCheck(GetInt16(device.GetController()->GetCdb(), 7));
+        });
 }
 
-int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int length, int max_size) const
+int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int length, int max_size) const
 {
     const int max_length = length - offset;
     if (max_length < 0) {
@@ -54,8 +50,8 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
 
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;
-    SetUpModePages(pages, page_code, changeable);
-    for (const auto& [p, data] : property_handler.GetCustomModePages(GetVendor(), GetProduct())) {
+    device.SetUpModePages(pages, page_code, changeable);
+    for (const auto& [p, data] : property_handler.GetCustomModePages(device.GetVendor(), device.GetProduct())) {
         if (data.empty()) {
             pages.erase(p);
         }
@@ -86,7 +82,7 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     }
 
     if (pages.contains(0)) {
-        // Page data only (there is no size field for page 0)
+        // Page data only (there is no standardized size field for page 0)
         const auto &page_data = pages[0];
         result.insert(result.end(), page_data.cbegin(), page_data.cend());
     }
@@ -102,17 +98,11 @@ int ModePageDevice::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, in
     return size + offset < length ? size + offset : length;
 }
 
-void ModePageDevice::ModeSelect(cdb_t, span<const uint8_t>, int)
+void PageHandler::SaveParametersCheck(int length) const
 {
-    // There is no default implementation of MODE SELECT
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-}
-
-void ModePageDevice::SaveParametersCheck(int length) const
-{
-    if (!supports_mode_select || (!supports_save_parameters && (GetController()->GetCdbByte(1) & 0x01))) {
+    if (!supports_mode_select || (!supports_save_parameters && (device.GetController()->GetCdbByte(1) & 0x01))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    DataOutPhase(length);
+    device.DataOutPhase(length);
 }

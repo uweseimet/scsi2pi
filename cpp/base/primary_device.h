@@ -13,12 +13,14 @@
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 #include "s2p_defs.h"
 #include "device.h"
 
 class PrimaryDevice : public ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
+    friend class PageHandler;
 
     using command = function<void()>;
 
@@ -100,6 +102,12 @@ public:
         return 0;
     }
 
+    virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
+    {
+        // There is no default implementation of MODE SELECT
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     virtual void FlushCache()
     {
         // Devices with a cache have to override this method
@@ -127,9 +135,25 @@ protected:
     void Inquiry() override;
     void RequestSense() override;
 
+
     void SendDiagnostic() override;
     void ReserveUnit() override;
     void ReleaseUnit() override;
+
+    virtual int ModeSense6(cdb_t, vector<uint8_t>&) const
+    {
+        // Nothing to do in base class
+        return 0;
+    }
+    virtual int ModeSense10(cdb_t, vector<uint8_t>&) const
+    {
+        // Nothing to do in base class
+        return 0;
+    }
+    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
+    {
+        // Nothing to do in base class
+    }
 
     void StatusPhase() const;
     void DataInPhase(int) const;

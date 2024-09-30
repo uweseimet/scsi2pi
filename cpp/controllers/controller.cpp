@@ -10,11 +10,7 @@
 
 #include "controller.h"
 #include "buses/bus_factory.h"
-#ifdef BUILD_MODE_PAGE_DEVICE
-#include "devices/mode_page_device.h"
-#else
 #include "base/primary_device.h"
-#endif
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -475,21 +471,11 @@ bool Controller::XferOut(bool cont)
     const auto device = GetDeviceForLun(GetEffectiveLun());
 
     // Limited to write/verify commands (DATA OUT phase)
-    switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode
-        ) {
+    switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode) {
     case scsi_command::cmd_mode_select6:
     case scsi_command::cmd_mode_select10:
-        {
-#ifdef BUILD_MODE_PAGE_DEVICE
-        const auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
-        assert(mode_page_device);
-        if (!mode_page_device) {
-            Error(sense_key::aborted_command, asc::controller_xfer_out);
-            return false;
-        }
-
         try {
-            mode_page_device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
+            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
         catch (const scsi_exception &e) {
             Error(e.get_sense_key(), e.get_asc());
@@ -497,9 +483,6 @@ bool Controller::XferOut(bool cont)
         }
 
         return true;
-#endif
-    }
-        break;
 
     case scsi_command::cmd_write6:
     case scsi_command::cmd_write10:

@@ -109,10 +109,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
     FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
     FRIEND_TEST(PrimaryDeviceTest, UnknownCommand);
-    FRIEND_TEST(ModePageDeviceTest, ModeSense6);
-    FRIEND_TEST(ModePageDeviceTest, ModeSense10);
-    FRIEND_TEST(ModePageDeviceTest, ModeSelect6);
-    FRIEND_TEST(ModePageDeviceTest, ModeSelect10);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -263,33 +259,6 @@ public:
     ~MockPrimaryDevice() override = default;
 };
 
-class MockModePageDevice : public ModePageDevice
-{
-    FRIEND_TEST(ModePageDeviceTest, SupportsSaveParameters);
-    FRIEND_TEST(ModePageDeviceTest, AddModePages);
-    FRIEND_TEST(ModePageDeviceTest, AddVendorPages);
-
-public:
-
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
-
-    MockModePageDevice() : ModePageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
-    {
-    }
-    ~MockModePageDevice() override = default;
-
-    void SetUpModePages(map<int, vector<byte>> &pages, int page, bool) const override
-    {
-        // Return dummy data for other pages than page 0
-        if (page) {
-            vector<byte> buf(32);
-            pages[page] = buf;
-        }
-    }
-};
-
 class MockStorageDevice : public StorageDevice
 {
     FRIEND_TEST(StorageDeviceTest, ValidateFile);
@@ -365,7 +334,7 @@ public:
     ~MockDisk() override = default;
 };
 
-class MockSasiHd : public SasiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockSasiHd : public SasiHd
 {
 public:
 
@@ -378,7 +347,7 @@ public:
     ~MockSasiHd() override = default;
 };
 
-class MockScsiHd : public ScsiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockScsiHd : public ScsiHd
 {
     FRIEND_TEST(DiskTest, ConfiguredSectorSize);
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
@@ -409,7 +378,7 @@ public:
     ~MockScsiHd() override = default;
 };
 
-class MockScsiCd : public ScsiCd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockScsiCd : public ScsiCd
 {
     FRIEND_TEST(ScsiCdTest, GetSectorSizes);
     FRIEND_TEST(ScsiCdTest, SetUpModePages);
@@ -424,7 +393,7 @@ public:
     ~MockScsiCd() override = default;
 };
 
-class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockOpticalMemory : public OpticalMemory
 {
     FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
     FRIEND_TEST(OpticalMemoryTest, SetUpModePages);

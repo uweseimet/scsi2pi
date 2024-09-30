@@ -97,14 +97,16 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false, false)
+HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun)
 {
     SetProduct("Host Services");
 }
 
 bool HostServices::Init(const param_map &params)
 {
-    ModePageDevice::Init(params);
+    PrimaryDevice::Init(params);
+
+    page_handler = make_unique<PageHandler>(*this, false, false);
 
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {
@@ -231,8 +233,7 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
-    // Basic information
-    const int size = AddModePages(cdb, buf, 4, length, 255);
+    const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
     buf[0] = (uint8_t)(size - 1);
@@ -250,8 +251,7 @@ int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
-    // Basic information
-    const int size = AddModePages(cdb, buf, 8, length, 65535);
+    const int size = page_handler->AddModePages(cdb, buf, 8, length, 65535);
 
     // The size fields do not count themselves
     SetInt16(buf, 0, size - 2);

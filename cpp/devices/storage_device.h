@@ -12,11 +12,12 @@
 
 #include <filesystem>
 #include "shared/s2p_util.h"
-#include "mode_page_device.h"
+#include "base/primary_device.h"
+#include "page_handler.h"
 
 using namespace std;
 
-class StorageDevice : public ModePageDevice
+class StorageDevice : public PrimaryDevice
 {
 
 public:
@@ -140,12 +141,18 @@ private:
     void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;
     void AddControlModePage(map<int, vector<byte>>&) const;
 
+    unique_ptr<PageHandler> page_handler;
+
     uint64_t blocks = 0;
 
     // Block sizes in bytes
     unordered_set<uint32_t> supported_block_sizes;
     uint32_t configured_block_size = 0;
     uint32_t block_size = 0;
+
+    bool supports_mode_select;
+
+    bool supports_save_parameters;
 
     filesystem::path filename;
 

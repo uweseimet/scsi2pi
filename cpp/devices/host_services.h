@@ -10,11 +10,12 @@
 
 #pragma once
 
-#include "mode_page_device.h"
+#include "base/primary_device.h"
+#include "page_handler.h"
 
 class CommandDispatcher;
 
-class HostServices : public ModePageDevice
+class HostServices : public PrimaryDevice
 {
 
 public:
@@ -70,6 +71,8 @@ private:
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
 
     protobuf_format ConvertFormat() const;
+
+    unique_ptr<PageHandler> page_handler;
 
     // Operation results per initiator
     unordered_map<int, string> execution_results;

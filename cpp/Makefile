@@ -128,10 +128,6 @@ ifdef ENABLE_SAHD
 	CXXFLAGS += -DBUILD_SAHD
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SAHD),$(ENABLE_SCHS)),1)
-	CXXFLAGS += -DBUILD_MODE_PAGE_DEVICE
-endif
-
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
 	CXXFLAGS += -DBUILD_STORAGE_DEVICE
 endif
@@ -192,7 +188,7 @@ SRC_DISK = \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
 	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/mode_page_device.cpp
+	$(DIR_DEVICES)/page_handler.cpp
 
 ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD = \
@@ -232,7 +228,7 @@ endif
 ifeq ($(ENABLE_SCHS),1)
 SRC_SCHS = \
 	$(DIR_DEVICES)/host_services.cpp \
-	$(DIR_DEVICES)/mode_page_device.cpp
+	$(DIR_DEVICES)/page_handler.cpp
 endif
 
 ifeq ($(ENABLE_SAHD),1)

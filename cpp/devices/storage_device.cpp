@@ -14,16 +14,18 @@
 using namespace filesystem;
 using namespace memory_util;
 
-StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select,
-    bool supports_save_parameters, const unordered_set<uint32_t> &s)
-: ModePageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_block_sizes(s)
+StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p,
+    const unordered_set<uint32_t> &sizes)
+: PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
 {
     SupportsFile(true);
 }
 
 bool StorageDevice::Init(const param_map &params)
 {
-    ModePageDevice::Init(params);
+    PrimaryDevice::Init(params);
+
+    page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters);
 
     AddCommand(scsi_command::cmd_start_stop, [this]
         {
@@ -41,7 +43,7 @@ void StorageDevice::CleanUp()
 {
     UnreserveFile();
 
-    ModePageDevice::CleanUp();
+    PrimaryDevice::CleanUp();
 }
 
 void StorageDevice::Dispatch(scsi_command cmd)
@@ -55,7 +57,7 @@ void StorageDevice::Dispatch(scsi_command cmd)
         throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
     }
 
-    ModePageDevice::Dispatch(cmd);
+    PrimaryDevice::Dispatch(cmd);
 }
 
 void StorageDevice::CheckWritePreconditions() const
@@ -124,7 +126,7 @@ void StorageDevice::PreventAllowMediumRemoval()
 
 bool StorageDevice::Eject(bool force)
 {
-    const bool status = ModePageDevice::Eject(force);
+    const bool status = PrimaryDevice::Eject(force);
     if (status) {
         FlushCache();
 
@@ -413,7 +415,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
         }
     }
 
-    size = AddModePages(cdb, buf, size, length, 255);
+    size = page_handler->AddModePages(cdb, buf, size, length, 255);
 
     if (!page_0) {
         // The size field does not count itself
@@ -471,7 +473,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
         }
     }
 
-    size = AddModePages(cdb, buf, size, length, 65535);
+    size = page_handler->AddModePages(cdb, buf, size, length, 65535);
 
     if (!page_0) {
         // The size fields do not count themselves
@@ -534,7 +536,7 @@ void StorageDevice::AddControlModePage(map<int, vector<byte>> &pages) const
 
 vector<PbStatistics> StorageDevice::GetStatistics() const
 {
-    vector<PbStatistics> statistics = ModePageDevice::GetStatistics();
+    vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
 
     PbStatistics s;
     s.set_id(GetId());
