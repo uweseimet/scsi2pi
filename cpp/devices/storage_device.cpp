@@ -167,7 +167,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
     SetUpModePages(pages, 0x3f, true);
-    for (const auto& [p, data] : PropertyHandler::Instance().GetCustomModePages(GetVendor(), GetProduct())) {
+    for (const auto& [p, data] : page_handler->GetCustomModePages(GetVendor(), GetProduct())) {
         if (data.empty()) {
             pages.erase(p);
         }

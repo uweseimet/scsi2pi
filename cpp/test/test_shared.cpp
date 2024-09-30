@@ -151,6 +151,23 @@ string testing::ReadTempFileToString(const string &filename)
     return buffer.str();
 }
 
+void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
+{
+    string filenames;
+    auto [fd1, filename1] = OpenTempFile();
+    filenames = filename1;
+    (void)write(fd1, properties1.data(), properties1.size());
+    close(fd1);
+    if (!properties2.empty()) {
+        auto [fd2, filename2] = OpenTempFile();
+        filenames += ",";
+        filenames += filename2;
+        (void)write(fd2, properties2.data(), properties2.size());
+        close(fd2);
+    }
+    PropertyHandler::Instance().Init(filenames, cmd_properties, true);
+}
+
 int testing::GetInt16(const vector<byte> &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);

@@ -14,6 +14,7 @@
 #include "command_response.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
+#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;

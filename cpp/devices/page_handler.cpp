@@ -6,11 +6,15 @@
 //
 //---------------------------------------------------------------------------
 
+#include <spdlog/spdlog.h>
 #include "page_handler.h"
 #include "base/memory_util.h"
+#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace spdlog;
 using namespace memory_util;
+using namespace s2p_util;
 
 PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
     p)
@@ -51,7 +55,7 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     device.SetUpModePages(pages, page_code, changeable);
-    for (const auto& [p, data] : property_handler.GetCustomModePages(device.GetVendor(), device.GetProduct())) {
+    for (const auto& [p, data] : GetCustomModePages(device.GetVendor(), device.GetProduct())) {
         if (data.empty()) {
             pages.erase(p);
         }
@@ -96,6 +100,61 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
 
     // Do not return more than the requested number of bytes
     return size + offset < length ? size + offset : length;
+}
+
+map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, const string &product) const
+{
+    map<int, vector<byte>> pages;
+
+    for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
+        const auto &key_components = Split(key, '.', 3);
+
+        if (key_components[0] != PropertyHandler::MODE_PAGE) {
+            continue;
+        }
+
+        int page_code;
+        if (!GetAsUnsignedInt(key_components[1], page_code) || page_code > 0x3e) {
+            warn("Ignored invalid page code in mode page property '{}'", key);
+            continue;
+        }
+
+        if (const string identifier = vendor + COMPONENT_SEPARATOR + product; !identifier.starts_with(
+            key_components[2])) {
+            continue;
+        }
+
+        vector<byte> page_data;
+        try {
+            page_data = HexToBytes(value);
+        }
+        catch (const out_of_range&) {
+            warn("Ignored invalid mode page definition for page {0}: {1}", page_code, value);
+            continue;
+        }
+
+        if (page_data.empty()) {
+            trace("Removing default mode page {}", page_code);
+        }
+        else {
+            // Validate the page code and (except for page 0, which has no well-defined format) the page size
+            if (page_code != (static_cast<int>(page_data[0]) & 0x3f)) {
+                warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
+                continue;
+            }
+
+            if (page_code && static_cast<byte>(page_data.size() - 2) != page_data[1]) {
+                warn("Ignored mode page definition with wrong page size {0}: {1}", page_code, page_data[1]);
+                continue;
+            }
+
+            trace("Adding/replacing mode page {0}: {1}", page_code, value);
+        }
+
+        pages[page_code] = page_data;
+    }
+
+    return pages;
 }
 
 void PageHandler::SaveParametersCheck(int length) const

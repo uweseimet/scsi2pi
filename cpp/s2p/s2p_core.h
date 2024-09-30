@@ -10,6 +10,7 @@
 
 #include <filesystem>
 #include "command/command_dispatcher.h"
+#include "base/property_handler.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;

@@ -10,7 +10,6 @@
 
 #include <cstddef>
 #include <vector>
-#include "base/property_handler.h"
 #include "base/primary_device.h"
 
 class PageHandler
@@ -22,6 +21,8 @@ public:
 
     int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
 
+    map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
+
 private:
 
     void SaveParametersCheck(int) const;
@@ -31,6 +32,4 @@ private:
     bool supports_mode_select;
 
     bool supports_save_parameters;
-
-    PropertyHandler &property_handler = PropertyHandler::Instance();
 };

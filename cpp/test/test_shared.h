@@ -12,6 +12,7 @@
 #include <span>
 #include "shared/s2p_util.h"
 #include "shared/scsi.h"
+#include "base/property_handler.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
@@ -32,6 +33,8 @@ pair<int, path> OpenTempFile();
 path CreateTempFile(size_t);
 string CreateTempFileWithData(span<const byte>);
 string ReadTempFileToString(const string&);
+
+void SetUpProperties(string_view, string_view = "", const property_map& = { });
 
 int GetInt16(const vector<byte>&, int);
 uint32_t GetInt32(const vector<byte>&, int);
