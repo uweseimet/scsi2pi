@@ -14,7 +14,7 @@
 
 using namespace memory_util;
 
-void ScsiHdTest_SetUpModePages(map<int, vector<byte>> &pages)
+static void SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(10U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
@@ -148,12 +148,12 @@ TEST(ScsiHdTest, SetUpModePages)
 
     // Non changeable
     hd.SetUpModePages(pages, 0x3f, false);
-    ScsiHdTest_SetUpModePages(pages);
+    SetUpModePages(pages);
 
     // Changeable
     pages.clear();
     hd.SetUpModePages(pages, 0x3f, true);
-    ScsiHdTest_SetUpModePages(pages);
+    SetUpModePages(pages);
 }
 
 TEST(ScsiHdTest, ModeSense6)

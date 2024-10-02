@@ -183,6 +183,13 @@ uint32_t testing::GetInt32(const vector<byte> &buf, int offset)
         | (to_integer<uint32_t>(buf[offset + 2]) << 8) | to_integer<uint32_t>(buf[offset + 3]);
 }
 
+uint32_t testing::GetInt16(const vector<uint8_t> &buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 1);
+
+    return (static_cast<uint32_t>(buf[offset]) << 8) | static_cast<uint32_t>(buf[offset + 1]);
+}
+
 uint32_t testing::GetInt32(const vector<uint8_t> &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);

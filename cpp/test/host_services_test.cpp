@@ -9,7 +9,7 @@
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
 
-void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
+static void SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(10U, pages[32].size());
@@ -191,12 +191,12 @@ TEST(HostServicesTest, SetUpModePages)
 
     // Non changeable
     services.SetUpModePages(pages, 0x3f, false);
-    HostServices_SetUpModePages(pages);
+    SetUpModePages(pages);
 
     // Changeable
     pages.clear();
     services.SetUpModePages(pages, 0x3f, true);
-    HostServices_SetUpModePages(pages);
+    SetUpModePages(pages);
 }
 
 TEST(HostServicesTest, WriteData)

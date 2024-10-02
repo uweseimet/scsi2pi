@@ -8,7 +8,7 @@
 
 #include "mocks.h"
 
-void TapeTest_SetUpModePages(map<int, vector<byte>> &pages)
+static void SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[0].size());
@@ -68,6 +68,49 @@ TEST(TapeTest, ValidateFile)
     EXPECT_NO_THROW(tape.ValidateFile());
 }
 
+TEST(TapeTest, Open)
+{
+    MockTape tape(0, false);
+
+    EXPECT_THROW(tape.Open(), io_exception);
+
+    const auto &filename = CreateTempFile(4096);
+    tape.SetFilename(filename.string());
+    EXPECT_NO_THROW(tape.Open());
+}
+
+TEST(TapeTest, Read)
+{
+    auto [controller, device] = CreateDevice(SCTP);
+    auto tape = dynamic_pointer_cast<Tape>(device);
+
+    TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Fixed und SILI
+    controller->SetCdbByte(1, 0x03);
+    TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Fixed
+    controller->SetCdbByte(1, 0x01);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read6));
+}
+
+TEST(TapeTest, Write)
+{
+    auto [controller, device] = CreateDevice(SCTP);
+    auto tape = dynamic_pointer_cast<Tape>(device);
+
+    TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Fixed und SILI
+    controller->SetCdbByte(1, 0x03);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Fixed
+    controller->SetCdbByte(1, 0x01);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write6));
+}
+
 TEST(TapeTest, ReadData)
 {
     vector<uint8_t> buf(1);
@@ -96,13 +139,43 @@ TEST(TapeTest, WriteData)
 
 TEST(TapeTest, Erase)
 {
-    auto [controller, tape] = CreateDevice(SCTP);
+    auto [controller, device] = CreateDevice(SCTP);
+    auto tape = dynamic_pointer_cast<Tape>(device);
 
     tape->SetProtected(true);
     TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::data_protect, asc::write_protected);
 
     tape->SetProtected(false);
     TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::medium_error, asc::write_fault);
+
+    const auto &filename = CreateTempFile(4567);
+    tape->SetFilename(filename.string());
+    EXPECT_NO_THROW(tape->Open());
+
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
+    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 4)) << "Wrong first block location";
+    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 8)) << "Wrong last block location";
+
+    // Long
+    controller->SetCdbByte(1, 0x01);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_rewind));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_EQ(0b01000000, controller->GetBuffer()[0]) << "EOP must be set";
+    EXPECT_EQ(8, GetInt32(controller->GetBuffer(), 4)) << "Wrong first block location";
+    EXPECT_EQ(8, GetInt32(controller->GetBuffer(), 8)) << "Wrong last block location";
+}
+
+TEST(TapeTest, ReadBlockLimits)
+{
+    auto [controller, tape] = CreateDevice(SCTP);
+
+    memset(controller->GetBuffer().data(), 0xff, 6);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_block_limits));
+    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 4));
 }
 
 TEST(TapeTest, Space)
@@ -122,8 +195,11 @@ TEST(TapeTest, Space)
     TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     // BLOCK, count > 0
-    controller->SetCdbByte(2, 0);
     controller->SetCdbByte(2, 1);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::medium_error, asc::read_fault);
+
+    // End-of-data
+    controller->SetCdbByte(1, 0b011);
     TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::medium_error, asc::read_fault);
 
     // Invalid object type
@@ -139,6 +215,14 @@ TEST(TapeTest, WriteFileMarks)
     controller->SetCdbByte(1, 0b010);
     TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::illegal_request,
         asc::invalid_field_in_cdb);
+
+    // Count = 0
+    controller->SetCdbByte(1, 0b001);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write_filemarks));
+
+    // Count > 0
+    controller->SetCdbByte(2, 1);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::medium_error, asc::write_fault);
 
     tape->SetProtected(true);
     controller->SetCdbByte(1, 0b001);
@@ -188,12 +272,12 @@ TEST(TapeTest, SetUpModePages)
 
     // Non changeable
     tape.SetUpModePages(pages, 0x3f, false);
-    TapeTest_SetUpModePages(pages);
+    SetUpModePages(pages);
 
     // Changeable
     pages.clear();
     tape.SetUpModePages(pages, 0x3f, true);
-    TapeTest_SetUpModePages(pages);
+    SetUpModePages(pages);
 }
 
 TEST(TapeTest, GetStatistics)

@@ -12,7 +12,7 @@
 
 using namespace memory_util;
 
-void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)
+static void SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
@@ -49,12 +49,12 @@ TEST(OpticalMemoryTest, SetUpModePages)
 
     // Non changeable
     mo.SetUpModePages(pages, 0x3f, false);
-    ScsiMo_SetUpModePages(pages);
+    SetUpModePages(pages);
 
     // Changeable
     pages.clear();
     mo.SetUpModePages(pages, 0x3f, true);
-    ScsiMo_SetUpModePages(pages);
+    SetUpModePages(pages);
 }
 
 TEST(OpticalMemoryTest, AddVendorPages)

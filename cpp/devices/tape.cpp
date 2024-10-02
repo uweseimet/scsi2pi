@@ -275,14 +275,11 @@ void Tape::Erase()
 
     file.seekp(position, ios::beg);
     WriteMetaData(object_type::END_OF_DATA, 0);
-    position += sizeof(meta_data_t);
 
     // Check Long bit. Like with an HP35470A a long erase erases everything, otherwise only EOD is written.
     if (GetController()->GetCdb()[1] & 0x01) {
-        // Erase in 10240 byte chunks
-        vector<byte> buf(10240);
-
-        file.seekp(position, ios::beg);
+        // Erase in 4096 byte chunks
+        vector<byte> buf(4096);
 
         uint64_t remaining = filesize - position;
         while (remaining > 0) {
@@ -297,6 +294,8 @@ void Tape::Erase()
             }
 
             remaining -= chunk;
+            position += chunk;
+            block_location += chunk / GetBlockSize();
         }
     }
 
@@ -313,7 +312,7 @@ void Tape::ReadBlockLimits()
     vector<uint8_t> &buf = GetController()->GetBuffer();
     buf[0] = 0;
 
-    // Currently only Fixed mode is supported, using the configured block size
+    // Only Fixed mode is supported, using the configured block size
     SetInt24(buf, 1, GetBlockSize());
     SetInt16(buf, 4, GetBlockSize());
 
