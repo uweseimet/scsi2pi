@@ -97,9 +97,8 @@ void StorageDevice::StartStopUnit()
         }
     }
     else if (load && !last_filename.empty()) {
-        SetFilename (last_filename);
+        SetFilename(last_filename);
         if (!ReserveFile()) {
-            last_filename.clear();
             throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
         }
 
@@ -157,10 +156,9 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         return;
     }
 
-    int size = GetBlockSize();
-
-    int offset = EvaluateBlockDescriptors(cmd, span(buf.data(), length), size);
+    auto [offset, size] = EvaluateBlockDescriptors(cmd, span(buf.data(), length), block_size);
     length -= offset;
+    block_size = size;
 
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
@@ -228,7 +226,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
     ChangeBlockSize(size);
 }
 
-int StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int &size) const
+pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int size) const
 {
     assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
 
@@ -247,7 +245,8 @@ int StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t
         size = VerifyBlockSizeChange(GetInt16(buf, static_cast<int>(required_length) + 6), true);
     }
 
-    return static_cast<int>(descriptor_length + required_length);
+    // Offset and (potentially new) size
+    return {static_cast<int>(descriptor_length + required_length), size};
 }
 
 int StorageDevice::VerifyBlockSizeChange(int requested_size, bool temporary) const
@@ -277,13 +276,12 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
     }
 
-    const auto current_size = GetBlockSize();
+    const auto current_size = block_size;
     if (new_size != current_size) {
-        const uint64_t capacity = current_size * GetBlockCount();
-        SetBlockSize(new_size);
-        SetBlockCount(static_cast<uint32_t>(capacity / new_size));
+        block_size = new_size;
+        blocks = static_cast<uint32_t>(current_size * blocks / block_size);
 
-        LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, new_size));
+        LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, block_size));
     }
 }
 
@@ -314,10 +312,6 @@ void StorageDevice::ValidateFile()
 {
     if (!blocks) {
         throw io_exception("Device has 0 blocks");
-    }
-
-    if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
-        throw io_exception("Image files > 2 TiB are not supported");
     }
 
     // TODO Check for duplicate handling of these properties (-> CommandExecutor)

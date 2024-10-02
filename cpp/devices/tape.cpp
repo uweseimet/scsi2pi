@@ -370,6 +370,8 @@ void Tape::WriteFilemarks()
     CheckWritePreconditions();
 
     if (!tar_mode) {
+        file.seekp(position, ios::beg);
+
         const int count = GetInt24(GetController()->GetCdb(), 2);
         for (int i = 0; i < count; i++) {
             WriteMetaData(object_type::FILEMARK, 0);
@@ -436,8 +438,6 @@ void Tape::ReadPosition() const
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
-    file.seekp(position, ios::beg);
-
     meta_data_t meta_data;
     meta_data.type = type;
     meta_data.size = size;

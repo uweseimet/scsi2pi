@@ -393,112 +393,12 @@ TEST(DiskTest, WriteLong16)
         "WRITE LONG(16) must fail because it only supports a limited transfer length");
 }
 
-TEST(DiskTest, StartStopUnit)
-{
-    auto [controller, disk] = CreateDisk();
-
-    disk->SetRemovable(true);
-
-    // Stop/Unload
-    disk->SetReady(true);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_CALL(*disk, FlushCache);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_TRUE(disk->IsStopped());
-
-    // Stop/Load
-    controller->SetCdbByte(4, 0x02);
-    disk->SetReady(true);
-    disk->SetLocked(false);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_CALL(*disk, FlushCache);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-
-    disk->SetReady(false);
-    EXPECT_CALL(*disk, FlushCache).Times(0);
-    TestShared::Dispatch(*disk, scsi_command::cmd_start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "START/STOP must fail because drive is not ready");
-
-    disk->SetReady(true);
-    disk->SetLocked(true);
-    EXPECT_CALL(*disk, FlushCache).Times(0);
-    TestShared::Dispatch(*disk, scsi_command::cmd_start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "LOAD/EJECT must fail because drive is locked");
-
-    // Start/Unload
-    controller->SetCdbByte(4, 0x01);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_FALSE(disk->IsStopped());
-
-    // Start/Load
-    controller->SetCdbByte(4, 0x03);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-
-    // Start/Load with previous medium
-    controller->SetCdbByte(4, 0x02);
-    disk->SetLocked(false);
-    disk->SetFilename("filename");
-    EXPECT_CALL(*controller, Status);
-    EXPECT_CALL(*disk, FlushCache);
-    // Eject existing medium
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_TRUE(disk->GetFilename().empty());
-    // Re-load medium
-    controller->SetCdbByte(4, 0x03);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_EQ("filename", disk->GetFilename());
-}
-
-TEST(DiskTest, PreventAllowMediumRemoval)
-{
-    auto [controller, disk] = CreateDisk();
-
-    TestShared::Dispatch(*disk, scsi_command::cmd_prevent_allow_medium_removal, sense_key::not_ready,
-        asc::medium_not_present, "PREVENT/ALLOW MEDIUM REMOVAL must fail because drive is not ready");
-
-    disk->SetReady(true);
-
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_FALSE(disk->IsLocked());
-
-    controller->SetCdbByte(4, 1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_TRUE(disk->IsLocked());
-}
-
 TEST(DiskTest, Eject)
 {
     MockDisk disk;
 
-    disk.SetReady(false);
-    disk.SetRemovable(false);
-    disk.SetLocked(false);
-    EXPECT_CALL(disk, FlushCache).Times(0);
-    EXPECT_FALSE(disk.Eject(false));
-
+    disk.SetReady(true);
     disk.SetRemovable(true);
-    EXPECT_CALL(disk, FlushCache).Times(0);
-    EXPECT_FALSE(disk.Eject(false));
-
-    disk.SetReady(true);
-    disk.SetLocked(true);
-    EXPECT_CALL(disk, FlushCache).Times(0);
-    EXPECT_FALSE(disk.Eject(false));
-
-    disk.SetReady(true);
     disk.SetLocked(false);
     EXPECT_CALL(disk, FlushCache);
     EXPECT_TRUE(disk.Eject(false));
@@ -640,5 +540,13 @@ TEST(DiskTest, GetStatistics)
 {
     MockDisk disk;
 
-    EXPECT_EQ(2U, disk.GetStatistics().size());
+    // There is no cache, therefore there are only 2 items
+    const auto &statistics = disk.GetStatistics();
+    EXPECT_EQ(2U, statistics.size());
+    EXPECT_EQ("block_read_count", statistics[0].key());
+    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
+    EXPECT_EQ("block_write_count", statistics[1].key());
+    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
 }

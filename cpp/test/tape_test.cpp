@@ -41,10 +41,144 @@ TEST(TapeTest, Device_Defaults)
     EXPECT_EQ(TestShared::GetVersion(), tape.GetRevision());
 }
 
+TEST(TapeTest, InitDevice)
+{
+    MockTape tape(0, false);
+
+    EXPECT_TRUE(tape.InitDevice());
+}
+
 TEST(TapeTest, Inquiry)
 {
     TestShared::Inquiry(SCTP, device_type::sequential_access, scsi_level::scsi_2, "SCSI2Pi SCSI TAPE       ", 0x1f,
         true);
+}
+
+TEST(TapeTest, ValidateFile)
+{
+    MockTape tape(0, false);
+
+    EXPECT_THROW(tape.ValidateFile(), io_exception)<< "Invalid block count";
+
+    tape.SetBlockCount(1);
+    EXPECT_THROW(tape.ValidateFile(), io_exception)<< "Missing filename";
+
+    const auto &filename = CreateTempFile(1);
+    tape.SetFilename(filename.string());
+    EXPECT_NO_THROW(tape.ValidateFile());
+}
+
+TEST(TapeTest, ReadData)
+{
+    vector<uint8_t> buf(1);
+
+    MockTape tape_tar(0, true);
+    tape_tar.SetReady(true);
+    EXPECT_THROW(tape_tar.ReadData(buf), scsi_exception);
+
+    MockTape tape_tap(0, false);
+    tape_tap.SetReady(true);
+    EXPECT_THROW(tape_tap.ReadData(buf), scsi_exception);
+}
+
+TEST(TapeTest, WriteData)
+{
+    vector<uint8_t> buf(1);
+
+    MockTape tape_tar(0, true);
+    tape_tar.SetReady(true);
+    EXPECT_THROW(tape_tar.WriteData(buf, scsi_command::cmd_write6), scsi_exception);
+
+    MockTape tape_tap(0, false);
+    tape_tap.SetReady(true);
+    EXPECT_THROW(tape_tap.WriteData(buf, scsi_command::cmd_write6), scsi_exception);
+}
+
+TEST(TapeTest, Erase)
+{
+    auto [controller, tape] = CreateDevice(SCTP);
+
+    tape->SetProtected(true);
+    TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::data_protect, asc::write_protected);
+
+    tape->SetProtected(false);
+    TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::medium_error, asc::write_fault);
+}
+
+TEST(TapeTest, Space)
+{
+    auto [_, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
+
+    TestShared::Dispatch(*tape_tar, scsi_command::cmd_space, sense_key::illegal_request,
+        asc::invalid_command_operation_code);
+
+    auto [controller, tape_tap] = CreateDevice(SCTP, 0, "test.tap");
+
+    // BLOCK, count = 0
+    EXPECT_NO_THROW(tape_tap->Dispatch(scsi_command::cmd_space));
+
+    // BLOCK, count < 0
+    controller->SetCdbByte(2, 0xff);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // BLOCK, count > 0
+    controller->SetCdbByte(2, 0);
+    controller->SetCdbByte(2, 1);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::medium_error, asc::read_fault);
+
+    // Invalid object type
+    controller->SetCdbByte(1, 0b111);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::illegal_request, asc::invalid_field_in_cdb);
+}
+
+TEST(TapeTest, WriteFileMarks)
+{
+    auto [controller, tape] = CreateDevice(SCTP);
+
+    // Setmarks are not supported
+    controller->SetCdbByte(1, 0b010);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::illegal_request,
+        asc::invalid_field_in_cdb);
+
+    tape->SetProtected(true);
+    controller->SetCdbByte(1, 0b001);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::data_protect, asc::write_protected);
+}
+
+TEST(TapeTest, Locate)
+{
+    auto [controller, tape_tap] = CreateDevice(SCTP);
+
+    // CP is not supported
+    controller->SetCdbByte(1, 0x02);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_locate, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    controller->SetCdbByte(1, 0);
+    TestShared::Dispatch(*tape_tap, scsi_command::cmd_locate, sense_key::medium_error, asc::read_fault);
+
+    auto [_, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
+
+    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_locate));
+}
+
+TEST(TapeTest, ReadPosition)
+{
+    auto [controller_tap, tape_tap] = CreateDevice(SCTP);
+
+    memset(controller_tap->GetBuffer().data() + 2 * sizeof(uint32_t), 0xff, 8);
+    EXPECT_NO_THROW(tape_tap->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_EQ(0b11000000, controller_tap->GetBuffer()[0]) << "BOP and EOP must be set";
+    EXPECT_EQ(0, GetInt32(controller_tap->GetBuffer(), 4)) << "Wrong first block location";
+    EXPECT_EQ(0, GetInt32(controller_tap->GetBuffer(), 8)) << "Wrong last block location";
+
+    auto [controller_tar, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
+
+    controller_tar->SetCdbByte(6, 123);
+    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_locate));
+    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_EQ(0b11000000, controller_tap->GetBuffer()[0]) << "BOP and EOP must be set";
+    EXPECT_EQ(123, GetInt32(controller_tar->GetBuffer(), 4)) << "Wrong first block location";
+    EXPECT_EQ(123, GetInt32(controller_tar->GetBuffer(), 8)) << "Wrong last block location";
 }
 
 TEST(TapeTest, SetUpModePages)
@@ -62,18 +196,22 @@ TEST(TapeTest, SetUpModePages)
     TapeTest_SetUpModePages(pages);
 }
 
-TEST(TapeTest, SendDiagnostic)
-{
-    auto [controller, tape] = CreateDevice(SCTP);
-
-    EXPECT_CALL(*controller, Status()).Times(1);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-}
-
 TEST(TapeTest, GetStatistics)
 {
     Tape tape(0, false);
 
-    EXPECT_EQ(4U, tape.GetStatistics().size());
+    const auto &statistics = tape.GetStatistics();
+    EXPECT_EQ(4U, statistics.size());
+    EXPECT_EQ("block_read_count", statistics[0].key());
+    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
+    EXPECT_EQ("block_write_count", statistics[1].key());
+    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
+    EXPECT_EQ("read_error_count", statistics[2].key());
+    EXPECT_EQ(0, statistics[2].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[2].category());
+    EXPECT_EQ("write_error_count", statistics[3].key());
+    EXPECT_EQ(0, statistics[3].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[3].category());
 }

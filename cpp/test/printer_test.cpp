@@ -85,15 +85,6 @@ TEST(PrinterTest, ReleaseUnit)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(PrinterTest, SendDiagnostic)
-{
-    auto [controller, printer] = CreateDevice(SCLP);
-
-    EXPECT_CALL(*controller, Status()).Times(1);
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_send_diagnostic));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-}
-
 TEST(PrinterTest, Print)
 {
     auto [controller, printer] = CreateDevice(SCLP);
@@ -139,6 +130,19 @@ TEST(PrinterTest, GetStatistics)
 {
     Printer printer(0);
 
-    EXPECT_EQ(4U, printer.GetStatistics().size());
+    const auto &statistics = printer.GetStatistics();
+    EXPECT_EQ(4U, statistics.size());
+    EXPECT_EQ("file_print_count", statistics[0].key());
+    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
+    EXPECT_EQ("byte_receive_count", statistics[1].key());
+    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
+    EXPECT_EQ("print_error_count", statistics[2].key());
+    EXPECT_EQ(0, statistics[2].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[2].category());
+    EXPECT_EQ("print_warning_count", statistics[3].key());
+    EXPECT_EQ(0, statistics[3].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_WARNING, statistics[3].category());
 }
 

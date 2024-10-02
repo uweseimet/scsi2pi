@@ -109,6 +109,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
     FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
     FRIEND_TEST(PrimaryDeviceTest, UnknownCommand);
+    FRIEND_TEST(StorageDeviceTest, PreventAllowMediumRemoval);
+    FRIEND_TEST(StorageDeviceTest, StartStopUnit);
+    FRIEND_TEST(StorageDeviceTest, ModeSense6);
+    FRIEND_TEST(StorageDeviceTest, ModeSense10);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -129,12 +133,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);
     FRIEND_TEST(DiskTest, WriteLong16);
-    FRIEND_TEST(DiskTest, PreventAllowMediumRemoval);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, StartStopUnit);
-    FRIEND_TEST(StorageDeviceTest, ModeSense6);
-    FRIEND_TEST(StorageDeviceTest, ModeSense10);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
@@ -157,6 +157,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrinterTest, Print);
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
+    FRIEND_TEST(TapeTest, Space);
+    FRIEND_TEST(TapeTest, WriteFileMarks);
+    FRIEND_TEST(TapeTest, Locate);
+    FRIEND_TEST(TapeTest, ReadPosition);
 
 public:
 
@@ -274,6 +278,8 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
+    FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
+    FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
     FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
@@ -281,16 +287,30 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, ChangeBlockSize);
     FRIEND_TEST(StorageDeviceTest, ModeSense6);
     FRIEND_TEST(StorageDeviceTest, ModeSense10);
+    FRIEND_TEST(StorageDeviceTest, GetStatistics);
 
 public:
 
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
+    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
     }
     ~MockStorageDevice() override = default;
+
+    void SetReady(bool b)
+    {
+        PrimaryDevice::SetReady(b);
+    }
+    void SetRemovable(bool b)
+    {
+        PrimaryDevice::SetRemovable(b);
+    }
+    void SetLocked(bool b)
+    {
+        PrimaryDevice::SetLocked(b);
+    }
 };
 
 class MockDisk : public Disk
@@ -317,8 +337,6 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, WriteLong16);
     FRIEND_TEST(DiskTest, ReserveRelease);
     FRIEND_TEST(DiskTest, SendDiagnostic);
-    FRIEND_TEST(DiskTest, StartStopUnit);
-    FRIEND_TEST(DiskTest, PreventAllowMediumRemoval);
     FRIEND_TEST(DiskTest, Eject);
     FRIEND_TEST(DiskTest, AddAppleVendorPage);
     FRIEND_TEST(DiskTest, ModeSense6);
@@ -418,9 +436,17 @@ class MockHostServices : public HostServices
 
 class MockTape : public Tape
 {
+    FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, SetUpModePages);
 
+public:
+
     using Tape::Tape;
+
+    void SetReady(bool b)
+    {
+        StorageDevice::SetReady(b);
+    }
 };
 
 class MockCommandExecutor : public CommandExecutor

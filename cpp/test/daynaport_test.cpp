@@ -187,5 +187,12 @@ TEST(ScsiDaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);
 
-    EXPECT_EQ(2U, daynaport.GetStatistics().size());
+    const auto &statistics = daynaport.GetStatistics();
+    EXPECT_EQ(2U, statistics.size());
+    EXPECT_EQ("byte_read_count", statistics[0].key());
+    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
+    EXPECT_EQ("byte_write_count", statistics[1].key());
+    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
 }
