@@ -79,6 +79,12 @@ vector<uint8_t> ScsiHd::InquiryInternal() const
     return HandleInquiry(device_type::direct_access, IsRemovable());
 }
 
+bool ScsiHd::ValidateBlockSize(uint32_t size) const
+{
+    // Non-removable hard drives support multiples of 4
+    return IsRemovable() ? Disk::ValidateBlockSize(size) : size && !(size % 4);
+}
+
 void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     Disk::SetUpModePages(pages, page, changeable);

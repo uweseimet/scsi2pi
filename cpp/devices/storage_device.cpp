@@ -21,7 +21,7 @@ StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool 
     SupportsFile(true);
 }
 
-bool StorageDevice::InitDevice()
+bool StorageDevice::SetUp()
 {
     AddCommand(scsi_command::cmd_start_stop, [this]
         {
@@ -296,16 +296,20 @@ bool StorageDevice::SetBlockSize(uint32_t size)
     return true;
 }
 
-bool StorageDevice::SetConfiguredBlockSize(uint32_t configured_size)
+bool StorageDevice::SetConfiguredBlockSize(uint32_t size)
 {
-    if (!configured_size || configured_size % 4
-        || (!supported_block_sizes.contains(configured_size) && GetType() != SCHD)) {
-        return false;
+    if (ValidateBlockSize(size)) {
+        configured_block_size = size;
+
+        return true;
     }
 
-    configured_block_size = configured_size;
+    return false;
+}
 
-    return true;
+bool StorageDevice::ValidateBlockSize(uint32_t size) const
+{
+    return supported_block_sizes.contains(size);
 }
 
 void StorageDevice::ValidateFile()

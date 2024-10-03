@@ -30,13 +30,13 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_set_iface_mode, 6, "SET INTERFACE MODE");
     AddCommand(scsi_command::cmd_set_mcast_addr, 6, "SET MULTICAST ADDRESS");
     AddCommand(scsi_command::cmd_enable_interface, 6, "ENABLE INTERFACE");
-    AddCommand(scsi_command::cmd_synchronize_buffer, 6, "SYNCHRONIZE BUFFER/WRITE_FILEMARKS");
-    AddCommand(scsi_command::cmd_space, 6, "SPACE");
+    AddCommand(scsi_command::cmd_synchronize_buffer, 6, "SYNCHRONIZE BUFFER/WRITE_FILEMARKS(6)");
+    AddCommand(scsi_command::cmd_space6, 6, "SPACE(6)");
     AddCommand(scsi_command::cmd_inquiry, 6, "INQUIRY");
     AddCommand(scsi_command::cmd_mode_select6, 6, "MODE SELECT(6)");
     AddCommand(scsi_command::cmd_reserve6, 6, "RESERVE(6)");
     AddCommand(scsi_command::cmd_release6, 6, "RELEASE(6)");
-    AddCommand(scsi_command::cmd_erase, 6, "ERASE");
+    AddCommand(scsi_command::cmd_erase6, 6, "ERASE(6)");
     AddCommand(scsi_command::cmd_mode_sense6, 6, "MODE SENSE(6)");
     AddCommand(scsi_command::cmd_start_stop, 6, "START STOP UNIT/STOP PRINT");
     AddCommand(scsi_command::cmd_send_diagnostic, 6, "SEND DIAGNOSTIC");
@@ -44,7 +44,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_read_capacity10, 10, "READ CAPACITY(10)");
     AddCommand(scsi_command::cmd_read10, 10, "READ(10)");
     AddCommand(scsi_command::cmd_write10, 10, "WRITE(10)");
-    AddCommand(scsi_command::cmd_seek10, 10, "SEEK(10)/LOCATE");
+    AddCommand(scsi_command::cmd_seek10, 10, "SEEK(10)/LOCATE(10)");
     AddCommand(scsi_command::cmd_verify10, 10, "VERIFY(10)");
     AddCommand(scsi_command::cmd_synchronize_cache10, 10, "SYNCHRONIZE CACHE(10)");
     AddCommand(scsi_command::cmd_read_defect_data10, 10, "READ DEFECT DATA(10)");
@@ -58,6 +58,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_verify16, 16, "VERIFY(16)");
     AddCommand(scsi_command::cmd_read_position, 10, "READ POSITION");
     AddCommand(scsi_command::cmd_synchronize_cache16, 16, "SYNCHRONIZE CACHE(16)");
+    AddCommand(scsi_command::cmd_locate16, 16, "LOCATE(16)");
     AddCommand(scsi_command::cmd_read_capacity16_read_long16, 16, "READ CAPACITY(16)/READ LONG(16)");
     AddCommand(scsi_command::cmd_write_long16, 16, "WRITE LONG(16)");
     AddCommand(scsi_command::cmd_report_luns, 12, "REPORT LUNS");

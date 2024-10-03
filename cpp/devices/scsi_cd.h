@@ -19,7 +19,7 @@ public:
     explicit ScsiCd(int, bool = false);
     ~ScsiCd() override = default;
 
-    bool InitDevice() override;
+    bool SetUp() override;
 
     void Open() override;
 

@@ -57,6 +57,7 @@ pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
 string ToUpper(const string&);
 string ToLower(const string&);
+string GetExtensionLowerCase(string_view);
 string GetLocale();
 string GetLine(const string&);
 bool GetAsUnsignedInt(const string&, int&);

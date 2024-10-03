@@ -19,11 +19,13 @@ class Tape : public StorageDevice, public ScsiStreamCommands
 
 public:
 
-    Tape(int, bool);
+    explicit Tape(int);
     ~Tape() override = default;
 
-    bool InitDevice() override;
+    bool SetUp() override;
     void CleanUp() override;
+
+    bool Eject(bool) override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
 
@@ -59,18 +61,27 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void Read() override;
-    void Write() override;
-    void Erase() override;
+    void Read6() override;
+    void Write6() override;
+    void Erase6() override;
     void ReadBlockLimits() override;
     void Rewind() override;
-    void Space() override;
-    void WriteFilemarks() override;
-    void Locate();
+    void Space6() override;
+    void WriteFilemarks6() override;
+    void Locate10()
+    {
+        Locate(false);
+    }
+    void Locate16()
+    {
+        Locate(true);
+    }
     void ReadPosition() const;
 
+    void Locate(bool);
+
     void WriteMetaData(Tape::object_type, uint32_t);
-    uint32_t FindNextObject(Tape::object_type, int);
+    uint32_t FindNextObject(Tape::object_type, int64_t);
 
     int GetByteCount() const;
 
@@ -82,7 +93,7 @@ private:
 
     uint64_t position = 0;
 
-    uint32_t block_location = 0;
+    uint64_t block_location = 0;
 
     int byte_count = 0;
 

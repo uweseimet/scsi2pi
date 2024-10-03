@@ -110,7 +110,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
     }
 }
 
-pair<int, path> testing::OpenTempFile()
+pair<int, path> testing::OpenTempFile(const string &extension)
 {
     const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.cbegin(), filename.cend());
@@ -119,27 +119,31 @@ pair<int, path> testing::OpenTempFile()
     const int fd = mkstemp(f.data());
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
 
-    TestShared::RememberTempFile(f.data());
+    string effective_name = f.data();
+    if (!extension.empty()) {
+        effective_name += "." + extension;
+        rename(path(f.data()), path(effective_name));
+    }
 
-    return {fd, path(f.data())};
+    TestShared::RememberTempFile(effective_name);
+
+    return {fd, path(effective_name)};
 }
 
-path testing::CreateTempFile(size_t size)
+path testing::CreateTempFile(size_t size, const string &extension)
 {
-    return path(CreateTempFileWithData(vector<byte>(size)));
+    return path(CreateTempFileWithData(vector<byte>(size), extension));
 }
 
-string testing::CreateTempFileWithData(const span<const byte> data)
+string testing::CreateTempFileWithData(const span<const byte> data, const string &extension)
 {
-    const auto& [fd, filename] = OpenTempFile();
+    const auto& [fd, filename] = OpenTempFile(extension);
 
     const size_t count = write(fd, data.data(), data.size());
     close(fd);
-    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
+    EXPECT_EQ(count, data.size()) << "Couldn't write to temporary file '" << filename << "'";
 
-    TestShared::RememberTempFile(filename);
-
-    return filename;
+    return filename.string();
 }
 
 string testing::ReadTempFileToString(const string &filename)

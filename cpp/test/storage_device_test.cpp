@@ -198,9 +198,12 @@ TEST(StorageDeviceTest, MediumChanged)
 
 TEST(StorageDeviceTest, ConfiguredBlockSize)
 {
-    MockScsiHd device(0, false);
+    MockStorageDevice device;
 
     EXPECT_TRUE(device.SetConfiguredBlockSize(512));
+    EXPECT_EQ(512U, device.GetConfiguredBlockSize());
+
+    EXPECT_FALSE(device.SetConfiguredBlockSize(4));
     EXPECT_EQ(512U, device.GetConfiguredBlockSize());
 
     EXPECT_FALSE(device.SetConfiguredBlockSize(1234));

@@ -29,7 +29,7 @@ public:
     ~PrimaryDevice() override = default;
 
     bool Init(const param_map&);
-    virtual bool InitDevice() = 0;
+    virtual bool SetUp() = 0;
     virtual void CleanUp()
     {
         // Override if cleanup work is required for a derived device
@@ -69,9 +69,10 @@ public:
     {
         eom = true;
     }
-    void SetInformation(uint32_t value)
+    void SetInformation(int64_t value)
     {
-        information = value;
+        // TODO Add 64 bit support
+        information = static_cast<uint32_t>(value);
         valid = true;
     }
 

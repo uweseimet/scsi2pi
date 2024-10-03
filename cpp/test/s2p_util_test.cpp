@@ -57,6 +57,13 @@ TEST(S2pUtilTest, ToLower)
     EXPECT_EQ("abc", ToLower("ABC"));
 }
 
+TEST(S2pUtilTest, GetExtensionLowerCase)
+{
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.ext"));
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.EXT"));
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.1.EXT"));
+}
+
 TEST(S2pUtilTest, ProcessId)
 {
     int id = -1;

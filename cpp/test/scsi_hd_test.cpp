@@ -29,7 +29,7 @@ static void SetUpModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(24U, pages[48].size());
 }
 
-void ScsiHdTest_ValidateFormatPage(AbstractController &controller, int offset)
+static void ValidateFormatPage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x08, buf[offset + 3]) << "Wrong number of tracks in one zone";
@@ -42,7 +42,7 @@ void ScsiHdTest_ValidateFormatPage(AbstractController &controller, int offset)
     EXPECT_TRUE(buf[offset + 20] & 0x40) << "Wrong hard-sectored flag";
 }
 
-void ScsiHdTest_ValidateDrivePage(AbstractController &controller, int offset)
+static void ValidateDrivePage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x17, buf[offset + 2]);
@@ -141,6 +141,20 @@ TEST(ScsiHdTest, GetBlockSizes)
     EXPECT_TRUE(sector_sizes.contains(4096));
 }
 
+TEST(ScsiHdTest, ConfiguredBlockSize)
+{
+    MockScsiHd hd(0, false);
+
+    EXPECT_TRUE(hd.SetConfiguredBlockSize(512));
+    EXPECT_EQ(512U, hd.GetConfiguredBlockSize());
+
+    EXPECT_TRUE(hd.SetConfiguredBlockSize(4));
+    EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
+
+    EXPECT_FALSE(hd.SetConfiguredBlockSize(1234));
+    EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
+}
+
 TEST(ScsiHdTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
@@ -176,13 +190,13 @@ TEST(ScsiHdTest, ModeSense6)
     controller.SetCdbByte(2, 0x03);
     hd->SetBlockSize(1024);
     EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_mode_sense6));
-    ScsiHdTest_ValidateFormatPage(controller, 12);
+    ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
     hd->SetBlockCount(0x12345678);
     EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_mode_sense6));
-    ScsiHdTest_ValidateDrivePage(controller, 12);
+    ValidateDrivePage(controller, 12);
 }
 
 TEST(ScsiHdTest, ModeSense10)
@@ -205,13 +219,13 @@ TEST(ScsiHdTest, ModeSense10)
     controller.SetCdbByte(2, 0x03);
     hd->SetBlockSize(1024);
     EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_mode_sense10));
-    ScsiHdTest_ValidateFormatPage(controller, 16);
+    ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
     hd->SetBlockCount(0x12345678);
     EXPECT_NO_THROW(hd->Dispatch(scsi_command::cmd_mode_sense10));
-    ScsiHdTest_ValidateDrivePage(controller, 16);
+    ValidateDrivePage(controller, 16);
 }
 
 TEST(ScsiHdTest, ModeSelect)

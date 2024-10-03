@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2024 Uwe Seimet
 //
-// Interface for SCSI streamer commands (see SCSI-2 specification)
+// Interface for SCSI streamer commands (see SCSI-2 and SSC-2 specification)
 //
 //---------------------------------------------------------------------------
 
@@ -18,13 +18,13 @@ public:
     virtual ~ScsiStreamCommands() = default;
 
     // Mandatory commands
-    virtual void Erase() = 0;
-    virtual void Read() = 0;
+    virtual void Erase6() = 0;
+    virtual void Read6() = 0;
     virtual void ReadBlockLimits() = 0;
     virtual void Rewind() = 0;
-    virtual void Space() = 0;
-    virtual void Write() = 0;
-    virtual void WriteFilemarks() = 0;
+    virtual void Space6() = 0;
+    virtual void Write6() = 0;
+    virtual void WriteFilemarks6() = 0;
 
 protected:
 

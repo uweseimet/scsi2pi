@@ -102,7 +102,7 @@ HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun
     SetProduct("Host Services");
 }
 
-bool HostServices::InitDevice()
+bool HostServices::SetUp()
 {
     AddCommand(scsi_command::cmd_test_unit_ready, [this]
         {

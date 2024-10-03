@@ -157,12 +157,14 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrinterTest, Print);
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
-    FRIEND_TEST(TapeTest, Read);
-    FRIEND_TEST(TapeTest, Write);
-    FRIEND_TEST(TapeTest, Erase);
-    FRIEND_TEST(TapeTest, Space);
-    FRIEND_TEST(TapeTest, WriteFileMarks);
-    FRIEND_TEST(TapeTest, Locate);
+    FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Write6);
+    FRIEND_TEST(TapeTest, Erase6);
+    FRIEND_TEST(TapeTest, Space6);
+    FRIEND_TEST(TapeTest, Space16);
+    FRIEND_TEST(TapeTest, WriteFileMarks6);
+    FRIEND_TEST(TapeTest, Locate10);
+    FRIEND_TEST(TapeTest, Locate16);
     FRIEND_TEST(TapeTest, ReadPosition);
 
 public:
@@ -267,7 +269,7 @@ public:
     }
     ~MockPrimaryDevice() override = default;
 
-    bool InitDevice() override
+    bool SetUp() override
     {
         return true;
     }
@@ -441,6 +443,8 @@ class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, SetUpModePages);
+    FRIEND_TEST(TapeTest, ReadData);
+    FRIEND_TEST(TapeTest, WriteData);
 
 public:
 
@@ -454,6 +458,7 @@ public:
 
 class MockCommandExecutor : public CommandExecutor
 {
+
 public:
 
     MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));

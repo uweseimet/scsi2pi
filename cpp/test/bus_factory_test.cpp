@@ -60,6 +60,7 @@ TEST(BusFactoryTest, GetCommandBytesCount)
     EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x8a)));
     EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x8f)));
     EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x91)));
+    EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x92)));
     EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x9e)));
     EXPECT_EQ(16, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x9f)));
     EXPECT_EQ(12, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0xa0)));
@@ -73,7 +74,7 @@ TEST(BusFactoryTest, GetCommandBytesCount)
             ++command_count;
         }
     }
-    EXPECT_EQ(46, command_count);
+    EXPECT_EQ(47, command_count);
 }
 
 TEST(BusFactoryTest, GetCommandName)
@@ -96,14 +97,15 @@ TEST(BusFactoryTest, GetCommandName)
     EXPECT_EQ("SET INTERFACE MODE", bus_factory.GetCommandName(scsi_command::cmd_set_iface_mode));
     EXPECT_EQ("SET MULTICAST ADDRESS", bus_factory.GetCommandName(scsi_command::cmd_set_mcast_addr));
     EXPECT_EQ("ENABLE INTERFACE", bus_factory.GetCommandName(scsi_command::cmd_enable_interface));
-    EXPECT_EQ("SYNCHRONIZE BUFFER/WRITE_FILEMARKS", bus_factory.GetCommandName(scsi_command::cmd_synchronize_buffer));
-    EXPECT_EQ("SYNCHRONIZE BUFFER/WRITE_FILEMARKS", bus_factory.GetCommandName(scsi_command::cmd_write_filemarks));
-    EXPECT_EQ("SPACE", bus_factory.GetCommandName(scsi_command::cmd_space));
+    EXPECT_EQ("SYNCHRONIZE BUFFER/WRITE_FILEMARKS(6)",
+        bus_factory.GetCommandName(scsi_command::cmd_synchronize_buffer));
+    EXPECT_EQ("SYNCHRONIZE BUFFER/WRITE_FILEMARKS(6)", bus_factory.GetCommandName(scsi_command::cmd_write_filemarks6));
+    EXPECT_EQ("SPACE(6)", bus_factory.GetCommandName(scsi_command::cmd_space6));
     EXPECT_EQ("INQUIRY", bus_factory.GetCommandName(scsi_command::cmd_inquiry));
     EXPECT_EQ("MODE SELECT(6)", bus_factory.GetCommandName(scsi_command::cmd_mode_select6));
     EXPECT_EQ("RESERVE(6)", bus_factory.GetCommandName(scsi_command::cmd_reserve6));
     EXPECT_EQ("RELEASE(6)", bus_factory.GetCommandName(scsi_command::cmd_release6));
-    EXPECT_EQ("ERASE", bus_factory.GetCommandName(scsi_command::cmd_erase));
+    EXPECT_EQ("ERASE(6)", bus_factory.GetCommandName(scsi_command::cmd_erase6));
     EXPECT_EQ("MODE SENSE(6)", bus_factory.GetCommandName(scsi_command::cmd_mode_sense6));
     EXPECT_EQ("START STOP UNIT/STOP PRINT", bus_factory.GetCommandName(scsi_command::cmd_start_stop));
     EXPECT_EQ("START STOP UNIT/STOP PRINT", bus_factory.GetCommandName(scsi_command::cmd_stop_print));
@@ -113,8 +115,8 @@ TEST(BusFactoryTest, GetCommandName)
     EXPECT_EQ("READ CAPACITY(10)", bus_factory.GetCommandName(scsi_command::cmd_read_capacity10));
     EXPECT_EQ("READ(10)", bus_factory.GetCommandName(scsi_command::cmd_read10));
     EXPECT_EQ("WRITE(10)", bus_factory.GetCommandName(scsi_command::cmd_write10));
-    EXPECT_EQ("SEEK(10)/LOCATE", bus_factory.GetCommandName(scsi_command::cmd_seek10));
-    EXPECT_EQ("SEEK(10)/LOCATE", bus_factory.GetCommandName(scsi_command::cmd_locate));
+    EXPECT_EQ("SEEK(10)/LOCATE(10)", bus_factory.GetCommandName(scsi_command::cmd_seek10));
+    EXPECT_EQ("SEEK(10)/LOCATE(10)", bus_factory.GetCommandName(scsi_command::cmd_locate10));
     EXPECT_EQ("READ POSITION", bus_factory.GetCommandName(scsi_command::cmd_read_position));
     EXPECT_EQ("VERIFY(10)", bus_factory.GetCommandName(scsi_command::cmd_verify10));
     EXPECT_EQ("SYNCHRONIZE CACHE(10)", bus_factory.GetCommandName(scsi_command::cmd_synchronize_cache10));
@@ -130,6 +132,7 @@ TEST(BusFactoryTest, GetCommandName)
     EXPECT_EQ("SYNCHRONIZE CACHE(16)", bus_factory.GetCommandName(scsi_command::cmd_synchronize_cache16));
     EXPECT_EQ("READ CAPACITY(16)/READ LONG(16)",
         bus_factory.GetCommandName(scsi_command::cmd_read_capacity16_read_long16));
+    EXPECT_EQ("LOCATE(16)", bus_factory.GetCommandName(scsi_command::cmd_locate16));
     EXPECT_EQ("WRITE LONG(16)", bus_factory.GetCommandName(scsi_command::cmd_write_long16));
     EXPECT_EQ("REPORT LUNS", bus_factory.GetCommandName(scsi_command::cmd_report_luns));
     EXPECT_EQ("EXECUTE OPERATION (SCSI2Pi-specific)", bus_factory.GetCommandName(scsi_command::cmd_execute_operation));

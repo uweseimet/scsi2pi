@@ -43,8 +43,6 @@ private:
 
     DeviceFactory();
 
-    static string GetExtensionLowerCase(string_view);
-
     inline static const unordered_map<string_view, PbDeviceType> DEVICE_MAPPING = {
         { "daynaport", SCDP },
         { "printer", SCLP },

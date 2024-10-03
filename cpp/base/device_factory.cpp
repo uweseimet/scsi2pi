@@ -34,6 +34,8 @@
 #endif
 #include "shared/s2p_util.h"
 
+using namespace s2p_util;
+
 DeviceFactory::DeviceFactory()
 {
 #if defined BUILD_SCHD || defined BUILD_SCRM
@@ -92,10 +94,8 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 #endif
 
 #ifdef BUILD_SCTP
-    case SCTP: {
-        const string &ext = GetExtensionLowerCase(filename);
-        return make_shared<Tape>(lun, ext == "tar");
-    }
+    case SCTP:
+        return make_shared<Tape>(lun);
 #endif
 
 #ifdef BUILD_SCDP
@@ -147,12 +147,4 @@ bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType ty
     mapping[extension] = type;
 
     return true;
-}
-
-string DeviceFactory::GetExtensionLowerCase(string_view filename)
-{
-    const string &ext = s2p_util::ToLower(filesystem::path(filename).extension().string());
-
-    // Remove the leading dot
-    return ext.empty() ? "" : ext.substr(1);
 }

@@ -19,9 +19,17 @@ static void SetUpModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(8U, pages[17].size());
 }
 
+static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position)
+{
+    memset(controller.GetBuffer().data() + 4 + 2 * sizeof(uint32_t), 0xff, 8);
+    tape.Dispatch(scsi_command::cmd_read_position);
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first block location";
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last block location";
+}
+
 TEST(TapeTest, Device_Defaults)
 {
-    Tape tape(0, false);
+    Tape tape(0);
 
     EXPECT_EQ(SCTP, tape.GetType());
     EXPECT_TRUE(tape.SupportsFile());
@@ -41,11 +49,11 @@ TEST(TapeTest, Device_Defaults)
     EXPECT_EQ(TestShared::GetVersion(), tape.GetRevision());
 }
 
-TEST(TapeTest, InitDevice)
+TEST(TapeTest, SetUp)
 {
-    MockTape tape(0, false);
+    Tape tape(0);
 
-    EXPECT_TRUE(tape.InitDevice());
+    EXPECT_TRUE(tape.SetUp());
 }
 
 TEST(TapeTest, Inquiry)
@@ -56,7 +64,7 @@ TEST(TapeTest, Inquiry)
 
 TEST(TapeTest, ValidateFile)
 {
-    MockTape tape(0, false);
+    MockTape tape(0);
 
     EXPECT_THROW(tape.ValidateFile(), io_exception)<< "Invalid block count";
 
@@ -70,7 +78,7 @@ TEST(TapeTest, ValidateFile)
 
 TEST(TapeTest, Open)
 {
-    MockTape tape(0, false);
+    Tape tape(0);
 
     EXPECT_THROW(tape.Open(), io_exception);
 
@@ -79,7 +87,7 @@ TEST(TapeTest, Open)
     EXPECT_NO_THROW(tape.Open());
 }
 
-TEST(TapeTest, Read)
+TEST(TapeTest, Read6)
 {
     auto [controller, device] = CreateDevice(SCTP);
     auto tape = dynamic_pointer_cast<Tape>(device);
@@ -95,7 +103,7 @@ TEST(TapeTest, Read)
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read6));
 }
 
-TEST(TapeTest, Write)
+TEST(TapeTest, Write6)
 {
     auto [controller, device] = CreateDevice(SCTP);
     auto tape = dynamic_pointer_cast<Tape>(device);
@@ -114,58 +122,66 @@ TEST(TapeTest, Write)
 TEST(TapeTest, ReadData)
 {
     vector<uint8_t> buf(1);
+    MockTape tape(0);
 
-    MockTape tape_tar(0, true);
-    tape_tar.SetReady(true);
-    EXPECT_THROW(tape_tar.ReadData(buf), scsi_exception);
+    tape.SetReady(true);
+    tape.SetBlockCount(1);
+    auto filename = CreateTempFile(1, "tap");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_THROW(tape.ReadData(buf), scsi_exception);
 
-    MockTape tape_tap(0, false);
-    tape_tap.SetReady(true);
-    EXPECT_THROW(tape_tap.ReadData(buf), scsi_exception);
+    tape.CleanUp();
+    filename = CreateTempFile(1, "tar");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_NO_THROW(tape.ReadData(buf));
 }
 
 TEST(TapeTest, WriteData)
 {
     vector<uint8_t> buf(1);
+    MockTape tape(0);
 
-    MockTape tape_tar(0, true);
-    tape_tar.SetReady(true);
-    EXPECT_THROW(tape_tar.WriteData(buf, scsi_command::cmd_write6), scsi_exception);
+    tape.SetReady(true);
+    tape.SetBlockCount(1);
+    auto filename = CreateTempFile(1, "tap");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_NO_THROW(tape.WriteData(buf, scsi_command::cmd_write6));
 
-    MockTape tape_tap(0, false);
-    tape_tap.SetReady(true);
-    EXPECT_THROW(tape_tap.WriteData(buf, scsi_command::cmd_write6), scsi_exception);
+    tape.CleanUp();
+    filename = CreateTempFile(1, "tar");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_NO_THROW(tape.WriteData(buf, scsi_command::cmd_write6));
 }
 
-TEST(TapeTest, Erase)
+TEST(TapeTest, Erase6)
 {
     auto [controller, device] = CreateDevice(SCTP);
     auto tape = dynamic_pointer_cast<Tape>(device);
 
     tape->SetProtected(true);
-    TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::data_protect, asc::write_protected);
+    TestShared::Dispatch(*tape, scsi_command::cmd_erase6, sense_key::data_protect, asc::write_protected);
 
     tape->SetProtected(false);
-    TestShared::Dispatch(*tape, scsi_command::cmd_erase, sense_key::medium_error, asc::write_fault);
+    TestShared::Dispatch(*tape, scsi_command::cmd_erase6, sense_key::medium_error, asc::write_fault);
 
     const auto &filename = CreateTempFile(4567);
     tape->SetFilename(filename.string());
     EXPECT_NO_THROW(tape->Open());
 
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase));
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase6));
+    CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
-    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 8)) << "Wrong last block location";
 
     // Long
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_rewind));
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase));
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_position));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase6));
+    CheckPosition(*controller, *tape, 8);
     EXPECT_EQ(0b01000000, controller->GetBuffer()[0]) << "EOP must be set";
-    EXPECT_EQ(8, GetInt32(controller->GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(8, GetInt32(controller->GetBuffer(), 8)) << "Wrong last block location";
 }
 
 TEST(TapeTest, ReadBlockLimits)
@@ -178,97 +194,97 @@ TEST(TapeTest, ReadBlockLimits)
     EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 4));
 }
 
-TEST(TapeTest, Space)
+TEST(TapeTest, Rewind)
 {
-    auto [_, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
+    auto [controller, tape] = CreateDevice(SCTP);
 
-    TestShared::Dispatch(*tape_tar, scsi_command::cmd_space, sense_key::illegal_request,
-        asc::invalid_command_operation_code);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_rewind));
+    CheckPosition(*controller, *tape, 0);
+    EXPECT_EQ(0b01000000, controller->GetBuffer()[0] & 0b01000000) << "BOP must be set";
+}
 
-    auto [controller, tape_tap] = CreateDevice(SCTP, 0, "test.tap");
+TEST(TapeTest, Space6)
+{
+    auto [controller, tape] = CreateDevice(SCTP);
 
     // BLOCK, count = 0
-    EXPECT_NO_THROW(tape_tap->Dispatch(scsi_command::cmd_space));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_space6));
 
     // BLOCK, count < 0
     controller->SetCdbByte(2, 0xff);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    TestShared::Dispatch(*tape, scsi_command::cmd_space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     // BLOCK, count > 0
-    controller->SetCdbByte(2, 1);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::medium_error, asc::read_fault);
+    controller->SetCdbByte(2, 0x01);
+    TestShared::Dispatch(*tape, scsi_command::cmd_space6, sense_key::medium_error, asc::read_fault);
 
     // End-of-data
     controller->SetCdbByte(1, 0b011);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::medium_error, asc::read_fault);
+    TestShared::Dispatch(*tape, scsi_command::cmd_space6, sense_key::medium_error, asc::read_fault);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_space, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    TestShared::Dispatch(*tape, scsi_command::cmd_space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
-TEST(TapeTest, WriteFileMarks)
+TEST(TapeTest, WriteFileMarks6)
 {
     auto [controller, tape] = CreateDevice(SCTP);
 
     // Setmarks are not supported
     controller->SetCdbByte(1, 0b010);
-    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::illegal_request,
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks6, sense_key::illegal_request,
         asc::invalid_field_in_cdb);
 
     // Count = 0
     controller->SetCdbByte(1, 0b001);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write_filemarks));
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write_filemarks6));
 
     // Count > 0
     controller->SetCdbByte(2, 1);
-    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::medium_error, asc::write_fault);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks6, sense_key::medium_error, asc::write_fault);
 
     tape->SetProtected(true);
     controller->SetCdbByte(1, 0b001);
-    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks, sense_key::data_protect, asc::write_protected);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write_filemarks6, sense_key::data_protect, asc::write_protected);
 }
 
-TEST(TapeTest, Locate)
+TEST(TapeTest, Locate10)
 {
-    auto [controller, tape_tap] = CreateDevice(SCTP);
+    auto [controller, tape] = CreateDevice(SCTP);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_locate, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    TestShared::Dispatch(*tape, scsi_command::cmd_locate10, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape_tap, scsi_command::cmd_locate, sense_key::medium_error, asc::read_fault);
+    TestShared::Dispatch(*tape, scsi_command::cmd_locate10, sense_key::medium_error, asc::read_fault);
+}
 
-    auto [_, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
+TEST(TapeTest, Locate16)
+{
+    auto [controller, tape] = CreateDevice(SCTP);
 
-    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_locate));
+    // CP is not supported
+    controller->SetCdbByte(1, 0x02);
+    TestShared::Dispatch(*tape, scsi_command::cmd_locate16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    controller->SetCdbByte(1, 0);
+    TestShared::Dispatch(*tape, scsi_command::cmd_locate16, sense_key::medium_error, asc::read_fault);
 }
 
 TEST(TapeTest, ReadPosition)
 {
-    auto [controller_tap, tape_tap] = CreateDevice(SCTP);
+    auto [controller, tape] = CreateDevice(SCTP);
 
-    memset(controller_tap->GetBuffer().data() + 2 * sizeof(uint32_t), 0xff, 8);
-    EXPECT_NO_THROW(tape_tap->Dispatch(scsi_command::cmd_read_position));
-    EXPECT_EQ(0b11000000, controller_tap->GetBuffer()[0]) << "BOP and EOP must be set";
-    EXPECT_EQ(0, GetInt32(controller_tap->GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(0, GetInt32(controller_tap->GetBuffer(), 8)) << "Wrong last block location";
-
-    auto [controller_tar, tape_tar] = CreateDevice(SCTP, 0, "test.tar");
-
-    controller_tar->SetCdbByte(6, 123);
-    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_locate));
-    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::cmd_read_position));
-    EXPECT_EQ(0b11000000, controller_tap->GetBuffer()[0]) << "BOP and EOP must be set";
-    EXPECT_EQ(123, GetInt32(controller_tar->GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(123, GetInt32(controller_tar->GetBuffer(), 8)) << "Wrong last block location";
+    CheckPosition(*controller, *tape, 0);
+    EXPECT_EQ(0b11000000, controller->GetBuffer()[0]) << "BOP and EOP must be set";
 }
 
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
-    MockTape tape(0, false);
+    MockTape tape(0);
 
     // Non changeable
     tape.SetUpModePages(pages, 0x3f, false);
@@ -282,7 +298,7 @@ TEST(TapeTest, SetUpModePages)
 
 TEST(TapeTest, GetStatistics)
 {
-    Tape tape(0, false);
+    Tape tape(0);
 
     const auto &statistics = tape.GetStatistics();
     EXPECT_EQ(4U, statistics.size());

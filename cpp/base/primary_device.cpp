@@ -50,7 +50,7 @@ bool PrimaryDevice::Init(const param_map &params)
             SendDiagnostic();
         });
 
-    return InitDevice();
+    return SetUp();
 }
 
 void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)

@@ -25,7 +25,7 @@ public:
     StorageDevice(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t> &s);
     ~StorageDevice() override = default;
 
-    bool InitDevice() override;
+    bool SetUp() override;
     void CleanUp() override;
 
     void Dispatch(scsi_command) override;
@@ -65,6 +65,7 @@ public:
         return configured_block_size;
     }
     bool SetConfiguredBlockSize(uint32_t);
+    virtual bool ValidateBlockSize(uint32_t) const;
 
     bool ReserveFile() const;
     void UnreserveFile();

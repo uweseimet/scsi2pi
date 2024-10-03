@@ -51,7 +51,7 @@ int memory_util::GetInt24(span<const int> buf, int offset)
     return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
 }
 
-int memory_util::GetSignedInt24(span<const int> buf, int offset)
+int32_t memory_util::GetSignedInt24(span<const int> buf, int offset)
 {
     const int value = GetInt24(buf, offset);
 

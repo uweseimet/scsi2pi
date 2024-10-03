@@ -39,7 +39,7 @@ public:
     explicit DaynaPort(int);
     ~DaynaPort() override = default;
 
-    bool InitDevice() override;
+    bool SetUp() override;
     void CleanUp() override;
 
     param_map GetDefaultParams() const override
