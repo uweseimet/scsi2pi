@@ -45,7 +45,7 @@ protected:
 
 private:
 
-    enum object_type : uint16_t
+    enum object_type : uint8_t
     {
         BLOCK = 0b000,
         FILEMARK = 0b001,
@@ -56,7 +56,9 @@ private:
     using meta_data_t = struct _meta_data_t
     {
         Tape::object_type type;
-        uint32_t size;
+        uint8_t reserved;
+        // Big-endian 16-bit integer
+        array<uint8_t, 2> size;
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)

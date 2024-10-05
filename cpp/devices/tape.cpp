@@ -5,16 +5,16 @@
 // Copyright (C) 2024 Uwe Seimet
 //
 // This implementation treats files with a .tar extension in a special way, so that regular .tar files can be used as
-// image files. Filemark, end-of-data and spacing support is not possible for these image files, because .tar files
-// cannot contain the required meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files
-// that do *not* have the extension .tar, e.g. files with the .tap extension.
-// Note that tar (actually the Linux tape device driver) tries to create a filemark as an end of data marker when
+// image files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
+// contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
+// have the extension .tar, e.g. files with the .tap extension.
+// Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
 // Reverse spacing (optional anyway) is not supported because the object type of the previous objects cannot easily be
-// determinted. One would need a special data encoding to move backwards and find the beginning of a block or filemark.
-// Splitting each data byte and writing it as two low nibbles, while reserving the high nibble of each byte in the
-// image file for meta data, might be such a format. This would double the image file size, but this should not be an
-// issue nowadays. Implementing this is most likely not worth the effort, though.
+// determined. One would need a special data encoding to move backwards and find the beginning of a block or filemark.
+// Splitting each data byte and writing it as two low nibbles, while reserving the high nibble of each byte for meta
+// data, might be such a format. This would double the image file size, but this should not be an issue nowadays.
+// Implementing this is most likely not worth the effort, though.
 // Gap handling is device-defined and does nothing, which is SCSI-compliant.
 // Note that the format of non-tar files may change in future SCSI2Pi releases, e.g. in order to add reverse spacing.
 //
@@ -455,9 +455,12 @@ void Tape::ReadPosition() const
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
+    assert(size < 65536);
+
     meta_data_t meta_data;
     meta_data.type = type;
-    meta_data.size = size;
+    meta_data.size[0] = static_cast<uint8_t>(size >> 8);
+    meta_data.size[1] = static_cast<uint8_t>(size);
     file.write((const char*)&meta_data, sizeof(meta_data));
     if (file.fail()) {
         throw scsi_exception(sense_key::medium_error, asc::write_fault);
@@ -481,18 +484,21 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             throw scsi_exception(sense_key::medium_error, asc::read_fault);
         }
 
+        const uint32_t size = (static_cast<uint32_t>(meta_data.size[0]) << 8) | meta_data.size[1];
+
         if (meta_data.type == type) {
             --count;
 
             if (count < 0) {
-                LogTrace(fmt::format("Next object position is at byte {}", position));
+                LogTrace(fmt::format("Next object location is {0}, object type is {1}", position,
+                    static_cast<uint8_t>(type)));
 
-                return meta_data.size;
+                return size;
             }
         }
 
         // End-of-partition side
-        position += sizeof(meta_data) + meta_data.size;
+        position += sizeof(meta_data) + size;
 
         // End-of-partition
         if (static_cast<off_t>(position) >= filesize) {
