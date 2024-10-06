@@ -37,7 +37,6 @@ public:
 
 private:
 
-    void TestUnitReady() override;
     void Print() override;
     void SynchronizeBuffer();
 

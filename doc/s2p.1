@@ -33,14 +33,16 @@ The number (n) after the device identifier specifies the ID number for that devi
 The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
-    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1)
+    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1-CCS)
     hds: SCSI Hard Disk image (generic, non-removable, SCSI-2)
     hdr: SCSI Hard Disk image (generic, removable, SCSI-2)
     hda: SCSI Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
     mos: SCSI Magneto-Optical image (MO/MOD, SCSI-2)
-    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1)
+    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
-  
+    tar: SCSI Tape image (tar-compatible image, SCSI-2)
+    tap: SCSI Type iamge (raw image with filemarks support, SCSI-2)
+
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
 

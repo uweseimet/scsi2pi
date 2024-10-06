@@ -100,14 +100,11 @@ using namespace protobuf_util;
 HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun)
 {
     SetProduct("Host Services");
+    SetReady(true);
 }
 
 bool HostServices::SetUp()
 {
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
-        {
-            TestUnitReady();
-        });
     AddCommand(scsi_command::cmd_start_stop, [this]
         {
             StartStopUnit();
@@ -123,15 +120,7 @@ bool HostServices::SetUp()
 
     page_handler = make_unique<PageHandler>(*this, false, false);
 
-    SetReady(true);
-
     return true;
-}
-
-void HostServices::TestUnitReady()
-{
-    // Always successful
-    StatusPhase();
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const

@@ -41,6 +41,7 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
 {
     SetProduct("SCSI PRINTER");
     SupportsParams(true);
+    SetReady(true);
 }
 
 bool Printer::SetUp()
@@ -50,10 +51,6 @@ bool Printer::SetUp()
         return false;
     }
 
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
-        {
-            TestUnitReady();
-        });
     AddCommand(scsi_command::cmd_print, [this]
         {
             Print();
@@ -62,17 +59,14 @@ bool Printer::SetUp()
         {
             SynchronizeBuffer();
         });
-    // STOP PRINT is identical with TEST UNIT READY, it just returns the status
     AddCommand(scsi_command::cmd_stop_print, [this]
         {
-            TestUnitReady();
+            StatusPhase();
         });
 
     error_code error;
     file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here
     file_template += PRINTER_FILE_PATTERN;
-
-    SetReady(true);
 
     return true;
 }
@@ -96,12 +90,6 @@ param_map Printer::GetDefaultParams() const
     return {
         {   "cmd", "lp -oraw %f"}
     };
-}
-
-void Printer::TestUnitReady()
-{
-    // The printer is always ready
-    StatusPhase();
 }
 
 vector<uint8_t> Printer::InquiryInternal() const

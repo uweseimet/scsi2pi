@@ -38,16 +38,12 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAY
     SetVendor("Dayna");
     SetProduct("SCSI/Link");
     SetRevision("1.4a");
-
     SupportsParams(true);
+    SetReady(true);
 }
 
 bool DaynaPort::SetUp()
 {
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
-        {
-            TestUnitReady();
-        });
     AddCommand(scsi_command::cmd_get_message6, [this]
         {
             GetMessage6();
@@ -80,8 +76,6 @@ bool DaynaPort::SetUp()
 		return false;
 #endif
     }
-
-    SetReady(true);
 
     return true;
 }
@@ -269,12 +263,6 @@ void DaynaPort::RetrieveStats() const
     GetController()->SetTransferSize(length, length);
 
     DataInPhase(length);
-}
-
-void DaynaPort::TestUnitReady()
-{
-    // Always successful
-    StatusPhase();
 }
 
 void DaynaPort::GetMessage6()

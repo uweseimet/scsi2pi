@@ -43,14 +43,14 @@ TEST(PrinterTest, GetDefaultParams)
 
 TEST(PrinterTest, Init)
 {
-    Printer printer(0);
-
+    Printer printer1(0);
     param_map params;
     params["cmd"] = "missing_filename_specifier";
-    EXPECT_FALSE(printer.Init(params));
+    EXPECT_FALSE(printer1.Init(params));
 
+    Printer printer2(0);
     params["cmd"] = "%f";
-    EXPECT_TRUE(printer.Init(params));
+    EXPECT_TRUE(printer2.Init(params));
 }
 
 TEST(PrinterTest, TestUnitReady)

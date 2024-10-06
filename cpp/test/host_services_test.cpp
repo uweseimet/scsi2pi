@@ -116,8 +116,6 @@ TEST(HostServicesTest, ModeSense6)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    EXPECT_TRUE(services->Init( { }));
-
     TestShared::Dispatch(*services, scsi_command::cmd_mode_sense6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
@@ -151,8 +149,6 @@ TEST(HostServicesTest, ModeSense6)
 TEST(HostServicesTest, ModeSense10)
 {
     auto [controller, services] = CreateDevice(SCHS);
-
-    EXPECT_TRUE(services->Init( { }));
 
     TestShared::Dispatch(*services, scsi_command::cmd_mode_sense10, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");

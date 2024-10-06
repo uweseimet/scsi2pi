@@ -51,7 +51,6 @@ public:
     int Read(cdb_t, vector<uint8_t>&, uint64_t);
     int WriteData(span<const uint8_t>, scsi_command) override;
 
-    void TestUnitReady() override;
     void GetMessage6() override;
     void SendMessage6() const override;
     void RetrieveStats() const;

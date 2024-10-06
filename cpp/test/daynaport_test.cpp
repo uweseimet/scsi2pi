@@ -10,7 +10,7 @@
 #include "devices/daynaport.h"
 #include "shared/s2p_exceptions.h"
 
-TEST(ScsiDaynaportTest, Device_Defaults)
+TEST(DaynaportTest, Device_Defaults)
 {
     DaynaPort daynaport(0);
 
@@ -32,7 +32,7 @@ TEST(ScsiDaynaportTest, Device_Defaults)
     EXPECT_EQ("1.4a", daynaport.GetRevision());
 }
 
-TEST(ScsiDaynaportTest, GetDefaultParams)
+TEST(DaynaportTest, GetDefaultParams)
 {
     DaynaPort daynaport(0);
 
@@ -43,12 +43,12 @@ TEST(ScsiDaynaportTest, GetDefaultParams)
     EXPECT_TRUE(params.contains("bridge"));
 }
 
-TEST(ScsiDaynaportTest, Inquiry)
+TEST(DaynaportTest, Inquiry)
 {
     TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
-TEST(ScsiDaynaportTest, TestUnitReady)
+TEST(DaynaportTest, TestUnitReady)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -57,7 +57,7 @@ TEST(ScsiDaynaportTest, TestUnitReady)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(ScsiDaynaportTest, Read)
+TEST(DaynaportTest, Read)
 {
     DaynaPort daynaport(0);
     vector<int> cdb(6);
@@ -68,7 +68,7 @@ TEST(ScsiDaynaportTest, Read)
     EXPECT_EQ(0, daynaport.Read(cdb, buf, 0)) << "Trying to read the root sector must fail";
 }
 
-TEST(ScsiDaynaportTest, WriteData)
+TEST(DaynaportTest, WriteData)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
     vector<int> cdb(6);
@@ -79,7 +79,7 @@ TEST(ScsiDaynaportTest, WriteData)
     EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, scsi_command::cmd_write6));
 }
 
-TEST(ScsiDaynaportTest, Read6)
+TEST(DaynaportTest, Read6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -88,7 +88,7 @@ TEST(ScsiDaynaportTest, Read6)
         "Invalid data format");
 }
 
-TEST(ScsiDaynaportTest, Write6)
+TEST(DaynaportTest, Write6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -109,7 +109,7 @@ TEST(ScsiDaynaportTest, Write6)
         "Invalid transfer length");
 }
 
-TEST(ScsiDaynaportTest, TestRetrieveStats)
+TEST(DaynaportTest, TestRetrieveStats)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -119,7 +119,7 @@ TEST(ScsiDaynaportTest, TestRetrieveStats)
     EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_retrieve_stats));
 }
 
-TEST(ScsiDaynaportTest, SetInterfaceMode)
+TEST(DaynaportTest, SetInterfaceMode)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -149,7 +149,7 @@ TEST(ScsiDaynaportTest, SetInterfaceMode)
         asc::invalid_field_in_cdb, "Not implemented");
 }
 
-TEST(ScsiDaynaportTest, SetMcastAddr)
+TEST(DaynaportTest, SetMcastAddr)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -161,7 +161,7 @@ TEST(ScsiDaynaportTest, SetMcastAddr)
     EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_set_mcast_addr));
 }
 
-TEST(ScsiDaynaportTest, EnableInterface)
+TEST(DaynaportTest, EnableInterface)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
@@ -176,14 +176,14 @@ TEST(ScsiDaynaportTest, EnableInterface)
         asc::daynaport_disable_interface);
 }
 
-TEST(ScsiDaynaportTest, GetDelayAfterBytes)
+TEST(DaynaportTest, GetDelayAfterBytes)
 {
     DaynaPort daynaport(0);
 
     EXPECT_EQ(6, daynaport.GetDelayAfterBytes());
 }
 
-TEST(ScsiDaynaportTest, GetStatistics)
+TEST(DaynaportTest, GetStatistics)
 {
     DaynaPort daynaport(0);
 

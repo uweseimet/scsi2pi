@@ -55,6 +55,7 @@ bool PrimaryDevice::Init(const param_map &params)
 
 void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
 {
+    assert(!commands[static_cast<int>(cmd)]);
     commands[static_cast<int>(cmd)] = c;
 }
 

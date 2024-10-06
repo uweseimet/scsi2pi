@@ -26,7 +26,6 @@ public:
     bool SetUp() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void TestUnitReady() override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
 
