@@ -270,6 +270,9 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages) const
     // BIS
     buf[8] = (byte)0b01000000;
 
+    // EEG (enable EOD generation)
+    buf[10] = (byte)0b00010000;
+
     pages[16] = buf;
 }
 
@@ -279,9 +282,6 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages) const
 
     // Fixed data partitions, PSUM (descriptor unit in MB)
     buf[4] = (byte)0b10010000;
-
-    // EEG (enable EOD generation)
-    buf[10] = (byte)0b00010000;
 
     pages[17] = buf;
 }
