@@ -226,8 +226,9 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
 {
     StorageDevice::SetUpModePages(pages, page, changeable);
 
-    // Page 0 (mode block descriptor), used by tools like tar
-    if (page == 0x00 || page == 0x3f) {
+    // Page 0 (mode block descriptor), used by tools like tar.
+    // Due to its format page 0 cannot be returned with a page list. This has been verified with an HP 35470A.
+    if (page == 0x00) {
         AddModeBlockDescriptor(pages);
     }
 
