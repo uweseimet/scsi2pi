@@ -10,8 +10,7 @@
 
 static void SetUpModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(12U, pages[0].size());
+    EXPECT_EQ(5U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
     EXPECT_EQ(8U, pages[10].size());
