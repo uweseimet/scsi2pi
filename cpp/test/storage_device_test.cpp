@@ -425,18 +425,18 @@ TEST(StorageDeviceTest, ModeSense6)
     device->SetBlockSize(1024);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00000001, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+    EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
@@ -466,24 +466,24 @@ TEST(StorageDeviceTest, ModeSense10)
     device->SetBlockSize(1024);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00000001, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+    EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     // LLBAA
     controller->SetCdbByte(1, 0x10);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
-    EXPECT_EQ(0x100000000, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
-    EXPECT_EQ(1024, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
+    EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
     EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
 
     // No block descriptor
@@ -507,16 +507,16 @@ TEST(StorageDeviceTest, GetStatistics)
     auto statistics = device.GetStatistics();
     EXPECT_EQ(2U, statistics.size());
     EXPECT_EQ("block_read_count", statistics[0].key());
-    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(0U, statistics[0].value());
     EXPECT_EQ("block_write_count", statistics[1].key());
-    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(0U, statistics[1].value());
 
     device.UpdateReadCount(1);
     device.UpdateWriteCount(2);
     statistics = device.GetStatistics();
     EXPECT_EQ(2U, statistics.size());
     EXPECT_EQ("block_read_count", statistics[0].key());
-    EXPECT_EQ(1, statistics[0].value());
+    EXPECT_EQ(1U, statistics[0].value());
     EXPECT_EQ("block_write_count", statistics[1].key());
-    EXPECT_EQ(2, statistics[1].value());
+    EXPECT_EQ(2U, statistics[1].value());
 }

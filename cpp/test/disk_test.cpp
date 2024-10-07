@@ -141,15 +141,15 @@ TEST(DiskTest, ReadCapacity10)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity10));
     auto &buf = controller->GetBuffer();
-    EXPECT_EQ(0x1234, GetInt16(buf, 0));
-    EXPECT_EQ(0x5677, GetInt16(buf, 2));
+    EXPECT_EQ(0x1234U, GetInt16(buf, 0));
+    EXPECT_EQ(0x5677U, GetInt16(buf, 2));
 
     disk->SetBlockCount(0x1234567887654321);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity10));
     buf = controller->GetBuffer();
-    EXPECT_EQ(0xffff, GetInt16(buf, 0));
-    EXPECT_EQ(0xffff, GetInt16(buf, 2));
+    EXPECT_EQ(0xffffU, GetInt16(buf, 0));
+    EXPECT_EQ(0xffffU, GetInt16(buf, 2));
 }
 
 TEST(DiskTest, ReadCapacity16)
@@ -175,12 +175,12 @@ TEST(DiskTest, ReadCapacity16)
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity16_read_long16));
     const auto &buf = controller->GetBuffer();
-    EXPECT_EQ(0x1234, GetInt16(buf, 0));
-    EXPECT_EQ(0x5678, GetInt16(buf, 2));
-    EXPECT_EQ(0x8765, GetInt16(buf, 4));
-    EXPECT_EQ(0x4320, GetInt16(buf, 6));
-    EXPECT_EQ(0x0000, GetInt16(buf, 8));
-    EXPECT_EQ(0x0400, GetInt16(buf, 10));
+    EXPECT_EQ(0x1234U, GetInt16(buf, 0));
+    EXPECT_EQ(0x5678U, GetInt16(buf, 2));
+    EXPECT_EQ(0x8765U, GetInt16(buf, 4));
+    EXPECT_EQ(0x4320U, GetInt16(buf, 6));
+    EXPECT_EQ(0x0000U, GetInt16(buf, 8));
+    EXPECT_EQ(0x0400U, GetInt16(buf, 10));
 }
 
 TEST(DiskTest, Read6)
@@ -411,9 +411,9 @@ TEST(DiskTest, Eject)
 void ValidateCachingPage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
-    EXPECT_EQ(0xffff, GetInt16(buf, offset + 4)) << "Wrong pre-fetch transfer length";
-    EXPECT_EQ(0xffff, GetInt16(buf, offset + 8)) << "Wrong maximum pre-fetch";
-    EXPECT_EQ(0xffff, GetInt16(buf, offset + 10)) << "Wrong maximum pre-fetch ceiling";
+    EXPECT_EQ(0xffffU, GetInt16(buf, offset + 4)) << "Wrong pre-fetch transfer length";
+    EXPECT_EQ(0xffffU, GetInt16(buf, offset + 8)) << "Wrong maximum pre-fetch";
+    EXPECT_EQ(0xffffU, GetInt16(buf, offset + 10)) << "Wrong maximum pre-fetch ceiling";
 }
 
 TEST(DiskTest, AddAppleVendorPage)
@@ -544,9 +544,9 @@ TEST(DiskTest, GetStatistics)
     const auto &statistics = disk.GetStatistics();
     EXPECT_EQ(2U, statistics.size());
     EXPECT_EQ("block_read_count", statistics[0].key());
-    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(0U, statistics[0].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
     EXPECT_EQ("block_write_count", statistics[1].key());
-    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(0U, statistics[1].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
 }

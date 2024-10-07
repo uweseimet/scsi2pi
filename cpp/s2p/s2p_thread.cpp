@@ -61,7 +61,7 @@ void S2pThread::Start()
 {
     assert(service_socket != -1);
 
-#if !defined __FreeBSD__ && !defined __APPLE__
+#ifndef __APPLE__
     service_thread = jthread([this]() {Execute();});
 #else
 	service_thread = thread([this] () { Execute(); } );

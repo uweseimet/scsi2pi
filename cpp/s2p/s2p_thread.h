@@ -34,7 +34,7 @@ private:
 
     callback execute;
 
-#if !defined __FreeBSD__ && !defined __APPLE__
+#ifndef __APPLE__
     jthread service_thread;
 #else
     thread service_thread;

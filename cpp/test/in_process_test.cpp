@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         add_arg(target_args, arg);
     }
 
-#if !defined __FreeBSD__ && !defined __APPLE__
+#ifndef __APPLE__
     auto s2p_thread = jthread([&target_args]() {
 #else
         auto s2p_thread = thread([&target_args]() {

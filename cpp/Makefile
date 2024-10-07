@@ -14,17 +14,17 @@ STRIP = $(CROSS_COMPILE)strip
 ##                 only by developers.
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-	# Debug compiler flags
+# Debug compiler flags
 	CXXFLAGS += -O0 -g -DDEBUG
 else
-	# Release compiler flags
+# Release compiler flags
 	CXXFLAGS += -O3 -Wall -DNDEBUG
 endif
 
 CXXFLAGS += -std=c++20 -iquote . -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
 
 ifeq ("$(shell uname -s)", "Linux")
-	# -Wno-psabi might not work on non-Linux platforms
+# -Wno-psabi might not work on non-Linux platforms
 	CXXFLAGS += -Wno-psabi
 endif
 
@@ -40,6 +40,11 @@ endif
 
 ## EXTRA_FLAGS Can be used to pass special purpose flag
 CXXFLAGS += $(EXTRA_FLAGS)
+
+## Additional libraries are required since protobuf version 22
+ifeq ($(shell expr `protoc --version | sed -e 's/3\.//g' | cut -d ' ' -f 2` \>= 22), 1)
+	ABSEIL_LIBS = -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash
+endif
 
 ## Installation path
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
@@ -372,10 +377,10 @@ coverage: test
 $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_IN_PROCESS_TEST): $(OBJ_GENERATED)
 
 $(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) -lpthread -lprotobuf
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf
 
 $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) -lprotobuf
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(ABSEIL_LIBS) -lprotobuf
 
 $(BINDIR)/$(S2PDUMP): $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS)
@@ -384,17 +389,17 @@ $(BINDIR)/$(S2PEXEC): $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS)
 
 $(BINDIR)/$(S2PPROTO): $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) -lprotobuf
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) $(ABSEIL_LIBS) -lprotobuf
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(OBJ_S2PCTL_TEST) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
-		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) -lpthread -lprotobuf -lgmock -lgtest
+		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf -lgmock -lgtest
 
 $(BINDIR)/$(IN_PROCESS_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_IN_PROCESS_TEST) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_IN_PROCESS_TEST) $(LIB_SHARED_COMMAND) \
-		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) -lpthread -lprotobuf
+		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf
 
 # Phony rules for building individual utilities
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2P_TEST) $(IN_PROCESS_TEST)
@@ -423,7 +428,6 @@ install: $(BINARIES)
 $(INSTALL_BIN)%: $(BINDIR)/%
 	mkdir -p $(INSTALL_BIN)
 	cp $< $@
-	
 
 
 ##   help            Lists information about how to use the Makefile

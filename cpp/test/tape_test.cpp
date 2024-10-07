@@ -189,8 +189,8 @@ TEST(TapeTest, ReadBlockLimits)
 
     memset(controller->GetBuffer().data(), 0xff, 6);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_block_limits));
-    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 0));
-    EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 4));
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(0U, GetInt16(controller->GetBuffer(), 4));
 }
 
 TEST(TapeTest, Rewind)
@@ -302,15 +302,15 @@ TEST(TapeTest, GetStatistics)
     const auto &statistics = tape.GetStatistics();
     EXPECT_EQ(4U, statistics.size());
     EXPECT_EQ("block_read_count", statistics[0].key());
-    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(0U, statistics[0].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
     EXPECT_EQ("block_write_count", statistics[1].key());
-    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(0U, statistics[1].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
     EXPECT_EQ("read_error_count", statistics[2].key());
-    EXPECT_EQ(0, statistics[2].value());
+    EXPECT_EQ(0U, statistics[2].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[2].category());
     EXPECT_EQ("write_error_count", statistics[3].key());
-    EXPECT_EQ(0, statistics[3].value());
+    EXPECT_EQ(0U, statistics[3].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[3].category());
 }

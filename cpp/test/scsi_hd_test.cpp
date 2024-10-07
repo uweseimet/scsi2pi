@@ -33,11 +33,11 @@ static void ValidateFormatPage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x08, buf[offset + 3]) << "Wrong number of tracks in one zone";
-    EXPECT_EQ(25, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
-    EXPECT_EQ(1024, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
-    EXPECT_EQ(1, GetInt16(buf, offset + 14)) << "Wrong interleave";
-    EXPECT_EQ(11, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
-    EXPECT_EQ(20, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
+    EXPECT_EQ(25U, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
+    EXPECT_EQ(1024U, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
+    EXPECT_EQ(1U, GetInt16(buf, offset + 14)) << "Wrong interleave";
+    EXPECT_EQ(11U, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
+    EXPECT_EQ(20U, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
     EXPECT_FALSE(buf[offset + 20] & 0x20) << "Wrong removable flag";
     EXPECT_TRUE(buf[offset + 20] & 0x40) << "Wrong hard-sectored flag";
 }
@@ -46,9 +46,9 @@ static void ValidateDrivePage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x17, buf[offset + 2]);
-    EXPECT_EQ(0x4d3b, GetInt16(buf, offset + 3));
+    EXPECT_EQ(0x4d3bU, GetInt16(buf, offset + 3));
     EXPECT_EQ(8, buf[offset + 5]) << "Wrong number of heads";
-    EXPECT_EQ(7200, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
+    EXPECT_EQ(7200U, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
 }
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)

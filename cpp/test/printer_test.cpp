@@ -133,16 +133,16 @@ TEST(PrinterTest, GetStatistics)
     const auto &statistics = printer.GetStatistics();
     EXPECT_EQ(4U, statistics.size());
     EXPECT_EQ("file_print_count", statistics[0].key());
-    EXPECT_EQ(0, statistics[0].value());
+    EXPECT_EQ(0U, statistics[0].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[0].category());
     EXPECT_EQ("byte_receive_count", statistics[1].key());
-    EXPECT_EQ(0, statistics[1].value());
+    EXPECT_EQ(0U, statistics[1].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics[1].category());
     EXPECT_EQ("print_error_count", statistics[2].key());
-    EXPECT_EQ(0, statistics[2].value());
+    EXPECT_EQ(0U, statistics[2].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_ERROR, statistics[2].category());
     EXPECT_EQ("print_warning_count", statistics[3].key());
-    EXPECT_EQ(0, statistics[3].value());
+    EXPECT_EQ(0U, statistics[3].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_WARNING, statistics[3].category());
 }
 
