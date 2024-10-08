@@ -120,7 +120,7 @@ void Controller::Command()
             SetCdbByte(i, buf[i]);
         }
 
-        // Check the log level first in order to avoid a time-consuming string construction
+        // Check the log level first in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
             LogCdb();
         }

@@ -160,7 +160,7 @@ int ScsiCd::ReadData(span<uint8_t> buf)
         SetBlockCount(last_lba - first_lba + 1);
 
         if (!InitCache(GetFilename())) {
-            throw scsi_exception(sense_key::medium_error, asc::read_fault);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         track_initialized = true;

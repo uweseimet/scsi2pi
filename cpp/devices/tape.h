@@ -45,6 +45,8 @@ protected:
 
 private:
 
+    static constexpr const char *MAGIC = "SCTP";
+
     enum object_type : uint8_t
     {
         BLOCK = 0b000,
@@ -55,6 +57,7 @@ private:
     // The meta data for each object, with the object type and payload size
     using meta_data_t = struct _meta_data_t
     {
+        array<uint8_t, 4> magic;
         Tape::object_type type;
         uint8_t reserved;
         // Big-endian 16-bit integer

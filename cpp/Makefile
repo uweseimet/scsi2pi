@@ -38,6 +38,11 @@ ifeq ("$(shell uname -s)", "NetBSD")
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
+ifeq ("$(shell uname -s)", "Darwin")
+	AR = $(CROSS_COMPILE)ar
+	CXXFLAGS += -Wno-unused-parameter
+endif
+
 ## EXTRA_FLAGS Can be used to pass special purpose flag
 CXXFLAGS += $(EXTRA_FLAGS)
 

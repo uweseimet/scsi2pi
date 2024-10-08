@@ -94,8 +94,8 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
 // This map only contains mappings for ASCs used by s2p
 static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
-    { asc::write_fault, "WRITE FAULT" },
-    { asc::read_fault, "READ ERROR" },
+    { asc::write_error, "WRITE FAULT" },
+    { asc::read_error, "READ ERROR" },
     { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
     { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
     { asc::lba_out_of_range, "LBA OUT OF RANGE" },

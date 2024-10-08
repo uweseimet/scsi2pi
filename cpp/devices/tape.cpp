@@ -16,6 +16,8 @@
 // data, might be such a format. This would double the image file size, but this should not be an issue nowadays.
 // Implementing this is most likely not worth the effort, though.
 // Gap handling is device-defined and does nothing, which is SCSI-compliant.
+// tap image files must be erased before first use, to ensure that they start with an end-of-data marker. I order to
+// detect
 // Note that the format of non-tar files may change in future SCSI2Pi releases, e.g. in order to add reverse spacing.
 //
 //---------------------------------------------------------------------------
@@ -137,7 +139,7 @@ int Tape::ReadData(span<uint8_t> buf)
 
     if (!tar_mode) {
         if (FindNextObject(object_type::BLOCK, 0) != GetBlockSize()) {
-            throw scsi_exception(sense_key::medium_error, asc::read_fault);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         position += sizeof(meta_data_t);
@@ -147,7 +149,7 @@ int Tape::ReadData(span<uint8_t> buf)
     file.read((char*)buf.data(), GetBlockSize());
     if (file.fail()) {
         ++read_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::read_fault);
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
     position += GetBlockSize();
@@ -169,7 +171,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     file.write((const char*)buf.data(), GetBlockSize());
     if (file.fail()) {
         ++write_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
     position += GetBlockSize();
@@ -183,7 +185,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     file.flush();
     if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
     return GetBlockSize();
@@ -268,7 +270,7 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages) const
 {
     vector<byte> buf(16);
 
-    // BIS
+    // BIS (block identifiers supported)
     buf[8] = (byte)0b01000000;
 
     // EEG (enable EOD generation)
@@ -308,7 +310,7 @@ void Tape::Erase6()
 
             file.write((const char*)buf.data(), chunk);
             if (file.fail()) {
-                throw scsi_exception(sense_key::medium_error, asc::write_fault);
+                throw scsi_exception(sense_key::medium_error, asc::write_error);
             }
 
             remaining -= chunk;
@@ -319,7 +321,7 @@ void Tape::Erase6()
 
     file.flush();
     if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
     StatusPhase();
@@ -432,7 +434,7 @@ void Tape::Locate(bool locate16)
 void Tape::ReadPosition() const
 {
     vector<uint8_t> &buf = GetController()->GetBuffer();
-    fill_n(buf.begin(), 32, 0);
+    fill_n(buf.begin(), 20, 0);
 
     // BOP
     if (!position) {
@@ -447,7 +449,6 @@ void Tape::ReadPosition() const
     // Partition number is always 0
 
     // First and last block location, BT does not make a difference
-    // TODO Add 64 bit support (service actions)
     SetInt32(buf, 4, static_cast<uint32_t>(block_location));
     SetInt32(buf, 8, static_cast<uint32_t>(block_location));
 
@@ -459,12 +460,13 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     assert(size < 65536);
 
     meta_data_t meta_data;
+    memcpy(meta_data.magic.data(), MAGIC, 4);
     meta_data.type = type;
     meta_data.size[0] = static_cast<uint8_t>(size >> 8);
     meta_data.size[1] = static_cast<uint8_t>(size);
     file.write((const char*)&meta_data, sizeof(meta_data));
     if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
     if (type != object_type::END_OF_DATA) {
@@ -482,7 +484,13 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         meta_data_t meta_data;
         file.read((char*)&meta_data, sizeof(meta_data));
         if (file.fail()) {
-            throw scsi_exception(sense_key::medium_error, asc::read_fault);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
+        // The magic is a safeguard against random data that look like objects
+        if (memcmp(meta_data.magic.data(), MAGIC, 4)) {
+            ++position;
+            continue;
         }
 
         const uint32_t size = (static_cast<uint32_t>(meta_data.size[0]) << 8) | meta_data.size[1];

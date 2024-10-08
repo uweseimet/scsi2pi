@@ -71,7 +71,6 @@ public:
     }
     void SetInformation(int64_t value)
     {
-        // TODO Add 64 bit support
         information = static_cast<uint32_t>(value);
         valid = true;
     }

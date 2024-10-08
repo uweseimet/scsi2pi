@@ -405,7 +405,7 @@ int Disk::ReadData(span<uint8_t> buf)
     CheckReady();
 
     if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
-        throw scsi_exception(sense_key::medium_error, asc::read_fault);
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
     next_sector += sector_transfer_count;
@@ -427,7 +427,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
         const auto length = linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
         if (!length) {
-            throw scsi_exception(sense_key::medium_error, asc::write_fault);
+            throw scsi_exception(sense_key::medium_error, asc::write_error);
         }
 
         UpdateWriteCount(1);
@@ -437,7 +437,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     if ((command != scsi_command::cmd_verify10 && command != scsi_command::cmd_verify16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
     next_sector += sector_transfer_count;

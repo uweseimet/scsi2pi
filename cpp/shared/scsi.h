@@ -148,8 +148,8 @@ enum class sense_key
 enum class asc
 {
     no_additional_sense_information = 0x00,
-    write_fault = 0x03,
-    read_fault = 0x11,
+    write_error = 0x03,
+    read_error = 0x11,
     parameter_list_length_error = 0x1a,
     invalid_command_operation_code = 0x20,
     lba_out_of_range = 0x21,

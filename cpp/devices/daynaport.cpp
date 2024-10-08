@@ -70,12 +70,12 @@ bool DaynaPort::SetUp()
         });
 
     tap_enabled = tap.Init(GetParams());
-    if (!tap_enabled) {
 // Not terminating on a regular PC is helpful for testing
 #if !defined(__x86_64__) && !defined(__X86__)
+    if (!tap_enabled) {
 		return false;
-#endif
     }
+#endif
 
     return true;
 }
