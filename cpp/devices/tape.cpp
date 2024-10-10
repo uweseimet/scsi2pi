@@ -111,11 +111,11 @@ void Tape::Read6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int count = GetByteCount();
-    if (count) {
-        GetController()->SetTransferSize(count, GetBlockSize());
+    byte_count = GetByteCount();
+    if (byte_count) {
+        GetController()->SetTransferSize(byte_count, GetBlockSize());
 
-        GetController()->SetCurrentLength(count);
+        GetController()->SetCurrentLength(byte_count);
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
@@ -549,12 +549,10 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
 int Tape::GetByteCount() const
 {
-    // Only Fixed mode with the configured block size is supported
-    if (!(GetController()->GetCdb()[1] & 0x01)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
-    const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize();
+    const int32_t count =
+        GetController()->GetCdb()[1] & 0x01 ?
+            GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
+            GetSignedInt24(GetController()->GetCdb(), 2);
 
     if (static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
