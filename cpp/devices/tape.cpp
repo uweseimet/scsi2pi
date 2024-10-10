@@ -141,33 +141,47 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    int count;
+    int length;
     if (tar_mode) {
-        count = GetController()->GetChunkSize();
+        length = GetController()->GetChunkSize();
     }
     else {
-        count = FindNextObject(object_type::BLOCK, 0);
-        if (count != GetController()->GetChunkSize()) {
+        length = FindNextObject(object_type::BLOCK, 0);
+        if (length != GetController()->GetChunkSize()) {
             // In Fixed mode an incorrect block length always results in an error
             if (GetController()->GetCdb()[1] & 0x01) {
                 throw scsi_exception(sense_key::medium_error, asc::read_error);
             }
 
-            // TODO Add SILI handling
+            const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
+            if (length != requested_length) {
+                // Report an error if SILI is not set and the actual block length does not match the requested length
+                if (!(GetController()->GetCdb()[1] & 0x02)) {
+                    SetIli();
+                    SetInformation(requested_length - length);
+                    throw scsi_exception(sense_key::medium_error, asc::read_error);
+                }
+
+                // Only report an error for an overlength condition if the length field is nonzero
+                // TODO Currently ReadData() is not executed when the requested length is 0
+                if (requested_length && length > requested_length) {
+                    throw scsi_exception(sense_key::medium_error, asc::read_error);
+                }
+            }
         }
     }
 
     file.seekg(position, ios::beg);
-    file.read((char*)buf.data(), count);
+    file.read((char*)buf.data(), length);
     if (file.fail()) {
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position += count;
+    position += length;
     ++block_location;
 
-    return count;
+    return length;
 }
 
 int Tape::WriteData(span<const uint8_t> buf, scsi_command)
