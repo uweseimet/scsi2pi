@@ -4,8 +4,10 @@
 //
 // Copyright (C) 2024 Uwe Seimet
 //
-// This implementation treats files with a .tar extension in a special way, so that regular .tar files can be used as
-// image files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
+// This device implements a sequential access device compliant with SCSI-2, with some SCC-2 extensions.
+//
+// Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
+// files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
 // contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
 // have the extension .tar, e.g. files with the .tap extension.
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
