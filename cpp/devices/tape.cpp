@@ -140,6 +140,10 @@ void Tape::Write6()
 int Tape::GetVariableBlockSize()
 {
     const int length = FindNextObject(object_type::BLOCK, 0);
+
+    LogTrace(fmt::format("Next block size is {} byte(s), chunk size is {} byte(s)", length,
+            GetController()->GetChunkSize()));
+
     if (length != GetController()->GetChunkSize()) {
         // In Fixed mode an incorrect block length always results in an error
         if (GetController()->GetCdb()[1] & 0x01) {
@@ -169,10 +173,6 @@ int Tape::ReadData(span<uint8_t> buf)
     CheckReady();
 
     const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
-
-    if (!tar_mode) {
-        LogTrace(fmt::format("Non-fixed block size is {} byte(s)", length));
-    }
 
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), length);
