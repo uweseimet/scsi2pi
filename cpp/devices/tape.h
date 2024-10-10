@@ -73,6 +73,7 @@ private:
     void Rewind() override;
     void Space6() override;
     void WriteFilemarks6() override;
+    void FormatMedium();
     void Locate10()
     {
         Locate(false);

@@ -85,7 +85,8 @@ TEST(BusFactoryTest, GetCommandName)
     EXPECT_EQ("REZERO/REWIND", bus_factory.GetCommandName(scsi_command::cmd_rezero));
     EXPECT_EQ("READ BLOCK LIMITS", bus_factory.GetCommandName(scsi_command::cmd_read_block_limits));
     EXPECT_EQ("REQUEST SENSE", bus_factory.GetCommandName(scsi_command::cmd_request_sense));
-    EXPECT_EQ("FORMAT UNIT", bus_factory.GetCommandName(scsi_command::cmd_format_unit));
+    EXPECT_EQ("FORMAT UNIT/FORMAT MEDIUM", bus_factory.GetCommandName(scsi_command::cmd_format_unit));
+    EXPECT_EQ("FORMAT UNIT/FORMAT MEDIUM", bus_factory.GetCommandName(scsi_command::cmd_format_medium));
     EXPECT_EQ("REASSIGN BLOCKS", bus_factory.GetCommandName(scsi_command::cmd_reassign_blocks));
     EXPECT_EQ("READ(6)/GET MESSAGE(6)", bus_factory.GetCommandName(scsi_command::cmd_read6));
     EXPECT_EQ("READ(6)/GET MESSAGE(6)", bus_factory.GetCommandName(scsi_command::cmd_get_message6));

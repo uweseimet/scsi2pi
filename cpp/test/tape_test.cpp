@@ -300,6 +300,17 @@ TEST(TapeTest, ReadPosition)
     EXPECT_EQ(0b11000000, controller->GetBuffer()[0]) << "BOP and EOP must be set";
 }
 
+TEST(TapeTest, FormatMedium)
+{
+    auto [controller, device] = CreateDevice(SCTP);
+    auto tape = dynamic_pointer_cast<Tape>(device);
+
+    CreateTapeFile(*tape, 4096);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_format_medium));
+    CheckPosition(*controller, *tape, 0);
+    EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
+}
+
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;

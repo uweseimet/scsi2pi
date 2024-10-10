@@ -80,6 +80,10 @@ bool Tape::SetUp()
         {
             ReadPosition();
         });
+    AddCommand(scsi_command::cmd_format_medium, [this]
+        {
+            FormatMedium();
+        });
 
     return StorageDevice::SetUp();
 }
@@ -488,6 +492,25 @@ void Tape::ReadPosition() const
     SetInt32(buf, 8, static_cast<uint32_t>(block_location));
 
     DataInPhase(20);
+}
+
+void Tape::FormatMedium()
+{
+    CheckWritePreconditions();
+
+    if (position) {
+        throw scsi_exception(sense_key::illegal_request, asc::sequential_positioning_error);
+    }
+
+    file.seekp(0, ios::beg);
+    WriteMetaData(object_type::END_OF_DATA, 0);
+
+    file.flush();
+    if (file.fail()) {
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
+
+    StatusPhase();
 }
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
