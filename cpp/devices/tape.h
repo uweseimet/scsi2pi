@@ -88,7 +88,7 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
-    int GetNonFixedBlockSize();
+    int GetVariableBlockSize();
 
     uint32_t GetByteCount() const;
 

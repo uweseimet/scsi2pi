@@ -137,7 +137,7 @@ void Tape::Write6()
     }
 }
 
-int Tape::GetNonFixedBlockSize()
+int Tape::GetVariableBlockSize()
 {
     const int length = FindNextObject(object_type::BLOCK, 0);
     if (length != GetController()->GetChunkSize()) {
@@ -168,7 +168,11 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int length = tar_mode ? GetBlockSize() : GetNonFixedBlockSize();
+    const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
+
+    if (!tar_mode) {
+        LogTrace(fmt::format("Non-fixed block size is {} byte(s)", length));
+    }
 
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), length);
