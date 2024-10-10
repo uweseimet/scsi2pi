@@ -545,7 +545,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 int Tape::GetByteCount() const
 {
     // Fixed and SILI must not both be set
-    if (GetController()->GetCdb()[1] & 0x02) {
+    if ((GetController()->GetCdb()[1] & 0x03) == 0x03) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
