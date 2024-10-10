@@ -151,7 +151,7 @@ int Tape::ReadData(span<uint8_t> buf)
     }
 
     file.seekg(position, ios::beg);
-    file.read((char*)buf.data(), static_cast<uint32_t>(GetController()->GetChunkSize()));
+    file.read((char*)buf.data(), GetController()->GetChunkSize());
     if (file.fail()) {
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
