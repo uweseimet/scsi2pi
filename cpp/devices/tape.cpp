@@ -141,11 +141,9 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    int length;
-    if (tar_mode) {
-        length = GetController()->GetChunkSize();
-    }
-    else {
+    int length = GetBlockSize();
+
+    if (!tar_mode) {
         length = FindNextObject(object_type::BLOCK, 0);
         if (length != GetController()->GetChunkSize()) {
             // In Fixed mode an incorrect block length always results in an error
