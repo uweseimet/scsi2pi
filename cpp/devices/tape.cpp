@@ -307,6 +307,8 @@ void Tape::Erase6()
 
     // Check Long bit. Like with an HP35470A a long erase erases everything, otherwise only EOD is written.
     if (GetController()->GetCdb()[1] & 0x01) {
+        position += sizeof(meta_data_t);
+
         // Erase in 4096 byte chunks
         vector<byte> buf(4096);
 
