@@ -548,7 +548,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     }
 }
 
-int Tape::GetByteCount() const
+uint32_t Tape::GetByteCount() const
 {
     const int32_t count =
         GetController()->GetCdb()[1] & 0x01 ?
