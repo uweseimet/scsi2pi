@@ -162,6 +162,8 @@ int Tape::GetVariableBlockSize()
         }
     }
 
+    position += sizeof(meta_data_t);
+
     return length;
 }
 
