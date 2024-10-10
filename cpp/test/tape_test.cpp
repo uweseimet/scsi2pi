@@ -116,6 +116,7 @@ TEST(TapeTest, Write6)
     auto [controller, device] = CreateDevice(SCTP);
     auto tape = dynamic_pointer_cast<Tape>(device);
 
+    // Non-fixed
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write6));
 
     // Fixed
