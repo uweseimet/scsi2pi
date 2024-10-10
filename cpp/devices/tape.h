@@ -97,6 +97,8 @@ private:
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
 
+    void Erase();
+
     fstream file;
 
     uint64_t position = 0;

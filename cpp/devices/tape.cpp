@@ -330,37 +330,19 @@ void Tape::Erase6()
 {
     CheckWritePreconditions();
 
-    file.seekp(position, ios::beg);
-    WriteMetaData(object_type::END_OF_DATA, 0);
-
     // Check Long bit. Like with an HP35470A a long erase erases everything, otherwise only EOD is written.
     if (GetController()->GetCdb()[1] & 0x01) {
+        Erase();
         position += sizeof(meta_data_t);
-
-        // Erase in 4096 byte chunks
-        vector<byte> buf(4096);
-
-        uint64_t remaining = filesize - position;
-        while (remaining > 0) {
-            uint64_t chunk = remaining;
-            if (chunk > buf.size()) {
-                chunk = buf.size();
-            }
-
-            file.write((const char*)buf.data(), chunk);
-            if (file.fail()) {
-                throw scsi_exception(sense_key::medium_error, asc::write_error);
-            }
-
-            remaining -= chunk;
-            position += chunk;
-            block_location += chunk / GetBlockSize();
-        }
     }
+    else {
+        file.seekp(position, ios::beg);
+        WriteMetaData(object_type::END_OF_DATA, 0);
 
-    file.flush();
-    if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
+        file.flush();
+        if (file.fail()) {
+            throw scsi_exception(sense_key::medium_error, asc::write_error);
+        }
     }
 
     StatusPhase();
@@ -503,13 +485,10 @@ void Tape::FormatMedium()
         throw scsi_exception(sense_key::illegal_request, asc::sequential_positioning_error);
     }
 
-    file.seekp(0, ios::beg);
-    WriteMetaData(object_type::END_OF_DATA, 0);
+    Erase();
 
-    file.flush();
-    if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
+    position = 0;
+    block_location = 0;
 
     StatusPhase();
 }
@@ -611,6 +590,38 @@ uint32_t Tape::GetByteCount() const
     LogTrace(fmt::format("READ/WRITE, position: {0}, byte count: {1}", position, count));
 
     return count;
+}
+
+void Tape::Erase()
+{
+    file.seekp(position, ios::beg);
+
+    // Erase in 4096 byte chunks
+    vector<byte> buf(4096);
+
+    uint64_t remaining = filesize - position - sizeof(meta_data_t);
+    while (remaining > 0) {
+        uint64_t chunk = remaining;
+        if (chunk > buf.size()) {
+            chunk = buf.size();
+        }
+
+        file.write((const char*)buf.data(), chunk);
+        if (file.fail()) {
+            throw scsi_exception(sense_key::medium_error, asc::write_error);
+        }
+
+        remaining -= chunk;
+        position += chunk;
+        block_location += chunk / GetBlockSize();
+    }
+
+    WriteMetaData(object_type::END_OF_DATA, 0);
+
+    file.flush();
+    if (file.fail()) {
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
 }
 
 vector<PbStatistics> Tape::GetStatistics() const
