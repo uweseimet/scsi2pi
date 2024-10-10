@@ -191,8 +191,8 @@ TEST(TapeTest, ReadBlockLimits)
 
     CreateTapeFile(*tape, 600);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_block_limits));
-    EXPECT_EQ(512U, GetInt32(controller->GetBuffer(), 0));
-    EXPECT_EQ(512U, GetInt16(controller->GetBuffer(), 4));
+    EXPECT_EQ(4096U, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(256U, GetInt16(controller->GetBuffer(), 4));
 }
 
 TEST(TapeTest, Rewind)

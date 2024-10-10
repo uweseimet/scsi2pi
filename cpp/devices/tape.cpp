@@ -341,9 +341,10 @@ void Tape::ReadBlockLimits()
     vector<uint8_t> &buf = GetController()->GetBuffer();
     buf[0] = 0;
 
-    // Only Fixed mode is supported, using the configured block size
-    SetInt24(buf, 1, GetBlockSize());
-    SetInt16(buf, 4, GetBlockSize());
+    vector<uint32_t> sorted_sizes = { GetSupportedBlockSizes().cbegin(), GetSupportedBlockSizes().cend() };
+    sort(sorted_sizes.begin(), sorted_sizes.end());
+    SetInt24(buf, 1, sorted_sizes.back());
+    SetInt16(buf, 4, sorted_sizes.front());
 
     DataInPhase(6);
 }
