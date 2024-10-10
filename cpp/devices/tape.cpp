@@ -14,9 +14,9 @@
 // determined. One would need a special data encoding to move backwards and find the beginning of a block or filemark.
 // Splitting each data byte and writing it as two low nibbles, while reserving the high nibble of each byte for meta
 // data, might be such a format. This would double the image file size, but this should not be an issue nowadays.
-// Implementing this is most likely not worth the effort, though.
+// Implementing this is most likely not worth the effort.
 // Gap handling is device-defined and does nothing, which is SCSI-compliant.
-// .tap image files must be erased before first use, to ensure that they start with an end-of-data marker.
+// .tap image files should be erased before first use, to ensure that they start with an end-of-data marker.
 // Note that the format of non-tar files may change in future SCSI2Pi releases, e.g. in order to add reverse spacing.
 //
 //---------------------------------------------------------------------------
