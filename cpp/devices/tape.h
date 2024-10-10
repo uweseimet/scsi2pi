@@ -88,6 +88,8 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
+    int GetNonFixedBlockSize();
+
     uint32_t GetByteCount() const;
 
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;

@@ -137,35 +137,38 @@ void Tape::Write6()
     }
 }
 
+int Tape::GetNonFixedBlockSize()
+{
+    const int length = FindNextObject(object_type::BLOCK, 0);
+    if (length != GetController()->GetChunkSize()) {
+        // In Fixed mode an incorrect block length always results in an error
+        if (GetController()->GetCdb()[1] & 0x01) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
+        const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
+
+        // Report an error if SILI is not set and the actual block length does not match the requested length
+        if (!(GetController()->GetCdb()[1] & 0x02)) {
+            SetIli();
+            SetInformation(requested_length - length);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
+        // Check for overlength condition
+        if (length > requested_length) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+    }
+
+    return length;
+}
+
 int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    int length = GetBlockSize();
-
-    if (!tar_mode) {
-        length = FindNextObject(object_type::BLOCK, 0);
-        if (length != GetController()->GetChunkSize()) {
-            // In Fixed mode an incorrect block length always results in an error
-            if (GetController()->GetCdb()[1] & 0x01) {
-                throw scsi_exception(sense_key::medium_error, asc::read_error);
-            }
-
-            const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
-
-            // Report an error if SILI is not set and the actual block length does not match the requested length
-            if (!(GetController()->GetCdb()[1] & 0x02)) {
-                SetIli();
-                SetInformation(requested_length - length);
-                throw scsi_exception(sense_key::medium_error, asc::read_error);
-            }
-
-            // Check for overlength condition
-            if (length > requested_length) {
-                throw scsi_exception(sense_key::medium_error, asc::read_error);
-            }
-        }
-    }
+    const int length = tar_mode ? GetBlockSize() : GetNonFixedBlockSize();
 
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), length);
