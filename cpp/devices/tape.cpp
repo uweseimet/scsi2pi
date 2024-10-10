@@ -111,11 +111,11 @@ void Tape::Read6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    byte_count = GetByteCount();
-    if (byte_count) {
-        GetController()->SetTransferSize(byte_count, GetBlockSize());
+    const int count = GetByteCount();
+    if (count) {
+        GetController()->SetTransferSize(count, count % GetBlockSize() ? count : GetBlockSize());
 
-        GetController()->SetCurrentLength(byte_count);
+        GetController()->SetCurrentLength(count);
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
@@ -129,9 +129,9 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        GetController()->SetTransferSize(byte_count, GetBlockSize());
+        GetController()->SetTransferSize(byte_count, byte_count % GetBlockSize() ? byte_count : GetBlockSize());
 
-        DataOutPhase(GetBlockSize());
+        DataOutPhase(byte_count % GetBlockSize() ? byte_count : GetBlockSize());
     }
     else {
         StatusPhase();
