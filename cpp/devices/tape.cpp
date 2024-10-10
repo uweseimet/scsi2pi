@@ -154,19 +154,17 @@ int Tape::ReadData(span<uint8_t> buf)
             }
 
             const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
-            if (length != requested_length) {
-                // Report an error if SILI is not set and the actual block length does not match the requested length
-                if (!(GetController()->GetCdb()[1] & 0x02)) {
-                    SetIli();
-                    SetInformation(requested_length - length);
-                    throw scsi_exception(sense_key::medium_error, asc::read_error);
-                }
 
-                // Only report an error for an overlength condition if the length field is nonzero
-                // TODO Currently ReadData() is not executed when the requested length is 0
-                if (requested_length && length > requested_length) {
-                    throw scsi_exception(sense_key::medium_error, asc::read_error);
-                }
+            // Report an error if SILI is not set and the actual block length does not match the requested length
+            if (!(GetController()->GetCdb()[1] & 0x02)) {
+                SetIli();
+                SetInformation(requested_length - length);
+                throw scsi_exception(sense_key::medium_error, asc::read_error);
+            }
+
+            // Check for overlength condition
+            if (length > requested_length) {
+                throw scsi_exception(sense_key::medium_error, asc::read_error);
             }
         }
     }
