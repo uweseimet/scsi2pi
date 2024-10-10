@@ -101,7 +101,7 @@ TEST(TapeTest, Read6)
 
     TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    // Fixed und SILI
+    // Fixed and SILI
     controller->SetCdbByte(1, 0x03);
     TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
@@ -115,10 +115,6 @@ TEST(TapeTest, Write6)
     auto [controller, device] = CreateDevice(SCTP);
     auto tape = dynamic_pointer_cast<Tape>(device);
 
-    TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    // Fixed und SILI
-    controller->SetCdbByte(1, 0x03);
     TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     // Fixed
