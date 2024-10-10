@@ -236,12 +236,12 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
 
     // Page 16 (device configuration)
     if (page == 0x10 || page == 0x3f) {
-        AddDeviceConfigurationPage(pages);
+        AddDeviceConfigurationPage(pages, changeable);
     }
 
     // Page 17 (medium partition page)
     if (page == 0x11 || page == 0x3f) {
-        AddMediumPartitionPage(pages);
+        AddMediumPartitionPage(pages, changeable);
     }
 }
 
@@ -266,25 +266,29 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
     pages[0] = buf;
 }
 
-void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages) const
+void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(16);
 
-    // BIS (block identifiers supported)
-    buf[8] = (byte)0b01000000;
+    if (!changeable) {
+        // BIS (block identifiers supported)
+        buf[8] = (byte)0b01000000;
 
-    // EEG (enable EOD generation)
-    buf[10] = (byte)0b00010000;
+        // EEG (enable EOD generation)
+        buf[10] = (byte)0b00010000;
+    }
 
     pages[16] = buf;
 }
 
-void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages) const
+void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable) const
 {
     vector<byte> buf(8);
 
-    // Fixed data partitions, PSUM (descriptor unit in MB)
-    buf[4] = (byte)0b10010000;
+    if (!changeable) {
+        // Fixed data partitions, PSUM (descriptor unit in MB)
+        buf[4] = (byte)0b10010000;
+    }
 
     pages[17] = buf;
 }
@@ -489,7 +493,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         // The magic is a safeguard against random data that look like objects
         if (memcmp(meta_data.magic.data(), MAGIC, 4)) {
-            ++position;
+            position += 2;
             continue;
         }
 
@@ -540,13 +544,13 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
 int Tape::GetByteCount() const
 {
-    // Only Fixed mode with the configured block size is supported
-    if (!(GetController()->GetCdb()[1] & 0x01)) {
+    // Fixed and SILI must not both be set
+    if (GetController()->GetCdb()[1] & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    // Fixed and SILI must not both be set
-    if (GetController()->GetCdb()[1] & 0x02) {
+    // Only Fixed mode with the configured block size is supported
+    if (!(GetController()->GetCdb()[1] & 0x01)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

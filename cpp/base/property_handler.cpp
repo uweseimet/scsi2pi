@@ -24,20 +24,12 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     property_map properties;
 
     // Always parse the optional global property file
-    if (!ignore_conf && exists(path(GLOBAL_CONFIGURATION))) {
-        ParsePropertyFile(properties, GLOBAL_CONFIGURATION, true);
+    if (!ignore_conf && exists(path(CONFIGURATION))) {
+        ParsePropertyFile(properties, CONFIGURATION, true);
     }
 
-    // When there is no explicit property file list parse the local property file
-    if (filenames.empty()) {
-        if (!ignore_conf) {
-            ParsePropertyFile(properties, GetHomeDir() + LOCAL_CONFIGURATION, true);
-        }
-    }
-    else {
-        for (const auto &filename : Split(filenames, ',')) {
-            ParsePropertyFile(properties, filename, false);
-        }
+    for (const auto &filename : Split(filenames, ',')) {
+        ParsePropertyFile(properties, filename, false);
     }
 
     // Merge properties from property files and from the command line, giving the command line priority
@@ -117,10 +109,10 @@ void PropertyHandler::RemoveProperties(const string &filter)
 bool PropertyHandler::Persist() const
 {
     error_code error;
-    remove(GLOBAL_CONFIGURATION_OLD, error);
-    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION_OLD), error);
+    remove(CONFIGURATION_OLD, error);
+    rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
 
-    ofstream out(GLOBAL_CONFIGURATION);
+    ofstream out(CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {
         out << key << "=" << value << "\n";
         if (out.fail()) {

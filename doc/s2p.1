@@ -41,7 +41,7 @@ If no explicit device type is provided, s2p determines the type based upon the f
     is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
     tar: SCSI Tape image (tar-compatible image, SCSI-2)
-    tap: SCSI Type iamge (raw image with filemarks support, SCSI-2)
+    tap: SCSI Tape iamge (raw image with filemarks support, SCSI-2)
 
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
@@ -100,10 +100,10 @@ Set the s2p configuration property with the name KEY to the value VALUE. Propert
 .TP
 .BR --property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The default global property file is /etc/s2p.conf. This file is parsed first.
-The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
+Explicitly specified property files override the previously defined properties.
 .TP
 .BR --ignore-conf\fI " " \fI
-Ignore any properties in the global configuration file /etc/s2p.conf and the local property file ~/.config/s2p.conf.
+Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
