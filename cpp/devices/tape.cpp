@@ -584,6 +584,7 @@ uint32_t Tape::GetByteCount() const
         GetController()->GetCdb()[1] & 0x01 ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
+    error(GetBlockSize());
 
     if (static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
