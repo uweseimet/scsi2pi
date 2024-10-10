@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2024 Uwe Seimet
 //
-// This device implements a sequential access device compliant with SCSI-2, with some SCC-2 extensions.
+// The SCTP device is a SCSI-2 sequential access device with some SCC-2 command extensions.
 //
 // Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
 // files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
