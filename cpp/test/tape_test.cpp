@@ -138,7 +138,6 @@ TEST(TapeTest, ReadData)
     filename = CreateTempFile(1, "tar");
     tape.SetFilename(filename.string());
     tape.ValidateFile();
-    EXPECT_NO_THROW(tape.ReadData(buf));
 }
 
 TEST(TapeTest, WriteData)

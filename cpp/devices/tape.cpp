@@ -143,7 +143,7 @@ int Tape::ReadData(span<uint8_t> buf)
     CheckReady();
 
     if (!tar_mode) {
-        if (FindNextObject(object_type::BLOCK, 0) != GetBlockSize()) {
+        if (FindNextObject(object_type::BLOCK, 0) != static_cast<uint32_t>(GetController()->GetChunkSize())) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
@@ -151,16 +151,16 @@ int Tape::ReadData(span<uint8_t> buf)
     }
 
     file.seekg(position, ios::beg);
-    file.read((char*)buf.data(), GetBlockSize());
+    file.read((char*)buf.data(), static_cast<uint32_t>(GetController()->GetChunkSize()));
     if (file.fail()) {
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position += GetBlockSize();
+    position += GetController()->GetChunkSize();
     ++block_location;
 
-    return GetBlockSize();
+    return GetController()->GetChunkSize();
 }
 
 int Tape::WriteData(span<const uint8_t> buf, scsi_command)
