@@ -143,6 +143,7 @@ int Tape::ReadData(span<uint8_t> buf)
     CheckReady();
 
     if (!tar_mode) {
+        // TODO SILI handling
         if (FindNextObject(object_type::BLOCK, 0) != static_cast<uint32_t>(GetController()->GetChunkSize())) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
