@@ -343,7 +343,7 @@ void Tape::ReadBlockLimits()
     buf[0] = 0;
 
     vector<uint32_t> sorted_sizes = { GetSupportedBlockSizes().cbegin(), GetSupportedBlockSizes().cend() };
-    sort(sorted_sizes.begin(), sorted_sizes.end());
+    ranges::sort(sorted_sizes);
     SetInt24(buf, 1, sorted_sizes.back());
     SetInt16(buf, 4, sorted_sizes.front());
 
