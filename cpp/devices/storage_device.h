@@ -149,7 +149,7 @@ private:
     // Block sizes in bytes
     unordered_set<uint32_t> supported_block_sizes;
     uint32_t configured_block_size = 0;
-    uint32_t block_size = 512;
+    uint32_t block_size = 0;
 
     bool supports_mode_select;
 
