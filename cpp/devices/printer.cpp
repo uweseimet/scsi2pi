@@ -197,6 +197,7 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
 
         out.open(filename, ios::binary);
         if (out.fail()) {
+            out.clear();
             ++print_error_count;
             throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
         }
@@ -208,6 +209,7 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
 
     out.write((const char*)buf.data(), length);
     if (out.fail()) {
+        out.clear();
         ++print_error_count;
         throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
     }

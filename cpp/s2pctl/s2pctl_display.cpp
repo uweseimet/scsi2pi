@@ -28,7 +28,9 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
 {
     ostringstream s;
 
-    s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << PbDeviceType_Name(pb_device.type())
+    const string &type = PbDeviceType_IsValid(pb_device.type()) ? PbDeviceType_Name(pb_device.type()) : "????";
+
+    s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << type
         << "  " << pb_device.vendor() << ":" << pb_device.product() << ":" << pb_device.revision();
 
     // Check for existence because PiSCSI does not support this setting
