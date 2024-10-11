@@ -77,15 +77,18 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 
     ifstream in(path, ios::binary);
     if (in.fail()) {
+        in.clear();
         return false;
     }
 
     in.seekg(offset);
     if (in.fail()) {
+        in.clear();
         return false;
     }
     in.read((char*)dt.buffer, length);
     if (in.fail()) {
+        in.clear();
         return false;
     }
 
@@ -118,6 +121,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 
     ofstream out(path, ios::in | ios::out | ios::binary);
     if (out.fail()) {
+        out.clear();
         return false;
     }
 
@@ -131,6 +135,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 
             out.seekp(offset + (i << dt.size));
             if (out.fail()) {
+                out.clear();
                 return false;
             }
 
@@ -148,6 +153,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 
             out.write((const char*)&dt.buffer[i << dt.size], total);
             if (out.fail()) {
+                out.clear();
                 return false;
             }
 
