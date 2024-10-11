@@ -45,6 +45,7 @@ int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)
     file.seekg(sector_size * start, ios::beg);
     file.read((char*)buf.data(), length);
     if (file.fail()) {
+        file.clear();
         ++read_error_count;
         return 0;
     }
@@ -59,6 +60,7 @@ int LinuxCache::Write(span<const uint8_t> buf, uint64_t start, int length)
     file.seekp(sector_size * start, ios::beg);
     file.write((const char*)buf.data(), length);
     if (file.fail()) {
+        file.clear();
         ++write_error_count;
         return 0;
     }
@@ -74,6 +76,7 @@ bool LinuxCache::Flush()
 {
     file.flush();
     if (file.fail()) {
+        file.clear();
         ++write_error_count;
         return false;
     }
