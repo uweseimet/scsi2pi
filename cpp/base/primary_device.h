@@ -69,9 +69,13 @@ public:
     {
         eom = true;
     }
+    void SetIli()
+    {
+        ili = true;
+    }
     void SetInformation(int64_t value)
     {
-        information = static_cast<uint32_t>(value);
+        information = static_cast<int32_t>(value);
         valid = true;
     }
 
@@ -202,7 +206,8 @@ private:
     bool valid = false;
     bool filemark = false;
     bool eom = false;
-    uint32_t information = 0;
+    bool ili = false;
+    int32_t information = 0;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

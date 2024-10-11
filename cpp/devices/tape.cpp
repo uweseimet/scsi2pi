@@ -4,20 +4,22 @@
 //
 // Copyright (C) 2024 Uwe Seimet
 //
-// This implementation treats files with a .tar extension in a special way, so that regular .tar files can be used as
-// image files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
+// The SCTP device is a SCSI-2 sequential access device with some SCC-2 command extensions.
+//
+// Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
+// files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
 // contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
 // have the extension .tar, e.g. files with the .tap extension.
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
 // Reverse spacing (optional anyway) is not supported because the object type of the previous objects cannot easily be
 // determined. One would need a special data encoding to move backwards and find the beginning of a block or filemark.
-// Splitting each data byte and writing it as two low nibbles, while reserving the high nibble of each byte for meta
-// data, might be such a format. This would double the image file size, but this should not be an issue nowadays.
-// Implementing this is most likely not worth the effort, though.
+// Storing each data byte as two bytes, with the excess bits encoding special information, might be such a format.
+// This would double the image file size, but this should not be an issue nowadays.
+// Implementing this is most likely not worth the effort.
 // Gap handling is device-defined and does nothing, which is SCSI-compliant.
-// tap image files must be erased before first use, to ensure that they start with an end-of-data marker. I order to
-// detect
+// .tap image files should be formatted or erased (long erase) before first use, to ensure that they start with an
+// end-of-data marker.
 // Note that the format of non-tar files may change in future SCSI2Pi releases, e.g. in order to add reverse spacing.
 //
 //---------------------------------------------------------------------------
@@ -81,6 +83,10 @@ bool Tape::SetUp()
         {
             ReadPosition();
         });
+    AddCommand(scsi_command::cmd_format_medium, [this]
+        {
+            FormatMedium();
+        });
 
     return StorageDevice::SetUp();
 }
@@ -113,7 +119,7 @@ void Tape::Read6()
 
     const int count = GetByteCount();
     if (count) {
-        GetController()->SetTransferSize(count, GetBlockSize());
+        GetController()->SetTransferSize(count, count % GetBlockSize() ? count : GetBlockSize());
 
         GetController()->SetCurrentLength(count);
         DataInPhase(ReadData(GetController()->GetBuffer()));
@@ -129,71 +135,98 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        GetController()->SetTransferSize(byte_count, GetBlockSize());
+        GetController()->SetTransferSize(byte_count, byte_count % GetBlockSize() ? byte_count : GetBlockSize());
 
-        DataOutPhase(GetBlockSize());
+        DataOutPhase(byte_count % GetBlockSize() ? byte_count : GetBlockSize());
     }
     else {
         StatusPhase();
     }
 }
 
+int Tape::GetVariableBlockSize()
+{
+    const int length = FindNextObject(object_type::BLOCK, 0);
+
+    if (length != GetController()->GetChunkSize()) {
+        // In Fixed mode an incorrect block length always results in an error
+        if (GetController()->GetCdb()[1] & 0x01) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
+        const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
+
+        // Report an error if SILI is not set and the actual block length does not match the requested length
+        if (!(GetController()->GetCdb()[1] & 0x02)) {
+            SetIli();
+            SetInformation(requested_length - length);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
+        // Check for overlength condition
+        if (length > requested_length) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+    }
+
+    position += sizeof(meta_data_t);
+
+    return length;
+}
+
 int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    if (!tar_mode) {
-        if (FindNextObject(object_type::BLOCK, 0) != GetBlockSize()) {
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
-        }
-
-        position += sizeof(meta_data_t);
-    }
+    const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
 
     file.seekg(position, ios::beg);
-    file.read((char*)buf.data(), GetBlockSize());
+    file.read((char*)buf.data(), length);
     if (file.fail()) {
+        file.clear();
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position += GetBlockSize();
+    position += length;
     ++block_location;
 
-    return GetBlockSize();
+    return length;
 }
 
 int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    file.seekp(position, ios::beg);
+    const int length = GetController()->GetChunkSize();
 
     if (!tar_mode) {
-        WriteMetaData(object_type::BLOCK, GetBlockSize());
+        WriteMetaData(object_type::BLOCK, length);
     }
 
-    file.write((const char*)buf.data(), GetBlockSize());
+    file.seekp(position, ios::beg);
+    file.write((const char*)buf.data(), length);
     if (file.fail()) {
+        file.clear();
         ++write_error_count;
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
-    position += GetBlockSize();
+    byte_count -= length;
+    position += length;
     ++block_location;
-    byte_count -= GetBlockSize();
 
-    // Write end-of-data if this was the last block to be written
-    if (!tar_mode && !byte_count) {
+    if (!tar_mode) {
         WriteMetaData(object_type::END_OF_DATA, 0);
     }
 
     file.flush();
     if (file.fail()) {
+        file.clear();
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
-    return GetBlockSize();
+    return length;
 }
 
 void Tape::Open()
@@ -302,35 +335,24 @@ void Tape::Erase6()
 {
     CheckWritePreconditions();
 
-    file.seekp(position, ios::beg);
-    WriteMetaData(object_type::END_OF_DATA, 0);
-
     // Check Long bit. Like with an HP35470A a long erase erases everything, otherwise only EOD is written.
     if (GetController()->GetCdb()[1] & 0x01) {
-        // Erase in 4096 byte chunks
-        vector<byte> buf(4096);
+        Erase();
 
-        uint64_t remaining = filesize - position;
-        while (remaining > 0) {
-            uint64_t chunk = remaining;
-            if (chunk > buf.size()) {
-                chunk = buf.size();
-            }
+        // After a Long erase according to the standard the position is undefined, for SCSI2Pi it is 0
+        position = 0;
 
-            file.write((const char*)buf.data(), chunk);
-            if (file.fail()) {
-                throw scsi_exception(sense_key::medium_error, asc::write_error);
-            }
-
-            remaining -= chunk;
-            position += chunk;
-            block_location += chunk / GetBlockSize();
-        }
+        WriteMetaData(object_type::END_OF_DATA, 0);
     }
+    else {
+        file.seekp(position, ios::beg);
+        WriteMetaData(object_type::END_OF_DATA, 0);
 
-    file.flush();
-    if (file.fail()) {
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
+        file.flush();
+        if (file.fail()) {
+            file.clear();
+            throw scsi_exception(sense_key::medium_error, asc::write_error);
+        }
     }
 
     StatusPhase();
@@ -341,9 +363,10 @@ void Tape::ReadBlockLimits()
     vector<uint8_t> &buf = GetController()->GetBuffer();
     buf[0] = 0;
 
-    // Only Fixed mode is supported, using the configured block size
-    SetInt24(buf, 1, GetBlockSize());
-    SetInt16(buf, 4, GetBlockSize());
+    vector<uint32_t> sorted_sizes = { GetSupportedBlockSizes().cbegin(), GetSupportedBlockSizes().cend() };
+    ranges::sort(sorted_sizes);
+    SetInt24(buf, 1, sorted_sizes.back());
+    SetInt16(buf, 4, 1);
 
     DataInPhase(6);
 }
@@ -464,6 +487,24 @@ void Tape::ReadPosition() const
     DataInPhase(20);
 }
 
+void Tape::FormatMedium()
+{
+    CheckWritePreconditions();
+
+    if (position) {
+        throw scsi_exception(sense_key::illegal_request, asc::sequential_positioning_error);
+    }
+
+    Erase();
+
+    position = 0;
+    block_location = 0;
+
+    WriteMetaData(object_type::END_OF_DATA, 0);
+
+    StatusPhase();
+}
+
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
     assert(size < 65536);
@@ -471,10 +512,15 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     meta_data_t meta_data;
     memcpy(meta_data.magic.data(), MAGIC, 4);
     meta_data.type = type;
+    meta_data.reserved = 0;
     meta_data.size[0] = static_cast<uint8_t>(size >> 8);
     meta_data.size[1] = static_cast<uint8_t>(size);
+
+    file.seekp(position, ios::beg);
     file.write((const char*)&meta_data, sizeof(meta_data));
+    file.flush();
     if (file.fail()) {
+        file.clear();
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
@@ -493,6 +539,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         meta_data_t meta_data;
         file.read((char*)&meta_data, sizeof(meta_data));
         if (file.fail()) {
+            file.clear();
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
@@ -520,7 +567,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         // End-of-partition
         if (static_cast<off_t>(position) >= filesize) {
-            LogTrace("Encountered end-of-partition while spacing");
+            LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();
             throw scsi_exception(sense_key::medium_error);
@@ -547,14 +594,12 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     }
 }
 
-int Tape::GetByteCount() const
+uint32_t Tape::GetByteCount() const
 {
-    // Only Fixed mode with the configured block size is supported
-    if (!(GetController()->GetCdb()[1] & 0x01)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
-    const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize();
+    const int32_t count =
+        GetController()->GetCdb()[1] & 0x01 ?
+            GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
+            GetSignedInt24(GetController()->GetCdb(), 2);
 
     if (static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -563,6 +608,38 @@ int Tape::GetByteCount() const
     LogTrace(fmt::format("READ/WRITE, position: {0}, byte count: {1}", position, count));
 
     return count;
+}
+
+void Tape::Erase()
+{
+    file.seekp(position, ios::beg);
+
+    // Erase in 4096 byte chunks
+    vector<byte> buf(4096);
+
+    uint64_t remaining = filesize - position;
+    while (remaining > 0) {
+        uint64_t chunk = remaining;
+        if (chunk > buf.size()) {
+            chunk = buf.size();
+        }
+
+        file.write((const char*)buf.data(), chunk);
+        if (file.fail()) {
+            file.clear();
+            throw scsi_exception(sense_key::medium_error, asc::write_error);
+        }
+
+        remaining -= chunk;
+        position += chunk;
+        block_location += chunk / GetBlockSize();
+    }
+
+    file.flush();
+    if (file.fail()) {
+        file.clear();
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
 }
 
 vector<PbStatistics> Tape::GetStatistics() const

@@ -73,6 +73,7 @@ private:
     void Rewind() override;
     void Space6() override;
     void WriteFilemarks6() override;
+    void FormatMedium();
     void Locate10()
     {
         Locate(false);
@@ -88,11 +89,15 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
-    int GetByteCount() const;
+    int GetVariableBlockSize();
+
+    uint32_t GetByteCount() const;
 
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
+
+    void Erase();
 
     fstream file;
 
@@ -100,7 +105,7 @@ private:
 
     uint64_t block_location = 0;
 
-    int byte_count = 0;
+    uint32_t byte_count = 0;
 
     off_t filesize = 0;
 

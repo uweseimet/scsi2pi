@@ -199,6 +199,7 @@ void PrimaryDevice::RequestSense()
     valid = false;
     filemark = false;
     eom = false;
+    ili = false;
 
     DataInPhase(length);
 }

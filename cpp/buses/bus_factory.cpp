@@ -21,7 +21,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::cmd_rezero, 6, "REZERO/REWIND");
     AddCommand(scsi_command::cmd_read_block_limits, 6, "READ BLOCK LIMITS");
     AddCommand(scsi_command::cmd_request_sense, 6, "REQUEST SENSE");
-    AddCommand(scsi_command::cmd_format_unit, 6, "FORMAT UNIT");
+    AddCommand(scsi_command::cmd_format_unit, 6, "FORMAT UNIT/FORMAT MEDIUM");
     AddCommand(scsi_command::cmd_reassign_blocks, 6, "REASSIGN BLOCKS");
     AddCommand(scsi_command::cmd_read6, 6, "READ(6)/GET MESSAGE(6)");
     AddCommand(scsi_command::cmd_retrieve_stats, 6, "RETRIEVE STATS");
