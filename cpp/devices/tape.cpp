@@ -25,7 +25,6 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -113,7 +112,7 @@ void Tape::ValidateFile()
 void Tape::Read6()
 {
     // Fixed and SILI must not both be set
-    if ((GetController()->GetCdb()[1] & 0x03) == 0x03) {
+    if ((GetCdbByte(1) & 0x03) == 0x03) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -150,14 +149,14 @@ int Tape::GetVariableBlockSize()
 
     if (length != GetController()->GetChunkSize()) {
         // In Fixed mode an incorrect block length always results in an error
-        if (GetController()->GetCdb()[1] & 0x01) {
+        if (GetCdbByte(1) & 0x01) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         const int requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
 
         // Report an error if SILI is not set and the actual block length does not match the requested length
-        if (!(GetController()->GetCdb()[1] & 0x02)) {
+        if (!(GetCdbByte(1) & 0x02)) {
             SetIli();
             SetInformation(requested_length - length);
             throw scsi_exception(sense_key::medium_error, asc::read_error);
@@ -336,7 +335,7 @@ void Tape::Erase6()
     CheckWritePreconditions();
 
     // Check Long bit. Like with an HP35470A a long erase erases everything, otherwise only EOD is written.
-    if (GetController()->GetCdb()[1] & 0x01) {
+    if (GetCdbByte(1) & 0x01) {
         Erase();
 
         // After a Long erase according to the standard the position is undefined, for SCSI2Pi it is 0
@@ -392,7 +391,7 @@ void Tape::Space6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    switch (const int code = GetController()->GetCdb()[1] & 0x07; code) {
+    switch (const int code = GetCdbByte(1) & 0x07; code) {
     case object_type::BLOCK:
     case object_type::FILEMARK:
         if (count) {
@@ -414,7 +413,7 @@ void Tape::Space6()
 void Tape::WriteFilemarks6()
 {
     // Setmarks are not supported
-    if (GetController()->GetCdb()[1] & 0x02) {
+    if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -423,7 +422,7 @@ void Tape::WriteFilemarks6()
     if (!tar_mode) {
         file.seekp(position, ios::beg);
 
-        const int count = GetInt24(GetController()->GetCdb(), 2);
+        const int count = GetCdbInt24(2);
         for (int i = 0; i < count; i++) {
             WriteMetaData(object_type::FILEMARK, 0);
         }
@@ -442,12 +441,12 @@ void Tape::WriteFilemarks6()
 // This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
-    // CP is not supported, BT does not make a difference
-    if (GetController()->GetCdb()[1] & 0x02) {
+    // CP is not supported
+    if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint64_t block = locate16 ? GetInt64(GetController()->GetCdb(), 4) : GetInt32(GetController()->GetCdb(), 3);
+    const uint64_t block = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
     position = 0;
     block_location = 0;
@@ -457,7 +456,12 @@ void Tape::Locate(bool locate16)
         block_location = block;
     }
     else {
-        FindNextObject(object_type::BLOCK, block);
+        // BT
+        if (GetCdbByte(1) & 0x01) {
+            position = GetCdbInt32(2);
+        } else {
+            FindNextObject(object_type::BLOCK, block);
+        }
     }
 
     StatusPhase();
@@ -480,9 +484,10 @@ void Tape::ReadPosition() const
 
     // Partition number is always 0
 
-    // First and last block location, BT does not make a difference
-    SetInt32(buf, 4, static_cast<uint32_t>(block_location));
-    SetInt32(buf, 8, static_cast<uint32_t>(block_location));
+    // BT (SCSI-2)/service action 01 (since SCC-2)
+    const bool bt = GetCdbByte(1) & 0x01;
+    SetInt32(buf, 4, static_cast<uint32_t>(bt ? position : block_location));
+    SetInt32(buf, 8, static_cast<uint32_t>(bt ? position : block_location));
 
     DataInPhase(20);
 }
@@ -597,7 +602,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 uint32_t Tape::GetByteCount() const
 {
     const int32_t count =
-        GetController()->GetCdb()[1] & 0x01 ?
+        GetCdbByte(1) & 0x01 ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 

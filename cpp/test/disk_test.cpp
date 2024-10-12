@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/memory_util.h"
 #include "devices/disk.h"
 #include "shared/s2p_exceptions.h"
 

@@ -94,6 +94,25 @@ TEST(TapeTest, Open)
     EXPECT_NO_THROW(tape.Open());
 }
 
+TEST(TapeTest, ReadData)
+{
+    vector<uint8_t> buf(1);
+    MockTape tape(0);
+
+    tape.SetReady(true);
+    tape.SetBlockCount(1);
+    auto filename = CreateTempFile(1, "tap");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_THROW(tape.ReadData(buf), scsi_exception);
+
+    tape.CleanUp();
+    filename = CreateTempFile(1, "tar");
+    tape.SetFilename(filename.string());
+    tape.ValidateFile();
+    EXPECT_NO_THROW(tape.ReadData(buf));
+}
+
 TEST(TapeTest, Read6)
 {
     auto [controller, device] = CreateDevice(SCTP);
@@ -160,6 +179,7 @@ TEST(TapeTest, Erase6)
     // Long
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase6));
+    controller->SetCdbByte(1, 0x00);
     CheckPosition(*controller, *tape, 8);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
@@ -187,8 +207,11 @@ TEST(TapeTest, Rewind)
 
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_erase6));
+    controller->SetCdbByte(1, 0x00);
     CheckPosition(*controller, *tape, 1);
+    controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_rewind));
+    controller->SetCdbByte(1, 0x00);
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
@@ -252,8 +275,13 @@ TEST(TapeTest, Locate10)
     TestShared::Dispatch(*tape, scsi_command::cmd_locate10, sense_key::medium_error, asc::read_error);
 
     CreateTapeFile(*tape);
+
     TestShared::Dispatch(*tape, scsi_command::cmd_locate10, sense_key::blank_check,
         asc::no_additional_sense_information);
+
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_locate10));
 }
 
 TEST(TapeTest, Locate16)
@@ -271,6 +299,10 @@ TEST(TapeTest, Locate16)
     CreateTapeFile(*tape);
     TestShared::Dispatch(*tape, scsi_command::cmd_locate16, sense_key::blank_check,
         asc::no_additional_sense_information);
+
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_locate16));
 }
 
 TEST(TapeTest, ReadPosition)

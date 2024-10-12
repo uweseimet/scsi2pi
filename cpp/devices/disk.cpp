@@ -13,7 +13,6 @@
 //---------------------------------------------------------------------------
 
 #include "disk.h"
-#include "base/memory_util.h"
 #include "disk_cache.h"
 #include "linux_cache.h"
 #include "shared/s2p_exceptions.h"
@@ -177,7 +176,7 @@ void Disk::FormatUnit()
     CheckReady();
 
     // FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
-    if ((GetController()->GetCdbByte(1) & 0x10) && GetController()->GetCdbByte(4)) {
+    if ((GetCdbByte(1) & 0x10) && GetCdbByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -239,26 +238,26 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
 
 void Disk::ReadLong10()
 {
-    ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), false);
+    ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), false);
 }
 
 void Disk::WriteLong10()
 {
     CheckWritePreconditions();
 
-    ReadWriteLong(ValidateBlockAddress(RW10), GetInt16(GetController()->GetCdb(), 7), true);
+    ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), true);
 }
 
 void Disk::ReadLong16()
 {
-    ReadWriteLong(ValidateBlockAddress(RW16), GetInt16(GetController()->GetCdb(), 12), false);
+    ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), false);
 }
 
 void Disk::WriteLong16()
 {
     CheckWritePreconditions();
 
-    ReadWriteLong(ValidateBlockAddress(RW16), GetInt16(GetController()->GetCdb(), 12), true);
+    ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), true);
 }
 
 void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
@@ -308,8 +307,7 @@ void Disk::SynchronizeCache()
 
 void Disk::ReadDefectData10() const
 {
-    const size_t allocation_length = min(static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7)),
-        static_cast<size_t>(4));
+    const size_t allocation_length = min(static_cast<size_t>(GetCdbInt16(7)), static_cast<size_t>(4));
 
     GetController()->SetCurrentLength(static_cast<int>(allocation_length));
 
@@ -506,13 +504,13 @@ void Disk::ReadCapacity16()
     SetInt64(buf, 0, GetBlockCount() - 1);
     SetInt32(buf, 8, GetBlockSize());
 
-    DataInPhase(min(32, static_cast<int>(GetInt32(GetController()->GetCdb(), 10))));
+    DataInPhase(min(32, static_cast<int>(GetCdbInt32(10))));
 }
 
 void Disk::ReadCapacity16_ReadLong16()
 {
     // The service action determines the actual command
-    switch (GetController()->GetCdbByte(1) & 0x1f) {
+    switch (GetCdbByte(1) & 0x1f) {
     case 0x10:
         ReadCapacity16();
         break;
@@ -530,12 +528,11 @@ void Disk::ReadCapacity16_ReadLong16()
 uint64_t Disk::ValidateBlockAddress(access_mode mode) const
 {
     // The RelAdr bit is only permitted with linked commands
-    if (mode == RW10 && GetController()->GetCdbByte(1) & 0x01) {
+    if (mode == RW10 && GetCdbByte(1) & 0x01) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint64_t sector =
-        mode == RW16 ? GetInt64(GetController()->GetCdb(), 2) : GetInt32(GetController()->GetCdb(), 2);
+    const uint64_t sector = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
 
     if (sector > GetBlockCount()) {
         LogTrace(
@@ -566,21 +563,21 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
     uint32_t count;
 
     if (mode == RW6 || mode == SEEK6) {
-        start = GetInt24(GetController()->GetCdb(), 1);
+        start = GetCdbInt24(1);
 
-        count = GetController()->GetCdbByte(4);
+        count = GetCdbByte(4);
         if (!count) {
             count = 256;
         }
     }
     else {
-        start = mode == RW16 ? GetInt64(GetController()->GetCdb(), 2) : GetInt32(GetController()->GetCdb(), 2);
+        start = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
 
         if (mode == RW16) {
-            count = GetInt32(GetController()->GetCdb(), 10);
+            count = GetCdbInt32(10);
         }
         else if (mode != SEEK10) {
-            count = GetInt16(GetController()->GetCdb(), 7);
+            count = GetCdbInt16(7);
         }
         else {
             count = 0;

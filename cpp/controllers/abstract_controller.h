@@ -13,6 +13,7 @@
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
+#include "base/memory_util.h"
 #include "base/s2p_defs.h"
 
 class PrimaryDevice;
@@ -81,10 +82,6 @@ public:
     auto& GetCdb() const
     {
         return cdb;
-    }
-    int GetCdbByte(int index) const
-    {
-        return cdb[index];
     }
 
 protected:

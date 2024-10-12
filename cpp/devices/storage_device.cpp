@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "storage_device.h"
-#include "base/memory_util.h"
 #include <unistd.h>
 #include "shared/s2p_exceptions.h"
 
@@ -67,8 +66,8 @@ void StorageDevice::CheckWritePreconditions() const
 
 void StorageDevice::StartStopUnit()
 {
-    const bool start = GetController()->GetCdbByte(4) & 0x01;
-    const bool load = GetController()->GetCdbByte(4) & 0x02;
+    const bool start = GetCdbByte(4) & 0x01;
+    const bool load = GetCdbByte(4) & 0x02;
 
     if (load) {
         LogTrace(start ? "Loading medium" : "Ejecting medium");
@@ -112,7 +111,7 @@ void StorageDevice::PreventAllowMediumRemoval()
 {
     CheckReady();
 
-    const bool lock = GetController()->GetCdbByte(4) & 0x01;
+    const bool lock = GetCdbByte(4) & 0x01;
 
     LogTrace(lock ? "Locking medium" : "Unlocking medium");
 

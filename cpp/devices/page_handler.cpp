@@ -8,7 +8,6 @@
 
 #include <spdlog/spdlog.h>
 #include "page_handler.h"
-#include "base/memory_util.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
@@ -33,11 +32,11 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports
     // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
     device.AddCommand(scsi_command::cmd_mode_select6, [this]
         {
-            ModeSelect(device.GetController()->GetCdbByte(4));
+            ModeSelect(device.GetCdbByte(4));
         });
     device.AddCommand(scsi_command::cmd_mode_select10, [this]
         {
-            ModeSelect(GetInt16(device.GetController()->GetCdb(), 7));
+            ModeSelect(device.GetCdbInt24(7));
         });
 }
 
@@ -159,7 +158,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 
 void PageHandler::ModeSelect(int length) const
 {
-    if (!supports_mode_select || (!supports_save_parameters && (device.GetController()->GetCdbByte(1) & 0x01))) {
+    if (!supports_mode_select || (!supports_save_parameters && (device.GetCdbByte(1) & 0x01))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

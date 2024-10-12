@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 
 #include "scsi_cd.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -68,17 +67,17 @@ void ScsiCd::ReadToc()
 {
     CheckReady();
 
-    const auto &cdb = GetController()->GetCdb();
+    const int track = GetCdbByte(6);
 
     // Track must be 1, except for lead out track ($AA)
-    if (cdb[6] > 1 && cdb[6] != 0xaa) {
+    if (track > 1 && track != 0xaa) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     uint8_t track_number = 1;
     uint32_t track_address = first_lba;
-    if (cdb[6] && !track_initialized) {
-        if (cdb[6] != 0xaa) {
+    if (track && !track_initialized) {
+        if (track != 0xaa) {
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         }
 
@@ -86,7 +85,7 @@ void ScsiCd::ReadToc()
         track_address = last_lba + 1;
     }
 
-    const int length = min(GetInt16(cdb, 7), 12);
+    const int length = min(GetCdbInt16(7), 12);
     auto &buf = GetController()->GetBuffer();
     fill_n(buf.data(), length, 0);
 
@@ -101,7 +100,7 @@ void ScsiCd::ReadToc()
     buf[6] = track_number;
 
     // Track address in the requested format (MSF)
-    if (cdb[1] & 0x02) {
+    if (GetCdbByte(1) & 0x02) {
         LBAtoMSF(track_address, &buf[8]);
     } else {
         SetInt16(buf, 10, track_address);

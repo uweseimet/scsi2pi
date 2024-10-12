@@ -164,6 +164,27 @@ protected:
     void DataInPhase(int) const;
     void DataOutPhase(int) const;
 
+    auto GetCdbByte(int index) const
+    {
+        return controller->GetCdb()[index];
+    }
+    auto GetCdbInt16(int index) const
+    {
+        return memory_util::GetInt16(controller->GetCdb(), index);
+    }
+    auto GetCdbInt24(int index) const
+    {
+        return memory_util::GetInt24(controller->GetCdb(), index);
+    }
+    auto GetCdbInt32(int index) const
+    {
+        return memory_util::GetInt32(controller->GetCdb(), index);
+    }
+    auto GetCdbInt64(int index) const
+    {
+        return memory_util::GetInt64(controller->GetCdb(), index);
+    }
+
     void LogTrace(const string &s) const
     {
         device_logger.Trace(s);

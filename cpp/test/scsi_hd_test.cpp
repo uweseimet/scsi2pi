@@ -9,7 +9,6 @@
 #include <spdlog/spdlog.h>
 #include "mocks.h"
 #include "base/device_factory.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;

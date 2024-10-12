@@ -31,7 +31,6 @@
 
 #include "printer.h"
 #include <filesystem>
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
@@ -99,7 +98,7 @@ vector<uint8_t> Printer::InquiryInternal() const
 
 void Printer::Print()
 {
-    const uint32_t length = GetInt24(GetController()->GetCdb(), 2);
+    const uint32_t length = GetCdbInt24(2);
 
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
@@ -162,7 +161,7 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
         throw scsi_exception(sense_key::aborted_command);
     }
 
-    const auto length = GetInt24(GetController()->GetCdb(), 2);
+    const auto length = GetCdbInt24(2);
 
     byte_receive_count += length;
 

@@ -8,7 +8,6 @@
 
 #include "primary_device.h"
 #include "buses/bus_factory.h"
-#include "memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -129,13 +128,13 @@ void PrimaryDevice::TestUnitReady()
 void PrimaryDevice::Inquiry()
 {
     // EVPD and page code check
-    if ((GetController()->GetCdbByte(1) & 0x01) || GetController()->GetCdbByte(2)) {
+    if ((GetCdbByte(1) & 0x01) || GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     const vector<uint8_t> &buf = InquiryInternal();
 
-    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3)));
+    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetCdbInt16(3)));
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
@@ -151,11 +150,11 @@ void PrimaryDevice::Inquiry()
 void PrimaryDevice::ReportLuns()
 {
     // Only SELECT REPORT mode 0 is supported
-    if (GetController()->GetCdbByte(2)) {
+    if (GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint32_t allocation_length = GetInt32(GetController()->GetCdb(), 6);
+    const uint32_t allocation_length = GetCdbInt32(6);
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
@@ -191,7 +190,7 @@ void PrimaryDevice::RequestSense()
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetController()->GetCdbByte(4))));
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetCdbByte(4))));
     GetController()->CopyToBuffer(buf.data(), length);
 
     // Clear the previous status
@@ -207,7 +206,7 @@ void PrimaryDevice::RequestSense()
 void PrimaryDevice::SendDiagnostic()
 {
     // Do not support parameter list
-    if (GetController()->GetCdbByte(3) || GetController()->GetCdbByte(4)) {
+    if (GetCdbByte(3) || GetCdbByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -299,14 +298,14 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     // A reservation is valid for all commands except those excluded below
-    const auto cmd = static_cast<scsi_command>(GetController()->GetCdbByte(0));
+    const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
     if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
         || cmd == scsi_command::cmd_release6) {
         return true;
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetController()->GetCdbByte(4) & 0x01)) {
+    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetCdbByte(4) & 0x01)) {
         return true;
     }
 

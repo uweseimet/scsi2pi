@@ -84,7 +84,6 @@
 #include <chrono>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
-#include "base/memory_util.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "controllers/controller.h"
@@ -130,9 +129,9 @@ vector<uint8_t> HostServices::InquiryInternal() const
 
 void HostServices::StartStopUnit() const
 {
-    const bool load = GetController()->GetCdbByte(4) & 0x02;
+    const bool load = GetCdbByte(4) & 0x02;
 
-    if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
+    if (const bool start = GetCdbByte(4) & 0x01; !start) {
         GetController()->ScheduleShutdown(load ? shutdown_mode::stop_pi : shutdown_mode::stop_s2p);
     }
     else if (load) {
@@ -151,7 +150,7 @@ void HostServices::ExecuteOperation()
 
     input_format = ConvertFormat();
 
-    const int length = GetInt16(GetController()->GetCdb(), 7);
+    const int length = GetCdbInt16(7);
     if (!length) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
@@ -198,7 +197,7 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
+    const auto allocation_length = static_cast<size_t>(GetCdbInt16(7));
     const auto length = static_cast<int>(min(allocation_length, data.size()));
     if (!length) {
         StatusPhase();
@@ -284,7 +283,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
         throw scsi_exception(sense_key::aborted_command);
     }
 
-    const auto length = GetInt16(GetController()->GetCdb(), 7);
+    const auto length = GetCdbInt16(7);
     if (!length) {
         execution_results[GetController()->GetInitiatorId()].clear();
         return 0;
@@ -335,7 +334,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 
 HostServices::protobuf_format HostServices::ConvertFormat() const
 {
-    switch (GetController()->GetCdbByte(1) & 0b00000111) {
+    switch (GetCdbByte(1) & 0b00000111) {
     case 0x001:
         return protobuf_format::binary;
         break;

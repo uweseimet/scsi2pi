@@ -127,7 +127,7 @@ void Controller::Command()
 
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
-                command_bytes_count, GetCdbByte(0), actual_count));
+                command_bytes_count, GetCdb()[0], actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
@@ -142,7 +142,7 @@ void Controller::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
@@ -437,7 +437,7 @@ void Controller::Receive()
 bool Controller::XferIn(vector<uint8_t> &buf)
 {
     // Limited to read commands (DATA IN phase)
-    switch (static_cast<scsi_command>(GetCdbByte(0))) {
+    switch (static_cast<scsi_command>(GetCdb()[0])) {
     case scsi_command::cmd_read6:
     case scsi_command::cmd_read10:
     case scsi_command::cmd_read16:
@@ -471,7 +471,7 @@ bool Controller::XferOut(bool cont)
     const auto device = GetDeviceForLun(GetEffectiveLun());
 
     // Limited to write/verify commands (DATA OUT phase)
-    switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode) {
+    switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
     case scsi_command::cmd_mode_select6:
     case scsi_command::cmd_mode_select10:
         try {
@@ -596,20 +596,20 @@ void Controller::ProcessExtendedMessage()
 int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
-    return identified_lun != -1 ? identified_lun : GetCdbByte(1) >> 5;
+    return identified_lun != -1 ? identified_lun : GetCdb()[1] >> 5;
 }
 
 void Controller::LogCdb() const
 {
-    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
     const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
     string s = fmt::format("Controller is executing {}, CDB $",
-        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
+        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdb()[0]));
     for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
         if (i) {
             s += ":";
         }
-        s += fmt::format("{:02x}", GetCdbByte(i));
+        s += fmt::format("{:02x}", GetCdb()[i]);
     }
     LogDebug(s);
 }
