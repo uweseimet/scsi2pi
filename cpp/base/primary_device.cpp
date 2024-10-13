@@ -243,6 +243,8 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
     buf[3] = level >= scsi_level::scsi_2 ?
             static_cast<uint8_t>(scsi_level::scsi_2) : static_cast<uint8_t>(scsi_level::scsi_1_ccs);
     buf[4] = 0x1f;
+    // Signal support of linked commands
+    buf[7] = 0x08;
 
     // Padded vendor, product, revision
     memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);
