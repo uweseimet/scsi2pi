@@ -134,7 +134,6 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
 {
     vector<byte> buf(8);
 
-    // No changeable area
     if (!changeable) {
         // 2 seconds for inactive timer
         buf[3] = (byte)0x05;

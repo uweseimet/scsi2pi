@@ -104,14 +104,7 @@ void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable
 {
     vector<byte> buf(12);
 
-    // No changeable area
-    if (changeable) {
-        pages[32] = buf;
-
-        return;
-    }
-
-    if (IsReady()) {
+    if (!changeable && IsReady()) {
         unsigned spare = 0;
         unsigned bands = 0;
         const uint64_t block_count = GetBlockCount();

@@ -132,6 +132,16 @@ void Controller::Command()
             return;
         }
 
+        const int control = GetCdb()[command_bytes_count - 1];
+
+        // Flag is not supported
+        if (control & 0x02) {
+            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            return;
+        }
+
+        linked = control & 0x01;
+
         Execute();
     }
 }
@@ -190,7 +200,10 @@ void Controller::Status()
     ResetOffset();
     SetCurrentLength(1);
     SetTransferSize(1, 1);
-    GetBuffer()[0] = (uint8_t)GetStatus();
+
+    // If this is a successfully terminated linked command convert the status code
+    GetBuffer()[0] =
+        linked && GetStatus() == status_code::good ? (uint8_t)status_code::intermediate : (uint8_t)status_code::good;
 }
 
 void Controller::MsgIn()
@@ -346,7 +359,7 @@ void Controller::Send()
 
     switch (GetPhase()) {
     case bus_phase::msgin:
-        ProcessExtendedMessage();
+        ProcessEndOfMessage();
         break;
 
     case bus_phase::datain:
@@ -582,11 +595,12 @@ void Controller::ProcessMessage()
     Command();
 }
 
-void Controller::ProcessExtendedMessage()
+void Controller::ProcessEndOfMessage()
 {
-    // Completed sending response to extended message of IDENTIFY message
-    if (atn_msg) {
+    // Completed sending response to extended message of IDENTIFY message or executing a linked command
+    if (atn_msg || linked) {
         atn_msg = false;
+        linked = false;
         Command();
     } else {
         BusFree();

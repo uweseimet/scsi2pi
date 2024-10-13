@@ -37,6 +37,11 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
         trace("Executing command ${0:02x} for device {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
     }
 
+    if (static_cast<int>(cdb.back()) & 0x01) {
+        error("Executing linked commands is not supported");
+        return 0xff;
+    }
+
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
         bus.Reset();

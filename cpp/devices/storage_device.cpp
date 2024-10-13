@@ -317,6 +317,10 @@ void StorageDevice::ValidateFile()
         throw io_exception("Device has 0 blocks");
     }
 
+    if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
+        throw io_exception("Image files > 2 TiB are not supported");
+    }
+
     // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {
         // Permanently write-protected

@@ -50,7 +50,7 @@ private:
 
     void ParseMessage();
     void ProcessMessage();
-    void ProcessExtendedMessage();
+    void ProcessEndOfMessage();
 
     void LogCdb() const;
 
@@ -58,6 +58,8 @@ private:
     int identified_lun = -1;
 
     bool atn_msg = false;
+
+    bool linked = false;
 
     vector<uint8_t> msg_bytes;
 };

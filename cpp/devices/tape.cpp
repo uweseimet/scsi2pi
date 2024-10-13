@@ -441,6 +441,10 @@ void Tape::WriteFilemarks6()
 // This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
+    if (tar_mode) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    }
+
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);

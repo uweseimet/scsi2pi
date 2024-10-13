@@ -243,8 +243,6 @@ void Disk::ReadLong10()
 
 void Disk::WriteLong10()
 {
-    CheckWritePreconditions();
-
     ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), true);
 }
 
@@ -255,13 +253,15 @@ void Disk::ReadLong16()
 
 void Disk::WriteLong16()
 {
-    CheckWritePreconditions();
-
     ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), true);
 }
 
 void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 {
+    if (write) {
+        CheckWritePreconditions();
+    }
+
     if (!length) {
         StatusPhase();
         return;
@@ -333,7 +333,7 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
 
     // Page 7 (verify error recovery)
     if (page == 0x07 || page == 0x3f) {
-        AddVerifyErrorRecoveryPage(pages);
+        AddVerifyErrorRecoveryPage(pages, changeable);
     }
 
     // Page 8 (caching)
@@ -347,14 +347,16 @@ void Disk::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
     }
 }
 
-void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages) const
+void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(12);
 
-    // The page data are those of an IBM DORS-39130 drive
+    if (!changeable) {
+        // The page data are those of an IBM DORS-39130 drive
 
-    // Verify retry count
-    buf[3] = (byte)1;
+        // Verify retry count
+        buf[3] = (byte)1;
+    }
 
     pages[7] = buf;
 }
@@ -363,23 +365,18 @@ void Disk::AddCachingPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(12);
 
-    // No changeable area
-    if (changeable) {
-        pages[8] = buf;
+    if (!changeable) {
+        // Only read cache is valid
 
-        return;
+        // Disable pre-fetch transfer length
+        SetInt16(buf, 0x04, -1);
+
+        // Maximum pre-fetch
+        SetInt16(buf, 0x08, -1);
+
+        // Maximum pre-fetch ceiling
+        SetInt16(buf, 0x0a, -1);
     }
-
-    // Only read cache is valid
-
-    // Disable pre-fetch transfer length
-    SetInt16(buf, 0x04, -1);
-
-    // Maximum pre-fetch
-    SetInt16(buf, 0x08, -1);
-
-    // Maximum pre-fetch ceiling
-    SetInt16(buf, 0x0a, -1);
 
     pages[8] = buf;
 }
@@ -389,7 +386,6 @@ void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) co
     // Needed for SCCD for stock Apple driver support and stock Apple HD SC Setup
     pages[48] = vector<byte>(24);
 
-    // No changeable area
     if (!changeable) {
         constexpr const char APPLE_DATA[] = "APPLE COMPUTER, INC   ";
         memcpy(&pages[48][2], APPLE_DATA, sizeof(APPLE_DATA) - 1);

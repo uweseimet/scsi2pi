@@ -117,7 +117,7 @@ private:
     void WriteLong16();
     void ReadCapacity16_ReadLong16();
 
-    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&) const;
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
     void AddCachingPage(map<int, vector<byte>>&, bool) const;
 
     bool SetUpCache();
