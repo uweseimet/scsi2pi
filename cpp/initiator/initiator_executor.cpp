@@ -20,18 +20,28 @@ using namespace initiator_util;
 
 int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
 {
+    cdb[0] = static_cast<uint8_t>(cmd);
+    return Execute(cdb, buffer, length, timeout);
+}
+
+int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
+{
     bus.Reset();
 
     status = 0xff;
     byte_count = 0;
+    cdb_offset = 0;
+
+    const auto cmd = static_cast<scsi_command>(cdb[0]);
 
     auto command_name = string(BusFactory::Instance().GetCommandName(cmd));
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
 
+    // Only report byte count mismatch for non-linked commands
     if (const int count = BusFactory::Instance().GetCommandBytesCount(cmd); count
-        && count != static_cast<int>(cdb.size())) {
+        && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
         warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
@@ -55,12 +65,14 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
 
         if (bus.GetREQ()) {
             try {
-                if (Dispatch(cmd, cdb, buffer, length)) {
+                if (Dispatch(cdb, buffer, length)) {
                     now = chrono::steady_clock::now();
                 }
                 else {
-                    LogStatus();
-                    return status;
+                    if (static_cast<status_code>(status) != status_code::intermediate) {
+                        LogStatus();
+                        return status;
+                    }
                 }
             }
             catch (const phase_exception &e) {
@@ -74,7 +86,7 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
     return 0xff;
 }
 
-bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int &length)
+bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &length)
 {
     const bus_phase phase = bus.GetPhase();
 
@@ -82,7 +94,7 @@ bool InitiatorExecutor::Dispatch(scsi_command cmd, span<uint8_t> cdb, span<uint8
 
     switch (phase) {
     case bus_phase::command:
-        Command(cmd, cdb);
+        Command(cdb);
         break;
 
     case bus_phase::status:
@@ -181,15 +193,16 @@ bool InitiatorExecutor::Selection() const
     return true;
 }
 
-void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
+void InitiatorExecutor::Command(span<uint8_t> cdb)
 {
-    cdb[0] = static_cast<uint8_t>(cmd);
     if (target_lun < 8) {
         // Encode LUN in the CDB for backwards compatibility with SCSI-1-CCS
-        cdb[1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
+        cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
     }
 
-    if (static_cast<int>(cdb.size()) != bus.SendHandShake(cdb.data(), static_cast<int>(cdb.size()))) {
+    const auto cmd = static_cast<scsi_command>(cdb[cdb_offset]);
+    const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
+    if (static_cast<int>(cdb.size()) < sent_count) {
         if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
             error("Command {} failed", command_name);
         }
@@ -197,6 +210,8 @@ void InitiatorExecutor::Command(scsi_command cmd, span<uint8_t> cdb) const
             error("Command ${:02x} failed", static_cast<int>(cmd));
         }
     }
+
+    cdb_offset += sent_count;
 }
 
 void InitiatorExecutor::Status()

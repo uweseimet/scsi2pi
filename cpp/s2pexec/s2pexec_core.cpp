@@ -429,7 +429,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         debug("Sending {} data byte(s)", buffer.size());
     }
 
-    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
+    const int status = executor->ExecuteCommand(cdb, buffer, timeout);
     if (status) {
         if (status != 0xff && request_sense) {
             return executor->GetSenseData();
