@@ -48,7 +48,6 @@ public:
     }
 
     vector<uint8_t> InquiryInternal() const override;
-    int Read(cdb_t, vector<uint8_t>&, uint64_t);
     int WriteData(span<const uint8_t>, scsi_command) override;
 
     void GetMessage6() override;
@@ -101,6 +100,8 @@ private:
         .crc_errors = 0,
         .frames_lost = 0,
     };
+
+    int GetMessage(vector<uint8_t>&);
 
     TapDriver tap;
 

@@ -57,56 +57,56 @@ TEST(DaynaportTest, TestUnitReady)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
-TEST(DaynaportTest, Read)
-{
-    DaynaPort daynaport(0);
-    vector<int> cdb(6);
-
-    // ALLOCATION LENGTH
-    cdb[4] = 1;
-    vector<uint8_t> buf;
-    EXPECT_EQ(0, daynaport.Read(cdb, buf, 0)) << "Trying to read the root sector must fail";
-}
-
 TEST(DaynaportTest, WriteData)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
     vector<int> cdb(6);
 
-    // Unknown data format
+    // Unknown data format must be ignored
     controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, scsi_command::cmd_write6));
+    EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, scsi_command::cmd_send_message6));
 }
 
-TEST(DaynaportTest, Read6)
+TEST(DaynaportTest, GetMessage6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
+    controller->SetCdbByte(5, 0xc0);
+    controller->SetCdbByte(4, 0x01);
+    controller->GetBuffer()[0] = 0x12;
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_get_message6));
+    EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
+
+    controller->SetCdbByte(5, 0x80);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_get_message6));
+    EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
+
+    controller->SetCdbByte(4, 0x00);
     controller->SetCdbByte(5, 0xff);
-    TestShared::Dispatch(*daynaport, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "Invalid data format");
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_get_message6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Invalid data format");
 }
 
-TEST(DaynaportTest, Write6)
+TEST(DaynaportTest, SendMessage6)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     controller->SetCdbByte(5, 0x00);
-    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "Invalid transfer length");
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_send_message6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Invalid transfer length");
 
     controller->SetCdbByte(3, -1);
     controller->SetCdbByte(4, -8);
     controller->SetCdbByte(5, 0x08);
-    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "Invalid transfer length");
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_send_message6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Invalid transfer length");
 
     controller->SetCdbByte(3, 0);
     controller->SetCdbByte(4, 0);
     controller->SetCdbByte(5, 0xff);
-    TestShared::Dispatch(*daynaport, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "Invalid transfer length");
+    TestShared::Dispatch(*daynaport, scsi_command::cmd_send_message6, sense_key::illegal_request,
+        asc::invalid_field_in_cdb, "Invalid transfer length");
 }
 
 TEST(DaynaportTest, TestRetrieveStats)

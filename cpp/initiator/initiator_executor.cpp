@@ -25,22 +25,17 @@ int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t
     status = 0xff;
     byte_count = 0;
 
+    auto command_name = string(BusFactory::Instance().GetCommandName(cmd));
+    if (command_name.empty()) {
+        command_name = fmt::format("${:02x}", static_cast<int>(cmd));
+    }
+
     if (const int count = BusFactory::Instance().GetCommandBytesCount(cmd); count
         && count != static_cast<int>(cdb.size())) {
-        warn("CDB has {0} byte(s), command ${1:02x} requires {2} bytes", cdb.size(), static_cast<int>(cmd), count);
+        warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
-        trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
-    }
-    else {
-        trace("Executing command ${0:02x} for device {1}:{2}", static_cast<int>(cmd), target_id, target_lun);
-    }
-
-    if (static_cast<int>(cdb.back()) & 0x01) {
-        error("Executing linked commands is not supported");
-        return 0xff;
-    }
+    trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
