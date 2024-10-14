@@ -261,6 +261,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
+    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
@@ -296,6 +297,7 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
+    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
@@ -444,7 +446,7 @@ class MockTape : public Tape
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, ReadData);
-    FRIEND_TEST(TapeTest, WriteData);
+    FRIEND_TEST(TapeTest, Unload);
 
 public:
 

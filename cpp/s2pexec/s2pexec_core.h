@@ -76,6 +76,8 @@ private:
 
     string log_level = "info";
 
+    string last_input;
+
     // Required for the termination handler
     static inline S2pExec *instance;
 

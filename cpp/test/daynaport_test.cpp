@@ -107,6 +107,10 @@ TEST(DaynaportTest, SendMessage6)
     controller->SetCdbByte(5, 0xff);
     TestShared::Dispatch(*daynaport, scsi_command::cmd_send_message6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Invalid transfer length");
+
+    controller->SetCdbByte(5, 0x80);
+    EXPECT_CALL(*controller, DataOut);
+    EXPECT_NO_THROW(daynaport->Dispatch(scsi_command::cmd_send_message6));
 }
 
 TEST(DaynaportTest, TestRetrieveStats)

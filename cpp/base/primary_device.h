@@ -61,23 +61,6 @@ public:
         sense_key = s;
         asc = a;
     }
-    void SetFilemark()
-    {
-        filemark = true;
-    }
-    void SetEom()
-    {
-        eom = true;
-    }
-    void SetIli()
-    {
-        ili = true;
-    }
-    void SetInformation(int64_t value)
-    {
-        information = static_cast<int32_t>(value);
-        valid = true;
-    }
 
     int GetId() const override;
 
@@ -99,13 +82,8 @@ public:
         return 0;
     }
 
-    virtual int WriteData(span<const uint8_t>, scsi_command)
-    {
-        // Devices that implement a DATA OUT phase have to override this method, except for MODE SELECT
-
-        assert(false);
-        return 0;
-    }
+    // For DATA OUT phase, except for MODE SELECT
+    virtual int WriteData(span<const uint8_t>, scsi_command) = 0;
 
     virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
     {
@@ -158,6 +136,24 @@ protected:
     virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
     {
         // Nothing to do in base class
+    }
+
+    void SetFilemark()
+    {
+        filemark = true;
+    }
+    void SetEom()
+    {
+        eom = true;
+    }
+    void SetIli()
+    {
+        ili = true;
+    }
+    void SetInformation(int64_t value)
+    {
+        information = static_cast<int32_t>(value);
+        valid = true;
     }
 
     void StatusPhase() const;

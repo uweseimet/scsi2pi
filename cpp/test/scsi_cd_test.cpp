@@ -9,7 +9,7 @@
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
 
-static void SetUpModePages(map<int, vector<byte>> &pages)
+static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
@@ -69,12 +69,12 @@ TEST(ScsiCdTest, SetUpModePages)
 
     // Non changeable
     cd.SetUpModePages(pages, 0x3f, false);
-    SetUpModePages(pages);
+    ValidateModePages(pages);
 
     // Changeable
     pages.clear();
     cd.SetUpModePages(pages, 0x3f, true);
-    SetUpModePages(pages);
+    ValidateModePages(pages);
 }
 
 TEST(ScsiCdTest, Open)

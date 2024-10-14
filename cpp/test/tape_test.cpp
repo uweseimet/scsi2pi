@@ -8,7 +8,7 @@
 
 #include "mocks.h"
 
-static void SetUpModePages(map<int, vector<byte>> &pages)
+static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(5U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
@@ -111,6 +111,15 @@ TEST(TapeTest, ReadData)
     tape.SetFilename(filename.string());
     tape.ValidateFile();
     EXPECT_NO_THROW(tape.ReadData(buf));
+}
+
+TEST(TapeTest, Unload)
+{
+    MockTape tape(0);
+
+    tape.SetReady(true);
+    EXPECT_TRUE(tape.Eject(false));
+    EXPECT_FALSE(tape.IsReady());
 }
 
 TEST(TapeTest, Read6)
@@ -331,12 +340,22 @@ TEST(TapeTest, SetUpModePages)
 
     // Non changeable
     tape.SetUpModePages(pages, 0x3f, false);
-    SetUpModePages(pages);
+    ValidateModePages(pages);
 
     // Changeable
     pages.clear();
     tape.SetUpModePages(pages, 0x3f, true);
-    SetUpModePages(pages);
+    ValidateModePages(pages);
+
+    pages.clear();
+    tape.SetUpModePages(pages, 0x00, false);
+    EXPECT_EQ(byte { 0x0b }, pages.at(0)[0]);
+    EXPECT_EQ(byte { 0x00 }, pages.at(0)[2]);
+
+    pages.clear();
+    tape.SetProtected(true);
+    tape.SetUpModePages(pages, 0x00, false);
+    EXPECT_EQ(byte { 0x80 }, pages.at(0)[2]);
 }
 
 TEST(TapeTest, GetStatistics)

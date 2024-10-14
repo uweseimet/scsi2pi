@@ -621,6 +621,10 @@ uint32_t Tape::GetByteCount() const
 
 void Tape::Erase()
 {
+    if (tar_mode) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    }
+
     file.seekp(position, ios::beg);
 
     // Erase in 4096 byte chunks

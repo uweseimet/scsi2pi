@@ -67,12 +67,12 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
             try {
                 if (Dispatch(cdb, buffer, length)) {
                     now = chrono::steady_clock::now();
+                    continue;
                 }
-                else {
-                    if (static_cast<status_code>(status) != status_code::intermediate) {
-                        LogStatus();
-                        return status;
-                    }
+
+                if (static_cast<status_code>(status) != status_code::intermediate) {
+                    LogStatus();
+                    return status;
                 }
             }
             catch (const phase_exception &e) {

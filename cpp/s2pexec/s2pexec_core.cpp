@@ -302,12 +302,20 @@ bool S2pExec::RunInteractive(bool in_process)
     }
 
     while (true) {
-        const string &line = GetLine(prompt);
-        if (line.empty()) {
+        string input = GetLine(prompt);
+        if (input.empty()) {
             break;
         }
 
-        const auto &args = Split(line, ' ');
+        // Like with bash "!!" repeats the last command
+        if (input == "!!") {
+            input = last_input;
+            cout << input << '\n';
+        } else {
+            last_input = input;
+        }
+
+        const auto &args = Split(input, ' ');
 
         vector<char*> interactive_args;
         interactive_args.emplace_back(strdup(prompt.c_str()));
