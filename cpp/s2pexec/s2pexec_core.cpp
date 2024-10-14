@@ -50,7 +50,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
             << "                                default LUN is 0.\n"
             << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-            << "  --cdb/-c CDB                  Command to send in hexadecimal format.\n"
+            << "  --cdb/-c CDB[:CDB:...]        Command blocks to send in hexadecimal format.\n"
             << "  --data/-d DATA                Data to send with the command in\n"
             << "                                hexadecimal format.\n"
             << "  --buffer-size/-b SIZE         Buffer size for received data,\n"
