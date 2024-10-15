@@ -61,6 +61,8 @@ private:
 
     bool linked = false;
 
+    bool flag = false;
+
     vector<uint8_t> msg_bytes;
 };
 

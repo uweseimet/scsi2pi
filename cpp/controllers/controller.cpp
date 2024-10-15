@@ -133,14 +133,13 @@ void Controller::Command()
         }
 
         const int control = GetCdb()[command_bytes_count - 1];
+        linked = control & 0x01;
+        flag = control & 0x02;
 
-        // Flag is not supported
-        if (control & 0x02) {
+        if (flag && !linked) {
             Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
             return;
         }
-
-        linked = control & 0x01;
 
         Execute();
     }
@@ -370,7 +369,13 @@ void Controller::Send()
         SetCurrentLength(1);
         SetTransferSize(1, 1);
         // Message byte
-        GetBuffer()[0] = 0;
+        if (linked) {
+            GetBuffer()[0] = static_cast<uint8_t>(
+                flag ? message_code::linked_command_complete_with_flag : message_code::linked_command_complete);
+        }
+        else {
+            GetBuffer()[0] = static_cast<uint8_t>(message_code::command_complete);
+        }
         MsgIn();
         break;
 
@@ -551,13 +556,13 @@ void Controller::ParseMessage()
             return;
         }
 
-        case 0x06: {
+        case static_cast<uint8_t>(message_code::abort): {
             LogTrace("Received ABORT message");
             BusFree();
             return;
         }
 
-        case 0x0c: {
+        case static_cast<uint8_t>(message_code::bus_device_reset): {
             LogTrace("Received BUS DEVICE RESET message");
             if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->SetReset(true);
@@ -601,6 +606,7 @@ void Controller::ProcessEndOfMessage()
     if (atn_msg || linked) {
         atn_msg = false;
         linked = false;
+        flag = false;
         Command();
     } else {
         BusFree();

@@ -111,6 +111,17 @@ enum class scsi_command
     cmd_receive_operation_results = 0xc1
 };
 
+enum class message_code
+{
+    command_complete = 0x00,
+    abort = 0x06,
+    message_reject = 0x07,
+    linked_command_complete_with_flag = 0x08,
+    linked_command_complete = 0x0a,
+    bus_device_reset = 0x0c,
+    identify = 0x80
+};
+
 enum class status_code
 {
     good = 0x00,

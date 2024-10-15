@@ -79,7 +79,7 @@ private:
 
     bool sasi = false;
 
-    int next_message = 0x80;
+    message_code next_message = message_code::identify;
 
     static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = 400 };
     static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = 800 };

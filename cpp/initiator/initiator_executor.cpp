@@ -111,7 +111,7 @@ bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &l
 
     case bus_phase::msgin:
         MsgIn();
-        if (next_message == 0x80) {
+        if (next_message == message_code::identify) {
             // Done with this command cycle unless there is a pending MESSAGE REJECT
             return false;
         }
@@ -259,13 +259,20 @@ void InitiatorExecutor::DataOut(span<uint8_t> buffer, int &length)
 void InitiatorExecutor::MsgIn()
 {
     const int msg = bus.MsgInHandShake();
-    if (msg == -1) {
+    switch (msg) {
+    case -1:
         error("MESSAGE IN phase failed");
-    }
-    else if (msg) {
-        trace("Device did not report COMMAND COMPLETE, rejecting unsupported message ${:02x}", msg);
+        break;
 
-        next_message = 0x07;
+    case static_cast<int>(message_code::command_complete):
+    case static_cast<int>(message_code::linked_command_complete):
+    case static_cast<int>(message_code::linked_command_complete_with_flag):
+        break;
+
+    default:
+        trace("Device did not report command completion, rejecting unsupported message ${:02x}", msg);
+        next_message = message_code::message_reject;
+        break;
     }
 }
 
@@ -274,15 +281,15 @@ void InitiatorExecutor::MsgOut()
     array<uint8_t, 1> buf;
 
     // IDENTIFY or MESSAGE REJECT
-    buf[0] = static_cast<uint8_t>(target_lun + next_message);
-
+    buf[0] = static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message);
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
-        error("MESSAGE OUT phase for {} failed", next_message == 0x80 ? "IDENTIFY" : "MESSAGE REJECT");
+        error("MESSAGE OUT phase for {} message failed",
+            next_message == message_code::identify ? "IDENTIFY" : "MESSAGE REJECT");
     }
 
     // Reset default message for MESSAGE OUT to IDENTIFY
-    next_message = 0x80;
+    next_message = message_code::identify;
 }
 
 bool InitiatorExecutor::WaitForFree() const
