@@ -116,8 +116,8 @@ enum class message_code
     command_complete = 0x00,
     abort = 0x06,
     message_reject = 0x07,
-    linked_command_complete_with_flag = 0x08,
     linked_command_complete = 0x0a,
+    linked_command_complete_with_flag = 0x0b,
     bus_device_reset = 0x0c,
     identify = 0x80
 };
