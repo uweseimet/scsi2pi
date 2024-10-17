@@ -296,6 +296,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, bool dryRun) const
 {
+#ifndef BUILD_STORAGE_DEVICE
+    return false;
+#else
     if (!device->SupportsFile()) {
         return false;
     }
@@ -308,9 +311,15 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_NAME_UPDATE);
     }
 
-    const string &filename = GetParam(pb_device, "file");
+    auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
+
+    string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
+        filename = storage_device->GetLastFilename();
+    }
+    if (filename.empty()) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
+            GetIdentifier(*storage_device));
     }
 
     // Stop the dry run here, before modifying the device
@@ -319,14 +328,12 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     }
 
     info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
-        + GetIdentifier(*device));
+        + GetIdentifier(*storage_device));
 
-    if (!SetBlockSize(context, device, pb_device.block_size())) {
+    if (!SetBlockSize(context, storage_device, pb_device.block_size())) {
         return false;
     }
 
-#ifdef BUILD_STORAGE_DEVICE
-    auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (!ValidateImageFile(context, *storage_device, filename)) {
         return false;
     }
@@ -337,11 +344,11 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     storage_device->SetMediumChanged(true);
     storage_device->SetProtected(pb_device.protected_());
-#endif
 
-    SetUpDeviceProperties(device);
+    SetUpDeviceProperties(storage_device);
 
     return true;
+#endif
 }
 #pragma GCC diagnostic pop
 

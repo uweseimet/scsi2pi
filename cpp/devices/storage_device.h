@@ -42,6 +42,10 @@ public:
     {
         filename = filesystem::path(file);
     }
+    string GetLastFilename() const
+    {
+        return last_filename;
+    }
 
     uint64_t GetBlockCount() const
     {
