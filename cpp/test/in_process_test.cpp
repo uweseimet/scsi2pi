@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -18,7 +18,7 @@ using namespace s2p_util;
 
 void usage()
 {
-    cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (In-process Test Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Test Tool)\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2023-2024 Uwe Seimet\n";
 

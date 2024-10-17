@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -151,7 +151,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.ReturnSuccessStatus();
 
     default:
-        // The remaining commands may only be executed when the target is idle
+        // The remaining commands may only be executed when the target is idle, which is ensured by the lock
         return ExecuteWithLock(context) ? HandleDeviceListChange(context) : false;
     }
 
@@ -166,8 +166,9 @@ bool CommandDispatcher::ExecuteWithLock(const CommandContext &context)
 
 bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const
 {
-    // ATTACH and DETACH return the resulting device list
-    if (const PbOperation operation = context.GetCommand().operation(); operation == ATTACH || operation == DETACH) {
+    // ATTACH, DETACH, INSERT and EJECT return the resulting device list
+    if (const PbOperation operation = context.GetCommand().operation(); operation == ATTACH || operation == DETACH
+        || operation == INSERT || operation == EJECT) {
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;

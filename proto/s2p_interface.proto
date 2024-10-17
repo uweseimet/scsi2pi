@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -13,7 +13,8 @@
 // All operations accept an optional access token, specified by the "token" parameter.
 // All operations also accept an optional locale, specified with the "locale" parameter. If there is
 // a localized error message it is returned, with English being the fallback language.
-// Numbers 100 and higher are used for messages and fields not supported by PISCSI 23.11.01 and newer.
+// This interface is backwards compatible with PiSCSI. Numbers 100 and higher are used for messages
+// and fields not supported by PISCSI 23.11.01 and newer.
 //
 
 syntax = "proto3";
@@ -70,12 +71,12 @@ enum PbOperation {
     // Stop device, e.g. park drive
     STOP = 5;
 
-    // Insert medium
+    // Insert a medium and return the new device list (PbDevicesInfo)
     // Parameters:
     //   "file": The filename, relative to the default image folder
     INSERT = 6;
 
-    // Eject medium
+    // Eject a medium and return the new device list (PbDevicesInfo)
     EJECT = 7;
 
     // Write-protect medium (not possible for read-only media)
@@ -98,7 +99,7 @@ enum PbOperation {
     VERSION_INFO = 11;
 
     // Get information on attached devices (PbDevicesInfo)
-    // Returns data for all attached devices if the device list is empty.
+    // Returns data for all attached devices if the device list passed is empty.
     DEVICES_INFO = 12;
 
     // Get device properties by device type (PbDeviceTypesInfo)
@@ -473,7 +474,7 @@ message PbResult {
         PbVersionInfo version_info = 4;
         // The result of a LOG_LEVEL_INFO command
         PbLogLevelInfo log_level_info = 5;
-        // The result of a DEVICES_INFO, ATTACH or DETACH command
+        // The result of a DEVICES_INFO, ATTACH, DETACH, INSERT or EJECT command
         PbDevicesInfo devices_info = 6;
         // The result of a DEVICE_TYPES_INFO command
         PbDeviceTypesInfo device_types_info = 7;

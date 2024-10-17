@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -140,11 +140,13 @@ TEST(StorageDeviceTest, StartStopUnit)
     controller->SetCdbByte(4, 0x02);
     device->SetLocked(false);
     device->SetFilename("filename");
+    EXPECT_TRUE(device->GetLastFilename().empty());
     EXPECT_CALL(*controller, Status);
     // Eject existing medium
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->GetFilename().empty());
+    EXPECT_EQ("filename", device->GetLastFilename());
     // Re-load medium
     device->SetFilename("filename");
     device->ReserveFile();

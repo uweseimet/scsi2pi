@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -77,9 +77,10 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
 {
     const PbCommand &command = context.GetCommand();
+    const PbOperation &operation = command.operation();
 
     // Handle commands that are not device-specific
-    switch (command.operation()) {
+    switch (operation) {
     case DETACH_ALL:
         DetachAll();
         return context.ReturnSuccessStatus();
@@ -96,7 +97,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     case CHECK_AUTHENTICATION:
     case NO_OPERATION:
         // Do nothing, just log
-        trace("Received {} command", PbOperation_Name(command.operation()));
+        trace("Received {} command", PbOperation_Name(operation));
         return context.ReturnSuccessStatus();
 
     default:
@@ -123,8 +124,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    // ATTACH and DETACH are special cases because they return the current device list
-    return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
+    // ATTACH, DETACH, INSERT and EJECT are special cases because they return the current device list
+    return
+        operation == ATTACH || operation == DETACH || operation == INSERT || operation == EJECT ?
+            true : context.ReturnSuccessStatus();
 }
 
 bool CommandExecutor::Start(PrimaryDevice &device) const
