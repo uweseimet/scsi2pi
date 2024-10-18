@@ -32,13 +32,13 @@ TEST(OpticalMemoryTest, GetBlockSizes)
 {
     OpticalMemory mo(0);
 
-    const auto &sector_sizes = mo.GetSupportedBlockSizes();
-    EXPECT_EQ(4U, sector_sizes.size());
+    const auto &sizes = mo.GetSupportedBlockSizes();
+    EXPECT_EQ(4U, sizes.size());
 
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(1024));
-    EXPECT_TRUE(sector_sizes.contains(2048));
-    EXPECT_TRUE(sector_sizes.contains(4096));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
 }
 
 TEST(OpticalMemoryTest, SetUpModePages)
@@ -125,8 +125,6 @@ TEST(OpticalMemoryTest, ModeSelect)
 {
     MockOpticalMemory mo(0);
     vector<uint8_t> buf(32);
-
-    mo.SetBlockSize(2048);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
     vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10");

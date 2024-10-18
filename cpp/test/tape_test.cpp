@@ -333,6 +333,20 @@ TEST(TapeTest, FormatMedium)
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
 
+TEST(TapeTest, GetBlockSizes)
+{
+    MockTape tape(0);
+
+    const auto &sizes = tape.GetSupportedBlockSizes();
+    EXPECT_EQ(5U, sizes.size());
+
+    EXPECT_TRUE(sizes.contains(256));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
+}
+
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;

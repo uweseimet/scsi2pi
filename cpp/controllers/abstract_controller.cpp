@@ -9,18 +9,15 @@
 #include <cstring>
 #include "base/primary_device.h"
 
-AbstractController::AbstractController(Bus &bus, int target_id) : bus(bus), target_id(target_id)
+AbstractController::AbstractController(Bus &b, int id) : bus(b), target_id(id)
 {
-    // The initial buffer size is the size of the biggest supported sector
-    buffer.resize(4096);
-
     device_logger.SetIdAndLun(target_id, -1);
 }
 
 void AbstractController::CleanUp() const
 {
-    for (const auto& [_, device] : luns) {
-        device->CleanUp();
+    for (const auto& [_, lun] : luns) {
+        lun->CleanUp();
     }
 }
 
@@ -37,8 +34,8 @@ void AbstractController::Reset()
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 
-    for (const auto& [_, device] : luns) {
-        device->Reset();
+    for (const auto& [_, lun] : luns) {
+        lun->Reset();
     }
 
     bus.Reset();
@@ -89,8 +86,6 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
 
 shutdown_mode AbstractController::ProcessOnController(int ids)
 {
-    device_logger.SetIdAndLun(target_id, -1);
-
     if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
         initiator_id = 0;
         while (!(ids_without_target & (1 << initiator_id))) {
@@ -120,7 +115,7 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
     for (const auto& [_, d] : luns) {
         if ((device->GetType() == SAHD && d->GetType() != SAHD)
             || (device->GetType() != SAHD && d->GetType() == SAHD)) {
-            LogTrace("SCSI and SASI devices cannot share the same controller");
+            LogTrace("SCSI and SASI devices cannot share a controller");
             return false;
         }
     }

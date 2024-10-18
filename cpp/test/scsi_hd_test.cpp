@@ -131,13 +131,13 @@ TEST(ScsiHdTest, GetBlockSizes)
 {
     MockScsiHd hd(0, false);
 
-    const auto &sector_sizes = hd.GetSupportedBlockSizes();
-    EXPECT_EQ(4U, sector_sizes.size());
+    const auto &sizes = hd.GetSupportedBlockSizes();
+    EXPECT_EQ(4U, sizes.size());
 
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(1024));
-    EXPECT_TRUE(sector_sizes.contains(2048));
-    EXPECT_TRUE(sector_sizes.contains(4096));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
 }
 
 TEST(ScsiHdTest, ConfiguredBlockSize)

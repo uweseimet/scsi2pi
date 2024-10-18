@@ -30,7 +30,7 @@ private:
     static void Banner(bool, bool);
 
     bool Init(bool);
-    bool ParseArguments(span<char*>);
+    bool ParseArguments(span<char*>, bool);
     bool RunInteractive(bool);
     int Run();
 

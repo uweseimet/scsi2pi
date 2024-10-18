@@ -140,9 +140,6 @@ bool StorageDevice::Eject(bool force)
 
 void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 {
-    const auto cmd = static_cast<scsi_command>(cdb[0]);
-    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
-
     // PF
     if (!(cdb[1] & 0x10)) {
         // Vendor-specific parameters (SCSI-1) are not supported.
@@ -155,7 +152,8 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
         return;
     }
 
-    auto [offset, size] = EvaluateBlockDescriptors(cmd, span(buf.data(), length), block_size);
+    auto [offset, size] = EvaluateBlockDescriptors(static_cast<scsi_command>(cdb[0]), span(buf.data(), length),
+        block_size);
     length -= offset;
     block_size = size;
 

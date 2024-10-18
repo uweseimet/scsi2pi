@@ -55,11 +55,11 @@ TEST(ScsiCdTest, GetBlockSizes)
 {
     ScsiCd cd(0);
 
-    const auto &sector_sizes = cd.GetSupportedBlockSizes();
-    EXPECT_EQ(2U, sector_sizes.size());
+    const auto &sizes = cd.GetSupportedBlockSizes();
+    EXPECT_EQ(2U, sizes.size());
 
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(2048));
 }
 
 TEST(ScsiCdTest, SetUpModePages)

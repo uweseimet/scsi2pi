@@ -35,13 +35,13 @@ TEST(SasiHdTest, RequestSense)
     EXPECT_EQ(LUN << 5, buffer[1]);
 }
 
-TEST(SasiHdTest, GetSectorSizes)
+TEST(SasiHdTest, GetBlockSizes)
 {
     MockSasiHd hd(0);
 
-    const auto &sector_sizes = hd.GetSupportedBlockSizes();
-    EXPECT_EQ(3U, sector_sizes.size());
-    EXPECT_TRUE(sector_sizes.contains(256));
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(1024));
+    const auto &sizes = hd.GetSupportedBlockSizes();
+    EXPECT_EQ(3U, sizes.size());
+    EXPECT_TRUE(sizes.contains(256));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
 }

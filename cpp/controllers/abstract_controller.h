@@ -140,8 +140,8 @@ private:
 
     array<int, 16> cdb = { };
 
-    // Transfer data buffer, dynamically resized
-    vector<uint8_t> buffer;
+    // Transfer data buffer, dynamically resized, initial size matches the biggest block size currently supported
+    vector<uint8_t> buffer = vector<uint8_t>(4096);
     // Transfer offset
     int offset = 0;
     // Total number of bytes to be transferred

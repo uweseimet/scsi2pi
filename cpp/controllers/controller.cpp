@@ -30,7 +30,7 @@ bool Controller::Process()
     GetBus().Acquire();
 
     if (GetBus().GetRST()) {
-        LogWarn("RESET signal received");
+        LogWarn("Received RESET signal");
         Reset();
         return false;
     }
@@ -344,7 +344,7 @@ void Controller::Send()
 
     const bool pending_data = UpdateTransferSize();
 
-    if (pending_data && IsDataIn() && !XferIn(GetBuffer())) {
+    if (pending_data && IsDataIn() && !XferIn()) {
         return;
     }
 
@@ -420,7 +420,7 @@ void Controller::Receive()
         break;
 
     case bus_phase::msgout:
-        XferMsg(GetBuffer()[0]);
+        XferMsg();
         break;
 
     default:
@@ -450,95 +450,73 @@ void Controller::Receive()
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool Controller::XferIn(vector<uint8_t> &buf)
+bool Controller::XferIn()
 {
-    // Limited to read commands (DATA IN phase)
-    switch (static_cast<scsi_command>(GetCdb()[0])) {
-    case scsi_command::cmd_read6:
-    case scsi_command::cmd_read10:
-    case scsi_command::cmd_read16:
-    case scsi_command::cmd_read_long10:
-    case scsi_command::cmd_read_capacity16_read_long16:
-        try {
-            SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
-        }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
-            return false;
-        }
+    // Limited to read commands with DATA IN phase
+    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read10 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read16 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_get_message6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read_capacity16_read_long16);
 
-        ResetOffset();
-        return true;
-
-    default:
-        assert(false);
-        break;
+    try {
+        SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
+    }
+    catch (const scsi_exception &e) {
+        Error(e.get_sense_key(), e.get_asc());
+        return false;
     }
 
-    Error(sense_key::aborted_command, asc::controller_xfer_in);
-    return false;
+    ResetOffset();
+    return true;
 }
-#pragma GCC diagnostic pop
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool Controller::XferOut(bool cont)
+bool Controller::XferOut(bool pending_data)
 {
     const auto device = GetDeviceForLun(GetEffectiveLun());
-
-    // Limited to write/verify commands (DATA OUT phase)
-    switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
-    case scsi_command::cmd_mode_select6:
-    case scsi_command::cmd_mode_select10:
-        try {
+    try {
+        switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
+        case scsi_command::cmd_mode_select6:
+        case scsi_command::cmd_mode_select10:
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
-        }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
-            return false;
-        }
+            break;
 
-        return true;
-
-    case scsi_command::cmd_write6:
-    case scsi_command::cmd_write10:
-    case scsi_command::cmd_write16:
-    case scsi_command::cmd_verify10:
-    case scsi_command::cmd_verify16:
-    case scsi_command::cmd_write_long10:
-    case scsi_command::cmd_write_long16:
-    case scsi_command::cmd_execute_operation:
-        try {
+        case scsi_command::cmd_write6:
+        case scsi_command::cmd_write10:
+        case scsi_command::cmd_write16:
+        case scsi_command::cmd_verify10:
+        case scsi_command::cmd_verify16:
+        case scsi_command::cmd_write_long10:
+        case scsi_command::cmd_write_long16:
+        case scsi_command::cmd_execute_operation: {
             const auto length = device->WriteData(GetBuffer(), opcode);
-            if (cont) {
+            if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
             }
+            break;
         }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
+
+        default:
+            // Limited to write/verify/mode commands with DATA OUT phase
+            assert(false);
             return false;
         }
-        return true;
-
-    default:
-        assert(false);
-        break;
+    }
+    catch (const scsi_exception &e) {
+        Error(e.get_sense_key(), e.get_asc());
+        return false;
     }
 
-    Error(sense_key::aborted_command, asc::controller_xfer_out);
-    return false;
+    return true;
 }
-#pragma GCC diagnostic pop
 
-void Controller::XferMsg(uint8_t msg)
+void Controller::XferMsg()
 {
     assert(IsMsgOut());
 
     if (atn_msg) {
-        msg_bytes.emplace_back(msg);
+        msg_bytes.emplace_back(GetBuffer()[0]);
     }
 }
 
