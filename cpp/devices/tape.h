@@ -95,6 +95,7 @@ private:
 
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
+    void AddDataCompressionPage(map<int, vector<byte>>&) const;
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
 
     void Erase();

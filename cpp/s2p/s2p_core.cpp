@@ -33,9 +33,9 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-bool S2p::InitBus(bool in_process)
+bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::Instance().CreateBus(true, in_process);
+    bus = BusFactory::Instance().CreateBus(true, in_process, log_signals);
     if (!bus) {
         return false;
     }
@@ -110,7 +110,7 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-int S2p::Run(span<char*> args, bool in_process)
+int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -137,7 +137,7 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!InitBus(in_process)) {
+    if (!InitBus(in_process, log_signals)) {
         cerr << "Error: Can't initialize bus" << endl;
         return EXIT_FAILURE;
     }

@@ -72,12 +72,12 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
     command_names[static_cast<int>(opcode)] = name;
 }
 
-unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)
 {
     unique_ptr<Bus> bus;
 
     if (in_process) {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), true);
+        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), log_signals);
     }
     else if (const auto pi_type = CheckForPi(); pi_type != RpiBus::PiType::unknown) {
         bus = make_unique<RpiBus>(pi_type);

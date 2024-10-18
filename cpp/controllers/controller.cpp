@@ -114,13 +114,11 @@ void Controller::Command()
         }
 
         const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
-        assert(command_bytes_count && command_bytes_count <= 16);
-
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }
 
-        // Check the log level first in order to avoid an unnecessary time-consuming string construction
+        // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
             LogCdb();
         }
@@ -323,7 +321,13 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Sending {} byte(s)", length));
+        // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
+        if (length < 256 && get_level() == level::trace) {
+            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
+        }
+        else {
+            LogTrace(fmt::format("Sending {} byte(s)", length));
+        }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is

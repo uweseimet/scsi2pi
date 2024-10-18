@@ -28,6 +28,7 @@ void usage()
         << "  --client-args/-a  Arguments to run client with,\n"
         << "                    optional for s2pctl and s2pexec.\n"
         << "  --s2p-args/-s     Arguments to run s2p with.\n"
+        << "  --log-signals/-l  On log level trace also log bus signals.\n"
         << "  --version/-v      Display the program version.\n"
         << "  --help/-h         Display this help.\n";
 }
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
         { "client", required_argument, nullptr, 'c' },
         { "client-args", required_argument, nullptr, 'a' },
         { "help", no_argument, nullptr, 'h' },
+        { "log-signals", no_argument, nullptr, 'l' },
         { "s2p-args", required_argument, nullptr, 's' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
@@ -51,10 +53,11 @@ int main(int argc, char *argv[])
     string client = "s2pexec";
     string t_args;
     string c_args;
+    bool log_signals = false;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(argc, argv, "-a:c:hs:v", options.data(), nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "-a:c:hls:v", options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'a':
             c_args = optarg;
@@ -67,6 +70,10 @@ int main(int argc, char *argv[])
         case 'h':
             usage();
             exit(EXIT_SUCCESS);
+            break;
+
+        case 'l':
+            log_signals = true;
             break;
 
         case 's':
@@ -112,12 +119,12 @@ int main(int argc, char *argv[])
     }
 
 #ifndef __APPLE__
-    auto s2p_thread = jthread([&target_args]() {
+    auto s2p_thread = jthread([&target_args, log_signals]() {
 #else
         auto s2p_thread = thread([&target_args]() {
 #endif
         auto s2p = make_unique<S2p>();
-        s2p->Run(target_args, true);
+        s2p->Run(target_args, true, log_signals);
     });
 
     if (client == "s2pctl") {

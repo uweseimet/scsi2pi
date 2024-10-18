@@ -10,10 +10,11 @@
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
 {
-    EXPECT_EQ(5U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
     EXPECT_EQ(8U, pages[10].size());
+    EXPECT_EQ(14U, pages[15].size());
     EXPECT_EQ(16U, pages[16].size());
     EXPECT_EQ(8U, pages[17].size());
 }
@@ -138,12 +139,16 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x03);
     TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    // Non-fixed, one byte
+    // Non-fixed, 1 byte
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     CreateTapeFile(*tape);
+    TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Non-fixed, 4 bytes
+    controller->SetCdbByte(4, 4);
     TestShared::Dispatch(*tape, scsi_command::cmd_read6, sense_key::blank_check, asc::no_additional_sense_information);
 }
 
@@ -159,12 +164,16 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write6));
 
-    // Non-fixed, one byte
+    // Non-fixed, 1 byte
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     CreateTapeFile(*tape);
+    TestShared::Dispatch(*tape, scsi_command::cmd_write6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Non-fixed, 4 bytes
+    controller->SetCdbByte(4, 4);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_write6));
 }
 
@@ -201,7 +210,7 @@ TEST(TapeTest, ReadBlockLimits)
     CreateTapeFile(*tape);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::cmd_read_block_limits));
     EXPECT_EQ(4096U, GetInt32(controller->GetBuffer(), 0));
-    EXPECT_EQ(1U, GetInt16(controller->GetBuffer(), 4));
+    EXPECT_EQ(4U, GetInt16(controller->GetBuffer(), 4));
 }
 
 TEST(TapeTest, Rewind)

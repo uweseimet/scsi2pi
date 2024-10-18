@@ -21,11 +21,11 @@ class S2p
 
 public:
 
-    int Run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false, bool = false);
 
 private:
 
-    bool InitBus(bool);
+    bool InitBus(bool, bool);
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;

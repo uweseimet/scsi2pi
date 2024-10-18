@@ -271,6 +271,11 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddModeBlockDescriptor(pages);
     }
 
+    // Page 15 (data compression)
+    if (page == 0x0f || page == 0x3f) {
+        AddDataCompressionPage(pages);
+    }
+
     // Page 16 (device configuration)
     if (page == 0x10 || page == 0x3f) {
         AddDeviceConfigurationPage(pages, changeable);
@@ -303,12 +308,19 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
     pages[0] = buf;
 }
 
+void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const
+{
+    vector<byte> buf(14);
+
+    pages[15] = buf;
+}
+
 void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable) const
 {
     vector<byte> buf(16);
 
     if (!changeable) {
-        // BIS (block identifiers supported)
+        // BIS/LOIS (logical block identifiers supported)
         buf[8] = (byte)0b01000000;
 
         // EEG (enable EOD generation)
@@ -365,7 +377,7 @@ void Tape::ReadBlockLimits()
     vector<uint32_t> sorted_sizes = { GetSupportedBlockSizes().cbegin(), GetSupportedBlockSizes().cend() };
     ranges::sort(sorted_sizes);
     SetInt24(buf, 1, sorted_sizes.back());
-    SetInt16(buf, 4, 1);
+    SetInt16(buf, 4, 4);
 
     DataInPhase(6);
 }
@@ -610,7 +622,8 @@ uint32_t Tape::GetByteCount() const
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    if (static_cast<off_t>(position + count) > filesize) {
+    // The block size must be a multiple of 4 (see SCC-5)
+    if (count % 4 || static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
