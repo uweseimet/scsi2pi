@@ -267,6 +267,11 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         return;
     }
 
+    if (length % 4 || length > GetBlockSize()) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
+
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
         // FUll READ/WRITE LONG support requires an appropriate caching mode
@@ -275,10 +280,6 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         InitCache(GetFilename());
         linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
-    }
-
-    if (length > GetBlockSize()) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     CheckReady();

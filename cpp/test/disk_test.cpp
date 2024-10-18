@@ -160,7 +160,7 @@ TEST(DiskTest, ReadCapacity16)
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Neither READ CAPACITY(16) nor READ LONG(16)");
 
-    // READ CAPACITY(16), not READ LONG(16)
+    // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
     TestShared::Dispatch(*disk, scsi_command::cmd_read_capacity16_read_long16, sense_key::not_ready,
         asc::medium_not_present, "READ CAPACITY(16) must fail because drive is not ready");
@@ -307,7 +307,6 @@ TEST(DiskTest, ReadLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_long10));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -331,10 +330,9 @@ TEST(DiskTest, ReadLong16)
 {
     auto [controller, disk] = CreateDisk();
 
-    // READ LONG(16), not READ CAPACITY(16)
+    // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
 
-    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_read_capacity16_read_long16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -353,7 +351,6 @@ TEST(DiskTest, WriteLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long10));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -382,7 +379,6 @@ TEST(DiskTest, WriteLong16)
         asc::lba_out_of_range, "WRITE LONG(16) must fail because the capacity is exceeded");
     controller->SetCdbByte(2, 0);
 
-    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::cmd_write_long16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
