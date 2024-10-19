@@ -250,6 +250,9 @@ bool Tape::Eject(bool force)
     bool status = StorageDevice::Eject(force);
     if (status) {
         file.close();
+
+        read_error_count = 0;
+        write_error_count = 0;
     }
 
     return status;
@@ -370,8 +373,7 @@ void Tape::Erase6()
 
 void Tape::ReadBlockLimits()
 {
-    SetInt32(GetController()->GetBuffer(), 0,
-        *max_element(GetSupportedBlockSizes().begin(), GetSupportedBlockSizes().end()));
+    SetInt32(GetController()->GetBuffer(), 0, *ranges::max_element(GetSupportedBlockSizes()));
     SetInt16(GetController()->GetBuffer(), 4, 4);
 
     DataInPhase(6);
@@ -495,7 +497,7 @@ void Tape::ReadPosition() const
 
     // Partition number is always 0
 
-    // BT (SCSI-2)/service action 01 (since SCC-2)
+    // BT (SCSI-2)/service action 01 (since SSC-2)
     const bool bt = GetCdbByte(1) & 0x01;
     SetInt32(buf, 4, static_cast<uint32_t>(bt ? position : block_location));
     SetInt32(buf, 8, static_cast<uint32_t>(bt ? position : block_location));
@@ -617,12 +619,12 @@ uint32_t Tape::GetByteCount() const
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    // The block size must be a multiple of 4 (see SCC-5)
+    // The block size must be a multiple of 4 (see SSC-5)
     if (count % 4 || static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    LogTrace(fmt::format("READ/WRITE, position: {0}, byte count: {1}", position, count));
+    LogTrace(fmt::format("Position: {0}, byte count: {1}", position, count));
 
     return count;
 }

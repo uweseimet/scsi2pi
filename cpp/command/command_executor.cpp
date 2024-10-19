@@ -232,13 +232,12 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (device->SupportsFile()) {
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
         // The caching mode must be set before the file is accessed
-        if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
+        if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
             disk->SetCachingMode(caching_mode);
         }
 
@@ -249,7 +248,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
                 fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
         }
 
-        if (!ValidateImageFile(context, *storage_device, filename)) {
+        if (!ValidateImageFile(context, *static_pointer_cast<StorageDevice>(device), filename)) {
             return false;
         }
     }
@@ -261,7 +260,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         device->SetProtected(pb_device.protected_());
     }
 
-    // Stop the dry run here, before actually attaching
+    // Stop the dry run here, before attaching
     if (dryRun) {
         return true;
     }
@@ -282,8 +281,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (storage_device && !storage_device->IsRemoved()) {
-        storage_device->ReserveFile();
+    if (!device->IsRemoved() && device->SupportsFile()) {
+        static_pointer_cast<StorageDevice>(device)->ReserveFile();
     }
 #endif
 
@@ -299,13 +298,11 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, bool dryRun) const
 {
-#ifndef BUILD_STORAGE_DEVICE
-    return false;
-#else
     if (!device->SupportsFile()) {
         return false;
     }
 
+#ifdef BUILD_STORAGE_DEVICE
     if (!device->IsRemoved()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_EJECT_REQUIRED);
     }
@@ -314,7 +311,8 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_NAME_UPDATE);
     }
 
-    auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
+    // It has been ensured above that this cast cannot fail
+    auto storage_device = static_pointer_cast<StorageDevice>(device);
 
     string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
@@ -410,18 +408,20 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
 #ifdef BUILD_STORAGE_DEVICE
-    const auto disk = dynamic_pointer_cast<Disk>(device);
-    if (disk && disk->GetConfiguredBlockSize()) {
-        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredBlockSize()));
-
-    }
-    if (disk && !disk->GetFilename().empty()) {
-        string filename = disk->GetFilename();
-        if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
-            filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+        if (storage_device->GetConfiguredBlockSize()) {
+            PropertyHandler::Instance().AddProperty(identifier + "block_size",
+                to_string(storage_device->GetConfiguredBlockSize()));
         }
-        PropertyHandler::Instance().AddProperty(identifier + "params", filename);
-        return;
+        string filename = storage_device->GetFilename();
+        if (!filename.empty()) {
+            if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
+                filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+            }
+            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+            return;
+        }
     }
 #endif
 
@@ -648,15 +648,13 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<Pri
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
     int block_size) const
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
-        const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
-        if (storage_device && storage_device->IsBlockSizeConfigurable()) {
+        if (device->SupportsFile()) {
+            const auto storage_device = static_pointer_cast<StorageDevice>(device);
             if (!storage_device->SetConfiguredBlockSize(block_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
             }
@@ -666,11 +664,12 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
                 GetTypeString(*device));
         }
     }
-#endif
 
     return true;
+#else
+    return false;
+#endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {

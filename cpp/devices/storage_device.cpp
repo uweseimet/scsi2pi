@@ -466,7 +466,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
     size = page_handler->AddModePages(cdb, buf, size, length, 65535);
 
     if (!page_0) {
-        // The size fields do not count themselves
+        // The size field does not count itself
         SetInt16(buf, 0, size - 2);
     }
 

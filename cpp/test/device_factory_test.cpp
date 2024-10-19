@@ -20,14 +20,15 @@ TEST(DeviceFactoryTest, CreateDevice)
 {
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCHD, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCRM, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<OpticalMemory>(device_factory.CreateDevice(SCMO, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiCd>(device_factory.CreateDevice(SCCD, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<DaynaPort>(device_factory.CreateDevice(SCDP, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<Printer>(device_factory.CreateDevice(SCLP, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<HostServices>(device_factory.CreateDevice(SCHS, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<SasiHd>(device_factory.CreateDevice(SAHD, 0, "")));
+    EXPECT_EQ(SCHD, device_factory.CreateDevice(SCHD, 0, "")->GetType());
+    EXPECT_EQ(SCRM, device_factory.CreateDevice(SCRM, 0, "")->GetType());
+    EXPECT_EQ(SCMO, device_factory.CreateDevice(SCMO, 0, "")->GetType());
+    EXPECT_EQ(SCCD, device_factory.CreateDevice(SCCD, 0, "")->GetType());
+    EXPECT_EQ(SCDP, device_factory.CreateDevice(SCDP, 0, "")->GetType());
+    EXPECT_EQ(SCLP, device_factory.CreateDevice(SCLP, 0, "")->GetType());
+    EXPECT_EQ(SCHS, device_factory.CreateDevice(SCHS, 0, "")->GetType());
+    EXPECT_EQ(SCTP, device_factory.CreateDevice(SCTP, 0, "")->GetType());
+    EXPECT_EQ(SAHD, device_factory.CreateDevice(SAHD, 0, "")->GetType());
 
     EXPECT_EQ(nullptr, device_factory.CreateDevice(UNDEFINED, 0, ""));
 }

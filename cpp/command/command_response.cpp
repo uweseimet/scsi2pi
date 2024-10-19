@@ -42,8 +42,8 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device
-        && storage_device->IsBlockSizeConfigurable()) {
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<StorageDevice>(device);
         for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
             properties.add_block_sizes(block_size);
         }
@@ -66,8 +66,6 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device) const
 {
     pb_device.set_id(device->GetId());
@@ -93,7 +91,8 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (const auto storage_device = dynamic_pointer_cast<const StorageDevice>(device); storage_device) {
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
         GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
@@ -105,7 +104,6 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
     }
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filename) const
 {

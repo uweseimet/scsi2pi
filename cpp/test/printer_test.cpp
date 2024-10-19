@@ -120,9 +120,9 @@ TEST(PrinterTest, WriteData)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    const vector<uint8_t> buf(1);
-    controller->SetTransferSize(1, 1);
-    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, scsi_command::print));
+    const vector<uint8_t> buf(4);
+    controller->SetTransferSize(4, 4);
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print));
 }
 
 TEST(PrinterTest, GetStatistics)

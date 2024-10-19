@@ -278,7 +278,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         FlushCache();
         caching_mode = PbCachingMode::LINUX;
         InitCache(GetFilename());
-        linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
+        linux_cache = static_pointer_cast<LinuxCache>(cache);
         LogInfo(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
 

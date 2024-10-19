@@ -357,8 +357,8 @@ void S2p::AttachInitialDevices(PbCommand &command)
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
         for (auto device : controller_factory.GetAllDevices()) {
-            if (auto host_services = dynamic_pointer_cast<HostServices>(device); host_services) {
-                host_services->SetDispatcher(dispatcher);
+            if (device->GetType() == SCHS) {
+                static_pointer_cast<HostServices>(device)->SetDispatcher(dispatcher);
             }
         }
 #endif

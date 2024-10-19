@@ -84,10 +84,6 @@ ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_
 	ENABLE_SAHD = 1
 endif
 
-ifdef ENABLE_SCRM
-	ENABLE_SCHD = 1
-endif
-
 ifdef DISABLE_SCHD
 	ENABLE_SCHD =
 endif
@@ -116,6 +112,9 @@ endif
 ifdef ENABLE_SCHD
 	CXXFLAGS += -DBUILD_SCHD
 endif
+ifdef ENABLE_SCRM
+	CXXFLAGS += -DBUILD_SCRM
+endif
 ifdef ENABLE_SCMO
 	CXXFLAGS += -DBUILD_SCMO
 endif
@@ -138,11 +137,11 @@ ifdef ENABLE_SAHD
 	CXXFLAGS += -DBUILD_SAHD
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
 	CXXFLAGS += -DBUILD_STORAGE_DEVICE
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
 	CXXFLAGS += -DBUILD_DISK
 endif
 
@@ -343,13 +342,8 @@ $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
 $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_INITIATOR) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE): | $(LIBDIR)
 	$(AR) rcs $@ $^
 
-ifeq ($(DATABASE), 1)
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(SRC_GENERATED)
-	$(CXX) $(CXXFLAGS) -c $< -o $@ -MJ $@.json
-else
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(SRC_GENERATED)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-endif
 
 $(OBJ_GENERATED): | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -359,7 +353,7 @@ $(SRC_GENERATED): $(SRC_PROTOC) | $(GENERATED_DIR)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:
-##   all             Rebuild all of the executable files (default target)
+##   all             Buidl all executable files (default target)
 ##   test            Build and run unit tests
 ##   in_process_test Build the in-process test
 ##   coverage        Build and run unit tests and create coverage files

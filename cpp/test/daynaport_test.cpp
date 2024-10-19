@@ -64,7 +64,7 @@ TEST(DaynaportTest, WriteData)
     // Unknown data format must be ignored
     controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_NO_THROW(dynamic_pointer_cast<DaynaPort>(daynaport)->WriteData(buf, scsi_command::send_message6));
+    EXPECT_NO_THROW(daynaport->WriteData(buf, scsi_command::send_message6));
 }
 
 TEST(DaynaportTest, GetMessage6)

@@ -60,10 +60,6 @@ public:
     {
         return block_size;
     }
-    bool IsBlockSizeConfigurable() const
-    {
-        return supported_block_sizes.size() > 1;
-    }
     const auto& GetSupportedBlockSizes() const
     {
         return supported_block_sizes;

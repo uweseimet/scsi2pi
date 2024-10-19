@@ -8,6 +8,16 @@
 
 #include "mocks.h"
 
+pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
+{
+    auto controller = make_shared<NiceMock<MockAbstractController>>(0);
+    auto tape = make_shared<MockTape>(0);
+    EXPECT_TRUE(tape->Init( { }));
+    EXPECT_TRUE(controller->AddDevice(tape));
+
+    return {controller, tape};
+}
+
 static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
@@ -124,8 +134,7 @@ TEST(TapeTest, Unload)
 
 TEST(TapeTest, Read6)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     // Non-fixed
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read6));
@@ -153,8 +162,7 @@ TEST(TapeTest, Read6)
 
 TEST(TapeTest, Write6)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     // Non-fixed
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::write6));
@@ -178,8 +186,7 @@ TEST(TapeTest, Write6)
 
 TEST(TapeTest, Erase6)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     tape->SetProtected(true);
     TestShared::Dispatch(*tape, scsi_command::erase6, sense_key::data_protect, asc::write_protected);
@@ -203,8 +210,7 @@ TEST(TapeTest, Erase6)
 
 TEST(TapeTest, ReadBlockLimits)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     CreateTapeFile(*tape);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_block_limits));
@@ -214,8 +220,7 @@ TEST(TapeTest, ReadBlockLimits)
 
 TEST(TapeTest, Rewind)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     CreateTapeFile(*tape, 600);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::rewind));
@@ -235,7 +240,7 @@ TEST(TapeTest, Rewind)
 
 TEST(TapeTest, Space6)
 {
-    auto [controller, tape] = CreateDevice(SCTP);
+    auto [controller, tape] = CreateTape();
 
     // BLOCK, count = 0
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::space6));
@@ -259,7 +264,7 @@ TEST(TapeTest, Space6)
 
 TEST(TapeTest, WriteFileMarks6)
 {
-    auto [controller, tape] = CreateDevice(SCTP);
+    auto [controller, tape] = CreateTape();
 
     // Setmarks are not supported
     controller->SetCdbByte(1, 0b010);
@@ -281,8 +286,7 @@ TEST(TapeTest, WriteFileMarks6)
 
 TEST(TapeTest, Locate10)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -303,8 +307,7 @@ TEST(TapeTest, Locate10)
 
 TEST(TapeTest, Locate16)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -324,7 +327,7 @@ TEST(TapeTest, Locate16)
 
 TEST(TapeTest, ReadPosition)
 {
-    auto [controller, tape] = CreateDevice(SCTP);
+    auto [controller, tape] = CreateTape();
 
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b11000000, controller->GetBuffer()[0]) << "BOP and EOP must be set";
@@ -332,8 +335,7 @@ TEST(TapeTest, ReadPosition)
 
 TEST(TapeTest, FormatMedium)
 {
-    auto [controller, device] = CreateDevice(SCTP);
-    auto tape = dynamic_pointer_cast<Tape>(device);
+    auto [controller, tape] = CreateTape();
 
     CreateTapeFile(*tape);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::format_medium));

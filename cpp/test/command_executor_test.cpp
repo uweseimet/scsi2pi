@@ -302,7 +302,7 @@ TEST(CommandExecutorTest, Insert)
 
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
-    dynamic_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
+    static_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
     const bool result = executor->Insert(context, definition, device, false);
     EXPECT_TRUE(result);
 }
@@ -395,7 +395,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
     PbCommand command;
     CommandContext context(command);
 
-    const auto device = dynamic_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
+    const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
 
     EXPECT_FALSE(executor->ValidateImageFile(context, *device, "/non_existing_file"));
@@ -469,14 +469,12 @@ TEST(CommandExecutorTest, SetBlockSize)
     CommandContext context(command);
 
     unordered_set<uint32_t> sizes;
-    auto hd = make_shared<MockScsiHd>(sizes);
-    EXPECT_FALSE(executor->SetBlockSize(context, hd, 512));
 
     sizes.insert(512);
-    hd = make_shared<MockScsiHd>(sizes);
+    auto hd = make_shared<MockScsiHd>(sizes);
     EXPECT_TRUE(executor->SetBlockSize(context, hd, 0));
     EXPECT_FALSE(executor->SetBlockSize(context, hd, 1));
-    EXPECT_FALSE(executor->SetBlockSize(context, hd, 512));
+    EXPECT_TRUE(executor->SetBlockSize(context, hd, 512));
 
     sizes.insert(1024);
     hd = make_shared<MockScsiHd>(sizes);
