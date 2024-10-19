@@ -22,7 +22,6 @@ TEST(DaynaportTest, Device_Defaults)
     EXPECT_FALSE(daynaport.IsReadOnly());
     EXPECT_FALSE(daynaport.IsRemovable());
     EXPECT_FALSE(daynaport.IsRemoved());
-    EXPECT_FALSE(daynaport.IsLockable());
     EXPECT_FALSE(daynaport.IsLocked());
     EXPECT_FALSE(daynaport.IsStoppable());
     EXPECT_FALSE(daynaport.IsStopped());

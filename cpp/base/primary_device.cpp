@@ -75,7 +75,9 @@ void PrimaryDevice::Reset()
 {
     DiscardReservation();
 
-    Device::Reset();
+    SetReset(false);
+    SetAttn(false);
+    SetLocked(false);
 }
 
 int PrimaryDevice::GetId() const

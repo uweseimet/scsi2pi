@@ -37,7 +37,6 @@ Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, 
     SetProduct("SCSI TAPE");
     SetProtectable(true);
     SetRemovable(true);
-    SetLockable(true);
 }
 
 bool Tape::SetUp()

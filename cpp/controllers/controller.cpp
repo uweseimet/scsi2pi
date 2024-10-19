@@ -114,6 +114,8 @@ void Controller::Command()
         }
 
         const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+        assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
+
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }

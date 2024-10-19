@@ -230,7 +230,6 @@ class MockDevice : public Device
     FRIEND_TEST(DeviceTest, Properties);
     FRIEND_TEST(DeviceTest, Params);
     FRIEND_TEST(DeviceTest, StatusCode);
-    FRIEND_TEST(DeviceTest, Reset);
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
     FRIEND_TEST(DeviceTest, Eject);
@@ -250,6 +249,7 @@ public:
 
 class MockPrimaryDevice : public PrimaryDevice
 {
+    FRIEND_TEST(PrimaryDeviceTest, Reset);
     FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataOutPhase);

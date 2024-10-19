@@ -63,7 +63,6 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
     EXPECT_FALSE(device->IsReadOnly());
     EXPECT_FALSE(device->IsRemovable());
     EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLockable());
     EXPECT_FALSE(device->IsLocked());
     EXPECT_TRUE(device->IsStoppable());
     EXPECT_FALSE(device->IsStopped());

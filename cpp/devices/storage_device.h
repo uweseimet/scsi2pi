@@ -22,13 +22,22 @@ class StorageDevice : public PrimaryDevice
 
 public:
 
-    StorageDevice(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t> &s);
+    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const unordered_set<uint32_t> &sizes)
+    : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
+        p)
+    {
+    }
     ~StorageDevice() override = default;
 
     bool SetUp() override;
     void CleanUp() override;
 
     void Dispatch(scsi_command) override;
+
+    bool SupportsFile() const override
+    {
+        return true;
+    }
 
     bool Eject(bool) override;
 

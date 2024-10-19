@@ -72,7 +72,7 @@ public:
     bool CheckReservation(int) const;
     void DiscardReservation();
 
-    void Reset() override;
+    void Reset();
 
     virtual int ReadData(span<uint8_t>)
     {

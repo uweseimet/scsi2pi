@@ -19,7 +19,6 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs 
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
     SetRemovable(true);
-    SetLockable(true);
 }
 
 bool ScsiCd::SetUp()

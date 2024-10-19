@@ -13,13 +13,6 @@
 using namespace filesystem;
 using namespace memory_util;
 
-StorageDevice::StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p,
-    const unordered_set<uint32_t> &sizes)
-: PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
-{
-    SupportsFile(true);
-}
-
 bool StorageDevice::SetUp()
 {
     AddCommand(scsi_command::cmd_start_stop, [this]

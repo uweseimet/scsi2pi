@@ -30,7 +30,8 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     properties.set_protectable(device->IsProtectable());
     properties.set_stoppable(device->IsStoppable());
     properties.set_removable(device->IsRemovable());
-    properties.set_lockable(device->IsLockable());
+    // All emulated removable media devices are lockable
+    properties.set_lockable(device->IsRemovable());
     properties.set_supports_file(device->SupportsFile());
     properties.set_supports_params(device->SupportsParams());
 

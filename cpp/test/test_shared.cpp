@@ -88,7 +88,6 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_FALSE(device->IsReadOnly());
     EXPECT_TRUE(device->IsRemovable());
     EXPECT_FALSE(device->IsRemoved());
-    EXPECT_TRUE(device->IsLockable());
     EXPECT_FALSE(device->IsLocked());
     EXPECT_TRUE(device->IsStoppable());
     EXPECT_FALSE(device->IsStopped());

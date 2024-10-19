@@ -22,7 +22,6 @@ TEST(PrinterTest, Device_Defaults)
     EXPECT_FALSE(printer.IsReadOnly());
     EXPECT_FALSE(printer.IsRemovable());
     EXPECT_FALSE(printer.IsRemoved());
-    EXPECT_FALSE(printer.IsLockable());
     EXPECT_FALSE(printer.IsLocked());
     EXPECT_FALSE(printer.IsStoppable());
     EXPECT_FALSE(printer.IsStopped());

@@ -85,9 +85,15 @@ TEST(PrimaryDeviceTest, Reset)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
+    device->SetLocked(true);
+    device->SetAttn(true);
+    device->SetReset(true);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_reserve6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     device->Reset();
+    EXPECT_FALSE(device->IsLocked());
+    EXPECT_FALSE(device->IsAttn());
+    EXPECT_FALSE(device->IsReset());
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 }
 

@@ -27,7 +27,6 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_FALSE(services.IsReadOnly());
     EXPECT_FALSE(services.IsRemovable());
     EXPECT_FALSE(services.IsRemoved());
-    EXPECT_FALSE(services.IsLockable());
     EXPECT_FALSE(services.IsLocked());
     EXPECT_FALSE(services.IsStoppable());
     EXPECT_FALSE(services.IsStopped());

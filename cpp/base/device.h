@@ -32,7 +32,6 @@ public:
     {
         return ready;
     }
-    virtual void Reset();
 
     void SetReset(bool b)
     {
@@ -80,10 +79,6 @@ public:
     {
         removed = b;
     }
-    bool IsLockable() const
-    {
-        return lockable;
-    }
     bool IsLocked() const
     {
         return locked;
@@ -112,21 +107,17 @@ public:
     void SetRevision(const string&);
     string GetPaddedName() const;
 
+    virtual bool SupportsFile() const
+    {
+        return false;
+    }
     bool SupportsParams() const
     {
         return supports_params;
     }
-    bool SupportsFile() const
-    {
-        return supports_file;
-    }
     void SupportsParams(bool b)
     {
         supports_params = b;
-    }
-    void SupportsFile(bool b)
-    {
-        supports_file = b;
     }
     auto GetParams() const
     {
@@ -174,10 +165,6 @@ protected:
     {
         stopped = b;
     }
-    void SetLockable(bool b)
-    {
-        lockable = b;
-    }
     void SetLocked(bool b)
     {
         locked = b;
@@ -188,7 +175,6 @@ protected:
 
 private:
 
-    // Immutable fields
     const PbDeviceType type;
     const int lun;
 
@@ -206,21 +192,14 @@ private:
     bool stoppable = false;
     bool stopped = false;
 
-    // Device is removable/removed
+    // Medium is removable/removed/locked
     bool removable = false;
     bool removed = false;
-
-    // Device is lockable/locked
-    bool lockable = false;
     bool locked = false;
 
-    // A device can be created with parameters
     bool supports_params = false;
 
-    // A device can support an image file
-    bool supports_file = false;
-
-    // Device identifier (for INQUIRY)
+    // Default device identifier for INQUIRY
     string vendor = "SCSI2Pi";
     string product;
     string revision;

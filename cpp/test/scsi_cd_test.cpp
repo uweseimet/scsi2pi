@@ -33,7 +33,6 @@ TEST(ScsiCdTest, DeviceDefaults)
     EXPECT_TRUE(cd.IsReadOnly());
     EXPECT_TRUE(cd.IsRemovable());
     EXPECT_FALSE(cd.IsRemoved());
-    EXPECT_TRUE(cd.IsLockable());
     EXPECT_FALSE(cd.IsLocked());
     EXPECT_TRUE(cd.IsStoppable());
     EXPECT_FALSE(cd.IsStopped());

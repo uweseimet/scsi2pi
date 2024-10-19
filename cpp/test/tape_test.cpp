@@ -47,7 +47,6 @@ TEST(TapeTest, Device_Defaults)
     EXPECT_FALSE(tape.IsReadOnly());
     EXPECT_TRUE(tape.IsRemovable());
     EXPECT_FALSE(tape.IsRemoved());
-    EXPECT_TRUE(tape.IsLockable());
     EXPECT_FALSE(tape.IsLocked());
     EXPECT_FALSE(tape.IsStoppable());
     EXPECT_FALSE(tape.IsStopped());

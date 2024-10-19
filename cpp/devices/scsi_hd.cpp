@@ -24,7 +24,6 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
     }
     SetProtectable(true);
     SetRemovable(removable);
-    SetLockable(removable);
 }
 
 string ScsiHd::GetProductData() const

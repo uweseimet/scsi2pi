@@ -28,7 +28,6 @@ OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true
     SetProduct("SCSI MO");
     SetProtectable(true);
     SetRemovable(true);
-    SetLockable(true);
 }
 
 void OpticalMemory::Open()
