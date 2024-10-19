@@ -57,7 +57,7 @@ TEST(PrinterTest, TestUnitReady)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_test_unit_ready));
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -71,7 +71,7 @@ TEST(PrinterTest, ReserveUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status()).Times(1);
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_reserve6));
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::reserve6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -80,7 +80,7 @@ TEST(PrinterTest, ReleaseUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status()).Times(1);
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_release6));
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::release6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -89,11 +89,11 @@ TEST(PrinterTest, Print)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, DataOut());
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_print));
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::print));
 
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    TestShared::Dispatch(*printer, scsi_command::cmd_print, sense_key::illegal_request,
+    TestShared::Dispatch(*printer, scsi_command::print, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Buffer overflow was not reported");
 }
 
@@ -102,7 +102,7 @@ TEST(PrinterTest, StopPrint)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::cmd_stop_print));
+    EXPECT_NO_THROW(printer->Dispatch(scsi_command::stop_print));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -110,7 +110,7 @@ TEST(PrinterTest, SynchronizeBuffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    TestShared::Dispatch(*printer, scsi_command::cmd_synchronize_buffer, sense_key::aborted_command,
+    TestShared::Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command,
         asc::printer_nothing_to_print);
 
     // Further testing would use the printing system
@@ -122,7 +122,7 @@ TEST(PrinterTest, WriteData)
 
     const vector<uint8_t> buf(1);
     controller->SetTransferSize(1, 1);
-    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, scsi_command::cmd_print));
+    EXPECT_NO_THROW(dynamic_pointer_cast<Printer>(printer)->WriteData(buf, scsi_command::print));
 }
 
 TEST(PrinterTest, GetStatistics)

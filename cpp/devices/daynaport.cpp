@@ -44,27 +44,27 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAY
 
 bool DaynaPort::SetUp()
 {
-    AddCommand(scsi_command::cmd_get_message6, [this]
+    AddCommand(scsi_command::get_message6, [this]
         {
             GetMessage6();
         });
-    AddCommand(scsi_command::cmd_send_message6, [this]
+    AddCommand(scsi_command::send_message6, [this]
         {
             SendMessage6();
         });
-    AddCommand(scsi_command::cmd_retrieve_stats, [this]
+    AddCommand(scsi_command::retrieve_stats, [this]
         {
             RetrieveStats();
         });
-    AddCommand(scsi_command::cmd_set_iface_mode, [this]
+    AddCommand(scsi_command::set_iface_mode, [this]
         {
             SetInterfaceMode();
         });
-    AddCommand(scsi_command::cmd_set_mcast_addr, [this]
+    AddCommand(scsi_command::set_mcast_addr, [this]
         {
             SetMcastAddr();
         });
-    AddCommand(scsi_command::cmd_enable_interface, [this]
+    AddCommand(scsi_command::enable_interface, [this]
         {
             EnableInterface();
         });
@@ -190,8 +190,8 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //---------------------------------------------------------------------------
 int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::cmd_send_message6);
-    if (command != scsi_command::cmd_send_message6) {
+    assert(command == scsi_command::send_message6);
+    if (command != scsi_command::send_message6) {
         throw scsi_exception(sense_key::aborted_command);
     }
 

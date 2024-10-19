@@ -104,15 +104,15 @@ HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun
 
 bool HostServices::SetUp()
 {
-    AddCommand(scsi_command::cmd_start_stop, [this]
+    AddCommand(scsi_command::start_stop, [this]
         {
             StartStopUnit();
         });
-    AddCommand(scsi_command::cmd_execute_operation, [this]
+    AddCommand(scsi_command::execute_operation, [this]
         {
             ExecuteOperation();
         });
-    AddCommand(scsi_command::cmd_receive_operation_results, [this]
+    AddCommand(scsi_command::receive_operation_results, [this]
         {
             ReceiveOperationResults();
         });
@@ -278,8 +278,8 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
 int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::cmd_execute_operation);
-    if (command != scsi_command::cmd_execute_operation) {
+    assert(command == scsi_command::execute_operation);
+    if (command != scsi_command::execute_operation) {
         throw scsi_exception(sense_key::aborted_command);
     }
 

@@ -155,7 +155,7 @@ void Controller::Execute()
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
+        if (opcode != scsi_command::inquiry && opcode != scsi_command::request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
         }
@@ -165,7 +165,7 @@ void Controller::Execute()
     }
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (opcode != scsi_command::cmd_request_sense) {
+    if (opcode != scsi_command::request_sense) {
         SetStatus(status_code::good);
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
@@ -459,11 +459,11 @@ void Controller::Receive()
 bool Controller::XferIn()
 {
     // Limited to read commands with DATA IN phase
-    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read10 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read16 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_get_message6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::cmd_read_capacity16_read_long16);
+    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read10 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read16 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::get_message6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_capacity16_read_long16);
 
     try {
         SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
@@ -482,19 +482,19 @@ bool Controller::XferOut(bool pending_data)
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
-        case scsi_command::cmd_mode_select6:
-        case scsi_command::cmd_mode_select10:
+        case scsi_command::mode_select6:
+        case scsi_command::mode_select10:
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
             break;
 
-        case scsi_command::cmd_write6:
-        case scsi_command::cmd_write10:
-        case scsi_command::cmd_write16:
-        case scsi_command::cmd_verify10:
-        case scsi_command::cmd_verify16:
-        case scsi_command::cmd_write_long10:
-        case scsi_command::cmd_write_long16:
-        case scsi_command::cmd_execute_operation: {
+        case scsi_command::write6:
+        case scsi_command::write10:
+        case scsi_command::write16:
+        case scsi_command::verify10:
+        case scsi_command::verify16:
+        case scsi_command::write_long10:
+        case scsi_command::write_long16:
+        case scsi_command::execute_operation: {
             const auto length = device->WriteData(GetBuffer(), opcode);
             if (pending_data) {
                 SetCurrentLength(length);

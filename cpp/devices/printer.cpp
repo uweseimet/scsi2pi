@@ -50,15 +50,15 @@ bool Printer::SetUp()
         return false;
     }
 
-    AddCommand(scsi_command::cmd_print, [this]
+    AddCommand(scsi_command::print, [this]
         {
             Print();
         });
-    AddCommand(scsi_command::cmd_synchronize_buffer, [this]
+    AddCommand(scsi_command::synchronize_buffer, [this]
         {
             SynchronizeBuffer();
         });
-    AddCommand(scsi_command::cmd_stop_print, [this]
+    AddCommand(scsi_command::stop_print, [this]
         {
             StatusPhase();
         });
@@ -156,8 +156,8 @@ void Printer::SynchronizeBuffer()
 
 int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::cmd_print);
-    if (command != scsi_command::cmd_print) {
+    assert(command == scsi_command::print);
+    if (command != scsi_command::print) {
         throw scsi_exception(sense_key::aborted_command);
     }
 

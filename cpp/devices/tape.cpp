@@ -41,47 +41,47 @@ Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, 
 
 bool Tape::SetUp()
 {
-    AddCommand(scsi_command::cmd_read6, [this]
+    AddCommand(scsi_command::read6, [this]
         {
             Read6();
         });
-    AddCommand(scsi_command::cmd_write6, [this]
+    AddCommand(scsi_command::write6, [this]
         {
             Write6();
         });
-    AddCommand(scsi_command::cmd_erase6, [this]
+    AddCommand(scsi_command::erase6, [this]
         {
             Erase6();
         });
-    AddCommand(scsi_command::cmd_read_block_limits, [this]
+    AddCommand(scsi_command::read_block_limits, [this]
         {
             ReadBlockLimits();
         });
-    AddCommand(scsi_command::cmd_rewind, [this]
+    AddCommand(scsi_command::rewind, [this]
         {
             Rewind();
         });
-    AddCommand(scsi_command::cmd_space6, [this]
+    AddCommand(scsi_command::space6, [this]
         {
             Space6();
         });
-    AddCommand(scsi_command::cmd_write_filemarks6, [this]
+    AddCommand(scsi_command::write_filemarks6, [this]
         {
             WriteFilemarks6();
         });
-    AddCommand(scsi_command::cmd_locate10, [this]
+    AddCommand(scsi_command::locate10, [this]
         {
             Locate10();
         });
-    AddCommand(scsi_command::cmd_locate16, [this]
+    AddCommand(scsi_command::locate16, [this]
         {
             Locate16();
         });
-    AddCommand(scsi_command::cmd_read_position, [this]
+    AddCommand(scsi_command::read_position, [this]
         {
             ReadPosition();
         });
-    AddCommand(scsi_command::cmd_format_medium, [this]
+    AddCommand(scsi_command::format_medium, [this]
         {
             FormatMedium();
         });
@@ -302,7 +302,7 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
     buf[3] = (byte)8;
 
     // Size of fixed blocks
-    SetInt24(buf, 9, GetBlockSize());
+    SetInt32(buf, 8, GetBlockSize());
 
     pages[0] = buf;
 }
@@ -370,13 +370,9 @@ void Tape::Erase6()
 
 void Tape::ReadBlockLimits()
 {
-    vector<uint8_t> &buf = GetController()->GetBuffer();
-    buf[0] = 0;
-
-    vector<uint32_t> sorted_sizes = { GetSupportedBlockSizes().cbegin(), GetSupportedBlockSizes().cend() };
-    ranges::sort(sorted_sizes);
-    SetInt24(buf, 1, sorted_sizes.back());
-    SetInt16(buf, 4, 4);
+    SetInt32(GetController()->GetBuffer(), 0,
+        *max_element(GetSupportedBlockSizes().begin(), GetSupportedBlockSizes().end()));
+    SetInt16(GetController()->GetBuffer(), 4, 4);
 
     DataInPhase(6);
 }

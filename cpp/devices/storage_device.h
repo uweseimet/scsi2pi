@@ -22,11 +22,6 @@ class StorageDevice : public PrimaryDevice
 
 public:
 
-    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const unordered_set<uint32_t> &sizes)
-    : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
-        p)
-    {
-    }
     ~StorageDevice() override = default;
 
     bool SetUp() override;
@@ -103,6 +98,12 @@ public:
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
+
+    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const unordered_set<uint32_t> &sizes)
+    : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
+        p)
+    {
+    }
 
     virtual void ValidateFile();
 

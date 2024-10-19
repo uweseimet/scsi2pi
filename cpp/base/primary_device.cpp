@@ -8,7 +8,6 @@
 
 #include "primary_device.h"
 #include "buses/bus_factory.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -18,33 +17,33 @@ bool PrimaryDevice::Init(const param_map &params)
     SetParams(params);
 
     // Mandatory SCSI primary commands
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
+    AddCommand(scsi_command::test_unit_ready, [this]
         {
             TestUnitReady();
         });
-    AddCommand(scsi_command::cmd_inquiry, [this]
+    AddCommand(scsi_command::inquiry, [this]
         {
             Inquiry();
         });
-    AddCommand(scsi_command::cmd_report_luns, [this]
+    AddCommand(scsi_command::report_luns, [this]
         {
             ReportLuns();
         });
 
     // Optional commands supported by all device types
-    AddCommand(scsi_command::cmd_request_sense, [this]
+    AddCommand(scsi_command::request_sense, [this]
         {
             RequestSense();
         });
-    AddCommand(scsi_command::cmd_reserve6, [this]
+    AddCommand(scsi_command::reserve6, [this]
         {
             ReserveUnit();
         });
-    AddCommand(scsi_command::cmd_release6, [this]
+    AddCommand(scsi_command::release6, [this]
         {
             ReleaseUnit();
         });
-    AddCommand(scsi_command::cmd_send_diagnostic, [this]
+    AddCommand(scsi_command::send_diagnostic, [this]
         {
             SendDiagnostic();
         });
@@ -303,13 +302,13 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
 
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
-    if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
-        || cmd == scsi_command::cmd_release6) {
+    if (cmd == scsi_command::inquiry || cmd == scsi_command::request_sense
+        || cmd == scsi_command::release6) {
         return true;
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetCdbByte(4) & 0x01)) {
+    if (cmd == scsi_command::prevent_allow_medium_removal && !(GetCdbByte(4) & 0x01)) {
         return true;
     }
 

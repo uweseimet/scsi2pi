@@ -83,7 +83,7 @@ TEST(MemoryUtilTest, SetInt32)
 
 TEST(MemoryUtilTest, SetInt64)
 {
-    vector<uint8_t> buf(8);
+    array<uint8_t, 8> buf;
     SetInt64(buf, 0, 0x1234567887654321);
     EXPECT_EQ(0x12, buf[0]);
     EXPECT_EQ(0x34, buf[1]);

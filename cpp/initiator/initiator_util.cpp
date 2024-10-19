@@ -28,7 +28,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (executor.Execute(scsi_command::cmd_request_sense, cdb, buf, static_cast<int>(buf.size()))) {
+    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()))) {
         error("Can't execute REQUEST SENSE");
         return {sense_key {-1}, asc {-1}, -1};
     }

@@ -76,19 +76,19 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    TestShared::Dispatch(*device, scsi_command::cmd_prevent_allow_medium_removal, sense_key::not_ready,
+    TestShared::Dispatch(*device, scsi_command::prevent_allow_medium_removal, sense_key::not_ready,
         asc::medium_not_present, "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(device->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_prevent_allow_medium_removal));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->IsLocked());
 }
@@ -102,7 +102,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     // Stop/Unload
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->IsStopped());
 
@@ -111,29 +111,29 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetReady(true);
     device->SetLocked(false);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     device->SetReady(false);
-    TestShared::Dispatch(*device, scsi_command::cmd_start_stop, sense_key::illegal_request,
+    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
         asc::load_or_eject_failed, "START/STOP must fail because device is not ready");
 
     device->SetReady(true);
     device->SetLocked(true);
-    TestShared::Dispatch(*device, scsi_command::cmd_start_stop, sense_key::illegal_request,
+    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
         asc::load_or_eject_failed, "LOAD/EJECT must fail because device is locked");
 
     // Start/Unload
     controller->SetCdbByte(4, 0x01);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(device->IsStopped());
 
     // Start/Load
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // Start/Load with previous medium
@@ -143,7 +143,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     EXPECT_TRUE(device->GetLastFilename().empty());
     EXPECT_CALL(*controller, Status);
     // Eject existing medium
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->GetFilename().empty());
     EXPECT_EQ("filename", device->GetLastFilename());
@@ -152,11 +152,11 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->ReserveFile();
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status).Times(0);
-    EXPECT_THROW(device->Dispatch(scsi_command::cmd_start_stop), scsi_exception)
+    EXPECT_THROW(device->Dispatch(scsi_command::start_stop), scsi_exception)
     << "Filename is already reserved";
     device->UnreserveFile();
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ("filename", device->GetFilename());
 }
@@ -336,23 +336,23 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
 {
     MockStorageDevice device;
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6, {}, 512);},
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select6, {}, 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6,
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select6,
                 CreateParameters("00:00:00:ff:00:00:00:00:00:00:08:00"), 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10, {}, 512);},
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select10, {}, 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10,
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select10,
                 CreateParameters("00:00:00:00:00:00:00:ff:00:08:00:00:00:00:00:00"), 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
@@ -361,25 +361,25 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
     pair<int, int> result;
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select6,
             CreateParameters("00:00:00:04:00:00:00:00:00:00:08:00"), 512));
     EXPECT_EQ(8, result.first);
     EXPECT_EQ(2048, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select6,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select6,
             CreateParameters("00:00:00:04:00:00:00:00:00:00:08:04"), result.second));
     EXPECT_EQ(8, result.first);
     EXPECT_EQ(2052, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select10,
             CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04:00"), result.second));
     EXPECT_EQ(16, result.first);
     EXPECT_EQ(1024, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::cmd_mode_select10,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select10,
             CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:03:fc"), result.second));
     EXPECT_EQ(16, result.first);
     EXPECT_EQ(1020, result.second);
@@ -425,30 +425,30 @@ TEST(StorageDeviceTest, ModeSense6)
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
 }
@@ -466,38 +466,38 @@ TEST(StorageDeviceTest, ModeSense10)
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     // LLBAA
     controller->SetCdbByte(1, 0x10);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
     EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
 }

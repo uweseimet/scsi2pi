@@ -15,11 +15,11 @@ using namespace memory_util;
 
 bool StorageDevice::SetUp()
 {
-    AddCommand(scsi_command::cmd_start_stop, [this]
+    AddCommand(scsi_command::start_stop, [this]
         {
             StartStopUnit();
         });
-    AddCommand(scsi_command::cmd_prevent_allow_medium_removal, [this]
+    AddCommand(scsi_command::prevent_allow_medium_removal, [this]
         {
             PreventAllowMediumRemoval();
         });
@@ -39,7 +39,7 @@ void StorageDevice::CleanUp()
 void StorageDevice::Dispatch(scsi_command cmd)
 {
     // Media changes must be reported on the next access, i.e. not only for TEST UNIT READY
-    if (cmd != scsi_command::cmd_inquiry && cmd != scsi_command::cmd_request_sense && IsMediumChanged()) {
+    if (cmd != scsi_command::inquiry && cmd != scsi_command::request_sense && IsMediumChanged()) {
         assert(IsRemovable());
 
         SetMediumChanged(false);
@@ -218,14 +218,14 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 
 pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int size) const
 {
-    assert(cmd == scsi_command::cmd_mode_select6 || cmd == scsi_command::cmd_mode_select10);
+    assert(cmd == scsi_command::mode_select6 || cmd == scsi_command::mode_select10);
 
-    const size_t required_length = cmd == scsi_command::cmd_mode_select10 ? 8 : 4;
+    const size_t required_length = cmd == scsi_command::mode_select10 ? 8 : 4;
     if (buf.size() < required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
-    const size_t descriptor_length = cmd == scsi_command::cmd_mode_select10 ? GetInt16(buf, 6) : buf[3];
+    const size_t descriptor_length = cmd == scsi_command::mode_select10 ? GetInt16(buf, 6) : buf[3];
     if (buf.size() < descriptor_length + required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
@@ -399,7 +399,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
             // Short LBA mode parameter block descriptor (number of blocks and block length)
             SetInt32(buf, 4, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-            SetInt24(buf, 9, block_size);
+            SetInt32(buf, 8, block_size);
 
             size += 8;
         }
@@ -443,7 +443,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 
                 // Short LBA mode parameter block descriptor (number of blocks and block length)
                 SetInt32(buf, 8, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-                SetInt24(buf, 13, block_size);
+                SetInt32(buf, 12, block_size);
 
                 size += 8;
             }

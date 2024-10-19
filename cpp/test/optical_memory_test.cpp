@@ -127,7 +127,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     vector<uint8_t> buf(32);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10");
+    vector<int> cdb = CreateCdb(scsi_command::mode_select6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
@@ -143,7 +143,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[4] = 0;
     buf[5] = 0;
 
-    cdb = CreateCdb(scsi_command::cmd_mode_select10, "10");
+    cdb = CreateCdb(scsi_command::mode_select10, "10");
 
     // Page 3 (Format device page)
     buf[8] = 0x04;

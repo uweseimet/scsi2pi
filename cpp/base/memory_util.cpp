@@ -20,18 +20,6 @@ template void memory_util::SetInt16(vector<byte>&, int, int);
 template void memory_util::SetInt16(vector<uint8_t>&, int, int);
 
 template<typename T>
-void memory_util::SetInt24(vector<T> &buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 2);
-
-    buf[offset] = static_cast<T>(value >> 16);
-    buf[offset + 1] = static_cast<T>(value >> 8);
-    buf[offset + 2] = static_cast<T>(value);
-}
-template void memory_util::SetInt24(vector<byte>&, int, int);
-template void memory_util::SetInt24(vector<uint8_t>&, int, int);
-
-template<typename T>
 void memory_util::SetInt32(vector<T> &buf, int offset, uint32_t value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
@@ -76,7 +64,7 @@ uint64_t memory_util::GetInt64(span<const int> buf, int offset)
         (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }
 
-void memory_util::SetInt64(vector<uint8_t> &buf, int offset, uint64_t value)
+void memory_util::SetInt64(span<uint8_t> buf, int offset, uint64_t value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 7);
 

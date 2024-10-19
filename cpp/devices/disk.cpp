@@ -31,87 +31,87 @@ Disk::Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_sele
 bool Disk::SetUp()
 {
     // REZERO implementation is identical with Seek
-    AddCommand(scsi_command::cmd_rezero, [this]
+    AddCommand(scsi_command::rezero, [this]
         {
             ReAssignBlocks();
         });
-    AddCommand(scsi_command::cmd_format_unit, [this]
+    AddCommand(scsi_command::format_unit, [this]
         {
             FormatUnit();
         });
-    AddCommand(scsi_command::cmd_reassign_blocks, [this]
+    AddCommand(scsi_command::reassign_blocks, [this]
         {
             ReAssignBlocks();
         });
-    AddCommand(scsi_command::cmd_read6, [this]
+    AddCommand(scsi_command::read6, [this]
         {
             Read6();
         });
-    AddCommand(scsi_command::cmd_write6, [this]
+    AddCommand(scsi_command::write6, [this]
         {
             Write6();
         });
-    AddCommand(scsi_command::cmd_seek6, [this]
+    AddCommand(scsi_command::seek6, [this]
         {
             Seek6();
         });
-    AddCommand(scsi_command::cmd_read_capacity10, [this]
+    AddCommand(scsi_command::read_capacity10, [this]
         {
             ReadCapacity10();
         });
-    AddCommand(scsi_command::cmd_read10, [this]
+    AddCommand(scsi_command::read10, [this]
         {
             Read10();
         });
-    AddCommand(scsi_command::cmd_write10, [this]
+    AddCommand(scsi_command::write10, [this]
         {
             Write10();
         });
-    AddCommand(scsi_command::cmd_read_long10, [this]
+    AddCommand(scsi_command::read_long10, [this]
         {
             ReadLong10();
         });
-    AddCommand(scsi_command::cmd_write_long10, [this]
+    AddCommand(scsi_command::write_long10, [this]
         {
             WriteLong10();
         });
-    AddCommand(scsi_command::cmd_write_long16, [this]
+    AddCommand(scsi_command::write_long16, [this]
         {
             WriteLong16();
         });
-    AddCommand(scsi_command::cmd_seek10, [this]
+    AddCommand(scsi_command::seek10, [this]
         {
             Seek10();
         });
-    AddCommand(scsi_command::cmd_verify10, [this]
+    AddCommand(scsi_command::verify10, [this]
         {
             Verify(RW10);
         });
-    AddCommand(scsi_command::cmd_synchronize_cache10, [this]
+    AddCommand(scsi_command::synchronize_cache10, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::cmd_synchronize_cache16, [this]
+    AddCommand(scsi_command::synchronize_cache16, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::cmd_read_defect_data10, [this]
+    AddCommand(scsi_command::read_defect_data10, [this]
         {
             ReadDefectData10();
         });
-    AddCommand(scsi_command::cmd_read16, [this]
+    AddCommand(scsi_command::read16, [this]
         {
             Read16();
         });
-    AddCommand(scsi_command::cmd_write16, [this]
+    AddCommand(scsi_command::write16, [this]
         {
             Write16();
         });
-    AddCommand(scsi_command::cmd_verify16, [this]
+    AddCommand(scsi_command::verify16, [this]
         {
             Verify(RW16);
         });
-    AddCommand(scsi_command::cmd_read_capacity16_read_long16, [this]
+    AddCommand(scsi_command::read_capacity16_read_long16, [this]
         {
             ReadCapacity16_ReadLong16();
         });
@@ -416,7 +416,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     CheckReady();
 
-    if (command == scsi_command::cmd_write_long10 || command == scsi_command::cmd_write_long16) {
+    if (command == scsi_command::write_long10 || command == scsi_command::write_long16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         assert(linux_cache);
 
@@ -430,7 +430,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
         return length;
     }
 
-    if ((command != scsi_command::cmd_verify10 && command != scsi_command::cmd_verify16)
+    if ((command != scsi_command::verify10 && command != scsi_command::verify16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }

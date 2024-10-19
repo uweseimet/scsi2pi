@@ -59,7 +59,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    device->Dispatch(scsi_command::cmd_inquiry);
+    device->Dispatch(scsi_command::inquiry);
     const span<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);

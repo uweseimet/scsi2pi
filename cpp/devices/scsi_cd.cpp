@@ -23,7 +23,7 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs 
 
 bool ScsiCd::SetUp()
 {
-    AddCommand(scsi_command::cmd_read_toc, [this]
+    AddCommand(scsi_command::read_toc, [this]
         {
             ReadToc();
         });
