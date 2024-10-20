@@ -11,10 +11,10 @@
 
 TEST(BusFactoryTest, CreateBus)
 {
-    auto target = BusFactory::Instance().CreateBus(true, true);
-    EXPECT_NE(nullptr, target);
+    auto bus = BusFactory::Instance().CreateBus(true, true);
+    EXPECT_NE(nullptr, bus);
     // Avoid a delay by signalling the initiator that the target is ready
-    target->CleanUp();
+    bus->CleanUp();
     EXPECT_NE(nullptr, BusFactory::Instance().CreateBus(false, true));
 }
 

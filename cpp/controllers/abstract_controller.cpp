@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <cstring>
 #include "base/primary_device.h"
 
 AbstractController::AbstractController(Bus &b, int id) : bus(b), target_id(id)

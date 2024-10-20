@@ -8,7 +8,6 @@
 
 #include "s2pproto_core.h"
 #include <csignal>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>

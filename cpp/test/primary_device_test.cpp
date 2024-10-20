@@ -150,6 +150,50 @@ TEST(PrimaryDeviceTest, DiscardReservation)
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 }
 
+TEST(PrimaryDeviceTest, ReadData)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_EQ(0, device.ReadData( { }));
+}
+
+TEST(PrimaryDeviceTest, ModeSelect)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0), scsi_exception);
+}
+
+TEST(PrimaryDeviceTest, ModeSense6)
+{
+    MockPrimaryDevice device(0);
+    vector<uint8_t> buf;
+
+    EXPECT_EQ(0, device.ModeSense6( { }, buf));
+}
+
+TEST(PrimaryDeviceTest, ModeSense10)
+{
+    MockPrimaryDevice device(0);
+    vector<uint8_t> buf;
+
+    EXPECT_EQ(0, device.ModeSense10( { }, buf));
+}
+
+TEST(PrimaryDeviceTest, SetUpModePages)
+{
+    MockPrimaryDevice device(0);
+    map<int, vector<byte>> pages;
+
+    // Non changeable
+    device.SetUpModePages(pages, 0x3f, false);
+    EXPECT_TRUE(pages.empty());
+
+    // Changeable
+    device.SetUpModePages(pages, 0x3f, true);
+    EXPECT_TRUE(pages.empty());
+}
+
 TEST(PrimaryDeviceTest, TestUnitReady)
 {
     auto [controller, device] = CreatePrimaryDevice();

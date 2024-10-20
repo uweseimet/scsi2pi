@@ -8,7 +8,6 @@
 
 #include "s2p_util.h"
 #include <cassert>
-#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <pwd.h>

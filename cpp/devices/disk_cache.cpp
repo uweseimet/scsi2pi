@@ -14,7 +14,6 @@
 
 #include "disk_cache.h"
 #include <cassert>
-#include <cstdlib>
 #include "disk_track.h"
 
 DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), sec_blocks(

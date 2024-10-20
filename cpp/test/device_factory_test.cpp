@@ -58,6 +58,7 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 TEST(DeviceFactoryTest, GetExtensionMapping)
 {
     const auto &mapping = DeviceFactory::Instance().GetExtensionMapping();
+
     EXPECT_EQ(11U, mapping.size());
     EXPECT_EQ(SCHD, mapping.at("hd1"));
     EXPECT_EQ(SCHD, mapping.at("hds"));

@@ -8,10 +8,10 @@
 
 #include "mocks.h"
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
+pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
-    auto tape = make_shared<MockTape>(0);
+    auto tape = make_shared<Tape>(0);
     EXPECT_TRUE(tape->Init( { }));
     EXPECT_TRUE(controller->AddDevice(tape));
 
@@ -31,7 +31,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
 
 static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position)
 {
-    memset(controller.GetBuffer().data() + 4 + 2 * sizeof(uint32_t), 0xff, 8);
+    fill_n(controller.GetBuffer().begin(), 20, 0xff);
     tape.Dispatch(scsi_command::read_position);
     EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first block location";
     EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last block location";
@@ -81,7 +81,7 @@ TEST(TapeTest, Inquiry)
 
 TEST(TapeTest, ValidateFile)
 {
-    MockTape tape(0);
+    MockTape tape;
 
     EXPECT_THROW(tape.ValidateFile(), io_exception)<< "Invalid block count";
 
@@ -106,18 +106,18 @@ TEST(TapeTest, Open)
 
 TEST(TapeTest, ReadData)
 {
-    vector<uint8_t> buf(1);
-    MockTape tape(0);
+    vector<uint8_t> buf(4);
+    MockTape tape;
 
     tape.SetReady(true);
     tape.SetBlockCount(1);
-    auto filename = CreateTempFile(1, "tap");
+    auto filename = CreateTempFile(4, "tap");
     tape.SetFilename(filename.string());
     tape.ValidateFile();
     EXPECT_THROW(tape.ReadData(buf), scsi_exception);
 
     tape.CleanUp();
-    filename = CreateTempFile(1, "tar");
+    filename = CreateTempFile(4, "tar");
     tape.SetFilename(filename.string());
     tape.ValidateFile();
     EXPECT_NO_THROW(tape.ReadData(buf));
@@ -125,7 +125,7 @@ TEST(TapeTest, ReadData)
 
 TEST(TapeTest, Unload)
 {
-    MockTape tape(0);
+    MockTape tape;
 
     tape.SetReady(true);
     EXPECT_TRUE(tape.Eject(false));
@@ -136,10 +136,10 @@ TEST(TapeTest, Read6)
 {
     auto [controller, tape] = CreateTape();
 
-    // Non-fixed
+    // Non-fixed, 0 bytes
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read6));
 
-    // Fixed
+    // Fixed, 0 bytes
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read6));
 
@@ -345,7 +345,7 @@ TEST(TapeTest, FormatMedium)
 
 TEST(TapeTest, GetBlockSizes)
 {
-    MockTape tape(0);
+    Tape tape(0);
 
     const auto &sizes = tape.GetSupportedBlockSizes();
     EXPECT_EQ(5U, sizes.size());
@@ -360,7 +360,7 @@ TEST(TapeTest, GetBlockSizes)
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
-    MockTape tape(0);
+    MockTape tape;
 
     // Non changeable
     tape.SetUpModePages(pages, 0x3f, false);

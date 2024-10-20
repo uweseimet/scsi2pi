@@ -8,7 +8,6 @@
 
 #include "s2pexec_core.h"
 #include <csignal>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>

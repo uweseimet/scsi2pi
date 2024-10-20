@@ -9,8 +9,6 @@
 #include "s2pdump_core.h"
 #include <chrono>
 #include <csignal>
-#include <cstddef>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>

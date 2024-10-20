@@ -78,7 +78,6 @@ public:
     {
         // Devices that implement a DATA IN phase have to override this method
 
-        assert(false);
         return 0;
     }
 

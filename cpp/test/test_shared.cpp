@@ -118,15 +118,15 @@ pair<int, path> testing::OpenTempFile(const string &extension)
     const int fd = mkstemp(f.data());
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
 
-    string effective_name = f.data();
+    path effective_name = f.data();
     if (!extension.empty()) {
         effective_name += "." + extension;
-        rename(path(f.data()), path(effective_name));
+        rename(path(f.data()), effective_name);
     }
 
     TestShared::RememberTempFile(effective_name);
 
-    return {fd, path(effective_name)};
+    return {fd, effective_name};
 }
 
 path testing::CreateTempFile(size_t size, const string &extension)

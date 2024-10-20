@@ -228,7 +228,6 @@ public:
 class MockDevice : public Device
 {
     FRIEND_TEST(DeviceTest, Properties);
-    FRIEND_TEST(DeviceTest, Params);
     FRIEND_TEST(DeviceTest, StatusCode);
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
@@ -256,6 +255,9 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
+    FRIEND_TEST(PrimaryDeviceTest, ModeSense6);
+    FRIEND_TEST(PrimaryDeviceTest, ModeSense10);
+    FRIEND_TEST(PrimaryDeviceTest, SetUpModePages);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
@@ -450,7 +452,10 @@ class MockTape : public Tape
 
 public:
 
-    using Tape::Tape;
+    MockTape() : Tape(0)
+    {
+    }
+    ~MockTape() override = default;
 
     void SetReady(bool b)
     {
