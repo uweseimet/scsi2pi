@@ -283,7 +283,7 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddDeviceConfigurationPage(pages, changeable);
     }
 
-    // Page 17 (medium partition page)
+    // Page 17 (medium partition page 1)
     if (page == 0x11 || page == 0x3f) {
         AddMediumPartitionPage(pages, changeable);
     }
