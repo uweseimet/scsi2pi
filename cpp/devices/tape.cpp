@@ -334,11 +334,20 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool change
 
 void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable) const
 {
-    vector<byte> buf(8);
+    vector<byte> buf(10);
 
     if (!changeable) {
-        // Fixed data partitions, PSUM (descriptor unit in MB)
-        buf[4] = (byte)0b10010000;
+        // PSUM (descriptor unit in MB)
+        buf[4] = (byte)0b00010000;
+
+        // Logical unit is capable of format and partition recognition
+        buf[5] = (byte)0x03;
+
+        // Approximate partition size in MB
+        if (IsReady()) {
+            const auto capacity = static_cast<uint32_t>(GetFileSize()) / 1048576;
+            SetInt16(buf, 8, capacity > 0 ? capacity : 1);
+        }
     }
 
     pages[17] = buf;
