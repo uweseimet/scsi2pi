@@ -337,6 +337,9 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeabl
     vector<byte> buf(10);
 
     if (!changeable) {
+        // Maximum additional partitions
+        buf[2] = (byte)1;
+
         // PSUM (descriptor unit in MB)
         buf[4] = (byte)0b00010000;
 
