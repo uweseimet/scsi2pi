@@ -46,6 +46,10 @@ bool initiator_util::SetLogLevel(const string &log_level)
     // Default spdlog format without the date
     set_pattern("[%T.%e] [%^%l%$] %v");
 
+    if (log_level.empty()) {
+        return true;
+    }
+
     // Compensate for spdlog using 'off' for unknown levels
     if (const level::level_enum level = level::from_str(log_level); to_string_view(level) == log_level) {
         set_level(level);

@@ -91,7 +91,7 @@ bool S2pExec::Init(bool in_process)
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args, bool in_process)
+bool S2pExec::ParseArguments(span<char*> args)
 {
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
@@ -219,13 +219,8 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         return true;
     }
 
-    // In in-process mode do not change the log level of the target process
-    if (!in_process && !SetLogLevel(log_level)) {
-        // Preserve the existing log level for interactive mode
-        const string &tmp = log_level;
-        const auto &l = to_string_view(get_level());
-        log_level = string(l.data(), l.size());
-        throw parser_exception("Invalid log level: '" + tmp + "'");
+    if (!SetLogLevel(log_level)) {
+        throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
     if (!initiator.empty()) {
@@ -325,7 +320,7 @@ bool S2pExec::RunInteractive(bool in_process)
         }
 
         try {
-            if (!ParseArguments(interactive_args, in_process)) {
+            if (!ParseArguments(interactive_args)) {
                 continue;
             }
         }
@@ -349,7 +344,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
     }
 
     try {
-        if (!ParseArguments(args, in_process)) {
+        if (!ParseArguments(args)) {
             return -1;
         }
         else if (version || help) {
