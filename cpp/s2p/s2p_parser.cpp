@@ -232,13 +232,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string_view, string_view> BLUE_SCSI_TO_S2P_TYPES = {
-        { "CD", PbDeviceType_Name(SCCD) },
-        { "FD", PbDeviceType_Name(SCHD) },
-        { "HD", PbDeviceType_Name(SCHD) },
-        { "MO", PbDeviceType_Name(SCMO) },
-        { "RE", PbDeviceType_Name(SCRM) },
-        { "TP", PbDeviceType_Name(SCTP) }
+    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", SCCD },
+        { "FD", SCHD },
+        { "HD", SCHD },
+        { "MO", SCMO },
+        { "RE", SCRM },
+        { "TP", SCTP }
     };
 
     const auto index = filename.find(".");
@@ -267,7 +267,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
-    properties[device_key + PropertyHandler::TYPE] = t->second;
+    properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
     string block_size = "512";
     if (components.size() > 1) {
