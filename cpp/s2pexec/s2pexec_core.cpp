@@ -221,15 +221,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (!SetLogLevel(log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
-<<<<<<< HEAD
-    }
-
-    if (!initiator.empty()) {
-        if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
-        }
-=======
->>>>>>> testing
     }
 
     if (!target.empty()) {
