@@ -194,11 +194,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             break;
         }
 
-        string device_key;
-        if (!id_lun.empty()) {
-            device_key = fmt::format("device.{}.", id_lun);
-        }
-
+        string device_key = id_lun.empty() ? "" : fmt::format("device.{}.", id_lun);
         const string &params = optarg;
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
