@@ -13,8 +13,10 @@
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace s2p_util;
+using namespace s2p_interface;
 
 void S2pParser::Banner(bool usage) const
 {
@@ -150,7 +152,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'h':
             id_lun = optarg;
-            type = "sahd";
+            type = PbDeviceType_Name(SAHD);
             continue;
 
         case 'i':
@@ -234,13 +236,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string_view, const char*> BLUE_SCSI_TO_S2P_TYPES = {
-        { "CD", "sccd" },
-        { "FD", "schd" },
-        { "HD", "schd" },
-        { "MO", "scmo" },
-        { "RE", "scrm" },
-        { "TP", "sctp" }
+    const unordered_map<string_view, string_view> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", PbDeviceType_Name(SCCD) },
+        { "FD", PbDeviceType_Name(SCHD) },
+        { "HD", PbDeviceType_Name(SCHD) },
+        { "MO", PbDeviceType_Name(SCMO) },
+        { "RE", PbDeviceType_Name(SCRM) },
+        { "TP", PbDeviceType_Name(SCTP) }
     };
 
     const auto index = filename.find(".");
@@ -268,9 +270,6 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
-    }
-    if (!t->second) {
-        throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
     }
     properties[device_key + PropertyHandler::TYPE] = t->second;
 
