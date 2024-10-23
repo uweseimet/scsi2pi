@@ -355,6 +355,11 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
+    if (command.empy()) {
+        cerr << "Error: Missing command" << endl;
+        return -1;
+    }
+
     if (!Init(in_process)) {
         cerr << "Error: Can't initialize bus" << endl;
         return -1;
