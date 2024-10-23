@@ -355,7 +355,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (command.empty()) {
+    if (command.empty() && !reset_bus) {
         cerr << "Error: Missing command" << endl;
         return -1;
     }
