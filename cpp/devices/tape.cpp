@@ -651,13 +651,13 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
 uint32_t Tape::GetByteCount() const
 {
-    const int32_t count =
-        GetCdbByte(1) & 0x01 ?
+    const bool fixed = GetCdbByte(1) & 0x01;
+    const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    // The block size must be a multiple of 4 (see SSC-5)
-    if (count % 4 || static_cast<off_t>(position + count) > filesize) {
+    // The non-fixed block size must be a multiple of 4 (see SSC-5)
+    if ((!fixed && count % 4) || static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
