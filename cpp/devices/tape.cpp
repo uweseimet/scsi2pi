@@ -425,6 +425,8 @@ void Tape::Space6()
         }
 
         StatusPhase();
+
+        return;
     }
 
     if (count < 0) {
