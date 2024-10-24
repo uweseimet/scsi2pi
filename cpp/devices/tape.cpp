@@ -424,6 +424,13 @@ void Tape::Space6()
             throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
         }
 
+        if (position < 0) {
+            position = 0;
+        }
+        if (block_location < 0) {
+            block_location = 0;
+        }
+
         StatusPhase();
 
         return;
