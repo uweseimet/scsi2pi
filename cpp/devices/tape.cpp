@@ -402,19 +402,30 @@ void Tape::Rewind()
 void Tape::Space6()
 {
     const int code = GetCdbByte(1) & 0x07;
+    const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2);
 
     if (tar_mode) {
-        if (code != object_type::BLOCK) {
+        switch (code) {
+        case object_type::BLOCK:
+            position += count * GetBlockSize();
+            block_location += count;
+            break;
+
+        case object_type::END_OF_DATA:
+            position = GetFileSize();
+            block_location = position / GetBlockSize();
+            break;
+
+        case object_type::FILEMARK:
+            LogError("Spacing over filemarks in tar-file compatibility mode is not possible");
+            [[fallthrough]];
+
+        default:
             throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
         }
 
-        position += GetBlockSize();
-        ++block_location;
-
         StatusPhase();
     }
-
-    const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2);
 
     if (count < 0) {
         LogError("Reverse spacing is not supported");
