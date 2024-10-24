@@ -407,7 +407,7 @@ void Tape::Space6()
     if (tar_mode) {
         switch (code) {
         case object_type::BLOCK:
-            if (block_location + count >= 0) {
+            if (static_cast<int64_t>(block_location) + count >= 0) {
                 position += count * GetBlockSize();
                 block_location += count;
             }
