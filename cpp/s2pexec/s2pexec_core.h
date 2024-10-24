@@ -30,7 +30,7 @@ private:
     static void Banner(bool, bool);
 
     bool Init(bool);
-    bool ParseArguments(span<char*>, bool);
+    bool ParseArguments(span<char*>);
     bool RunInteractive(bool);
     int Run();
 
@@ -74,7 +74,7 @@ private:
     string command;
     string data;
 
-    string log_level = "info";
+    string log_level;
 
     string last_input;
 

@@ -91,7 +91,7 @@ bool S2pExec::Init(bool in_process)
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args, bool in_process)
+bool S2pExec::ParseArguments(span<char*> args)
 {
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
@@ -131,7 +131,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:L:t:T:Hnrvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:t:T:Hnrvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -219,19 +219,8 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         return true;
     }
 
-    // In in-process mode do not change the log level of the target process
-    if (!in_process && !SetLogLevel(log_level)) {
-        // Preserve the existing log level for interactive mode
-        const string &tmp = log_level;
-        const auto &l = to_string_view(get_level());
-        log_level = string(l.data(), l.size());
-        throw parser_exception("Invalid log level: '" + tmp + "'");
-    }
-
-    if (!initiator.empty()) {
-        if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
-        }
+    if (!SetLogLevel(log_level)) {
+        throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
     if (!target.empty()) {
@@ -240,36 +229,39 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         }
     }
 
-    if (target_id == -1 && !reset_bus) {
-        throw parser_exception("Missing target ID");
-    }
+    // Most options only make sense when there is a command
+    if (!command.empty()) {
+        if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
+            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+        }
 
-    if (target_id == initiator_id) {
-        throw parser_exception("Target ID and initiator ID must not be identical");
-    }
+        if (target_id == -1 && !reset_bus) {
+            throw parser_exception("Missing target ID");
+        }
 
-    if (target_lun == -1) {
-        target_lun = 0;
-    }
+        if (target_id == initiator_id) {
+            throw parser_exception("Target ID and initiator ID must not be identical");
+        }
 
-    if (command.empty() && !reset_bus) {
-        throw parser_exception("Missing command block");
-    }
+        if (target_lun == -1) {
+            target_lun = 0;
+        }
 
-    if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
-        throw parser_exception("An input file is not permitted when providing explicit data");
-    }
+        if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
+            throw parser_exception("An input file is not permitted when providing explicit data");
+        }
 
-    if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
-        throw parser_exception("There can only be a single input file");
-    }
+        if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
+            throw parser_exception("There can only be a single input file");
+        }
 
-    if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
-        throw parser_exception("There can only be a single output file");
-    }
+        if (!!binary_output_filename.empty() && !hex_output_filename.empty()) {
+            throw parser_exception("There can only be a single output file");
+        }
 
-    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
-        throw parser_exception("Invalid command timeout value: '" + tout + "'");
+        if ((!GetAsUnsignedInt(tout, timeout) || !timeout)) {
+            throw parser_exception("Invalid command timeout value: '" + tout + "'");
+        }
     }
 
     int buffer_size = DEFAULT_BUFFER_SIZE;
@@ -325,7 +317,7 @@ bool S2pExec::RunInteractive(bool in_process)
         }
 
         try {
-            if (!ParseArguments(interactive_args, in_process)) {
+            if (!ParseArguments(interactive_args)) {
                 continue;
             }
         }
@@ -334,7 +326,9 @@ bool S2pExec::RunInteractive(bool in_process)
             continue;
         }
 
-        Run();
+        if (!command.empty() || reset_bus) {
+            Run();
+        }
     }
 
     CleanUp();
@@ -349,7 +343,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
     }
 
     try {
-        if (!ParseArguments(args, in_process)) {
+        if (!ParseArguments(args)) {
             return -1;
         }
         else if (version || help) {
@@ -358,6 +352,11 @@ int S2pExec::Run(span<char*> args, bool in_process)
     }
     catch (const parser_exception &e) {
         cerr << "Error: " << e.what() << endl;
+        return -1;
+    }
+
+    if (command.empty() && !reset_bus) {
+        cerr << "Error: Missing command" << endl;
         return -1;
     }
 

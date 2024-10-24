@@ -422,7 +422,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
         const auto length = linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
         if (!length) {
-            throw scsi_exception(sense_key::medium_error, asc::write_error);
+            throw scsi_exception(sense_key::medium_error, asc::write_fault);
         }
 
         UpdateWriteCount(1);
@@ -432,7 +432,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     if ((command != scsi_command::verify10 && command != scsi_command::verify16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
+        throw scsi_exception(sense_key::medium_error, asc::write_fault);
     }
 
     next_sector += sector_transfer_count;

@@ -389,18 +389,46 @@ void Tape::Rewind()
 
 void Tape::Space6()
 {
-    if (tar_mode) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-    }
-
+    const int code = GetCdbByte(1) & 0x07;
     const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2);
+
+    if (tar_mode) {
+        switch (code) {
+        case object_type::BLOCK:
+            if (static_cast<int64_t>(block_location) + count >= 0) {
+                position += count * GetBlockSize();
+                block_location += count;
+            }
+            else {
+                position = 0;
+                block_location = 0;
+            }
+            break;
+
+        case object_type::END_OF_DATA:
+            position = GetFileSize();
+            block_location = position / GetBlockSize();
+            break;
+
+        case object_type::FILEMARK:
+            LogError("Spacing over filemarks in tar-file compatibility mode is not possible");
+            [[fallthrough]];
+
+        default:
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        }
+
+        StatusPhase();
+
+        return;
+    }
 
     if (count < 0) {
         LogError("Reverse spacing is not supported");
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    switch (const int code = GetCdbByte(1) & 0x07; code) {
+    switch (code) {
     case object_type::BLOCK:
     case object_type::FILEMARK:
         if (count) {
@@ -441,7 +469,7 @@ void Tape::WriteFilemarks6()
         }
     }
     else {
-        LogWarn("Writing filemarks in tar-file compatibility mode is not possible");
+        LogWarn("Writing filemarks in tar-file compatibility mode is not possible, command is ignored");
     }
 
     StatusPhase();
@@ -450,10 +478,6 @@ void Tape::WriteFilemarks6()
 // This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
-    if (tar_mode) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-    }
-
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -461,14 +485,14 @@ void Tape::Locate(bool locate16)
 
     const uint64_t block = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
-    position = 0;
-    block_location = 0;
-
     if (tar_mode) {
         position = block * GetBlockSize();
         block_location = block;
     }
     else {
+        position = 0;
+        block_location = 0;
+
         // BT
         if (GetCdbByte(1) & 0x01) {
             position = GetCdbInt32(2);
@@ -614,13 +638,13 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
 uint32_t Tape::GetByteCount() const
 {
-    const int32_t count =
-        GetCdbByte(1) & 0x01 ?
+    const bool fixed = GetCdbByte(1) & 0x01;
+    const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    // The block size must be a multiple of 4 (see SSC-5)
-    if (count % 4 || static_cast<off_t>(position + count) > filesize) {
+    // The non-fixed block size must be a multiple of 4 (see SSC-5)
+    if ((!fixed && count % 4) || static_cast<off_t>(position + count) > filesize) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -631,10 +655,6 @@ uint32_t Tape::GetByteCount() const
 
 void Tape::Erase()
 {
-    if (tar_mode) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-    }
-
     file.seekp(position, ios::beg);
 
     // Erase in 4096 byte chunks

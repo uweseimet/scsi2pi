@@ -126,7 +126,16 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     parser.Banner(false);
 
     bool ignore_conf = false;
-    const auto &properties = parser.ParseArguments(args, ignore_conf);
+
+    property_map properties;
+    try {
+        properties = parser.ParseArguments(args, ignore_conf);
+    }
+    catch (const parser_exception &e) {
+        cerr << "Error: " << e.what() << endl;
+        return EXIT_FAILURE;
+    }
+
     int port;
     if (!ParseProperties(properties, port, ignore_conf)) {
         return EXIT_FAILURE;

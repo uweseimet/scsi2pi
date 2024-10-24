@@ -13,8 +13,10 @@
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace s2p_util;
+using namespace s2p_interface;
 
 void S2pParser::Banner(bool usage) const
 {
@@ -150,7 +152,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'h':
             id_lun = optarg;
-            type = "sahd";
+            type = PbDeviceType_Name(SAHD);
             continue;
 
         case 'i':
@@ -192,11 +194,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             break;
         }
 
-        string device_key;
-        if (!id_lun.empty()) {
-            device_key = fmt::format("device.{}.", id_lun);
-        }
-
+        string device_key = id_lun.empty() ? "" : fmt::format("device.{}.", id_lun);
         const string &params = optarg;
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
@@ -234,13 +232,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string_view, const char*> BLUE_SCSI_TO_S2P_TYPES = {
-        { "CD", "sccd" },
-        { "FD", "schd" },
-        { "HD", "schd" },
-        { "MO", "scmo" },
-        { "RE", "scrm" },
-        { "TP", "sctp" }
+    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", SCCD },
+        { "FD", SCHD },
+        { "HD", SCHD },
+        { "MO", SCMO },
+        { "RE", SCRM },
+        { "TP", SCTP }
     };
 
     const auto index = filename.find(".");
@@ -269,10 +267,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
-    if (!t->second) {
-        throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
-    }
-    properties[device_key + PropertyHandler::TYPE] = t->second;
+    properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
     string block_size = "512";
     if (components.size() > 1) {
