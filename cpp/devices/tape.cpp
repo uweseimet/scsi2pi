@@ -178,6 +178,10 @@ int Tape::ReadData(span<uint8_t> buf)
 
     const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
 
+    if (static_cast<off_t>(position + length) > GetFileSize()) {
+        throw scsi_exception(sense_key::blank_check);
+    }
+
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), length);
     if (file.fail()) {
@@ -197,6 +201,10 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     CheckReady();
 
     const int length = GetController()->GetChunkSize();
+
+    if (static_cast<off_t>(position + length) > GetFileSize()) {
+        throw scsi_exception(sense_key::blank_check);
+    }
 
     if (!tar_mode) {
         WriteMetaData(object_type::BLOCK, length);
@@ -551,6 +559,10 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
     assert(size < 65536);
 
+    if (static_cast<off_t>(position + sizeof(meta_data_t)) > GetFileSize()) {
+        throw scsi_exception(sense_key::blank_check);
+    }
+
     meta_data_t meta_data;
     memcpy(meta_data.magic.data(), MAGIC, 4);
     meta_data.type = type;
@@ -644,7 +656,7 @@ uint32_t Tape::GetByteCount() const
             GetSignedInt24(GetController()->GetCdb(), 2);
 
     // The non-fixed block size must be a multiple of 4 (see SSC-5)
-    if ((!fixed && count % 4) || static_cast<off_t>(position + count) > filesize) {
+    if (!fixed && count % 4) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

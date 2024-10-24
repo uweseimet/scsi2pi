@@ -188,13 +188,12 @@ TEST(TapeTest, Erase6)
 {
     auto [controller, tape] = CreateTape();
 
+    CreateTapeFile(*tape, 4567);
+
     tape->SetProtected(true);
     TestShared::Dispatch(*tape, scsi_command::erase6, sense_key::data_protect, asc::write_protected);
 
     tape->SetProtected(false);
-    TestShared::Dispatch(*tape, scsi_command::erase6, sense_key::medium_error, asc::write_error);
-
-    CreateTapeFile(*tape, 4567);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::erase6));
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
@@ -275,12 +274,14 @@ TEST(TapeTest, WriteFileMarks6)
     controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_filemarks6));
 
+    CreateTapeFile(*tape);
+
     // Count > 0
     controller->SetCdbByte(2, 1);
-    TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::medium_error, asc::write_error);
+    TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::blank_check,
+        asc::no_additional_sense_information);
 
     tape->SetProtected(true);
-    controller->SetCdbByte(1, 0b001);
     TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::data_protect, asc::write_protected);
 }
 
