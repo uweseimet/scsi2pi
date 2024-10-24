@@ -401,8 +401,17 @@ void Tape::Rewind()
 
 void Tape::Space6()
 {
+    const int code = GetCdbByte(1) & 0x07;
+
     if (tar_mode) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        if (code != object_type::BLOCK) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        }
+
+        position += GetBlockSize();
+        ++block_location;
+
+        StatusPhase();
     }
 
     const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2);
@@ -412,7 +421,7 @@ void Tape::Space6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    switch (const int code = GetCdbByte(1) & 0x07; code) {
+    switch (code) {
     case object_type::BLOCK:
     case object_type::FILEMARK:
         if (count) {
@@ -462,10 +471,6 @@ void Tape::WriteFilemarks6()
 // This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
-    if (tar_mode) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-    }
-
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
