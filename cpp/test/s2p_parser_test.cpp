@@ -251,6 +251,13 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ("512", properties["device.1:31.block_size"]);
     EXPECT_EQ("RE131.hds", properties["device.1:31.params"]);
 
+    SetUpArgs(args, "-B", "TP73.tap");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(3UL, properties.size());
+    EXPECT_EQ(PbDeviceType_Name(SCTP), properties["device.7:3.type"]);
+    EXPECT_EQ("512", properties["device.7:3.block_size"]);
+    EXPECT_EQ("TP73.tap", properties["device.7:3.params"]);
+
     SetUpArgs(args, "-B", "H1.hds");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
 
