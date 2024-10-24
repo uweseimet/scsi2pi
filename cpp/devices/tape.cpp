@@ -407,8 +407,14 @@ void Tape::Space6()
     if (tar_mode) {
         switch (code) {
         case object_type::BLOCK:
-            position += count * GetBlockSize();
-            block_location += count;
+            if (block_location + count >= 0) {
+                position += count * GetBlockSize();
+                block_location += count;
+            }
+            else {
+                position = 0;
+                block_location = 0;
+            }
             break;
 
         case object_type::END_OF_DATA:
@@ -422,13 +428,6 @@ void Tape::Space6()
 
         default:
             throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-        }
-
-        if (position < 0) {
-            position = 0;
-        }
-        if (block_location < 0) {
-            block_location = 0;
         }
 
         StatusPhase();
