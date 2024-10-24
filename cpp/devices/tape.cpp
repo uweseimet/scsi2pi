@@ -478,14 +478,14 @@ void Tape::Locate(bool locate16)
 
     const uint64_t block = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
-    position = 0;
-    block_location = 0;
-
     if (tar_mode) {
         position = block * GetBlockSize();
         block_location = block;
     }
     else {
+        position = 0;
+        block_location = 0;
+
         // BT
         if (GetCdbByte(1) & 0x01) {
             position = GetCdbInt32(2);
