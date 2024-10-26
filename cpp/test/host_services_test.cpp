@@ -92,6 +92,9 @@ TEST(HostServicesTest, ExecuteOperation)
     controller->SetCdbByte(1, 0b001);
     TestShared::Dispatch(*services, scsi_command::execute_operation, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal length");
+
+    controller->SetCdbByte(8, 1);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::execute_operation));
 }
 
 TEST(HostServicesTest, ReceiveOperationResults)
@@ -203,6 +206,10 @@ TEST(HostServicesTest, SetUpModePages)
 TEST(HostServicesTest, WriteData)
 {
     auto [controller, services] = CreateDevice(SCHS);
+    array<uint8_t, 1> buf = { };
 
-    EXPECT_EQ(0, services->WriteData( { }, scsi_command::execute_operation));
+    EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation));
+
+    controller->SetCdbByte(8, 1);
+    EXPECT_THROW(services->WriteData(buf, scsi_command::execute_operation), scsi_exception)<< "protobuf data are invalid";
 }

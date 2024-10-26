@@ -203,7 +203,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     const int length = GetController()->GetChunkSize();
 
     if (static_cast<off_t>(position + length) > GetFileSize()) {
-        throw scsi_exception(sense_key::blank_check);
+        throw scsi_exception(sense_key::volume_overflow);
     }
 
     if (!tar_mode) {
@@ -291,7 +291,7 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
         AddDeviceConfigurationPage(pages, changeable);
     }
 
-    // Page 17 (medium partition page)
+    // Page 17 (medium partition page 1)
     if (page == 0x11 || page == 0x3f) {
         AddMediumPartitionPage(pages, changeable);
     }
@@ -342,11 +342,23 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool change
 
 void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable) const
 {
-    vector<byte> buf(8);
+    vector<byte> buf(10);
 
     if (!changeable) {
-        // Fixed data partitions, PSUM (descriptor unit in MB)
-        buf[4] = (byte)0b10010000;
+        // Maximum additional partitions
+        buf[2] = (byte)1;
+
+        // PSUM (descriptor unit in MB)
+        buf[4] = (byte)0b00010000;
+
+        // Logical unit is capable of format and partition recognition
+        buf[5] = (byte)0x03;
+
+        // Approximate partition size in MB
+        if (IsReady()) {
+            const auto capacity = static_cast<uint32_t>(GetFileSize()) / 1048576;
+            SetInt16(buf, 8, capacity > 0 ? capacity : 1);
+        }
     }
 
     pages[17] = buf;
@@ -560,7 +572,7 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     assert(size < 65536);
 
     if (static_cast<off_t>(position + sizeof(meta_data_t)) > GetFileSize()) {
-        throw scsi_exception(sense_key::blank_check);
+        throw scsi_exception(sense_key::volume_overflow);
     }
 
     meta_data_t meta_data;
