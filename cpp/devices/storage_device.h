@@ -117,7 +117,7 @@ protected:
 
     void ModeSelect(cdb_t, span<const uint8_t>, int) override;
     pair<int, int> EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int) const;
-    int VerifyBlockSizeChange(int, bool) const;
+    virtual int VerifyBlockSizeChange(int, bool) const;
     unordered_set<uint32_t> GetBlockSizes() const;
     bool SetBlockSize(uint32_t);
 

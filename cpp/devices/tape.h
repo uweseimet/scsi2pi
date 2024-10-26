@@ -93,6 +93,8 @@ private:
 
     uint32_t GetByteCount() const;
 
+    int VerifyBlockSizeChange(int, bool) const override;
+
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDataCompressionPage(map<int, vector<byte>>&) const;

@@ -135,7 +135,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 {
     // PF
     if (!(cdb[1] & 0x10)) {
-        // Vendor-specific parameters (SCSI-1) are not supported.
+        // Vendor-specific parameters (all parameters in SCSI-1 are vendor-specific) are not supported.
         // Do not report an error in order to support Apple's HD SC Setup.
         return;
     }

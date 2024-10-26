@@ -271,6 +271,12 @@ vector<uint8_t> Tape::InquiryInternal() const
     return HandleInquiry(device_type::sequential_access, true);
 }
 
+int Tape::VerifyBlockSizeChange(int requested_size, bool temporary) const
+{
+    // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
+    return requested_size || !temporary ? VerifyBlockSizeChange(requested_size, temporary) : 0;
+}
+
 void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     StorageDevice::SetUpModePages(pages, page, changeable);
