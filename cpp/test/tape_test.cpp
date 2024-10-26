@@ -26,7 +26,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(8U, pages[10].size());
     EXPECT_EQ(14U, pages[15].size());
     EXPECT_EQ(16U, pages[16].size());
-    EXPECT_EQ(10U, pages[17].size());
+    EXPECT_EQ(8U, pages[17].size());
 }
 
 static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position)
