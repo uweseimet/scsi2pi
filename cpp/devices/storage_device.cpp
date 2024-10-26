@@ -375,6 +375,11 @@ off_t StorageDevice::GetFileSize() const
 
 int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 {
+    // Subpages are not supported
+    if (cdb[3]) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
@@ -417,6 +422,11 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
 int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 {
+    // Subpages are not supported
+    if (cdb[3]) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 

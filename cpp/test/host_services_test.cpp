@@ -143,6 +143,9 @@ TEST(HostServicesTest, ModeSense6)
     EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense6));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense6), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, ModeSense10)
@@ -177,6 +180,9 @@ TEST(HostServicesTest, ModeSense10)
     EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense10), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, SetUpModePages)

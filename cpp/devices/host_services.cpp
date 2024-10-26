@@ -211,8 +211,8 @@ void HostServices::ReceiveOperationResults()
 
 int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Block descriptors cannot be returned
-    if (!(cdb[1] & 0x08)) {
+    // Block descriptors cannot be returned, subpages are not supported
+    if (cdb[3] || !(cdb[1] & 0x08)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -229,8 +229,8 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
 int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Block descriptors cannot be returned
-    if (!(cdb[1] & 0x08)) {
+    // Block descriptors cannot be returned, subpages are not supported
+    if (cdb[3] || !(cdb[1] & 0x08)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

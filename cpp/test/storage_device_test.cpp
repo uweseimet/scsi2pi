@@ -451,6 +451,9 @@ TEST(StorageDeviceTest, ModeSense6)
     EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense6), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(StorageDeviceTest, ModeSense10)
@@ -500,6 +503,9 @@ TEST(StorageDeviceTest, ModeSense10)
     EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense10), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(StorageDeviceTest, GetStatistics)

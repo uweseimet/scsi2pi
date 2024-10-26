@@ -202,7 +202,7 @@ void Controller::Status()
 
     // If this is a successfully terminated linked command convert the status code
     GetBuffer()[0] =
-        linked && GetStatus() == status_code::good ? (uint8_t)status_code::intermediate : (uint8_t)status_code::good;
+        linked && GetStatus() == status_code::good ? (uint8_t)status_code::intermediate : (uint8_t)GetStatus();
 }
 
 void Controller::MsgIn()
