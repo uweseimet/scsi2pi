@@ -278,7 +278,6 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
 int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::execute_operation);
     if (command != scsi_command::execute_operation) {
         throw scsi_exception(sense_key::aborted_command);
     }

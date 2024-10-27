@@ -24,7 +24,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(12U, pages[1].size());
     EXPECT_EQ(16U, pages[2].size());
     EXPECT_EQ(8U, pages[10].size());
-    EXPECT_EQ(14U, pages[15].size());
+    EXPECT_EQ(16U, pages[15].size());
     EXPECT_EQ(16U, pages[16].size());
     EXPECT_EQ(8U, pages[17].size());
 }

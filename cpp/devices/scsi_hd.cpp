@@ -112,7 +112,7 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(24);
 
     if (changeable) {
-        // The sector size is simulated to be changeable in multiples of 4 with a maximum of 4096 bytes per sector.
+        // The sector size is simulated to be changeable in multiples of 4.
         // See the MODE SELECT implementation for details.
         SetInt16(buf, 12, 0x1ffc);
 

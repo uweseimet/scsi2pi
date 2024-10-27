@@ -208,6 +208,8 @@ TEST(HostServicesTest, WriteData)
     auto [controller, services] = CreateDevice(SCHS);
     array<uint8_t, 1> buf = { };
 
+    EXPECT_THROW(services->WriteData(buf, scsi_command::test_unit_ready), scsi_exception)<< "Illegal command";
+
     EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation));
 
     controller->SetCdbByte(8, 1);

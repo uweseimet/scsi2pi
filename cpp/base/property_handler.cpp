@@ -23,7 +23,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 
     property_map properties;
 
-    // Always parse the optional global property file
+    // Parse the optional global property file unless disabled
     if (!ignore_conf && exists(path(CONFIGURATION))) {
         ParsePropertyFile(properties, CONFIGURATION, true);
     }

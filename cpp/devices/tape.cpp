@@ -327,7 +327,7 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
 
 void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const
 {
-    vector<byte> buf(14);
+    vector<byte> buf(16);
 
     pages[15] = buf;
 }

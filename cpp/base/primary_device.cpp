@@ -128,8 +128,8 @@ void PrimaryDevice::TestUnitReady()
 
 void PrimaryDevice::Inquiry()
 {
-    // EVPD and page code check
-    if ((GetCdbByte(1) & 0x01) || GetCdbByte(2)) {
+    // EVPD, CMDDT and page code check
+    if ((GetCdbByte(1) & 0x03) || GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
