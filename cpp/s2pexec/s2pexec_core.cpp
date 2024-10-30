@@ -132,7 +132,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:L:t:T:Hnrvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:t:T:Hnrvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':

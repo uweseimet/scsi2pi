@@ -136,6 +136,12 @@ void Controller::Command()
             return;
         }
 
+        // Linked commands are not supported
+        if (GetCdb()[command_bytes_count - 1] & 0x03) {
+            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            return;
+        }
+
         Execute();
     }
 }
