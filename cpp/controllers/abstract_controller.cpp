@@ -56,8 +56,6 @@ void AbstractController::SetTransferSize(int length, int size)
 
     // The number of bytes to transfer in a single chunk
     chunk_size = size;
-
-    LogTrace(fmt::format("Going to transfer {0} byte(s) in chunks of {1} byte(s)", total_length, chunk_size));
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
