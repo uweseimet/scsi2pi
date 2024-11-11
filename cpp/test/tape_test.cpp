@@ -43,6 +43,7 @@ static void CreateTapeFile(Tape &tape, size_t size = 4096)
     tape.SetFilename(filename.string());
     tape.Open();
     tape.Dispatch(scsi_command::format_medium);
+    tape.Dispatch(scsi_command::rewind);
 }
 
 TEST(TapeTest, Device_Defaults)

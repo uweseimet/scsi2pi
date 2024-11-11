@@ -39,23 +39,23 @@ using namespace s2p_util;
 DeviceFactory::DeviceFactory()
 {
 #if defined BUILD_SCHD || defined BUILD_SCRM
-        mapping["hd1"] = SCHD;
-        mapping["hds"] = SCHD;
-        mapping["hda"] = SCHD;
-        mapping["hdr"] = SCRM;
+    mapping["hd1"] = SCHD;
+    mapping["hds"] = SCHD;
+    mapping["hda"] = SCHD;
+    mapping["hdr"] = SCRM;
 #endif
 #ifdef BUILD_SCMO
-        mapping["mos"] = SCMO;
+    mapping["mos"] = SCMO;
 #endif
 #ifdef BUILD_SCCD
-        mapping["is1"] = SCCD;
-        mapping["iso"] = SCCD;
-        mapping["cdr"] = SCCD;
-        mapping["toast"] = SCCD;
+    mapping["is1"] = SCCD;
+    mapping["iso"] = SCCD;
+    mapping["cdr"] = SCCD;
+    mapping["toast"] = SCCD;
 #endif
 #ifdef BUILD_SCTP
-        mapping["tap"] = SCTP;
-        mapping["tar"] = SCTP;
+    mapping["tar"] = SCTP;
+    mapping["st"] = SCTP;
 #endif
 }
 

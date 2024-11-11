@@ -31,5 +31,6 @@ int GetInt24(span<const int>, int);
 int32_t GetSignedInt24(span<const int>, int);
 uint32_t GetInt32(span<const int>, int);
 uint64_t GetInt64(span<const int>, int);
+uint64_t GetInt64(span<const uint8_t>, int);
 void SetInt64(span<uint8_t>, int, uint64_t);
 }

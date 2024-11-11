@@ -54,14 +54,16 @@ private:
         END_OF_DATA = 0b011
     };
 
-    // The meta data for each object, with the object type and payload size
+    // The meta data for each object, with the object type and the previous and next object position
     using meta_data_t = struct _meta_data_t
     {
         array<uint8_t, 4> magic;
         Tape::object_type type;
         uint8_t reserved;
-        // Big-endian 16-bit integer
-        array<uint8_t, 2> size;
+        // Big-endian 64-bit integer with the previous object position, -1 if none
+        array<uint8_t, 8> prev_position;
+        // Big-endian 64-bit integer with the next object position
+        array<uint8_t, 8> next_position;
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -74,20 +76,14 @@ private:
     void Space6() override;
     void WriteFilemarks6() override;
     void FormatMedium();
-    void Locate10()
-    {
-        Locate(false);
-    }
-    void Locate16()
-    {
-        Locate(true);
-    }
     void ReadPosition() const;
-
     void Locate(bool);
 
-    void WriteMetaData(Tape::object_type, uint32_t);
+    void WriteMetaData(Tape::object_type, uint32_t = 0);
     uint32_t FindNextObject(Tape::object_type, int64_t);
+
+    void SpaceTarMode(int, int32_t);
+    void SpaceTapMode(int, int32_t);
 
     int GetVariableBlockSize();
 
@@ -105,6 +101,8 @@ private:
     fstream file;
 
     uint64_t position = 0;
+
+    int blocks_read = 0;
 
     uint64_t block_location = 0;
 

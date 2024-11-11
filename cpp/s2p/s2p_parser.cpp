@@ -63,7 +63,7 @@ void S2pParser::Banner(bool usage) const
             << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
             << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
             << "    tar: SCSI Tape image (SCSI-2 tar-compatible image)\n"
-            << "    tap: SCSI Tape image (SCSI-2 raw image with filemarks support)\n";
+            << "    st: SCSI Tape image (SCSI-2 raw image with filemarks support)\n";
     }
 }
 

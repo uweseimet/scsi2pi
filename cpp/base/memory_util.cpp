@@ -64,6 +64,16 @@ uint64_t memory_util::GetInt64(span<const int> buf, int offset)
         (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }
 
+uint64_t memory_util::GetInt64(span<const uint8_t> buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 7);
+
+    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
+        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
+        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
+        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
+}
+
 void memory_util::SetInt64(span<uint8_t> buf, int offset, uint64_t value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 7);

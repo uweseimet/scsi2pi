@@ -187,3 +187,9 @@ enum class asc
     printer_write_failed = 0xf6,
     host_services_receive_operation_results = 0xf8
 };
+
+enum class ascq
+{
+    filemark_detected = 0x01,
+    end_of_partition_medium_detected = 0x02
+};

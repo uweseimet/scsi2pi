@@ -70,7 +70,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCCD, mapping.at("toast"));
     EXPECT_EQ(SCCD, mapping.at("is1"));
     EXPECT_EQ(SCTP, mapping.at("tar"));
-    EXPECT_EQ(SCTP, mapping.at("tap"));
+    EXPECT_EQ(SCTP, mapping.at("st"));
 }
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
