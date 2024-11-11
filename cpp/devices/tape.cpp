@@ -785,7 +785,7 @@ pair<uint32_t, uint32_t> Tape::ReadHeader()
     const uint32_t value = header & 0x0fffffff;
 
     LogTrace(
-        fmt::format("Read simh header with class {0:1X}, marker value/record length ${1:87x} from position {2}", cls,
+        fmt::format("Read simh header with class {0:1X}, marker value/record length ${1:07x} from position {2}", cls,
             value, position));
 
     position += sizeof(uint32_t);
