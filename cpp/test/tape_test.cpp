@@ -99,10 +99,6 @@ TEST(TapeTest, Open)
     Tape tape(0);
 
     EXPECT_THROW(tape.Open(), io_exception);
-
-    const auto &filename = CreateTempFile(4096);
-    tape.SetFilename(filename.string());
-    EXPECT_NO_THROW(tape.Open());
 }
 
 TEST(TapeTest, ReadData)
@@ -112,13 +108,7 @@ TEST(TapeTest, ReadData)
 
     tape.SetReady(true);
     tape.SetBlockCount(1);
-    auto filename = CreateTempFile(4, "tap");
-    tape.SetFilename(filename.string());
-    tape.ValidateFile();
-    EXPECT_THROW(tape.ReadData(buf), scsi_exception);
-
-    tape.CleanUp();
-    filename = CreateTempFile(4, "tar");
+    const auto &filename = CreateTempFile(4, "tar");
     tape.SetFilename(filename.string());
     tape.ValidateFile();
     EXPECT_NO_THROW(tape.ReadData(buf));
@@ -152,13 +142,6 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*tape, scsi_command::read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    CreateTapeFile(*tape);
-    TestShared::Dispatch(*tape, scsi_command::read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(4, 4);
-    TestShared::Dispatch(*tape, scsi_command::read6, sense_key::blank_check, asc::no_additional_sense_information);
 }
 
 TEST(TapeTest, Write6)
@@ -260,71 +243,6 @@ TEST(TapeTest, Space6)
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
     TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-}
-
-TEST(TapeTest, WriteFileMarks6)
-{
-    auto [controller, tape] = CreateTape();
-
-    // Setmarks are not supported
-    controller->SetCdbByte(1, 0b010);
-    TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::illegal_request,
-        asc::invalid_field_in_cdb);
-
-    // Count = 0
-    controller->SetCdbByte(1, 0b001);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_filemarks6));
-
-    CreateTapeFile(*tape);
-
-    // Count > 0
-    controller->SetCdbByte(2, 1);
-    TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::volume_overflow,
-        asc::no_additional_sense_information);
-
-    tape->SetProtected(true);
-    TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::data_protect, asc::write_protected);
-}
-
-TEST(TapeTest, Locate10)
-{
-    auto [controller, tape] = CreateTape();
-
-    // CP is not supported
-    controller->SetCdbByte(1, 0x02);
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::medium_error, asc::read_error);
-
-    CreateTapeFile(*tape);
-
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::blank_check,
-        asc::no_additional_sense_information);
-
-    // BT
-    controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate10));
-}
-
-TEST(TapeTest, Locate16)
-{
-    auto [controller, tape] = CreateTape();
-
-    // CP is not supported
-    controller->SetCdbByte(1, 0x02);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::medium_error, asc::read_error);
-
-    CreateTapeFile(*tape);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::blank_check,
-        asc::no_additional_sense_information);
-
-    // BT
-    controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate16));
 }
 
 TEST(TapeTest, ReadPosition)

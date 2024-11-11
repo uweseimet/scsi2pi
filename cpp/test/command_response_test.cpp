@@ -245,7 +245,7 @@ TEST(CommandResponseTest, GetMappingInfo)
 
     PbMappingInfo info;
     response.GetMappingInfo(info);
-    EXPECT_EQ(11U, info.mapping().size());
+    EXPECT_EQ(10U, info.mapping().size());
 }
 
 TEST(CommandResponseTest, GetStatisticsInfo)

@@ -59,7 +59,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 {
     const auto &mapping = DeviceFactory::Instance().GetExtensionMapping();
 
-    EXPECT_EQ(11U, mapping.size());
+    EXPECT_EQ(10U, mapping.size());
     EXPECT_EQ(SCHD, mapping.at("hd1"));
     EXPECT_EQ(SCHD, mapping.at("hds"));
     EXPECT_EQ(SCHD, mapping.at("hda"));
@@ -70,7 +70,6 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCCD, mapping.at("toast"));
     EXPECT_EQ(SCCD, mapping.at("is1"));
     EXPECT_EQ(SCTP, mapping.at("tar"));
-    EXPECT_EQ(SCTP, mapping.at("st"));
 }
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
@@ -79,10 +78,10 @@ TEST(DeviceFactoryTest, AddExtensionMapping)
 
     EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
     auto mapping = device_factory.GetExtensionMapping();
-    EXPECT_EQ(11U, mapping.size());
+    EXPECT_EQ(10U, mapping.size());
 
     EXPECT_TRUE(device_factory.AddExtensionMapping("ext", SCCD));
     mapping = device_factory.GetExtensionMapping();
-    EXPECT_EQ(12U, mapping.size());
+    EXPECT_EQ(11U, mapping.size());
     EXPECT_EQ(SCCD, mapping["ext"]);
 }

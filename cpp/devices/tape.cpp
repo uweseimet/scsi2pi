@@ -6,17 +6,11 @@
 //
 // The SCTP device is a SCSI-2 sequential access device with some SSC-2 command extensions.
 //
-// Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
-// files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
-// contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
-// have the extension .tar, e.g. files with the .st extension.
+// This implementation supports using .tar files as tape image files. Filemark, end-of-data and spacing support
+// is not possible with these files, because .tar files do not contain any meta data.
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
-// Reverse spacing (optional in the SCSI standard) is not supported.
-// Gap handling is device-defined and does nothing, which is SCSI-compliant.
-// .st image files should be formatted or erased (long erase) before first use, to ensure that they start with an
-// end-of-data marker.
-// Note that the format of .st files may change in future SCSI2Pi releases, e.g. in order to add reverse spacing.
+// This implementation has successfully been tested with tar, mt and mtx on Linux and with Gemar on the Atari.
 //
 //---------------------------------------------------------------------------
 
@@ -101,7 +95,8 @@ void Tape::ValidateFile()
         throw io_exception("Can't open image file '" + GetFilename() + "'");
     }
 
-    tar_mode = GetExtensionLowerCase(GetFilename()) == "tar";
+    // The SCSI2Pi 4.0 implementation only supports tar mode
+    tar_mode = true;
 }
 
 void Tape::Read6()
