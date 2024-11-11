@@ -113,7 +113,7 @@ void Tape::Read6()
 
     const int count = GetByteCount();
     if (count) {
-        if (static_cast<off_t>(position + count) > GetFileSize()) {
+        if (static_cast<off_t>(position + count + (tar_mode ? 0 : 2 * sizeof(uint32_t))) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(count);
@@ -138,7 +138,7 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        if (static_cast<off_t>(position + byte_count) > GetFileSize()) {
+        if (static_cast<off_t>(position + byte_count + (tar_mode ? 0 : 2 * sizeof(uint32_t))) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(byte_count);
@@ -160,6 +160,9 @@ int Tape::GetVariableBlockSize()
 
     // Check for incorrect block length
     if (length != GetController()->GetChunkSize()) {
+        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match expected block length of {1} byte(s)",
+            length, GetController()->GetChunkSize()));
+
         const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
 
         // In fixed mode an incorrect length always results in an error.
@@ -183,9 +186,6 @@ int Tape::GetVariableBlockSize()
         }
     }
 
-    // Position before the actual data block
-    position += sizeof(meta_data_t);
-
     return length;
 }
 
@@ -195,7 +195,10 @@ int Tape::ReadData(span<uint8_t> buf)
 
     const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
 
+    LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", length, position));
+
     file.seekg(position, ios::beg);
+
     file.read((char*)buf.data(), length);
     if (file.fail()) {
         file.clear();
@@ -203,7 +206,14 @@ int Tape::ReadData(span<uint8_t> buf)
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position += length;
+    if (tar_mode) {
+        position += length;
+    }
+    else {
+        // Also skip the trailing length
+        position += Pad(length) + sizeof(uint32_t);
+    }
+
     ++block_location;
     ++blocks_read;
 
@@ -214,7 +224,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    const int length = GetController()->GetChunkSize();
+    const uint32_t length = GetController()->GetChunkSize();
 
     if (static_cast<off_t>(position + length) > GetFileSize()) {
         throw scsi_exception(sense_key::volume_overflow);
@@ -224,8 +234,31 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         WriteMetaData(object_type::BLOCK, length);
     }
 
+    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", length, position));
+
     file.seekp(position, ios::beg);
+
     file.write((const char*)buf.data(), length);
+
+    if (tar_mode) {
+        position += length;
+    }
+    else {
+        if (length % 2) {
+            // Padding
+            file << "\0";
+        }
+
+        // Trailing length
+        file.write((const char*)&length, sizeof(uint32_t));
+
+        position += Pad(length) + sizeof(uint32_t);
+
+        WriteMetaData(object_type::END_OF_DATA);
+    }
+
+    file.flush();
+
     if (file.fail()) {
         file.clear();
         ++write_error_count;
@@ -233,18 +266,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     }
 
     byte_count -= length;
-    position += length;
     ++block_location;
-
-    if (!tar_mode) {
-        WriteMetaData(object_type::END_OF_DATA);
-    }
-
-    file.flush();
-    if (file.fail()) {
-        file.clear();
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
 
     return length;
 }
@@ -406,6 +428,9 @@ void Tape::ReadBlockLimits()
 
 void Tape::Rewind()
 {
+    file.seekg(0, ios::beg);
+    file.seekp(0, ios::beg);
+
     position = 0;
     block_location = 0;
 
@@ -579,32 +604,33 @@ void Tape::FormatMedium()
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
-    assert(size < 65536);
-    assert(!size || type == object_type::BLOCK);
+    assert(!(size & 0xf0000000));
 
-    if (static_cast<off_t>(position + sizeof(meta_data_t)) > GetFileSize()) {
+    // TODO This condition is incorrect for end-of-data
+    if (static_cast<off_t>(position + sizeof(uint32_t) + size) > GetFileSize()) {
         throw scsi_exception(sense_key::volume_overflow);
     }
 
-    meta_data_t meta_data;
-    memcpy(meta_data.magic.data(), MAGIC, 4);
-    meta_data.type = type;
-    meta_data.reserved = 0;
-    // TODO Write previous position
-    SetInt64(meta_data.prev_position, 0, -1);
-    SetInt64(meta_data.next_position, 0, position + sizeof(meta_data_t) + size);
+    switch (type) {
+    case BLOCK:
+        if (size) {
+            WriteHeader(0x0, size);
+        }
+        break;
 
-    file.seekp(position, ios::beg);
-    file.write((const char*)&meta_data, sizeof(meta_data_t));
-    file.flush();
-    if (file.fail()) {
-        file.clear();
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
+    case FILEMARK:
+        WriteHeader(0x0, 0x00000000);
+        break;
 
-    // The current position is always before end-of-data
-    if (type != object_type::END_OF_DATA) {
-        position += sizeof(meta_data_t);
+    case END_OF_DATA:
+        WriteHeader(0xf, 0x0fffffff);
+        // The position is always before end-of-data
+        position -= sizeof(uint32_t);
+        break;
+
+    default:
+        assert(false);
+        break;
     }
 }
 
@@ -613,40 +639,37 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     assert(count >= 0);
 
     while (true) {
-        file.seekg(position, ios::beg);
+        const auto [simh_cls, simh_value] = ReadHeader();
 
-        meta_data_t meta_data;
-        file.read((char*)&meta_data, sizeof(meta_data_t));
-        if (file.fail()) {
-            file.clear();
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        object_type scsi_type;
+        switch (simh_cls) {
+        // This covers both tape_mark and good_data_record
+        case tape_mark_good_data_record:
+            scsi_type = simh_value ? BLOCK : FILEMARK;
+            break;
+
+        case private_marker:
+            scsi_type = END_OF_DATA;
+            break;
+
+        default:
+            // TODO Error handling, display warning
+            assert(false);
+            break;
         }
 
-        // The magic is a safeguard against random data that look like objects
-        if (memcmp(meta_data.magic.data(), MAGIC, 4)) {
-            // This is the next possible object position
-            position += 2;
-            continue;
-        }
+        LogTrace(fmt::format("Searching for object type {0}, found type {1} at position {2}", static_cast<int>(type),
+            static_cast<int>(scsi_type), position - sizeof(uint32_t)));
 
-        const auto size = static_cast<uint32_t>(GetInt64(meta_data.next_position, 0) - position - sizeof(meta_data_t));
-
-        if (meta_data.type == type) {
+        if (type == scsi_type) {
             --count;
-
             if (count < 0) {
-                LogTrace(fmt::format("Next object location is {0}, object type is {1}", position,
-                    static_cast<uint8_t>(type)));
-
-                return size;
+                return simh_value;
             }
         }
 
-        // End-of-partition side
-        position = GetInt64(meta_data.next_position, 0);
-
         // End-of-partition
-        if (static_cast<off_t>(position) >= filesize) {
+        if (const off_t end = position + Pad(simh_value) + sizeof(uint32_t); end >= filesize) {
             LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();
@@ -654,7 +677,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // End-of-data while spacing over blocks or filemarks
-        if (meta_data.type == object_type::END_OF_DATA && (type != object_type::END_OF_DATA)) {
+        if (scsi_type == object_type::END_OF_DATA && (type != object_type::END_OF_DATA)) {
             LogTrace(fmt::format("Encountered end-of-data while spacing over {}",
                     type == object_type::BLOCK ? "blocks" : "filemarks"));
             SetInformation(count);
@@ -662,14 +685,14 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // Terminate while spacing over blocks and a filemark is found
-        if (meta_data.type == object_type::FILEMARK && type == object_type::BLOCK) {
+        if (scsi_type == object_type::FILEMARK && type == object_type::BLOCK) {
             LogTrace("Encountered filemark while spacing over blocks");
             SetInformation(count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
         }
 
-        if (meta_data.type == object_type::BLOCK) {
+        if (scsi_type == object_type::BLOCK) {
             ++block_location;
         }
     }
@@ -744,4 +767,49 @@ vector<PbStatistics> Tape::GetStatistics() const
     }
 
     return statistics;
+}
+
+pair<uint32_t, uint32_t> Tape::ReadHeader()
+{
+    file.seekg(position, ios::beg);
+
+    uint32_t header;
+    file.read((char*)&header, sizeof(uint32_t));
+    if (file.fail()) {
+        file.clear();
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
+    }
+
+    // TODO Ensure little endian also on big endian platforms
+    const uint32_t cls = header >> 28;
+    const uint32_t value = header & 0x0fffffff;
+
+    LogTrace(
+        fmt::format("Read simh header with class {0:1X}, marker value/record length ${1:87x} from position {2}", cls,
+            value, position));
+
+    position += sizeof(uint32_t);
+
+    return {cls, value};
+}
+
+void Tape::WriteHeader(uint32_t cls, uint32_t value)
+{
+    LogTrace(
+        fmt::format("Writing simh header with class {0:1X}, marker value/record length ${1:07x} to position {2}", cls,
+            value, position));
+
+    file.seekp(position, ios::beg);
+
+    // TODO Ensure little endian also on big endian platforms
+    const uint32_t header = (cls << 28) + value;
+
+    file.write((const char*)&header, sizeof(uint32_t));
+    file.flush();
+    if (file.fail()) {
+        file.clear();
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
+
+    position += sizeof(uint32_t);
 }

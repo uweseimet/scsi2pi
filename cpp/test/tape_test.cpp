@@ -155,10 +155,6 @@ TEST(TapeTest, Read6)
 
     CreateTapeFile(*tape);
     TestShared::Dispatch(*tape, scsi_command::read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(4, 4);
-    TestShared::Dispatch(*tape, scsi_command::read6, sense_key::blank_check, asc::no_additional_sense_information);
 }
 
 TEST(TapeTest, Write6)
@@ -297,11 +293,6 @@ TEST(TapeTest, Locate10)
     controller->SetCdbByte(1, 0);
     TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::medium_error, asc::read_error);
 
-    CreateTapeFile(*tape);
-
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::blank_check,
-        asc::no_additional_sense_information);
-
     // BT
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate10));
@@ -317,10 +308,6 @@ TEST(TapeTest, Locate16)
 
     controller->SetCdbByte(1, 0);
     TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::medium_error, asc::read_error);
-
-    CreateTapeFile(*tape);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::blank_check,
-        asc::no_additional_sense_information);
 
     // BT
     controller->SetCdbByte(1, 0x01);

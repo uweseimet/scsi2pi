@@ -45,25 +45,18 @@ protected:
 
 private:
 
-    static constexpr const char *MAGIC = "SCTP";
-
-    enum object_type : uint8_t
+    enum object_type
     {
         BLOCK = 0b000,
         FILEMARK = 0b001,
+        // TODO End-of-data probably has to be coded with a private marker. It is not always identical with the end of the file.
         END_OF_DATA = 0b011
     };
 
-    // The meta data for each object, with the object type and the previous and next object position
-    using meta_data_t = struct _meta_data_t
+    enum simh_type
     {
-        array<uint8_t, 4> magic;
-        Tape::object_type type;
-        uint8_t reserved;
-        // Big-endian 64-bit integer with the previous object position, -1 if none
-        array<uint8_t, 8> prev_position;
-        // Big-endian 64-bit integer with the next object position
-        array<uint8_t, 8> next_position;
+        tape_mark_good_data_record = 0,
+        private_marker = 7
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -97,6 +90,14 @@ private:
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
 
     void Erase();
+
+    pair<uint32_t, uint32_t> ReadHeader();
+    void WriteHeader(uint32_t, uint32_t);
+
+    static uint32_t Pad(uint32_t length)
+    {
+        return length % 2 ? length + 1 : length;
+    }
 
     fstream file;
 
