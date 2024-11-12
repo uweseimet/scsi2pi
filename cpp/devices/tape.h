@@ -45,18 +45,12 @@ protected:
 
 private:
 
-    enum object_type
+    enum class object_type
     {
         BLOCK = 0b000,
         FILEMARK = 0b001,
         END_OF_DATA = 0b011,
         INVALID = 0b111
-    };
-
-    enum simh_class
-    {
-        tape_mark_good_data_record = 0,
-        reserved_marker = 15
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)

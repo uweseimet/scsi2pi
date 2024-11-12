@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
-#include "simh_util.h"
+#include "shared/simh_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -443,18 +443,15 @@ void Tape::Space6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 
-    const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2);
-
-    switch (const int code = GetCdbByte(1) & 0x07; code) {
+    switch (const auto code = static_cast<object_type>(GetCdbByte(1) & 0x07); code) {
     case object_type::BLOCK:
     case object_type::FILEMARK:
-        if (count) {
-            FindNextObject(static_cast<object_type>(code), count);
+        if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
+            FindNextObject(code, count);
         }
         break;
 
     case object_type::END_OF_DATA:
-        // For end-of-data the count must be ignored
         FindNextObject(object_type::END_OF_DATA, 0);
         break;
 
@@ -567,17 +564,17 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     assert(!(size & 0xf0000000));
 
     switch (type) {
-    case BLOCK:
+    case object_type::BLOCK:
         if (size) {
             WriteSimhHeader(0x0, size, true);
         }
         break;
 
-    case FILEMARK:
+    case object_type::FILEMARK:
         WriteSimhHeader(0x0, 0x00000000, true);
         break;
 
-    case END_OF_DATA:
+    case object_type::END_OF_DATA:
         WriteSimhHeader(0xf, 0x0fffffff, false);
         break;
 
@@ -727,37 +724,37 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 {
     const auto old_position = position;
 
-    const auto [simh_class, simh_value] = ReadHeader(file, position);
+    const auto [cls, value] = ReadHeader(file, position);
 
-    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", simh_class,
-        simh_value, old_position));
+    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", cls,
+        value, old_position));
 
-    if (simh_class == -1) {
+    if (cls == -1) {
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    object_type scsi_type = INVALID;
-    switch (simh_class) {
+    object_type scsi_type = object_type::INVALID;
+    switch (static_cast<simh_class>(cls)) {
     // This covers both tape_mark and good_data_record
-    case tape_mark_good_data_record:
-        scsi_type = simh_value ? BLOCK : FILEMARK;
+    case simh_class::tape_mark_good_data_record:
+        scsi_type = value ? object_type::BLOCK : object_type::FILEMARK;
         break;
 
-    case reserved_marker:
-        if (simh_value == 0xfffffff) {
-            scsi_type = END_OF_DATA;
+    case simh_class::reserved_marker:
+        if (value == 0xfffffff) {
+            scsi_type = object_type::END_OF_DATA;
         }
         else {
-            LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", simh_value));
+            LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", value));
         }
         break;
 
     default:
-        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", simh_class));
+        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", cls));
         break;
     }
 
-    return {scsi_type, simh_value};
+    return {scsi_type, value};
 }
 
 void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)

@@ -16,6 +16,13 @@ using namespace std;
 namespace simh_util
 {
 
+enum class simh_class
+{
+    tape_mark_good_data_record = 0,
+    reserved_marker = 15,
+    invalid = -1
+};
+
 pair<int, int> ReadHeader(istream&, int64_t&);
 int WriteHeader(ostream&, int64_t, int, uint32_t, uint32_t);
 
