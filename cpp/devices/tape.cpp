@@ -571,11 +571,11 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         break;
 
     case object_type::filemark:
-        WriteSimhHeader(0x0, 0x00000000, true);
+        WriteSimhHeader(0x0, 0x0000000, true);
         break;
 
     case object_type::end_of_data:
-        WriteSimhHeader(0xf, 0x0fffffff, false);
+        WriteSimhHeader(0xf, 0xfffffff, false);
         break;
 
     default:

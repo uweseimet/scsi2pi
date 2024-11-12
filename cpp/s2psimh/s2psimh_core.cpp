@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "s2psimh_core.h"
+#include <cassert>
 #include <iostream>
 #include <filesystem>
 #include "shared/s2p_util.h"
@@ -29,6 +30,8 @@ void S2pSimh::Banner(bool help)
 int S2pSimh::Run(span<char*> args)
 {
     Banner(false);
+
+    // TODO getopt_long, verbose mode with record data display
 
     if (args.size() < 2) {
         return EXIT_FAILURE;
@@ -116,16 +119,16 @@ int S2pSimh::Analyze(const string &filename)
             break;
 
         case simh_class::reserved_marker:
-            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec << ", reserved marker, ";
-            if (value == 0x0fffffff) {
-                cout << "end of medium";
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec << ", reserved marker";
+            if (value == 0xfffffff) {
+                cout << " (end of medium)\n";
                 return EXIT_SUCCESS;
             }
-            else if (value == 0x0ffffffe) {
-                cout << "erase gap";
+            else if (value == 0xffffffe) {
+                cout << " (erase gap)";
             }
             else {
-                cout << "marker value " << value << " ($" << hex << value << ")";
+                cout << ", marker value " << value << " ($" << hex << value << ")";
             }
             cout << '\n';
             break;
@@ -135,8 +138,7 @@ int S2pSimh::Analyze(const string &filename)
             return EXIT_FAILURE;
 
         default:
-            cout << "Ignored unknown simh class " << hex << cls << dec << ", value " << value << " ($" << hex << value
-                << ")\n";
+            assert(false);
             break;
         }
     }
