@@ -508,11 +508,11 @@ void Tape::Locate(bool locate16)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint64_t block = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
+    const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
     if (tar_mode) {
-        position = block * GetBlockSize();
-        block_location = block;
+        position = identifier * GetBlockSize();
+        block_location = identifier;
     }
     else {
         position = 0;
@@ -520,9 +520,9 @@ void Tape::Locate(bool locate16)
 
         // BT
         if (GetCdbByte(1) & 0x01) {
-            position = GetCdbInt32(2);
+            position = identifier;
         } else {
-            FindNextObject(object_type::BLOCK, block);
+            FindNextObject(object_type::BLOCK, identifier);
         }
     }
 
