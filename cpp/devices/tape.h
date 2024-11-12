@@ -53,7 +53,7 @@ private:
         INVALID = 0b111
     };
 
-    enum simh_type
+    enum simh_class
     {
         tape_mark_good_data_record = 0,
         reserved_marker = 15
