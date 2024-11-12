@@ -531,7 +531,7 @@ void Tape::ReadPosition() const
     }
 
     // EOP
-    if (static_cast<off_t>(position) >= filesize) {
+    if (position >= filesize) {
         buf[0] += 0b01000000;
     }
 
@@ -623,7 +623,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // End-of-partition
-        if (const auto end = position + Pad(length) + HEADER_SIZE; end >= filesize) {
+        if (const auto end = static_cast<off_t>(position + Pad(length) + HEADER_SIZE); end >= filesize) {
             LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();

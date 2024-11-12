@@ -66,7 +66,7 @@ int64_t simh_util::MoveBack(istream &file, int64_t position)
 
     // The previous object is a data record, skip the actual data and the two length fields
     if (!cls) {
-        if (position < value + 2 * static_cast<int64_t>(HEADER_SIZE)) {
+        if (position < value + 2 * HEADER_SIZE) {
             return -1;
         }
 
