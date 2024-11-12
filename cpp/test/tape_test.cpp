@@ -243,15 +243,19 @@ TEST(TapeTest, Space6)
 
     // BLOCK, count < 0
     controller->SetCdbByte(2, 0xff);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::space6));
 
     // BLOCK, count > 0
     controller->SetCdbByte(2, 0x01);
     TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
 
-    // End-of-data
+    // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
     TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+
+    // End-of-data, count < 0
+    controller->SetCdbByte(2, 0xff);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
@@ -271,10 +275,10 @@ TEST(TapeTest, WriteFileMarks6)
     controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_filemarks6));
 
-    CreateTapeFile(*tape);
+    CreateTapeFile(*tape, 512);
 
     // Count > 0
-    controller->SetCdbByte(2, 1);
+    controller->SetCdbByte(4, 255);
     TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::volume_overflow,
         asc::no_additional_sense_information);
 

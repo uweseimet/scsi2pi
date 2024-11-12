@@ -56,7 +56,7 @@ private:
     enum simh_type
     {
         tape_mark_good_data_record = 0,
-        private_marker = 7
+        reserved_marker = 15
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -75,9 +75,6 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
-    void SpaceTarMode(int, int32_t);
-    void SpaceTapMode(int, int32_t);
-
     int GetVariableBlockSize();
 
     uint32_t GetByteCount() const;
@@ -91,8 +88,8 @@ private:
 
     void Erase();
 
-    pair<uint32_t, uint32_t> ReadHeader();
-    void WriteHeader(uint32_t, uint32_t);
+    pair<uint32_t, uint32_t> ReadSimhHeader(bool);
+    void WriteSimhHeader(uint32_t, uint32_t, bool);
 
     static uint32_t Pad(uint32_t length)
     {
