@@ -601,10 +601,10 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     }
 
     while (true) {
-        const auto [simh_cls, simh_value] = ReadSimhHeader(reverse);
+        const auto [simh_class, simh_value] = ReadSimhHeader(reverse);
 
         object_type scsi_type = INVALID;
-        switch (simh_cls) {
+        switch (simh_class) {
         // This covers both tape_mark and good_data_record
         case tape_mark_good_data_record:
             scsi_type = simh_value ? BLOCK : FILEMARK;
@@ -620,7 +620,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             break;
 
         default:
-            LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_cls)));
+            LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_class)));
             break;
         }
 
