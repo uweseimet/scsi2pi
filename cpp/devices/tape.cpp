@@ -603,7 +603,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     while (true) {
         const auto [simh_cls, simh_value] = ReadSimhHeader(reverse);
 
-        object_type scsi_type;
+        object_type scsi_type = BLOCK;
         switch (simh_cls) {
         // This covers both tape_mark and good_data_record
         case tape_mark_good_data_record:
@@ -615,14 +615,12 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
                 scsi_type = END_OF_DATA;
             }
             else {
-                // TODO Error handling, display warning
-                assert(false);
+                LogWarn(fmt::format("Encountered unknown simh reserved marker with value {:07x}", simh_value));
             }
             break;
 
         default:
-            // TODO Error handling, display warning
-            assert(false);
+            LogWarn(fmt::format("Encountered unknown simh class {:1X}", static_cast<int>(simh_cls)));
             break;
         }
 

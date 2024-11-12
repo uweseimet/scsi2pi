@@ -49,7 +49,6 @@ private:
     {
         BLOCK = 0b000,
         FILEMARK = 0b001,
-        // TODO End-of-data probably has to be coded with a private marker. It is not always identical with the end of the file.
         END_OF_DATA = 0b011
     };
 
