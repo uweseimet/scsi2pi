@@ -615,12 +615,12 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
                 scsi_type = END_OF_DATA;
             }
             else {
-                LogWarn(fmt::format("Encountered unknown simh reserved marker with value {:07x}", simh_value));
+                LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", simh_value));
             }
             break;
 
         default:
-            LogWarn(fmt::format("Encountered unknown simh class {:1X}", static_cast<int>(simh_cls)));
+            LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_cls)));
             break;
         }
 
