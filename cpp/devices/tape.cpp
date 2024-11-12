@@ -282,8 +282,8 @@ void Tape::Open()
 
     ValidateFile();
 
-    position = 0;
-    block_location = 0;
+    ResetPosition();
+
     filesize = GetFileSize();
 }
 
@@ -402,7 +402,7 @@ void Tape::Erase6()
         Erase();
 
         // After a Long erase according to the standard the position is undefined, for SCSI2Pi it is 0
-        position = 0;
+        ResetPosition();
     }
 
     WriteMetaData(object_type::END_OF_DATA);
@@ -429,8 +429,7 @@ void Tape::Rewind()
     file.seekg(0, ios::beg);
     file.seekp(0, ios::beg);
 
-    position = 0;
-    block_location = 0;
+    ResetPosition();
 
     StatusPhase();
 }
@@ -500,21 +499,21 @@ void Tape::Locate(bool locate16)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint64_t block = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
+    const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
     if (tar_mode) {
-        position = block * GetBlockSize();
-        block_location = block;
+        position = identifier * GetBlockSize();
+        block_location = identifier;
     }
     else {
-        position = 0;
-        block_location = 0;
+        ResetPosition();
 
         // BT
         if (GetCdbByte(1) & 0x01) {
-            position = GetCdbInt32(2);
+            position = identifier;
+            block_location = position / GetBlockSize();
         } else {
-            FindNextObject(object_type::BLOCK, block);
+            FindNextObject(object_type::BLOCK, identifier);
         }
     }
 
@@ -556,8 +555,7 @@ void Tape::FormatMedium()
 
     Erase();
 
-    position = 0;
-    block_location = 0;
+    ResetPosition();
 
     WriteMetaData(object_type::END_OF_DATA);
 

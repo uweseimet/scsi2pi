@@ -33,8 +33,9 @@ static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, u
 {
     fill_n(controller.GetBuffer().begin(), 20, 0xff);
     tape.Dispatch(scsi_command::read_position);
-    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last block location";
+    const bool bt = controller.GetCdb()[1] & 0x01;
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first " << (bt ? "position" : "block location");
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last " << (bt ? "position" : "block location");
 }
 
 static void CreateTapeFile(Tape &tape, size_t size = 4096)
@@ -196,11 +197,17 @@ TEST(TapeTest, Erase6)
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
 
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::rewind));
+    // Set filemark in order to advance the tape position
+    controller->SetCdbByte(4, 0x01);
+    tape->Dispatch(scsi_command::write_filemarks6);
+    controller->SetCdbByte(4, 0x00);
     // Long
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::erase6));
     controller->SetCdbByte(1, 0x00);
-    CheckPosition(*controller, *tape, 8);
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
 
@@ -223,13 +230,16 @@ TEST(TapeTest, Rewind)
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
+    // Set filemark in order to advance the tape position
+    controller->SetCdbByte(4, 0x01);
+    tape->Dispatch(scsi_command::write_filemarks6);
+    controller->SetCdbByte(4, 0x00);
+    // BT
     controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::erase6));
+    CheckPosition(*controller, *tape, 4);
     controller->SetCdbByte(1, 0x00);
-    CheckPosition(*controller, *tape, 1);
-    controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::rewind));
-    controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(1, 0x01);
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
@@ -290,32 +300,38 @@ TEST(TapeTest, Locate10)
 {
     auto [controller, tape] = CreateTape();
 
+    CreateTapeFile(*tape, 512);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::medium_error, asc::read_error);
+    controller->SetCdbByte(1, 0x00);
 
     // BT
     controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(6, 123);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate10));
+    controller->SetCdbByte(6, 0);
+    CheckPosition(*controller, *tape, 123);
 }
 
 TEST(TapeTest, Locate16)
 {
     auto [controller, tape] = CreateTape();
 
+    CreateTapeFile(*tape, 512);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::medium_error, asc::read_error);
+    controller->SetCdbByte(1, 0x00);
 
     // BT
     controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 123);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate16));
+    controller->SetCdbByte(11, 0);
+    CheckPosition(*controller, *tape, 123);
 }
 
 TEST(TapeTest, ReadPosition)

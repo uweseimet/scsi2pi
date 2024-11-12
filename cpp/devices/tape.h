@@ -91,6 +91,12 @@ private:
     pair<uint32_t, uint32_t> ReadSimhHeader(bool);
     void WriteSimhHeader(uint32_t, uint32_t, bool);
 
+    void ResetPosition()
+    {
+        position = 0;
+        block_location = 0;
+    }
+
     static uint32_t Pad(uint32_t length)
     {
         return length % 2 ? length + 1 : length;
