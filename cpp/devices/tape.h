@@ -49,7 +49,8 @@ private:
     {
         BLOCK = 0b000,
         FILEMARK = 0b001,
-        END_OF_DATA = 0b011
+        END_OF_DATA = 0b011,
+        INVALID = 0b111
     };
 
     enum simh_type

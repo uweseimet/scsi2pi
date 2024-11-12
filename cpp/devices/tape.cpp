@@ -603,7 +603,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     while (true) {
         const auto [simh_cls, simh_value] = ReadSimhHeader(reverse);
 
-        object_type scsi_type = BLOCK;
+        object_type scsi_type = INVALID;
         switch (simh_cls) {
         // This covers both tape_mark and good_data_record
         case tape_mark_good_data_record:
