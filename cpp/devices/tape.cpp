@@ -113,7 +113,7 @@ void Tape::Read6()
 
     const int count = GetByteCount();
     if (count) {
-        if (static_cast<off_t>(position + count + (tar_mode ? 0 : 2 * HEADER_SIZE)) > GetFileSize()) {
+        if (position + count + (tar_mode ? 0 : 2 * HEADER_SIZE) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(count);
@@ -138,7 +138,7 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        if (static_cast<off_t>(position + byte_count + (tar_mode ? 0 : 2 * HEADER_SIZE)) > GetFileSize()) {
+        if (position + byte_count + (tar_mode ? 0 : 2 * HEADER_SIZE) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(byte_count);
@@ -230,7 +230,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         WriteMetaData(object_type::BLOCK, length);
     }
 
-    if (static_cast<off_t>(position + (tar_mode ? length : Pad(length) + HEADER_SIZE)) > GetFileSize()) {
+    if (position + (tar_mode ? length : Pad(length) + HEADER_SIZE) > GetFileSize()) {
         throw scsi_exception(sense_key::volume_overflow);
     }
 
@@ -616,14 +616,14 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         if (type == scsi_type) {
             if (!count) {
-                return length;
+                return static_cast<uint32_t>(length);
             }
 
             --count;
         }
 
         // End-of-partition
-        if (const off_t end = position + Pad(length) + HEADER_SIZE; end >= filesize) {
+        if (const auto end = position + Pad(length) + HEADER_SIZE; end >= filesize) {
             LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();
@@ -753,7 +753,7 @@ pair<Tape::object_type, int64_t> Tape::ReadSimhHeader()
         break;
 
     default:
-        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_class)));
+        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", simh_class));
         break;
     }
 
@@ -765,7 +765,7 @@ void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
     LogTrace(
         fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", cls, value, position));
 
-    switch (WriteHeader(file, position, GetFileSize(), cls, value)) {
+    switch (WriteHeader(file, position, static_cast<int>(GetFileSize()), cls, value)) {
     case 0:
         break;
 
