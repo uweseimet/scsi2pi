@@ -220,7 +220,8 @@ endif
 ifeq ($(ENABLE_SCTP),1)
 SRC_SCTP = \
 	$(DIR_DEVICES)/tape.cpp \
-	$(DIR_DEVICES)/storage_device.cpp
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/simh_util.cpp
 endif
 
 ifeq ($(ENABLE_SCDP),1)

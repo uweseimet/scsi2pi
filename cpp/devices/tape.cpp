@@ -19,12 +19,14 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
+#include "simh_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
+using namespace simh_util;
 
 Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 256, 512, 1024, 2048, 4096 })
 {
@@ -111,7 +113,7 @@ void Tape::Read6()
 
     const int count = GetByteCount();
     if (count) {
-        if (static_cast<off_t>(position + count + (tar_mode ? 0 : 2 * sizeof(uint32_t))) > GetFileSize()) {
+        if (static_cast<off_t>(position + count + (tar_mode ? 0 : 2 * HEADER_SIZE)) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(count);
@@ -136,7 +138,7 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        if (static_cast<off_t>(position + byte_count + (tar_mode ? 0 : 2 * sizeof(uint32_t))) > GetFileSize()) {
+        if (static_cast<off_t>(position + byte_count + (tar_mode ? 0 : 2 * HEADER_SIZE)) > GetFileSize()) {
             // End-of-partition
             SetEom();
             SetInformation(byte_count);
@@ -209,7 +211,7 @@ int Tape::ReadData(span<uint8_t> buf)
     }
     else {
         // Also skip the trailing length
-        position += Pad(length) + sizeof(uint32_t);
+        position += Pad(length) + HEADER_SIZE;
     }
 
     ++block_location;
@@ -228,7 +230,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         WriteMetaData(object_type::BLOCK, length);
     }
 
-    if (static_cast<off_t>(position + (tar_mode ? length : Pad(length) + sizeof(uint32_t))) > GetFileSize()) {
+    if (static_cast<off_t>(position + (tar_mode ? length : Pad(length) + HEADER_SIZE)) > GetFileSize()) {
         throw scsi_exception(sense_key::volume_overflow);
     }
 
@@ -248,9 +250,9 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         }
 
         // Trailing length
-        file.write((const char*)&length, sizeof(uint32_t));
+        file.write((const char*)&length, HEADER_SIZE);
 
-        position += Pad(length) + sizeof(uint32_t);
+        position += Pad(length) + HEADER_SIZE;
 
         WriteMetaData(object_type::END_OF_DATA);
     }
@@ -452,9 +454,7 @@ void Tape::Space6()
         break;
 
     case object_type::END_OF_DATA:
-        if (count < 0) {
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-        }
+        // For end-of-data the count must be ignored
         FindNextObject(object_type::END_OF_DATA, 0);
         break;
 
@@ -591,51 +591,39 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 {
     const bool reverse = count < 0;
     if (reverse) {
-        if (position < sizeof(uint32_t)) {
-            // Beginning-of-partition
-            return 0;
-        }
-
         count = -count;
     }
 
     while (true) {
-        const auto [simh_class, simh_value] = ReadSimhHeader(reverse);
+        if (reverse) {
+            if (position < HEADER_SIZE) {
+                // Beginning-of-partition
+                ResetPosition();
 
-        object_type scsi_type = INVALID;
-        switch (simh_class) {
-        // This covers both tape_mark and good_data_record
-        case tape_mark_good_data_record:
-            scsi_type = simh_value ? BLOCK : FILEMARK;
-            break;
-
-        case reserved_marker:
-            if (simh_value == 0xfffffff) {
-                scsi_type = END_OF_DATA;
+                return 0;
             }
-            else {
-                LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", simh_value));
-            }
-            break;
 
-        default:
-            LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_class)));
-            break;
+            position = MoveBack(file, position);
+            if (position < 0) {
+                throw scsi_exception(sense_key::medium_error, asc::read_error);
+            }
         }
 
+        const auto [scsi_type, length] = ReadSimhHeader();
+
         LogTrace(fmt::format("Searching for object type {0}, found type {1} at position {2}", static_cast<int>(type),
-                static_cast<int>(scsi_type), position - sizeof(uint32_t)));
+            static_cast<int>(scsi_type), position - HEADER_SIZE));
 
         if (type == scsi_type) {
             if (!count) {
-                return simh_value;
+                return length;
             }
 
             --count;
         }
 
         // End-of-partition
-        if (const off_t end = position + Pad(simh_value) + sizeof(uint32_t); end >= filesize) {
+        if (const off_t end = position + Pad(length) + HEADER_SIZE; end >= filesize) {
             LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();
@@ -735,54 +723,41 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<uint32_t, uint32_t> Tape::ReadSimhHeader(bool reverse)
+pair<Tape::object_type, int64_t> Tape::ReadSimhHeader()
 {
-    if (reverse) {
-        assert(position >= sizeof(uint32_t));
+    const auto old_position = position;
 
-        file.seekg(position - sizeof(uint32_t), ios::beg);
+    const auto [simh_class, simh_value] = ReadHeader(file, position);
 
-        // This is either a trailing length for a data record or a marker
-        uint32_t previous;
-        file.read((char*)&previous, sizeof(uint32_t));
+    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", simh_class,
+        simh_value, old_position));
 
-        // TODO Ensure little endian also on big endian platforms
-        const uint32_t cls = previous >> 28;
-        const uint32_t value = previous & 0x0fffffff;
-
-        // The previous object is a data record, skip the actual data and the two length fields
-        if (!cls) {
-            if (position < value + 2 * sizeof(uint32_t)) {
-                throw scsi_exception(sense_key::medium_error, asc::read_error);
-            }
-
-            position -= value + 2 * sizeof(uint32_t);
-        }
-        // The previous object is a marker, skip it
-        else {
-            position -= sizeof(uint32_t);
-        }
-    }
-
-    file.seekg(position, ios::beg);
-
-    uint32_t header;
-    file.read((char*)&header, sizeof(uint32_t));
-    if (file.fail()) {
-        file.clear();
+    if (simh_class == -1) {
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    // TODO Ensure little endian also on big endian platforms
-    uint32_t cls = header >> 28;
-    uint32_t value = header & 0x0fffffff;
+    object_type scsi_type = INVALID;
+    switch (simh_class) {
+    // This covers both tape_mark and good_data_record
+    case tape_mark_good_data_record:
+        scsi_type = simh_value ? BLOCK : FILEMARK;
+        break;
 
-    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} from position {2}", cls,
-        value, position));
+    case reserved_marker:
+        if (simh_value == 0xfffffff) {
+            scsi_type = END_OF_DATA;
+        }
+        else {
+            LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", simh_value));
+        }
+        break;
 
-    position += sizeof(uint32_t);
+    default:
+        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(simh_class)));
+        break;
+    }
 
-    return {cls, value};
+    return {scsi_type, simh_value};
 }
 
 void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
@@ -790,23 +765,22 @@ void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
     LogTrace(
         fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", cls, value, position));
 
-    if (static_cast<off_t>(position + sizeof(uint32_t)) > GetFileSize()) {
+    switch (WriteHeader(file, position, GetFileSize(), cls, value)) {
+    case 0:
+        break;
+
+    case OVERFLOW_ERROR:
         throw scsi_exception(sense_key::volume_overflow);
-    }
 
-    file.seekp(position, ios::beg);
-
-    // TODO Ensure little endian also on big endian platforms
-    const uint32_t header = (cls << 28) + value;
-
-    file.write((const char*)&header, sizeof(uint32_t));
-    file.flush();
-    if (file.fail()) {
-        file.clear();
+    case WRITE_ERROR:
         throw scsi_exception(sense_key::medium_error, asc::write_error);
+
+    default:
+        assert(false);
+        break;
     }
 
     if (update_position) {
-        position += sizeof(uint32_t);
+        position += HEADER_SIZE;
     }
 }

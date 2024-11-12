@@ -265,7 +265,7 @@ TEST(TapeTest, Space6)
 
     // End-of-data, count < 0
     controller->SetCdbByte(2, 0xff);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
