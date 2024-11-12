@@ -9,7 +9,8 @@
 // Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
 // files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
 // contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
-// have the extension .tar, e.g. files with the .tap extension.
+// have the extension .tar, in particular simh-compatible files with the .tap extension.
+// See https://simh.trailing-edge.com/docs/simh_magtape.pdf for details on the simh file format.
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
 // Gap handling is device-defined and does nothing, which is SCSI-compliant.
