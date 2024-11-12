@@ -723,7 +723,7 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<Tape::object_type, int64_t> Tape::ReadSimhHeader()
+pair<Tape::object_type, int> Tape::ReadSimhHeader()
 {
     const auto old_position = position;
 

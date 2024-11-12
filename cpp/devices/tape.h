@@ -88,7 +88,7 @@ private:
 
     void Erase();
 
-    pair<Tape::object_type, int64_t> ReadSimhHeader();
+    pair<Tape::object_type, int> ReadSimhHeader();
     void WriteSimhHeader(uint32_t, uint32_t, bool);
 
     void ResetPosition()
@@ -97,7 +97,7 @@ private:
         block_location = 0;
     }
 
-    static uint32_t Pad(uint32_t length)
+    static uint32_t Pad(int length)
     {
         return length % 2 ? length + 1 : length;
     }
