@@ -521,6 +521,7 @@ void Tape::Locate(bool locate16)
         // BT
         if (GetCdbByte(1) & 0x01) {
             position = identifier;
+            block_location = position / GetBlockSize();
         } else {
             FindNextObject(object_type::BLOCK, identifier);
         }
