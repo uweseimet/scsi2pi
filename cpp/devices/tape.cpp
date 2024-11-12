@@ -156,7 +156,7 @@ void Tape::Write6()
 
 int Tape::GetVariableBlockSize()
 {
-    const int length = FindNextObject(object_type::BLOCK, 0);
+    const int length = FindNextObject(object_type::block, 0);
 
     // Check for incorrect block length
     if (length != GetController()->GetChunkSize()) {
@@ -227,7 +227,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     const uint32_t length = GetController()->GetChunkSize();
 
     if (!tar_mode) {
-        WriteMetaData(object_type::BLOCK, length);
+        WriteMetaData(object_type::block, length);
     }
 
     if (position + (tar_mode ? length : Pad(length) + HEADER_SIZE) > GetFileSize()) {
@@ -254,7 +254,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
         position += Pad(length) + HEADER_SIZE;
 
-        WriteMetaData(object_type::END_OF_DATA);
+        WriteMetaData(object_type::end_of_data);
     }
 
     file.flush();
@@ -407,7 +407,7 @@ void Tape::Erase6()
         ResetPosition();
     }
 
-    WriteMetaData(object_type::END_OF_DATA);
+    WriteMetaData(object_type::end_of_data);
 
     file.flush();
     if (file.fail()) {
@@ -444,15 +444,15 @@ void Tape::Space6()
     }
 
     switch (const auto code = static_cast<object_type>(GetCdbByte(1) & 0x07); code) {
-    case object_type::BLOCK:
-    case object_type::FILEMARK:
+    case object_type::block:
+    case object_type::filemark:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
             FindNextObject(code, count);
         }
         break;
 
-    case object_type::END_OF_DATA:
-        FindNextObject(object_type::END_OF_DATA, 0);
+    case object_type::end_of_data:
+        FindNextObject(object_type::end_of_data, 0);
         break;
 
     default:
@@ -477,11 +477,11 @@ void Tape::WriteFilemarks6()
     else {
         const int count = GetCdbInt24(2);
         for (int i = 0; i < count; i++) {
-            WriteMetaData(object_type::FILEMARK);
+            WriteMetaData(object_type::filemark);
         }
 
         if (count) {
-            WriteMetaData(object_type::END_OF_DATA);
+            WriteMetaData(object_type::end_of_data);
         }
     }
 
@@ -510,7 +510,7 @@ void Tape::Locate(bool locate16)
             position = identifier;
             block_location = position / GetBlockSize();
         } else {
-            FindNextObject(object_type::BLOCK, identifier);
+            FindNextObject(object_type::filemark, identifier);
         }
     }
 
@@ -554,7 +554,7 @@ void Tape::FormatMedium()
 
     ResetPosition();
 
-    WriteMetaData(object_type::END_OF_DATA);
+    WriteMetaData(object_type::end_of_data);
 
     StatusPhase();
 }
@@ -564,17 +564,17 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     assert(!(size & 0xf0000000));
 
     switch (type) {
-    case object_type::BLOCK:
+    case object_type::block:
         if (size) {
             WriteSimhHeader(0x0, size, true);
         }
         break;
 
-    case object_type::FILEMARK:
+    case object_type::filemark:
         WriteSimhHeader(0x0, 0x00000000, true);
         break;
 
-    case object_type::END_OF_DATA:
+    case object_type::end_of_data:
         WriteSimhHeader(0xf, 0x0fffffff, false);
         break;
 
@@ -628,22 +628,22 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // End-of-data while spacing over blocks or filemarks
-        if (scsi_type == object_type::END_OF_DATA && (type != object_type::END_OF_DATA)) {
+        if (scsi_type == object_type::end_of_data && (type != object_type::end_of_data)) {
             LogTrace(fmt::format("Encountered end-of-data while spacing over {}",
-                    type == object_type::BLOCK ? "blocks" : "filemarks"));
+                type == object_type::block ? "blocks" : "filemarks"));
             SetInformation(count);
             throw scsi_exception(sense_key::blank_check);
         }
 
         // Terminate while spacing over blocks and a filemark is found
-        if (scsi_type == object_type::FILEMARK && type == object_type::BLOCK) {
+        if (scsi_type == object_type::filemark && type == object_type::block) {
             LogTrace("Encountered filemark while spacing over blocks");
             SetInformation(count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
         }
 
-        if (scsi_type == object_type::BLOCK) {
+        if (scsi_type == object_type::block) {
             ++block_location;
         }
     }
@@ -733,16 +733,16 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    object_type scsi_type = object_type::INVALID;
+    object_type scsi_type = object_type::invalid;
     switch (static_cast<simh_class>(cls)) {
     // This covers both tape_mark and good_data_record
     case simh_class::tape_mark_good_data_record:
-        scsi_type = value ? object_type::BLOCK : object_type::FILEMARK;
+        scsi_type = value ? object_type::block : object_type::filemark;
         break;
 
     case simh_class::reserved_marker:
         if (value == 0xfffffff) {
-            scsi_type = object_type::END_OF_DATA;
+            scsi_type = object_type::end_of_data;
         }
         else {
             LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", value));
@@ -762,7 +762,7 @@ void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
     LogTrace(
         fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", cls, value, position));
 
-    switch (WriteHeader(file, position, static_cast<int>(GetFileSize()), cls, value)) {
+    switch (WriteHeader(file, position, filesize, cls, value)) {
     case 0:
         break;
 

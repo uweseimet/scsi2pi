@@ -19,12 +19,26 @@ namespace simh_util
 enum class simh_class
 {
     tape_mark_good_data_record = 0,
+    private_data_record_1 = 1,
+    private_data_record_2 = 2,
+    private_data_record_3 = 3,
+    private_data_record_4 = 4,
+    private_data_record_5 = 5,
+    private_data_record_6 = 6,
+    private_marker = 7,
+    bad_data_record = 8,
+    reserved_data_record_1 = 9,
+    reserved_data_record_2 = 10,
+    reserved_data_record_3 = 11,
+    reserved_data_record_4 = 12,
+    reserved_data_record_5 = 13,
+    tape_description_data_record = 14,
     reserved_marker = 15,
     invalid = -1
 };
 
 pair<int, int> ReadHeader(istream&, int64_t&);
-int WriteHeader(ostream&, int64_t, int, uint32_t, uint32_t);
+int WriteHeader(ostream&, int64_t, off_t, uint32_t, uint32_t);
 
 int64_t MoveBack(istream&, int64_t);
 

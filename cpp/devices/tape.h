@@ -47,10 +47,10 @@ private:
 
     enum class object_type
     {
-        BLOCK = 0b000,
-        FILEMARK = 0b001,
-        END_OF_DATA = 0b011,
-        INVALID = 0b111
+        block = 0b000,
+        filemark = 0b001,
+        end_of_data = 0b011,
+        invalid = 0b111
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)

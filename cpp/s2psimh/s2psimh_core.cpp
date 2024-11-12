@@ -65,13 +65,69 @@ int S2pSimh::Analyze(const string &filename)
 
         switch (static_cast<simh_class>(cls)) {
         case simh_class::tape_mark_good_data_record:
-            cout << "Offset " << current_offset << ": Class " << cls << ", value " << value
-                << (value ? " (data record)" : " (tape mark) ") << '\n';
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec;
+            if (!value) {
+                cout << ", tape mark\n";
+            }
+            else {
+                cout << ", good data record, record length " << value << " ($" << hex << value << ")\n";
+            }
             offset += value + (value ? HEADER_SIZE : 0);
             break;
 
+        case simh_class::bad_data_record:
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec << ", bad data record"
+                << (value ? "" : ", no data recovered") << ", record length " << value << " ($" << hex << value
+                << ")\n";
+            offset += value + HEADER_SIZE;
+            break;
+
+        case simh_class::private_data_record_1:
+        case simh_class::private_data_record_2:
+        case simh_class::private_data_record_3:
+        case simh_class::private_data_record_4:
+        case simh_class::private_data_record_5:
+        case simh_class::private_data_record_6:
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec
+                << ", private data record, record length " << value << " ($" << hex << value << ")\n";
+            offset += value + HEADER_SIZE;
+            break;
+
+        case simh_class::tape_description_data_record:
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec
+                << ", tape description data record, record length " << value << " ($" << hex << value << ")\n";
+            offset += value + HEADER_SIZE;
+            break;
+
+        case simh_class::reserved_data_record_1:
+        case simh_class::reserved_data_record_2:
+        case simh_class::reserved_data_record_3:
+        case simh_class::reserved_data_record_4:
+        case simh_class::reserved_data_record_5:
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec
+                << ", reserved data record, record length " << value << " ($" << hex << value << ")\n";
+            offset += value + HEADER_SIZE;
+            break;
+
+        case simh_class::private_marker:
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec
+                << ", private marker, marker value " << value << " ($" << hex << value << ")\n";
+            offset += value;
+            break;
+
         case simh_class::reserved_marker:
-            cout << "Offset " << current_offset << ": Class " << cls << ", value " << value << '\n';
+            cout << dec << "Offset " << current_offset << ": Class " << hex << cls << dec << ", reserved marker, ";
+            if (value == 0x0fffffff) {
+                cout << "end of medium";
+                return EXIT_SUCCESS;
+            }
+            else if (value == 0x0ffffffe) {
+                cout << "erase gap";
+            }
+            else {
+                cout << "marker value " << value << " ($" << hex << value << ")";
+            }
+            cout << '\n';
             break;
 
         case simh_class::invalid:
@@ -79,7 +135,8 @@ int S2pSimh::Analyze(const string &filename)
             return EXIT_FAILURE;
 
         default:
-            cout << "Error: Ignored unknown simh class " << cls << ", value " << value << '\n';
+            cout << "Ignored unknown simh class " << hex << cls << dec << ", value " << value << " ($" << hex << value
+                << ")\n";
             break;
         }
     }

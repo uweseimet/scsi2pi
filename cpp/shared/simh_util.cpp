@@ -29,7 +29,7 @@ pair<int, int> simh_util::ReadHeader(istream &file, int64_t &position)
     return {cls, value};
 }
 
-int simh_util::WriteHeader(ostream &file, int64_t position, int file_size, uint32_t cls, uint32_t value)
+int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, uint32_t cls, uint32_t value)
 {
     if (position + HEADER_SIZE > file_size) {
         return OVERFLOW_ERROR;
