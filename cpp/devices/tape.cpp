@@ -623,7 +623,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // End-of-partition
-        if (const auto end = static_cast<off_t>(position + Pad(length) + HEADER_SIZE); end >= filesize) {
+        if (const auto end = position + Pad(length) + HEADER_SIZE; static_cast<off_t>(end) >= filesize) {
             LogTrace("Encountered end-of-partition");
             SetInformation(count);
             SetEom();
