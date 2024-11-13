@@ -52,7 +52,9 @@ private:
         block = 0b000,
         filemark = 0b001,
         end_of_data = 0b011,
-        invalid = 0b111
+        // SCSI2Pi-specific
+        invalid = -1,
+        end_of_partition = -2
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -103,7 +105,7 @@ private:
 
     uint32_t byte_count = 0;
 
-    off_t filesize = 0;
+    off_t file_size = 0;
 
     bool tar_mode = false;
 

@@ -23,7 +23,7 @@ pair<simh_util::simh_class, int> simh_util::ReadHeader(istream &file, int64_t &p
     position += HEADER_SIZE;
 
     const uint32_t data = FromLittleEndian(header);
-    return {static_cast<simh_class>(data >> 28), data& 0xfffffff};
+    return {static_cast<simh_class>(data >> 28), data & 0xfffffff};
 }
 
 int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, simh_class cls, uint32_t value)
@@ -57,8 +57,12 @@ int simh_util::ReadRecord(istream &file, int64_t position, span<uint8_t> buf, in
     return length;
 }
 
-int simh_util::WriteRecord(ostream &file, int64_t position, span<const uint8_t> buf, uint32_t length)
+int simh_util::WriteRecord(ostream &file, int64_t position, off_t filesize, span<const uint8_t> buf, uint32_t length)
 {
+    if (position + Pad(length) + HEADER_SIZE > filesize) {
+        return -1;
+    }
+
     file.seekp(position, ios::beg);
 
     file.write((const char*)buf.data(), length);

@@ -257,15 +257,15 @@ TEST(TapeTest, Space6)
 
     // BLOCK, count > 0
     controller->SetCdbByte(2, 0x01);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
 
     // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
 
     // End-of-data, count < 0
     controller->SetCdbByte(2, 0xff);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
