@@ -11,7 +11,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
-[\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
+[\fB\--reserved-ids/-r\fR \fIIDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
@@ -86,7 +86,7 @@ s2p supports non-standard SCSI hard drive sector sizes as long as they are multi
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
-.BR --reserved-ids/-r\fI " " \fIRESERVED_IDS
+.BR --reserved-ids/-r\fI " " \fIIDS
 An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
@@ -146,6 +146,6 @@ In case the fallocate command is available a much faster alternative to the dd c
    fallocate -l 104857600 /path/to/newimage.hda
 
 .SH SEE ALSO
-s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1)
+s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1), s2psimh(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

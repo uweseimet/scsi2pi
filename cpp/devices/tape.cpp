@@ -726,15 +726,15 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 
     const auto [cls, value] = ReadHeader(file, position);
 
-    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", cls,
+    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", static_cast<int>(cls),
         value, old_position));
 
-    if (cls == -1) {
+    if (cls == simh_class::invalid) {
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
     object_type scsi_type = object_type::invalid;
-    switch (static_cast<simh_class>(cls)) {
+    switch (cls) {
     // This covers both tape_mark and good_data_record
     case simh_class::tape_mark_good_data_record:
         scsi_type = value ? object_type::block : object_type::filemark;
@@ -750,7 +750,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
         break;
 
     default:
-        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", cls));
+        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(cls)));
         break;
     }
 

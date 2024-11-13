@@ -8,8 +8,11 @@
 
 #pragma once
 
+#include <iostream>
+#include <limits>
 #include <span>
 #include <string>
+#include "shared/simh_util.h"
 
 using namespace std;
 
@@ -24,5 +27,22 @@ private:
 
     static void Banner(bool);
 
-    int Analyze(const string&);
+    bool ParseArguments(span<char*>);
+
+    int Analyze(istream&, off_t);
+
+    void PrintClass(simh_util::simh_class) const;
+    void PrintValue(int);
+    bool PrintRecord(int);
+    bool PrintReservedMarker(int);
+
+    string filename;
+
+    ifstream file;
+
+    int64_t offset = 0;
+    int64_t old_offset = 0;
+
+    bool dump = false;
+    int limit = numeric_limits<int>::max();
 };

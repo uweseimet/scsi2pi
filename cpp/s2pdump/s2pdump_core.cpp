@@ -117,7 +117,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "sasi-scan", no_argument, nullptr, 't' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
         { "version", no_argument, nullptr, 'v' },
-        { "help", no_argument, nullptr, 'H' },
         { nullptr, 0, nullptr, 0 }
     };
 

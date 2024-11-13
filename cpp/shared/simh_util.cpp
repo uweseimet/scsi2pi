@@ -9,7 +9,7 @@
 #include <cassert>
 #include "simh_util.h"
 
-pair<int, int> simh_util::ReadHeader(istream &file, int64_t &position)
+pair<simh_util::simh_class, int> simh_util::ReadHeader(istream &file, int64_t &position)
 {
     file.seekg(position, ios::beg);
 
@@ -17,12 +17,12 @@ pair<int, int> simh_util::ReadHeader(istream &file, int64_t &position)
     file.read((char*)&header, HEADER_SIZE);
     if (file.fail()) {
         file.clear();
-        return {-1, -1};
+        return {simh_class::invalid, -1};
     }
 
     // TODO Ensure little endian also on big endian platforms
-    int cls = header >> 28;
-    int value = header & 0x0fffffff;
+    const auto cls = static_cast<simh_class>(header >> 28);
+    const int value = header & 0x0fffffff;
 
     position += HEADER_SIZE;
 

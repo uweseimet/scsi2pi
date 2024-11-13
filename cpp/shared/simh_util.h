@@ -37,7 +37,7 @@ enum class simh_class
     invalid = -1
 };
 
-pair<int, int> ReadHeader(istream&, int64_t&);
+pair<simh_class, int> ReadHeader(istream&, int64_t&);
 int WriteHeader(ostream&, int64_t, off_t, uint32_t, uint32_t);
 
 int64_t MoveBack(istream&, int64_t);

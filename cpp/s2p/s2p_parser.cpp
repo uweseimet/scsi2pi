@@ -40,7 +40,7 @@ void S2pParser::Banner(bool usage) const
             << "                              |linux-optimized), default currently is PiSCSI\n"
             << "                              compatible caching.\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
-            << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
+            << "  --reserved-ids/-r [IDS]     List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
             << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
             << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
