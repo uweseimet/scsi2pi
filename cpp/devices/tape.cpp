@@ -11,6 +11,8 @@
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
 // This implementation has successfully been tested with tar, mt and mtx on Linux and with Gemar on the Atari.
+// Note that non-tar file implementation is not stable and will change in future versions of SCSI2Pi, which will
+// support Simh .tap image files.
 //
 //---------------------------------------------------------------------------
 
@@ -151,7 +153,7 @@ void Tape::Write6()
 
 int Tape::GetVariableBlockSize()
 {
-    const int length = FindNextObject(object_type::BLOCK, 0);
+    const int length = FindNextObject(object_type::block, 0);
 
     // Check for incorrect block length
     if (length != GetController()->GetChunkSize()) {
@@ -216,7 +218,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     }
 
     if (!tar_mode) {
-        WriteMetaData(object_type::BLOCK, length);
+        WriteMetaData(object_type::block, length);
     }
 
     file.seekp(position, ios::beg);
@@ -232,7 +234,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     ++block_location;
 
     if (!tar_mode) {
-        WriteMetaData(object_type::END_OF_DATA);
+        WriteMetaData(object_type::end_of_data);
     }
 
     file.flush();
@@ -380,7 +382,7 @@ void Tape::Erase6()
         position = 0;
     }
 
-    WriteMetaData(object_type::END_OF_DATA);
+    WriteMetaData(object_type::end_of_data);
 
     file.flush();
     if (file.fail()) {
@@ -430,7 +432,7 @@ void Tape::Space6()
 void Tape::SpaceTarMode(int code, int32_t count)
 {
     switch (code) {
-    case object_type::BLOCK:
+    case object_type::block:
         if (static_cast<int64_t>(block_location) + count >= 0) {
             position += count * GetBlockSize();
             block_location += count;
@@ -441,12 +443,12 @@ void Tape::SpaceTarMode(int code, int32_t count)
         }
         break;
 
-    case object_type::END_OF_DATA:
+    case object_type::end_of_data:
         position = GetFileSize();
         block_location = position / GetBlockSize();
         break;
 
-    case object_type::FILEMARK:
+    case object_type::filemark:
         LogError("Spacing over filemarks in tar-file compatibility mode is not possible");
         [[fallthrough]];
 
@@ -458,15 +460,15 @@ void Tape::SpaceTarMode(int code, int32_t count)
 void Tape::SpaceTapMode(int code, int32_t count)
 {
     switch (code) {
-    case object_type::BLOCK:
-    case object_type::FILEMARK:
+    case object_type::block:
+        case object_type::filemark:
         if (count) {
             FindNextObject(static_cast<object_type>(code), count);
         }
         break;
 
-    case object_type::END_OF_DATA:
-        FindNextObject(object_type::END_OF_DATA, 0);
+    case object_type::end_of_data:
+        FindNextObject(object_type::end_of_data, 0);
         break;
 
     default:
@@ -486,11 +488,11 @@ void Tape::WriteFilemarks6()
     if (!tar_mode) {
         const int count = GetCdbInt24(2);
         for (int i = 0; i < count; i++) {
-            WriteMetaData(object_type::FILEMARK);
+            WriteMetaData(object_type::filemark);
         }
 
         if (count) {
-            WriteMetaData(object_type::END_OF_DATA);
+            WriteMetaData(object_type::end_of_data);
         }
     }
     else {
@@ -523,7 +525,7 @@ void Tape::Locate(bool locate16)
             position = identifier;
             block_location = position / GetBlockSize();
         } else {
-            FindNextObject(object_type::BLOCK, identifier);
+            FindNextObject(object_type::block, identifier);
         }
     }
 
@@ -568,7 +570,7 @@ void Tape::FormatMedium()
     position = 0;
     block_location = 0;
 
-    WriteMetaData(object_type::END_OF_DATA);
+    WriteMetaData(object_type::end_of_data);
 
     StatusPhase();
 }
@@ -576,7 +578,7 @@ void Tape::FormatMedium()
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
     assert(size < 65536);
-    assert(!size || type == object_type::BLOCK);
+    assert(!size || type == object_type::block);
 
     if (static_cast<off_t>(position + sizeof(meta_data_t)) > GetFileSize()) {
         throw scsi_exception(sense_key::volume_overflow);
@@ -599,7 +601,7 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     }
 
     // The current position is always before end-of-data
-    if (type != object_type::END_OF_DATA) {
+    if (type != object_type::end_of_data) {
         position += sizeof(meta_data_t);
     }
 }
@@ -650,22 +652,22 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         }
 
         // End-of-data while spacing over blocks or filemarks
-        if (meta_data.type == object_type::END_OF_DATA && (type != object_type::END_OF_DATA)) {
+        if (meta_data.type == object_type::end_of_data && (type != object_type::end_of_data)) {
             LogTrace(fmt::format("Encountered end-of-data while spacing over {}",
-                    type == object_type::BLOCK ? "blocks" : "filemarks"));
+                type == object_type::block ? "blocks" : "filemarks"));
             SetInformation(count);
             throw scsi_exception(sense_key::blank_check);
         }
 
         // Terminate while spacing over blocks and a filemark is found
-        if (meta_data.type == object_type::FILEMARK && type == object_type::BLOCK) {
+        if (meta_data.type == object_type::filemark && type == object_type::block) {
             LogTrace("Encountered filemark while spacing over blocks");
             SetInformation(count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
         }
 
-        if (meta_data.type == object_type::BLOCK) {
+        if (meta_data.type == object_type::block) {
             ++block_location;
         }
     }

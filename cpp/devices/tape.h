@@ -49,9 +49,9 @@ private:
 
     enum object_type : uint8_t
     {
-        BLOCK = 0b000,
-        FILEMARK = 0b001,
-        END_OF_DATA = 0b011
+        block = 0b000,
+        filemark = 0b001,
+        end_of_data = 0b011
     };
 
     // The meta data for each object, with the object type and the previous and next object position
