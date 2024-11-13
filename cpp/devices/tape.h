@@ -10,9 +10,11 @@
 
 #include <fstream>
 #include "base/interfaces/scsi_stream_commands.h"
+#include "shared/simh_util.h"
 #include "storage_device.h"
 
 using namespace std;
+using namespace simh_util;
 
 class Tape : public StorageDevice, public ScsiStreamCommands
 {
@@ -83,17 +85,12 @@ private:
     void Erase();
 
     pair<Tape::object_type, int> ReadSimhHeader();
-    void WriteSimhHeader(uint32_t, uint32_t, bool);
+    void WriteSimhHeader(simh_class, uint32_t, bool);
 
     void ResetPosition()
     {
         position = 0;
         block_location = 0;
-    }
-
-    static uint32_t Pad(int length)
-    {
-        return length % 2 ? length + 1 : length;
     }
 
     fstream file;

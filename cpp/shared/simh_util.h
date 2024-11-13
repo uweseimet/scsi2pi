@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <span>
 
 using namespace std;
 
@@ -38,9 +39,14 @@ enum class simh_class
 };
 
 pair<simh_class, int> ReadHeader(istream&, int64_t&);
-int WriteHeader(ostream&, int64_t, off_t, uint32_t, uint32_t);
+int WriteHeader(ostream&, int64_t, off_t, simh_class, uint32_t);
+int WriteRecord(ostream&, int64_t, span<const uint8_t>, uint32_t);
 
 int64_t MoveBack(istream&, int64_t);
+
+bool IsRecord(simh_class);
+
+uint32_t Pad(int);
 
 static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 

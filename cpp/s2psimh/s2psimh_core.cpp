@@ -22,7 +22,7 @@ void S2pSimh::Banner(bool help)
         << "Copyright (C) 2024 Uwe Seimet\n";
 
     if (help) {
-        cout << "Usage: s2psimh <SIMH_TAP_FILE>\n"
+        cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
             << "  --dump/-d         Dump record contents.\n"
             << "  --limit/-l LIMIT  Limit record contents dump size to LIMIT bytes.\n"
             << "  --version/-v      Display the program version.\n"
@@ -214,26 +214,43 @@ void S2pSimh::PrintValue(int value)
 {
     cout << " " << value << " ($" << hex << value << ")\n";
 
-    offset += value;
+    offset += HEADER_SIZE;
 }
 
 bool S2pSimh::PrintRecord(int value)
 {
     PrintValue(value);
 
+    const int length = value & 0xfffffff;
+
     if (dump && limit) {
-        vector<uint8_t> record(limit < value ? limit : value);
+        vector<uint8_t> record(limit < length ? limit : length);
         file.read((char*)record.data(), record.size());
         if (file.fail()) {
             file.clear();
-            cerr << "Can't read record of " << value << " byte(s)" << endl;
+            cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }
 
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
+    else {
+        file.seekg(length, ios::cur);
+    }
 
-    offset += HEADER_SIZE;
+    if (length != static_cast<int>(Pad(length))) {
+        file.seekg(1, ios::cur);
+    }
+
+    uint32_t trailing_length;
+    file.read((char*)&trailing_length, HEADER_SIZE);
+    if (length != static_cast<int>(trailing_length)) {
+        cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
+            << ") does not match leading length " << dec << length << hex << " ($" << length << ")" << endl;
+        return false;
+    }
+
+    offset += Pad(value & 0xfffffff);
 
     return true;
 }

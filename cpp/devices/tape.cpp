@@ -19,14 +19,12 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
-#include "shared/simh_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
-using namespace simh_util;
 
 Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 256, 512, 1024, 2048, 4096 })
 {
@@ -97,7 +95,7 @@ void Tape::ValidateFile()
     StorageDevice::ValidateFile();
 
     file.open(GetFilename(), ios::in | ios::out | ios::binary);
-    if (!file.good()) {
+    if (file.bad()) {
         throw io_exception("Can't open image file '" + GetFilename() + "'");
     }
 
@@ -236,29 +234,17 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", length, position));
 
-    file.seekp(position, ios::beg);
-
-    file.write((const char*)buf.data(), length);
-
     if (tar_mode) {
+        file.seekp(position, ios::beg);
+        file.write((const char*)buf.data(), length);
         position += length;
     }
     else {
-        if (length % 2) {
-            // Padding
-            file << "\0";
-        }
-
-        // Trailing length
-        file.write((const char*)&length, HEADER_SIZE);
-
-        position += Pad(length) + HEADER_SIZE;
-
+        position += WriteRecord(file, position, buf, length);
         WriteMetaData(object_type::end_of_data);
     }
 
     file.flush();
-
     if (file.fail()) {
         file.clear();
         ++write_error_count;
@@ -566,16 +552,16 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     switch (type) {
     case object_type::block:
         if (size) {
-            WriteSimhHeader(0x0, size, true);
+            WriteSimhHeader(simh_class::tape_mark_good_data_record, size, true);
         }
         break;
 
     case object_type::filemark:
-        WriteSimhHeader(0x0, 0x0000000, true);
+        WriteSimhHeader(simh_class::tape_mark_good_data_record, 0x0000000, true);
         break;
 
     case object_type::end_of_data:
-        WriteSimhHeader(0xf, 0xfffffff, false);
+        WriteSimhHeader(simh_class::reserved_marker, 0xfffffff, false);
         break;
 
     default:
@@ -593,6 +579,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
     while (true) {
         if (reverse) {
+            // TODO Verify this condition
             if (position < HEADER_SIZE) {
                 // Beginning-of-partition
                 ResetPosition();
@@ -757,15 +744,13 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
     return {scsi_type, value};
 }
 
-void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
+void Tape::WriteSimhHeader(simh_class cls, uint32_t value, bool update_position)
 {
-    LogTrace(
-        fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", cls, value, position));
+    LogTrace(fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
+        value, position));
 
-    switch (WriteHeader(file, position, filesize, cls, value)) {
-    case 0:
-        break;
-
+    const int size = WriteHeader(file, position, filesize, cls, value);
+    switch (size) {
     case OVERFLOW_ERROR:
         throw scsi_exception(sense_key::volume_overflow);
 
@@ -773,11 +758,10 @@ void Tape::WriteSimhHeader(uint32_t cls, uint32_t value, bool update_position)
         throw scsi_exception(sense_key::medium_error, asc::write_error);
 
     default:
-        assert(false);
         break;
     }
 
     if (update_position) {
-        position += HEADER_SIZE;
+        position += size;
     }
 }
