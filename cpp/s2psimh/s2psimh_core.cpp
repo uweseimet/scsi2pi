@@ -225,32 +225,25 @@ bool S2pSimh::PrintRecord(int value)
 
     if (dump && limit) {
         vector<uint8_t> record(limit < length ? limit : length);
-        file.read((char*)record.data(), record.size());
-        if (file.fail()) {
-            file.clear();
+        if (ReadRecord(file, offset, record, record.size()) != static_cast<int>(record.size())) {
             cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }
 
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
-    else {
-        file.seekg(length, ios::cur);
-    }
 
-    if (length != static_cast<int>(Pad(length))) {
-        file.seekg(1, ios::cur);
-    }
+    offset += Pad(length);
 
-    uint32_t trailing_length;
-    file.read((char*)&trailing_length, HEADER_SIZE);
-    if (length != static_cast<int>(trailing_length)) {
+    array<uint8_t, HEADER_SIZE> data;
+    file.seekg(offset - HEADER_SIZE, ios::beg);
+    file.read((char*)data.data(), data.size());
+    const int trailing_length = FromLittleEndian(data);
+    if (length != trailing_length) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
             << ") does not match leading length " << dec << length << hex << " ($" << length << ")" << endl;
         return false;
     }
-
-    offset += Pad(value & 0xfffffff);
 
     return true;
 }

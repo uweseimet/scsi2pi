@@ -38,8 +38,16 @@ enum class simh_class
     invalid = -1
 };
 
+enum class simh_marker : uint32_t
+{
+    erase_gap = 0xffffffe,
+    end_of_medium = 0xfffffff
+};
+
 pair<simh_class, int> ReadHeader(istream&, int64_t&);
 int WriteHeader(ostream&, int64_t, off_t, simh_class, uint32_t);
+
+int ReadRecord(istream&, int64_t, span<uint8_t>, int);
 int WriteRecord(ostream&, int64_t, span<const uint8_t>, uint32_t);
 
 int64_t MoveBack(istream&, int64_t);
@@ -47,6 +55,9 @@ int64_t MoveBack(istream&, int64_t);
 bool IsRecord(simh_class);
 
 uint32_t Pad(int);
+
+uint32_t FromLittleEndian(span<const uint8_t>);
+array<uint8_t, 4> ToLittleEndian(uint32_t);
 
 static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 

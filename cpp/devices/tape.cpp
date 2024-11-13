@@ -9,13 +9,12 @@
 // Files with a .tar extension are treated in a special way, so that unmodified .tar files can be used an image
 // files. Filemark, end-of-data and spacing support is not possible for these files, because .tar files do not
 // contain any meta data. Therefore, SCSI2Pi only supports filemarks and end-of-data for image files that do *not*
-// have the extension .tar, in particular simh-compatible files with the .tap extension.
-// See https://simh.trailing-edge.com/docs/simh_magtape.pdf for details on the simh file format.
+// have the extension .tar, in particular SIMH-compatible files with the .tap extension.
+// See https://simh.trailing-edge.com/docs/simh_magtape.pdf for details on the SIMH file format.
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
-// Gap handling is device-defined and does nothing, which is SCSI-compliant.
-// .tap image files should be formatted or erased (long erase) before first use, to ensure that they start with an
-// end-of-data marker.
+// .tap image files should be formatted or erased (long erase) before first use.
+//
 //---------------------------------------------------------------------------
 
 #include "tape.h"
@@ -195,19 +194,24 @@ int Tape::ReadData(span<uint8_t> buf)
 
     LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", length, position));
 
-    file.seekg(position, ios::beg);
-
-    file.read((char*)buf.data(), length);
-    if (file.fail()) {
-        file.clear();
-        ++read_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::read_error);
-    }
-
+    // TODO Move all tar-related code to separate namespace or class, just like the simh code
     if (tar_mode) {
+        file.seekg(position, ios::beg);
+        file.read((char*)buf.data(), length);
+        if (file.fail()) {
+            file.clear();
+            ++read_error_count;
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
         position += length;
     }
     else {
+        if (ReadRecord(file, position, buf, length) != length) {
+            ++read_error_count;
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
         // Also skip the trailing length
         position += Pad(length) + HEADER_SIZE;
     }
@@ -561,7 +565,7 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         break;
 
     case object_type::end_of_data:
-        WriteSimhHeader(simh_class::reserved_marker, 0xfffffff, false);
+        WriteSimhHeader(simh_class::reserved_marker, static_cast<int>(simh_marker::end_of_medium), false);
         break;
 
     default:
@@ -657,11 +661,19 @@ void Tape::Erase()
 {
     file.seekp(position, ios::beg);
 
-    // Erase in 4096 byte chunks
-    vector<byte> buf(4096);
+    // Erase in chunks, using SIMH gaps as a pattern (little endian)
+    vector<uint8_t> buf;
+    buf.reserve(1024 * sizeof(simh_marker::erase_gap));
+    const auto gap = static_cast<uint32_t>(simh_marker::erase_gap);
+    for (int i = 0; i < 1024; i++) {
+        buf.push_back(gap & 0xff);
+        buf.push_back((gap >> 8) & 0xff);
+        buf.push_back((gap >> 16) & 0xff);
+        buf.push_back((gap >> 24) & 0xff);
+    }
 
     uint64_t remaining = filesize - position;
-    while (remaining > 0) {
+    while (remaining >= 4) {
         uint64_t chunk = remaining;
         if (chunk > buf.size()) {
             chunk = buf.size();
@@ -713,12 +725,8 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 
     const auto [cls, value] = ReadHeader(file, position);
 
-    LogTrace(fmt::format("Read simh header with class {0:1X}, value ${1:07x} at position {2}", static_cast<int>(cls),
+    LogTrace(fmt::format("Read SIMH header with class {0:1X}, value ${1:07x} at position {2}", static_cast<int>(cls),
         value, old_position));
-
-    if (cls == simh_class::invalid) {
-        throw scsi_exception(sense_key::medium_error, asc::read_error);
-    }
 
     object_type scsi_type = object_type::invalid;
     switch (cls) {
@@ -727,17 +735,22 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
         scsi_type = value ? object_type::block : object_type::filemark;
         break;
 
+    case simh_class::bad_data_record:
+    case simh_class::invalid:
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
+
     case simh_class::reserved_marker:
-        if (value == 0xfffffff) {
+        if (value == static_cast<int>(simh_marker::end_of_medium)) {
             scsi_type = object_type::end_of_data;
         }
         else {
-            LogWarn(fmt::format("Ignoring unknown simh reserved marker with value {:07x}", value));
+            LogWarn(fmt::format("Ignoring unknown SIMH reserved marker with value {:07x}", value));
         }
         break;
 
     default:
-        LogWarn(fmt::format("Ignoring unknown simh class {:1X}", static_cast<int>(cls)));
+        LogWarn(fmt::format("Ignoring unknown SIMH class {0:1X} with value {1:07x}", static_cast<int>(cls), value));
+        position += value + HEADER_SIZE;
         break;
     }
 
@@ -746,15 +759,17 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 
 void Tape::WriteSimhHeader(simh_class cls, uint32_t value, bool update_position)
 {
-    LogTrace(fmt::format("Writing simh header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
+    LogTrace(fmt::format("Writing SIMH header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
         value, position));
 
     const int size = WriteHeader(file, position, filesize, cls, value);
     switch (size) {
     case OVERFLOW_ERROR:
+        ++write_error_count;
         throw scsi_exception(sense_key::volume_overflow);
 
     case WRITE_ERROR:
+        ++write_error_count;
         throw scsi_exception(sense_key::medium_error, asc::write_error);
 
     default:
