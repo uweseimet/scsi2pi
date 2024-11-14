@@ -29,7 +29,7 @@ private:
 
     bool ParseArguments(span<char*>);
 
-    int Analyze(istream&, off_t);
+    int Analyze();
 
     void PrintClass(simh_util::simh_class) const;
     void PrintValue(int);
@@ -38,7 +38,9 @@ private:
 
     string filename;
 
-    ifstream file;
+    off_t file_size;
+
+    fstream file;
 
     int64_t position = 0;
     int64_t old_position = 0;

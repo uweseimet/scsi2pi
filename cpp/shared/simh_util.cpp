@@ -9,18 +9,18 @@
 #include <cassert>
 #include "simh_util.h"
 
-int simh_util::ReadHeader(istream &file, off_t file_size, SimhHeader &header)
+int simh_util::ReadHeader(const TapeFile &file_wrapper, SimhHeader &header)
 {
-    if (file.tellg() + HEADER_SIZE > file_size) {
+    if (file_wrapper.file.tellg() + HEADER_SIZE > file_wrapper.size) {
         header.cls = simh_class::reserved_marker;
         header.value = static_cast<int>(simh_marker::end_of_medium);
         return 0;
     }
 
     array<uint8_t, HEADER_SIZE> h = { };
-    file.read((char*)h.data(), h.size());
-    if (file.fail()) {
-        file.clear();
+    file_wrapper.file.read((char*)h.data(), h.size());
+    if (file_wrapper.file.fail()) {
+        file_wrapper.file.clear();
         header.cls = simh_class::error;
         return 0;
     }
@@ -32,47 +32,53 @@ int simh_util::ReadHeader(istream &file, off_t file_size, SimhHeader &header)
     return HEADER_SIZE;
 }
 
-int simh_util::WriteHeader(ostream &file, off_t file_size, const SimhHeader &header)
+int simh_util::WriteHeader(const TapeFile &file_wrapper, const SimhHeader &header)
 {
-    if (file.tellp() + HEADER_SIZE > file_size) {
+    if (file_wrapper.file.tellp() + HEADER_SIZE > file_wrapper.size) {
         return OVERFLOW_ERROR;
     }
 
-    file.write((const char*)ToLittleEndian((static_cast<int>(header.cls) << 28) + header.value).data(), HEADER_SIZE);
-    file.flush();
-    if (file.fail()) {
-        file.clear();
+    file_wrapper.file.write((const char*)ToLittleEndian((static_cast<int>(header.cls) << 28) + header.value).data(),
+        HEADER_SIZE);
+    file_wrapper.file.flush();
+    if (file_wrapper.file.fail()) {
+        file_wrapper.file.clear();
         return WRITE_ERROR;
     }
 
     return HEADER_SIZE;
 }
 
-int simh_util::ReadRecord(istream &file, span<uint8_t> buf, int length)
+int simh_util::ReadRecord(const TapeFile &file_wrapper, span<uint8_t> buf, int length)
 {
-    file.read((char*)buf.data(), length);
-    if (file.fail()) {
-        file.clear();
+    if (static_cast<off_t>(file_wrapper.file.tellg()) + length > file_wrapper.size) {
         return -1;
     }
 
-    return length;
+    file_wrapper.file.read((char*)buf.data(), length);
+    if (file_wrapper.file.fail()) {
+        file_wrapper.file.clear();
+        return -1;
+    }
+
+    // Skip trailing length
+    return length + HEADER_SIZE;
 }
 
-int simh_util::WriteRecord(ostream &file, off_t filesize, span<const uint8_t> buf, uint32_t length)
+int simh_util::WriteRecord(const TapeFile &file_wrapper, span<const uint8_t> buf, uint32_t length)
 {
-    if (static_cast<off_t>(file.tellp()) + Pad(length) + HEADER_SIZE > filesize) {
+    if (static_cast<off_t>(file_wrapper.file.tellp()) + Pad(length) + HEADER_SIZE > file_wrapper.size) {
         return OVERFLOW_ERROR;
     }
 
-    file.write((const char*)buf.data(), length);
+    file_wrapper.file.write((const char*)buf.data(), length);
 
     if (length != Pad(length)) {
-        file << '\0';
+        file_wrapper.file << '\0';
     }
 
     // Trailing length
-    file.write((const char*)ToLittleEndian(length).data(), HEADER_SIZE);
+    file_wrapper.file.write((const char*)ToLittleEndian(length).data(), HEADER_SIZE);
 
     return Pad(length) + HEADER_SIZE;
 }
@@ -94,14 +100,14 @@ int64_t simh_util::MoveBack(istream &file)
     const auto cls = static_cast<simh_class>(previous >> 28);
     const uint32_t length = previous & 0xfffffff;
 
-    const int64_t new_position = file.tellg() - (IsRecord(cls) ? Pad(length) + 2 * HEADER_SIZE : HEADER_SIZE);
-    if (new_position < 0) {
+    const int64_t position = file.tellg() - (IsRecord(cls) ? Pad(length) + 2 * HEADER_SIZE : HEADER_SIZE);
+    if (position < 0) {
         return -1;
     }
 
-    file.seekg(new_position, ios::beg);
+    file.seekg(position, ios::beg);
 
-    return new_position;
+    return position;
 }
 
 bool simh_util::IsRecord(simh_class cls)

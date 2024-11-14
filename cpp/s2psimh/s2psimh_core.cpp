@@ -106,7 +106,6 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_FAILURE;
     }
 
-    off_t file_size;
     try {
         file_size = filesystem::file_size(filename);
     }
@@ -115,10 +114,10 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_FAILURE;
     }
 
-    return Analyze(file, file_size);
+    return Analyze();
 }
 
-int S2pSimh::Analyze(istream &file, off_t file_size)
+int S2pSimh::Analyze()
 {
     while (position < file_size) {
         old_position = position;
@@ -126,7 +125,7 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        position += ReadHeader(file, file_size, header);
+        position += ReadHeader( { file, file_size }, header);
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
             PrintClass(header.cls);
@@ -227,7 +226,7 @@ bool S2pSimh::PrintRecord(const string &identifier, int value)
         file.seekg(position, ios::beg);
 
         vector<uint8_t> record(limit < length ? limit : length);
-        if (ReadRecord(file, record, record.size()) == -1) {
+        if (ReadRecord( { file, file_size }, record, record.size()) == -1) {
             cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }

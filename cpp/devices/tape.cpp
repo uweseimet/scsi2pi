@@ -175,62 +175,65 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int length = tar_mode ? GetBlockSize() : GetVariableBlockSize();
+    const int size = tar_mode ? GetBlockSize() : GetVariableBlockSize();
 
-    LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", length, position));
+    LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", size, position));
 
     file.seekg(position, ios::beg);
 
     // TODO Move all tar-related code to separate namespace or class, just like the simh code
+    int length = -1;
     if (tar_mode) {
-        file.read((char*)buf.data(), length);
+        file.read((char*)buf.data(), size);
         if (file.fail()) {
             file.clear();
-            ++read_error_count;
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
-
-        position += length;
+        else {
+            length = size;
+        }
     }
     else {
-        if (ReadRecord(file, buf, length) == -1) {
-            ++read_error_count;
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        length = ReadRecord( { file, file_size }, buf, size);
+        if (length != -1) {
+            length = Pad(length);
         }
-
-        // Also skip the trailing length
-        position += Pad(length) + HEADER_SIZE;
     }
 
+    if (length == -1) {
+        ++read_error_count;
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
+    }
+
+    position += length;
     ++block_location;
     ++blocks_read;
 
-    return length;
+    return size;
 }
 
 int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    const uint32_t length = GetController()->GetChunkSize();
+    const uint32_t size = GetController()->GetChunkSize();
 
-    WriteMetaData(object_type::block, length);
+    WriteMetaData(object_type::block, size);
 
-    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", length, position));
+    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", size, position));
 
     file.seekp(position, ios::beg);
 
     if (tar_mode) {
-        if (position + length > file_size) {
+        if (position + size > file_size) {
             throw scsi_exception(sense_key::volume_overflow);
         }
 
-        file.write((const char*)buf.data(), length);
+        file.write((const char*)buf.data(), size);
 
-        position += length;
+        position += size;
     }
     else {
-        const int l = WriteRecord(file, file_size, buf, length);
+        const int l = WriteRecord( { file, file_size }, buf, size);
         if (l == -1) {
             ++write_error_count;
             throw scsi_exception(sense_key::volume_overflow);
@@ -248,10 +251,10 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
-    byte_count -= length;
+    byte_count -= size;
     ++block_location;
 
-    return length;
+    return size;
 }
 
 void Tape::Open()
@@ -558,10 +561,12 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 
     assert(!(size & 0xf0000000));
 
+    file.seekp(position, ios::beg);
+
     switch (type) {
     case object_type::block:
     case object_type::filemark:
-        position = WriteSimhHeader(simh_class::tape_mark_good_data_record, size);
+        position += WriteSimhHeader(simh_class::tape_mark_good_data_record, size);
         break;
 
     case object_type::end_of_data:
@@ -737,7 +742,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        position += ReadHeader(file, file_size, header);
+        position += ReadHeader( { file, file_size }, header);
         if (header.cls == simh_class::reserved_marker && header.value == static_cast<int>(simh_marker::end_of_medium)) {
             return {object_type::end_of_partition, 0};
         }
@@ -775,14 +780,12 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
     assert(false);
 }
 
-int64_t Tape::WriteSimhHeader(simh_class cls, uint32_t value)
+int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
 {
     LogTrace(fmt::format("Writing SIMH header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, position));
+        value, file.tellp()));
 
-    file.seekp(position, ios::beg);
-
-    const int size = WriteHeader(file, file_size, { cls, value });
+    const int size = WriteHeader( { file, file_size }, { cls, value });
     switch (size) {
     case OVERFLOW_ERROR:
         ++write_error_count;
@@ -796,5 +799,5 @@ int64_t Tape::WriteSimhHeader(simh_class cls, uint32_t value)
         break;
     }
 
-    return position + size;
+    return size;
 }
