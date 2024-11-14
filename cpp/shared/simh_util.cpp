@@ -9,7 +9,7 @@
 #include <cassert>
 #include "simh_util.h"
 
-int simh_util::ReadHeader(istream &file, int64_t position, off_t file_size, simh_header &header)
+int simh_util::ReadHeader(istream &file, int64_t position, off_t file_size, SimhHeader &header)
 {
     if (position + HEADER_SIZE > file_size) {
         header.cls = simh_class::reserved_marker;
@@ -19,7 +19,7 @@ int simh_util::ReadHeader(istream &file, int64_t position, off_t file_size, simh
 
     file.seekg(position, ios::beg);
 
-    array<uint8_t, HEADER_SIZE> h;
+    array<uint8_t, HEADER_SIZE> h = { };
     file.read((char*)h.data(), h.size());
     if (file.fail()) {
         file.clear();
@@ -34,7 +34,7 @@ int simh_util::ReadHeader(istream &file, int64_t position, off_t file_size, simh
     return HEADER_SIZE;
 }
 
-int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, const simh_header &header)
+int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, const SimhHeader &header)
 {
     if (position + HEADER_SIZE > file_size) {
         return OVERFLOW_ERROR;
@@ -91,7 +91,7 @@ int64_t simh_util::MoveBack(istream &file, int64_t position)
     file.seekg(position - HEADER_SIZE, ios::beg);
 
     // This is either a trailing length for a data record or a marker
-    array<uint8_t, HEADER_SIZE> data;
+    array<uint8_t, HEADER_SIZE> data = { };
     file.read((char*)data.data(), data.size());
     if (file.fail()) {
         file.clear();

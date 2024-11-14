@@ -729,7 +729,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
     while (true) {
         const auto old_position = position;
 
-        simh_header header;
+        SimhHeader header;
         position += ReadHeader(file, position, file_size, header);
         if (header.cls == simh_class::reserved_marker && header.value == static_cast<int>(simh_marker::end_of_medium)) {
             return {object_type::end_of_partition, 0};

@@ -123,7 +123,7 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
     while (offset < file_size) {
         old_offset = offset;
 
-        simh_header header;
+        SimhHeader header;
         offset += ReadHeader(file, offset, file_size, header);
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:

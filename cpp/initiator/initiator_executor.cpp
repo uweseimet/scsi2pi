@@ -216,7 +216,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
 
 void InitiatorExecutor::Status()
 {
-    array<uint8_t, 1> buf;
+    array<uint8_t, 1> buf = { };
 
     if (bus.ReceiveHandShake(buf.data(), static_cast<int>(buf.size())) != static_cast<int>(buf.size())) {
         error("STATUS phase failed");

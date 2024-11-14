@@ -28,7 +28,7 @@ TEST(SimhUtilTest, ReadHeader)
     WriteHeader(file, position, FILE_SIZE, { simh_class::reserved_marker, 0 });
 
     position = 0;
-    simh_header header;
+    SimhHeader header;
 
     position += ReadHeader(file, 0, FILE_SIZE, header);
     EXPECT_EQ(HEADER_SIZE, position);
