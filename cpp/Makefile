@@ -163,7 +163,7 @@ BIN_ALL = \
 	$(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL)
 
-# s2pdump s2pexec, s2pproto and in_process_test require initiator support
+# s2pdump, s2pexec, s2pproto and in_process_test require initiator support
 ifeq ($(BOARD), FULLSPEC)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
