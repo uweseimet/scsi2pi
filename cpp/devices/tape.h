@@ -86,7 +86,7 @@ private:
     void Erase();
 
     pair<Tape::object_type, int> ReadSimhHeader();
-    int WriteSimhHeader(simh_class, uint32_t);
+    int64_t WriteSimhHeader(simh_class, uint32_t);
 
     void ResetPosition()
     {

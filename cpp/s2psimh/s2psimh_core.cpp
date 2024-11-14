@@ -123,25 +123,26 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
     while (offset < file_size) {
         old_offset = offset;
 
-        const auto [cls, value] = ReadHeader(file, offset, file_size);
-        switch (cls) {
+        simh_header header;
+        offset += ReadHeader(file, offset, file_size, header);
+        switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
-            PrintClass(cls);
-            if (!value) {
+            PrintClass(header.cls);
+            if (!header.value) {
                 cout << ", tape mark\n";
             }
             else {
                 cout << ", good data record, record length";
-                if (!PrintRecord(value)) {
+                if (!PrintRecord(header.value)) {
                     return EXIT_FAILURE;
                 }
             }
             break;
 
         case simh_class::bad_data_record:
-            PrintClass(cls);
-            cout << ", bad data record" << (value ? "" : ", no data recovered") << ", record length";
-            if (!PrintRecord(value)) {
+            PrintClass(header.cls);
+            cout << ", bad data record" << (header.value ? "" : ", no data recovered") << ", record length";
+            if (!PrintRecord(header.value)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -152,17 +153,17 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
         case simh_class::private_data_record_4:
         case simh_class::private_data_record_5:
         case simh_class::private_data_record_6:
-            PrintClass(cls);
+            PrintClass(header.cls);
             cout << ", private data record, record length";
-            if (!PrintRecord(value)) {
+            if (!PrintRecord(header.value)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::tape_description_data_record:
-            PrintClass(cls);
+            PrintClass(header.cls);
             cout << ", tape description data record, record length";
-            if (!PrintRecord(value)) {
+            if (!PrintRecord(header.value)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -172,22 +173,22 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
         case simh_class::reserved_data_record_3:
         case simh_class::reserved_data_record_4:
         case simh_class::reserved_data_record_5:
-            PrintClass(cls);
+            PrintClass(header.cls);
             cout << ", reserved data record, record length";
-            if (!PrintRecord(value)) {
+            if (!PrintRecord(header.value)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::private_marker:
-            PrintClass(cls);
+            PrintClass(header.cls);
             cout << ", private marker, marker value";
-            PrintValue(value);
+            PrintValue(header.value);
             break;
 
         case simh_class::reserved_marker:
-            PrintClass(cls);
-            if (!PrintReservedMarker(value)) {
+            PrintClass(header.cls);
+            if (!PrintReservedMarker(header.value)) {
                 return EXIT_SUCCESS;
             }
             break;

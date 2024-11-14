@@ -23,32 +23,31 @@ TEST(SimhUtilTest, ReadHeader)
 
     int64_t position = 0;
 
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::tape_mark_good_data_record, 0);
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::tape_mark_good_data_record, 0x1234567);
-    WriteHeader(file, position, FILE_SIZE, simh_class::reserved_marker, 0);
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::tape_mark_good_data_record, 0 });
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::tape_mark_good_data_record, 0x1234567 });
+    WriteHeader(file, position, FILE_SIZE, { simh_class::reserved_marker, 0 });
 
     position = 0;
+    simh_header header;
 
-    const auto [cls_filemark, value_filemark] = ReadHeader(file, position, FILE_SIZE);
+    position += ReadHeader(file, 0, FILE_SIZE, header);
     EXPECT_EQ(HEADER_SIZE, position);
-    EXPECT_EQ(cls_filemark, simh_class::tape_mark_good_data_record);
-    EXPECT_EQ(value_filemark, 0);
+    EXPECT_EQ(header.cls, simh_class::tape_mark_good_data_record);
+    EXPECT_EQ(header.value, 0);
 
-    const auto [cls_record, value_record] = ReadHeader(file, position, FILE_SIZE);
+    position += ReadHeader(file, position, FILE_SIZE, header);
     EXPECT_EQ(2 * HEADER_SIZE, position);
-    EXPECT_EQ(cls_record, simh_class::tape_mark_good_data_record);
-    EXPECT_EQ(value_record, 0x1234567);
+    EXPECT_EQ(header.cls, simh_class::tape_mark_good_data_record);
+    EXPECT_EQ(header.value, 0x1234567);
 
-    const auto [cls_end_of_data, value_end_of_data] = ReadHeader(file, position, FILE_SIZE);
+    position += ReadHeader(file, position, FILE_SIZE, header);
     EXPECT_EQ(3 * HEADER_SIZE, position);
-    EXPECT_EQ(cls_end_of_data, simh_class::reserved_marker);
-    EXPECT_EQ(value_end_of_data, 0);
+    EXPECT_EQ(header.cls, simh_class::reserved_marker);
+    EXPECT_EQ(header.value, 0);
 
-    position = FILE_SIZE;
-    const auto [cls_end_of_file, value_end_of_file] = ReadHeader(file, position, FILE_SIZE);
-    EXPECT_EQ(FILE_SIZE, position);
-    EXPECT_EQ(cls_end_of_file, simh_class::reserved_marker);
-    EXPECT_EQ(value_end_of_file, static_cast<int>(simh_marker::end_of_medium));
+    EXPECT_EQ(0, ReadHeader(file, FILE_SIZE, FILE_SIZE, header));
+    EXPECT_EQ(header.cls, simh_class::reserved_marker);
+    EXPECT_EQ(header.value, static_cast<int>(simh_marker::end_of_medium));
 }
 
 TEST(SimhUtilTest, WriteHeader)
@@ -59,14 +58,14 @@ TEST(SimhUtilTest, WriteHeader)
     file.open(CreateTempFile(FILE_SIZE), ios::out | ios::binary);
     assert(file.good());
 
-    EXPECT_EQ(-1, WriteHeader(file, 512, FILE_SIZE, simh_class::tape_mark_good_data_record, 0));
+    EXPECT_EQ(-1, WriteHeader(file, 512, FILE_SIZE, { simh_class::tape_mark_good_data_record, 0 }));
 
     int64_t position = 0;
 
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::tape_mark_good_data_record, 1);
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::tape_mark_good_data_record, 1 });
     EXPECT_EQ(HEADER_SIZE, position);
 
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::reserved_marker, 0);
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::reserved_marker, 0 });
     EXPECT_EQ(2 * HEADER_SIZE, position);
 }
 
@@ -126,14 +125,14 @@ TEST(SimhUtilTest, MoveBack)
     const array<uint8_t, 2> &buf = { 0xaa, 0xaa };
     int64_t position = 0;
 
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::tape_mark_good_data_record, RECORD_LENGTH_ODD);
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::tape_mark_good_data_record, RECORD_LENGTH_ODD });
     position += WriteRecord(file, position, FILE_SIZE, buf, RECORD_LENGTH_ODD);
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::tape_mark_good_data_record, RECORD_LENGTH_EVEN);
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::tape_mark_good_data_record, RECORD_LENGTH_EVEN });
     position += WriteRecord(file, position, FILE_SIZE, buf, RECORD_LENGTH_EVEN);
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::reserved_marker,
-        static_cast<int>(simh_marker::erase_gap));
-    position += WriteHeader(file, position, FILE_SIZE, simh_class::reserved_marker,
-        static_cast<int>(simh_marker::end_of_medium));
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::reserved_marker,
+        static_cast<int>(simh_marker::erase_gap) });
+    position += WriteHeader(file, position, FILE_SIZE, { simh_class::reserved_marker,
+        static_cast<int>(simh_marker::end_of_medium) });
     EXPECT_EQ(28, position);
 
     position = MoveBack(file, position);

@@ -9,28 +9,32 @@
 #include <cassert>
 #include "simh_util.h"
 
-pair<simh_util::simh_class, int> simh_util::ReadHeader(istream &file, int64_t &position, off_t file_size)
+int simh_util::ReadHeader(istream &file, int64_t position, off_t file_size, simh_header &header)
 {
     if (position + HEADER_SIZE > file_size) {
-        return {simh_class::reserved_marker, static_cast<int>(simh_marker::end_of_medium)};
+        header.cls = simh_class::reserved_marker;
+        header.value = static_cast<int>(simh_marker::end_of_medium);
+        return 0;
     }
 
     file.seekg(position, ios::beg);
 
-    array<uint8_t, HEADER_SIZE> header;
-    file.read((char*)&header, header.size());
+    array<uint8_t, HEADER_SIZE> h;
+    file.read((char*)h.data(), h.size());
     if (file.fail()) {
         file.clear();
-        return {simh_class::error, -1};
+        header.cls = simh_class::error;
+        return 0;
     }
 
-    position += HEADER_SIZE;
+    const uint32_t data = FromLittleEndian(h);
+    header.cls = static_cast<simh_class>(data >> 28);
+    header.value = data & 0xfffffff;
 
-    const uint32_t data = FromLittleEndian(header);
-    return {static_cast<simh_class>(data >> 28), data & 0xfffffff};
+    return HEADER_SIZE;
 }
 
-int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, simh_class cls, uint32_t value)
+int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, const simh_header &header)
 {
     if (position + HEADER_SIZE > file_size) {
         return OVERFLOW_ERROR;
@@ -38,7 +42,7 @@ int simh_util::WriteHeader(ostream &file, int64_t position, off_t file_size, sim
 
     file.seekp(position, ios::beg);
 
-    file.write((const char*)ToLittleEndian((static_cast<int>(cls) << 28) + value).data(), HEADER_SIZE);
+    file.write((const char*)ToLittleEndian((static_cast<int>(header.cls) << 28) + header.value).data(), HEADER_SIZE);
     file.flush();
     if (file.fail()) {
         file.clear();

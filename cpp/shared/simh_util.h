@@ -45,8 +45,13 @@ enum class simh_marker : uint32_t
     end_of_medium = 0xfffffff
 };
 
-pair<simh_class, int> ReadHeader(istream&, int64_t&, off_t);
-int WriteHeader(ostream&, int64_t, off_t, simh_class, uint32_t);
+using simh_header = struct {
+    simh_class cls;
+    uint32_t value;
+};
+
+int ReadHeader(istream&, int64_t, off_t, simh_header&);
+int WriteHeader(ostream&, int64_t, off_t, const simh_header&);
 
 int ReadRecord(istream&, int64_t, span<uint8_t>, int);
 int WriteRecord(ostream&, int64_t, off_t, span<const uint8_t>, uint32_t);
