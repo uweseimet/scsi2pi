@@ -75,7 +75,7 @@ TEST(ControllerFactoryTest, ProcessOnController)
     const int VALID_ID = 0;
     const int INVALID_ID = 1;
 
-    MockBus bus;
+    NiceMock<MockBus> bus;
     ControllerFactory controller_factory;
 
     EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(VALID_ID));
