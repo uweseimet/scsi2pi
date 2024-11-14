@@ -120,11 +120,13 @@ int S2pSimh::Run(span<char*> args)
 
 int S2pSimh::Analyze(istream &file, off_t file_size)
 {
-    while (offset < file_size) {
-        old_offset = offset;
+    while (position < file_size) {
+        old_position = position;
+
+        file.seekg(position, ios::beg);
 
         SimhHeader header;
-        offset += ReadHeader(file, offset, file_size, header);
+        position += ReadHeader(file, file_size, header);
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
             PrintClass(header.cls);
@@ -132,8 +134,7 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
                 cout << ", tape mark\n";
             }
             else {
-                cout << ", good data record, record length";
-                if (!PrintRecord(header.value)) {
+                if (!PrintRecord("good data record", header.value)) {
                     return EXIT_FAILURE;
                 }
             }
@@ -141,8 +142,7 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
 
         case simh_class::bad_data_record:
             PrintClass(header.cls);
-            cout << ", bad data record" << (header.value ? "" : ", no data recovered") << ", record length";
-            if (!PrintRecord(header.value)) {
+            if (!PrintRecord(header.value ? "bad data record" : "bad data record (no data recovered)", header.value)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -154,16 +154,14 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
         case simh_class::private_data_record_5:
         case simh_class::private_data_record_6:
             PrintClass(header.cls);
-            cout << ", private data record, record length";
-            if (!PrintRecord(header.value)) {
+            if (!PrintRecord("private data record", header.value)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::tape_description_data_record:
             PrintClass(header.cls);
-            cout << ", tape description data record, record length";
-            if (!PrintRecord(header.value)) {
+            if (!PrintRecord("tape description data record", header.value)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -174,8 +172,7 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
         case simh_class::reserved_data_record_4:
         case simh_class::reserved_data_record_5:
             PrintClass(header.cls);
-            cout << ", reserved data record, record length";
-            if (!PrintRecord(header.value)) {
+            if (!PrintRecord("reserved data record", header.value)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -208,25 +205,29 @@ int S2pSimh::Analyze(istream &file, off_t file_size)
 
 void S2pSimh::PrintClass(simh_class cls) const
 {
-    cout << dec << "Offset " << old_offset << ": Class " << hex << static_cast<int>(cls) << dec;
+    cout << dec << "Offset " << old_position << ": Class " << hex << static_cast<int>(cls) << dec;
 }
 
 void S2pSimh::PrintValue(int value)
 {
     cout << " " << value << " ($" << hex << value << ")\n";
 
-    offset += HEADER_SIZE;
+    position += HEADER_SIZE;
 }
 
-bool S2pSimh::PrintRecord(int value)
+bool S2pSimh::PrintRecord(const string &identifier, int value)
 {
+    cout << ", " << identifier << ", record length";
+
     PrintValue(value);
 
     const int length = value & 0xfffffff;
 
     if (dump && limit) {
+        file.seekg(position, ios::beg);
+
         vector<uint8_t> record(limit < length ? limit : length);
-        if (ReadRecord(file, offset, record, record.size()) != static_cast<int>(record.size())) {
+        if (ReadRecord(file, record, record.size()) == -1) {
             cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }
@@ -234,10 +235,10 @@ bool S2pSimh::PrintRecord(int value)
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
 
-    offset += Pad(length);
+    position += Pad(length);
 
-    array<uint8_t, HEADER_SIZE> data;
-    file.seekg(offset - HEADER_SIZE, ios::beg);
+    array<uint8_t, HEADER_SIZE> data = { };
+    file.seekg(position - HEADER_SIZE, ios::beg);
     file.read((char*)data.data(), data.size());
     const int trailing_length = FromLittleEndian(data);
     if (length != trailing_length) {

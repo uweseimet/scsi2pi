@@ -50,13 +50,13 @@ using SimhHeader = struct _SimhHeader {
     uint32_t value;
 };
 
-int ReadHeader(istream&, int64_t, off_t, SimhHeader&);
-int WriteHeader(ostream&, int64_t, off_t, const SimhHeader&);
+int ReadHeader(istream&, off_t, SimhHeader&);
+int WriteHeader(ostream&, off_t, const SimhHeader&);
 
-int ReadRecord(istream&, int64_t, span<uint8_t>, int);
-int WriteRecord(ostream&, int64_t, off_t, span<const uint8_t>, uint32_t);
+int ReadRecord(istream&, span<uint8_t>, int);
+int WriteRecord(ostream&, off_t, span<const uint8_t>, uint32_t);
 
-int64_t MoveBack(istream&, int64_t);
+int64_t MoveBack(istream&);
 
 bool IsRecord(simh_class);
 

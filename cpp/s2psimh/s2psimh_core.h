@@ -33,15 +33,15 @@ private:
 
     void PrintClass(simh_util::simh_class) const;
     void PrintValue(int);
-    bool PrintRecord(int);
+    bool PrintRecord(const string&, int);
     bool PrintReservedMarker(int);
 
     string filename;
 
     ifstream file;
 
-    int64_t offset = 0;
-    int64_t old_offset = 0;
+    int64_t position = 0;
+    int64_t old_position = 0;
 
     bool dump = false;
     int limit = numeric_limits<int>::max();

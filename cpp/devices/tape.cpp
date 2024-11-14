@@ -179,9 +179,10 @@ int Tape::ReadData(span<uint8_t> buf)
 
     LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", length, position));
 
+    file.seekg(position, ios::beg);
+
     // TODO Move all tar-related code to separate namespace or class, just like the simh code
     if (tar_mode) {
-        file.seekg(position, ios::beg);
         file.read((char*)buf.data(), length);
         if (file.fail()) {
             file.clear();
@@ -192,7 +193,7 @@ int Tape::ReadData(span<uint8_t> buf)
         position += length;
     }
     else {
-        if (ReadRecord(file, position, buf, length) != length) {
+        if (ReadRecord(file, buf, length) == -1) {
             ++read_error_count;
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
@@ -217,19 +218,21 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", length, position));
 
+    file.seekp(position, ios::beg);
+
     if (tar_mode) {
         if (position + length > file_size) {
             throw scsi_exception(sense_key::volume_overflow);
         }
 
-        file.seekp(position, ios::beg);
         file.write((const char*)buf.data(), length);
 
         position += length;
     }
     else {
-        const int l = WriteRecord(file, position, file_size, buf, length);
+        const int l = WriteRecord(file, file_size, buf, length);
         if (l == -1) {
+            ++write_error_count;
             throw scsi_exception(sense_key::volume_overflow);
         }
 
@@ -588,7 +591,9 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
                 return 0;
             }
 
-            position = MoveBack(file, position);
+            file.seekg(position, ios::beg);
+
+            position = MoveBack(file);
             if (position < 0) {
                 throw scsi_exception(sense_key::medium_error, asc::read_error);
             }
@@ -729,8 +734,10 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
     while (true) {
         const auto old_position = position;
 
+        file.seekg(position, ios::beg);
+
         SimhHeader header;
-        position += ReadHeader(file, position, file_size, header);
+        position += ReadHeader(file, file_size, header);
         if (header.cls == simh_class::reserved_marker && header.value == static_cast<int>(simh_marker::end_of_medium)) {
             return {object_type::end_of_partition, 0};
         }
@@ -773,7 +780,9 @@ int64_t Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     LogTrace(fmt::format("Writing SIMH header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
         value, position));
 
-    const int size = WriteHeader(file, position, file_size, { cls, value });
+    file.seekp(position, ios::beg);
+
+    const int size = WriteHeader(file, file_size, { cls, value });
     switch (size) {
     case OVERFLOW_ERROR:
         ++write_error_count;
