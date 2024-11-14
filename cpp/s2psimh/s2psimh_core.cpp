@@ -118,12 +118,12 @@ int S2pSimh::Run(span<char*> args)
     return Analyze(file, file_size);
 }
 
-int S2pSimh::Analyze(istream &file, off_t size)
+int S2pSimh::Analyze(istream &file, off_t file_size)
 {
-    while (offset < size) {
+    while (offset < file_size) {
         old_offset = offset;
 
-        const auto [cls, value] = ReadHeader(file, offset);
+        const auto [cls, value] = ReadHeader(file, offset, file_size);
         switch (cls) {
         case simh_class::tape_mark_good_data_record:
             PrintClass(cls);
@@ -192,7 +192,7 @@ int S2pSimh::Analyze(istream &file, off_t size)
             }
             break;
 
-        case simh_class::invalid:
+        case simh_class::error:
             cerr << "Error: Can't read from '" << filename << "'" << endl;
             return EXIT_FAILURE;
 

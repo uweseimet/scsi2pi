@@ -36,7 +36,7 @@ enum class simh_class
     tape_description_data_record = 14,
     reserved_marker = 15,
     // SCSI2Pi-specific
-    invalid = -1,
+    error = -1
 };
 
 enum class simh_marker : uint32_t
@@ -45,7 +45,7 @@ enum class simh_marker : uint32_t
     end_of_medium = 0xfffffff
 };
 
-pair<simh_class, int> ReadHeader(istream&, int64_t&);
+pair<simh_class, int> ReadHeader(istream&, int64_t&, off_t);
 int WriteHeader(ostream&, int64_t, off_t, simh_class, uint32_t);
 
 int ReadRecord(istream&, int64_t, span<uint8_t>, int);

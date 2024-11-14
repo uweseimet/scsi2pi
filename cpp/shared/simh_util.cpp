@@ -9,15 +9,19 @@
 #include <cassert>
 #include "simh_util.h"
 
-pair<simh_util::simh_class, int> simh_util::ReadHeader(istream &file, int64_t &position)
+pair<simh_util::simh_class, int> simh_util::ReadHeader(istream &file, int64_t &position, off_t file_size)
 {
+    if (position + HEADER_SIZE > file_size) {
+        return {simh_class::reserved_marker, static_cast<int>(simh_marker::end_of_medium)};
+    }
+
     file.seekg(position, ios::beg);
 
     array<uint8_t, HEADER_SIZE> header;
     file.read((char*)&header, header.size());
     if (file.fail()) {
         file.clear();
-        return {simh_class::invalid, -1};
+        return {simh_class::error, -1};
     }
 
     position += HEADER_SIZE;
@@ -60,7 +64,7 @@ int simh_util::ReadRecord(istream &file, int64_t position, span<uint8_t> buf, in
 int simh_util::WriteRecord(ostream &file, int64_t position, off_t filesize, span<const uint8_t> buf, uint32_t length)
 {
     if (position + Pad(length) + HEADER_SIZE > filesize) {
-        return -1;
+        return OVERFLOW_ERROR;
     }
 
     file.seekp(position, ios::beg);
@@ -100,7 +104,7 @@ int64_t simh_util::MoveBack(istream &file, int64_t position)
 
 bool simh_util::IsRecord(simh_class cls)
 {
-    return cls != simh_class::private_marker && cls != simh_class::reserved_marker && cls != simh_class::invalid;
+    return cls != simh_class::private_marker && cls != simh_class::reserved_marker && cls != simh_class::error;
 }
 
 uint32_t simh_util::Pad(int length)

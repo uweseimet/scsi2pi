@@ -29,20 +29,26 @@ TEST(SimhUtilTest, ReadHeader)
 
     position = 0;
 
-    const auto [cls_filemark, value_filemark] = ReadHeader(file, position);
+    const auto [cls_filemark, value_filemark] = ReadHeader(file, position, FILE_SIZE);
     EXPECT_EQ(HEADER_SIZE, position);
     EXPECT_EQ(cls_filemark, simh_class::tape_mark_good_data_record);
     EXPECT_EQ(value_filemark, 0);
 
-    const auto [cls_record, value_record] = ReadHeader(file, position);
+    const auto [cls_record, value_record] = ReadHeader(file, position, FILE_SIZE);
     EXPECT_EQ(2 * HEADER_SIZE, position);
     EXPECT_EQ(cls_record, simh_class::tape_mark_good_data_record);
     EXPECT_EQ(value_record, 0x1234567);
 
-    const auto [cls_end_of_data, value_end_of_data] = ReadHeader(file, position);
+    const auto [cls_end_of_data, value_end_of_data] = ReadHeader(file, position, FILE_SIZE);
     EXPECT_EQ(3 * HEADER_SIZE, position);
     EXPECT_EQ(cls_end_of_data, simh_class::reserved_marker);
     EXPECT_EQ(value_end_of_data, 0);
+
+    position = FILE_SIZE;
+    const auto [cls_end_of_file, value_end_of_file] = ReadHeader(file, position, FILE_SIZE);
+    EXPECT_EQ(FILE_SIZE, position);
+    EXPECT_EQ(cls_end_of_file, simh_class::reserved_marker);
+    EXPECT_EQ(value_end_of_file, static_cast<int>(simh_marker::end_of_medium));
 }
 
 TEST(SimhUtilTest, WriteHeader)
