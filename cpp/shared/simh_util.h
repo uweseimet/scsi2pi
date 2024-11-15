@@ -58,9 +58,6 @@ using TapeFile = struct _TapeFile {
 int ReadHeader(const TapeFile&, SimhHeader&);
 int WriteHeader(const TapeFile&, const SimhHeader&);
 
-int ReadRecord(const TapeFile&, span<uint8_t>, int);
-int WriteRecord(const TapeFile&, span<const uint8_t>, uint32_t);
-
 int64_t MoveBack(istream&);
 
 bool IsRecord(simh_class);

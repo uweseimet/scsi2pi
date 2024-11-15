@@ -152,9 +152,7 @@ int Tape::GetVariableBlockSize()
 {
     const int length = FindNextObject(object_type::block, 0);
 
-    // Check for incorrect block length
-    const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
-    if (length != requested_length) {
+    if (const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2); length != requested_length) {
         LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
             length, requested_length));
 
@@ -192,16 +190,13 @@ int Tape::ReadData(span<uint8_t> buf)
 
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), size);
-    if (file.fail()) {
-        file.clear();
-        ++read_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::read_error);
-    }
+    CheckForReadError();
 
     remaining_count -= size;
     position += size;
 
     if (!remaining_count) {
+        // TODO Extract tar-specific code and simh-specific code to classes
         if (!tar_mode) {
             if (byte_count != Pad(byte_count)) {
                 file.seekg(1, ios::cur);
@@ -210,8 +205,9 @@ int Tape::ReadData(span<uint8_t> buf)
 
             array<uint8_t, HEADER_SIZE> data = { };
             file.read((char*)data.data(), data.size());
-            const int trailing_length = FromLittleEndian(data);
-            if (static_cast<int>(byte_count) != trailing_length) {
+            CheckForReadError();
+
+            if (const int trailing_length = FromLittleEndian(data); static_cast<int>(byte_count) != trailing_length) {
                 LogWarn(fmt::format("Trailing record length {0} does not match leading length {1}", trailing_length,
                     byte_count));
             }
@@ -241,12 +237,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     file.seekp(position, ios::beg);
     file.write((const char*)buf.data(), size);
-    file.flush();
-    if (file.fail()) {
-        file.clear();
-        ++write_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
+    CheckForWriteError();
 
     remaining_count -= size;
     position += size;
@@ -264,12 +255,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
             // SCSI2Pi ensures that there is always an end-of-data object
             WriteMetaData(object_type::end_of_data);
 
-            file.flush();
-            if (file.fail()) {
-                file.clear();
-                ++write_error_count;
-                throw scsi_exception(sense_key::medium_error, asc::write_error);
-            }
+            CheckForWriteError();
         }
 
         ++block_location;
@@ -294,12 +280,11 @@ void Tape::Open()
     ValidateFile();
 
     ResetPosition();
-
 }
 
 bool Tape::Eject(bool force)
 {
-    bool status = StorageDevice::Eject(force);
+    const bool status = StorageDevice::Eject(force);
     if (status) {
         file.close();
 
@@ -313,6 +298,12 @@ bool Tape::Eject(bool force)
 vector<uint8_t> Tape::InquiryInternal() const
 {
     return HandleInquiry(device_type::sequential_access, true);
+}
+
+bool Tape::ValidateBlockSize(uint32_t size) const
+{
+    // Tape drives support multiples of 4
+    return size && !(size % 4);
 }
 
 int Tape::VerifyBlockSizeChange(int requested_size, bool temporary) const
@@ -421,11 +412,7 @@ void Tape::Erase6()
 
     WriteMetaData(object_type::end_of_data);
 
-    file.flush();
-    if (file.fail()) {
-        file.clear();
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
+    CheckForWriteError();
 
     StatusPhase();
 }
@@ -715,21 +702,14 @@ void Tape::Erase()
         }
 
         file.write((const char*)buf.data(), chunk);
-        if (file.fail()) {
-            file.clear();
-            throw scsi_exception(sense_key::medium_error, asc::write_error);
-        }
+        CheckForWriteError();
 
         remaining -= chunk;
         position += chunk;
         block_location += chunk / GetBlockSize();
     }
 
-    file.flush();
-    if (file.fail()) {
-        file.clear();
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-    }
+    CheckForWriteError();
 }
 
 void Tape::ResetPosition()
@@ -830,4 +810,23 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     }
 
     return size;
+}
+
+void Tape::CheckForReadError()
+{
+    if (file.fail()) {
+        file.clear();
+        ++read_error_count;
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
+    }
+}
+
+void Tape::CheckForWriteError()
+{
+    file.flush();
+    if (file.fail()) {
+        file.clear();
+        ++write_error_count;
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
 }

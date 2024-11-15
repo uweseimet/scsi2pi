@@ -378,6 +378,17 @@ TEST(TapeTest, GetBlockSizes)
     EXPECT_TRUE(sizes.contains(8192));
 }
 
+TEST(TapeTest, ValidateBlockSize)
+{
+    MockTape tape;
+
+    EXPECT_FALSE(tape.ValidateBlockSize(0));
+    EXPECT_TRUE(tape.ValidateBlockSize(4));
+    EXPECT_FALSE(tape.ValidateBlockSize(7));
+    EXPECT_TRUE(tape.ValidateBlockSize(512));
+    EXPECT_TRUE(tape.ValidateBlockSize(131072));
+}
+
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;

@@ -654,8 +654,8 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
         if (device->SupportsFile()) {
-            const auto storage_device = static_pointer_cast<StorageDevice>(device);
-            if (!storage_device->SetConfiguredBlockSize(block_size)) {
+            if (const auto storage_device = static_pointer_cast<StorageDevice>(device); !storage_device->SetConfiguredBlockSize(
+                block_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
             }
         }

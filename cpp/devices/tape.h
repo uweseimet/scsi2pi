@@ -37,6 +37,8 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
+    bool ValidateBlockSize(uint32_t) const override;
+
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
@@ -89,6 +91,9 @@ private:
 
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
+
+    void CheckForReadError();
+    void CheckForWriteError();
 
     fstream file;
 

@@ -226,7 +226,7 @@ bool S2pSimh::PrintRecord(const string &identifier, int value)
         file.seekg(position, ios::beg);
 
         vector<uint8_t> record(limit < length ? limit : length);
-        if (ReadRecord( { file, file_size }, record, record.size()) == -1) {
+        if (ReadRecord(record) == -1) {
             cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }
@@ -269,4 +269,20 @@ bool S2pSimh::PrintReservedMarker(int value)
     }
 
     return true;
+}
+
+int S2pSimh::ReadRecord(span<uint8_t> buf)
+{
+    if (static_cast<off_t>(position + buf.size()) > file_size) {
+        return -1;
+    }
+
+    file.read((char*)buf.data(), buf.size());
+    if (file.fail()) {
+        file.clear();
+        return -1;
+    }
+
+    // Skip trailing length
+    return buf.size() + HEADER_SIZE;
 }

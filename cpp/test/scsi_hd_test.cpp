@@ -153,6 +153,23 @@ TEST(ScsiHdTest, ConfiguredBlockSize)
     EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
 }
 
+TEST(ScsiHdTest, ValidateBlockSize)
+{
+    MockScsiHd hd(0, false);
+    EXPECT_FALSE(hd.ValidateBlockSize(0));
+    EXPECT_TRUE(hd.ValidateBlockSize(4));
+    EXPECT_FALSE(hd.ValidateBlockSize(7));
+    EXPECT_TRUE(hd.ValidateBlockSize(512));
+    EXPECT_TRUE(hd.ValidateBlockSize(131072));
+
+    MockScsiHd rm(0, true);
+    EXPECT_FALSE(rm.ValidateBlockSize(0));
+    EXPECT_FALSE(rm.ValidateBlockSize(4));
+    EXPECT_FALSE(rm.ValidateBlockSize(7));
+    EXPECT_TRUE(hd.ValidateBlockSize(512));
+    EXPECT_FALSE(rm.ValidateBlockSize(131072));
+}
+
 TEST(ScsiHdTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;

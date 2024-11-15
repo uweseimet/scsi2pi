@@ -49,40 +49,6 @@ int simh_util::WriteHeader(const TapeFile &file_wrapper, const SimhHeader &heade
     return HEADER_SIZE;
 }
 
-int simh_util::ReadRecord(const TapeFile &file_wrapper, span<uint8_t> buf, int length)
-{
-    if (static_cast<off_t>(file_wrapper.file.tellg()) + length > file_wrapper.size) {
-        return READ_ERROR;
-    }
-
-    file_wrapper.file.read((char*)buf.data(), length);
-    if (file_wrapper.file.fail()) {
-        file_wrapper.file.clear();
-        return READ_ERROR;
-    }
-
-    // Skip trailing length
-    return length + HEADER_SIZE;
-}
-
-int simh_util::WriteRecord(const TapeFile &file_wrapper, span<const uint8_t> buf, uint32_t length)
-{
-    if (static_cast<off_t>(file_wrapper.file.tellp()) + Pad(length) + HEADER_SIZE > file_wrapper.size) {
-        return OVERFLOW_ERROR;
-    }
-
-    file_wrapper.file.write((const char*)buf.data(), length);
-
-    if (length != Pad(length)) {
-        file_wrapper.file << '\0';
-    }
-
-    // Trailing length
-    file_wrapper.file.write((const char*)ToLittleEndian(length).data(), HEADER_SIZE);
-
-    return Pad(length) + HEADER_SIZE;
-}
-
 int64_t simh_util::MoveBack(istream &file)
 {
     // Position before trailing length
