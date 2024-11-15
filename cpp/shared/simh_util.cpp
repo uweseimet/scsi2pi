@@ -52,13 +52,13 @@ int simh_util::WriteHeader(const TapeFile &file_wrapper, const SimhHeader &heade
 int simh_util::ReadRecord(const TapeFile &file_wrapper, span<uint8_t> buf, int length)
 {
     if (static_cast<off_t>(file_wrapper.file.tellg()) + length > file_wrapper.size) {
-        return -1;
+        return READ_ERROR;
     }
 
     file_wrapper.file.read((char*)buf.data(), length);
     if (file_wrapper.file.fail()) {
         file_wrapper.file.clear();
-        return -1;
+        return READ_ERROR;
     }
 
     // Skip trailing length
@@ -102,7 +102,7 @@ int64_t simh_util::MoveBack(istream &file)
 
     const int64_t position = file.tellg() - (IsRecord(cls) ? Pad(length) + 2 * HEADER_SIZE : HEADER_SIZE);
     if (position < 0) {
-        return -1;
+        return READ_ERROR;
     }
 
     file.seekg(position, ios::beg);

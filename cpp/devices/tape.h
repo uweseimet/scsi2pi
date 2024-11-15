@@ -85,14 +85,10 @@ private:
 
     void Erase();
 
+    void ResetPosition();
+
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
-
-    void ResetPosition()
-    {
-        position = 0;
-        block_location = 0;
-    }
 
     fstream file;
 

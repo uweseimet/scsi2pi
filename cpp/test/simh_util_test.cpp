@@ -32,22 +32,22 @@ TEST(SimhUtilTest, ReadHeader)
     file.seekg(0, ios::beg);
     position = ReadHeader(tapeFile, header);
     EXPECT_EQ(HEADER_SIZE, position);
-    EXPECT_EQ(header.cls, simh_class::tape_mark_good_data_record);
-    EXPECT_EQ(header.value, 0);
+    EXPECT_EQ(simh_class::tape_mark_good_data_record, header.cls);
+    EXPECT_EQ(0U, header.value);
 
     position += ReadHeader(tapeFile, header);
     EXPECT_EQ(2 * HEADER_SIZE, position);
-    EXPECT_EQ(header.cls, simh_class::tape_mark_good_data_record);
-    EXPECT_EQ(header.value, 0x1234567);
+    EXPECT_EQ(simh_class::tape_mark_good_data_record, header.cls);
+    EXPECT_EQ(0x1234567U, header.value);
 
     position += ReadHeader(tapeFile, header);
     EXPECT_EQ(3 * HEADER_SIZE, position);
-    EXPECT_EQ(header.cls, simh_class::reserved_marker);
-    EXPECT_EQ(header.value, 0);
+    EXPECT_EQ(simh_class::reserved_marker, header.cls);
+    EXPECT_EQ(0U, header.value);
 
     EXPECT_EQ(0, ReadHeader(tapeFile, header));
-    EXPECT_EQ(header.cls, simh_class::reserved_marker);
-    EXPECT_EQ(header.value, static_cast<int>(simh_marker::end_of_medium));
+    EXPECT_EQ(simh_class::reserved_marker, header.cls);
+    EXPECT_EQ(static_cast<uint32_t>(simh_marker::end_of_medium), header.value);
 }
 
 TEST(SimhUtilTest, WriteHeader)
@@ -90,7 +90,7 @@ TEST(SimhUtilTest, ReadRecord)
     EXPECT_EQ(0x04, buf[3]);
 
     file.seekg(file_size, ios::beg);
-    EXPECT_EQ(-1, ReadRecord(tapeFile, buf, static_cast<int>(buf.size())));
+    EXPECT_EQ(READ_ERROR, ReadRecord(tapeFile, buf, static_cast<int>(buf.size())));
 }
 
 TEST(SimhUtilTest, WriteRecord)
@@ -103,18 +103,21 @@ TEST(SimhUtilTest, WriteRecord)
 
     array<uint8_t, 4> buf = { };
 
-    EXPECT_EQ(HEADER_SIZE + buf.size(), WriteRecord( { file, FILE_SIZE }, buf, static_cast<int>(buf.size())));
+    EXPECT_EQ(static_cast<int>(HEADER_SIZE + buf.size()),
+        WriteRecord( { file, FILE_SIZE }, buf, static_cast<int>(buf.size())));
     file.seekg(-HEADER_SIZE, ios::cur);
     uint32_t trailing_length;
     file.read((char*)&trailing_length, HEADER_SIZE);
-    EXPECT_EQ(4, trailing_length);
+    EXPECT_EQ(4U, trailing_length);
 
     file.seekg(0, ios::beg);
     file.seekp(0, ios::beg);
     EXPECT_EQ(HEADER_SIZE + 2, WriteRecord( { file, FILE_SIZE }, buf, 1));
     file.seekg(-HEADER_SIZE, ios::cur);
     file.read((char*)&trailing_length, HEADER_SIZE);
-    EXPECT_EQ(1, trailing_length);
+    EXPECT_EQ(1U, trailing_length);
+
+    EXPECT_EQ(OVERFLOW_ERROR, WriteRecord( { file, FILE_SIZE }, buf, 1));
 }
 
 TEST(SimhUtilTest, MoveBack)

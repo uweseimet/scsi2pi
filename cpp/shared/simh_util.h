@@ -73,6 +73,7 @@ array<uint8_t, 4> ToLittleEndian(uint32_t);
 static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 
 static const int OVERFLOW_ERROR = -1;
-static const int WRITE_ERROR = -2;
+static const int READ_ERROR = -2;
+static const int WRITE_ERROR = -3;
 
 }

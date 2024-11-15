@@ -24,7 +24,7 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 256, 512, 1024, 2048, 4096 })
+Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 256, 512, 1024, 2048, 4096, 8192 })
 {
     SetProduct("SCSI TAPE");
     SetProtectable(true);
@@ -182,7 +182,7 @@ int Tape::ReadData(span<uint8_t> buf)
     file.seekg(position, ios::beg);
 
     // TODO Move all tar-related code to separate namespace or class, just like the simh code
-    int length = -1;
+    int length = READ_ERROR;
     if (tar_mode) {
         file.read((char*)buf.data(), size);
         if (file.fail()) {
@@ -194,12 +194,12 @@ int Tape::ReadData(span<uint8_t> buf)
     }
     else {
         length = ReadRecord( { file, file_size }, buf, size);
-        if (length != -1) {
+        if (length >= 0) {
             length = Pad(length);
         }
     }
 
-    if (length == -1) {
+    if (length < 0) {
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
@@ -234,7 +234,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     }
     else {
         const int l = WriteRecord( { file, file_size }, buf, size);
-        if (l == -1) {
+        if (l < 0) {
             ++write_error_count;
             throw scsi_exception(sense_key::volume_overflow);
         }
@@ -455,6 +455,11 @@ void Tape::Space6()
 
 void Tape::WriteFilemarks6()
 {
+    if (tar_mode) {
+        LogInfo("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS(6) command is ignored");
+        StatusPhase();
+    }
+
     // Since SSC-2 setmarks are not supported anymore
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -462,10 +467,7 @@ void Tape::WriteFilemarks6()
 
     CheckWritePreconditions();
 
-    if (tar_mode) {
-        LogWarn("Writing filemarks in tar-compatibility mode is not supported, command is ignored");
-    }
-    else if (const int count = GetCdbInt24(2); count) {
+    if (const int count = GetCdbInt24(2); count) {
         for (int i = 0; i < count; i++) {
             WriteMetaData(object_type::filemark);
         }
@@ -478,7 +480,6 @@ void Tape::WriteFilemarks6()
     StatusPhase();
 }
 
-// This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
     // CP is not supported
@@ -712,6 +713,12 @@ void Tape::Erase()
     }
 }
 
+void Tape::ResetPosition()
+{
+    position = 0;
+    block_location = 0;
+}
+
 vector<PbStatistics> Tape::GetStatistics() const
 {
     vector<PbStatistics> statistics = StorageDevice::GetStatistics();
@@ -783,7 +790,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
 {
     LogTrace(fmt::format("Writing SIMH header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, file.tellp()));
+        value, static_cast<uint64_t>(file.tellp())));
 
     const int size = WriteHeader( { file, file_size }, { cls, value });
     switch (size) {
