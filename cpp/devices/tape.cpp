@@ -24,7 +24,7 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 256, 512, 1024, 2048, 4096, 8192 })
+Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 512, 1024, 2048, 4096, 8192 })
 {
     SetProduct("SCSI TAPE");
     SetProtectable(true);
@@ -141,11 +141,10 @@ int Tape::GetVariableBlockSize()
     const int length = FindNextObject(object_type::block, 0);
 
     // Check for incorrect block length
-    if (length != GetController()->GetChunkSize()) {
-        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match expected length of {1} byte(s)",
-            length, GetController()->GetChunkSize()));
-
-        const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
+    const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2);
+    if (length != requested_length) {
+        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
+            length, requested_length));
 
         // In fixed mode an incorrect length always results in an error.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length

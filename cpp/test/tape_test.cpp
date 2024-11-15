@@ -304,6 +304,10 @@ TEST(TapeTest, WriteFileMarks6)
 
     tape->SetProtected(true);
     TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::data_protect, asc::write_protected);
+
+    auto [_, tape_tar] = CreateTape();
+    CreateTapeFile(*tape_tar, 512, "tar");
+    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::write_filemarks6));
 }
 
 TEST(TapeTest, Locate10)
@@ -384,9 +388,8 @@ TEST(TapeTest, GetBlockSizes)
     Tape tape(0);
 
     const auto &sizes = tape.GetSupportedBlockSizes();
-    EXPECT_EQ(6U, sizes.size());
+    EXPECT_EQ(5U, sizes.size());
 
-    EXPECT_TRUE(sizes.contains(256));
     EXPECT_TRUE(sizes.contains(512));
     EXPECT_TRUE(sizes.contains(1024));
     EXPECT_TRUE(sizes.contains(2048));

@@ -401,7 +401,7 @@ string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) co
 
     if (properties.block_sizes_size()) {
         const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
-        s << "Configurable block sizes in bytes: " << Join(sorted_sizes);
+        s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: " << Join(sorted_sizes);
     }
 
     return s.str();
