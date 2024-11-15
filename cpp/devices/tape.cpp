@@ -685,7 +685,7 @@ uint32_t Tape::GetByteCount() const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    LogTrace(fmt::format("Position: {0}, byte count: {1}", position, count));
+    LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", position, count));
 
     return count;
 }
