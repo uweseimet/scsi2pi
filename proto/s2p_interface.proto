@@ -279,7 +279,7 @@ message PbDeviceProperties {
     map<string, string> default_params = 8;
     // Maximum LUN number this device can have, usually 32 for SCSI and 2 for SASI devices
     int32 luns = 9;
-    // Unordered list of permitted block sizes in bytes, empty if the block size is not configurable
+    // Unordered list of the standard block sizes in bytes, empty if the block size is not configurable
     repeated uint32 block_sizes = 10;
     // The SCSI level, 0 if not explicitly set
     int32 scsi_level = 100;
@@ -385,7 +385,7 @@ message PbDeviceDefinition {
     PbDeviceType type = 3;
     // Device specific named parameters, e.g. the name of an image file
     map<string, string> params = 4;
-    // The optional block size in bytes per sector, must be one of the supported block sizes
+    // The optional block size in bytes per sector, must be a multiple of 4
     int32 block_size = 5;
     // The device name components
     string vendor = 6;

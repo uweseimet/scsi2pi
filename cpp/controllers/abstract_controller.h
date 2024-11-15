@@ -144,7 +144,7 @@ private:
     vector<uint8_t> buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;
-    // Total number of bytes to be transferred
+    // Total number of bytes to be transferred, updated during the transfer
     int total_length = 0;
     // Remaining bytes to be transferred in a single handshake cycle
     int current_length = 0;

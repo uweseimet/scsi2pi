@@ -107,11 +107,19 @@ void Tape::Read6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto count = GetByteCount();
-    if (count) {
+    byte_count = GetByteCount();
+    if (byte_count && !tar_mode) {
+        const auto [scsi_type, length] = ReadSimhHeader();
+        if (scsi_type != object_type::block || static_cast<int>(byte_count) != length) {
+            ++read_error_count;
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+
         blocks_read = 0;
 
-        GetController()->SetTransferSize(count, GetBlockSize());
+        remaining_count = byte_count;
+
+        GetController()->SetTransferSize(byte_count, GetBlockSize());
 
         GetController()->SetCurrentLength(GetBlockSize());
         DataInPhase(ReadData(GetController()->GetBuffer()));
@@ -127,11 +135,13 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
+        remaining_count = byte_count;
+
         WriteMetaData(object_type::block, byte_count);
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
-        DataOutPhase(byte_count);
+        DataOutPhase(GetBlockSize());
     }
     else {
         StatusPhase();
@@ -181,33 +191,38 @@ int Tape::ReadData(span<uint8_t> buf)
     LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", size, position));
 
     file.seekg(position, ios::beg);
-
-    // TODO Move all tar-related code to separate namespace or class, just like the simh code
-    int length = READ_ERROR;
-    if (tar_mode) {
-        file.read((char*)buf.data(), size);
-        if (file.fail()) {
-            file.clear();
-        }
-        else {
-            length = size;
-        }
-    }
-    else {
-        length = ReadRecord( { file, file_size }, buf, size);
-        if (length >= 0) {
-            length = Pad(length);
-        }
-    }
-
-    if (length < 0) {
+    file.read((char*)buf.data(), size);
+    if (file.fail()) {
+        file.clear();
         ++read_error_count;
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position += length;
-    ++block_location;
-    ++blocks_read;
+    remaining_count -= size;
+    position += size;
+
+    if (!remaining_count) {
+        if (!tar_mode) {
+            if (byte_count != Pad(byte_count)) {
+                file.seekg(1, ios::cur);
+                ++position;
+            }
+
+            array<uint8_t, HEADER_SIZE> data = { };
+            file.read((char*)data.data(), data.size());
+            const int trailing_length = FromLittleEndian(data);
+            if (static_cast<int>(byte_count) != trailing_length) {
+                LogWarn(fmt::format("Trailing record length {0} does not match leading length {1}", trailing_length,
+                    byte_count));
+            }
+
+            // Skip trailing length
+            position += HEADER_SIZE;
+        }
+
+        ++block_location;
+        ++blocks_read;
+    }
 
     return size;
 }
@@ -220,27 +235,12 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", size, position));
 
+    if (position + size > file_size) {
+        throw scsi_exception(sense_key::volume_overflow);
+    }
+
     file.seekp(position, ios::beg);
-
-    if (tar_mode) {
-        if (position + size > file_size) {
-            throw scsi_exception(sense_key::volume_overflow);
-        }
-
-        file.write((const char*)buf.data(), size);
-
-        position += size;
-    }
-    else {
-        const int l = WriteRecord( { file, file_size }, buf, size);
-        if (l < 0) {
-            ++write_error_count;
-            throw scsi_exception(sense_key::volume_overflow);
-        }
-
-        position += l;
-    }
-
+    file.write((const char*)buf.data(), size);
     file.flush();
     if (file.fail()) {
         file.clear();
@@ -248,12 +248,31 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         throw scsi_exception(sense_key::medium_error, asc::write_error);
     }
 
-    byte_count -= size;
-    ++block_location;
+    remaining_count -= size;
+    position += size;
 
-    if (!byte_count)
-    {
-        WriteMetaData(object_type::end_of_data);
+    if (!remaining_count) {
+        if (!tar_mode) {
+            if (byte_count != Pad(byte_count)) {
+                file << '\0';
+            }
+
+            // Trailing length
+            file.write((const char*)ToLittleEndian(byte_count).data(), HEADER_SIZE);
+            position += HEADER_SIZE;
+
+            // SCSI2Pi ensures that there is always an end-of-data object
+            WriteMetaData(object_type::end_of_data);
+
+            file.flush();
+            if (file.fail()) {
+                file.clear();
+                ++write_error_count;
+                throw scsi_exception(sense_key::medium_error, asc::write_error);
+            }
+        }
+
+        ++block_location;
     }
 
     return size;
@@ -421,9 +440,6 @@ void Tape::ReadBlockLimits()
 
 void Tape::Rewind()
 {
-    file.seekg(0, ios::beg);
-    file.seekp(0, ios::beg);
-
     ResetPosition();
 
     StatusPhase();
@@ -458,8 +474,9 @@ void Tape::Space6()
 void Tape::WriteFilemarks6()
 {
     if (tar_mode) {
-        LogInfo("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS(6) command is ignored");
+        LogTrace("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS(6) command is ignored");
         StatusPhase();
+        return;
     }
 
     // Since SSC-2 setmarks are not supported anymore
@@ -717,6 +734,10 @@ void Tape::Erase()
 
 void Tape::ResetPosition()
 {
+    file.clear();
+    file.seekg(0, ios::beg);
+    file.seekp(0, ios::beg);
+
     position = 0;
     block_location = 0;
 }

@@ -405,12 +405,11 @@ void Controller::Receive()
             return;
         }
         // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
+        // and are worth logging
         else if (IsDataOut() && !GetOffset() && l < 256 && get_level() == level::trace) {
             LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", l, FormatBytes(GetBuffer(), l)));
         }
-    }
 
-    if (GetCurrentLength()) {
         UpdateOffsetAndLength();
         return;
     }
