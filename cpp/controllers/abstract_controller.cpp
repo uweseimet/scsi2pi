@@ -55,7 +55,7 @@ void AbstractController::SetTransferSize(int length, int size)
     total_length = length;
 
     // The number of bytes to transfer in a single chunk
-    chunk_size = size;
+    chunk_size = length < size ? length : size;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted

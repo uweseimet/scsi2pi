@@ -107,13 +107,13 @@ void Tape::Read6()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int count = GetByteCount();
+    const auto count = GetByteCount();
     if (count) {
         blocks_read = 0;
 
-        GetController()->SetTransferSize(count, count % GetBlockSize() ? count : GetBlockSize());
+        GetController()->SetTransferSize(count, GetBlockSize());
 
-        GetController()->SetCurrentLength(count);
+        GetController()->SetCurrentLength(GetBlockSize());
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
     else {
@@ -127,9 +127,11 @@ void Tape::Write6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        GetController()->SetTransferSize(byte_count, byte_count % GetBlockSize() ? byte_count : GetBlockSize());
+        WriteMetaData(object_type::block, byte_count);
 
-        DataOutPhase(byte_count % GetBlockSize() ? byte_count : GetBlockSize());
+        GetController()->SetTransferSize(byte_count, GetBlockSize());
+
+        DataOutPhase(byte_count);
     }
     else {
         StatusPhase();
@@ -174,7 +176,7 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int size = tar_mode ? GetBlockSize() : GetVariableBlockSize();
+    const int size = GetController()->GetChunkSize();
 
     LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", size, position));
 
@@ -216,8 +218,6 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     const uint32_t size = GetController()->GetChunkSize();
 
-    WriteMetaData(object_type::block, size);
-
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", size, position));
 
     file.seekp(position, ios::beg);
@@ -239,8 +239,6 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         }
 
         position += l;
-
-        WriteMetaData(object_type::end_of_data);
     }
 
     file.flush();
@@ -252,6 +250,11 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     byte_count -= size;
     ++block_location;
+
+    if (!byte_count)
+    {
+        WriteMetaData(object_type::end_of_data);
+    }
 
     return size;
 }

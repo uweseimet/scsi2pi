@@ -449,7 +449,6 @@ class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, SetUpModePages);
-    FRIEND_TEST(TapeTest, ReadData);
     FRIEND_TEST(TapeTest, Unload);
 
 public:

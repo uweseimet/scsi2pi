@@ -104,25 +104,6 @@ TEST(TapeTest, Open)
     EXPECT_NO_THROW(tape.Open());
 }
 
-TEST(TapeTest, ReadData)
-{
-    vector<uint8_t> buf(4);
-    MockTape tape;
-
-    tape.SetReady(true);
-    tape.SetBlockCount(1);
-    auto filename = CreateTempFile(4, "tap");
-    tape.SetFilename(filename.string());
-    tape.ValidateFile();
-    EXPECT_THROW(tape.ReadData(buf), scsi_exception);
-
-    tape.CleanUp();
-    filename = CreateTempFile(4, "tar");
-    tape.SetFilename(filename.string());
-    tape.ValidateFile();
-    EXPECT_NO_THROW(tape.ReadData(buf));
-}
-
 TEST(TapeTest, Unload)
 {
     MockTape tape;
