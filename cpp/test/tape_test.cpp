@@ -42,7 +42,6 @@ static void CreateTapeFile(Tape &tape, size_t size = 4096)
     const auto &filename = CreateTempFile(size);
     tape.SetFilename(filename.string());
     tape.Open();
-    tape.Dispatch(scsi_command::format_medium);
     tape.Dispatch(scsi_command::rewind);
 }
 
@@ -251,16 +250,6 @@ TEST(TapeTest, ReadPosition)
 
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b11000000, controller->GetBuffer()[0]) << "BOP and EOP must be set";
-}
-
-TEST(TapeTest, FormatMedium)
-{
-    auto [controller, tape] = CreateTape();
-
-    CreateTapeFile(*tape);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::format_medium));
-    CheckPosition(*controller, *tape, 0);
-    EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
 
 TEST(TapeTest, GetBlockSizes)

@@ -11,8 +11,8 @@
 // Note that tar (actually the Linux tape device driver) tries to create a filemark as an end-of-data marker when
 // writing to a tape device, but not when writing to a local .tar file.
 // This implementation has successfully been tested with tar, mt and mtx on Linux and with Gemar on the Atari.
-// Note that non-tar file implementation is not stable and will change in future versions of SCSI2Pi, which will
-// support Simh .tap image files.
+// Note that non-tar file code is not stable and will change in future versions of SCSI2Pi, which will most likely
+// spport Simh .tap image files (see https://simh.trailing-edge.com/docs/simh_magtape.pdf).
 //
 //---------------------------------------------------------------------------
 
@@ -72,10 +72,6 @@ bool Tape::SetUp()
     AddCommand(scsi_command::read_position, [this]
         {
             ReadPosition();
-        });
-    AddCommand(scsi_command::format_medium, [this]
-        {
-            FormatMedium();
         });
 
     return StorageDevice::SetUp();
@@ -502,7 +498,6 @@ void Tape::WriteFilemarks6()
     StatusPhase();
 }
 
-// This is a potentially long-running operation because filemarks have to be skipped
 void Tape::Locate(bool locate16)
 {
     // CP is not supported
@@ -555,24 +550,6 @@ void Tape::ReadPosition() const
     SetInt32(buf, 8, static_cast<uint32_t>(bt ? position : block_location));
 
     DataInPhase(20);
-}
-
-void Tape::FormatMedium()
-{
-    CheckWritePreconditions();
-
-    if (position) {
-        throw scsi_exception(sense_key::illegal_request, asc::sequential_positioning_error);
-    }
-
-    Erase();
-
-    position = 0;
-    block_location = 0;
-
-    WriteMetaData(object_type::end_of_data);
-
-    StatusPhase();
 }
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
