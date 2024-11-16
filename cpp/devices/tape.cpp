@@ -109,9 +109,10 @@ void Tape::Read6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        FindNextObject(object_type::block, 0);
-
-        position -= HEADER_SIZE;
+        if (!tar_mode) {
+            FindNextObject(object_type::block, 0);
+            position -= HEADER_SIZE;
+        }
 
         blocks_read = 0;
 
@@ -252,7 +253,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         ++block_location;
     }
 
-    if (!remaining_count || IsAtBoundary()) {
+    if (!tar_mode && (!remaining_count || IsAtBoundary())) {
         if (!remaining_count && GetPadding(byte_count)) {
             file << '\0';
             ++position;
