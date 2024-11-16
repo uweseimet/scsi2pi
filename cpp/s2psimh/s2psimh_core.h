@@ -36,7 +36,7 @@ private:
     bool PrintRecord(const string&, int);
     bool PrintReservedMarker(int);
 
-    int ReadRecord(span<uint8_t>);
+    bool ReadRecord(span<uint8_t>);
 
     string filename;
 

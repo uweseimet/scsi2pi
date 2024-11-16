@@ -219,8 +219,6 @@ void S2pSimh::PrintClass(simh_class cls) const
 void S2pSimh::PrintValue(int value)
 {
     cout << " " << value << " ($" << hex << value << ")\n";
-
-    position += HEADER_SIZE;
 }
 
 bool S2pSimh::PrintRecord(const string &identifier, int value)
@@ -235,15 +233,15 @@ bool S2pSimh::PrintRecord(const string &identifier, int value)
         file.seekg(position, ios::beg);
 
         vector<uint8_t> record(limit < length ? limit : length);
-        if (ReadRecord(record) == -1) {
+        if (!ReadRecord(record)) {
             cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
             return false;
         }
 
+        position += length + GetPadding(length) + HEADER_SIZE;
+
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
-
-    position += length + GetPadding(length);
 
     array<uint8_t, HEADER_SIZE> data = { };
     file.seekg(position - HEADER_SIZE, ios::beg);
@@ -280,18 +278,16 @@ bool S2pSimh::PrintReservedMarker(int value)
     return true;
 }
 
-int S2pSimh::ReadRecord(span<uint8_t> buf)
+bool S2pSimh::ReadRecord(span<uint8_t> buf)
 {
     if (static_cast<off_t>(position + buf.size()) > file_size) {
-        return -1;
+        return false;
     }
 
     file.read((char*)buf.data(), buf.size());
     if (file.fail()) {
-        file.clear();
-        return -1;
+        return false;
     }
 
-    // Skip trailing length
-    return buf.size() + HEADER_SIZE;
+    return true;
 }
