@@ -182,7 +182,7 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    if (IsAtBoundary()) {
+    if (byte_count != remaining_count && IsAtBoundary()) {
         const auto [scsi_type, length] = ReadSimhHeader();
         if (scsi_type != object_type::block) {
             ++read_error_count;
