@@ -125,7 +125,14 @@ int S2pSimh::Analyze()
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        position += ReadHeader( { file, file_size }, header);
+        const int count = ReadHeader( { file, file_size }, header);
+        if (count == -1) {
+            cerr << "Error: Can't read from '" << filename << "'" << endl;
+            return EXIT_FAILURE;
+        }
+
+        position += count;
+
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
             PrintClass(header.cls);
@@ -178,7 +185,13 @@ int S2pSimh::Analyze()
 
         case simh_class::private_marker:
             PrintClass(header.cls);
-            cout << ", private marker, marker value";
+            cout << ", private marker";
+            // SCSI2Pi end-of-data?
+            if (static_cast<int>(header.value == (PRIVATE_MARKER_MAGIC | 0b011))) {
+                cout << " (SCSI2Pi end-of-data object)\n";
+                return EXIT_SUCCESS;
+            }
+            cout << ", marker value";
             PrintValue(header.value);
             break;
 
@@ -188,10 +201,6 @@ int S2pSimh::Analyze()
                 return EXIT_SUCCESS;
             }
             break;
-
-        case simh_class::error:
-            cerr << "Error: Can't read from '" << filename << "'" << endl;
-            return EXIT_FAILURE;
 
         default:
             assert(false);

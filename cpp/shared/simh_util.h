@@ -35,8 +35,6 @@ enum class simh_class
     reserved_data_record_5 = 13,
     tape_description_data_record = 14,
     reserved_marker = 15,
-    // SCSI2Pi-specific
-    error = -1
 };
 
 enum class simh_marker : uint32_t
@@ -68,6 +66,9 @@ uint32_t FromLittleEndian(span<const uint8_t>);
 array<uint8_t, 4> ToLittleEndian(uint32_t);
 
 static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
+
+// "S2P", private marker magic value for tape object types
+static const uint32_t PRIVATE_MARKER_MAGIC = 0x53325000;
 
 static const int OVERFLOW_ERROR = -1;
 static const int READ_ERROR = -2;

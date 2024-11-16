@@ -21,8 +21,7 @@ int simh_util::ReadHeader(const TapeFile &file_wrapper, SimhHeader &header)
     file_wrapper.file.read((char*)h.data(), h.size());
     if (file_wrapper.file.fail()) {
         file_wrapper.file.clear();
-        header.cls = simh_class::error;
-        return 0;
+        return -1;
     }
 
     const uint32_t data = FromLittleEndian(h);
@@ -79,11 +78,13 @@ int64_t simh_util::MoveBack(istream &file)
 
 bool simh_util::IsRecord(simh_class cls)
 {
-    return cls != simh_class::private_marker && cls != simh_class::reserved_marker && cls != simh_class::error;
+    return cls != simh_class::private_marker && cls != simh_class::reserved_marker;
 }
 
 uint32_t simh_util::GetPadding(int length)
 {
+    assert(length >= 0);
+
     return length % 2 ? 1 : 0;
 }
 

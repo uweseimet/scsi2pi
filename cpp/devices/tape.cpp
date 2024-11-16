@@ -421,8 +421,6 @@ void Tape::Erase6()
 
     WriteMetaData(object_type::end_of_data);
 
-    CheckForWriteError();
-
     StatusPhase();
 }
 
@@ -585,14 +583,13 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         position += WriteSimhHeader(simh_class::tape_mark_good_data_record, size);
         break;
 
-    case object_type::end_of_data:
-        WriteSimhHeader(simh_class::reserved_marker, static_cast<int>(simh_marker::end_of_medium));
-        break;
-
     default:
-        assert(false);
+        // Write object types not supported by simh (e.g. end-of-data) as private markers with a 3 leading magic bytes
+        WriteSimhHeader(simh_class::private_marker, static_cast<int>(type) | PRIVATE_MARKER_MAGIC);
         break;
     }
+
+    CheckForWriteError();
 }
 
 uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
@@ -717,8 +714,6 @@ void Tape::Erase()
         position += chunk;
         block_location += chunk / GetBlockSize();
     }
-
-    CheckForWriteError();
 }
 
 void Tape::ResetPosition()
@@ -756,36 +751,38 @@ vector<PbStatistics> Tape::GetStatistics() const
 pair<Tape::object_type, int> Tape::ReadSimhHeader()
 {
     while (true) {
-        const auto old_position = position;
-
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        position += ReadHeader( { file, file_size }, header);
-        if (header.cls == simh_class::reserved_marker && header.value == static_cast<int>(simh_marker::end_of_medium)) {
-            return {object_type::end_of_partition, 0};
+        const int count = ReadHeader( { file, file_size }, header);
+        if (count == -1) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         LogTrace(fmt::format("Read SIMH header with class {0:1X}, value ${1:07x} at position {2}",
-            static_cast<int>(header.cls), header.value, old_position));
+            static_cast<int>(header.cls), header.value, position));
+
+        position += count;
 
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
             return {header.value ? object_type::block : object_type::filemark, header.value};
 
         case simh_class::bad_data_record:
-        case simh_class::error:
             throw scsi_exception(sense_key::medium_error, asc::read_error);
 
         case simh_class::reserved_marker:
             if (header.value == static_cast<int>(simh_marker::end_of_medium)) {
-                return {object_type::end_of_data, 0};
+                return {object_type::end_of_partition, 0};
             }
 
             LogTrace(
                 header.value == static_cast<int>(simh_marker::erase_gap) ?
                     "Skipping erase gap" : "Skipping unknown SIMH reserved marker");
             break;
+
+        case simh_class::private_marker:
+            return {static_cast<object_type>(header.value), 0};
 
         default:
             LogTrace("Skipping unknown SIMH class");
