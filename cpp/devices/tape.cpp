@@ -112,7 +112,6 @@ void Tape::Read6()
         if (!tar_mode) {
             // Ensure that the next object is a block
             FindNextObject(object_type::block, 0);
-            position -= HEADER_SIZE;
         }
 
         blocks_read = 0;
