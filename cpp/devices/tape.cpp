@@ -492,7 +492,7 @@ void Tape::WriteFilemarks6()
         }
     }
     else {
-        LogWarn("Writing filemarks in tar-file compatibility mode is not possible, command is ignored");
+        LogTrace("Writing filemarks in tar-file compatibility mode is not possible, command is ignored");
     }
 
     StatusPhase();
