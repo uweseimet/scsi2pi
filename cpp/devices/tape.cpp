@@ -110,6 +110,7 @@ void Tape::Read6()
     byte_count = GetByteCount();
     if (byte_count) {
         if (!tar_mode) {
+            // Ensure that the next object is a block
             FindNextObject(object_type::block, 0);
             position -= HEADER_SIZE;
         }
