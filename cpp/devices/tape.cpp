@@ -108,12 +108,10 @@ void Tape::Read6()
     }
 
     byte_count = GetByteCount();
-    if (byte_count && !tar_mode) {
-        const auto [scsi_type, length] = ReadSimhHeader();
-        if (scsi_type != object_type::block || static_cast<int>(byte_count) != length) {
-            ++read_error_count;
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
-        }
+    if (byte_count) {
+        FindNextObject(object_type::block, 0);
+
+        position -= HEADER_SIZE;
 
         blocks_read = 0;
 
@@ -136,8 +134,6 @@ void Tape::Write6()
     byte_count = GetByteCount();
     if (byte_count) {
         remaining_count = byte_count;
-
-        WriteMetaData(object_type::block, byte_count);
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
@@ -184,6 +180,14 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
+    if (IsAtBoundary()) {
+        const auto [scsi_type, length] = ReadSimhHeader();
+        if (scsi_type != object_type::block) {
+            ++read_error_count;
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+    }
+
     const int size = GetController()->GetChunkSize();
 
     LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", size, position));
@@ -195,27 +199,26 @@ int Tape::ReadData(span<uint8_t> buf)
     remaining_count -= size;
     position += size;
 
-    if (!remaining_count) {
-        // TODO Extract tar-specific code and simh-specific code to classes
-        if (!tar_mode) {
-            if (byte_count != Pad(byte_count)) {
-                file.seekg(1, ios::cur);
-                ++position;
-            }
-
-            array<uint8_t, HEADER_SIZE> data = { };
-            file.read((char*)data.data(), data.size());
-            CheckForReadError();
-
-            if (const int trailing_length = FromLittleEndian(data); static_cast<int>(byte_count) != trailing_length) {
-                LogWarn(fmt::format("Trailing record length {0} does not match leading length {1}", trailing_length,
-                    byte_count));
-            }
-
-            // Skip trailing length
-            position += HEADER_SIZE;
+    if (IsAtBoundary()) {
+        if (GetPadding(byte_count)) {
+            file.seekg(1, ios::cur);
+            ++position;
         }
 
+        array<uint8_t, HEADER_SIZE> data = { };
+        file.read((char*)data.data(), data.size());
+        CheckForReadError();
+
+        if (const int trailing_length = FromLittleEndian(data); static_cast<int>(byte_count) != trailing_length) {
+            LogWarn(fmt::format("Trailing record length {0} does not match leading length {1}", trailing_length,
+                byte_count));
+        }
+
+        // Skip trailing length
+        position += HEADER_SIZE;
+    }
+
+    if (!remaining_count) {
         ++block_location;
         ++blocks_read;
     }
@@ -226,6 +229,10 @@ int Tape::ReadData(span<uint8_t> buf)
 int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
+
+    if (IsAtBoundary()) {
+        WriteMetaData(object_type::block, GetBlockSize());
+    }
 
     const uint32_t size = GetController()->GetChunkSize();
 
@@ -241,24 +248,24 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 
     remaining_count -= size;
     position += size;
-
     if (!remaining_count) {
-        if (!tar_mode) {
-            if (byte_count != Pad(byte_count)) {
-                file << '\0';
-            }
+        ++block_location;
+    }
 
-            // Trailing length
-            file.write((const char*)ToLittleEndian(byte_count).data(), HEADER_SIZE);
-            position += HEADER_SIZE;
-
-            // SCSI2Pi ensures that there is always an end-of-data object
-            WriteMetaData(object_type::end_of_data);
-
-            CheckForWriteError();
+    if (!remaining_count || IsAtBoundary()) {
+        if (!remaining_count && GetPadding(byte_count)) {
+            file << '\0';
+            ++position;
         }
 
-        ++block_location;
+        // Trailing length
+        file.write((const char*)ToLittleEndian(GetBlockSize()).data(), HEADER_SIZE);
+        CheckForWriteError();
+
+        position += HEADER_SIZE;
+
+        // Ensure that there is always an end-of-data object
+        WriteMetaData(object_type::end_of_data);
     }
 
     return size;
@@ -396,6 +403,7 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeabl
 
 void Tape::Erase6()
 {
+    // TODO Extract all tar-specific code and simh-specific code to classes
     if (tar_mode) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
@@ -662,15 +670,15 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
     }
 }
 
-uint32_t Tape::GetByteCount() const
+uint32_t Tape::GetByteCount()
 {
-    const bool fixed = GetCdbByte(1) & 0x01;
+    fixed = GetCdbByte(1) & 0x01;
     const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    // SSC-5: The non-fixed block size must be a multiple of 4
-    if (!fixed && count % 4) {
+    // SSC-5: The block size must be a multiple of 4
+    if (count % 4) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -810,6 +818,12 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     }
 
     return size;
+}
+
+bool Tape::IsAtBoundary() const
+{
+    // Check for data record boundary (in Fixed mode the record size equals the block size)
+    return !tar_mode && (!fixed || !((byte_count - remaining_count) % GetBlockSize()));
 }
 
 void Tape::CheckForReadError()

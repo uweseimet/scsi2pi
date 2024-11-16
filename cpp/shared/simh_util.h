@@ -62,7 +62,7 @@ int64_t MoveBack(istream&);
 
 bool IsRecord(simh_class);
 
-uint32_t Pad(int);
+uint32_t GetPadding(int);
 
 uint32_t FromLittleEndian(span<const uint8_t>);
 array<uint8_t, 4> ToLittleEndian(uint32_t);

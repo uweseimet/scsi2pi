@@ -234,7 +234,7 @@ bool S2pSimh::PrintRecord(const string &identifier, int value)
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
 
-    position += Pad(length);
+    position += length + GetPadding(length);
 
     array<uint8_t, HEADER_SIZE> data = { };
     file.seekg(position - HEADER_SIZE, ios::beg);

@@ -120,7 +120,10 @@ string s2p_util::GetLine(const string &prompt)
         }
 
         string line;
-        if (!getline(cin, line) || line == "exit" || line == "quit") {
+        getline(cin, line);
+        line = Trim(line);
+
+        if (cin.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
             }
@@ -135,7 +138,7 @@ string s2p_util::GetLine(const string &prompt)
 
 bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
 {
-    if (value.find_first_not_of("0123456789") != string::npos) {
+    if (value.find_first_not_of(" 0123456789 ") != string::npos) {
         return false;
     }
 
@@ -315,4 +318,14 @@ int s2p_util::HexToDec(char c)
     }
 
     throw out_of_range("");
+}
+
+string s2p_util::Trim(const string &s)
+{
+    const size_t first = s.find_first_not_of(' ');
+    if (first == string::npos) {
+        return s;
+    }
+    const size_t last = s.find_last_not_of(' ');
+    return s.substr(first, (last - first + 1));
 }

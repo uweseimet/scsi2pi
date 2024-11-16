@@ -72,6 +72,8 @@ vector<byte> HexToBytes(const string&);
 string FormatBytes(vector<uint8_t>&, int, bool = false);
 int HexToDec(char);
 
+string Trim(const string&);
+
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",

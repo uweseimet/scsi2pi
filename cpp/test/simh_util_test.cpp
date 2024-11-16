@@ -69,10 +69,11 @@ TEST(SimhUtilTest, WriteHeader)
     EXPECT_EQ(-1, WriteHeader(tapeFile, { simh_class::tape_mark_good_data_record, 0 }));
 }
 
-TEST(SimhUtilTest, Pad)
+TEST(SimhUtilTest, GetPadding)
 {
-    EXPECT_EQ(2, Pad(2));
-    EXPECT_EQ(6, Pad(5));
+    EXPECT_EQ(0, GetPadding(0));
+    EXPECT_EQ(0, GetPadding(6));
+    EXPECT_EQ(1, GetPadding(7));
 }
 
 TEST(SimhUtilTest, FromLittleEndian)

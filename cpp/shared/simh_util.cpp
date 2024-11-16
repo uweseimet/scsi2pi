@@ -66,7 +66,8 @@ int64_t simh_util::MoveBack(istream &file)
     const auto cls = static_cast<simh_class>(previous >> 28);
     const uint32_t length = previous & 0xfffffff;
 
-    const int64_t position = file.tellg() - (IsRecord(cls) ? Pad(length) + 2 * HEADER_SIZE : HEADER_SIZE);
+    const int64_t position = file.tellg()
+        - (IsRecord(cls) ? length + GetPadding(length) + 2 * HEADER_SIZE : HEADER_SIZE);
     if (position < 0) {
         return READ_ERROR;
     }
@@ -81,9 +82,9 @@ bool simh_util::IsRecord(simh_class cls)
     return cls != simh_class::private_marker && cls != simh_class::reserved_marker && cls != simh_class::error;
 }
 
-uint32_t simh_util::Pad(int length)
+uint32_t simh_util::GetPadding(int length)
 {
-    return length % 2 ? length + 1 : length;
+    return length % 2 ? 1 : 0;
 }
 
 uint32_t simh_util::FromLittleEndian(span<const uint8_t> value)

@@ -132,6 +132,8 @@ TEST(S2pUtilTest, GetAsUnsignedInt)
     EXPECT_EQ(0, result);
     EXPECT_TRUE(GetAsUnsignedInt("1234", result));
     EXPECT_EQ(1234, result);
+    EXPECT_TRUE(GetAsUnsignedInt(" 1234 ", result));
+    EXPECT_EQ(1234, result);
 }
 
 TEST(S2pUtilTest, Banner)

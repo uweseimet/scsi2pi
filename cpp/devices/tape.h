@@ -76,7 +76,7 @@ private:
 
     int GetVariableBlockSize();
 
-    uint32_t GetByteCount() const;
+    uint32_t GetByteCount();
 
     int VerifyBlockSizeChange(int, bool) const override;
 
@@ -92,12 +92,16 @@ private:
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
 
+    bool IsAtBoundary() const;
+
     void CheckForReadError();
     void CheckForWriteError();
 
     fstream file;
 
     int64_t position = 0;
+
+    bool fixed = false;
 
     int blocks_read = 0;
 
