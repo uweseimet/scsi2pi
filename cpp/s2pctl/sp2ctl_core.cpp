@@ -115,7 +115,9 @@ int S2pCtl::RunInteractive()
         interactive_args.emplace_back(strdup(args[0].c_str())
         );
         for (size_t i = 1; i < args.size(); i++) {
-            interactive_args.emplace_back(strdup(args[i].c_str()));
+            if (!args[i].empty()) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
         }
 
         ParseArguments(interactive_args);
