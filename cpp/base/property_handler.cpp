@@ -20,6 +20,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 {
     // A clear property cache helps with unit testing because Init() can be called for different files
     property_cache.clear();
+    unknown_properties.clear();
 
     property_map properties;
 
@@ -41,10 +42,10 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     for (const auto& [key, value] : properties) {
         const auto &components = Split(key, '.');
         if (key.starts_with("device.") && key.find(":") == string::npos && components.size() == 3) {
-            property_cache[components[0] + "." + components[1] + ":0." + components[2]] = value;
+            AddProperty(components[0] + "." + components[1] + ":0." + components[2], value);
         }
         else {
-            property_cache[key] = value;
+            AddProperty(key, value);
         }
     }
 }
@@ -90,11 +91,16 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
+property_map PropertyHandler::GetUnknownProperties() const
+{
+    return unknown_properties;
+}
+
 const string& PropertyHandler::RemoveProperty(const string &key, const string &def)
 {
-    for (const auto& [k, v] : property_cache) {
+    for (const auto& [k, v] : unknown_properties) {
         if (k == key) {
-            property_cache.erase(key);
+            unknown_properties.erase(key);
             return v;
         }
     }
@@ -105,11 +111,12 @@ const string& PropertyHandler::RemoveProperty(const string &key, const string &d
 void PropertyHandler::AddProperty(const string &key, string_view value)
 {
     property_cache[key] = value;
+    unknown_properties[key] = value;
 }
 
 void PropertyHandler::RemoveProperties(const string &filter)
 {
-    erase_if(property_cache, [&filter](auto &kv) {return kv.first.starts_with(filter);});
+    erase_if(unknown_properties, [&filter](auto &kv) {return kv.first.starts_with(filter);});
 }
 
 bool PropertyHandler::Persist() const

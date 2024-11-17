@@ -180,7 +180,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    for (const auto& [key, value] : property_handler.GetProperties("")) {
+    for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
         if (!key.starts_with("device.")) {
             warn("Ignored unknown global property \"{0}={1}\"", key, value);
         }

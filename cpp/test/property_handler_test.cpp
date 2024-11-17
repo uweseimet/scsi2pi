@@ -79,7 +79,8 @@ key2=value2
     EXPECT_TRUE(PropertyHandler::Instance().RemoveProperty("key3").empty());
     EXPECT_EQ("value1", PropertyHandler::Instance().RemoveProperty("key1"));
     EXPECT_EQ("value2", PropertyHandler::Instance().RemoveProperty("key2"));
-    EXPECT_TRUE(PropertyHandler::Instance().GetProperties().empty());
+    EXPECT_EQ(2U, PropertyHandler::Instance().GetProperties().size());
+    EXPECT_TRUE(PropertyHandler::Instance().GetUnknownProperties().empty());
 
     EXPECT_EQ("default_value", PropertyHandler::Instance().RemoveProperty("key", "default_value"));
 }
