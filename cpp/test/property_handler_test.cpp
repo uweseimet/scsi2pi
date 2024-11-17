@@ -36,12 +36,12 @@ device.3.params=params3
     cmd_properties["device.1.params"] = "params1";
     cmd_properties["device.2:1.params"] = "params2";
     SetUpProperties(properties1, properties2, cmd_properties);
-    EXPECT_EQ("value2", PropertyHandler::Instance().GetAndRemoveProperty("key1"));
-    EXPECT_EQ("value2", PropertyHandler::Instance().GetAndRemoveProperty("key2"));
-    EXPECT_EQ("value3", PropertyHandler::Instance().GetAndRemoveProperty("key3"));
-    EXPECT_EQ("params1", PropertyHandler::Instance().GetAndRemoveProperty("device.1:0.params"));
-    EXPECT_EQ("params2", PropertyHandler::Instance().GetAndRemoveProperty("device.2:1.params"));
-    EXPECT_EQ("params3", PropertyHandler::Instance().GetAndRemoveProperty("device.3:0.params"));
+    EXPECT_EQ("value2", PropertyHandler::Instance().RemoveProperty("key1"));
+    EXPECT_EQ("value2", PropertyHandler::Instance().RemoveProperty("key2"));
+    EXPECT_EQ("value3", PropertyHandler::Instance().RemoveProperty("key3"));
+    EXPECT_EQ("params1", PropertyHandler::Instance().RemoveProperty("device.1:0.params"));
+    EXPECT_EQ("params2", PropertyHandler::Instance().RemoveProperty("device.2:1.params"));
+    EXPECT_EQ("params3", PropertyHandler::Instance().RemoveProperty("device.3:0.params"));
 
     EXPECT_THROW(SetUpProperties(properties3), parser_exception);
 }
@@ -66,7 +66,7 @@ key11=value2
     EXPECT_TRUE(p.contains("key11"));
 }
 
-TEST(PropertyHandlerTest, GetAndRemoveProperty)
+TEST(PropertyHandlerTest, RemoveProperty)
 {
     const string &properties =
         R"(key1=value1
@@ -75,10 +75,11 @@ key2=value2
 
     SetUpProperties(properties);
 
-    EXPECT_TRUE(PropertyHandler::Instance().GetAndRemoveProperty("key").empty());
-    EXPECT_TRUE(PropertyHandler::Instance().GetAndRemoveProperty("key3").empty());
-    EXPECT_EQ("value1", PropertyHandler::Instance().GetAndRemoveProperty("key1"));
-    EXPECT_EQ("value2", PropertyHandler::Instance().GetAndRemoveProperty("key2"));
+    EXPECT_TRUE(PropertyHandler::Instance().RemoveProperty("key").empty());
+    EXPECT_TRUE(PropertyHandler::Instance().RemoveProperty("key3").empty());
+    EXPECT_EQ("value1", PropertyHandler::Instance().RemoveProperty("key1"));
+    EXPECT_EQ("value2", PropertyHandler::Instance().RemoveProperty("key2"));
+    EXPECT_TRUE(PropertyHandler::Instance().GetProperties().empty());
 
-    EXPECT_EQ("default_value", PropertyHandler::Instance().GetAndRemoveProperty("key", "default_value"));
+    EXPECT_EQ("default_value", PropertyHandler::Instance().RemoveProperty("key", "default_value"));
 }

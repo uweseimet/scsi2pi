@@ -52,9 +52,8 @@ public:
     void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
-    const string& GetAndRemoveProperty(const string&, const string& = "");
+    const string& RemoveProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
-    void RemoveProperty(const string&);
     void RemoveProperties(const string&);
 
     bool Persist() const;
