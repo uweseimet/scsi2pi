@@ -10,8 +10,9 @@
 
 #include <span>
 #include <unordered_set>
-#include "buses/bus.h"
 #include "phase_handler.h"
+#include "script_generator.h"
+#include "buses/bus.h"
 #include "base/device_logger.h"
 #include "base/memory_util.h"
 #include "base/s2p_defs.h"
@@ -33,6 +34,8 @@ public:
     virtual void Reset();
 
     void CleanUp() const;
+
+    void SetScriptFile(ostream&);
 
     int GetInitiatorId() const
     {
@@ -85,6 +88,9 @@ public:
     }
 
 protected:
+
+    void AddCdbToScript();
+    void AddDataToScript(span<uint8_t>);
 
     virtual bool Process() = 0;
 
@@ -156,6 +162,8 @@ private:
     Bus &bus;
 
     DeviceLogger device_logger;
+
+    unique_ptr<ScriptGenerator> script_generator;
 
     // Logical units of this controller mapped to their LUN numbers
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;

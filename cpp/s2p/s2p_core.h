@@ -40,7 +40,7 @@ private:
 
     bool ExecuteCommand(CommandContext&);
 
-    void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
+    void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&) const;
 
     static bool CheckActive(const property_map&, const string&);
 

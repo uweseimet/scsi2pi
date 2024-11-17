@@ -19,6 +19,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--ignore-conf\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
 [\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
+[\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--locale,-z\fR \fILOCALE\fR]
@@ -110,6 +111,9 @@ The s2p log level (trace, debug, info, warning, error, critical, off). The defau
 .TP
 .BR --log-pattern/-l\fI " " \fILOG_PATTERN
 The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
+.TP
+.BR --script-file/-s\fI " " \fISCRIPT_FILE
+Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
 .TP
 .BR --token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

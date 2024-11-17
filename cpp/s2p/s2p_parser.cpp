@@ -102,6 +102,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
+        { 's', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
@@ -119,7 +120,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     string name;
     string block_size;
     string caching_mode;
-    string script_file;
     bool blue_scsi_mode = false;
 
     property_map properties;
@@ -167,10 +167,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'n':
             name = optarg;
-            continue;
-
-        case 's':
-            script_file = optarg;
             continue;
 
         case 't':

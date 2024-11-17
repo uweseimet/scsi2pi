@@ -9,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 #include "base/s2p_defs.h"
@@ -29,11 +30,16 @@ public:
     bool DeleteAllControllers();
     shutdown_mode ProcessOnController(int) const;
     bool HasController(int) const;
+
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
+
+    bool CreateScriptFile(const string&);
 
 private:
 
     // Controllers mapped to their target IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
+
+    ofstream script_file;
 };
