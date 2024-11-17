@@ -116,6 +116,8 @@ void Tape::Read6()
 
         blocks_read = 0;
 
+        record_length = 0;
+
         remaining_count = byte_count;
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
@@ -135,6 +137,8 @@ void Tape::Write6()
     byte_count = GetByteCount();
     if (byte_count) {
         remaining_count = byte_count;
+
+        record_length = 0;
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
@@ -181,12 +185,13 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    if (byte_count != remaining_count && IsAtBoundary()) {
+    if (!tar_mode && !record_length) {
         const auto [scsi_type, length] = ReadSimhHeader();
         if (scsi_type != object_type::block) {
             ++read_error_count;
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
+        record_length = length;
     }
 
     const int size = GetController()->GetChunkSize();
@@ -206,6 +211,7 @@ int Tape::ReadData(span<uint8_t> buf)
             ++position;
         }
 
+        // Trailing length
         array<uint8_t, HEADER_SIZE> data = { };
         file.read((char*)data.data(), data.size());
         CheckForReadError();
@@ -231,8 +237,11 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    if (IsAtBoundary()) {
+    if (!record_length) {
         WriteMetaData(object_type::block, GetBlockSize());
+
+        // When writing a SIMH file the block size is the record length
+        record_length = GetBlockSize();
     }
 
     const uint32_t size = GetController()->GetChunkSize();
@@ -841,8 +850,8 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
 
 bool Tape::IsAtBoundary() const
 {
-    // Check for data record boundary (in Fixed mode the record size equals the block size)
-    return !tar_mode && (!fixed || !((byte_count - remaining_count) % GetBlockSize()));
+    // Check for data record boundary
+    return !tar_mode && (!fixed || !((byte_count - remaining_count) % record_length));
 }
 
 void Tape::CheckForReadError()
