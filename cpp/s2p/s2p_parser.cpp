@@ -47,6 +47,7 @@ void S2pParser::Banner(bool usage) const
             << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
             << "                              critical|off), default is 'info'.\n"
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
+            << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
@@ -92,6 +93,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         { "scsi-id", required_argument, nullptr, 'i' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
+        { "script-file", required_argument, nullptr, 's' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
@@ -117,13 +119,14 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     string name;
     string block_size;
     string caching_mode;
+    string script_file;
     bool blue_scsi_mode = false;
 
     property_map properties;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:s:t:z:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -164,6 +167,10 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'n':
             name = optarg;
+            continue;
+
+        case 's':
+            script_file = optarg;
             continue;
 
         case 't':

@@ -31,6 +31,7 @@ public:
     static constexpr const char *PROPERTY_FILES = "property_files";
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
+    static constexpr const char *SCRIPT_FILE = "script_file";
     static constexpr const char *TOKEN_FILE = "token_file";
 
     // Device-specific property keys
@@ -51,11 +52,9 @@ public:
     void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
-    const string& GetProperty(string_view, const string& = "") const;
-    void AddProperty(const string &key, string_view value)
-    {
-        property_cache[key] = value;
-    }
+    const string& GetAndRemoveProperty(const string&, const string& = "");
+    void AddProperty(const string&, string_view);
+    void RemoveProperty(const string&);
     void RemoveProperties(const string&);
 
     bool Persist() const;
