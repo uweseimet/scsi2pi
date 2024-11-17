@@ -678,23 +678,21 @@ bool Tape::MoveBack()
         return false;
     }
 
-    // Position before trailing length
-    file.seekg(position - HEADER_SIZE, ios::beg);
+    // Position before trailing length or marker
+    position -= HEADER_SIZE;
+    file.seekg(position, ios::beg);
 
-    // This is either a trailing length for a data record or a marker
-    array<uint8_t, HEADER_SIZE> data = { };
-    file.read((char*)data.data(), data.size());
-    if (file.fail()) {
-        file.clear();
-        ++read_error_count;
+    SimhHeader header;
+    const int count = ReadHeader(file, header);
+    if (count == -1) {
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    const uint32_t previous = FromLittleEndian(data);
-    const auto cls = static_cast<simh_class>(previous >> 28);
-    const uint32_t length = previous & 0xfffffff;
+    position -= IsRecord(header) ? header.value + GetPadding(header.value) + HEADER_SIZE : 0;
 
-    position -= (IsRecord(cls) ? length + GetPadding(length) + 2 * HEADER_SIZE : HEADER_SIZE);
+    LogTrace(
+        fmt::format("Moved back to class {0}, value {1} at position {2}", static_cast<int>(header.cls), header.value,
+            position));
 
     return position >= 0;
 }
@@ -809,7 +807,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 
             LogTrace(
                 header.value == static_cast<int>(simh_marker::erase_gap) ?
-                    "Skipping erase gap" : "Skipping unknown SIMH reserved marker");
+                    "Skipping SIMH erase gap" : "Skipping unknown SIMH reserved marker");
             break;
 
         case simh_class::private_marker:
@@ -817,7 +815,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 
         default:
             LogTrace("Skipping unknown SIMH class");
-            if (IsRecord(header.cls)) {
+            if (IsRecord(header)) {
                 position += header.value;
             }
             break;

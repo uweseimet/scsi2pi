@@ -98,7 +98,7 @@ property_map PropertyHandler::GetUnknownProperties() const
 
 const string& PropertyHandler::RemoveProperty(const string &key, const string &def)
 {
-    for (const auto& [k, v] : unknown_properties) {
+    for (const auto& [k, v] : property_cache) {
         if (k == key) {
             unknown_properties.erase(key);
             return v;

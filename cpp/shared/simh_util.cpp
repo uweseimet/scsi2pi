@@ -32,9 +32,13 @@ int simh_util::ReadHeader(istream &file, SimhHeader &header)
     return HEADER_SIZE;
 }
 
-bool simh_util::IsRecord(simh_class cls)
+bool simh_util::IsRecord(const SimhHeader &header)
 {
-    return cls != simh_class::private_marker && cls != simh_class::reserved_marker;
+    if (header.cls == simh_class::tape_mark_good_data_record) {
+        return header.value & 0xfffffff;
+    }
+
+    return header.cls != simh_class::private_marker && header.cls != simh_class::reserved_marker;
 }
 
 uint32_t simh_util::GetPadding(int length)

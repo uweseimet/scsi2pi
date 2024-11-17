@@ -50,7 +50,7 @@ using SimhHeader = struct _SimhHeader {
 
 int ReadHeader(istream&, SimhHeader&);
 
-bool IsRecord(simh_class);
+bool IsRecord(const SimhHeader&);
 
 uint32_t GetPadding(int);
 
