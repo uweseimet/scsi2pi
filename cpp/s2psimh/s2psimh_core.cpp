@@ -8,6 +8,7 @@
 
 #include "s2psimh_core.h"
 #include <cassert>
+#include <cstring>
 #include <filesystem>
 #include <getopt.h>
 #include "shared/s2p_util.h"
@@ -102,7 +103,7 @@ int S2pSimh::Run(span<char*> args)
 
     file.open(filename, ios::in | ios::binary);
     if (file.fail()) {
-        cerr << "Error: Can't open '" << filename << "'" << endl;
+        cerr << "Error: Can't open '" << filename << "':" << strerror(errno) << endl;
         return EXIT_FAILURE;
     }
 
@@ -110,7 +111,7 @@ int S2pSimh::Run(span<char*> args)
         file_size = filesystem::file_size(filename);
     }
     catch (const filesystem::filesystem_error &e) {
-        cerr << "Error: Can't get size of '" << filename << "': " << e.what();
+        cerr << "Error: Can't get size of '" << filename << "': " << e.what() << endl;
         return EXIT_FAILURE;
     }
 
@@ -125,9 +126,9 @@ int S2pSimh::Analyze()
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        const int count = ReadHeader( { file, file_size }, header);
+        const int count = ReadHeader(file, header);
         if (count == -1) {
-            cerr << "Error: Can't read from '" << filename << "'" << endl;
+            cerr << "Error: Can't read from '" << filename << "': " << strerror(errno) << endl;
             return EXIT_FAILURE;
         }
 
@@ -135,20 +136,18 @@ int S2pSimh::Analyze()
 
         switch (header.cls) {
         case simh_class::tape_mark_good_data_record:
-            PrintClass(header.cls);
+            PrintClass(header);
             if (!header.value) {
                 cout << ", tape mark\n";
             }
-            else {
-                if (!PrintRecord("good data record", header.value)) {
-                    return EXIT_FAILURE;
-                }
+            else if (!PrintRecord("good data record", header)) {
+                return EXIT_FAILURE;
             }
             break;
 
         case simh_class::bad_data_record:
-            PrintClass(header.cls);
-            if (!PrintRecord(header.value ? "bad data record" : "bad data record (no data recovered)", header.value)) {
+            PrintClass(header);
+            if (!PrintRecord(header.value ? "bad data record" : "bad data record (no data recovered)", header)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -159,15 +158,15 @@ int S2pSimh::Analyze()
         case simh_class::private_data_record_4:
         case simh_class::private_data_record_5:
         case simh_class::private_data_record_6:
-            PrintClass(header.cls);
-            if (!PrintRecord("private data record", header.value)) {
+            PrintClass(header);
+            if (!PrintRecord("private data record", header)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::tape_description_data_record:
-            PrintClass(header.cls);
-            if (!PrintRecord("tape description data record", header.value)) {
+            PrintClass(header);
+            if (!PrintRecord("tape description data record", header)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -177,14 +176,14 @@ int S2pSimh::Analyze()
         case simh_class::reserved_data_record_3:
         case simh_class::reserved_data_record_4:
         case simh_class::reserved_data_record_5:
-            PrintClass(header.cls);
-            if (!PrintRecord("reserved data record", header.value)) {
+            PrintClass(header);
+            if (!PrintRecord("reserved data record", header)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::private_marker:
-            PrintClass(header.cls);
+            PrintClass(header);
             cout << ", private marker";
             // SCSI2Pi end-of-data?
             if (static_cast<int>(header.value == (PRIVATE_MARKER_MAGIC | 0b011))) {
@@ -192,12 +191,12 @@ int S2pSimh::Analyze()
                 return EXIT_SUCCESS;
             }
             cout << ", marker value";
-            PrintValue(header.value);
+            PrintValue(header);
             break;
 
         case simh_class::reserved_marker:
-            PrintClass(header.cls);
-            if (!PrintReservedMarker(header.value)) {
+            PrintClass(header);
+            if (!PrintReservedMarker(header)) {
                 return EXIT_SUCCESS;
             }
             break;
@@ -211,56 +210,55 @@ int S2pSimh::Analyze()
     return EXIT_SUCCESS;
 }
 
-void S2pSimh::PrintClass(simh_class cls) const
+void S2pSimh::PrintClass(const SimhHeader &header) const
 {
-    cout << dec << "Offset " << old_position << ": Class " << hex << static_cast<int>(cls) << dec;
+    cout << dec << "Offset " << old_position << ": Class " << hex << static_cast<int>(header.cls) << dec;
 }
 
-void S2pSimh::PrintValue(int value)
+void S2pSimh::PrintValue(const SimhHeader &header)
 {
-    cout << " " << value << " ($" << hex << value << ")\n";
+    cout << " " << header.value << " ($" << hex << header.value << ")\n";
 }
 
-bool S2pSimh::PrintRecord(const string &identifier, int value)
+bool S2pSimh::PrintRecord(const string &identifier, const SimhHeader &header)
 {
     cout << ", " << identifier << ", record length";
 
-    PrintValue(value);
+    PrintValue(header);
 
-    const int length = value & 0xfffffff;
+    const int length = header.value & 0xfffffff;
 
     if (dump && limit) {
-        file.seekg(position, ios::beg);
-
         vector<uint8_t> record(limit < length ? limit : length);
         if (!ReadRecord(record)) {
-            cerr << "Error: Can't read record of " << length << " byte(s)" << endl;
+            cerr << "Error: Can't read record of " << length << " byte(s): " << strerror(errno) << endl;
             return false;
         }
 
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
 
-    position += length + GetPadding(length) + HEADER_SIZE;
+    position += length + GetPadding(length);
 
     array<uint8_t, HEADER_SIZE> data = { };
-    file.seekg(position - HEADER_SIZE, ios::beg);
+    file.seekg(position, ios::beg);
     file.read((char*)data.data(), data.size());
-    const int trailing_length = FromLittleEndian(data);
-    if (length != trailing_length) {
+    if (const int trailing_length = FromLittleEndian(data); trailing_length != length) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
             << ") does not match leading length " << dec << length << hex << " ($" << length << ")" << endl;
         return false;
     }
 
+    position += HEADER_SIZE;
+
     return true;
 }
 
-bool S2pSimh::PrintReservedMarker(int value)
+bool S2pSimh::PrintReservedMarker(const simh_util::SimhHeader &header)
 {
     cout << ", reserved marker";
 
-    switch (value) {
+    switch (header.value) {
     case 0xffffffe:
         cout << " (erase gap)\n";
         break;
@@ -271,7 +269,7 @@ bool S2pSimh::PrintReservedMarker(int value)
 
     default:
         cout << ", marker value";
-        PrintValue(value);
+        PrintValue(header);
         break;
     }
 
@@ -285,9 +283,6 @@ bool S2pSimh::ReadRecord(span<uint8_t> buf)
     }
 
     file.read((char*)buf.data(), buf.size());
-    if (file.fail()) {
-        return false;
-    }
 
-    return true;
+    return file.good();
 }

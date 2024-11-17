@@ -202,8 +202,8 @@ void PrimaryDevice::RequestSense()
     SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     valid = false;
     filemark = false;
-    eom = false;
     ili = false;
+    eom = ascq::none;
 
     DataInPhase(length);
 }
@@ -270,16 +270,16 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (eom ? (byte)0x40 : (byte)0x00);
+    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (eom != ascq::none ? (byte)0x40 : (byte)0x00);
     buf[7] = (byte)10;
     buf[12] = (byte)asc;
     if (asc == asc::no_additional_sense_information) {
-        assert(!filemark || !eom);
+        assert(!filemark || eom == ascq::none);
         if (filemark) {
             buf[13] = (byte)ascq::filemark_detected;
         }
-        else if (eom) {
-            buf[13] = (byte)ascq::end_of_partition_medium_detected;
+        else if (eom != ascq::none) {
+            buf[13] = (byte)eom;
         }
     }
 

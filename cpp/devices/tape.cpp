@@ -599,22 +599,15 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         count = -count;
     }
 
+    int64_t effective_count = 0;
+
     while (true) {
-        if (reverse) {
-            // SSC-5: "If the device server reaches beginning-of-partition before positioning over N logical objects,
-            // then it shall end movement at beginning-of-partition."
-            if (position < HEADER_SIZE) {
-                LogTrace("Encountered beginning-of-partition while spacing");
-                ResetPosition();
-                return 0;
-            }
-
-            file.seekg(position, ios::beg);
-
-            position = MoveBack(file);
-            if (position < 0) {
-                throw scsi_exception(sense_key::medium_error, asc::read_error);
-            }
+        if (reverse && !MoveBack()) {
+            LogTrace("Encountered beginning-of-partition while spacing");
+            ResetPosition();
+            SetInformation(count);
+            SetEom(ascq::beginning_of_partition_medium_detected);
+            throw scsi_exception(sense_key::no_sense);
         }
 
         const auto old_position = position;
@@ -632,11 +625,13 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             --count;
         }
 
+        ++effective_count;
+
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
             LogTrace("Encountered end-of-partition while spacing");
-            SetInformation(count);
-            SetEom();
+            SetInformation(effective_count);
+            SetEom(ascq::end_of_partition_medium_detected);
             throw scsi_exception(sense_key::medium_error);
         }
 
@@ -644,14 +639,14 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
         if (scsi_type == object_type::end_of_data && (type != object_type::end_of_data)) {
             LogTrace(fmt::format("Encountered end-of-data while spacing over {}",
                 type == object_type::block ? "blocks" : "filemarks"));
-            SetInformation(count);
+            SetInformation(effective_count);
             throw scsi_exception(sense_key::blank_check);
         }
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
             LogTrace("Encountered filemark while spacing over blocks");
-            SetInformation(count);
+            SetInformation(effective_count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
         }
@@ -666,6 +661,33 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             }
         }
     }
+}
+
+bool Tape::MoveBack()
+{
+    if (position < HEADER_SIZE) {
+        return false;
+    }
+
+    // Position before trailing length
+    file.seekg(position - HEADER_SIZE, ios::beg);
+
+    // This is either a trailing length for a data record or a marker
+    array<uint8_t, HEADER_SIZE> data = { };
+    file.read((char*)data.data(), data.size());
+    if (file.fail()) {
+        file.clear();
+        ++read_error_count;
+        throw scsi_exception(sense_key::medium_error, asc::read_error);
+    }
+
+    const uint32_t previous = FromLittleEndian(data);
+    const auto cls = static_cast<simh_class>(previous >> 28);
+    const uint32_t length = previous & 0xfffffff;
+
+    position -= (IsRecord(cls) ? length + GetPadding(length) + 2 * HEADER_SIZE : HEADER_SIZE);
+
+    return position >= 0;
 }
 
 uint32_t Tape::GetByteCount()
@@ -754,7 +776,7 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
         file.seekg(position, ios::beg);
 
         SimhHeader header;
-        const int count = ReadHeader( { file, file_size }, header);
+        const int count = ReadHeader(file, header);
         if (count == -1) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
@@ -799,23 +821,22 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
 int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
 {
     LogTrace(fmt::format("Writing SIMH header with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, static_cast<uint64_t>(file.tellp())));
+        value, position));
 
-    const int size = WriteHeader( { file, file_size }, { cls, value });
-    switch (size) {
-    case OVERFLOW_ERROR:
+    if (position + HEADER_SIZE > file_size) {
         ++write_error_count;
         throw scsi_exception(sense_key::volume_overflow);
-
-    case WRITE_ERROR:
-        ++write_error_count;
-        throw scsi_exception(sense_key::medium_error, asc::write_error);
-
-    default:
-        break;
     }
 
-    return size;
+    file.write((const char*)ToLittleEndian((static_cast<int>(cls) << 28) + value).data(), HEADER_SIZE);
+    file.flush();
+    if (file.fail()) {
+        file.clear();
+        ++write_error_count;
+        throw scsi_exception(sense_key::medium_error, asc::write_error);
+    }
+
+    return HEADER_SIZE;
 }
 
 bool Tape::IsAtBoundary() const

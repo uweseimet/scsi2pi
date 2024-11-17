@@ -48,15 +48,7 @@ using SimhHeader = struct _SimhHeader {
     uint32_t value;
 };
 
-using TapeFile = struct _TapeFile {
-    fstream& file;
-    off_t size;
-};
-
-int ReadHeader(const TapeFile&, SimhHeader&);
-int WriteHeader(const TapeFile&, const SimhHeader&);
-
-int64_t MoveBack(istream&);
+int ReadHeader(istream&, SimhHeader&);
 
 bool IsRecord(simh_class);
 
