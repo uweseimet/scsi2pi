@@ -320,14 +320,25 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x80, data[2]);
     EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(static_cast<uint8_t>(ascq::filemark_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
 
-    device->SetEom();
+    device->SetEom(ascq::end_of_partition_medium_detected);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]);
     EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(static_cast<uint8_t>(ascq::end_of_partition_medium_detected), data[13]);
+    EXPECT_EQ(0U, GetInt32(data, 3));
+
+    device->SetEom(ascq::beginning_of_partition_medium_detected);
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(0x40, data[2]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(static_cast<uint8_t>(ascq::beginning_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
 
     device->SetInformation(0x12345678);

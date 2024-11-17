@@ -31,10 +31,10 @@ private:
 
     int Analyze();
 
-    void PrintClass(simh_util::simh_class) const;
-    void PrintValue(int);
-    bool PrintRecord(const string&, int);
-    bool PrintReservedMarker(int);
+    void PrintClass(const simh_util::SimhHeader&) const;
+    void PrintValue(const simh_util::SimhHeader&);
+    bool PrintRecord(const string&, const simh_util::SimhHeader&);
+    bool PrintReservedMarker(const simh_util::SimhHeader&);
 
     bool ReadRecord(span<uint8_t>);
 

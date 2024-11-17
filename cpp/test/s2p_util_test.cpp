@@ -222,3 +222,22 @@ TEST(S2pUtilTest, FormatBytes)
     EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size())));
     EXPECT_EQ(str_hex_only, FormatBytes(bytes, static_cast<int>(bytes.size()), true));
 }
+
+TEST(S2pUtilTest, HexToDec)
+{
+    EXPECT_EQ(0, HexToDec('0'));
+    EXPECT_EQ(9, HexToDec('9'));
+    EXPECT_EQ(10, HexToDec('a'));
+    EXPECT_EQ(15, HexToDec('f'));
+    EXPECT_THROW(HexToDec('A'), out_of_range);
+    EXPECT_THROW(HexToDec('F'), out_of_range);
+    EXPECT_THROW(HexToDec('x'), out_of_range);
+}
+
+TEST(S2pUtilTest, Trim)
+{
+    EXPECT_EQ("x", Trim(" x"));
+    EXPECT_EQ("x", Trim("x "));
+    EXPECT_EQ("x", Trim(" x "));
+    EXPECT_EQ("x y", Trim("x y"));
+}

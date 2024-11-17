@@ -141,9 +141,9 @@ protected:
     {
         filemark = true;
     }
-    void SetEom()
+    void SetEom(ascq e)
     {
-        eom = true;
+        eom = e;
     }
     void SetIli()
     {
@@ -221,7 +221,7 @@ private:
 
     bool valid = false;
     bool filemark = false;
-    bool eom = false;
+    ascq eom = ascq::none;
     bool ili = false;
     int32_t information = 0;
 

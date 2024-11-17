@@ -19,64 +19,43 @@ TEST(SimhUtilTest, ReadHeader)
 
     fstream file;
     file.open(CreateTempFile(FILE_SIZE), ios::in | ios::out | ios::binary);
-    assert(file.good());
-
-    const TapeFile &tapeFile = { file, FILE_SIZE };
-
-    WriteHeader(tapeFile, { simh_class::tape_mark_good_data_record, 0 });
-    WriteHeader(tapeFile, { simh_class::tape_mark_good_data_record, 0x1234567 });
+    file.write((const char*)ToLittleEndian((static_cast<int>(simh_class::tape_mark_good_data_record) << 28)).data(),
+        HEADER_SIZE);
+    file.write(
+        (const char*)ToLittleEndian((static_cast<int>(simh_class::tape_mark_good_data_record) << 28) + 0x1234567).data(),
+        HEADER_SIZE);
     // end-of-data
-    WriteHeader(tapeFile, { simh_class::private_marker, 0b011 });
-    WriteHeader(tapeFile, { simh_class::reserved_marker, 0 });
+    file.write((const char*)ToLittleEndian((static_cast<int>(simh_class::private_marker) << 28) + 0b11).data(),
+        HEADER_SIZE);
+    file.write((const char*)ToLittleEndian((static_cast<int>(simh_class::reserved_marker) << 28)).data(),
+        HEADER_SIZE);
 
     SimhHeader header;
 
     file.seekg(0, ios::beg);
-    int64_t position = ReadHeader(tapeFile, header);
+    int64_t position = ReadHeader(file, header);
     EXPECT_EQ(HEADER_SIZE, position);
     EXPECT_EQ(simh_class::tape_mark_good_data_record, header.cls);
     EXPECT_EQ(0U, header.value);
 
-    position += ReadHeader(tapeFile, header);
+    position += ReadHeader(file, header);
     EXPECT_EQ(2 * HEADER_SIZE, position);
     EXPECT_EQ(simh_class::tape_mark_good_data_record, header.cls);
     EXPECT_EQ(0x1234567U, header.value);
 
-    position += ReadHeader(tapeFile, header);
+    position += ReadHeader(file, header);
     EXPECT_EQ(3 * HEADER_SIZE, position);
     EXPECT_EQ(simh_class::private_marker, header.cls);
     EXPECT_EQ(0b011U, header.value);
 
-    position += ReadHeader(tapeFile, header);
+    position += ReadHeader(file, header);
     EXPECT_EQ(4 * HEADER_SIZE, position);
     EXPECT_EQ(simh_class::reserved_marker, header.cls);
     EXPECT_EQ(0U, header.value);
 
-    EXPECT_EQ(0, ReadHeader(tapeFile, header));
+    EXPECT_EQ(0, ReadHeader(file, header));
     EXPECT_EQ(simh_class::reserved_marker, header.cls);
     EXPECT_EQ(static_cast<uint32_t>(simh_marker::end_of_medium), header.value);
-}
-
-TEST(SimhUtilTest, WriteHeader)
-{
-    const int FILE_SIZE = 12;
-
-    fstream file;
-    file.open(CreateTempFile(FILE_SIZE), ios::out | ios::binary);
-    assert(file.good());
-
-    const TapeFile &tapeFile = { file, FILE_SIZE };
-
-    int64_t position = WriteHeader(tapeFile, { simh_class::tape_mark_good_data_record, 1 });
-    EXPECT_EQ(HEADER_SIZE, position);
-
-    position += WriteHeader(tapeFile, { simh_class::reserved_marker, 0 });
-    EXPECT_EQ(2 * HEADER_SIZE, position);
-
-    position += WriteHeader(tapeFile, { simh_class::private_marker, 0 });
-    EXPECT_EQ(3 * HEADER_SIZE, position);
-
-    EXPECT_EQ(-1, WriteHeader(tapeFile, { simh_class::tape_mark_good_data_record, 0 }));
 }
 
 TEST(SimhUtilTest, GetPadding)

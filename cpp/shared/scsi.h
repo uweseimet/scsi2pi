@@ -190,6 +190,8 @@ enum class asc
 
 enum class ascq
 {
+    none = 0x00,
     filemark_detected = 0x01,
-    end_of_partition_medium_detected = 0x02
+    end_of_partition_medium_detected = 0x02,
+    beginning_of_partition_medium_detected = 0x04
 };
