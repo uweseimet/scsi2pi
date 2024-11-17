@@ -151,7 +151,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    if (const string &reserved_ids = property_handler.GetAndRemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
+    if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
             cerr << "Error: " << error << endl;
             CleanUp();
@@ -159,7 +159,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         }
     }
 
-    if (const string &token_file = property_handler.GetAndRemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
+    if (const string &token_file = property_handler.RemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
         ReadAccessToken(path(token_file));
     }
 
@@ -182,7 +182,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     for (const auto &property : property_handler.GetProperties("")) {
         if (!property.first.starts_with("device.")) {
-            warn("Ignored unknown property \"{0}={1}\"", property.first, property.second);
+            warn("Ignored unknown global property \"{0}={1}\"", property.first, property.second);
         }
     }
 
@@ -225,40 +225,40 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
             ignore_conf);
 
-        if (const string &log_level = property_handler.GetAndRemoveProperty(PropertyHandler::LOG_LEVEL, "info");
+        if (const string &log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
         !CommandDispatcher::SetLogLevel(log_level)) {
             throw parser_exception("Invalid log level: '" + log_level + "'");
         }
 
-        if (const string &log_pattern = property_handler.GetAndRemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+        if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
             set_pattern(log_pattern);
         }
 
         // Log the properties (on trace level) *after* the log level has been set
         LogProperties();
 
-        if (const string &image_folder = property_handler.GetAndRemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+        if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
             if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw parser_exception(error);
             }
         }
 
-        if (const string &scan_depth = property_handler.GetAndRemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
+        if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
             if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
                 throw parser_exception(
                     "Invalid image file scan depth "
-                        + property_handler.GetAndRemoveProperty(PropertyHandler::SCAN_DEPTH));
+                        + property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
                 CommandImageSupport::Instance().SetDepth(depth);
             }
         }
 
-        if (const string &script_file = property_handler.GetAndRemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
+        if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
             // TODO
         }
 
-        if (const string &p = property_handler.GetAndRemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p,
+        if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p,
             port)
             || port <= 0 || port > 65535) {
             throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
@@ -376,7 +376,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
         command.set_operation(ATTACH);
 
         CommandContext context(command);
-        context.SetLocale(property_handler.GetAndRemoveProperty(PropertyHandler::LOCALE, GetLocale()));
+        context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
         if (!executor->ProcessCmd(context)) {
             throw parser_exception("Can't attach devices");
         }

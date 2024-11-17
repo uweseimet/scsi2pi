@@ -90,7 +90,7 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
-const string& PropertyHandler::GetAndRemoveProperty(const string &key, const string &def)
+const string& PropertyHandler::RemoveProperty(const string &key, const string &def)
 {
     for (const auto& [k, v] : property_cache) {
         if (k == key) {
@@ -105,11 +105,6 @@ const string& PropertyHandler::GetAndRemoveProperty(const string &key, const str
 void PropertyHandler::AddProperty(const string &key, string_view value)
 {
     property_cache[key] = value;
-}
-
-void PropertyHandler::RemoveProperty(const string &key)
-{
-    property_cache.erase(key);
 }
 
 void PropertyHandler::RemoveProperties(const string &filter)
