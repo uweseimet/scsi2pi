@@ -94,7 +94,7 @@ private:
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
 
-    bool IsAtBoundary() const;
+    bool IsAtRecordBoundary() const;
 
     void CheckForReadError();
     void CheckForWriteError();

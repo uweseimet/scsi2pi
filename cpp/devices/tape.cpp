@@ -109,16 +109,12 @@ void Tape::Read6()
 
     byte_count = GetByteCount();
     if (byte_count) {
-        if (!tar_mode) {
-            // Ensure that the next object is a block
-            FindNextObject(object_type::block, 0);
-        }
-
         blocks_read = 0;
 
-        record_length = 0;
-
         remaining_count = byte_count;
+
+        // The record length is taken from the SIMH header
+        record_length = 0;
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
@@ -138,7 +134,8 @@ void Tape::Write6()
     if (byte_count) {
         remaining_count = byte_count;
 
-        record_length = 0;
+        // When writing a SIMH file the block size is the record length
+        record_length = GetBlockSize();
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
@@ -185,7 +182,7 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    if (!tar_mode && !record_length) {
+    if (IsAtRecordBoundary()) {
         const auto [scsi_type, length] = ReadSimhHeader();
         if (scsi_type != object_type::block) {
             ++read_error_count;
@@ -196,7 +193,8 @@ int Tape::ReadData(span<uint8_t> buf)
 
     const int size = GetController()->GetChunkSize();
 
-    LogTrace(fmt::format("Reading {0} data byte(s) from position {1}", size, position));
+    LogTrace(
+        fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, position, record_length));
 
     file.seekg(position, ios::beg);
     file.read((char*)buf.data(), size);
@@ -205,20 +203,19 @@ int Tape::ReadData(span<uint8_t> buf)
     remaining_count -= size;
     position += size;
 
-    if (IsAtBoundary()) {
-        if (GetPadding(byte_count)) {
-            file.seekg(1, ios::cur);
-            ++position;
-        }
+    if (IsAtRecordBoundary()) {
+        position += GetPadding(record_length);
+
+        file.seekg(position, ios::beg);
 
         // Trailing length
         array<uint8_t, HEADER_SIZE> data = { };
         file.read((char*)data.data(), data.size());
         CheckForReadError();
 
-        if (const int trailing_length = FromLittleEndian(data); static_cast<int>(byte_count) != trailing_length) {
-            LogWarn(fmt::format("Trailing record length {0} does not match leading length {1}", trailing_length,
-                byte_count));
+        if (const int trailing_length = FromLittleEndian(data); static_cast<int>(record_length) != trailing_length) {
+            LogWarn(fmt::format("Trailing record length {0} at position {1} does not match leading length {2}",
+                trailing_length, position, record_length));
         }
 
         // Skip trailing length
@@ -237,16 +234,14 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    if (!record_length) {
+    if (IsAtRecordBoundary()) {
         WriteMetaData(object_type::block, GetBlockSize());
-
-        // When writing a SIMH file the block size is the record length
-        record_length = GetBlockSize();
     }
 
     const uint32_t size = GetController()->GetChunkSize();
 
-    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}", size, position));
+    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, position,
+            record_length));
 
     if (position + size > file_size) {
         throw scsi_exception(sense_key::volume_overflow);
@@ -262,18 +257,20 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         ++block_location;
     }
 
-    if (!tar_mode && (!remaining_count || IsAtBoundary())) {
-        if (!remaining_count && GetPadding(byte_count)) {
+    if (IsAtRecordBoundary()) {
+        if (!remaining_count && GetPadding(record_length)) {
             file << '\0';
             ++position;
         }
 
         // Trailing length
-        file.write((const char*)ToLittleEndian(GetBlockSize()).data(), HEADER_SIZE);
+        file.write((const char*)ToLittleEndian(record_length).data(), HEADER_SIZE);
         CheckForWriteError();
 
         position += HEADER_SIZE;
+    }
 
+    if (!remaining_count) {
         // Ensure that there is always an end-of-data object
         WriteMetaData(object_type::end_of_data);
     }
@@ -493,10 +490,6 @@ void Tape::WriteFilemarks6()
         for (int i = 0; i < count; i++) {
             WriteMetaData(object_type::filemark);
         }
-
-        if (position + HEADER_SIZE <= file_size) {
-            WriteMetaData(object_type::end_of_data);
-        }
     }
 
     StatusPhase();
@@ -592,11 +585,18 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         position += WriteSimhHeader(simh_class::tape_mark_good_data_record, size);
         break;
 
+    case object_type::end_of_data:
+        // Handled below
+        break;
+
     default:
         // Write object types not supported by simh (e.g. end-of-data) as private markers with a 3 leading magic bytes
         WriteSimhHeader(simh_class::private_marker, static_cast<int>(type) | PRIVATE_MARKER_MAGIC);
         break;
     }
+
+    // Ensure that there is always an end-of-data object after the last position
+    WriteSimhHeader(simh_class::private_marker, static_cast<int>(object_type::end_of_data) | PRIVATE_MARKER_MAGIC);
 
     CheckForWriteError();
 }
@@ -837,7 +837,7 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
         throw scsi_exception(sense_key::volume_overflow);
     }
 
-    file.write((const char*)ToLittleEndian((static_cast<int>(cls) << 28) + value).data(), HEADER_SIZE);
+    file.write((const char*)ToLittleEndian((static_cast<uint32_t>(cls) << 28) | value).data(), HEADER_SIZE);
     file.flush();
     if (file.fail()) {
         file.clear();
@@ -848,10 +848,13 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     return HEADER_SIZE;
 }
 
-bool Tape::IsAtBoundary() const
+bool Tape::IsAtRecordBoundary() const
 {
-    // Check for data record boundary
-    return !tar_mode && (!fixed || !((byte_count - remaining_count) % record_length));
+    if (tar_mode) {
+        return false;
+    }
+
+    return fixed || !record_length || !remaining_count || byte_count - remaining_count == record_length;
 }
 
 void Tape::CheckForReadError()
