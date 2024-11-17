@@ -638,7 +638,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
-            LogTrace("Encountered end-of-partition while spacing");
+            LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", position));
             SetInformation(effective_count);
             SetEom(ascq::end_of_partition_medium_detected);
             throw scsi_exception(sense_key::medium_error);
@@ -646,7 +646,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         // End-of-data while spacing over blocks or filemarks
         if (scsi_type == object_type::end_of_data && (type != object_type::end_of_data)) {
-            LogTrace(fmt::format("Encountered end-of-data while spacing over {}",
+            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
                 type == object_type::block ? "blocks" : "filemarks"));
             SetInformation(effective_count);
             throw scsi_exception(sense_key::blank_check);
@@ -654,7 +654,11 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            LogTrace("Encountered filemark while spacing over blocks");
+            if (reverse) {
+                position -= HEADER_SIZE;
+            }
+
+            LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", position));
             SetInformation(effective_count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
@@ -662,6 +666,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         if (scsi_type == object_type::block) {
             if (reverse) {
+                position -= length + 3 * HEADER_SIZE;
                 --block_location;
             }
             else {
