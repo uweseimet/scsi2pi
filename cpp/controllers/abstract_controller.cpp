@@ -40,6 +40,25 @@ void AbstractController::Reset()
     bus.Reset();
 }
 
+void AbstractController::SetScriptFile(ostream &file)
+{
+    script_generator = make_unique<ScriptGenerator>(file);
+}
+
+void AbstractController::AddCdbToScript()
+{
+    if (script_generator) {
+        script_generator->AddCdb(target_id, GetEffectiveLun(), cdb);
+    }
+}
+
+void AbstractController::AddDataToScript(span<uint8_t> data)
+{
+    if (script_generator) {
+        script_generator->AddData(data);
+    }
+}
+
 void AbstractController::SetCurrentLength(int length)
 {
     if (length > static_cast<int>(buffer.size())) {
@@ -97,6 +116,10 @@ shutdown_mode AbstractController::ProcessOnController(int ids)
 
     while (Process()) {
         // Handle bus phases until the bus is free for the next command
+    }
+
+    if (script_generator) {
+        script_generator->WriteEol();
     }
 
     return sh_mode;

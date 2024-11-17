@@ -180,9 +180,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    for (const auto &property : property_handler.GetProperties("")) {
-        if (!property.first.starts_with("device.")) {
-            warn("Ignored unknown global property \"{0}={1}\"", property.first, property.second);
+    for (const auto& [key, value] : property_handler.GetProperties("")) {
+        if (!key.starts_with("device.")) {
+            warn("Ignored unknown global property \"{0}={1}\"", key, value);
         }
     }
 
@@ -245,9 +245,8 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
             if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
-                throw parser_exception(
-                    "Invalid image file scan depth "
-                        + property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH));
+                throw parser_exception("Invalid image file scan depth "
+                    + property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
                 CommandImageSupport::Instance().SetDepth(depth);
@@ -255,11 +254,13 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         }
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
-            // TODO
+            if (!controller_factory.CreateScriptFile(script_file)) {
+                throw parser_exception("Can't open script file '" + script_file + "': " + strerror(errno));
+            }
+            info("Generating SCSI command script '" + script_file + "'");
         }
 
-        if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p,
-            port)
+        if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p, port)
             || port <= 0 || port > 65535) {
             throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
         }
@@ -405,7 +406,7 @@ bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
     return true;
 }
 
-void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, const string &value)
+void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, const string &value) const
 {
     if (key == PropertyHandler::ACTIVE) {
         // "active" has already been handled separately

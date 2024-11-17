@@ -23,6 +23,10 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
         if (auto controller = make_shared<Controller>(bus, id); controller->AddDevice(device)) {
             controller->Init();
 
+            if (script_file.is_open()) {
+                controller->SetScriptFile(script_file);
+            }
+
             controllers[id] = controller;
 
             return true;
@@ -51,6 +55,14 @@ bool ControllerFactory::DeleteAllControllers()
     }
 
     return true;
+}
+
+bool ControllerFactory::CreateScriptFile(const string &filename)
+{
+    script_file.open(filename, ios::out);
+    script_file << "-L trace" << flush;
+
+    return script_file.good();
 }
 
 shutdown_mode ControllerFactory::ProcessOnController(int ids) const

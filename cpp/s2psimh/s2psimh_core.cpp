@@ -212,12 +212,12 @@ int S2pSimh::Analyze()
 
 void S2pSimh::PrintClass(const SimhHeader &header) const
 {
-    cout << dec << "Offset " << old_position << ": Class " << hex << static_cast<int>(header.cls) << dec;
+    cout << "Offset " << old_position << ": Class " << hex << uppercase << static_cast<int>(header.cls) << dec;
 }
 
 void S2pSimh::PrintValue(const SimhHeader &header)
 {
-    cout << " " << header.value << " ($" << hex << header.value << ")\n";
+    cout << " " << header.value << " ($" << hex << header.value << ")\n" << dec;
 }
 
 bool S2pSimh::PrintRecord(const string &identifier, const SimhHeader &header)
