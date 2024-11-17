@@ -52,6 +52,7 @@ public:
     void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
+    property_map GetUnknownProperties() const;
     const string& RemoveProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
     void RemoveProperties(const string&);
@@ -65,6 +66,8 @@ private:
     static void ParsePropertyFile(property_map&, const string&, bool);
 
     property_map property_cache;
+
+    property_map unknown_properties;
 
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
     static constexpr const char *CONFIGURATION_OLD = "/etc/s2p.conf.old";
