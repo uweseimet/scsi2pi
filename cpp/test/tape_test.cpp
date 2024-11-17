@@ -33,17 +33,16 @@ static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, u
 {
     fill_n(controller.GetBuffer().begin(), 20, 0xff);
     tape.Dispatch(scsi_command::read_position);
-    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first block location";
-    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last block location";
+    const bool bt = controller.GetCdb()[1] & 0x01;
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4)) << "Wrong first " << (bt ? "position" : "block location");
+    EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last " << (bt ? "position" : "block location");
 }
 
-static void CreateTapeFile(Tape &tape, size_t size = 4096)
+static void CreateTapeFile(Tape &tape, size_t size = 4096, const string &extension = "")
 {
-    const auto &filename = CreateTempFile(size);
+    const auto &filename = CreateTempFile(size, extension);
     tape.SetFilename(filename.string());
     tape.Open();
-    tape.Dispatch(scsi_command::format_medium);
-    tape.Dispatch(scsi_command::rewind);
 }
 
 TEST(TapeTest, Device_Defaults)
@@ -105,25 +104,6 @@ TEST(TapeTest, Open)
     EXPECT_NO_THROW(tape.Open());
 }
 
-TEST(TapeTest, ReadData)
-{
-    vector<uint8_t> buf(4);
-    MockTape tape;
-
-    tape.SetReady(true);
-    tape.SetBlockCount(1);
-    auto filename = CreateTempFile(4, "tap");
-    tape.SetFilename(filename.string());
-    tape.ValidateFile();
-    EXPECT_THROW(tape.ReadData(buf), scsi_exception);
-
-    tape.CleanUp();
-    filename = CreateTempFile(4, "tar");
-    tape.SetFilename(filename.string());
-    tape.ValidateFile();
-    EXPECT_NO_THROW(tape.ReadData(buf));
-}
-
 TEST(TapeTest, Unload)
 {
     MockTape tape;
@@ -155,10 +135,6 @@ TEST(TapeTest, Read6)
 
     CreateTapeFile(*tape);
     TestShared::Dispatch(*tape, scsi_command::read6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(4, 4);
-    TestShared::Dispatch(*tape, scsi_command::read6, sense_key::blank_check, asc::no_additional_sense_information);
 }
 
 TEST(TapeTest, Write6)
@@ -200,12 +176,23 @@ TEST(TapeTest, Erase6)
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
 
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::rewind));
+    // Set filemark in order to advance the tape position
+    controller->SetCdbByte(4, 0x01);
+    tape->Dispatch(scsi_command::write_filemarks6);
+    controller->SetCdbByte(4, 0x00);
     // Long
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::erase6));
     controller->SetCdbByte(1, 0x00);
-    CheckPosition(*controller, *tape, 8);
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
+
+    auto [_, tape_tar] = CreateTape();
+    CreateTapeFile(*tape_tar, 512, "tar");
+    TestShared::Dispatch(*tape_tar, scsi_command::erase6, sense_key::illegal_request,
+        asc::invalid_command_operation_code);
 }
 
 TEST(TapeTest, ReadBlockLimits)
@@ -214,7 +201,7 @@ TEST(TapeTest, ReadBlockLimits)
 
     CreateTapeFile(*tape);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_block_limits));
-    EXPECT_EQ(4096U, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(8192U, GetInt32(controller->GetBuffer(), 0));
     EXPECT_EQ(4U, GetInt16(controller->GetBuffer(), 4));
 }
 
@@ -227,13 +214,16 @@ TEST(TapeTest, Rewind)
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
+    // Set filemark in order to advance the tape position
+    controller->SetCdbByte(4, 0x01);
+    tape->Dispatch(scsi_command::write_filemarks6);
+    controller->SetCdbByte(4, 0x00);
+    // BT
     controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(tape->Dispatch(scsi_command::erase6));
+    CheckPosition(*controller, *tape, 4);
     controller->SetCdbByte(1, 0x00);
-    CheckPosition(*controller, *tape, 1);
-    controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::rewind));
-    controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(1, 0x01);
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
@@ -247,19 +237,28 @@ TEST(TapeTest, Space6)
 
     // BLOCK, count < 0
     controller->SetCdbByte(2, 0xff);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::space6));
 
     // BLOCK, count > 0
     controller->SetCdbByte(2, 0x01);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
 
-    // End-of-data
+    // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
-    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::read_error);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    // End-of-data, count < 0
+    controller->SetCdbByte(2, 0xff);
+    TestShared::Dispatch(*tape, scsi_command::space6, sense_key::medium_error, asc::no_additional_sense_information);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
     TestShared::Dispatch(*tape, scsi_command::space6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    auto [_, tape_tar] = CreateTape();
+    CreateTapeFile(*tape_tar, 512, "tar");
+    TestShared::Dispatch(*tape_tar, scsi_command::space6, sense_key::illegal_request,
+        asc::invalid_command_operation_code);
 }
 
 TEST(TapeTest, WriteFileMarks6)
@@ -275,56 +274,59 @@ TEST(TapeTest, WriteFileMarks6)
     controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_filemarks6));
 
-    CreateTapeFile(*tape);
+    CreateTapeFile(*tape, 512);
 
     // Count > 0
-    controller->SetCdbByte(2, 1);
+    controller->SetCdbByte(4, 255);
     TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::volume_overflow,
         asc::no_additional_sense_information);
+    // 512 instead of 508 because of the trailing end-of-data object
+    CheckPosition(*controller, *tape, 512);
 
     tape->SetProtected(true);
     TestShared::Dispatch(*tape, scsi_command::write_filemarks6, sense_key::data_protect, asc::write_protected);
+
+    auto [_, tape_tar] = CreateTape();
+    CreateTapeFile(*tape_tar, 512, "tar");
+    EXPECT_NO_THROW(tape_tar->Dispatch(scsi_command::write_filemarks6));
 }
 
 TEST(TapeTest, Locate10)
 {
     auto [controller, tape] = CreateTape();
 
+    CreateTapeFile(*tape, 512);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::medium_error, asc::read_error);
-
-    CreateTapeFile(*tape);
-
-    TestShared::Dispatch(*tape, scsi_command::locate10, sense_key::blank_check,
-        asc::no_additional_sense_information);
+    controller->SetCdbByte(1, 0x00);
 
     // BT
     controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(6, 123);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate10));
+    controller->SetCdbByte(6, 0);
+    CheckPosition(*controller, *tape, 123);
 }
 
 TEST(TapeTest, Locate16)
 {
     auto [controller, tape] = CreateTape();
 
+    CreateTapeFile(*tape, 512);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
-    controller->SetCdbByte(1, 0);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::medium_error, asc::read_error);
-
-    CreateTapeFile(*tape);
-    TestShared::Dispatch(*tape, scsi_command::locate16, sense_key::blank_check,
-        asc::no_additional_sense_information);
+    controller->SetCdbByte(1, 0x00);
 
     // BT
     controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 123);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::locate16));
+    controller->SetCdbByte(11, 0);
+    CheckPosition(*controller, *tape, 123);
 }
 
 TEST(TapeTest, ReadPosition)
@@ -343,6 +345,23 @@ TEST(TapeTest, FormatMedium)
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::format_medium));
     CheckPosition(*controller, *tape, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
+
+    // Write a filemark in order to advance the position
+    controller->SetCdbByte(1, 0b001);
+    controller->SetCdbByte(4, 1);
+    tape->Dispatch(scsi_command::write_filemarks6);
+    controller->SetCdbByte(1, 0);
+    controller->SetCdbByte(4, 0);
+    TestShared::Dispatch(*tape, scsi_command::format_medium, sense_key::illegal_request,
+        asc::sequential_positioning_error);
+
+    tape->SetProtected(true);
+    TestShared::Dispatch(*tape, scsi_command::format_medium, sense_key::data_protect, asc::write_protected);
+
+    auto [_, tape_tar] = CreateTape();
+    CreateTapeFile(*tape_tar, 512, "tar");
+    TestShared::Dispatch(*tape_tar, scsi_command::format_medium, sense_key::illegal_request,
+        asc::invalid_command_operation_code);
 }
 
 TEST(TapeTest, GetBlockSizes)
@@ -352,11 +371,22 @@ TEST(TapeTest, GetBlockSizes)
     const auto &sizes = tape.GetSupportedBlockSizes();
     EXPECT_EQ(5U, sizes.size());
 
-    EXPECT_TRUE(sizes.contains(256));
     EXPECT_TRUE(sizes.contains(512));
     EXPECT_TRUE(sizes.contains(1024));
     EXPECT_TRUE(sizes.contains(2048));
     EXPECT_TRUE(sizes.contains(4096));
+    EXPECT_TRUE(sizes.contains(8192));
+}
+
+TEST(TapeTest, ValidateBlockSize)
+{
+    MockTape tape;
+
+    EXPECT_FALSE(tape.ValidateBlockSize(0));
+    EXPECT_TRUE(tape.ValidateBlockSize(4));
+    EXPECT_FALSE(tape.ValidateBlockSize(7));
+    EXPECT_TRUE(tape.ValidateBlockSize(512));
+    EXPECT_TRUE(tape.ValidateBlockSize(131072));
 }
 
 TEST(TapeTest, SetUpModePages)

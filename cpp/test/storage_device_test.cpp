@@ -220,6 +220,17 @@ TEST(StorageDeviceTest, SetBlockSize)
     EXPECT_FALSE(device.SetBlockSize(520));
 }
 
+TEST(StorageDeviceTest, ValidateBlockSize)
+{
+    MockStorageDevice device;
+
+    EXPECT_FALSE(device.ValidateBlockSize(0));
+    EXPECT_FALSE(device.ValidateBlockSize(4));
+    EXPECT_FALSE(device.ValidateBlockSize(7));
+    EXPECT_TRUE(device.ValidateBlockSize(512));
+    EXPECT_FALSE(device.ValidateBlockSize(131072));
+}
+
 TEST(StorageDeviceTest, ReserveUnreserveFile)
 {
     MockStorageDevice device1;

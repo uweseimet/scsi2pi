@@ -22,7 +22,7 @@ void usage()
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2023-2024 Uwe Seimet\n";
 
-    cout << "Usage: in_process_test [options]\n"
+    cout << "Usage: in_process_tool [options]\n"
         << "  --client/-c       In-process client to run against s2p (s2pctl|s2pdump|\n"
         << "                    s2pexec|s2pproto), default is s2pexec.\n"
         << "  --client-args/-a  Arguments to run client with,\n"
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     }
 
     if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
-        cerr << "Invalid in-process test client: '" << client
+        cerr << "Invalid in-process test tool client: '" << client
             << "', client must be s2pctl, s2pdump, s2pexec or s2pproto" << endl;
         exit(EXIT_FAILURE);
     }

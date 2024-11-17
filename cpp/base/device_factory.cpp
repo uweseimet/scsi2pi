@@ -55,7 +55,7 @@ DeviceFactory::DeviceFactory()
 #endif
 #ifdef BUILD_SCTP
     mapping["tar"] = SCTP;
-    mapping["st"] = SCTP;
+    mapping["tap"] = SCTP;
 #endif
 }
 

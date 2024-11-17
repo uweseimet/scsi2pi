@@ -34,13 +34,12 @@ void S2pParser::Banner(bool usage) const
             << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional block size, 4-4096 bytes\n"
-            << "                              in multiples of 4.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional default block size, a multiple of 4.\n"
             << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
             << "                              |linux-optimized), default currently is PiSCSI\n"
             << "                              compatible caching.\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
-            << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
+            << "  --reserved-ids/-r [IDS]     List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
             << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
             << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
@@ -63,7 +62,7 @@ void S2pParser::Banner(bool usage) const
             << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
             << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
             << "    tar: SCSI Tape image (SCSI-2 tar-compatible image)\n"
-            << "    st: SCSI Tape image (SCSI-2 raw image with filemarks support)\n";
+            << "    tap: SCSI Tape image (SCSI-2 simh-compatible image)\n";
     }
 }
 

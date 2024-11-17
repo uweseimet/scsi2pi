@@ -188,7 +188,11 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
     LogDevices(device_list);
-    cout << device_list << flush;
+
+    // Show the device list only once
+    if (get_level() > level::info) {
+        cout << device_list << flush;
+    }
 
     if (!in_process && !bus->IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;

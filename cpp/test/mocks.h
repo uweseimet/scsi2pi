@@ -164,6 +164,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, Space6);
     FRIEND_TEST(TapeTest, Space16);
     FRIEND_TEST(TapeTest, WriteFileMarks6);
+    FRIEND_TEST(TapeTest, FormatMedium);
     FRIEND_TEST(TapeTest, Locate10);
     FRIEND_TEST(TapeTest, Locate16);
     FRIEND_TEST(TapeTest, ReadPosition);
@@ -448,7 +449,6 @@ class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, SetUpModePages);
-    FRIEND_TEST(TapeTest, ReadData);
     FRIEND_TEST(TapeTest, Unload);
 
 public:

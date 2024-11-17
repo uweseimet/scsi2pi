@@ -2,13 +2,17 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "s2p_version.h"
+#include "s2psimh_core.h"
+#include <vector>
+#include "shared/s2p_version.h"
 
-const int s2p_major_version = 4;
-const int s2p_minor_version = 1;
-const int s2p_revision = 0;
-const std::string s2p_suffix = "-devel";
+int main(int argc, char *argv[])
+{
+    vector<char*> args(argv, argv + argc);
+
+    return S2pSimh().Run(args);
+}

@@ -10,9 +10,11 @@
 
 #include <fstream>
 #include "base/interfaces/scsi_stream_commands.h"
+#include "shared/simh_util.h"
 #include "storage_device.h"
 
 using namespace std;
+using namespace simh_util;
 
 class Tape : public StorageDevice, public ScsiStreamCommands
 {
@@ -35,6 +37,8 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
+    bool ValidateBlockSize(uint32_t) const override;
+
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
@@ -45,25 +49,13 @@ protected:
 
 private:
 
-    static constexpr const char *MAGIC = "SCTP";
-
-    enum object_type : uint8_t
+    enum class object_type
     {
-        BLOCK = 0b000,
-        FILEMARK = 0b001,
-        END_OF_DATA = 0b011
-    };
-
-    // The meta data for each object, with the object type and the previous and next object position
-    using meta_data_t = struct _meta_data_t
-    {
-        array<uint8_t, 4> magic;
-        Tape::object_type type;
-        uint8_t reserved;
-        // Big-endian 64-bit integer with the previous object position, -1 if none
-        array<uint8_t, 8> prev_position;
-        // Big-endian 64-bit integer with the next object position
-        array<uint8_t, 8> next_position;
+        block = 0b000,
+        filemark = 0b001,
+        end_of_data = 0b011,
+        // SCSI2Pi-specific
+        end_of_partition = -1
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -82,12 +74,9 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
-    void SpaceTarMode(int, int32_t);
-    void SpaceTapMode(int, int32_t);
-
     int GetVariableBlockSize();
 
-    uint32_t GetByteCount() const;
+    uint32_t GetByteCount();
 
     int VerifyBlockSizeChange(int, bool) const override;
 
@@ -98,17 +87,30 @@ private:
 
     void Erase();
 
+    void ResetPosition();
+
+    pair<Tape::object_type, int> ReadSimhHeader();
+    int WriteSimhHeader(simh_class, uint32_t);
+
+    bool IsAtBoundary() const;
+
+    void CheckForReadError();
+    void CheckForWriteError();
+
     fstream file;
 
-    uint64_t position = 0;
+    int64_t position = 0;
+
+    bool fixed = false;
 
     int blocks_read = 0;
 
     uint64_t block_location = 0;
 
     uint32_t byte_count = 0;
+    uint32_t remaining_count = 0;
 
-    off_t filesize = 0;
+    off_t file_size = 0;
 
     bool tar_mode = false;
 

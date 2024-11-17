@@ -32,8 +32,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 |unprotect).\n"
             << "  --type/-t TYPE                 Optional device type\n"
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
-            << "  --block-size/-b BLOCK_SIZE     Optional block size, 4-4096 bytes\n"
-            << "                                 in multiples of 4.\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
@@ -115,7 +114,9 @@ int S2pCtl::RunInteractive()
         interactive_args.emplace_back(strdup(args[0].c_str())
         );
         for (size_t i = 1; i < args.size(); i++) {
-            interactive_args.emplace_back(strdup(args[i].c_str()));
+            if (!args[i].empty()) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
         }
 
         ParseArguments(interactive_args);

@@ -11,7 +11,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
-[\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
+[\fB\--reserved-ids/-r\fR \fIIDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
@@ -41,7 +41,7 @@ If no explicit device type is provided, s2p determines the type based upon the f
     is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
     tar: SCSI Tape image (tar-compatible image, SCSI-2)
-    st: SCSI Tape image (raw image with filemarks support, SCSI-2)
+    tap: SCSI Tape image (simh-compatible image, SCSI-2)
 
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
@@ -80,13 +80,13 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
-s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms. Note that image file sizes must be a multiple of 512.
+The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
+s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
-.BR --reserved-ids/-r\fI " " \fIRESERVED_IDS
+.BR --reserved-ids/-r\fI " " \fIIDS
 An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
@@ -146,6 +146,6 @@ In case the fallocate command is available a much faster alternative to the dd c
    fallocate -l 104857600 /path/to/newimage.hda
 
 .SH SEE ALSO
-s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1)
+s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1), s2psimh(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.
