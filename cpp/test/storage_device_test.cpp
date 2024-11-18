@@ -347,23 +347,23 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
 {
     MockStorageDevice device;
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select6, {}, 512);},
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select_6, {}, 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select6,
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select_6,
                 CreateParameters("00:00:00:ff:00:00:00:00:00:00:08:00"), 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select10, {}, 512);},
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select_10, {}, 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
             Property(&scsi_exception::get_asc, asc::parameter_list_length_error))));
 
-    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select10,
+    EXPECT_THAT([&] {device.EvaluateBlockDescriptors(scsi_command::mode_select_10,
                 CreateParameters("00:00:00:00:00:00:00:ff:00:08:00:00:00:00:00:00"), 512);},
         Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
@@ -372,25 +372,25 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
     pair<int, int> result;
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::mode_select6,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select_6,
             CreateParameters("00:00:00:04:00:00:00:00:00:00:08:00"), 512));
     EXPECT_EQ(8, result.first);
     EXPECT_EQ(2048, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::mode_select6,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select_6,
             CreateParameters("00:00:00:04:00:00:00:00:00:00:08:04"), result.second));
     EXPECT_EQ(8, result.first);
     EXPECT_EQ(2052, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::mode_select10,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select_10,
             CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:04:00"), result.second));
     EXPECT_EQ(16, result.first);
     EXPECT_EQ(1024, result.second);
 
     EXPECT_NO_THROW(
-        result = device.EvaluateBlockDescriptors(scsi_command::mode_select10,
+        result = device.EvaluateBlockDescriptors(scsi_command::mode_select_10,
             CreateParameters("00:00:00:00:00:00:00:08:00:08:00:00:00:00:03:fc"), result.second));
     EXPECT_EQ(16, result.first);
     EXPECT_EQ(1020, result.second);
@@ -436,35 +436,35 @@ TEST(StorageDeviceTest, ModeSense6)
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
     EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
 
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense6), scsi_exception)<< "Subpages are not supported";
+    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense_6), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(StorageDeviceTest, ModeSense10)
@@ -480,43 +480,43 @@ TEST(StorageDeviceTest, ModeSense10)
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     // LLBAA
     controller->SetCdbByte(1, 0x10);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
     EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
 
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense10), scsi_exception)<< "Subpages are not supported";
+    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense_10), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(StorageDeviceTest, GetStatistics)

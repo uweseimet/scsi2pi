@@ -6,18 +6,34 @@
 //
 //---------------------------------------------------------------------------
 
-#include  <iomanip>
+#include <cassert>
+#include <iomanip>
 #include "script_generator.h"
 #include "buses/bus_factory.h"
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
 
+bool ScriptGenerator::CreateFile(const string &filename)
+{
+    file.open(filename, ios::out);
+
+    return file.good();
+}
+
 void ScriptGenerator::AddCdb(int id, int lun, span<int> cdb)
 {
+    assert(!cdb.empty());
+
     file << dec << "-i " << id << COMPONENT_SEPARATOR << lun << " -c " << hex;
 
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(cdb[0])); i++) {
+    int count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(cdb[0]));
+    // In case of an unknown command add all available CDB data
+    if (!count) {
+        count = static_cast<int>(cdb.size());
+    }
+
+    for (int i = 0; i < count; i++) {
         if (i) {
             file << ":";
         }
@@ -29,6 +45,8 @@ void ScriptGenerator::AddCdb(int id, int lun, span<int> cdb)
 
 void ScriptGenerator::AddData(span<uint8_t> data)
 {
+    assert(!data.empty());
+
     file << " -d " << hex;
 
     for (size_t i = 0; i < data.size(); i++) {

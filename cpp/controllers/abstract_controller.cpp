@@ -40,9 +40,9 @@ void AbstractController::Reset()
     bus.Reset();
 }
 
-void AbstractController::SetScriptFile(ostream &file)
+void AbstractController::SetScriptGenerator(shared_ptr<ScriptGenerator> s)
 {
-    script_generator = make_unique<ScriptGenerator>(file);
+    script_generator = s;
 }
 
 void AbstractController::AddCdbToScript()

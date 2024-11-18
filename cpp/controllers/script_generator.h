@@ -9,7 +9,7 @@
 #pragma once
 
 #include <cstdint>
-#include <iostream>
+#include <fstream>
 #include <span>
 
 using namespace std;
@@ -19,9 +19,7 @@ class ScriptGenerator
 
 public:
 
-    explicit ScriptGenerator(ostream &f) : file(f)
-    {
-    }
+    bool CreateFile(const string&);
 
     void AddCdb(int, int, span<int>);
     void AddData(span<uint8_t>);
@@ -30,5 +28,5 @@ public:
 
 private:
 
-    ostream &file;
+    ofstream file;
 };

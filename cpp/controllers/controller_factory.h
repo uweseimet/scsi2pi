@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "base/s2p_defs.h"
+#include "script_generator.h"
 
 class Bus;
 class AbstractController;
@@ -34,12 +35,12 @@ public:
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    bool CreateScriptFile(const string&);
+    bool SetScriptFile(const string&);
 
 private:
 
     // Controllers mapped to their target IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
 
-    ofstream script_file;
+    shared_ptr<ScriptGenerator> script_generator;
 };

@@ -118,18 +118,18 @@ TEST(HostServicesTest, ModeSense6)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    TestShared::Dispatch(*services, scsi_command::mode_sense6, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense_6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    TestShared::Dispatch(*services, scsi_command::mode_sense6, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense_6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense_6));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -143,30 +143,30 @@ TEST(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense_6));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
 
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense6), scsi_exception)<< "Subpages are not supported";
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense_6), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, ModeSense10)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    TestShared::Dispatch(*services, scsi_command::mode_sense10, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense_10, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    TestShared::Dispatch(*services, scsi_command::mode_sense10, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense_10, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense_10));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -180,12 +180,12 @@ TEST(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense_10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense10), scsi_exception)<< "Subpages are not supported";
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense_10), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, SetUpModePages)

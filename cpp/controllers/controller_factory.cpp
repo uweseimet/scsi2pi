@@ -23,8 +23,8 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
         if (auto controller = make_shared<Controller>(bus, id); controller->AddDevice(device)) {
             controller->Init();
 
-            if (script_file.is_open()) {
-                controller->SetScriptFile(script_file);
+            if (script_generator) {
+                controller->SetScriptGenerator(script_generator);
             }
 
             controllers[id] = controller;
@@ -57,12 +57,16 @@ bool ControllerFactory::DeleteAllControllers()
     return true;
 }
 
-bool ControllerFactory::CreateScriptFile(const string &filename)
+bool ControllerFactory::SetScriptFile(const string &filename)
 {
-    script_file.open(filename, ios::out);
-    script_file << "-L trace" << flush;
+    auto generator = make_shared<ScriptGenerator>();
+    if (!generator->CreateFile(filename)) {
+        return false;
+    }
 
-    return script_file.good();
+    script_generator = generator;
+
+    return true;
 }
 
 shutdown_mode ControllerFactory::ProcessOnController(int ids) const

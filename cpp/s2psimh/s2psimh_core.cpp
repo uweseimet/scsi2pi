@@ -185,8 +185,7 @@ int S2pSimh::Analyze()
         case simh_class::private_marker:
             PrintClass(header);
             cout << ", private marker";
-            // SCSI2Pi end-of-data?
-            if (static_cast<int>(header.value == (PRIVATE_MARKER_MAGIC | 0b011))) {
+            if ((header.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC && ((header.value >> 24) & 0x0f) == 0b011) {
                 cout << " (SCSI2Pi end-of-data object)\n";
                 return EXIT_SUCCESS;
             }
@@ -212,7 +211,8 @@ int S2pSimh::Analyze()
 
 void S2pSimh::PrintClass(const SimhHeader &header) const
 {
-    cout << "Offset " << old_position << ": Class " << hex << uppercase << static_cast<int>(header.cls) << dec;
+    cout << "Offset " << old_position << hex << " ($" << old_position << "): Class " << uppercase
+        << static_cast<int>(header.cls) << nouppercase << dec;
 }
 
 void S2pSimh::PrintValue(const SimhHeader &header)

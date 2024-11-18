@@ -218,14 +218,14 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
 
 pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int size) const
 {
-    assert(cmd == scsi_command::mode_select6 || cmd == scsi_command::mode_select10);
+    assert(cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10);
 
-    const size_t required_length = cmd == scsi_command::mode_select10 ? 8 : 4;
+    const size_t required_length = cmd == scsi_command::mode_select_10 ? 8 : 4;
     if (buf.size() < required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }
 
-    const size_t descriptor_length = cmd == scsi_command::mode_select10 ? GetInt16(buf, 6) : buf[3];
+    const size_t descriptor_length = cmd == scsi_command::mode_select_10 ? GetInt16(buf, 6) : buf[3];
     if (buf.size() < descriptor_length + required_length) {
         throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
     }

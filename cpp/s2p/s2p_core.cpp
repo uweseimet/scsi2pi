@@ -254,10 +254,10 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         }
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
-            if (!controller_factory.CreateScriptFile(script_file)) {
-                throw parser_exception("Can't open script file '" + script_file + "': " + strerror(errno));
+            if (!controller_factory.SetScriptFile(script_file)) {
+                throw parser_exception("Can't create script file '" + script_file + "': " + strerror(errno));
             }
-            info("Generating SCSI command script '" + script_file + "'");
+            info("Generating SCSI command script file '" + script_file + "'");
         }
 
         if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p, port)

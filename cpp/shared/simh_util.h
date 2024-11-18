@@ -50,7 +50,7 @@ using SimhHeader = struct _SimhHeader {
 
 int ReadHeader(istream&, SimhHeader&);
 
-bool IsRecord(simh_class);
+bool IsRecord(const SimhHeader&);
 
 uint32_t GetPadding(int);
 
@@ -59,8 +59,8 @@ array<uint8_t, 4> ToLittleEndian(uint32_t);
 
 static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 
-// "S2P", private marker magic value for tape object types
-static const uint32_t PRIVATE_MARKER_MAGIC = 0x53325000;
+// "S2P", private marker magic value for tape object types, the SCSI2Pi type is coded in the low nibble of the LSB
+static const uint32_t PRIVATE_MARKER_MAGIC = 0x00533250;
 
 static const int OVERFLOW_ERROR = -1;
 static const int READ_ERROR = -2;

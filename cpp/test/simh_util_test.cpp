@@ -58,6 +58,27 @@ TEST(SimhUtilTest, ReadHeader)
     EXPECT_EQ(static_cast<uint32_t>(simh_marker::end_of_medium), header.value);
 }
 
+TEST(SimhUtilTest, IsRecord)
+{
+    EXPECT_TRUE(IsRecord( { simh_class::tape_mark_good_data_record, 1 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_1, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_2, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_3, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_4, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_5, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::private_data_record_6, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::bad_data_record, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::reserved_data_record_1, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::reserved_data_record_2, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::reserved_data_record_3, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::reserved_data_record_4, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::reserved_data_record_5, 0 }));
+    EXPECT_TRUE(IsRecord( { simh_class::tape_description_data_record, 0 }));
+    EXPECT_FALSE(IsRecord( { simh_class::tape_mark_good_data_record, 0 }));
+    EXPECT_FALSE(IsRecord( { simh_class::private_marker, 0 }));
+    EXPECT_FALSE(IsRecord( { simh_class::reserved_marker, 0 }));
+}
+
 TEST(SimhUtilTest, GetPadding)
 {
     EXPECT_EQ(0, GetPadding(0));

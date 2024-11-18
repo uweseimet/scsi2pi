@@ -44,11 +44,11 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAY
 
 bool DaynaPort::SetUp()
 {
-    AddCommand(scsi_command::get_message6, [this]
+    AddCommand(scsi_command::get_message_6, [this]
         {
             GetMessage6();
         });
-    AddCommand(scsi_command::send_message6, [this]
+    AddCommand(scsi_command::send_message_6, [this]
         {
             SendMessage6();
         });
@@ -190,8 +190,8 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //---------------------------------------------------------------------------
 int DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::send_message6);
-    if (command != scsi_command::send_message6) {
+    assert(command == scsi_command::send_message_6);
+    if (command != scsi_command::send_message_6) {
         throw scsi_exception(sense_key::aborted_command);
     }
 

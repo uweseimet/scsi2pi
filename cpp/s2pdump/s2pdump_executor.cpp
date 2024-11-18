@@ -40,7 +40,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
     vector<uint8_t> buffer(14);
     vector<uint8_t> cdb(10);
 
-    if (initiator_executor->Execute(scsi_command::read_capacity10, cdb, buffer, 8)) {
+    if (initiator_executor->Execute(scsi_command::read_capacity_10, cdb, buffer, 8)) {
         return {0, 0};
     }
 
@@ -53,7 +53,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
-        if (initiator_executor->Execute(scsi_command::read_capacity16_read_long16, cdb, buffer,
+        if (initiator_executor->Execute(scsi_command::read_capacity_16_read_long_16, cdb, buffer,
             static_cast<int>(buffer.size()))) {
             return {0, 0};
         }
@@ -77,7 +77,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t 
         cdb[3] = static_cast<uint8_t>(bstart);
         cdb[4] = static_cast<uint8_t>(blength);
 
-        return !initiator_executor->Execute(is_write ? scsi_command::write6 : scsi_command::read6, cdb, buffer,
+        return !initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
             length);
     }
     else {
@@ -89,7 +89,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t 
         cdb[7] = static_cast<uint8_t>(blength >> 8);
         cdb[8] = static_cast<uint8_t>(blength);
 
-        return !initiator_executor->Execute(is_write ? scsi_command::write10 : scsi_command::read10, cdb,
+        return !initiator_executor->Execute(is_write ? scsi_command::write_10 : scsi_command::read_10, cdb,
             buffer,
             length);
     }
@@ -102,14 +102,14 @@ bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buffer.size());
 
-    return !initiator_executor->Execute(scsi_command::mode_sense6, cdb, buffer, static_cast<int>(buffer.size()));
+    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buffer, static_cast<int>(buffer.size()));
 }
 
 void S2pDumpExecutor::SynchronizeCache()
 {
     vector<uint8_t> cdb(10);
 
-    initiator_executor->Execute(scsi_command::synchronize_cache10, cdb, { }, 0);
+    initiator_executor->Execute(scsi_command::synchronize_cache_10, cdb, { }, 0);
 }
 
 set<int> S2pDumpExecutor::ReportLuns()
