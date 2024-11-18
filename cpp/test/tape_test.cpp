@@ -38,11 +38,12 @@ static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, u
     EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 8)) << "Wrong last " << (bt ? "position" : "block location");
 }
 
-static void CreateTapeFile(Tape &tape, size_t size = 4096, const string &extension = "")
+static string CreateTapeFile(Tape &tape, size_t size = 4096, const string &extension = "")
 {
     const auto &filename = CreateTempFile(size, extension);
     tape.SetFilename(filename.string());
     tape.Open();
+    return filename.string();
 }
 
 TEST(TapeTest, Device_Defaults)
@@ -232,7 +233,7 @@ TEST(TapeTest, Space6)
 {
     auto [controller, tape] = CreateTape();
 
-    CreateTapeFile(*tape, 512);
+    const string &filename = CreateTapeFile(*tape);
 
     // BLOCK, count = 0
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::space_6));
@@ -309,6 +310,75 @@ TEST(TapeTest, Space6)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 5);
     TestShared::Dispatch(*tape, scsi_command::space_6, sense_key::blank_check, asc::no_additional_sense_information);
+
+    // Write 5 good data records of 512 bytes and 1 filemark
+    ofstream file(filename);
+    const array<uint8_t, HEADER_SIZE> header_block = { 0, 2, 0, 0 };
+    file.write((const char*)header_block.data(), header_block.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)header_block.data(), header_block.size());
+    file.write((const char*)header_block.data(), header_block.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)header_block.data(), header_block.size());
+    file.write((const char*)header_block.data(), header_block.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)header_block.data(), header_block.size());
+    file.write((const char*)header_block.data(), header_block.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)header_block.data(), header_block.size());
+    file.write((const char*)header_block.data(), header_block.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)header_block.data(), header_block.size());
+    const array<uint8_t, HEADER_SIZE> header_filemark = { 0, 0, 0, 0 };
+    file.write((const char*)header_filemark.data(), header_filemark.size());
+    file.flush();
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Space over 1 block
+    controller->SetCdbByte(1, 0b000);
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::space_6));
+    controller->SetCdbByte(1, 0);
+    controller->SetCdbByte(4, 0);
+    CheckPosition(*controller, *tape, 1);
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    CheckPosition(*controller, *tape, 520);
+    controller->SetCdbByte(1, 0);
+
+    // Space over 3 blocks
+    controller->SetCdbByte(1, 0b000);
+    controller->SetCdbByte(4, 3);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::space_6));
+    controller->SetCdbByte(1, 0);
+    controller->SetCdbByte(4, 0);
+    CheckPosition(*controller, *tape, 4);
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    CheckPosition(*controller, *tape, 2080);
+    controller->SetCdbByte(1, 0);
+
+    // Reverse-space over 2 blocks
+    controller->SetCdbByte(1, 0b000);
+    controller->SetCdbByte(2, 0xff);
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0xfe);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::space_6));
+    controller->SetCdbByte(1, 0);
+    controller->SetCdbByte(2, 0);
+    controller->SetCdbByte(3, 0);
+    controller->SetCdbByte(4, 0);
+    CheckPosition(*controller, *tape, 2);
+    // BT
+    controller->SetCdbByte(1, 0x01);
+    CheckPosition(*controller, *tape, 1040);
+    controller->SetCdbByte(1, 0);
+
+    // Try to space over 5 blocks, in order to hit the filemark
+    controller->SetCdbByte(1, 0b000);
+    controller->SetCdbByte(4, 5);
+    TestShared::Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
 
     auto [_, tape_tar] = CreateTape();
     CreateTapeFile(*tape_tar, 512, "tar");

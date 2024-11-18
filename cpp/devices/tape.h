@@ -76,8 +76,6 @@ private:
 
     bool MoveBack();
 
-    int GetVariableBlockSize();
-
     uint32_t GetByteCount();
 
     int VerifyBlockSizeChange(int, bool) const override;
@@ -93,6 +91,8 @@ private:
 
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
+
+    void CheckRecordLength();
 
     bool IsAtRecordBoundary() const;
 

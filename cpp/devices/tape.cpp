@@ -146,38 +146,6 @@ void Tape::Write6()
     }
 }
 
-int Tape::GetVariableBlockSize()
-{
-    const int length = FindNextObject(object_type::block, 0);
-
-    if (const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2); length != requested_length) {
-        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
-            length, requested_length));
-
-        // In fixed mode an incorrect length always results in an error.
-        // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
-        // minus the actual number of logical blocks read, not including the incorrect-length logical block."
-        if (GetCdbByte(1) & 0x01) {
-            SetIli();
-            SetInformation(requested_length - blocks_read);
-            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
-        }
-
-        // In non-fixed mode the error handling depends on SILI.
-        // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
-        // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
-        // minus the actual logical block length."
-        // If SILI is set report CHECK CONDITION for the overlength condition only.
-        if (!(GetCdbByte(1) & 0x02) || length > requested_length) {
-            SetIli();
-            SetInformation(requested_length - length);
-            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
-        }
-    }
-
-    return length;
-}
-
 int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
@@ -629,24 +597,31 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             throw scsi_exception(sense_key::no_sense);
         }
 
-        const auto old_position = position;
-
         const auto [scsi_type, length] = ReadSimhHeader();
 
-        LogTrace(
-            fmt::format("Found object type {0} at position {1}, count {2}", static_cast<int>(scsi_type), old_position,
-                actual_count));
+        LogTrace(fmt::format("Found object type {0} at position {1}, count {2}", static_cast<int>(scsi_type),
+            position - HEADER_SIZE, actual_count));
 
         if (type == scsi_type) {
-            if (count <= 1) {
+            --count;
+            if (count <= 0) {
                 if (reverse) {
-                    position -= type == object_type::block ? length + 2 * HEADER_SIZE : HEADER_SIZE;
+                    if (type == object_type::block) {
+                        --block_location;
+                        position += length + HEADER_SIZE;
+                    }
+                    else {
+                        position -= HEADER_SIZE;
+                    }
                 }
-
+                else {
+                    if (type == object_type::block) {
+                        position += length + HEADER_SIZE;
+                        ++block_location;
+                    }
+                }
                 return static_cast<uint32_t>(length);
             }
-
-            --count;
         }
 
         ++actual_count;
@@ -677,7 +652,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", position));
             SetInformation(actual_count);
             SetFilemark();
-            throw scsi_exception(sense_key::no_sense);
+            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
 
         if (scsi_type == object_type::block) {
@@ -873,6 +848,35 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     }
 
     return HEADER_SIZE;
+}
+
+void Tape::CheckRecordLength()
+{
+    if (const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2); static_cast<int>(record_length)
+        != requested_length) {
+        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
+            record_length, requested_length));
+
+        // In fixed mode an incorrect length always results in an error.
+        // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
+        // minus the actual number of logical blocks read, not including the incorrect-length logical block."
+        if (GetCdbByte(1) & 0x01) {
+            SetIli();
+            SetInformation(requested_length - blocks_read);
+            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+        }
+
+        // In non-fixed mode the error handling depends on SILI.
+        // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
+        // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
+        // minus the actual logical block length."
+        // If SILI is set report CHECK CONDITION for the overlength condition only.
+        if (!(GetCdbByte(1) & 0x02) || static_cast<int>(record_length) > requested_length) {
+            SetIli();
+            SetInformation(requested_length - record_length);
+            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+        }
+    }
 }
 
 bool Tape::IsAtRecordBoundary() const
