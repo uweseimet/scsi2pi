@@ -42,6 +42,8 @@ void AbstractController::Reset()
 
 void AbstractController::SetScriptGenerator(shared_ptr<ScriptGenerator> s)
 {
+    assert(script_generator);
+
     script_generator = s;
 }
 
@@ -52,7 +54,7 @@ void AbstractController::AddCdbToScript()
     }
 }
 
-void AbstractController::AddDataToScript(span<uint8_t> data)
+void AbstractController::AddDataToScript(span<uint8_t> data) const
 {
     if (script_generator) {
         script_generator->AddData(data);

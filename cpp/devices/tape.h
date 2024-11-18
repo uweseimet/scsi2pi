@@ -92,7 +92,7 @@ private:
     pair<Tape::object_type, int> ReadSimhHeader();
     int WriteSimhHeader(simh_class, uint32_t);
 
-    void CheckRecordLength();
+    void CheckLength(int);
 
     bool IsAtRecordBoundary() const;
 

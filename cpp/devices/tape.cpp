@@ -150,6 +150,8 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
+    const int size = GetController()->GetChunkSize();
+
     if (IsAtRecordBoundary()) {
         const auto [scsi_type, length] = ReadSimhHeader();
         if (scsi_type != object_type::block) {
@@ -157,9 +159,10 @@ int Tape::ReadData(span<uint8_t> buf)
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
         record_length = length;
-    }
 
-    const int size = GetController()->GetChunkSize();
+        // TODO Enable
+        //CheckLength(size);
+    }
 
     LogTrace(
         fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, position, record_length));
@@ -471,25 +474,29 @@ void Tape::Locate(bool locate16)
     }
 
     const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
+    const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_mode) {
-        // Only BT is supproted
-        if (!(GetCdbByte(1) & 0x01)) {
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-        }
+        if (bt) {
+            // The device-specific identifier must be a multiple of the block size
+            if (identifier % GetBlockSize()) {
+                throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            }
 
-        position = identifier * GetBlockSize();
-        block_location = identifier;
+            position = identifier;
+            block_location = identifier / GetBlockSize();
+        }
+        else {
+            position = identifier * GetBlockSize();
+            block_location = identifier;
+        }
     }
     else {
-        // BT
-        if (GetCdbByte(1) & 0x01) {
-            position = identifier;
-            // Approximate block position
-            block_location = position / GetBlockSize();
+        if (bt && identifier) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         } else {
             ResetPosition();
-            FindNextObject(object_type::filemark, identifier);
+            FindNextObject(object_type::block, identifier);
         }
     }
 
@@ -850,19 +857,18 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
     return HEADER_SIZE;
 }
 
-void Tape::CheckRecordLength()
+void Tape::CheckLength(int length)
 {
-    if (const auto requested_length = GetSignedInt24(GetController()->GetCdb(), 2); static_cast<int>(record_length)
-        != requested_length) {
+    if (static_cast<int>(record_length) != length) {
         LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
-            record_length, requested_length));
+            record_length, length));
 
         // In fixed mode an incorrect length always results in an error.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (GetCdbByte(1) & 0x01) {
             SetIli();
-            SetInformation(requested_length - blocks_read);
+            SetInformation(length / GetBlockSize() - blocks_read);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
         }
 
@@ -871,9 +877,9 @@ void Tape::CheckRecordLength()
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        if (!(GetCdbByte(1) & 0x02) || static_cast<int>(record_length) > requested_length) {
+        if (!(GetCdbByte(1) & 0x02) || static_cast<int>(record_length) > length) {
             SetIli();
-            SetInformation(requested_length - record_length);
+            SetInformation(length - record_length);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
         }
     }
