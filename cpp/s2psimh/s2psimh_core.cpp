@@ -18,7 +18,7 @@ using namespace simh_util;
 
 void S2pSimh::Banner(bool help)
 {
-    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Simh .tap File Analysis Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SIMH .tap File Analysis Tool)\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2024 Uwe Seimet\n";
 

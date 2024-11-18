@@ -94,6 +94,7 @@ TEST(HostServicesTest, ExecuteOperation)
         asc::invalid_field_in_cdb, "Illegal length");
 
     controller->SetCdbByte(8, 1);
+    controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(services->Dispatch(scsi_command::execute_operation));
 }
 
@@ -126,6 +127,7 @@ TEST(HostServicesTest, ModeSense6)
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
@@ -163,6 +165,7 @@ TEST(HostServicesTest, ModeSense10)
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn());

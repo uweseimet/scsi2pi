@@ -99,6 +99,8 @@ TEST(DiskTest, Seek6)
 
     disk->SetReady(true);
 
+    // Sector count
+    controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::seek_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -155,8 +157,6 @@ TEST(DiskTest, ReadCapacity16)
 {
     auto [controller, disk] = CreateDisk();
 
-    controller->SetCdbByte(1, 0x00);
-
     TestShared::Dispatch(*disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Neither READ CAPACITY(16) nor READ LONG(16)");
 
@@ -165,10 +165,14 @@ TEST(DiskTest, ReadCapacity16)
     TestShared::Dispatch(*disk, scsi_command::read_capacity_16_read_long_16, sense_key::not_ready,
         asc::medium_not_present, "READ CAPACITY(16) must fail because drive is not ready");
 
+    // Service action: READ CAPACITY(16), not READ LONG(16)
+    controller->SetCdbByte(1, 0x10);
     disk->SetReady(true);
     TestShared::Dispatch(*disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request,
         asc::medium_not_present, "READ CAPACITY(16) must fail because the medium has no capacity");
 
+    // Service action: READ CAPACITY(16), not READ LONG(16)
+    controller->SetCdbByte(1, 0x10);
     disk->SetBlockCount(0x1234567887654321);
     disk->SetBlockSize(1024);
     EXPECT_CALL(*controller, DataIn);

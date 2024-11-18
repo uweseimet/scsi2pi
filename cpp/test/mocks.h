@@ -200,6 +200,13 @@ public:
         SetCurrentLength(512);
     }
     ~MockAbstractController() override = default;
+
+    void ResetCdb()
+    {
+        for (size_t i = 0; i < GetCdb().size(); i++) {
+            SetCdbByte(i, 0);
+        }
+    }
 };
 
 class MockController : public Controller

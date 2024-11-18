@@ -107,6 +107,10 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         EXPECT_EQ(s, e.get_sense_key()) << msg;
         EXPECT_EQ(a, e.get_asc()) << msg;
     }
+
+    if (auto controller = static_cast<MockAbstractController*>(device.GetController()); controller) {
+        controller->ResetCdb();
+    }
 }
 
 string testing::CreateTempName()

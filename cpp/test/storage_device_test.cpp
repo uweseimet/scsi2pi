@@ -118,6 +118,8 @@ TEST(StorageDeviceTest, StartStopUnit)
     TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
         asc::load_or_eject_failed, "START/STOP must fail because device is not ready");
 
+    // Stop/Load
+    controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetLocked(true);
     TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,

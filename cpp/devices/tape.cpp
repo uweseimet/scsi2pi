@@ -97,7 +97,7 @@ void Tape::ValidateFile()
         throw io_exception("Can't open image file '" + GetFilename() + "'");
     }
 
-    tar_mode = GetExtensionLowerCase(GetFilename()) == "tar";
+    tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
 }
 
 void Tape::Read6()
@@ -153,7 +153,7 @@ int Tape::ReadData(span<uint8_t> buf)
     const int size = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
-        const auto [scsi_type, length] = ReadSimhHeader();
+        const auto [scsi_type, length] = ReadSimhHeader(false);
         if (scsi_type != object_type::block) {
             ++read_error_count;
             throw scsi_exception(sense_key::medium_error, asc::read_error);
@@ -161,7 +161,7 @@ int Tape::ReadData(span<uint8_t> buf)
         record_length = length;
 
         // TODO Enable
-        //CheckLength(size);
+        // CheckLength(byte_count);
     }
 
     LogTrace(
@@ -381,8 +381,7 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeabl
 
 void Tape::Erase6()
 {
-    // TODO Extract all tar-specific code and simh-specific code to classes
-    if (tar_mode) {
+    if (tar_file) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 
@@ -418,7 +417,7 @@ void Tape::Rewind()
 
 void Tape::Space6()
 {
-    if (tar_mode) {
+    if (tar_file) {
         LogError("In tar-compatibility mode spacing is not supported");
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
@@ -444,7 +443,7 @@ void Tape::Space6()
 
 void Tape::WriteFilemarks6()
 {
-    if (tar_mode) {
+    if (tar_file) {
         LogTrace("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS(6) command is ignored");
         StatusPhase();
         return;
@@ -476,7 +475,7 @@ void Tape::Locate(bool locate16)
     const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
     const bool bt = GetCdbByte(1) & 0x04;
 
-    if (tar_mode) {
+    if (tar_file) {
         if (bt) {
             // The device-specific identifier must be a multiple of the block size
             if (identifier % GetBlockSize()) {
@@ -530,7 +529,7 @@ void Tape::ReadPosition() const
 
 void Tape::FormatMedium()
 {
-    if (tar_mode) {
+    if (tar_file) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 
@@ -551,7 +550,7 @@ void Tape::FormatMedium()
 
 void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 {
-    if (tar_mode) {
+    if (tar_file) {
         return;
     }
 
@@ -604,7 +603,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             throw scsi_exception(sense_key::no_sense);
         }
 
-        const auto [scsi_type, length] = ReadSimhHeader();
+        const auto [scsi_type, length] = ReadSimhHeader(true);
 
         LogTrace(fmt::format("Found object type {0} at position {1}, count {2}", static_cast<int>(scsi_type),
             position - HEADER_SIZE, actual_count));
@@ -778,7 +777,7 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<Tape::object_type, int> Tape::ReadSimhHeader()
+pair<Tape::object_type, int> Tape::ReadSimhHeader(bool find_only)
 {
     while (true) {
         file.seekg(position, ios::beg);
@@ -799,13 +798,15 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
             return {header.value ? object_type::block : object_type::filemark, header.value};
 
         case simh_class::bad_data_record:
+            if (find_only) {
+                return {object_type::block, header.value & 0x0fffffff};
+            }
             throw scsi_exception(sense_key::medium_error, asc::read_error);
 
         case simh_class::reserved_marker:
             if (header.value == static_cast<int>(simh_marker::end_of_medium)) {
                 return {object_type::end_of_partition, 0};
             }
-
             LogTrace(
                 header.value == static_cast<int>(simh_marker::erase_gap) ?
                     "Skipping SIMH erase gap" : "Skipping unknown SIMH reserved marker");
@@ -860,13 +861,15 @@ int Tape::WriteSimhHeader(simh_class cls, uint32_t value)
 void Tape::CheckLength(int length)
 {
     if (static_cast<int>(record_length) != length) {
-        LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
-            record_length, length));
+        const bool fixed = GetCdbByte(1) & 0x01;
 
         // In fixed mode an incorrect length always results in an error.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
-        if (GetCdbByte(1) & 0x01) {
+        if (fixed && (length % GetBlockSize())) {
+            LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
+                GetBlockSize(), length));
+
             SetIli();
             SetInformation(length / GetBlockSize() - blocks_read);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
@@ -877,7 +880,10 @@ void Tape::CheckLength(int length)
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        if (!(GetCdbByte(1) & 0x02) || static_cast<int>(record_length) > length) {
+        if (!fixed && (!(GetCdbByte(1) & 0x02) || static_cast<int>(record_length) > length)) {
+            LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
+                record_length, length));
+
             SetIli();
             SetInformation(length - record_length);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
@@ -887,7 +893,7 @@ void Tape::CheckLength(int length)
 
 bool Tape::IsAtRecordBoundary() const
 {
-    if (tar_mode) {
+    if (tar_file) {
         return false;
     }
 
