@@ -109,19 +109,27 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
     }
 }
 
-pair<int, path> testing::OpenTempFile(const string &extension)
+string testing::CreateTempName()
 {
-    const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
+    const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Public directory is fine here
     vector<char> f(filename.cbegin(), filename.cend());
     f.emplace_back(0);
 
-    const int fd = mkstemp(f.data());
-    EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
+    return f.data();
+}
 
-    path effective_name = f.data();
+pair<int, path> testing::OpenTempFile(const string &extension)
+{
+    char *f = strdup(CreateTempName().c_str());
+    const int fd = mkstemp(f);
+    const string filename = f;
+    free(f);
+    EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
+
+    path effective_name = filename;
     if (!extension.empty()) {
         effective_name += "." + extension;
-        rename(path(f.data()), effective_name);
+        rename(path(filename), effective_name);
     }
 
     TestShared::RememberTempFile(effective_name);

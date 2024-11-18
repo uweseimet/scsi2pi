@@ -35,7 +35,7 @@ public:
 
     void CleanUp() const;
 
-    void SetScriptFile(ostream&);
+    void SetScriptGenerator(shared_ptr<ScriptGenerator>);
 
     int GetInitiatorId() const
     {
@@ -163,7 +163,7 @@ private:
 
     DeviceLogger device_logger;
 
-    unique_ptr<ScriptGenerator> script_generator;
+    shared_ptr<ScriptGenerator> script_generator;
 
     // Logical units of this controller mapped to their LUN numbers
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;

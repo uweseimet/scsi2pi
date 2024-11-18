@@ -35,11 +35,11 @@ bool PrimaryDevice::Init(const param_map &params)
         {
             RequestSense();
         });
-    AddCommand(scsi_command::reserve6, [this]
+    AddCommand(scsi_command::reserve_6, [this]
         {
             ReserveUnit();
         });
-    AddCommand(scsi_command::release6, [this]
+    AddCommand(scsi_command::release_6, [this]
         {
             ReleaseUnit();
         });
@@ -278,7 +278,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         if (filemark) {
             buf[13] = (byte)ascq::filemark_detected;
         }
-        else if (eom != ascq::none) {
+        else {
             buf[13] = (byte)eom;
         }
     }
@@ -316,7 +316,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
     if (cmd == scsi_command::inquiry || cmd == scsi_command::request_sense
-        || cmd == scsi_command::release6) {
+        || cmd == scsi_command::release_6) {
         return true;
     }
 

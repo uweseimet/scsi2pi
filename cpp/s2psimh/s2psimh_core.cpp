@@ -185,7 +185,7 @@ int S2pSimh::Analyze()
         case simh_class::private_marker:
             PrintClass(header);
             cout << ", private marker";
-            if ((header.value & 0xff) == 0b011) {
+            if ((header.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC && ((header.value >> 24) & 0x0f) == 0b011) {
                 cout << " (SCSI2Pi end-of-data object)\n";
                 return EXIT_SUCCESS;
             }

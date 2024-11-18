@@ -43,75 +43,75 @@ bool Disk::SetUp()
         {
             ReAssignBlocks();
         });
-    AddCommand(scsi_command::read6, [this]
+    AddCommand(scsi_command::read_6, [this]
         {
             Read6();
         });
-    AddCommand(scsi_command::write6, [this]
+    AddCommand(scsi_command::write_6, [this]
         {
             Write6();
         });
-    AddCommand(scsi_command::seek6, [this]
+    AddCommand(scsi_command::seek_6, [this]
         {
             Seek6();
         });
-    AddCommand(scsi_command::read_capacity10, [this]
+    AddCommand(scsi_command::read_capacity_10, [this]
         {
             ReadCapacity10();
         });
-    AddCommand(scsi_command::read10, [this]
+    AddCommand(scsi_command::read_10, [this]
         {
             Read10();
         });
-    AddCommand(scsi_command::write10, [this]
+    AddCommand(scsi_command::write_10, [this]
         {
             Write10();
         });
-    AddCommand(scsi_command::read_long10, [this]
+    AddCommand(scsi_command::read_long_10, [this]
         {
             ReadLong10();
         });
-    AddCommand(scsi_command::write_long10, [this]
+    AddCommand(scsi_command::write_long_10, [this]
         {
             WriteLong10();
         });
-    AddCommand(scsi_command::write_long16, [this]
+    AddCommand(scsi_command::write_long_16, [this]
         {
             WriteLong16();
         });
-    AddCommand(scsi_command::seek10, [this]
+    AddCommand(scsi_command::seek_10, [this]
         {
             Seek10();
         });
-    AddCommand(scsi_command::verify10, [this]
+    AddCommand(scsi_command::verify_10, [this]
         {
             Verify(RW10);
         });
-    AddCommand(scsi_command::synchronize_cache10, [this]
+    AddCommand(scsi_command::synchronize_cache_10, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::synchronize_cache16, [this]
+    AddCommand(scsi_command::synchronize_cache_16, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::read_defect_data10, [this]
+    AddCommand(scsi_command::read_defect_data_10, [this]
         {
             ReadDefectData10();
         });
-    AddCommand(scsi_command::read16, [this]
+    AddCommand(scsi_command::read_16, [this]
         {
             Read16();
         });
-    AddCommand(scsi_command::write16, [this]
+    AddCommand(scsi_command::write_16, [this]
         {
             Write16();
         });
-    AddCommand(scsi_command::verify16, [this]
+    AddCommand(scsi_command::verify_16, [this]
         {
             Verify(RW16);
         });
-    AddCommand(scsi_command::read_capacity16_read_long16, [this]
+    AddCommand(scsi_command::read_capacity_16_read_long_16, [this]
         {
             ReadCapacity16_ReadLong16();
         });
@@ -416,7 +416,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     CheckReady();
 
-    if (command == scsi_command::write_long10 || command == scsi_command::write_long16) {
+    if (command == scsi_command::write_long_10 || command == scsi_command::write_long_16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         assert(linux_cache);
 
@@ -430,7 +430,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
         return length;
     }
 
-    if ((command != scsi_command::verify10 && command != scsi_command::verify16)
+    if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
         throw scsi_exception(sense_key::medium_error, asc::write_fault);
     }

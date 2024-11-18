@@ -466,11 +466,11 @@ void Controller::Receive()
 bool Controller::XferIn()
 {
     // Limited to read commands with DATA IN phase
-    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read10 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read16 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::get_message6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_capacity16_read_long16);
+    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_10 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_16 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::get_message_6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_capacity_16_read_long_16);
 
     try {
         SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
@@ -489,18 +489,18 @@ bool Controller::XferOut(bool pending_data)
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
-        case scsi_command::mode_select6:
-        case scsi_command::mode_select10:
+        case scsi_command::mode_select_6:
+        case scsi_command::mode_select_10:
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
             break;
 
-        case scsi_command::write6:
-        case scsi_command::write10:
-        case scsi_command::write16:
-        case scsi_command::verify10:
-        case scsi_command::verify16:
-        case scsi_command::write_long10:
-        case scsi_command::write_long16:
+        case scsi_command::write_6:
+        case scsi_command::write_10:
+        case scsi_command::write_16:
+        case scsi_command::verify_10:
+        case scsi_command::verify_16:
+        case scsi_command::write_long_10:
+        case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
             const auto length = device->WriteData(GetBuffer(), opcode);
             if (pending_data) {

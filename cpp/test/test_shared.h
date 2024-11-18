@@ -29,6 +29,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice
 vector<int> CreateCdb(scsi_command, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
+string CreateTempName();
 pair<int, path> OpenTempFile(const string& = "");
 path CreateTempFile(size_t, const string& = "");
 string CreateTempFileWithData(span<const byte>, const string& = "");

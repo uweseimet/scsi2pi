@@ -88,7 +88,7 @@ TEST(PrimaryDeviceTest, Reset)
     device->SetLocked(true);
     device->SetAttn(true);
     device->SetReset(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     device->Reset();
     EXPECT_FALSE(device->IsLocked());
@@ -104,7 +104,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
 
     controller->ProcessOnController(0);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_FALSE(device->CheckReservation(-1)) << "Device must be reserved for unknown initiator";
@@ -112,7 +112,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for INQUIRY";
     controller->SetCdbByte(0, static_cast<int>(scsi_command::request_sense));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REQUEST SENSE";
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::release6));
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::release_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE (6)";
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::prevent_allow_medium_removal));
@@ -127,16 +127,16 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::release6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::release_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for unknown initiator";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::release6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::release_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for unknown initiator";
 }
 
@@ -144,7 +144,7 @@ TEST(PrimaryDeviceTest, DiscardReservation)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve6));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_NO_THROW(device->DiscardReservation());
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";

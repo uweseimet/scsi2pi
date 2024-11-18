@@ -33,15 +33,15 @@ Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, 
 
 bool Tape::SetUp()
 {
-    AddCommand(scsi_command::read6, [this]
+    AddCommand(scsi_command::read_6, [this]
         {
             Read6();
         });
-    AddCommand(scsi_command::write6, [this]
+    AddCommand(scsi_command::write_6, [this]
         {
             Write6();
         });
-    AddCommand(scsi_command::erase6, [this]
+    AddCommand(scsi_command::erase_6, [this]
         {
             Erase6();
         });
@@ -53,19 +53,19 @@ bool Tape::SetUp()
         {
             Rewind();
         });
-    AddCommand(scsi_command::space6, [this]
+    AddCommand(scsi_command::space_6, [this]
         {
             Space6();
         });
-    AddCommand(scsi_command::write_filemarks6, [this]
+    AddCommand(scsi_command::write_filemarks_6, [this]
         {
             WriteFilemarks6();
         });
-    AddCommand(scsi_command::locate10, [this]
+    AddCommand(scsi_command::locate_10, [this]
         {
             Locate(false);
         });
-    AddCommand(scsi_command::locate16, [this]
+    AddCommand(scsi_command::locate_16, [this]
         {
             Locate(true);
         });
@@ -505,17 +505,22 @@ void Tape::Locate(bool locate16)
     const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
 
     if (tar_mode) {
+        // Only BT is supproted
+        if (!(GetCdbByte(1) & 0x01)) {
+            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        }
+
         position = identifier * GetBlockSize();
         block_location = identifier;
     }
     else {
-        ResetPosition();
-
         // BT
         if (GetCdbByte(1) & 0x01) {
             position = identifier;
+            // Approximate block position
             block_location = position / GetBlockSize();
         } else {
+            ResetPosition();
             FindNextObject(object_type::filemark, identifier);
         }
     }
@@ -590,13 +595,14 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         break;
 
     default:
-        // Write object types not supported by simh (e.g. end-of-data) as private markers with a 3 leading magic bytes
-        WriteSimhHeader(simh_class::private_marker, static_cast<int>(type) | PRIVATE_MARKER_MAGIC);
+        // Write tape object types not supported by SIMH (e.g. end-of-data) as private markers
+        WriteSimhHeader(simh_class::private_marker, (static_cast<uint32_t>(type) << 24) | PRIVATE_MARKER_MAGIC);
         break;
     }
 
     // Ensure that there is always an end-of-data object after the last position
-    WriteSimhHeader(simh_class::private_marker, static_cast<int>(object_type::end_of_data) | PRIVATE_MARKER_MAGIC);
+    WriteSimhHeader(simh_class::private_marker,
+        (static_cast<uint32_t>(object_type::end_of_data) << 24) | PRIVATE_MARKER_MAGIC);
 
     CheckForWriteError();
 }
@@ -604,11 +610,15 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 {
     const bool reverse = count < 0;
+
+    LogTrace(fmt::format("{0}-spacing for object type {1}, count {2}", reverse ? "Reverse" : "Forward",
+        static_cast<int>(type), count));
+
     if (reverse) {
         count = -count;
     }
 
-    int64_t effective_count = 0;
+    int64_t actual_count = 0;
 
     while (true) {
         if (reverse && !MoveBack()) {
@@ -623,33 +633,39 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
         const auto [scsi_type, length] = ReadSimhHeader();
 
-        LogTrace(fmt::format("Searching for object type {0}, found type {1} at position {2}", static_cast<int>(type),
-            static_cast<int>(scsi_type), old_position));
+        LogTrace(
+            fmt::format("Found object type {0} at position {1}, count {2}", static_cast<int>(scsi_type), old_position,
+                actual_count));
 
         if (type == scsi_type) {
-            if (!count) {
+            if (count <= 1) {
+                if (reverse) {
+                    position -= type == object_type::block ? length + 2 * HEADER_SIZE : HEADER_SIZE;
+                }
+
                 return static_cast<uint32_t>(length);
             }
 
             --count;
         }
 
-        ++effective_count;
+        ++actual_count;
 
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
             LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", position));
-            SetInformation(effective_count);
+            SetInformation(count - actual_count);
             SetEom(ascq::end_of_partition_medium_detected);
-            throw scsi_exception(sense_key::medium_error);
+            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
         }
 
         // End-of-data while spacing over blocks or filemarks
-        if (scsi_type == object_type::end_of_data && (type != object_type::end_of_data)) {
+        if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
             LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
                 type == object_type::block ? "blocks" : "filemarks"));
-            SetInformation(effective_count);
-            throw scsi_exception(sense_key::blank_check);
+            SetInformation(count - actual_count);
+            SetEom(ascq::end_of_partition_medium_detected);
+            throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
         }
 
         // Terminate while spacing over blocks and a filemark is found
@@ -659,7 +675,7 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             }
 
             LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", position));
-            SetInformation(effective_count);
+            SetInformation(actual_count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense);
         }
@@ -673,6 +689,9 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
                 position += length + HEADER_SIZE;
                 ++block_location;
             }
+        }
+        else if (reverse) {
+            position -= HEADER_SIZE;
         }
     }
 }
@@ -688,16 +707,11 @@ bool Tape::MoveBack()
     file.seekg(position, ios::beg);
 
     SimhHeader header;
-    const int count = ReadHeader(file, header);
-    if (count == -1) {
+    if (const int count = ReadHeader(file, header); count == -1) {
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
     position -= IsRecord(header) ? header.value + GetPadding(header.value) + HEADER_SIZE : 0;
-
-    LogTrace(
-        fmt::format("Moved back to class {0}, value {1} at position {2}", static_cast<int>(header.cls), header.value,
-            position));
 
     return position >= 0;
 }
@@ -816,12 +830,22 @@ pair<Tape::object_type, int> Tape::ReadSimhHeader()
             break;
 
         case simh_class::private_marker:
-            return {static_cast<object_type>(header.value), 0};
+            if ((header.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
+                LogTrace(
+                    fmt::format("Found SCSI2Pi private marker for object type {0} at position {1}",
+                        (header.value >> 24) & 0x0f, position));
+                return {static_cast<object_type>((header.value >> 24) & 0x0f), 0};
+            }
+            LogTrace(
+                fmt::format("Skipping unknown private marker, value ${0:07x} at position {1}",
+                    static_cast<int>(header.value), position));
+            break;
 
         default:
-            LogTrace("Skipping unknown SIMH class");
+            LogTrace(fmt::format("Skipping unknown SIMH class {0:1X} at position {1}", static_cast<int>(header.cls),
+                position));
             if (IsRecord(header)) {
-                position += header.value;
+                position += header.value + GetPadding(header.value) + HEADER_SIZE;
             }
             break;
         }

@@ -18,23 +18,23 @@ using namespace s2p_util;
 PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
     p)
 {
-    device.AddCommand(scsi_command::mode_sense6, [this]
+    device.AddCommand(scsi_command::mode_sense_6, [this]
         {
             device.DataInPhase(
                 device.ModeSense6(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
-    device.AddCommand(scsi_command::mode_sense10, [this]
+    device.AddCommand(scsi_command::mode_sense_10, [this]
         {
             device.DataInPhase(
                 device.ModeSense10(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
 
     // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
-    device.AddCommand(scsi_command::mode_select6, [this]
+    device.AddCommand(scsi_command::mode_select_6, [this]
         {
             ModeSelect(device.GetCdbByte(4));
         });
-    device.AddCommand(scsi_command::mode_select10, [this]
+    device.AddCommand(scsi_command::mode_select_10, [this]
         {
             ModeSelect(device.GetCdbInt24(7));
         });
