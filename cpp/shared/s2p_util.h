@@ -96,7 +96,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
 
 // This map only contains mappings for ASCs used by s2p
 static const unordered_map<asc, const char*> ASC_MAPPING = {
-    { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
+    { asc::no_additional_sense_information, "NO ADDITIONAL SENSE INFORMATION" },
     { asc::write_fault, "PERIPHERAL DEVICE WRITE FAULT" },
     { asc::write_error, "WRITE ERROR" },
     { asc::read_error, "READ ERROR" },

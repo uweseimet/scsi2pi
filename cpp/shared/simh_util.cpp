@@ -35,11 +35,11 @@ bool simh_util::IsRecord(const SimhMetaData &meta_data)
 {
     // Tape mark
     if (meta_data.cls == simh_class::tape_mark_good_data_record) {
-        return meta_data.value & 0x0fffffff;
+        return meta_data.value;
     }
 
     // Bad data record, not recovered
-    if (meta_data.cls == simh_class::bad_data_record && !(meta_data.value & 0x0fffffff)) {
+    if (meta_data.cls == simh_class::bad_data_record && !meta_data.value) {
         return false;
     }
 
