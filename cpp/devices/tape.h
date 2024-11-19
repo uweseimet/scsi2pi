@@ -55,7 +55,7 @@ private:
         filemark = 0b001,
         end_of_data = 0b011,
         // SCSI2Pi-specific
-        end_of_partition = -1
+        end_of_partition = -1,
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -89,8 +89,8 @@ private:
 
     void ResetPosition();
 
-    pair<Tape::object_type, int> ReadSimhHeader(bool);
-    int WriteSimhHeader(simh_class, uint32_t);
+    pair<Tape::object_type, int> ReadSimhMetaData(bool);
+    int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckLength(int);
 

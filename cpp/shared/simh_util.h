@@ -43,21 +43,21 @@ enum class simh_marker : uint32_t
     end_of_medium = 0xfffffff
 };
 
-using SimhHeader = struct _SimhHeader {
+using SimhMetaData = struct _SimhMetaData {
     simh_class cls;
     uint32_t value;
 };
 
-int ReadHeader(istream&, SimhHeader&);
+bool ReadMetaData(istream&, SimhMetaData&);
 
-bool IsRecord(const SimhHeader&);
+bool IsRecord(const SimhMetaData&);
 
 uint32_t GetPadding(int);
 
-uint32_t FromLittleEndian(span<const uint8_t>);
-array<uint8_t, 4> ToLittleEndian(uint32_t);
+SimhMetaData FromLittleEndian(span<const uint8_t>);
+array<uint8_t, 4> ToLittleEndian(const SimhMetaData&);
 
-static const int64_t HEADER_SIZE = static_cast<int64_t>(sizeof(uint32_t));
+static const int64_t META_DATA_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 
 // "S2P", private marker magic value for tape object types, the SCSI2Pi type is coded in the low nibble of the LSB
 static const uint32_t PRIVATE_MARKER_MAGIC = 0x00533250;

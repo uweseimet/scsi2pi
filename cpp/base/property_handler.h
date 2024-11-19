@@ -21,7 +21,9 @@ class PropertyHandler
 
 public:
 
-    // Non device-specific property keys
+    static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
+
+    // Global property keys
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
@@ -69,6 +71,5 @@ private:
 
     property_map unknown_properties;
 
-    static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
     static constexpr const char *CONFIGURATION_OLD = "/etc/s2p.conf.old";
 };

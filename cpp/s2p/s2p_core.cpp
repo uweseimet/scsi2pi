@@ -182,7 +182,10 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
         if (!key.starts_with("device.")) {
-            warn("Ignored unknown global property \"{0}={1}\"", key, value);
+            cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
+                << PropertyHandler::CONFIGURATION << endl;
+            CleanUp();
+            return EXIT_FAILURE;
         }
     }
 

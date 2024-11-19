@@ -31,10 +31,10 @@ private:
 
     int Analyze();
 
-    void PrintClass(const simh_util::SimhHeader&) const;
-    void PrintValue(const simh_util::SimhHeader&);
-    bool PrintRecord(const string&, const simh_util::SimhHeader&);
-    bool PrintReservedMarker(const simh_util::SimhHeader&);
+    void PrintClass(const simh_util::SimhMetaData&) const;
+    void PrintValue(const simh_util::SimhMetaData&);
+    bool PrintRecord(const string&, const simh_util::SimhMetaData&);
+    bool PrintReservedMarker(const simh_util::SimhMetaData&);
 
     bool ReadRecord(span<uint8_t>);
 
@@ -48,5 +48,5 @@ private:
     int64_t old_position = 0;
 
     bool dump = false;
-    int limit = numeric_limits<int>::max();
+    uint32_t limit = numeric_limits<uint32_t>::max();
 };

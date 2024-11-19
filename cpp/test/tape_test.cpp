@@ -134,11 +134,37 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    // Non-fixed, 1 byte
+    const string &filename = CreateTapeFile(*tape);
+
+    // Non-fixed, 4 bytes
     controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(4, 4);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
+
+    fstream file(filename);
+    const array<uint8_t, META_DATA_SIZE> good_data_non_fixed = { 0x04, 0x00, 0x00, 0x00 };
+    const array<uint8_t, META_DATA_SIZE> good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
+    file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
+    file.seekp(4, ios::cur);
+    file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
+    file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
+    file.flush();
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Non-fixed, 4 bytes
+    controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(4, 4);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
-    CreateTapeFile(*tape);
-    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
 }
 
 TEST(TapeTest, Write6)
@@ -157,15 +183,14 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    CreateTapeFile(*tape);
-    // Non-fixed, 1 byte
-    controller->SetCdbByte(1, 0x00);
-    controller->SetCdbByte(4, 1);
-    TestShared::Dispatch(*tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
     // Non-fixed, 4 bytes
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 4);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_6));
+
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::write_6));
 }
 
@@ -273,13 +298,13 @@ TEST(TapeTest, Space6_simh)
 
     // Write 5 filemarks and 1 end-of-data
     ofstream file(filename);
-    const array<uint8_t, HEADER_SIZE> filemark = { 0, 0, 0, 0 };
+    const array<uint8_t, META_DATA_SIZE> filemark = { 0, 0, 0, 0 };
+    const array<uint8_t, META_DATA_SIZE> end_of_data = { 'P', '2', 'S', 0x73 };
     file.write((const char*)filemark.data(), filemark.size());
     file.write((const char*)filemark.data(), filemark.size());
     file.write((const char*)filemark.data(), filemark.size());
     file.write((const char*)filemark.data(), filemark.size());
     file.write((const char*)filemark.data(), filemark.size());
-    const array<uint8_t, HEADER_SIZE> end_of_data = { 'P', '2', 'S', 0x73 };
     file.write((const char*)end_of_data.data(), end_of_data.size());
     file.flush();
 
@@ -327,27 +352,38 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 5);
     TestShared::Dispatch(*tape, scsi_command::space_6, sense_key::blank_check, asc::no_additional_sense_information);
 
-    // Write 5 data records of 512 bytes and 1 filemark
+    // Write 6 data records (bad and good) and different markers, terminated by a filemark
     file.seekp(0, ios::beg);
-    const array<uint8_t, HEADER_SIZE> header_good_data = { 0x00, 0x02, 0x00, 0x00 };
-    const array<uint8_t, HEADER_SIZE> header_bad_data = { 0x00, 0x02, 0x00, 0x80 };
-    file.write((const char*)header_good_data.data(), header_good_data.size());
+    const array<uint8_t, META_DATA_SIZE> good_data = { 0x00, 0x02, 0x00, 0x00 };
+    const array<uint8_t, META_DATA_SIZE> bad_data = { 0x00, 0x02, 0x00, 0x80 };
+    const array<uint8_t, META_DATA_SIZE> bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
+    const array<uint8_t, META_DATA_SIZE> private_marker = { 0x00, 0x00, 0x00, 0x70 };
+    const array<uint8_t, META_DATA_SIZE> reserved_marker = { 0x00, 0x00, 0x00, 0xf0 };
+    const array<uint8_t, META_DATA_SIZE> erase_gap = { 0xff, 0xff, 0xff, 0x7f };
+    const array<uint8_t, META_DATA_SIZE> tape_description_data_record = { 0x01, 0x00, 0x00, 0xe0 };
+    file.write((const char*)good_data.data(), good_data.size());
     file.seekp(512, ios::cur);
-    file.write((const char*)header_good_data.data(), header_good_data.size());
-    file.write((const char*)header_good_data.data(), header_good_data.size());
+    file.write((const char*)good_data.data(), good_data.size());
+    file.write((const char*)bad_data_not_recovered.data(), bad_data_not_recovered.size());
+    file.write((const char*)good_data.data(), good_data.size());
     file.seekp(512, ios::cur);
-    file.write((const char*)header_good_data.data(), header_good_data.size());
-    file.write((const char*)header_bad_data.data(), header_bad_data.size());
+    file.write((const char*)good_data.data(), good_data.size());
+    file.write((const char*)bad_data.data(), bad_data.size());
     file.seekp(512, ios::cur);
-    file.write((const char*)header_bad_data.data(), header_bad_data.size());
-    file.write((const char*)header_good_data.data(), header_good_data.size());
+    file.write((const char*)bad_data.data(), bad_data.size());
+    file.write((const char*)good_data.data(), good_data.size());
     file.seekp(512, ios::cur);
-    file.write((const char*)header_good_data.data(), header_good_data.size());
-    file.write((const char*)header_good_data.data(), header_good_data.size());
+    file.write((const char*)good_data.data(), good_data.size());
+    file.write((const char*)erase_gap.data(), erase_gap.size());
+    file.write((const char*)private_marker.data(), private_marker.size());
+    file.write((const char*)reserved_marker.data(), reserved_marker.size());
+    file.write((const char*)tape_description_data_record.data(), tape_description_data_record.size());
+    file.seekp(2, ios::cur);
+    file.write((const char*)tape_description_data_record.data(), tape_description_data_record.size());
+    file.write((const char*)good_data.data(), good_data.size());
     file.seekp(512, ios::cur);
-    file.write((const char*)header_good_data.data(), header_good_data.size());
-    const array<uint8_t, HEADER_SIZE> header_filemark = { 0x00, 0x00, 0x00, 0x00 };
-    file.write((const char*)header_filemark.data(), header_filemark.size());
+    file.write((const char*)good_data.data(), good_data.size());
+    file.write((const char*)filemark.data(), filemark.size());
     file.flush();
 
     tape->Dispatch(scsi_command::rewind);
@@ -371,10 +407,9 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0);
     controller->SetCdbByte(4, 0);
     CheckPosition(*controller, *tape, 4);
-
     // BT
     controller->SetCdbByte(1, 0x01);
-    CheckPosition(*controller, *tape, 2080);
+    CheckPosition(*controller, *tape, 1564);
     controller->SetCdbByte(1, 0);
 
     // Reverse-space over 2 blocks
@@ -390,12 +425,12 @@ TEST(TapeTest, Space6_simh)
     CheckPosition(*controller, *tape, 2);
     // BT
     controller->SetCdbByte(1, 0x01);
-    CheckPosition(*controller, *tape, 1040);
+    CheckPosition(*controller, *tape, 520);
     controller->SetCdbByte(1, 0);
 
-    // Try to space over 5 blocks, in order to hit the filemark
+    // Try to space over 6 blocks, in order to hit the filemark
     controller->SetCdbByte(1, 0b000);
-    controller->SetCdbByte(4, 5);
+    controller->SetCdbByte(4, 6);
     TestShared::Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
 }
 
