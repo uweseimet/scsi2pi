@@ -88,8 +88,9 @@ private:
     void Erase();
 
     void ResetPosition();
+    void AdjustPosition(bool);
 
-    pair<Tape::object_type, int> ReadSimhMetaData(bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(bool, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckLength(int);
@@ -117,6 +118,8 @@ private:
     off_t file_size = 0;
 
     bool tar_file = false;
+
+    SimhMetaData current_meta_data = { };
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;

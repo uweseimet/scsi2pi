@@ -153,12 +153,15 @@ int Tape::ReadData(span<uint8_t> buf)
     const int size = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
-        const auto [scsi_type, length] = ReadSimhMetaData(false);
-        if (scsi_type != object_type::block) {
-            ++read_error_count;
+        file.seekg(position, ios::beg);
+
+        SimhMetaData meta_data;
+        if (!ReadMetaData(file, meta_data) || !IsRecord(meta_data)) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
-        record_length = length;
+        position += META_DATA_SIZE;
+
+        record_length = meta_data.value;
 
         CheckLength(byte_count);
     }
@@ -596,38 +599,31 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
 
     while (true) {
         if (reverse && !MoveBack()) {
-            LogTrace("Encountered beginning-of-partition while spacing");
+            LogTrace("Encountered beginning-of-partition while reverse-spacing");
             ResetPosition();
             SetInformation(count);
             SetEom(ascq::beginning_of_partition_medium_detected);
             throw scsi_exception(sense_key::no_sense);
         }
 
-        const auto [scsi_type, length] = ReadSimhMetaData(true);
+        const auto [scsi_type, length] = ReadSimhMetaData(reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1}, count {2}", static_cast<int>(scsi_type),
-            position - META_DATA_SIZE, actual_count));
+        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} objects",
+            static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count + 1));
 
         if (type == scsi_type) {
             --count;
             if (count <= 0) {
                 if (reverse) {
                     if (type == object_type::block) {
-                        // Unrecovered blocks do not have a length and trailing length
-                        position += length ? length + META_DATA_SIZE : -META_DATA_SIZE;
-                        --block_location;
+                        AdjustPosition(reverse);
                     }
-                    else {
-                        position -= META_DATA_SIZE;
-                    }
+                    position -= META_DATA_SIZE;
                 }
                 else {
-                    if (type == object_type::block) {
-                        // Unrecovered blocks do not have a length and trailing length
-                        position += length ? length + META_DATA_SIZE : 0;
-                        ++block_location;
-                    }
+                    AdjustPosition(reverse);
                 }
+
                 return static_cast<uint32_t>(length);
             }
         }
@@ -663,20 +659,34 @@ uint32_t Tape::FindNextObject(Tape::object_type type, int64_t count)
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
 
-        if (scsi_type == object_type::block) {
-            if (reverse) {
-                // Unrecovered blocks do not have a length and trailing length
-                position -= length ? length + 3 * META_DATA_SIZE : META_DATA_SIZE;
-                --block_location;
-            }
-            else {
-                // Unrecovered blocks do not have a length and trailing length
-                position += length ? length + META_DATA_SIZE : 0;
-                ++block_location;
-            }
+        AdjustPosition(reverse);
+    }
+}
+
+void Tape::ResetPosition()
+{
+    position = 0;
+    block_location = 0;
+}
+
+void Tape::AdjustPosition(bool reverse)
+{
+    if (reverse) {
+        position -=
+            IsRecord(current_meta_data) ?
+                current_meta_data.value + GetPadding(current_meta_data.value) + 2 * META_DATA_SIZE : META_DATA_SIZE;
+    }
+    else if (IsRecord(current_meta_data)) {
+        position += current_meta_data.value + GetPadding(current_meta_data.value) + META_DATA_SIZE;
+    }
+
+    if (IsRecord(current_meta_data)
+        || (current_meta_data.cls == simh_class::bad_data_record && !current_meta_data.value)) {
+        if (reverse) {
+            --block_location;
         }
-        else if (reverse) {
-            position -= META_DATA_SIZE;
+        else {
+            ++block_location;
         }
     }
 }
@@ -697,9 +707,7 @@ bool Tape::MoveBack()
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    position -= IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE : 0;
-
-    return position >= 0;
+    return position - (IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE : 0) >= 0;
 }
 
 uint32_t Tape::GetByteCount()
@@ -750,12 +758,6 @@ void Tape::Erase()
     }
 }
 
-void Tape::ResetPosition()
-{
-    position = 0;
-    block_location = 0;
-}
-
 vector<PbStatistics> Tape::GetStatistics() const
 {
     vector<PbStatistics> statistics = StorageDevice::GetStatistics();
@@ -778,58 +780,63 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<Tape::object_type, int> Tape::ReadSimhMetaData(bool find_only)
+pair<Tape::object_type, int> Tape::ReadSimhMetaData(bool reverse, bool find_only)
 {
     while (true) {
         file.seekg(position, ios::beg);
 
-        SimhMetaData meta_data;
-        if (!ReadMetaData(file, meta_data)) {
+        if (!ReadMetaData(file, current_meta_data)) {
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
-            static_cast<int>(meta_data.cls), meta_data.value, position));
+            static_cast<int>(current_meta_data.cls), current_meta_data.value, position));
 
         position += META_DATA_SIZE;
 
-        switch (meta_data.cls) {
+        switch (current_meta_data.cls) {
         case simh_class::tape_mark_good_data_record:
-            return {meta_data.value ? object_type::block : object_type::filemark, meta_data.value};
+            return {current_meta_data.value ? object_type::block : object_type::filemark, current_meta_data.value};
 
         case simh_class::bad_data_record:
             // Consider recovered bad data records valid
-            if (meta_data.value || find_only) {
-                return {object_type::block, meta_data.value};
+            if (current_meta_data.value || find_only) {
+                return {object_type::block, current_meta_data.value};
             }
             throw scsi_exception(sense_key::medium_error, asc::read_error);
 
         case simh_class::reserved_marker:
-            if (meta_data.value == static_cast<int>(simh_marker::end_of_medium)) {
+            if (current_meta_data.value == static_cast<int>(simh_marker::end_of_medium)) {
                 return {object_type::end_of_partition, 0};
             }
             LogTrace(
-                meta_data.value == static_cast<int>(simh_marker::erase_gap) ?
+                current_meta_data.value == static_cast<int>(simh_marker::erase_gap) ?
                     "Skipping SIMH erase gap" : "Skipping unknown SIMH reserved marker");
             break;
 
         case simh_class::private_marker:
-            if ((meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
+            if ((current_meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
                 LogTrace(
                     fmt::format("Found SCSI2Pi private marker for object type {0} at position {1}",
-                        (meta_data.value >> 24) & 0x0f, position));
-                return {static_cast<object_type>((meta_data.value >> 24) & 0x0f), 0};
+                        (current_meta_data.value >> 24) & 0x0f, position));
+                return {static_cast<object_type>((current_meta_data.value >> 24) & 0x0f), 0};
             }
-            LogTrace(
-                fmt::format("Skipping unknown private marker, value ${0:07x} at position {1}",
-                    static_cast<int>(meta_data.value), position));
+            LogTrace(fmt::format("Skipping unknown SIMH private marker, value ${0:07x} at position {1}",
+                static_cast<int>(current_meta_data.value), position));
             break;
 
         default:
-            LogTrace(fmt::format("Skipping unknown SIMH class {0:1X} at position {1}", static_cast<int>(meta_data.cls),
-                position));
-            if (IsRecord(meta_data)) {
-                position += meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE;
+            LogTrace(fmt::format("Skipping unknown SIMH class {0:1X} at position {1}",
+                static_cast<int>(current_meta_data.cls), position));
+            if (IsRecord(current_meta_data)) {
+                if (reverse) {
+                    position -= current_meta_data.value + GetPadding(current_meta_data.value) + 2 * META_DATA_SIZE;
+                    --block_location;
+                }
+                else {
+                    position += current_meta_data.value + GetPadding(current_meta_data.value) + META_DATA_SIZE;
+                    ++block_location;
+                }
             }
             break;
         }

@@ -135,17 +135,11 @@ TEST(TapeTest, Read6)
     TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     const string &filename = CreateTapeFile(*tape);
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(1, 0x00);
-    controller->SetCdbByte(4, 4);
-    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
-
     fstream file(filename);
-    const array<uint8_t, META_DATA_SIZE> good_data_non_fixed = { 0x04, 0x00, 0x00, 0x00 };
+    const array<uint8_t, META_DATA_SIZE> good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const array<uint8_t, META_DATA_SIZE> good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
     file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
-    file.seekp(4, ios::cur);
+    file << "123456789012";
     file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
     file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
     file.seekp(512, ios::cur);
@@ -154,17 +148,27 @@ TEST(TapeTest, Read6)
 
     tape->Dispatch(scsi_command::rewind);
 
-    // Non-fixed, 4 bytes
+    // Non-fixed, 12 bytes
     controller->SetCdbByte(1, 0x00);
-    controller->SetCdbByte(4, 4);
+    controller->SetCdbByte(4, 12);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+    EXPECT_EQ('1', controller->GetBuffer()[0]);
+    EXPECT_EQ('2', controller->GetBuffer()[1]);
+    EXPECT_EQ('3', controller->GetBuffer()[2]);
+    EXPECT_EQ('4', controller->GetBuffer()[3]);
+    EXPECT_EQ('5', controller->GetBuffer()[4]);
+    EXPECT_EQ('6', controller->GetBuffer()[5]);
+    EXPECT_EQ('7', controller->GetBuffer()[6]);
+    EXPECT_EQ('8', controller->GetBuffer()[7]);
+    EXPECT_EQ('9', controller->GetBuffer()[8]);
+    EXPECT_EQ('0', controller->GetBuffer()[9]);
+    EXPECT_EQ('1', controller->GetBuffer()[10]);
+    EXPECT_EQ('2', controller->GetBuffer()[11]);
 
     // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
-
-    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
 }
 
 TEST(TapeTest, Write6)
