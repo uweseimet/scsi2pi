@@ -306,6 +306,9 @@ TEST(PrimaryDeviceTest, RequestSense)
     device->SetReady(false);
     TestShared::Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);
 
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+
     device->SetReady(true);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());

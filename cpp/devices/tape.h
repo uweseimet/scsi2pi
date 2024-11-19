@@ -55,7 +55,7 @@ private:
         filemark = 0b001,
         end_of_data = 0b011,
         // SCSI2Pi-specific
-        end_of_partition = -1
+        end_of_partition = -1,
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -89,10 +89,10 @@ private:
 
     void ResetPosition();
 
-    pair<Tape::object_type, int> ReadSimhHeader();
-    int WriteSimhHeader(simh_class, uint32_t);
+    pair<Tape::object_type, int> ReadSimhMetaData(bool);
+    int WriteSimhMetaData(simh_class, uint32_t);
 
-    void CheckRecordLength();
+    void CheckLength(int);
 
     bool IsAtRecordBoundary() const;
 
@@ -116,7 +116,7 @@ private:
 
     off_t file_size = 0;
 
-    bool tar_mode = false;
+    bool tar_file = false;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;

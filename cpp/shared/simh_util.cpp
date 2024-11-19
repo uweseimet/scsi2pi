@@ -9,36 +9,41 @@
 #include <cassert>
 #include "simh_util.h"
 
-int simh_util::ReadHeader(istream &file, SimhHeader &header)
+bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 {
-    array<uint8_t, HEADER_SIZE> h = { };
-    file.read((char*)h.data(), h.size());
-    if (file.fail()) {
-        if (file.eof()) {
+    array<uint8_t, META_DATA_SIZE> data = { };
+    file.read((char*)data.data(), data.size());
+
+    if (file.good()) {
+        meta_data = FromLittleEndian(data);
+    }
+    else {
+        if (!file.eof()) {
             file.clear();
-            header.cls = simh_class::reserved_marker;
-            header.value = static_cast<int>(simh_marker::end_of_medium);
-            return 0;
+            return false;
         }
 
         file.clear();
-        return -1;
+        meta_data.cls = simh_class::reserved_marker;
+        meta_data.value = static_cast<int>(simh_marker::end_of_medium);
     }
 
-    const uint32_t data = FromLittleEndian(h);
-    header.cls = static_cast<simh_class>(data >> 28);
-    header.value = data & 0xfffffff;
-
-    return HEADER_SIZE;
+    return true;
 }
 
-bool simh_util::IsRecord(const SimhHeader &header)
+bool simh_util::IsRecord(const SimhMetaData &meta_data)
 {
-    if (header.cls == simh_class::tape_mark_good_data_record) {
-        return header.value & 0xfffffff;
+    // Tape mark
+    if (meta_data.cls == simh_class::tape_mark_good_data_record) {
+        return meta_data.value & 0x0fffffff;
     }
 
-    return header.cls != simh_class::private_marker && header.cls != simh_class::reserved_marker;
+    // Bad data record, not recovered
+    if (meta_data.cls == simh_class::bad_data_record && !(meta_data.value & 0x0fffffff)) {
+        return false;
+    }
+
+    return meta_data.cls != simh_class::private_marker && meta_data.cls != simh_class::reserved_marker;
 }
 
 uint32_t simh_util::GetPadding(int length)
@@ -48,16 +53,19 @@ uint32_t simh_util::GetPadding(int length)
     return length % 2 ? 1 : 0;
 }
 
-uint32_t simh_util::FromLittleEndian(span<const uint8_t> value)
+simh_util::SimhMetaData simh_util::FromLittleEndian(span<const uint8_t> value)
 {
     assert(value.size() == sizeof(uint32_t));
 
-    return (static_cast<uint32_t>(value[3]) << 24) | (static_cast<uint32_t>(value[2]) << 16)
+    const uint32_t data = (static_cast<uint32_t>(value[3]) << 24) | (static_cast<uint32_t>(value[2]) << 16)
         | (static_cast<uint32_t>(value[1]) << 8) | value[0];
+
+    return {static_cast<simh_class>(data >> 28), data & 0x0fffffff};
 }
 
-array<uint8_t, 4> simh_util::ToLittleEndian(uint32_t value)
+array<uint8_t, 4> simh_util::ToLittleEndian(const SimhMetaData &meta_data)
 {
-    return {static_cast<uint8_t>(value & 0xff), static_cast<uint8_t>((value >> 8) & 0xff),
-        static_cast<uint8_t>((value >> 16) & 0xff), static_cast<uint8_t>((value >> 24) & 0xff)};
+    return {static_cast<uint8_t>(meta_data.value & 0xff), static_cast<uint8_t>((meta_data.value >> 8) & 0xff),
+        static_cast<uint8_t>((meta_data.value >> 16) & 0xff),
+        static_cast<uint8_t>(((meta_data.value >> 24) & 0x0f) | static_cast<uint8_t>((static_cast<uint32_t>(meta_data.cls) << 4)))};
 }

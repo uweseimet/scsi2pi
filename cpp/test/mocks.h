@@ -159,14 +159,19 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
     FRIEND_TEST(TapeTest, Write6);
-    FRIEND_TEST(TapeTest, Erase6);
+    FRIEND_TEST(TapeTest, Erase6_simh);
+    FRIEND_TEST(TapeTest, Erase6_tar);
     FRIEND_TEST(TapeTest, Rewind);
-    FRIEND_TEST(TapeTest, Space6);
-    FRIEND_TEST(TapeTest, Space16);
-    FRIEND_TEST(TapeTest, WriteFileMarks6);
-    FRIEND_TEST(TapeTest, FormatMedium);
-    FRIEND_TEST(TapeTest, Locate10);
-    FRIEND_TEST(TapeTest, Locate16);
+    FRIEND_TEST(TapeTest, Space6_simh);
+    FRIEND_TEST(TapeTest, Space6_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks6_simh);
+    FRIEND_TEST(TapeTest, WriteFileMarks6_tar);
+    FRIEND_TEST(TapeTest, FormatMedium_simh);
+    FRIEND_TEST(TapeTest, FormatMedium_tar);
+    FRIEND_TEST(TapeTest, Locate10_simh);
+    FRIEND_TEST(TapeTest, Locate10_tar);
+    FRIEND_TEST(TapeTest, Locate16_simh);
+    FRIEND_TEST(TapeTest, Locate16_tar);
     FRIEND_TEST(TapeTest, ReadPosition);
 
 public:
@@ -195,6 +200,13 @@ public:
         SetCurrentLength(512);
     }
     ~MockAbstractController() override = default;
+
+    void ResetCdb()
+    {
+        for (size_t i = 0; i < GetCdb().size(); i++) {
+            SetCdbByte(i, 0);
+        }
+    }
 };
 
 class MockController : public Controller

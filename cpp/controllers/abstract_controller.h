@@ -90,7 +90,7 @@ public:
 protected:
 
     void AddCdbToScript();
-    void AddDataToScript(span<uint8_t>);
+    void AddDataToScript(span<uint8_t>) const;
 
     virtual bool Process() = 0;
 
