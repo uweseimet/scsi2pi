@@ -217,7 +217,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         throw scsi_exception(sense_key::volume_overflow);
     }
 
-    file.seekp(position, ios::beg);
+    file.seekp(position);
     file.write((const char*)buf.data(), size);
     CheckForWriteError();
 
@@ -556,7 +556,7 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 
     assert(!(size & 0xf0000000));
 
-    file.seekp(position, ios::beg);
+    file.seekp(position);
 
     switch (type) {
     case object_type::block:
@@ -602,7 +602,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         SimhMetaData meta_data = { };
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} objects",
+        LogTrace(fmt::format("Found object type {0} at position {1},eod length {2}, spaced over {3} objects",
             static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count));
 
         if (type == scsi_type && count <= 1) {
@@ -610,7 +610,6 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         }
 
         --count;
-        ++actual_count;
 
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
@@ -622,10 +621,12 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
 
         // End-of-data while spacing over blocks or filemarks
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
+            position -= META_DATA_SIZE;
+
             LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
                 type == object_type::block ? "blocks" : "filemarks"));
             SetInformation(count - actual_count);
-            SetEom(ascq::end_of_partition_medium_detected);
+            SetEom(ascq::end_of_data_detected);
             throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
         }
 
@@ -640,6 +641,8 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
             SetFilemark();
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
+
+        ++actual_count;
 
         AdjustForSpacing(meta_data, reverse);
     }
@@ -689,12 +692,12 @@ uint32_t Tape::AdjustResult(const SimhMetaData &meta_data, bool reverse, object_
 {
     if (reverse) {
         if (type == object_type::block) {
-            AdjustForSpacing(meta_data, reverse);
+            AdjustForSpacing(meta_data, true);
         }
         position -= META_DATA_SIZE;
     }
     else {
-        AdjustForSpacing(meta_data, reverse);
+        AdjustForSpacing(meta_data, false);
     }
 
     return meta_data.value;
@@ -742,7 +745,7 @@ uint32_t Tape::GetByteCount()
 
 void Tape::Erase()
 {
-    file.seekp(position, ios::beg);
+    file.seekp(position);
 
     // Erase in chunks, using SIMH gaps as a pattern (little endian)
     vector<uint8_t> buf;
@@ -870,7 +873,7 @@ void Tape::CheckLength(int length)
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (fixed) {
-            LogTrace(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
+            LogError(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
                 record_length, length));
 
             SetIli();
@@ -885,7 +888,7 @@ void Tape::CheckLength(int length)
         // If SILI is set report CHECK CONDITION for the overlength condition only.
         else {
             if (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length)) {
-                LogTrace(
+                LogError(
                     fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
                         record_length, length));
 

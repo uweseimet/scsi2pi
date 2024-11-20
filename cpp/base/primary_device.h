@@ -56,11 +56,8 @@ public:
     {
         return asc;
     }
-    void SetStatus(enum sense_key s, enum asc a)
-    {
-        sense_key = s;
-        asc = a;
-    }
+    void SetStatus(sense_key, asc);
+    void ResetStatus();
 
     int GetId() const override;
 
@@ -137,23 +134,10 @@ protected:
         // Nothing to do in base class
     }
 
-    void SetFilemark()
-    {
-        filemark = true;
-    }
-    void SetEom(ascq e)
-    {
-        eom = e;
-    }
-    void SetIli()
-    {
-        ili = true;
-    }
-    void SetInformation(int64_t value)
-    {
-        information = static_cast<int32_t>(value);
-        valid = true;
-    }
+    void SetFilemark();
+    void SetEom(ascq);
+    void SetIli();
+    void SetInformation(int64_t);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
