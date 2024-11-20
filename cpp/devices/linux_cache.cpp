@@ -57,7 +57,7 @@ int LinuxCache::Write(span<const uint8_t> buf, uint64_t start, int length)
 {
     assert(length);
 
-    file.seekp(sector_size * start, ios::beg);
+    file.seekp(sector_size * start);
     file.write((const char*)buf.data(), length);
     if (file.fail()) {
         file.clear();

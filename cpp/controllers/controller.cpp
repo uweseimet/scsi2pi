@@ -169,7 +169,7 @@ void Controller::Execute()
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (opcode != scsi_command::request_sense) {
         SetStatus(status_code::good);
-        device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+        device->ResetStatus();
     }
 
     if (device->CheckReservation(GetInitiatorId())) {

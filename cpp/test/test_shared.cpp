@@ -99,9 +99,16 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
 
 void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
 {
+    // Explicitly reset the device status because Controller::Execute() is not called during the unit tests
+    if (cmd != scsi_command::request_sense) {
+        device.ResetStatus();
+    }
+
     try {
         device.Dispatch(cmd);
-        FAIL() << msg;
+        if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {
+            FAIL() << msg;
+        }
     }
     catch (const scsi_exception &e) {
         if (e.get_sense_key() != s || e.get_asc() != a) {
@@ -183,6 +190,11 @@ void testing::SetUpProperties(string_view properties1, string_view properties2, 
         close(fd2);
     }
     PropertyHandler::Instance().Init(filenames, cmd_properties, true);
+}
+
+void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s, asc a, const string &msg)
+{
+    TestShared::Dispatch(device, command, s, a, msg);
 }
 
 int testing::GetInt16(const vector<byte> &buf, int offset)

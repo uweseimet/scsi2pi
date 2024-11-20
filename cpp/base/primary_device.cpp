@@ -79,6 +79,44 @@ void PrimaryDevice::Reset()
     SetLocked(false);
 }
 
+void PrimaryDevice::SetStatus(enum sense_key s, enum asc a)
+{
+    sense_key = s;
+    asc = a;
+}
+
+void PrimaryDevice::ResetStatus()
+{
+    sense_key = sense_key::no_sense;
+    asc = asc::no_additional_sense_information;
+    valid = false;
+    filemark = false;
+    ili = false;
+    information = 0;
+    eom = ascq::none;
+}
+
+void PrimaryDevice::SetFilemark()
+{
+    filemark = true;
+}
+
+void PrimaryDevice::SetEom(ascq e)
+{
+    eom = e;
+}
+
+void PrimaryDevice::SetIli()
+{
+    ili = true;
+}
+
+void PrimaryDevice::SetInformation(int64_t value)
+{
+    information = static_cast<int32_t>(value);
+    valid = true;
+}
+
 int PrimaryDevice::GetId() const
 {
     return GetController() ? GetController()->GetTargetId() : -1;
@@ -198,12 +236,7 @@ void PrimaryDevice::RequestSense()
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
     GetController()->CopyToBuffer(buf.data(), length);
 
-    // Clear the previous status
-    SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
-    valid = false;
-    filemark = false;
-    ili = false;
-    eom = ascq::none;
+    ResetStatus();
 
     DataInPhase(length);
 }
@@ -270,7 +303,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (eom != ascq::none ? (byte)0x40 : (byte)0x00);
+    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (ili ? (byte)0x40 : (byte)0x00);
     buf[7] = (byte)10;
     buf[12] = (byte)asc;
     if (asc == asc::no_additional_sense_information) {

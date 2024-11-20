@@ -193,5 +193,6 @@ enum class ascq
     none = 0x00,
     filemark_detected = 0x01,
     end_of_partition_medium_detected = 0x02,
-    beginning_of_partition_medium_detected = 0x04
+    beginning_of_partition_medium_detected = 0x04,
+    end_of_data_detected = 0x05,
 };
