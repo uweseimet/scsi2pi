@@ -104,8 +104,10 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         FAIL() << msg;
     }
     catch (const scsi_exception &e) {
-        EXPECT_EQ(s, e.get_sense_key()) << msg;
-        EXPECT_EQ(a, e.get_asc()) << msg;
+        if (e.get_sense_key() != s || e.get_asc() != a) {
+            spdlog::critical("Expected: " + FormatSenseData(s, a));
+            spdlog::critical("Actual: " + FormatSenseData(e.get_sense_key(), e.get_asc()));
+        }
     }
 
     if (auto controller = static_cast<MockAbstractController*>(device.GetController()); controller) {

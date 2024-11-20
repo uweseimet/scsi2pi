@@ -138,12 +138,22 @@ TEST(TapeTest, Read6)
     fstream file(filename);
     const array<uint8_t, META_DATA_SIZE> good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const array<uint8_t, META_DATA_SIZE> good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
+    const array<uint8_t, META_DATA_SIZE> good_data_broken = { 0x00, 0x04, 0x00, 0x00 };
+    const array<uint8_t, META_DATA_SIZE> bad_data_recovered = { 0x00, 0x02, 0x00, 0x80 };
+    const array<uint8_t, META_DATA_SIZE> bad_data = { 0x00, 0x00, 0x00, 0x80 };
     file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
     file << "123456789012";
     file.write((const char*)good_data_non_fixed.data(), good_data_non_fixed.size());
     file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
     file.seekp(512, ios::cur);
     file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
+    file.write((const char*)bad_data_recovered.data(), bad_data_recovered.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)bad_data_recovered.data(), bad_data_recovered.size());
+    file.write((const char*)bad_data.data(), bad_data.size());
+    file.write((const char*)good_data_fixed.data(), good_data_fixed.size());
+    file.seekp(512, ios::cur);
+    file.write((const char*)good_data_broken.data(), good_data_broken.size());
     file.flush();
 
     tape->Dispatch(scsi_command::rewind);
@@ -169,6 +179,65 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+
+    // Fixed, 1 block, bad data recovered
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+
+    // Fixed, 1 block, bad data
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
+
+    // Fixed, 1 block, trailing length mismatch
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
+
+    const array<uint8_t, META_DATA_SIZE> block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
+    file.seekp(0, ios::beg);
+    file.write((const char*)block_size_mismatch.data(), block_size_mismatch.size());
+    file.seekp(256, ios::cur);
+    file.write((const char*)block_size_mismatch.data(), block_size_mismatch.size());
+    file.flush();
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Fixed, 1 block, block size mismatch
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Non-fixed, 4 bytes (less than block size)
+    controller->SetCdbByte(4, 4);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Non-fixed, 4 bytes (less than block size)
+    controller->SetCdbByte(4, 4);
+    // SILI
+    controller->SetCdbByte(1, 0x02);
+    EXPECT_NO_THROW(tape->Dispatch(scsi_command::read_6));
+
+    // Non-fixed, 1024 bytes (more than block size)
+    controller->SetCdbByte(3, 0x04);
+    controller->SetCdbByte(4, 0x00);
+    controller->SetCdbByte(1, 0x00);
+    tape->Dispatch(scsi_command::rewind);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    tape->Dispatch(scsi_command::rewind);
+
+    // Non-fixed, 1024 bytes (more than block size)
+    controller->SetCdbByte(3, 0x04);
+    // SILI
+    controller->SetCdbByte(1, 0x02);
+    TestShared::Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    // TODO Check ILI and information field (REQUEST SENSE)
+    // TODO Checking spacing over blocks and finding filemark
 }
 
 TEST(TapeTest, Write6)

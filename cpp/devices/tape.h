@@ -74,7 +74,7 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     uint32_t FindNextObject(Tape::object_type, int64_t);
 
-    bool MoveBack();
+    bool MoveBackwards(int64_t);
 
     uint32_t GetByteCount();
 
@@ -88,9 +88,11 @@ private:
     void Erase();
 
     void ResetPosition();
-    void AdjustPosition(bool);
+    void AdjustForSpacing(const SimhMetaData&, bool);
+    void AdjustForReading(const SimhMetaData&, bool);
+    uint32_t AdjustResult(const SimhMetaData&, bool, object_type);
 
-    pair<Tape::object_type, int> ReadSimhMetaData(bool, bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, bool, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckLength(int);
@@ -118,8 +120,6 @@ private:
     off_t file_size = 0;
 
     bool tar_file = false;
-
-    SimhMetaData current_meta_data = { };
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;
