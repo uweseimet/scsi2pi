@@ -37,7 +37,7 @@ enum class simh_class
     reserved_marker = 15,
 };
 
-enum class simh_marker : uint32_t
+enum class simh_marker
 {
     erase_gap = 0xffffffe,
     end_of_medium = 0xfffffff
