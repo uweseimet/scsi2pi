@@ -323,7 +323,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
     if (valid) {
-        LogTrace(fmt::format("VALID: 1, ILI: {0}, INFORMATION: {1}", ili ? "1" : "0", information));
+        LogTrace(fmt::format("ILI: {0}, INFORMATION: {1}", ili ? "1" : "0", information));
     }
 
     return buf;
