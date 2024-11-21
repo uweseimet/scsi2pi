@@ -733,11 +733,6 @@ uint32_t Tape::GetByteCount()
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    // SSC-5: The block size must be a multiple of 4
-    if (count % 4) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
-
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", position, count));
 
     return count;

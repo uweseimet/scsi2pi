@@ -76,19 +76,19 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    TestShared::Dispatch(*device, scsi_command::prevent_allow_medium_removal, sense_key::not_ready,
-        asc::medium_not_present, "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
+    Dispatch(*device, scsi_command::prevent_allow_medium_removal, sense_key::not_ready, asc::medium_not_present,
+        "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(device->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->IsLocked());
 }
@@ -115,15 +115,15 @@ TEST(StorageDeviceTest, StartStopUnit)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     device->SetReady(false);
-    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "START/STOP must fail because device is not ready");
+    Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request, asc::load_or_eject_failed,
+        "START/STOP must fail because device is not ready");
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetLocked(true);
-    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "LOAD/EJECT must fail because device is locked");
+    Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request, asc::load_or_eject_failed,
+        "LOAD/EJECT must fail because device is locked");
 
     // Start/Unload
     controller->SetCdbByte(4, 0x01);

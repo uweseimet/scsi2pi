@@ -88,7 +88,7 @@ TEST(PrimaryDeviceTest, Reset)
     device->SetLocked(true);
     device->SetAttn(true);
     device->SetReset(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     device->Reset();
     EXPECT_FALSE(device->IsLocked());
@@ -104,7 +104,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
 
     controller->ProcessOnController(0);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::reserve_6));
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_FALSE(device->CheckReservation(-1)) << "Device must be reserved for unknown initiator";
@@ -127,16 +127,16 @@ TEST(PrimaryDeviceTest, ReserveReleaseUnit)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::release_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::release_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for unknown initiator";
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::release_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::release_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for unknown initiator";
 }
 
@@ -144,7 +144,7 @@ TEST(PrimaryDeviceTest, DiscardReservation)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::reserve_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_NO_THROW(device->DiscardReservation());
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
@@ -202,31 +202,28 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetAttn(true);
     device->SetReady(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
+    Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
 
     device->SetReset(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention,
-        asc::not_ready_to_ready_change);
+    Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::not_ready_to_ready_change);
 
     device->SetReset(true);
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
-
+    Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
     device->SetReset(false);
     device->SetAttn(true);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention,
-        asc::not_ready_to_ready_change);
+    Dispatch(*device, scsi_command::test_unit_ready, sense_key::unit_attention, asc::not_ready_to_ready_change);
 
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::test_unit_ready, sense_key::not_ready, asc::medium_not_present);
+    Dispatch(*device, scsi_command::test_unit_ready, sense_key::not_ready, asc::medium_not_present);
 
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::test_unit_ready));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -266,7 +263,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(scsi_level::scsi_1_ccs);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::inquiry));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::inquiry));
     EXPECT_EQ(device_type::direct_access, (device_type )controller->GetBuffer()[0]);
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
     EXPECT_EQ(scsi_level::scsi_1_ccs, (scsi_level)controller->GetBuffer()[2]) << "Wrong SCSI level";
@@ -275,12 +272,12 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     controller->SetCdbByte(1, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::inquiry, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(*device, scsi_command::inquiry, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "EVPD bit is not supported");
 
     controller->SetCdbByte(2, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    TestShared::Dispatch(*device, scsi_command::inquiry, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(*device, scsi_command::inquiry, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "PAGE CODE field is not supported");
 
     controller->SetCdbByte(1, 0);
@@ -289,7 +286,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::inquiry));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::inquiry));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
     EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
@@ -304,7 +301,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     const auto &data = controller->GetBuffer();
 
     device->SetReady(false);
-    TestShared::Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);
+    Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
@@ -344,6 +341,13 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(static_cast<uint8_t>(ascq::beginning_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
 
+    device->SetIli();
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(0x40, data[2]);
+    EXPECT_EQ(10, data[7]);
+
     device->SetInformation(0x12345678);
     EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -362,12 +366,12 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
-    TestShared::Dispatch(*device, scsi_command::send_diagnostic, sense_key::illegal_request,
-        asc::invalid_field_in_cdb, "SEND DIAGNOSTIC must fail because parameter list is not supported");
+    Dispatch(*device, scsi_command::send_diagnostic, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "SEND DIAGNOSTIC must fail because parameter list is not supported");
     controller->SetCdbByte(3, 0);
     controller->SetCdbByte(4, 1);
-    TestShared::Dispatch(*device, scsi_command::send_diagnostic, sense_key::illegal_request,
-        asc::invalid_field_in_cdb, "SEND DIAGNOSTIC must fail because parameter list is not supported");
+    Dispatch(*device, scsi_command::send_diagnostic, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "SEND DIAGNOSTIC must fail because parameter list is not supported");
 }
 
 TEST(PrimaryDeviceTest, ReportLuns)
@@ -404,16 +408,16 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_EQ(LUN2, GetInt16(buffer, 22)) << "Wrong LUN2 number";
 
     controller->SetCdbByte(2, 0x01);
-    TestShared::Dispatch(*device1, scsi_command::report_luns, sense_key::illegal_request,
-        asc::invalid_field_in_cdb, "Only SELECT REPORT mode 0 is supported");
+    Dispatch(*device1, scsi_command::report_luns, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Only SELECT REPORT mode 0 is supported");
 }
 
 TEST(PrimaryDeviceTest, Dispatch)
 {
     MockPrimaryDevice device(0);
 
-    TestShared::Dispatch(device, static_cast<scsi_command>(0x1f), sense_key::illegal_request,
-        asc::invalid_command_operation_code, "Unsupported SCSI command");
+    Dispatch(device, static_cast<scsi_command>(0x1f), sense_key::illegal_request, asc::invalid_command_operation_code,
+        "Unsupported SCSI command");
 }
 
 TEST(PrimaryDeviceTest, Init)
