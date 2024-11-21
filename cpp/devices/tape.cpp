@@ -602,7 +602,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         SimhMetaData meta_data = { };
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1},eod length {2}, spaced over {3} objects",
+        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} objects",
             static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count));
 
         if (type == scsi_type && count <= 1) {
@@ -614,7 +614,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
             LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", position));
-            SetInformation(count - actual_count);
+            SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_partition_medium_detected);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
         }
@@ -625,7 +625,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
 
             LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
                 type == object_type::block ? "blocks" : "filemarks"));
-            SetInformation(count - actual_count);
+            SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_data_detected);
             throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
         }
@@ -732,11 +732,6 @@ uint32_t Tape::GetByteCount()
     const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
-
-    // SSC-5: The block size must be a multiple of 4
-    if (count % 4) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
-    }
 
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", position, count));
 
@@ -878,7 +873,7 @@ void Tape::CheckLength(int length)
 
             SetIli();
             SetInformation(length / GetBlockSize() - blocks_read);
-            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
 
         // In non-fixed mode the error handling depends on SILI.
@@ -894,7 +889,7 @@ void Tape::CheckLength(int length)
 
                 SetIli();
                 SetInformation(length - record_length);
-                throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+                throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
             }
             else {
                 // Move position to the end of the record, so that the trailing length can be verified

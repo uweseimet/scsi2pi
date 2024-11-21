@@ -176,7 +176,7 @@ enum class asc
     medium_not_present = 0x3a,
     command_phase_error = 0x4a,
     data_phase_error = 0x4b,
-    load_or_eject_failed = 0x53,
+    medium_load_or_eject_failed = 0x53,
 
     // SCSI2Pi-specific
     controller_process_phase = 0x80,

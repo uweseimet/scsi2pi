@@ -76,19 +76,19 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    TestShared::Dispatch(*device, scsi_command::prevent_allow_medium_removal, sense_key::not_ready,
-        asc::medium_not_present, "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
+    Dispatch(*device, scsi_command::prevent_allow_medium_removal, sense_key::not_ready, asc::medium_not_present,
+        "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(device->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::prevent_allow_medium_removal));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::prevent_allow_medium_removal));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->IsLocked());
 }
@@ -102,7 +102,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     // Stop/Unload
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->IsStopped());
 
@@ -111,31 +111,34 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetReady(true);
     device->SetLocked(false);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
+    // Stop/Load
+    controller->SetCdbByte(4, 0x02);
+    device->SetReady(true);
     device->SetReady(false);
-    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "START/STOP must fail because device is not ready");
+    Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request, asc::medium_load_or_eject_failed,
+        "START/STOP must fail because device is not ready");
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetLocked(true);
-    TestShared::Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request,
-        asc::load_or_eject_failed, "LOAD/EJECT must fail because device is locked");
+    Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request, asc::medium_load_or_eject_failed,
+        "LOAD/EJECT must fail because device is locked");
 
     // Start/Unload
     controller->SetCdbByte(4, 0x01);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_FALSE(device->IsStopped());
 
     // Start/Load
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // Start/Load with previous medium
@@ -145,7 +148,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     EXPECT_TRUE(device->GetLastFilename().empty());
     EXPECT_CALL(*controller, Status);
     // Eject existing medium
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_TRUE(device->GetFilename().empty());
     EXPECT_EQ("filename", device->GetLastFilename());
@@ -154,11 +157,12 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->ReserveFile();
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status).Times(0);
-    EXPECT_THROW(device->Dispatch(scsi_command::start_stop), scsi_exception)
-    << "Filename is already reserved";
+    Dispatch(*device, scsi_command::start_stop, sense_key::illegal_request, asc::medium_load_or_eject_failed,
+        "Filename is already reserved");
     device->UnreserveFile();
+    controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::start_stop));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ("filename", device->GetFilename());
 }
@@ -435,38 +439,58 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    // No block descriptor
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_6));
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
 
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x3f);
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense_6), scsi_exception)<< "Subpages are not supported";
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    Dispatch(*device, scsi_command::mode_sense_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Subpages are not supported");
 }
 
 TEST(StorageDeviceTest, ModeSense10)
@@ -476,49 +500,71 @@ TEST(StorageDeviceTest, ModeSense10)
     // Drive must be ready in order to return all data
     device->SetReady(true);
 
+    device->SetBlockCount(0x00000001);
+    device->SetBlockSize(1024);
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-
-    device->SetBlockCount(0x00000001);
-    device->SetBlockSize(1024);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0xffffffff);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     device->SetBlockCount(0x100000000);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
     // LLBAA
     controller->SetCdbByte(1, 0x10);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
     EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
 
     // No block descriptor
     controller->SetCdbByte(1, 0x08);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
 
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x3f);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
 
+    // No block descriptor
+    controller->SetCdbByte(1, 0x08);
+    controller->SetCdbByte(2, 0x3f);
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(device->Dispatch(scsi_command::mode_sense_10), scsi_exception)<< "Subpages are not supported";
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(8, 255);
+    Dispatch(*device, scsi_command::mode_sense_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Subpages are not supported");
 }
 
 TEST(StorageDeviceTest, GetStatistics)

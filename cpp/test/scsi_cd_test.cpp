@@ -102,22 +102,21 @@ TEST(ScsiCdTest, ReadToc)
 
     controller.AddDevice(cd);
 
-    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::not_ready, asc::medium_not_present,
-        "Drive is not ready");
+    Dispatch(*cd, scsi_command::read_toc, sense_key::not_ready, asc::medium_not_present, "Drive is not ready");
 
     cd->SetReady(true);
 
     controller.SetCdbByte(6, 2);
-    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
     controller.SetCdbByte(6, 1);
-    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
     controller.SetCdbByte(6, 0);
     EXPECT_CALL(controller, DataIn());
-    EXPECT_NO_THROW(cd->Dispatch(scsi_command::read_toc));
+    EXPECT_NO_THROW(Dispatch(*cd, scsi_command::read_toc));
 }
 
 TEST(ScsiCdTest, ReadData)

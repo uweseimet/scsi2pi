@@ -203,14 +203,18 @@ TEST(ScsiHdTest, ModeSense6)
 
     // Format page
     controller.SetCdbByte(2, 0x03);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(4, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_6));
     ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(4, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_6));
     ValidateDrivePage(controller, 12);
 }
 
@@ -232,14 +236,18 @@ TEST(ScsiHdTest, ModeSense10)
 
     // Format page
     controller.SetCdbByte(2, 0x03);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(8, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_10));
     ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(8, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_10));
     ValidateDrivePage(controller, 16);
 }
 
