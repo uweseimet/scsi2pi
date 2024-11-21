@@ -235,28 +235,31 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
         return d->HandleInquiry(device_type::processor, false);
     });
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::inquiry));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::inquiry));
     EXPECT_EQ(0x7f, controller->GetBuffer()[0]) << "Invalid LUN was not reported";
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(0));
 
     EXPECT_FALSE(controller->AddDevice(make_shared<MockPrimaryDevice>(0))) << "Duplicate LUN was not rejected";
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(scsi_level::spc_3);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::inquiry));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::inquiry));
     EXPECT_EQ(device_type::processor, (device_type )controller->GetBuffer()[0]);
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
     EXPECT_EQ(scsi_level::spc_3, (scsi_level)controller->GetBuffer()[2]) << "Wrong SCSI level";
     EXPECT_EQ(scsi_level::scsi_2, (scsi_level)controller->GetBuffer()[3]) << "Wrong response level";
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
         return d->HandleInquiry(device_type::direct_access, true);
     });
@@ -303,11 +306,10 @@ TEST(PrimaryDeviceTest, RequestSense)
     device->SetReady(false);
     Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);
 
+    device->SetReady(true);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-
-    device->SetReady(true);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -315,7 +317,9 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0U, GetInt32(data, 3));
 
     device->SetFilemark();
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x80, data[2]);
@@ -324,7 +328,9 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0U, GetInt32(data, 3));
 
     device->SetEom(ascq::end_of_partition_medium_detected);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -333,7 +339,9 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0U, GetInt32(data, 3));
 
     device->SetEom(ascq::beginning_of_partition_medium_detected);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -342,14 +350,18 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0U, GetInt32(data, 3));
 
     device->SetIli();
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]);
     EXPECT_EQ(10, data[7]);
 
     device->SetInformation(0x12345678);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0xf0, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -362,7 +374,7 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
     auto [controller, device] = CreatePrimaryDevice();
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::send_diagnostic));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::send_diagnostic));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
@@ -394,7 +406,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     controller->SetCdbByte(9, 255);
 
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(device1->Dispatch(scsi_command::report_luns));
+    EXPECT_NO_THROW(Dispatch(*device1, scsi_command::report_luns));
     span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";

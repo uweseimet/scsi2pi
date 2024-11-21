@@ -189,7 +189,7 @@ TEST(ControllerTest, RequestSense)
 
     device->SetReady(true);
     EXPECT_CALL(controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }
 

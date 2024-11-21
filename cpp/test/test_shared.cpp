@@ -117,7 +117,8 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         }
     }
 
-    if (auto controller = static_cast<MockAbstractController*>(device.GetController()); controller) {
+    auto controller = static_cast<MockAbstractController*>(device.GetController());
+    if (controller) {
         controller->ResetCdb();
     }
 }
