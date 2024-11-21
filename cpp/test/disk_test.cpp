@@ -318,14 +318,12 @@ TEST(DiskTest, ReadLong10)
     controller->SetCdbByte(1, 1);
     Dispatch(*disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "READ LONG(10) must fail because the RelAdr bit is set");
-    controller->SetCdbByte(1, 0);
 
     controller->SetCdbByte(2, 1);
     Dispatch(*disk, scsi_command::read_long_10, sense_key::illegal_request, asc::lba_out_of_range,
         "READ LONG(10) must fail because the capacity is exceeded");
-    controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 255);
+    controller->SetCdbByte(7, 0xff);
     Dispatch(*disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "READ LONG(10) must fail because it only supports a limited transfer length");
 }
@@ -341,12 +339,13 @@ TEST(DiskTest, ReadLong16)
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_capacity_16_read_long_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
+    controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(2, 1);
     Dispatch(*disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::lba_out_of_range,
         "READ LONG(16) must fail because the capacity is exceeded");
-    controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(12, 55);
+    controller->SetCdbByte(1, 0x11);
+    controller->SetCdbByte(12, 0xff);
     Dispatch(*disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "READ LONG(16) must fail because it only supports a limited transfer length");
 }
@@ -362,14 +361,12 @@ TEST(DiskTest, WriteLong10)
     controller->SetCdbByte(1, 1);
     Dispatch(*disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "WRITE LONG(10) must fail because the RelAdr bit is set");
-    controller->SetCdbByte(1, 0);
 
     controller->SetCdbByte(2, 1);
     Dispatch(*disk, scsi_command::write_long_10, sense_key::illegal_request, asc::lba_out_of_range,
         "WRITE LONG(10) must fail because the capacity is exceeded");
-    controller->SetCdbByte(2, 0);
 
-    controller->SetCdbByte(7, 255);
+    controller->SetCdbByte(7, 0xff);
     Dispatch(*disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "WRITE LONG(10) must fail because it only supports a limited transfer length");
 }
@@ -381,13 +378,12 @@ TEST(DiskTest, WriteLong16)
     controller->SetCdbByte(2, 1);
     Dispatch(*disk, scsi_command::write_long_16, sense_key::illegal_request, asc::lba_out_of_range,
         "WRITE LONG(16) must fail because the capacity is exceeded");
-    controller->SetCdbByte(2, 0);
 
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::write_long_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
-    controller->SetCdbByte(12, 255);
+    controller->SetCdbByte(12, 0xff);
     Dispatch(*disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "WRITE LONG(16) must fail because it only supports a limited transfer length");
 }

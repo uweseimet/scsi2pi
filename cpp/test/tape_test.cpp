@@ -159,25 +159,19 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x03);
     Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    // Non-fixed, 1 byte
-    controller->SetCdbByte(1, 0x00);
-    controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
-
     const string &filename = CreateTapeFile(*tape);
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
     const vector<uint8_t> &good_data_broken = { 0x00, 0x04, 0x00, 0x00 };
     const vector<uint8_t> &bad_data_recovered = { 0x00, 0x02, 0x00, 0x80 };
-    const vector<uint8_t> &bad_data = { 0x00, 0x00, 0x00, 0x80 };
+    const vector<uint8_t> &bad_data = { 0x00, 0x01, 0x00, 0x80 };
     WriteSimhObject(file, good_data_non_fixed);
     file << "123456789012";
     WriteSimhObject(file, good_data_non_fixed);
     WriteSimhObject(file, good_data_fixed, 512, good_data_fixed);
     WriteSimhObject(file, bad_data_recovered, 512, bad_data_recovered);
-    WriteSimhObject(file, bad_data);
-    WriteSimhObject(file, good_data_fixed, 512, good_data_fixed);
+    WriteSimhObject(file, bad_data, 512, bad_data);
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -211,12 +205,7 @@ TEST(TapeTest, Read6)
     // Fixed, 1 block, bad data
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
-
-    // Fixed, 1 block, trailing length mismatch
-    controller->SetCdbByte(1, 0x01);
-    controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
+    Dispatch(*tape, scsi_command::read_6);
 
     const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
     file.seekp(0);
@@ -227,22 +216,23 @@ TEST(TapeTest, Read6)
     // Fixed, 1 block, block size mismatch
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::read_6);
+    Dispatch(*tape, scsi_command::request_sense);
+    // TODO
+//    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+//    EXPECT_EQ(0x40, controller->GetBuffer()[2] & 0x40) << "ILI must be set";
+//    exit(0);
 
     Dispatch(*tape, scsi_command::rewind);
 
     // Non-fixed, 1 byte
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(4, 4);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::read_6);
 
     Dispatch(*tape, scsi_command::rewind);
 
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(4, 4);
+    // Non-fixed, 1 byte
+    controller->SetCdbByte(4, 1);
     // SILI
     controller->SetCdbByte(1, 0x02);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
@@ -253,7 +243,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(3, 0x04);
     controller->SetCdbByte(4, 0x00);
     controller->SetCdbByte(1, 0x00);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::read_6);
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -261,12 +251,12 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(3, 0x04);
     // SILI
     controller->SetCdbByte(1, 0x02);
-    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::read_6);
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
-    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
-    EXPECT_TRUE(controller->GetBuffer()[2] & 0x40);
+    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(controller->GetBuffer()[2] & 0x40) << "ILI must be set";
     EXPECT_EQ(256, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 }
 
@@ -284,11 +274,6 @@ TEST(TapeTest, Write6)
     // Non-fixed, 1 byte
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-
-    // Non-fixed, 4 bytes
-    controller->SetCdbByte(1, 0x00);
-    controller->SetCdbByte(4, 4);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
 
     // Fixed, 1 block

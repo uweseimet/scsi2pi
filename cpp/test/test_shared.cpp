@@ -114,6 +114,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         if (e.get_sense_key() != s || e.get_asc() != a) {
             spdlog::critical("Expected: " + FormatSenseData(s, a));
             spdlog::critical("Actual: " + FormatSenseData(e.get_sense_key(), e.get_asc()));
+            FAIL() << msg;
         }
     }
 

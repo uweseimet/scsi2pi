@@ -602,7 +602,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         SimhMetaData meta_data = { };
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1},eod length {2}, spaced over {3} objects",
+        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} objects",
             static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count));
 
         if (type == scsi_type && count <= 1) {
