@@ -6,8 +6,8 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--scsi-target/-i\fR \fIID[:LUN]\fR]
 [\fB\--sasi-target/-h\fR \fIID[:LUN]\fR]
 [\fB\--board-id/-B\fR \fIBOARD_ID\fR]
-[\fB\--cdb/-c\fR \fICDB\fR]
-[\fB\--data/-c\fR \fICDB\fR]
+[\fB\--cdb/-c\fR \fICDB[:CDB:...]\fR]
+[\fB\--data/-c\fR \fIDATA\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
@@ -24,7 +24,7 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 .B s2pexec
 sends SCSI or SASI commands to a device and displays the results.
 
-When launched without arguments s2pexec enters interactive mode, where you can enter commands on the command line.
+When launched without arguments s2pexec enters interactive mode, where you can enter commands on the command line. Like with the bash shell, "!!" repeats the last command.
 In interactive mode the target, initiator and log level settings are preserved between command invocations.
 
 .SH NOTES
@@ -43,8 +43,8 @@ ID and optional LUN (0-1) of the SASI target device.
 .BR --board-id/-B\fI " "\fIBOARD_ID
 Initiator ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7. Not relevant for SASI.
 .TP
-.BR --cdb/-c\fI " "\fICDB
-Command block to send in hexecimal format. Hexadecimal numbers may be separated by a colon.
+.BR --cdb/-c\fI " "\fICDB[:CDB:...]
+Command blocks to send in hexecimal format. Hexadecimal numbers may be separated by a colon. s2pexec also accepts linked commands.
 .TP
 .BR --data/-d\fI " "\fIDATA
 Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase.

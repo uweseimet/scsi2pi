@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -10,6 +10,9 @@
 #include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
+
+using namespace s2p_interface;
 
 void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
     nullptr)
@@ -94,7 +97,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     SetUpArgs(args, "-h2", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(2UL, properties.size());
-    EXPECT_EQ("sahd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.2.type"]);
     EXPECT_EQ("test.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-ID1:0", "-n", "a:b:c", "test.hds");
@@ -147,70 +150,70 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     SetUpArgs(args, "-B", "HD2.hds");
     auto properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
     EXPECT_EQ("HD2.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-B", "HD21.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2:1.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2:1.type"]);
     EXPECT_EQ("512", properties["device.2:1.block_size"]);
     EXPECT_EQ("HD21.hds", properties["device.2:1.params"]);
 
     SetUpArgs(args, "-B", "HD20.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
     EXPECT_EQ("HD20.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-i", "5", "-B", "FD2.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("schd", properties["device.5.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.5.type"]);
     EXPECT_EQ("512", properties["device.5.block_size"]);
     EXPECT_EQ("FD2.hds", properties["device.5.params"]);
 
     SetUpArgs(args, "-h", "5", "-B", "HD2.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("sahd", properties["device.5.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.5.type"]);
     EXPECT_EQ("512", properties["device.5.block_size"]);
     EXPECT_EQ("HD2.hds", properties["device.5.params"]);
 
     SetUpArgs(args, "-B", "CD13.iso");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("sccd", properties["device.1:3.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCCD), properties["device.1:3.type"]);
     EXPECT_EQ("512", properties["device.1:3.block_size"]);
     EXPECT_EQ("CD13.iso", properties["device.1:3.params"]);
 
     SetUpArgs(args, "-B", "MO731.mos");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("scmo", properties["device.7:31.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCMO), properties["device.7:31.type"]);
     EXPECT_EQ("512", properties["device.7:31.block_size"]);
     EXPECT_EQ("MO731.mos", properties["device.7:31.params"]);
 
     SetUpArgs(args, "-B", "RE731_2048.mos");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("scrm", properties["device.7:31.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCRM), properties["device.7:31.type"]);
     EXPECT_EQ("2048", properties["device.7:31.block_size"]);
     EXPECT_EQ("RE731_2048.mos", properties["device.7:31.params"]);
 
     SetUpArgs(args, "-b", "512", "-B", "RE731_2048.mos");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("scrm", properties["device.7:31.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCRM), properties["device.7:31.type"]);
     EXPECT_EQ("512", properties["device.7:31.block_size"]) << "Explicit sector size provided";
     EXPECT_EQ("RE731_2048.mos", properties["device.7:31.params"]);
 
     SetUpArgs(args, "-B", "HD2_vendor:product:revision.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(4UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
     EXPECT_EQ("vendor:product:revision", properties["device.2.name"]);
     EXPECT_EQ("HD2_vendor:product:revision.hds", properties["device.2.params"]);
@@ -218,7 +221,7 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     SetUpArgs(args, "-B", "-n", "v:p:r", "HD2_vendor:product:revision.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(4UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
     EXPECT_EQ("v:p:r", properties["device.2.name"]) << "Explicit product data provided";
     EXPECT_EQ("HD2_vendor:product:revision.hds", properties["device.2.params"]);
@@ -226,14 +229,14 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     SetUpArgs(args, "-B", "HD2vendor:product:revision.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("512", properties["device.2.block_size"]);
     EXPECT_EQ("HD2vendor:product:revision.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-B", "HD2_4096_vendor:product:revision.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(4UL, properties.size());
-    EXPECT_EQ("schd", properties["device.2.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.2.type"]);
     EXPECT_EQ("4096", properties["device.2.block_size"]);
     EXPECT_EQ("vendor:product:revision", properties["device.2.name"]);
     EXPECT_EQ("HD2_4096_vendor:product:revision.hds", properties["device.2.params"]);
@@ -241,17 +244,21 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     SetUpArgs(args, "-B", "HD1.hds", "-B", "RE131.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(6UL, properties.size());
-    EXPECT_EQ("schd", properties["device.1.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.1.type"]);
     EXPECT_EQ("512", properties["device.1.block_size"]);
     EXPECT_EQ("HD1.hds", properties["device.1.params"]);
-    EXPECT_EQ("scrm", properties["device.1:31.type"]);
+    EXPECT_EQ(PbDeviceType_Name(SCRM), properties["device.1:31.type"]);
     EXPECT_EQ("512", properties["device.1:31.block_size"]);
     EXPECT_EQ("RE131.hds", properties["device.1:31.params"]);
 
-    SetUpArgs(args, "-B", "H1.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    SetUpArgs(args, "-B", "TP73.tap");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(3UL, properties.size());
+    EXPECT_EQ(PbDeviceType_Name(SCTP), properties["device.7:3.type"]);
+    EXPECT_EQ("512", properties["device.7:3.block_size"]);
+    EXPECT_EQ("TP73.tap", properties["device.7:3.params"]);
 
-    SetUpArgs(args, "-B", "TP5.hds");
+    SetUpArgs(args, "-B", "H1.hds");
     EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
 
     SetUpArgs(args, "-B", "XX2.hds");

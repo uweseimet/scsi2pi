@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -10,6 +10,7 @@
 
 #include <filesystem>
 #include "command/command_dispatcher.h"
+#include "base/property_handler.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;
@@ -20,11 +21,11 @@ class S2p
 
 public:
 
-    int Run(span<char*>, bool = false);
+    int Run(span<char*>, bool = false, bool = false);
 
 private:
 
-    bool InitBus(bool);
+    bool InitBus(bool, bool);
     void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(string_view) const;

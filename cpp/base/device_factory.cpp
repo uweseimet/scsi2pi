@@ -1,8 +1,8 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -26,27 +26,35 @@
 #ifdef BUILD_SCCD
 #include "devices/scsi_cd.h"
 #endif
+#ifdef BUILD_SCTP
+#include "devices/tape.h"
+#endif
 #if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
 #endif
 #include "shared/s2p_util.h"
 
+using namespace s2p_util;
+
 DeviceFactory::DeviceFactory()
 {
 #if defined BUILD_SCHD || defined BUILD_SCRM
-        mapping["hd1"] = SCHD;
-        mapping["hds"] = SCHD;
-        mapping["hda"] = SCHD;
-        mapping["hdr"] = SCRM;
+    mapping["hd1"] = SCHD;
+    mapping["hds"] = SCHD;
+    mapping["hda"] = SCHD;
+    mapping["hdr"] = SCRM;
 #endif
 #ifdef BUILD_SCMO
-        mapping["mos"] = SCMO;
+    mapping["mos"] = SCMO;
 #endif
 #ifdef BUILD_SCCD
-        mapping["is1"] = SCCD;
-        mapping["iso"] = SCCD;
-        mapping["cdr"] = SCCD;
-        mapping["toast"] = SCCD;
+    mapping["is1"] = SCCD;
+    mapping["iso"] = SCCD;
+    mapping["cdr"] = SCCD;
+    mapping["toast"] = SCCD;
+#endif
+#ifdef BUILD_SCTP
+    mapping["tar"] = SCTP;
 #endif
 }
 
@@ -82,6 +90,11 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
         const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiCd>(lun, ext == "is1");
     }
+#endif
+
+#ifdef BUILD_SCTP
+    case SCTP:
+        return make_shared<Tape>(lun);
 #endif
 
 #ifdef BUILD_SCDP
@@ -133,12 +146,4 @@ bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType ty
     mapping[extension] = type;
 
     return true;
-}
-
-string DeviceFactory::GetExtensionLowerCase(string_view filename)
-{
-    const string &ext = s2p_util::ToLower(filesystem::path(filename).extension().string());
-
-    // Remove the leading dot
-    return ext.empty() ? "" : ext.substr(1);
 }

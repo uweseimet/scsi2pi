@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2023 Uwe Seimet
 //
@@ -40,7 +40,7 @@ private:
     string DisplayParams(const PbDevice&) const;
     string DisplayAttributes(const PbDeviceProperties&) const;
     string DisplayDefaultParameters(const PbDeviceProperties&) const;
-    string DisplaySectorSizes(const PbDeviceProperties&) const;
+    string DisplayBlockSizes(const PbDeviceProperties&) const;
     string DisplayParameters(const PbOperationMetaData&) const;
     string DisplayPermittedValues(const PbOperationParameter&) const;
 };

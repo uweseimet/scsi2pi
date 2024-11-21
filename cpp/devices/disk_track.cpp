@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -14,7 +14,6 @@
 
 #include "disk_track.h"
 #include <cassert>
-#include <cstdlib>
 #include <fstream>
 #include <spdlog/spdlog.h>
 

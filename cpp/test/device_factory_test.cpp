@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -20,14 +20,15 @@ TEST(DeviceFactoryTest, CreateDevice)
 {
     const DeviceFactory &device_factory = DeviceFactory::Instance();
 
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCHD, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiHd>(device_factory.CreateDevice(SCRM, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<OpticalMemory>(device_factory.CreateDevice(SCMO, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<ScsiCd>(device_factory.CreateDevice(SCCD, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<DaynaPort>(device_factory.CreateDevice(SCDP, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<Printer>(device_factory.CreateDevice(SCLP, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<HostServices>(device_factory.CreateDevice(SCHS, 0, "")));
-    EXPECT_NE(nullptr, dynamic_pointer_cast<SasiHd>(device_factory.CreateDevice(SAHD, 0, "")));
+    EXPECT_EQ(SCHD, device_factory.CreateDevice(SCHD, 0, "")->GetType());
+    EXPECT_EQ(SCRM, device_factory.CreateDevice(SCRM, 0, "")->GetType());
+    EXPECT_EQ(SCMO, device_factory.CreateDevice(SCMO, 0, "")->GetType());
+    EXPECT_EQ(SCCD, device_factory.CreateDevice(SCCD, 0, "")->GetType());
+    EXPECT_EQ(SCDP, device_factory.CreateDevice(SCDP, 0, "")->GetType());
+    EXPECT_EQ(SCLP, device_factory.CreateDevice(SCLP, 0, "")->GetType());
+    EXPECT_EQ(SCHS, device_factory.CreateDevice(SCHS, 0, "")->GetType());
+    EXPECT_EQ(SCTP, device_factory.CreateDevice(SCTP, 0, "")->GetType());
+    EXPECT_EQ(SAHD, device_factory.CreateDevice(SAHD, 0, "")->GetType());
 
     EXPECT_EQ(nullptr, device_factory.CreateDevice(UNDEFINED, 0, ""));
 }
@@ -57,7 +58,8 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 TEST(DeviceFactoryTest, GetExtensionMapping)
 {
     const auto &mapping = DeviceFactory::Instance().GetExtensionMapping();
-    EXPECT_EQ(9U, mapping.size());
+
+    EXPECT_EQ(10U, mapping.size());
     EXPECT_EQ(SCHD, mapping.at("hd1"));
     EXPECT_EQ(SCHD, mapping.at("hds"));
     EXPECT_EQ(SCHD, mapping.at("hda"));
@@ -67,6 +69,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCCD, mapping.at("cdr"));
     EXPECT_EQ(SCCD, mapping.at("toast"));
     EXPECT_EQ(SCCD, mapping.at("is1"));
+    EXPECT_EQ(SCTP, mapping.at("tar"));
 }
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
@@ -75,10 +78,10 @@ TEST(DeviceFactoryTest, AddExtensionMapping)
 
     EXPECT_FALSE(device_factory.AddExtensionMapping("iso", SCHS));
     auto mapping = device_factory.GetExtensionMapping();
-    EXPECT_EQ(9U, mapping.size());
+    EXPECT_EQ(10U, mapping.size());
 
     EXPECT_TRUE(device_factory.AddExtensionMapping("ext", SCCD));
     mapping = device_factory.GetExtensionMapping();
-    EXPECT_EQ(10U, mapping.size());
+    EXPECT_EQ(11U, mapping.size());
     EXPECT_EQ(SCCD, mapping["ext"]);
 }

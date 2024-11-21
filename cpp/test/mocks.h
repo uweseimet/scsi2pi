@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -17,6 +17,7 @@
 #include "devices/sasi_hd.h"
 #include "devices/scsi_cd.h"
 #include "devices/scsi_hd.h"
+#include "devices/tape.h"
 #include "test_shared.h"
 
 using namespace testing;
@@ -108,10 +109,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
     FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
     FRIEND_TEST(PrimaryDeviceTest, UnknownCommand);
-    FRIEND_TEST(ModePageDeviceTest, ModeSense6);
-    FRIEND_TEST(ModePageDeviceTest, ModeSense10);
-    FRIEND_TEST(ModePageDeviceTest, ModeSelect6);
-    FRIEND_TEST(ModePageDeviceTest, ModeSelect10);
+    FRIEND_TEST(StorageDeviceTest, PreventAllowMediumRemoval);
+    FRIEND_TEST(StorageDeviceTest, StartStopUnit);
+    FRIEND_TEST(StorageDeviceTest, ModeSense6);
+    FRIEND_TEST(StorageDeviceTest, ModeSense10);
     FRIEND_TEST(DiskTest, Dispatch);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -132,32 +133,40 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);
     FRIEND_TEST(DiskTest, WriteLong16);
-    FRIEND_TEST(DiskTest, PreventAllowMediumRemoval);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, StartStopUnit);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiCdTest, ReadToc);
-    FRIEND_TEST(ScsiDaynaportTest, Read);
-    FRIEND_TEST(ScsiDaynaportTest, WriteData);
-    FRIEND_TEST(ScsiDaynaportTest, Read6);
-    FRIEND_TEST(ScsiDaynaportTest, Write6);
-    FRIEND_TEST(ScsiDaynaportTest, TestRetrieveStats);
-    FRIEND_TEST(ScsiDaynaportTest, SetInterfaceMode);
-    FRIEND_TEST(ScsiDaynaportTest, SetMcastAddr);
-    FRIEND_TEST(ScsiDaynaportTest, EnableInterface);
+    FRIEND_TEST(DaynaportTest, WriteData);
+    FRIEND_TEST(DaynaportTest, GetMessage6);
+    FRIEND_TEST(DaynaportTest, SendMessage6);
+    FRIEND_TEST(DaynaportTest, TestRetrieveStats);
+    FRIEND_TEST(DaynaportTest, SetInterfaceMode);
+    FRIEND_TEST(DaynaportTest, SetMcastAddr);
+    FRIEND_TEST(DaynaportTest, EnableInterface);
     FRIEND_TEST(HostServicesTest, StartStopUnit);
     FRIEND_TEST(HostServicesTest, ExecuteOperation);
     FRIEND_TEST(HostServicesTest, ReceiveOperationResults);
+    FRIEND_TEST(HostServicesTest, WriteData);
     FRIEND_TEST(HostServicesTest, ModeSense6);
     FRIEND_TEST(HostServicesTest, ModeSense10);
     FRIEND_TEST(HostServicesTest, SetUpModePages);
     FRIEND_TEST(PrinterTest, Print);
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
+    FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Write6);
+    FRIEND_TEST(TapeTest, Erase6);
+    FRIEND_TEST(TapeTest, Rewind);
+    FRIEND_TEST(TapeTest, Space6);
+    FRIEND_TEST(TapeTest, Space16);
+    FRIEND_TEST(TapeTest, WriteFileMarks6);
+    FRIEND_TEST(TapeTest, Locate10);
+    FRIEND_TEST(TapeTest, Locate16);
+    FRIEND_TEST(TapeTest, ReadPosition);
 
 public:
 
@@ -220,9 +229,7 @@ public:
 class MockDevice : public Device
 {
     FRIEND_TEST(DeviceTest, Properties);
-    FRIEND_TEST(DeviceTest, Params);
     FRIEND_TEST(DeviceTest, StatusCode);
-    FRIEND_TEST(DeviceTest, Reset);
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
     FRIEND_TEST(DeviceTest, Eject);
@@ -242,17 +249,22 @@ public:
 
 class MockPrimaryDevice : public PrimaryDevice
 {
+    FRIEND_TEST(PrimaryDeviceTest, Reset);
     FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataOutPhase);
     FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
+    FRIEND_TEST(PrimaryDeviceTest, ModeSense6);
+    FRIEND_TEST(PrimaryDeviceTest, ModeSense10);
+    FRIEND_TEST(PrimaryDeviceTest, SetUpModePages);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
 public:
 
+    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
@@ -260,55 +272,55 @@ public:
     {
     }
     ~MockPrimaryDevice() override = default;
-};
 
-class MockModePageDevice : public ModePageDevice
-{
-    FRIEND_TEST(ModePageDeviceTest, SupportsSaveParameters);
-    FRIEND_TEST(ModePageDeviceTest, AddModePages);
-    FRIEND_TEST(ModePageDeviceTest, AddVendorPages);
-
-public:
-
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
-
-    MockModePageDevice() : ModePageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
+    bool SetUp() override
     {
-    }
-    ~MockModePageDevice() override = default;
-
-    void SetUpModePages(map<int, vector<byte>> &pages, int page, bool) const override
-    {
-        // Return dummy data for other pages than page 0
-        if (page) {
-            vector<byte> buf(32);
-            pages[page] = buf;
-        }
+        return true;
     }
 };
 
 class MockStorageDevice : public StorageDevice
 {
     FRIEND_TEST(StorageDeviceTest, ValidateFile);
+    FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
+    FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
+    FRIEND_TEST(StorageDeviceTest, StartStopUnit);
+    FRIEND_TEST(StorageDeviceTest, SetBlockSize);
+    FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
+    FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
+    FRIEND_TEST(StorageDeviceTest, BlockCount);
+    FRIEND_TEST(StorageDeviceTest, ChangeBlockSize);
+    FRIEND_TEST(StorageDeviceTest, ModeSense6);
+    FRIEND_TEST(StorageDeviceTest, ModeSense10);
+    FRIEND_TEST(StorageDeviceTest, GetStatistics);
 
 public:
 
+    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
-    MOCK_METHOD(int, ModeSense6, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(int, ModeSense10, (span<const int>, vector<uint8_t>&), (const, override));
-    MOCK_METHOD(void, SetUpModePages, ((map<int, vector<byte>>&), int, bool), (const, override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false)
+    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
     }
     ~MockStorageDevice() override = default;
+
+    void SetReady(bool b)
+    {
+        PrimaryDevice::SetReady(b);
+    }
+    void SetRemovable(bool b)
+    {
+        PrimaryDevice::SetRemovable(b);
+    }
+    void SetLocked(bool b)
+    {
+        PrimaryDevice::SetLocked(b);
+    }
 };
 
 class MockDisk : public Disk
@@ -335,19 +347,13 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, WriteLong16);
     FRIEND_TEST(DiskTest, ReserveRelease);
     FRIEND_TEST(DiskTest, SendDiagnostic);
-    FRIEND_TEST(DiskTest, StartStopUnit);
-    FRIEND_TEST(DiskTest, PreventAllowMediumRemoval);
     FRIEND_TEST(DiskTest, Eject);
     FRIEND_TEST(DiskTest, AddAppleVendorPage);
     FRIEND_TEST(DiskTest, ModeSense6);
     FRIEND_TEST(DiskTest, ModeSense10);
-    FRIEND_TEST(DiskTest, EvaluateBlockDescriptors);
-    FRIEND_TEST(DiskTest, VerifySectorSizeChange);
     FRIEND_TEST(DiskTest, SynchronizeCache);
     FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, BlockCount);
-    FRIEND_TEST(DiskTest, SetSectorSizeInBytes);
-    FRIEND_TEST(DiskTest, ChangeSectorSize);
+    FRIEND_TEST(DiskTest, ChangeBlockSize);
 
 public:
 
@@ -362,7 +368,7 @@ public:
     ~MockDisk() override = default;
 };
 
-class MockSasiHd : public SasiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockSasiHd : public SasiHd
 {
 public:
 
@@ -375,7 +381,7 @@ public:
     ~MockSasiHd() override = default;
 };
 
-class MockScsiHd : public ScsiHd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockScsiHd : public ScsiHd
 {
     FRIEND_TEST(DiskTest, ConfiguredSectorSize);
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
@@ -406,7 +412,7 @@ public:
     ~MockScsiHd() override = default;
 };
 
-class MockScsiCd : public ScsiCd // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockScsiCd : public ScsiCd
 {
     FRIEND_TEST(ScsiCdTest, GetSectorSizes);
     FRIEND_TEST(ScsiCdTest, SetUpModePages);
@@ -421,7 +427,7 @@ public:
     ~MockScsiCd() override = default;
 };
 
-class MockOpticalMemory : public OpticalMemory // NOSONAR Ignore inheritance hierarchy depth in unit tests
+class MockOpticalMemory : public OpticalMemory
 {
     FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
     FRIEND_TEST(OpticalMemoryTest, SetUpModePages);
@@ -438,8 +444,29 @@ class MockHostServices : public HostServices
     using HostServices::HostServices;
 };
 
+class MockTape : public Tape
+{
+    FRIEND_TEST(TapeTest, ValidateFile);
+    FRIEND_TEST(TapeTest, SetUpModePages);
+    FRIEND_TEST(TapeTest, ReadData);
+    FRIEND_TEST(TapeTest, Unload);
+
+public:
+
+    MockTape() : Tape(0)
+    {
+    }
+    ~MockTape() override = default;
+
+    void SetReady(bool b)
+    {
+        StorageDevice::SetReady(b);
+    }
+};
+
 class MockCommandExecutor : public CommandExecutor
 {
+
 public:
 
     MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));

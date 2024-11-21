@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -8,7 +8,6 @@
 
 #include "s2p_util.h"
 #include <cassert>
-#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <pwd.h>
@@ -95,6 +94,14 @@ string s2p_util::ToLower(const string &s)
     return result;
 }
 
+string s2p_util::GetExtensionLowerCase(string_view filename)
+{
+    const string &ext = ToLower(filesystem::path(filename).extension().string());
+
+    // Remove the leading dot
+    return ext.empty() ? "" : ext.substr(1);
+}
+
 string s2p_util::GetLocale()
 {
     const char *locale = setlocale(LC_MESSAGES, "");
@@ -113,7 +120,10 @@ string s2p_util::GetLine(const string &prompt)
         }
 
         string line;
-        if (!getline(cin, line) || line == "exit" || line == "quit") {
+        getline(cin, line);
+        line = Trim(line);
+
+        if (cin.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
             }
@@ -128,7 +138,7 @@ string s2p_util::GetLine(const string &prompt)
 
 bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
 {
-    if (value.find_first_not_of("0123456789") != string::npos) {
+    if (value.find_first_not_of(" 0123456789 ") != string::npos) {
         return false;
     }
 
@@ -179,7 +189,7 @@ string s2p_util::Banner(string_view app)
 {
     stringstream s;
 
-    s << "SCSI Target Emulator and SCSI Tools SCSI2Pi " << app << "\n"
+    s << "SCSI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2016-2020 GIMONS\n"
         << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
@@ -308,4 +318,14 @@ int s2p_util::HexToDec(char c)
     }
 
     throw out_of_range("");
+}
+
+string s2p_util::Trim(const string &s)
+{
+    const size_t first = s.find_first_not_of(' ');
+    if (first == string::npos) {
+        return s;
+    }
+    const size_t last = s.find_last_not_of(' ');
+    return s.substr(first, (last - first + 1));
 }

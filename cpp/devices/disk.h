@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -28,34 +28,14 @@ public:
 
     ~Disk() override = default;
 
-    bool Init(const param_map&) override;
+    bool SetUp() override;
     void CleanUp() override;
-
-    void Dispatch(scsi_command) override;
 
     bool Eject(bool) override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
 
     int ReadData(span<uint8_t>) override;
-
-    uint32_t GetSectorSizeInBytes() const
-    {
-        return sector_size;
-    }
-    bool IsSectorSizeConfigurable() const
-    {
-        return supported_sector_sizes.size() > 1;
-    }
-    const auto& GetSupportedSectorSizes() const
-    {
-        return supported_sector_sizes;
-    }
-    uint32_t GetConfiguredSectorSize() const
-    {
-        return configured_sector_size;
-    }
-    bool SetConfiguredSectorSize(uint32_t);
 
     PbCachingMode GetCachingMode() const
     {
@@ -71,31 +51,16 @@ public:
 
 protected:
 
-    Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-        const unordered_set<uint32_t> &s)
-    : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters), supported_sector_sizes(s)
-    {
-    }
+    Disk(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t>&);
 
     void ValidateFile() override;
 
     bool InitCache(const string&);
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
-    void AddDisconnectReconnectPage(map<int, vector<byte>>&, bool) const;
-    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
-    void AddCachingPage(map<int, vector<byte>>&, bool) const;
-    void AddControlModePage(map<int, vector<byte>>&, bool) const;
     void AddAppleVendorPage(map<int, vector<byte>>&, bool) const;
 
-    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    int EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int&) const;
-    int VerifySectorSizeChange(int, bool) const;
-
-    void ChangeSectorSize(uint32_t);
-    unordered_set<uint32_t> GetSectorSizes() const;
-    bool SetSectorSizeInBytes(uint32_t);
+    void ChangeBlockSize(uint32_t) override;
 
     uint64_t GetNextSector() const
     {
@@ -111,8 +76,6 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void StartStopUnit();
-    void PreventAllowMediumRemoval();
     void SynchronizeCache();
     void ReadDefectData10() const;
     virtual void Read6()
@@ -154,6 +117,9 @@ private:
     void WriteLong16();
     void ReadCapacity16_ReadLong16();
 
+    void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
+    void AddCachingPage(map<int, vector<byte>>&, bool) const;
+
     bool SetUpCache();
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
@@ -161,27 +127,11 @@ private:
     uint64_t ValidateBlockAddress(access_mode) const;
     tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
-
     shared_ptr<Cache> cache;
 
     PbCachingMode caching_mode = PbCachingMode::DEFAULT;
 
-    unordered_set<uint32_t> supported_sector_sizes;
-    uint32_t configured_sector_size = 0;
-
     uint64_t next_sector = 0;
 
     uint32_t sector_transfer_count = 0;
-
-    uint32_t sector_size = 0;
-
-    uint64_t sector_read_count = 0;
-    uint64_t sector_write_count = 0;
-
-    string last_filename;
-
-    static constexpr const char *SECTOR_READ_COUNT = "sector_read_count";
-    static constexpr const char *SECTOR_WRITE_COUNT = "sector_write_count";
 };

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -20,13 +20,13 @@ void SasiHd::Open()
 {
     assert(!IsReady());
 
-    // Sector size (default 256 bytes) and number of blocks
-    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 256)) {
+    // Sector size (default 256 bytes) and number of sectors
+    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
-    Disk::ValidateFile();
+    ValidateFile();
 }
 
 void SasiHd::Inquiry()

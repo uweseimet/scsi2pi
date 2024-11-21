@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -34,7 +34,7 @@ private:
 
     callback execute;
 
-#if !defined __FreeBSD__ && !defined __APPLE__
+#ifndef __APPLE__
     jthread service_thread;
 #else
     thread service_thread;

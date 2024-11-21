@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -12,6 +12,7 @@
 #include <span>
 #include "shared/s2p_util.h"
 #include "shared/scsi.h"
+#include "base/property_handler.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
@@ -28,13 +29,18 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice
 vector<int> CreateCdb(scsi_command, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
-pair<int, path> OpenTempFile();
-path CreateTempFile(size_t);
-string CreateTempFileWithData(span<const byte>);
+pair<int, path> OpenTempFile(const string& = "");
+path CreateTempFile(size_t, const string& = "");
+string CreateTempFileWithData(span<const byte>, const string& = "");
 string ReadTempFileToString(const string&);
+
+void SetUpProperties(string_view, string_view = "", const property_map& = { });
 
 int GetInt16(const vector<byte>&, int);
 uint32_t GetInt32(const vector<byte>&, int);
+uint32_t GetInt16(const vector<uint8_t>&, int);
+uint32_t GetInt32(const vector<uint8_t>&, int);
+uint64_t GetInt64(const vector<uint8_t>&, int);
 
 class TestShared
 {

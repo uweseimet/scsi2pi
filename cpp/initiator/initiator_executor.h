@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -34,6 +34,7 @@ public:
 
     // Execute command with a default timeout of 3 s
     int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int = 3);
+    int Execute(span<uint8_t>, span<uint8_t>, int, int = 3);
 
     int GetByteCount() const
     {
@@ -42,11 +43,11 @@ public:
 
 private:
 
-    bool Dispatch(scsi_command, span<uint8_t>, span<uint8_t>, int&);
+    bool Dispatch(span<uint8_t>, span<uint8_t>, int&);
 
     bool Arbitration() const;
     bool Selection() const;
-    void Command(scsi_command, span<uint8_t>) const;
+    void Command(span<uint8_t>);
     void Status();
     void DataIn(span<uint8_t>, int&);
     void DataOut(span<uint8_t>, int&);
@@ -74,9 +75,11 @@ private:
 
     int byte_count = 0;
 
+    int cdb_offset = 0;
+
     bool sasi = false;
 
-    int next_message = 0x80;
+    message_code next_message = message_code::identify;
 
     static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = 400 };
     static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = 800 };

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -28,7 +28,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (executor.Execute(scsi_command::cmd_request_sense, cdb, buf, static_cast<int>(buf.size()))) {
+    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()))) {
         error("Can't execute REQUEST SENSE");
         return {sense_key {-1}, asc {-1}, -1};
     }
@@ -43,8 +43,12 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
 
 bool initiator_util::SetLogLevel(const string &log_level)
 {
-    // Default spdlog format without the date
-    set_pattern("[%T.%e] [%^%l%$] %v");
+    // Default spdlog format without the timestamp
+    set_pattern("[%^%l%$] %v");
+
+    if (log_level.empty()) {
+        return true;
+    }
 
     // Compensate for spdlog using 'off' for unknown levels
     if (const level::level_enum level = level::from_str(log_level); to_string_view(level) == log_level) {

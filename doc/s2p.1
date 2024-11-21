@@ -33,14 +33,15 @@ The number (n) after the device identifier specifies the ID number for that devi
 The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
-    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1)
+    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1-CCS)
     hds: SCSI Hard Disk image (generic, non-removable, SCSI-2)
     hdr: SCSI Hard Disk image (generic, removable, SCSI-2)
     hda: SCSI Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
     mos: SCSI Magneto-Optical image (MO/MOD, SCSI-2)
-    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1)
+    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
-  
+    tar: SCSI Tape image (tar-compatible image, SCSI-2)
+
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
 
@@ -78,8 +79,8 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
-The optional sector size, usually 256 (SASI only), 512, 1024, 2048 or 4096 bytes. The default size for SASI hard drives is 256 bytes, for SCSI hard drives it is 512 bytes.
-s2p supports non-standard SCSI hard drive sector sizes as long as they are multiples of 4, but these sizes are only required for exotic platforms. Note that image file sizes must be a multiple of 512.
+The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
+s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
@@ -88,7 +89,7 @@ Caching mode (piscsi|write-through|linux|linux-optimized), default currently is 
 An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
-The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images' except for the root user. In this case, for backwards compatibility with PiSCSI the default is '/home/pi/images'.
+The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images' except for the root user. In this case, for backward compatibility with PiSCSI the default is '/home/pi/images'.
 .TP
 .BR --scan-depth/-R\fI " " \fISCAN_DEPTH
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
@@ -98,10 +99,10 @@ Set the s2p configuration property with the name KEY to the value VALUE. Propert
 .TP
 .BR --property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The default global property file is /etc/s2p.conf. This file is parsed first.
-The optional local default property file is ~/.config/s2p.conf. Definitions in this file and in explicitly specified property files override the previously defined properties.
+Explicitly specified property files override the previously defined properties.
 .TP
 .BR --ignore-conf\fI " " \fI
-Ignore any properties in the global configuration file /etc/s2p.conf and the local property file ~/.config/s2p.conf.
+Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.

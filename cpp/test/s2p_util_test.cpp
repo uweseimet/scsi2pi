@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -55,6 +55,13 @@ TEST(S2pUtilTest, ToUpper)
 TEST(S2pUtilTest, ToLower)
 {
     EXPECT_EQ("abc", ToLower("ABC"));
+}
+
+TEST(S2pUtilTest, GetExtensionLowerCase)
+{
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.ext"));
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.EXT"));
+    EXPECT_EQ("ext", GetExtensionLowerCase("test.1.EXT"));
 }
 
 TEST(S2pUtilTest, ProcessId)
@@ -124,6 +131,8 @@ TEST(S2pUtilTest, GetAsUnsignedInt)
     EXPECT_TRUE(GetAsUnsignedInt("0", result));
     EXPECT_EQ(0, result);
     EXPECT_TRUE(GetAsUnsignedInt("1234", result));
+    EXPECT_EQ(1234, result);
+    EXPECT_TRUE(GetAsUnsignedInt(" 1234 ", result));
     EXPECT_EQ(1234, result);
 }
 

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,6 +8,7 @@
 
 #include "mocks.h"
 #include "base/s2p_defs.h"
+#include "buses/bus_factory.h"
 #include "shared/s2p_exceptions.h"
 
 TEST(ControllerTest, Reset)
@@ -15,12 +16,10 @@ TEST(ControllerTest, Reset)
     const int TARGET_ID = 5;
     const int INITIATOR_ID = 7;
 
-    NiceMock<MockBus> bus;
-    auto controller = make_shared<Controller>(bus, TARGET_ID);
-    auto device = make_shared<MockPrimaryDevice>(0);
+    auto bus = BusFactory::Instance().CreateBus(true, true);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID);
 
     controller->Init();
-    controller->AddDevice(device);
 
     controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
     EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());
@@ -33,15 +32,13 @@ TEST(ControllerTest, GetInitiatorId)
     const int TARGET_ID = 0;
     const int INITIATOR_ID = 2;
 
-    auto bus = make_shared<NiceMock<MockBus>>();
-    MockController controller(bus, TARGET_ID);
-    auto device = make_shared<MockPrimaryDevice>(0);
+    auto bus = BusFactory::Instance().CreateBus(true, true);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID);
 
-    controller.Init();
-    controller.AddDevice(device);
+    controller->Init();
 
-    controller.ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
-    EXPECT_EQ(INITIATOR_ID, controller.GetInitiatorId());
+    controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
+    EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());
 }
 
 TEST(ControllerTest, BusFree)
@@ -192,7 +189,7 @@ TEST(ControllerTest, RequestSense)
 
     device->SetReady(true);
     EXPECT_CALL(controller, Status);
-    EXPECT_NO_THROW(device->Dispatch(scsi_command::cmd_request_sense));
+    EXPECT_NO_THROW(device->Dispatch(scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }
 

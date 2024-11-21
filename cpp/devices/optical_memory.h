@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -26,11 +26,11 @@ public:
 protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
-    void AddVendorPages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
 
-    void AddOptionPage(map<int, vector<byte>>&, bool) const;
+    void AddOptionPage(map<int, vector<byte>>&) const;
+    void AddVendorPage(map<int, vector<byte>>&, bool) const;
 
     bool SetGeometryForCapacity(uint64_t);
 

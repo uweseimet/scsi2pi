@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -8,7 +8,6 @@
 
 #include "s2pproto_core.h"
 #include <csignal>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
@@ -44,7 +43,7 @@ void S2pProto::TerminationHandler(int)
 void S2pProto::Banner(bool header)
 {
     if (header) {
-        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Custom SCSI Command Execution Tool)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Custom SCSI Command Execution Tool)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }

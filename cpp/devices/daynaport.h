@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2020 akuker
 // Copyright (C) 2014-2020 GIMONS
@@ -39,7 +39,7 @@ public:
     explicit DaynaPort(int);
     ~DaynaPort() override = default;
 
-    bool Init(const param_map&) override;
+    bool SetUp() override;
     void CleanUp() override;
 
     param_map GetDefaultParams() const override
@@ -48,10 +48,8 @@ public:
     }
 
     vector<uint8_t> InquiryInternal() const override;
-    int Read(cdb_t, vector<uint8_t>&, uint64_t);
     int WriteData(span<const uint8_t>, scsi_command) override;
 
-    void TestUnitReady() override;
     void GetMessage6() override;
     void SendMessage6() const override;
     void RetrieveStats() const;
@@ -102,6 +100,8 @@ private:
         .crc_errors = 0,
         .frames_lost = 0,
     };
+
+    int GetMessage(vector<uint8_t>&);
 
     TapDriver tap;
 

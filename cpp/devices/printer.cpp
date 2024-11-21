@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -31,7 +31,6 @@
 
 #include "printer.h"
 #include <filesystem>
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
@@ -41,40 +40,32 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
 {
     SetProduct("SCSI PRINTER");
     SupportsParams(true);
+    SetReady(true);
 }
 
-bool Printer::Init(const param_map &params)
+bool Printer::SetUp()
 {
-    PrimaryDevice::Init(params);
-
     if (GetParam("cmd").find("%f") == string::npos) {
         LogTrace("Missing filename specifier '%f'");
         return false;
     }
 
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
-        {
-            TestUnitReady();
-        });
-    AddCommand(scsi_command::cmd_print, [this]
+    AddCommand(scsi_command::print, [this]
         {
             Print();
         });
-    AddCommand(scsi_command::cmd_synchronize_buffer, [this]
+    AddCommand(scsi_command::synchronize_buffer, [this]
         {
             SynchronizeBuffer();
         });
-    // STOP PRINT is identical with TEST UNIT READY, it just returns the status
-    AddCommand(scsi_command::cmd_stop_print, [this]
+    AddCommand(scsi_command::stop_print, [this]
         {
-            TestUnitReady();
+            StatusPhase();
         });
 
     error_code error;
     file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here
     file_template += PRINTER_FILE_PATTERN;
-
-    SetReady(true);
 
     return true;
 }
@@ -100,12 +91,6 @@ param_map Printer::GetDefaultParams() const
     };
 }
 
-void Printer::TestUnitReady()
-{
-    // The printer is always ready
-    StatusPhase();
-}
-
 vector<uint8_t> Printer::InquiryInternal() const
 {
     return HandleInquiry(device_type::printer, false);
@@ -113,7 +98,7 @@ vector<uint8_t> Printer::InquiryInternal() const
 
 void Printer::Print()
 {
-    const uint32_t length = GetInt24(GetController()->GetCdb(), 2);
+    const uint32_t length = GetCdbInt24(2);
 
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
@@ -171,12 +156,12 @@ void Printer::SynchronizeBuffer()
 
 int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::cmd_print);
-    if (command != scsi_command::cmd_print) {
+    assert(command == scsi_command::print);
+    if (command != scsi_command::print) {
         throw scsi_exception(sense_key::aborted_command);
     }
 
-    const auto length = GetInt24(GetController()->GetCdb(), 2);
+    const auto length = GetCdbInt24(2);
 
     byte_receive_count += length;
 

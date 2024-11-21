@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -23,21 +23,13 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 
     property_map properties;
 
-    // Always parse the optional global property file
-    if (!ignore_conf && exists(path(GLOBAL_CONFIGURATION))) {
-        ParsePropertyFile(properties, GLOBAL_CONFIGURATION, true);
+    // Parse the optional global property file unless disabled
+    if (!ignore_conf && exists(path(CONFIGURATION))) {
+        ParsePropertyFile(properties, CONFIGURATION, true);
     }
 
-    // When there is no explicit property file list parse the local property file
-    if (filenames.empty()) {
-        if (!ignore_conf) {
-            ParsePropertyFile(properties, GetHomeDir() + LOCAL_CONFIGURATION, true);
-        }
-    }
-    else {
-        for (const auto &filename : Split(filenames, ',')) {
-            ParsePropertyFile(properties, filename, false);
-        }
+    for (const auto &filename : Split(filenames, ',')) {
+        ParsePropertyFile(properties, filename, false);
     }
 
     // Merge properties from property files and from the command line, giving the command line priority
@@ -114,68 +106,13 @@ void PropertyHandler::RemoveProperties(const string &filter)
     erase_if(property_cache, [&filter](auto &kv) {return kv.first.starts_with(filter);});
 }
 
-map<int, vector<byte>> PropertyHandler::GetCustomModePages(const string &vendor, const string &product) const
-{
-    map<int, vector<byte>> pages;
-
-    for (const auto& [key, value] : property_cache) {
-        const auto &key_components = Split(key, '.', 3);
-
-        if (key_components[0] != MODE_PAGE) {
-            continue;
-        }
-
-        int page_code;
-        if (!GetAsUnsignedInt(key_components[1], page_code) || page_code > 0x3e) {
-            warn("Ignored invalid page code in mode page property '{}'", key);
-            continue;
-        }
-
-        if (const string identifier = vendor + COMPONENT_SEPARATOR + product; !identifier.starts_with(
-            key_components[2])) {
-            continue;
-        }
-
-        vector<byte> page_data;
-        try {
-            page_data = HexToBytes(value);
-        }
-        catch (const out_of_range&) {
-            warn("Ignored invalid mode page definition for page {0}: {1}", page_code, value);
-            continue;
-        }
-
-        if (page_data.empty()) {
-            trace("Removing default mode page {}", page_code);
-        }
-        else {
-            // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (page_code != (static_cast<int>(page_data[0]) & 0x3f)) {
-                warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
-                continue;
-            }
-
-            if (page_code && static_cast<byte>(page_data.size() - 2) != page_data[1]) {
-                warn("Ignored mode page definition with wrong page size {0}: {1}", page_code, page_data[1]);
-                continue;
-            }
-
-            trace("Adding/replacing mode page {0}: {1}", page_code, value);
-        }
-
-        pages[page_code] = page_data;
-    }
-
-    return pages;
-}
-
 bool PropertyHandler::Persist() const
 {
     error_code error;
-    remove(GLOBAL_CONFIGURATION_OLD, error);
-    rename(path(GLOBAL_CONFIGURATION), path(GLOBAL_CONFIGURATION_OLD), error);
+    remove(CONFIGURATION_OLD, error);
+    rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
 
-    ofstream out(GLOBAL_CONFIGURATION);
+    ofstream out(CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {
         out << key << "=" << value << "\n";
         if (out.fail()) {

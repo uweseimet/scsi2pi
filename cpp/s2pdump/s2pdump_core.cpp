@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -9,8 +9,6 @@
 #include "s2pdump_core.h"
 #include <chrono>
 #include <csignal>
-#include <cstddef>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -46,7 +44,7 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
@@ -119,7 +117,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "sasi-scan", no_argument, nullptr, 't' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
         { "version", no_argument, nullptr, 'v' },
-        { "help", no_argument, nullptr, 'H' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -391,15 +388,16 @@ bool S2pDump::DisplayInquiry(bool check_type)
 
 bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
 {
-    scsi_device_info = { };
-
-    scsi_device_info.type = static_cast<byte>(buf[0]);
-    if ((scsi_device_info.type & byte { 0x1f }) == byte { 0x1f }) {
+    const auto type = static_cast<int>(buf[0]) & 0x0f;
+    if (type == 0x1f) {
         // Requested LUN is not available
         return false;
     }
 
     cout << "\nINQUIRY product data:\n";
+
+    scsi_device_info = { };
+    scsi_device_info.type = static_cast<byte>(buf[0]);
 
     array<char, 17> str = { };
     memcpy(str.data(), &buf[8], 8);
@@ -416,8 +414,8 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     scsi_device_info.revision = string(str.data());
     cout << "Revision:             '" << scsi_device_info.revision << "'\n";
 
-    if (const auto &type = SCSI_DEVICE_TYPES.find(scsi_device_info.type & byte { 0x1f }); type != SCSI_DEVICE_TYPES.end()) {
-        cout << "Device Type:          " << (*type).second << "\n";
+    if (const auto &t = SCSI_DEVICE_TYPES.find(static_cast<byte>(type)); t != SCSI_DEVICE_TYPES.end()) {
+        cout << "Device Type:          " << (*t).second << "\n";
     }
     else {
         cout << "Device Type:          Unknown\n";
@@ -447,7 +445,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     }
     cout << "\n";
 
-    scsi_device_info.removable = (static_cast<byte>(buf[1]) & byte { 0x80 }) == byte { 0x80 };
+    scsi_device_info.removable = (static_cast<int>(buf[1]) & 0x80) == 0x80;
     cout << "Removable:            " << (scsi_device_info.removable ? "Yes" : "No")
         << "\n";
 
@@ -455,7 +453,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
         scsi_device_info.type != static_cast<byte>(device_type::cd_rom)
         && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD and OPTICAL MEMORY" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM and OPTICAL MEMORY" << endl;
         return false;
     }
 
@@ -695,9 +693,10 @@ void S2pDump::DisplayProperties(int id, int lun) const
     id_and_lun += ".";
 
     cout << id_and_lun << "type=";
-    if (const auto &type = S2P_DEVICE_TYPES.find(scsi_device_info.type & byte { 0x1f }); type != S2P_DEVICE_TYPES.end()) {
-        if (string((*type).second) != "SCHD") {
-            cout << (*type).second << "\n";
+    const auto type = static_cast<int>(scsi_device_info.type);
+    if (const auto &t = S2P_DEVICE_TYPES.find(static_cast<byte>(type & 0x1f)); t != S2P_DEVICE_TYPES.end()) {
+        if (string((*t).second) != "SCHD") {
+            cout << (*t).second << "\n";
         }
         else {
             cout << (scsi_device_info.removable ? "SCRM" : "SCHD") << "\n";

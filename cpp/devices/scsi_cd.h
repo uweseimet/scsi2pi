@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -19,7 +19,7 @@ public:
     explicit ScsiCd(int, bool = false);
     ~ScsiCd() override = default;
 
-    bool Init(const param_map&) override;
+    bool SetUp() override;
 
     void Open() override;
 

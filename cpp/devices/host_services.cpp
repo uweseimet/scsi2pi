@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -84,7 +84,6 @@
 #include <chrono>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
-#include "base/memory_util.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "controllers/controller.h"
@@ -97,41 +96,30 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : ModePageDevice(SCHS, scsi_level::spc_3, lun, false, false)
+HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun)
 {
     SetProduct("Host Services");
+    SetReady(true);
 }
 
-bool HostServices::Init(const param_map &params)
+bool HostServices::SetUp()
 {
-    ModePageDevice::Init(params);
-
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
-        {
-            TestUnitReady();
-        });
-    AddCommand(scsi_command::cmd_start_stop, [this]
+    AddCommand(scsi_command::start_stop, [this]
         {
             StartStopUnit();
         });
-    AddCommand(scsi_command::cmd_execute_operation, [this]
+    AddCommand(scsi_command::execute_operation, [this]
         {
             ExecuteOperation();
         });
-    AddCommand(scsi_command::cmd_receive_operation_results, [this]
+    AddCommand(scsi_command::receive_operation_results, [this]
         {
             ReceiveOperationResults();
         });
 
-    SetReady(true);
+    page_handler = make_unique<PageHandler>(*this, false, false);
 
     return true;
-}
-
-void HostServices::TestUnitReady()
-{
-    // Always successful
-    StatusPhase();
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const
@@ -141,9 +129,9 @@ vector<uint8_t> HostServices::InquiryInternal() const
 
 void HostServices::StartStopUnit() const
 {
-    const bool load = GetController()->GetCdbByte(4) & 0x02;
+    const bool load = GetCdbByte(4) & 0x02;
 
-    if (const bool start = GetController()->GetCdbByte(4) & 0x01; !start) {
+    if (const bool start = GetCdbByte(4) & 0x01; !start) {
         GetController()->ScheduleShutdown(load ? shutdown_mode::stop_pi : shutdown_mode::stop_s2p);
     }
     else if (load) {
@@ -162,7 +150,7 @@ void HostServices::ExecuteOperation()
 
     input_format = ConvertFormat();
 
-    const int length = GetInt16(GetController()->GetCdb(), 7);
+    const int length = GetCdbInt16(7);
     if (!length) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
@@ -209,7 +197,7 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const auto allocation_length = static_cast<size_t>(GetInt16(GetController()->GetCdb(), 7));
+    const auto allocation_length = static_cast<size_t>(GetCdbInt16(7));
     const auto length = static_cast<int>(min(allocation_length, data.size()));
     if (!length) {
         StatusPhase();
@@ -223,16 +211,15 @@ void HostServices::ReceiveOperationResults()
 
 int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Block descriptors cannot be returned
-    if (!(cdb[1] & 0x08)) {
+    // Block descriptors cannot be returned, subpages are not supported
+    if (cdb[3] || !(cdb[1] & 0x08)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
     fill_n(buf.begin(), length, 0);
 
-    // Basic information
-    const int size = AddModePages(cdb, buf, 4, length, 255);
+    const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
     buf[0] = (uint8_t)(size - 1);
@@ -242,18 +229,17 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
 int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
 {
-    // Block descriptors cannot be returned
-    if (!(cdb[1] & 0x08)) {
+    // Block descriptors cannot be returned, subpages are not supported
+    if (cdb[3] || !(cdb[1] & 0x08)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
     fill_n(buf.begin(), length, 0);
 
-    // Basic information
-    const int size = AddModePages(cdb, buf, 8, length, 65535);
+    const int size = page_handler->AddModePages(cdb, buf, 8, length, 65535);
 
-    // The size fields do not count themselves
+    // The size field does not count itself
     SetInt16(buf, 0, size - 2);
 
     return size;
@@ -292,12 +278,11 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
 int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 {
-    assert(command == scsi_command::cmd_execute_operation);
-    if (command != scsi_command::cmd_execute_operation) {
+    if (command != scsi_command::execute_operation) {
         throw scsi_exception(sense_key::aborted_command);
     }
 
-    const auto length = GetInt16(GetController()->GetCdb(), 7);
+    const auto length = GetCdbInt16(7);
     if (!length) {
         execution_results[GetController()->GetInitiatorId()].clear();
         return 0;
@@ -348,7 +333,7 @@ int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
 
 HostServices::protobuf_format HostServices::ConvertFormat() const
 {
-    switch (GetController()->GetCdbByte(1) & 0b00000111) {
+    switch (GetCdbByte(1) & 0b00000111) {
     case 0x001:
         return protobuf_format::binary;
         break;

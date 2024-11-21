@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -10,11 +10,7 @@
 
 #include "controller.h"
 #include "buses/bus_factory.h"
-#ifdef BUILD_MODE_PAGE_DEVICE
-#include "devices/mode_page_device.h"
-#else
 #include "base/primary_device.h"
-#endif
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -34,7 +30,7 @@ bool Controller::Process()
     GetBus().Acquire();
 
     if (GetBus().GetRST()) {
-        LogWarn("RESET signal received");
+        LogWarn("Received RESET signal");
         Reset();
         return false;
     }
@@ -108,7 +104,7 @@ void Controller::Command()
         const int actual_count = GetBus().CommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
-                LogTrace(fmt::format("Received unknown command: ${:02x}", buf[0]));
+                LogDebug(fmt::format("Received unknown command: ${:02x}", buf[0]));
                 Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             }
             else {
@@ -118,26 +114,29 @@ void Controller::Command()
         }
 
         const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
-        assert(command_bytes_count && command_bytes_count <= 16);
+        assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }
 
-        // Check the log level first in order to avoid a time-consuming string construction
+        // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
             LogCdb();
         }
 
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
-                command_bytes_count, GetCdbByte(0), actual_count));
+                command_bytes_count, GetCdb()[0], actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
 
-        // Linked commands are not supported
-        if (GetCdb()[command_bytes_count - 1] & 0x03) {
+        const int control = GetCdb()[command_bytes_count - 1];
+        linked = control & 0x01;
+        flag = control & 0x02;
+
+        if (flag && !linked) {
             Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
             return;
         }
@@ -152,11 +151,11 @@ void Controller::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (opcode != scsi_command::cmd_inquiry && opcode != scsi_command::cmd_request_sense) {
+        if (opcode != scsi_command::inquiry && opcode != scsi_command::request_sense) {
             Error(sense_key::illegal_request, asc::invalid_lun);
             return;
         }
@@ -166,7 +165,7 @@ void Controller::Execute()
     }
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (opcode != scsi_command::cmd_request_sense) {
+    if (opcode != scsi_command::request_sense) {
         SetStatus(status_code::good);
         device->SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
     }
@@ -200,7 +199,10 @@ void Controller::Status()
     ResetOffset();
     SetCurrentLength(1);
     SetTransferSize(1, 1);
-    GetBuffer()[0] = (uint8_t)GetStatus();
+
+    // If this is a successfully terminated linked command convert the status code
+    GetBuffer()[0] =
+        linked && GetStatus() == status_code::good ? (uint8_t)status_code::intermediate : (uint8_t)GetStatus();
 }
 
 void Controller::MsgIn()
@@ -321,7 +323,13 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Sending {} byte(s)", length));
+        // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
+        if (length < 256 && get_level() == level::trace) {
+            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
+        }
+        else {
+            LogTrace(fmt::format("Sending {} byte(s)", length));
+        }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
@@ -342,7 +350,7 @@ void Controller::Send()
 
     const bool pending_data = UpdateTransferSize();
 
-    if (pending_data && IsDataIn() && !XferIn(GetBuffer())) {
+    if (pending_data && IsDataIn() && !XferIn()) {
         return;
     }
 
@@ -356,7 +364,7 @@ void Controller::Send()
 
     switch (GetPhase()) {
     case bus_phase::msgin:
-        ProcessExtendedMessage();
+        ProcessEndOfMessage();
         break;
 
     case bus_phase::datain:
@@ -367,7 +375,13 @@ void Controller::Send()
         SetCurrentLength(1);
         SetTransferSize(1, 1);
         // Message byte
-        GetBuffer()[0] = 0;
+        if (linked) {
+            GetBuffer()[0] = static_cast<uint8_t>(
+                flag ? message_code::linked_command_complete_with_flag : message_code::linked_command_complete);
+        }
+        else {
+            GetBuffer()[0] = static_cast<uint8_t>(message_code::command_complete);
+        }
         MsgIn();
         break;
 
@@ -412,7 +426,7 @@ void Controller::Receive()
         break;
 
     case bus_phase::msgout:
-        XferMsg(GetBuffer()[0]);
+        XferMsg();
         break;
 
     default:
@@ -442,108 +456,73 @@ void Controller::Receive()
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool Controller::XferIn(vector<uint8_t> &buf)
+bool Controller::XferIn()
 {
-    // Limited to read commands (DATA IN phase)
-    switch (static_cast<scsi_command>(GetCdbByte(0))) {
-    case scsi_command::cmd_read6:
-    case scsi_command::cmd_read10:
-    case scsi_command::cmd_read16:
-    case scsi_command::cmd_read_long10:
-    case scsi_command::cmd_read_capacity16_read_long16:
-        try {
-            SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(buf));
-        }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
-            return false;
-        }
+    // Limited to read commands with DATA IN phase
+    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read10 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read16 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::get_message6 ||
+        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_capacity16_read_long16);
 
-        ResetOffset();
-        return true;
-
-    default:
-        assert(false);
-        break;
+    try {
+        SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
+    }
+    catch (const scsi_exception &e) {
+        Error(e.get_sense_key(), e.get_asc());
+        return false;
     }
 
-    Error(sense_key::aborted_command, asc::controller_xfer_in);
-    return false;
+    ResetOffset();
+    return true;
 }
-#pragma GCC diagnostic pop
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool Controller::XferOut(bool cont)
+bool Controller::XferOut(bool pending_data)
 {
     const auto device = GetDeviceForLun(GetEffectiveLun());
+    try {
+        switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
+        case scsi_command::mode_select6:
+        case scsi_command::mode_select10:
+            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
+            break;
 
-    // Limited to write/verify commands (DATA OUT phase)
-    switch (const auto opcode = static_cast<scsi_command>(GetCdbByte(0)); opcode
-        ) {
-    case scsi_command::cmd_mode_select6:
-    case scsi_command::cmd_mode_select10:
-        {
-#ifdef BUILD_MODE_PAGE_DEVICE
-        const auto mode_page_device = dynamic_pointer_cast<ModePageDevice>(device);
-        assert(mode_page_device);
-        if (!mode_page_device) {
-            Error(sense_key::aborted_command, asc::controller_xfer_out);
-            return false;
-        }
-
-        try {
-            mode_page_device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
-        }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
-            return false;
-        }
-
-        return true;
-#endif
-    }
-        break;
-
-    case scsi_command::cmd_write6:
-    case scsi_command::cmd_write10:
-    case scsi_command::cmd_write16:
-    case scsi_command::cmd_verify10:
-    case scsi_command::cmd_verify16:
-    case scsi_command::cmd_write_long10:
-    case scsi_command::cmd_write_long16:
-    case scsi_command::cmd_execute_operation:
-        try {
+        case scsi_command::write6:
+        case scsi_command::write10:
+        case scsi_command::write16:
+        case scsi_command::verify10:
+        case scsi_command::verify16:
+        case scsi_command::write_long10:
+        case scsi_command::write_long16:
+        case scsi_command::execute_operation: {
             const auto length = device->WriteData(GetBuffer(), opcode);
-            if (cont) {
+            if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
             }
+            break;
         }
-        catch (const scsi_exception &e) {
-            Error(e.get_sense_key(), e.get_asc());
+
+        default:
+            // Limited to write/verify/mode commands with DATA OUT phase
+            assert(false);
             return false;
         }
-        return true;
-
-    default:
-        assert(false);
-        break;
+    }
+    catch (const scsi_exception &e) {
+        Error(e.get_sense_key(), e.get_asc());
+        return false;
     }
 
-    Error(sense_key::aborted_command, asc::controller_xfer_out);
-    return false;
+    return true;
 }
-#pragma GCC diagnostic pop
 
-void Controller::XferMsg(uint8_t msg)
+void Controller::XferMsg()
 {
     assert(IsMsgOut());
 
     if (atn_msg) {
-        msg_bytes.emplace_back(msg);
+        msg_bytes.emplace_back(GetBuffer()[0]);
     }
 }
 
@@ -561,13 +540,13 @@ void Controller::ParseMessage()
             return;
         }
 
-        case 0x06: {
+        case static_cast<uint8_t>(message_code::abort): {
             LogTrace("Received ABORT message");
             BusFree();
             return;
         }
 
-        case 0x0c: {
+        case static_cast<uint8_t>(message_code::bus_device_reset): {
             LogTrace("Received BUS DEVICE RESET message");
             if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->SetReset(true);
@@ -605,11 +584,13 @@ void Controller::ProcessMessage()
     Command();
 }
 
-void Controller::ProcessExtendedMessage()
+void Controller::ProcessEndOfMessage()
 {
-    // Completed sending response to extended message of IDENTIFY message
-    if (atn_msg) {
+    // Completed sending response to extended message of IDENTIFY message or executing a linked command
+    if (atn_msg || linked) {
         atn_msg = false;
+        linked = false;
+        flag = false;
         Command();
     } else {
         BusFree();
@@ -619,20 +600,20 @@ void Controller::ProcessExtendedMessage()
 int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
-    return identified_lun != -1 ? identified_lun : GetCdbByte(1) >> 5;
+    return identified_lun != -1 ? identified_lun : GetCdb()[1] >> 5;
 }
 
 void Controller::LogCdb() const
 {
-    const auto opcode = static_cast<scsi_command>(GetCdbByte(0));
+    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
     const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
-    string s = fmt::format("Controller is executing {}, CDB $",
-        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdbByte(0)));
+    string s = fmt::format("Controller is executing {}, CDB ",
+        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdb()[0]));
     for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
         if (i) {
             s += ":";
         }
-        s += fmt::format("{:02x}", GetCdbByte(i));
+        s += fmt::format("{:02x}", GetCdb()[i]);
     }
     LogDebug(s);
 }

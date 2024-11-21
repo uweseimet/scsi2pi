@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -16,13 +16,6 @@ using namespace spdlog;
 Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
 {
     revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);
-}
-
-void Device::Reset()
-{
-    locked = false;
-    attn = false;
-    reset = false;
 }
 
 void Device::SetProtected(bool b)

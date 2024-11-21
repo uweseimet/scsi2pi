@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 
 #include "scsi_cd.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -20,19 +19,16 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs 
     SetProduct("SCSI CD-ROM");
     SetReadOnly(true);
     SetRemovable(true);
-    SetLockable(true);
 }
 
-bool ScsiCd::Init(const param_map &params)
+bool ScsiCd::SetUp()
 {
-    Disk::Init(params);
-
-    AddCommand(scsi_command::cmd_read_toc, [this]
+    AddCommand(scsi_command::read_toc, [this]
         {
             ReadToc();
         });
 
-    return true;
+    return Disk::SetUp();
 }
 
 void ScsiCd::Open()
@@ -42,12 +38,12 @@ void ScsiCd::Open()
     track_initialized = false;
 
     // Default sector size is 2048 bytes
-    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 2048)) {
+    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(GetFileSize() / GetSectorSizeInBytes());
+    SetBlockCount(GetFileSize() / GetBlockSize());
 
-    Disk::ValidateFile();
+    ValidateFile();
 
     SetReadOnly(true);
     SetProtectable(false);
@@ -70,17 +66,17 @@ void ScsiCd::ReadToc()
 {
     CheckReady();
 
-    const auto &cdb = GetController()->GetCdb();
+    const int track = GetCdbByte(6);
 
     // Track must be 1, except for lead out track ($AA)
-    if (cdb[6] > 1 && cdb[6] != 0xaa) {
+    if (track > 1 && track != 0xaa) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     uint8_t track_number = 1;
     uint32_t track_address = first_lba;
-    if (cdb[6] && !track_initialized) {
-        if (cdb[6] != 0xaa) {
+    if (track && !track_initialized) {
+        if (track != 0xaa) {
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         }
 
@@ -88,7 +84,7 @@ void ScsiCd::ReadToc()
         track_address = last_lba + 1;
     }
 
-    const int length = min(GetInt16(cdb, 7), 12);
+    const int length = min(GetCdbInt16(7), 12);
     auto &buf = GetController()->GetBuffer();
     fill_n(buf.data(), length, 0);
 
@@ -103,7 +99,7 @@ void ScsiCd::ReadToc()
     buf[6] = track_number;
 
     // Track address in the requested format (MSF)
-    if (cdb[1] & 0x02) {
+    if (GetCdbByte(1) & 0x02) {
         LBAtoMSF(track_address, &buf[8]);
     } else {
         SetInt16(buf, 10, track_address);
@@ -137,7 +133,6 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
 {
     vector<byte> buf(8);
 
-    // No changeable area
     if (!changeable) {
         // 2 seconds for inactive timer
         buf[3] = (byte)0x05;
@@ -162,7 +157,7 @@ int ScsiCd::ReadData(span<uint8_t> buf)
         SetBlockCount(last_lba - first_lba + 1);
 
         if (!InitCache(GetFilename())) {
-            throw scsi_exception(sense_key::medium_error, asc::read_fault);
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         track_initialized = true;

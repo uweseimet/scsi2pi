@@ -1,18 +1,17 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
-void ScsiMo_SetUpModePages(map<int, vector<byte>> &pages)
+static void SetUpModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(8U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(12U, pages[1].size());
@@ -29,17 +28,17 @@ TEST(OpticalMemoryTest, Inquiry)
     TestShared::Inquiry(SCMO, device_type::optical_memory, scsi_level::scsi_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
 }
 
-TEST(OpticalMemoryTest, GetSectorSizes)
+TEST(OpticalMemoryTest, GetBlockSizes)
 {
     OpticalMemory mo(0);
 
-    const auto &sector_sizes = mo.GetSupportedSectorSizes();
-    EXPECT_EQ(4U, sector_sizes.size());
+    const auto &sizes = mo.GetSupportedBlockSizes();
+    EXPECT_EQ(4U, sizes.size());
 
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(1024));
-    EXPECT_TRUE(sector_sizes.contains(2048));
-    EXPECT_TRUE(sector_sizes.contains(4096));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
 }
 
 TEST(OpticalMemoryTest, SetUpModePages)
@@ -49,12 +48,12 @@ TEST(OpticalMemoryTest, SetUpModePages)
 
     // Non changeable
     mo.SetUpModePages(pages, 0x3f, false);
-    ScsiMo_SetUpModePages(pages);
+    SetUpModePages(pages);
 
     // Changeable
     pages.clear();
     mo.SetUpModePages(pages, 0x3f, true);
-    ScsiMo_SetUpModePages(pages);
+    SetUpModePages(pages);
 }
 
 TEST(OpticalMemoryTest, AddVendorPages)
@@ -77,7 +76,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(0, GetInt16(page_32, 10));
 
-    mo.SetSectorSizeInBytes(512);
+    mo.SetBlockSize(512);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(0, GetInt16(page_32, 10));
@@ -97,7 +96,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     EXPECT_EQ(2250, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
     EXPECT_EQ(18, GetInt16(page_32, 10));
 
-    mo.SetSectorSizeInBytes(2048);
+    mo.SetBlockSize(2048);
     mo.SetBlockCount(0x12345678);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(0, GetInt16(page_32, 8)) << "Wrong number of spare blocks";
@@ -127,10 +126,8 @@ TEST(OpticalMemoryTest, ModeSelect)
     MockOpticalMemory mo(0);
     vector<uint8_t> buf(32);
 
-    mo.SetSectorSizeInBytes(2048);
-
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::cmd_mode_select6, "10");
+    vector<int> cdb = CreateCdb(scsi_command::mode_select6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
@@ -146,7 +143,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[4] = 0;
     buf[5] = 0;
 
-    cdb = CreateCdb(scsi_command::cmd_mode_select10, "10");
+    cdb = CreateCdb(scsi_command::mode_select10, "10");
 
     // Page 3 (Format device page)
     buf[8] = 0x04;

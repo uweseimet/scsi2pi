@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -15,6 +15,7 @@
 #include "controllers/controller.h"
 #include "devices/disk.h"
 #include "protobuf/protobuf_util.h"
+#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -76,9 +77,10 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
 {
     const PbCommand &command = context.GetCommand();
+    const PbOperation &operation = command.operation();
 
     // Handle commands that are not device-specific
-    switch (command.operation()) {
+    switch (operation) {
     case DETACH_ALL:
         DetachAll();
         return context.ReturnSuccessStatus();
@@ -95,7 +97,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     case CHECK_AUTHENTICATION:
     case NO_OPERATION:
         // Do nothing, just log
-        trace("Received {} command", PbOperation_Name(command.operation()));
+        trace("Received {} command", PbOperation_Name(operation));
         return context.ReturnSuccessStatus();
 
     default:
@@ -122,8 +124,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    // ATTACH and DETACH are special cases because they return the current device list
-    return command.operation() == ATTACH || command.operation() == DETACH ? true : context.ReturnSuccessStatus();
+    // ATTACH, DETACH, INSERT and EJECT are special cases because they return the current device list
+    return
+        operation == ATTACH || operation == DETACH || operation == INSERT || operation == EJECT ?
+            true : context.ReturnSuccessStatus();
 }
 
 bool CommandExecutor::Start(PrimaryDevice &device) const
@@ -223,18 +227,17 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    if (!SetSectorSize(context, device, pb_device.block_size())) {
+    if (!SetBlockSize(context, device, pb_device.block_size())) {
         return false;
     }
 
-#ifdef BUILD_DISK
-    const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
+#ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsFile()) {
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
         // The caching mode must be set before the file is accessed
-        if (const auto disk = dynamic_pointer_cast<Disk>(device)) {
+        if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
             disk->SetCachingMode(caching_mode);
         }
 
@@ -245,7 +248,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
                 fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
         }
 
-        if (!ValidateImageFile(context, *storage_device, filename)) {
+        if (!ValidateImageFile(context, *static_pointer_cast<StorageDevice>(device), filename)) {
             return false;
         }
     }
@@ -257,7 +260,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         device->SetProtected(pb_device.protected_());
     }
 
-    // Stop the dry run here, before actually attaching
+    // Stop the dry run here, before attaching
     if (dryRun) {
         return true;
     }
@@ -277,9 +280,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
 
-#ifdef BUILD_DISK
-    if (storage_device && !storage_device->IsRemoved()) {
-        storage_device->ReserveFile();
+#ifdef BUILD_STORAGE_DEVICE
+    if (!device->IsRemoved() && device->SupportsFile()) {
+        static_pointer_cast<StorageDevice>(device)->ReserveFile();
     }
 #endif
 
@@ -299,6 +302,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
+#ifdef BUILD_STORAGE_DEVICE
     if (!device->IsRemoved()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_EJECT_REQUIRED);
     }
@@ -307,9 +311,16 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_NAME_UPDATE);
     }
 
-    const string &filename = GetParam(pb_device, "file");
+    // It has been ensured above that this cast cannot fail
+    auto storage_device = static_pointer_cast<StorageDevice>(device);
+
+    string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, GetIdentifier(*device));
+        filename = storage_device->GetLastFilename();
+    }
+    if (filename.empty()) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
+            GetIdentifier(*storage_device));
     }
 
     // Stop the dry run here, before modifying the device
@@ -318,14 +329,12 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     }
 
     info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
-        + GetIdentifier(*device));
+        + GetIdentifier(*storage_device));
 
-    if (!SetSectorSize(context, device, pb_device.block_size())) {
+    if (!SetBlockSize(context, storage_device, pb_device.block_size())) {
         return false;
     }
 
-#ifdef BUILD_DISK
-    auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
     if (!ValidateImageFile(context, *storage_device, filename)) {
         return false;
     }
@@ -336,11 +345,11 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     storage_device->SetMediumChanged(true);
     storage_device->SetProtected(pb_device.protected_());
-#endif
 
-    SetUpDeviceProperties(device);
+    SetUpDeviceProperties(storage_device);
 
     return true;
+#endif
 }
 #pragma GCC diagnostic pop
 
@@ -398,19 +407,21 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
-#ifdef BUILD_DISK
-    const auto disk = dynamic_pointer_cast<Disk>(device);
-    if (disk && disk->GetConfiguredSectorSize()) {
-        PropertyHandler::Instance().AddProperty(identifier + "block_size", to_string(disk->GetConfiguredSectorSize()));
-
-    }
-    if (disk && !disk->GetFilename().empty()) {
-        string filename = disk->GetFilename();
-        if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
-            filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+#ifdef BUILD_STORAGE_DEVICE
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+        if (storage_device->GetConfiguredBlockSize()) {
+            PropertyHandler::Instance().AddProperty(identifier + "block_size",
+                to_string(storage_device->GetConfiguredBlockSize()));
         }
-        PropertyHandler::Instance().AddProperty(identifier + "params", filename);
-        return;
+        string filename = storage_device->GetFilename();
+        if (!filename.empty()) {
+            if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
+                filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+            }
+            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+            return;
+        }
     }
 #endif
 
@@ -471,7 +482,7 @@ string CommandExecutor::SetReservedIds(string_view ids)
 bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &storage_device,
     const string &filename) const
 {
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (filename.empty()) {
         return true;
     }
@@ -509,7 +520,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const string &filename)
 {
-#ifdef BUILD_DISK
+#ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
             to_string(id) + ":" + to_string(lun));
@@ -637,17 +648,15 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<Pri
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
-    int sector_size) const
+bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
+    int block_size) const
 {
-#ifdef BUILD_DISK
-    if (sector_size) {
-        const auto disk = dynamic_pointer_cast<Disk>(device);
-        if (disk && disk->IsSectorSizeConfigurable()) {
-            if (!disk->SetConfiguredSectorSize(sector_size)) {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(sector_size));
+#ifdef BUILD_STORAGE_DEVICE
+    if (block_size) {
+        if (device->SupportsFile()) {
+            const auto storage_device = static_pointer_cast<StorageDevice>(device);
+            if (!storage_device->SetConfiguredBlockSize(block_size)) {
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
             }
         }
         else {
@@ -655,11 +664,12 @@ bool CommandExecutor::SetSectorSize(const CommandContext &context, shared_ptr<Pr
                 GetTypeString(*device));
         }
     }
-#endif
 
     return true;
+#else
+    return false;
+#endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -44,13 +44,13 @@ private:
     void Execute();
     void Send();
     void Receive();
-    void XferMsg(uint8_t);
-    bool XferIn(vector<uint8_t>&);
+    void XferMsg();
+    bool XferIn();
     bool XferOut(bool);
 
     void ParseMessage();
     void ProcessMessage();
-    void ProcessExtendedMessage();
+    void ProcessEndOfMessage();
 
     void LogCdb() const;
 
@@ -58,6 +58,10 @@ private:
     int identified_lun = -1;
 
     bool atn_msg = false;
+
+    bool linked = false;
+
+    bool flag = false;
 
     vector<uint8_t> msg_bytes;
 };

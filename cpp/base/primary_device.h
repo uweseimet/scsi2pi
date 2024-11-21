@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -13,12 +13,14 @@
 #include <functional>
 #include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 #include "s2p_defs.h"
 #include "device.h"
 
 class PrimaryDevice : public ScsiPrimaryCommands, public Device
 {
     friend class AbstractController;
+    friend class PageHandler;
 
     using command = function<void()>;
 
@@ -26,7 +28,8 @@ public:
 
     ~PrimaryDevice() override = default;
 
-    virtual bool Init(const param_map&);
+    bool Init(const param_map&);
+    virtual bool SetUp() = 0;
     virtual void CleanUp()
     {
         // Override if cleanup work is required for a derived device
@@ -69,22 +72,22 @@ public:
     bool CheckReservation(int) const;
     void DiscardReservation();
 
-    void Reset() override;
+    void Reset();
 
     virtual int ReadData(span<uint8_t>)
     {
         // Devices that implement a DATA IN phase have to override this method
 
-        assert(false);
         return 0;
     }
 
-    virtual int WriteData(span<const uint8_t>, scsi_command)
-    {
-        // Devices that implement a DATA OUT phase have to override this method, except for MODE SELECT
+    // For DATA OUT phase, except for MODE SELECT
+    virtual int WriteData(span<const uint8_t>, scsi_command) = 0;
 
-        assert(false);
-        return 0;
+    virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
+    {
+        // There is no default implementation of MODE SELECT
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     virtual void FlushCache()
@@ -114,13 +117,68 @@ protected:
     void Inquiry() override;
     void RequestSense() override;
 
+
     void SendDiagnostic() override;
     void ReserveUnit() override;
     void ReleaseUnit() override;
 
+    virtual int ModeSense6(cdb_t, vector<uint8_t>&) const
+    {
+        // Nothing to do in base class
+        return 0;
+    }
+    virtual int ModeSense10(cdb_t, vector<uint8_t>&) const
+    {
+        // Nothing to do in base class
+        return 0;
+    }
+    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
+    {
+        // Nothing to do in base class
+    }
+
+    void SetFilemark()
+    {
+        filemark = true;
+    }
+    void SetEom()
+    {
+        eom = true;
+    }
+    void SetIli()
+    {
+        ili = true;
+    }
+    void SetInformation(int64_t value)
+    {
+        information = static_cast<int32_t>(value);
+        valid = true;
+    }
+
     void StatusPhase() const;
     void DataInPhase(int) const;
     void DataOutPhase(int) const;
+
+    auto GetCdbByte(int index) const
+    {
+        return controller->GetCdb()[index];
+    }
+    auto GetCdbInt16(int index) const
+    {
+        return memory_util::GetInt16(controller->GetCdb(), index);
+    }
+    auto GetCdbInt24(int index) const
+    {
+        return memory_util::GetInt24(controller->GetCdb(), index);
+    }
+    auto GetCdbInt32(int index) const
+    {
+        return memory_util::GetInt32(controller->GetCdb(), index);
+    }
+    auto GetCdbInt64(int index) const
+    {
+        return memory_util::GetInt64(controller->GetCdb(), index);
+    }
 
     void LogTrace(const string &s) const
     {
@@ -160,6 +218,12 @@ private:
 
     enum sense_key sense_key = sense_key::no_sense;
     enum asc asc = asc::no_additional_sense_information;
+
+    bool valid = false;
+    bool filemark = false;
+    bool eom = false;
+    bool ili = false;
+    int32_t information = 0;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

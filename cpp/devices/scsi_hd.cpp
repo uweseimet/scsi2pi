@@ -1,13 +1,12 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "scsi_hd.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -25,12 +24,11 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_
     }
     SetProtectable(true);
     SetRemovable(removable);
-    SetLockable(removable);
 }
 
 string ScsiHd::GetProductData() const
 {
-    uint64_t capacity = GetBlockCount() * GetSectorSizeInBytes();
+    uint64_t capacity = GetBlockCount() * GetBlockSize();
     string unit;
 
     // 10,000 MiB and more
@@ -53,7 +51,7 @@ string ScsiHd::GetProductData() const
 
 void ScsiHd::FinalizeSetup()
 {
-    Disk::ValidateFile();
+    ValidateFile();
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {
@@ -65,11 +63,11 @@ void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    // Sector size (default 512 bytes) and number of blocks
-    if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+    // Sector size (default 512 bytes) and number of sectors
+    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
         throw io_exception("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetSectorSizeInBytes()));
+    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
     FinalizeSetup();
 }
@@ -77,6 +75,12 @@ void ScsiHd::Open()
 vector<uint8_t> ScsiHd::InquiryInternal() const
 {
     return HandleInquiry(device_type::direct_access, IsRemovable());
+}
+
+bool ScsiHd::ValidateBlockSize(uint32_t size) const
+{
+    // Non-removable hard drives support multiples of 4
+    return IsRemovable() ? Disk::ValidateBlockSize(size) : size && !(size % 4);
 }
 
 void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -97,6 +101,10 @@ void ScsiHd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     if (page == 0x0c || page == 0x3f) {
         AddNotchPage(pages, changeable);
     }
+
+    if (page == 0x25 || page == 0x3f) {
+        AddDecVendorPage(pages, changeable);
+    }
 }
 
 void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
@@ -104,7 +112,7 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(24);
 
     if (changeable) {
-        // The sector size is simulated to be changeable in multiples of 4 with a maximum of 4096 bytes per sector.
+        // The sector size is simulated to be changeable in multiples of 4.
         // See the MODE SELECT implementation for details.
         SetInt16(buf, 12, 0x1ffc);
 
@@ -121,7 +129,7 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
         SetInt16(buf, 10, 25);
 
         // The current sector size
-        SetInt16(buf, 12, GetSectorSizeInBytes());
+        SetInt16(buf, 12, GetBlockSize());
 
         // Interleave 1
         SetInt16(buf, 14, 1);
@@ -177,14 +185,6 @@ void ScsiHd::AddNotchPage(map<int, vector<byte>> &pages, bool) const
     // Not having a notched drive (i.e. not setting anything) probably provides the best compatibility
 
     pages[12] = buf;
-}
-
-void ScsiHd::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
-{
-    // Page code 37
-    if (page == 0x25 || page == 0x3f) {
-        AddDecVendorPage(pages, changeable);
-    }
 }
 
 // See https://manx-docs.org/collections/antonio/dec/dec-scsi.pdf

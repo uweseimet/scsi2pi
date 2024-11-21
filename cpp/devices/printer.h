@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -24,7 +24,7 @@ public:
     explicit Printer(int);
     ~Printer() override = default;
 
-    bool Init(const param_map&) override;
+    bool SetUp() override;
     void CleanUp() override;
 
     param_map GetDefaultParams() const override;
@@ -37,7 +37,6 @@ public:
 
 private:
 
-    void TestUnitReady() override;
     void Print() override;
     void SynchronizeBuffer();
 

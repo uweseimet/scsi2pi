@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
@@ -10,7 +10,6 @@
 //---------------------------------------------------------------------------
 
 #include "optical_memory.h"
-#include "base/memory_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -29,7 +28,6 @@ OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true
     SetProduct("SCSI MO");
     SetProtectable(true);
     SetRemovable(true);
-    SetLockable(true);
 }
 
 void OpticalMemory::Open()
@@ -38,14 +36,14 @@ void OpticalMemory::Open()
 
     // For some capacities there are hard-coded, well-defined sector sizes and block counts
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
-        // Sector size (default 512 bytes) and number of blocks
-        if (!SetSectorSizeInBytes(GetConfiguredSectorSize() ? GetConfiguredSectorSize() : 512)) {
+        // Sector size (default 512 bytes) and number of sectors
+        if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
             throw io_exception("Invalid sector size");
         }
-        SetBlockCount(size / GetSectorSizeInBytes());
+        SetBlockCount(size / GetBlockSize());
     }
 
-    Disk::ValidateFile();
+    ValidateFile();
 
     if (IsReady()) {
         SetAttn(true);
@@ -61,13 +59,17 @@ void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool
 {
     Disk::SetUpModePages(pages, page, changeable);
 
-    // Page code 6
+    // Page code 6 (option page)
     if (page == 0x06 || page == 0x3f) {
-        AddOptionPage(pages, changeable);
+        AddOptionPage(pages);
+    }
+
+    if (page == 0x20 || page == 0x3f) {
+        AddVendorPage(pages, changeable);
     }
 }
 
-void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
+void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages) const
 {
     vector<byte> buf(4);
     pages[6] = buf;
@@ -97,27 +99,16 @@ void OpticalMemory::AddOptionPage(map<int, vector<byte>> &pages, bool) const
 //
 // Further information: https://r2089.blog36.fc2.com/blog-entry-177.html
 //
-void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool changeable) const
+void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    if (page != 0x20 && page != 0x3f) {
-        return;
-    }
-
     vector<byte> buf(12);
 
-    // No changeable area
-    if (changeable) {
-        pages[32] = buf;
-
-        return;
-    }
-
-    if (IsReady()) {
+    if (!changeable && IsReady()) {
         unsigned spare = 0;
         unsigned bands = 0;
         const uint64_t block_count = GetBlockCount();
 
-        if (GetSectorSizeInBytes() == 512) {
+        if (GetBlockSize() == 512) {
             switch (block_count) {
             // 128MB
             case 248826:
@@ -142,7 +133,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
             }
         }
 
-        if (GetSectorSizeInBytes() == 2048) {
+        if (GetBlockSize() == 2048) {
             switch (block_count) {
             // 640MB
             case 310352:
@@ -178,7 +169,7 @@ void OpticalMemory::AddVendorPages(map<int, vector<byte>> &pages, int page, bool
 bool OpticalMemory::SetGeometryForCapacity(uint64_t capacity)
 {
     if (const auto &geometry = geometries.find(capacity); geometry != geometries.end()) {
-        SetSectorSizeInBytes(geometry->second.first);
+        SetBlockSize(geometry->second.first);
         SetBlockCount(geometry->second.second);
 
         return true;

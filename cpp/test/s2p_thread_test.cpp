@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2023 Uwe Seimet
 //
@@ -46,7 +46,6 @@ TEST(S2pThreadTest, Init)
     EXPECT_FALSE(service_thread.Init(nullptr, 65536).empty()) << "Illegal port number";
     EXPECT_FALSE(service_thread.Init(nullptr, 0).empty()) << "Illegal port number";
     EXPECT_FALSE(service_thread.Init(nullptr, -1).empty()) << "Illegal port number";
-    EXPECT_FALSE(service_thread.Init(nullptr, 1).empty()) << "Port 1 is only available for the root user";
     EXPECT_TRUE(service_thread.Init(nullptr, 9999).empty()) << "Port 9999 is expected not to be in use for this test";
     service_thread.Stop();
 }

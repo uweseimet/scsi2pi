@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,6 +8,12 @@
 
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
+
+static void ValidateModePages(map<int, vector<byte>> &pages)
+{
+    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(10U, pages[32].size());
+}
 
 TEST(HostServicesTest, DeviceDefaults)
 {
@@ -21,7 +27,6 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_FALSE(services.IsReadOnly());
     EXPECT_FALSE(services.IsRemovable());
     EXPECT_FALSE(services.IsRemoved());
-    EXPECT_FALSE(services.IsLockable());
     EXPECT_FALSE(services.IsLocked());
     EXPECT_FALSE(services.IsStoppable());
     EXPECT_FALSE(services.IsStopped());
@@ -31,18 +36,12 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_EQ(TestShared::GetVersion(), services.GetRevision());
 }
 
-void HostServices_SetUpModePages(map<int, vector<byte>> &pages)
-{
-    EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(10U, pages[32].size());
-}
-
 TEST(HostServicesTest, TestUnitReady)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_test_unit_ready));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -57,24 +56,24 @@ TEST(HostServicesTest, StartStopUnit)
 
     // STOP
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_start_stop));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
-    TestShared::Dispatch(*services, scsi_command::cmd_start_stop, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::start_stop, sense_key::illegal_request,
         asc::invalid_field_in_cdb);
 }
 
@@ -83,16 +82,19 @@ TEST(HostServicesTest, ExecuteOperation)
     auto [controller, services] = CreateDevice(SCHS);
 
     controller->SetCdbByte(1, 0b000);
-    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::execute_operation, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::execute_operation, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal format");
 
     controller->SetCdbByte(1, 0b001);
-    TestShared::Dispatch(*services, scsi_command::cmd_execute_operation, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::execute_operation, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal length");
+
+    controller->SetCdbByte(8, 1);
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::execute_operation));
 }
 
 TEST(HostServicesTest, ReceiveOperationResults)
@@ -100,15 +102,15 @@ TEST(HostServicesTest, ReceiveOperationResults)
     auto [controller, services] = CreateDevice(SCHS);
 
     controller->SetCdbByte(1, 0b000);
-    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::receive_operation_results, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::receive_operation_results, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Illegal format");
 
     controller->SetCdbByte(1, 0b010);
-    TestShared::Dispatch(*services, scsi_command::cmd_receive_operation_results, sense_key::aborted_command,
+    TestShared::Dispatch(*services, scsi_command::receive_operation_results, sense_key::aborted_command,
         asc::host_services_receive_operation_results, "No matching initiator ID");
 }
 
@@ -116,20 +118,18 @@ TEST(HostServicesTest, ModeSense6)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    EXPECT_TRUE(services->Init( { }));
-
-    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense6, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense6, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense6, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense6));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -143,29 +143,30 @@ TEST(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense6));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense6));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense6), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, ModeSense10)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    EXPECT_TRUE(services->Init( { }));
-
-    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense10, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense10, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    TestShared::Dispatch(*services, scsi_command::cmd_mode_sense10, sense_key::illegal_request,
+    TestShared::Dispatch(*services, scsi_command::mode_sense10, sense_key::illegal_request,
         asc::invalid_field_in_cdb, "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense10));
     vector<uint8_t> &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -179,9 +180,12 @@ TEST(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::cmd_mode_sense10));
+    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
+
+    controller->SetCdbByte(3, 0x01);
+    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense10), scsi_exception)<< "Subpages are not supported";
 }
 
 TEST(HostServicesTest, SetUpModePages)
@@ -191,17 +195,23 @@ TEST(HostServicesTest, SetUpModePages)
 
     // Non changeable
     services.SetUpModePages(pages, 0x3f, false);
-    HostServices_SetUpModePages(pages);
+    ValidateModePages(pages);
 
     // Changeable
     pages.clear();
     services.SetUpModePages(pages, 0x3f, true);
-    HostServices_SetUpModePages(pages);
+    ValidateModePages(pages);
 }
 
 TEST(HostServicesTest, WriteData)
 {
     auto [controller, services] = CreateDevice(SCHS);
+    array<uint8_t, 1> buf = { };
 
-    EXPECT_EQ(0, services->WriteData( { }, scsi_command::cmd_execute_operation));
+    EXPECT_THROW(services->WriteData(buf, scsi_command::test_unit_ready), scsi_exception)<< "Illegal command";
+
+    EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation));
+
+    controller->SetCdbByte(8, 1);
+    EXPECT_THROW(services->WriteData(buf, scsi_command::execute_operation), scsi_exception)<< "protobuf data are invalid";
 }

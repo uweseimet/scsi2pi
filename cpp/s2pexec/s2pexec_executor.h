@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -29,7 +29,7 @@ public:
     }
     ~S2pExecExecutor() = default;
 
-    int ExecuteCommand(scsi_command, vector<uint8_t>&, vector<uint8_t>&, int);
+    int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int);
 
     tuple<sense_key, asc, int> GetSenseData() const
     {

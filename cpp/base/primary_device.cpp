@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,53 +8,52 @@
 
 #include "primary_device.h"
 #include "buses/bus_factory.h"
-#include "memory_util.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
 
 bool PrimaryDevice::Init(const param_map &params)
 {
+    SetParams(params);
+
     // Mandatory SCSI primary commands
-    AddCommand(scsi_command::cmd_test_unit_ready, [this]
+    AddCommand(scsi_command::test_unit_ready, [this]
         {
             TestUnitReady();
         });
-    AddCommand(scsi_command::cmd_inquiry, [this]
+    AddCommand(scsi_command::inquiry, [this]
         {
             Inquiry();
         });
-    AddCommand(scsi_command::cmd_report_luns, [this]
+    AddCommand(scsi_command::report_luns, [this]
         {
             ReportLuns();
         });
 
     // Optional commands supported by all device types
-    AddCommand(scsi_command::cmd_request_sense, [this]
+    AddCommand(scsi_command::request_sense, [this]
         {
             RequestSense();
         });
-    AddCommand(scsi_command::cmd_reserve6, [this]
+    AddCommand(scsi_command::reserve6, [this]
         {
             ReserveUnit();
         });
-    AddCommand(scsi_command::cmd_release6, [this]
+    AddCommand(scsi_command::release6, [this]
         {
             ReleaseUnit();
         });
-    AddCommand(scsi_command::cmd_send_diagnostic, [this]
+    AddCommand(scsi_command::send_diagnostic, [this]
         {
             SendDiagnostic();
         });
 
-    SetParams(params);
-
-    return true;
+    return SetUp();
 }
 
 void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
 {
+    assert(!commands[static_cast<int>(cmd)]);
     commands[static_cast<int>(cmd)] = c;
 }
 
@@ -75,7 +74,9 @@ void PrimaryDevice::Reset()
 {
     DiscardReservation();
 
-    Device::Reset();
+    SetReset(false);
+    SetAttn(false);
+    SetLocked(false);
 }
 
 int PrimaryDevice::GetId() const
@@ -127,14 +128,14 @@ void PrimaryDevice::TestUnitReady()
 
 void PrimaryDevice::Inquiry()
 {
-    // EVPD and page code check
-    if ((GetController()->GetCdbByte(1) & 0x01) || GetController()->GetCdbByte(2)) {
+    // EVPD, CMDDT and page code check
+    if ((GetCdbByte(1) & 0x03) || GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
     const vector<uint8_t> &buf = InquiryInternal();
 
-    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetInt16(GetController()->GetCdb(), 3)));
+    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetCdbInt16(3)));
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
@@ -150,11 +151,11 @@ void PrimaryDevice::Inquiry()
 void PrimaryDevice::ReportLuns()
 {
     // Only SELECT REPORT mode 0 is supported
-    if (GetController()->GetCdbByte(2)) {
+    if (GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint32_t allocation_length = GetInt32(GetController()->GetCdb(), 6);
+    const uint32_t allocation_length = GetCdbInt32(6);
 
     vector<uint8_t> &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
@@ -190,7 +191,7 @@ void PrimaryDevice::RequestSense()
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
-    int allocation_length = GetController()->GetCdbByte(4);
+    int allocation_length = GetCdbByte(4);
     if (!allocation_length && level == scsi_level::scsi_1_ccs) {
         allocation_length = 4;
     }
@@ -199,6 +200,10 @@ void PrimaryDevice::RequestSense()
 
     // Clear the previous status
     SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+    valid = false;
+    filemark = false;
+    eom = false;
+    ili = false;
 
     DataInPhase(length);
 }
@@ -206,7 +211,7 @@ void PrimaryDevice::RequestSense()
 void PrimaryDevice::SendDiagnostic()
 {
     // Do not support parameter list
-    if (GetController()->GetCdbByte(3) || GetController()->GetCdbByte(4)) {
+    if (GetCdbByte(3) || GetCdbByte(4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -243,6 +248,8 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
     buf[3] = level >= scsi_level::scsi_2 ?
             static_cast<uint8_t>(scsi_level::scsi_2) : static_cast<uint8_t>(scsi_level::scsi_1_ccs);
     buf[4] = 0x1f;
+    // Signal support of linked commands
+    buf[7] = 0x08;
 
     // Padded vendor, product, revision
     memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);
@@ -263,9 +270,23 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     // Current error
     buf[0] = (byte)0x70;
 
-    buf[2] = (byte)sense_key;
-    buf[7] = byte { 10 };
+    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (eom ? (byte)0x40 : (byte)0x00);
+    buf[7] = (byte)10;
     buf[12] = (byte)asc;
+    if (asc == asc::no_additional_sense_information) {
+        assert(!filemark || !eom);
+        if (filemark) {
+            buf[13] = (byte)ascq::filemark_detected;
+        }
+        else if (eom) {
+            buf[13] = (byte)ascq::end_of_partition_medium_detected;
+        }
+    }
+
+    if (valid) {
+        buf[0] |= (byte)0x80;
+        SetInt32(buf, 3, information);
+    }
 
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
 
@@ -293,14 +314,14 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     // A reservation is valid for all commands except those excluded below
-    const auto cmd = static_cast<scsi_command>(GetController()->GetCdbByte(0));
-    if (cmd == scsi_command::cmd_inquiry || cmd == scsi_command::cmd_request_sense
-        || cmd == scsi_command::cmd_release6) {
+    const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
+    if (cmd == scsi_command::inquiry || cmd == scsi_command::request_sense
+        || cmd == scsi_command::release6) {
         return true;
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::cmd_prevent_allow_medium_removal && !(GetController()->GetCdbByte(4) & 0x01)) {
+    if (cmd == scsi_command::prevent_allow_medium_removal && !(GetCdbByte(4) & 0x01)) {
         return true;
     }
 

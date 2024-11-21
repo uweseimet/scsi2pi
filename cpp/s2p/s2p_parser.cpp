@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2024 Uwe Seimet
 //
@@ -13,8 +13,10 @@
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace s2p_util;
+using namespace s2p_interface;
 
 void S2pParser::Banner(bool usage) const
 {
@@ -32,7 +34,8 @@ void S2pParser::Banner(bool usage) const
             << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional block (sector) size.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional block size, 4-4096 bytes\n"
+            << "                              in multiples of 4.\n"
             << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
             << "                              |linux-optimized), default currently is PiSCSI\n"
             << "                              compatible caching.\n"
@@ -43,8 +46,7 @@ void S2pParser::Banner(bool usage) const
             << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
             << "  --property-files/-C         List of configuration property files.\n"
             << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
-            << "                              critical|off),\n"
-            << "                              default is 'info'.\n"
+            << "                              critical|off), default is 'info'.\n"
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
@@ -59,7 +61,8 @@ void S2pParser::Banner(bool usage) const
             << "    hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
             << "    mos: SCSI MO image (SCSI-2 MO image)\n"
             << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n";
+            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
+            << "    tar: SCSI Tape image (SCSI-2 tar-compatible image)\n";
     }
 }
 
@@ -148,7 +151,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'h':
             id_lun = optarg;
-            type = "sahd";
+            type = PbDeviceType_Name(SAHD);
             continue;
 
         case 'i':
@@ -190,11 +193,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             break;
         }
 
-        string device_key;
-        if (!id_lun.empty()) {
-            device_key = fmt::format("device.{}.", id_lun);
-        }
-
+        string device_key = id_lun.empty() ? "" : fmt::format("device.{}.", id_lun);
         const string &params = optarg;
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
@@ -232,13 +231,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string_view, const char*> BLUE_SCSI_TO_S2P_TYPES = {
-        { "CD", "sccd" },
-        { "FD", "schd" },
-        { "HD", "schd" },
-        { "MO", "scmo" },
-        { "RE", "scrm" },
-        { "TP", nullptr }
+    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", SCCD },
+        { "FD", SCHD },
+        { "HD", SCHD },
+        { "MO", SCMO },
+        { "RE", SCRM },
+        { "TP", SCTP }
     };
 
     const auto index = filename.find(".");
@@ -267,10 +266,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
-    if (!t->second) {
-        throw parser_exception(fmt::format("Unsupported BlueSCSI device type: '{}'", type));
-    }
-    properties[device_key + PropertyHandler::TYPE] = t->second;
+    properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
     string block_size = "512";
     if (components.size() > 1) {

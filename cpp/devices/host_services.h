@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -10,11 +10,12 @@
 
 #pragma once
 
-#include "mode_page_device.h"
+#include "base/primary_device.h"
+#include "page_handler.h"
 
 class CommandDispatcher;
 
-class HostServices : public ModePageDevice
+class HostServices : public PrimaryDevice
 {
 
 public:
@@ -22,10 +23,9 @@ public:
     explicit HostServices(int);
     ~HostServices() override = default;
 
-    bool Init(const param_map&) override;
+    bool SetUp() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void TestUnitReady() override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
 
@@ -70,6 +70,8 @@ private:
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
 
     protobuf_format ConvertFormat() const;
+
+    unique_ptr<PageHandler> page_handler;
 
     // Operation results per initiator
     unordered_map<int, string> execution_results;

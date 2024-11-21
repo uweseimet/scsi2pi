@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -39,6 +39,13 @@ int memory_util::GetInt24(span<const int> buf, int offset)
     return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
 }
 
+int32_t memory_util::GetSignedInt24(span<const int> buf, int offset)
+{
+    const int value = GetInt24(buf, offset);
+
+    return value >= 0x800000 ? value - 0x1000000 : value;
+}
+
 uint32_t memory_util::GetInt32(span<const int> buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
@@ -57,7 +64,17 @@ uint64_t memory_util::GetInt64(span<const int> buf, int offset)
         (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }
 
-void memory_util::SetInt64(vector<uint8_t> &buf, int offset, uint64_t value)
+uint64_t memory_util::GetInt64(span<const uint8_t> buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 7);
+
+    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
+        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
+        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
+        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
+}
+
+void memory_util::SetInt64(span<uint8_t> buf, int offset, uint64_t value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 7);
 

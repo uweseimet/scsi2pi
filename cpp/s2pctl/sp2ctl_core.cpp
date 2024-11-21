@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -32,8 +32,8 @@ void S2pCtl::Banner(bool usage) const
             << "                                 |unprotect).\n"
             << "  --type/-t TYPE                 Optional device type\n"
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
-            << "  --block-size/-b BLOCK_SIZE     Optional block size\n"
-            << "                                 (256|512|1024|2048|4096).\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional block size, 4-4096 bytes\n"
+            << "                                 in multiples of 4.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
@@ -77,7 +77,8 @@ void S2pCtl::Banner(bool usage) const
             << "                                 s2p requires authentication.\n"
             << "  --list-settings/-s             List s2p settings.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
-            << "  --persist                      Save the current configuration to /etc/s2p.conf.\n"
+            << "  --persist                      Save the current configuration to\n"
+            << "                                 /etc/s2p.conf.\n"
             << "  --version/-v                   Display the program version.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n";
@@ -114,7 +115,9 @@ int S2pCtl::RunInteractive()
         interactive_args.emplace_back(strdup(args[0].c_str())
         );
         for (size_t i = 1; i < args.size(); i++) {
-            interactive_args.emplace_back(strdup(args[i].c_str()));
+            if (!args[i].empty()) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
         }
 
         ParseArguments(interactive_args);

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2023 Uwe Seimet
 //
@@ -93,12 +93,6 @@ TEST(DeviceTest, Properties)
     device.SetRemoved(false);
     EXPECT_FALSE(device.IsRemoved());
 
-    EXPECT_FALSE(device.IsLockable()) << "Wrong default value";
-    device.SetLockable(true);
-    EXPECT_TRUE(device.IsLockable());
-    device.SetLockable(false);
-    EXPECT_FALSE(device.IsLockable());
-
     EXPECT_FALSE(device.IsLocked()) << "Wrong default value";
     device.SetLocked(true);
     EXPECT_TRUE(device.IsLocked());
@@ -112,10 +106,6 @@ TEST(DeviceTest, Properties)
     EXPECT_FALSE(device.SupportsParams());
 
     EXPECT_FALSE(device.SupportsFile()) << "Wrong default value";
-    device.SupportsFile(true);
-    EXPECT_TRUE(device.SupportsFile());
-    device.SupportsFile(false);
-    EXPECT_FALSE(device.SupportsFile());
 
     EXPECT_EQ(LUN, device.GetLun());
 }
@@ -161,19 +151,6 @@ TEST(DeviceTest, GetPaddedName)
     device.SetRevision("R");
 
     EXPECT_EQ("V       P               R   ", device.GetPaddedName());
-}
-
-TEST(DeviceTest, Reset)
-{
-    MockDevice device(0);
-
-    device.SetLocked(true);
-    device.SetAttn(true);
-    device.SetReset(true);
-    device.Reset();
-    EXPECT_FALSE(device.IsLocked());
-    EXPECT_FALSE(device.IsAttn());
-    EXPECT_FALSE(device.IsReset());
 }
 
 TEST(DeviceTest, Start)

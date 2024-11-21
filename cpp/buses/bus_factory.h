@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -24,7 +24,7 @@ public:
         return instance;
     }
 
-    unique_ptr<Bus> CreateBus(bool, bool);
+    unique_ptr<Bus> CreateBus(bool, bool, bool = false);
 
     int GetCommandBytesCount(scsi_command opcode) const
     {

@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -59,7 +59,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn());
-    device->Dispatch(scsi_command::cmd_inquiry);
+    device->Dispatch(scsi_command::inquiry);
     const span<uint8_t> &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
@@ -88,7 +88,6 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_FALSE(device->IsReadOnly());
     EXPECT_TRUE(device->IsRemovable());
     EXPECT_FALSE(device->IsRemoved());
-    EXPECT_TRUE(device->IsLockable());
     EXPECT_FALSE(device->IsLocked());
     EXPECT_TRUE(device->IsStoppable());
     EXPECT_FALSE(device->IsStopped());
@@ -110,7 +109,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
     }
 }
 
-pair<int, path> testing::OpenTempFile()
+pair<int, path> testing::OpenTempFile(const string &extension)
 {
     const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Publicly writable directory is fine here
     vector<char> f(filename.cbegin(), filename.cend());
@@ -119,27 +118,31 @@ pair<int, path> testing::OpenTempFile()
     const int fd = mkstemp(f.data());
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << f.data() << "'";
 
-    TestShared::RememberTempFile(f.data());
+    path effective_name = f.data();
+    if (!extension.empty()) {
+        effective_name += "." + extension;
+        rename(path(f.data()), effective_name);
+    }
 
-    return {fd, path(f.data())};
+    TestShared::RememberTempFile(effective_name);
+
+    return {fd, effective_name};
 }
 
-path testing::CreateTempFile(size_t size)
+path testing::CreateTempFile(size_t size, const string &extension)
 {
-    return path(CreateTempFileWithData(vector<byte>(size)));
+    return path(CreateTempFileWithData(vector<byte>(size), extension));
 }
 
-string testing::CreateTempFileWithData(const span<const byte> data)
+string testing::CreateTempFileWithData(const span<const byte> data, const string &extension)
 {
-    const auto& [fd, filename] = OpenTempFile();
+    const auto& [fd, filename] = OpenTempFile(extension);
 
     const size_t count = write(fd, data.data(), data.size());
     close(fd);
-    EXPECT_EQ(count, data.size()) << "Couldn't create temporary file '" << filename << "'";
+    EXPECT_EQ(count, data.size()) << "Couldn't write to temporary file '" << filename << "'";
 
-    TestShared::RememberTempFile(filename);
-
-    return filename;
+    return filename.string();
 }
 
 string testing::ReadTempFileToString(const string &filename)
@@ -149,6 +152,23 @@ string testing::ReadTempFileToString(const string &filename)
     buffer << in.rdbuf();
 
     return buffer.str();
+}
+
+void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
+{
+    string filenames;
+    auto [fd1, filename1] = OpenTempFile();
+    filenames = filename1;
+    (void)write(fd1, properties1.data(), properties1.size());
+    close(fd1);
+    if (!properties2.empty()) {
+        auto [fd2, filename2] = OpenTempFile();
+        filenames += ",";
+        filenames += filename2;
+        (void)write(fd2, properties2.data(), properties2.size());
+        close(fd2);
+    }
+    PropertyHandler::Instance().Init(filenames, cmd_properties, true);
 }
 
 int testing::GetInt16(const vector<byte> &buf, int offset)
@@ -164,4 +184,29 @@ uint32_t testing::GetInt32(const vector<byte> &buf, int offset)
 
     return (to_integer<uint32_t>(buf[offset]) << 24) | (to_integer<uint32_t>(buf[offset + 1]) << 16)
         | (to_integer<uint32_t>(buf[offset + 2]) << 8) | to_integer<uint32_t>(buf[offset + 3]);
+}
+
+uint32_t testing::GetInt16(const vector<uint8_t> &buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 1);
+
+    return (static_cast<uint32_t>(buf[offset]) << 8) | static_cast<uint32_t>(buf[offset + 1]);
+}
+
+uint32_t testing::GetInt32(const vector<uint8_t> &buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 3);
+
+    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16)
+        | (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
+}
+
+uint64_t testing::GetInt64(const vector<uint8_t> &buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 7);
+
+    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
+        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
+        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
+        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }

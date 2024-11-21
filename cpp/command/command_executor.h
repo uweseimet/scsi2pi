@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -25,7 +25,8 @@ public:
     }
     ~CommandExecutor() = default;
 
-    // TODO At least some of these methods should be private, currently they are directly called by the unit tests
+    // TODO At least some of these methods and of the protected moethods should be private.
+    // Currently they are called by the unit tests.
 
     auto GetReservedIds() const
     {
@@ -48,8 +49,7 @@ public:
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
-    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
-    bool SetSectorSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
+    bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     mutex& GetExecutionLocker()
     {
@@ -62,8 +62,12 @@ public:
     }
 
     static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
-    static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
+    static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
+
+protected:
+
+    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
 private:
 

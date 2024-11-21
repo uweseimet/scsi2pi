@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -8,7 +8,6 @@
 
 #include "s2pexec_core.h"
 #include <csignal>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -38,7 +37,7 @@ void S2pExec::TerminationHandler(int)
 void S2pExec::Banner(bool header, bool usage)
 {
     if (header) {
-        cout << "SCSI Target Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
@@ -50,7 +49,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
             << "                                default LUN is 0.\n"
             << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-            << "  --cdb/-c CDB                  Command to send in hexadecimal format.\n"
+            << "  --cdb/-c CDB[:CDB:...]        Command blocks to send in hexadecimal format.\n"
             << "  --data/-d DATA                Data to send with the command in\n"
             << "                                hexadecimal format.\n"
             << "  --buffer-size/-b SIZE         Buffer size for received data,\n"
@@ -221,17 +220,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!SetLogLevel(log_level)) {
-        // Preserve the existing log level for interactive mode
-        const string &tmp = log_level;
-        const auto &l = to_string_view(get_level());
-        log_level = string(l.data(), l.size());
-        throw parser_exception("Invalid log level: '" + tmp + "'");
-    }
-
-    if (!initiator.empty()) {
-        if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
-        }
+        throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
     if (!target.empty()) {
@@ -240,36 +229,39 @@ bool S2pExec::ParseArguments(span<char*> args)
         }
     }
 
-    if (target_id == -1 && !reset_bus) {
-        throw parser_exception("Missing target ID");
-    }
+    // Most options only make sense when there is a command
+    if (!command.empty()) {
+        if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
+            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+        }
 
-    if (target_id == initiator_id) {
-        throw parser_exception("Target ID and initiator ID must not be identical");
-    }
+        if (target_id == -1 && !reset_bus) {
+            throw parser_exception("Missing target ID");
+        }
 
-    if (target_lun == -1) {
-        target_lun = 0;
-    }
+        if (target_id == initiator_id) {
+            throw parser_exception("Target ID and initiator ID must not be identical");
+        }
 
-    if (command.empty() && !reset_bus) {
-        throw parser_exception("Missing command block");
-    }
+        if (target_lun == -1) {
+            target_lun = 0;
+        }
 
-    if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
-        throw parser_exception("An input file is not permitted when providing explicit data");
-    }
+        if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
+            throw parser_exception("An input file is not permitted when providing explicit data");
+        }
 
-    if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
-        throw parser_exception("There can only be a single input file");
-    }
+        if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
+            throw parser_exception("There can only be a single input file");
+        }
 
-    if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
-        throw parser_exception("There can only be a single output file");
-    }
+        if (!!binary_output_filename.empty() && !hex_output_filename.empty()) {
+            throw parser_exception("There can only be a single output file");
+        }
 
-    if (!GetAsUnsignedInt(tout, timeout) || !timeout) {
-        throw parser_exception("Invalid command timeout value: '" + tout + "'");
+        if ((!GetAsUnsignedInt(tout, timeout) || !timeout)) {
+            throw parser_exception("Invalid command timeout value: '" + tout + "'");
+        }
     }
 
     int buffer_size = DEFAULT_BUFFER_SIZE;
@@ -302,18 +294,28 @@ bool S2pExec::RunInteractive(bool in_process)
     }
 
     while (true) {
-        const string &line = GetLine(prompt);
-        if (line.empty()) {
+        string input = GetLine(prompt);
+        if (input.empty()) {
             break;
         }
 
-        const auto &args = Split(line, ' ');
+        // Like with bash "!!" repeats the last command
+        if (input == "!!") {
+            input = last_input;
+            cout << input << '\n';
+        } else {
+            last_input = input;
+        }
+
+        const auto &args = Split(input, ' ');
 
         vector<char*> interactive_args;
         interactive_args.emplace_back(strdup(prompt.c_str()));
         interactive_args.emplace_back(strdup(args[0].c_str()));
         for (size_t i = 1; i < args.size(); i++) {
-            interactive_args.emplace_back(strdup(args[i].c_str()));
+            if (!args[i].empty()) {
+                interactive_args.emplace_back(strdup(args[i].c_str()));
+            }
         }
 
         try {
@@ -326,7 +328,9 @@ bool S2pExec::RunInteractive(bool in_process)
             continue;
         }
 
-        Run();
+        if (!command.empty() || reset_bus) {
+            Run();
+        }
     }
 
     CleanUp();
@@ -336,7 +340,7 @@ bool S2pExec::RunInteractive(bool in_process)
 
 int S2pExec::Run(span<char*> args, bool in_process)
 {
-    if (args.size() < 2) {
+    if (args.size() < 2 || in_process) {
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
     }
 
@@ -350,6 +354,11 @@ int S2pExec::Run(span<char*> args, bool in_process)
     }
     catch (const parser_exception &e) {
         cerr << "Error: " << e.what() << endl;
+        return -1;
+    }
+
+    if (command.empty() && !reset_bus) {
+        cerr << "Error: Missing command" << endl;
         return -1;
     }
 
@@ -429,7 +438,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         debug("Sending {} data byte(s)", buffer.size());
     }
 
-    const int status = executor->ExecuteCommand(static_cast<scsi_command>(cdb[0]), cdb, buffer, timeout);
+    const int status = executor->ExecuteCommand(cdb, buffer, timeout);
     if (status) {
         if (status != 0xff && request_sense) {
             return executor->GetSenseData();

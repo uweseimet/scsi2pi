@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -55,6 +55,7 @@ inline static const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
     { 'l', SCLP },
     { 'm', SCMO },
     { 'r', SCRM },
-    { 's', SCHS }
+    { 's', SCHS },
+    { 't', SCTP }
 };
 }

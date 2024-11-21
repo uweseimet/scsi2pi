@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -8,6 +8,18 @@
 
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
+
+static void ValidateModePages(map<int, vector<byte>> &pages)
+{
+    EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
+    EXPECT_EQ(12U, pages[1].size());
+    EXPECT_EQ(16U, pages[2].size());
+    EXPECT_EQ(12U, pages[7].size());
+    EXPECT_EQ(12U, pages[8].size());
+    EXPECT_EQ(8U, pages[10].size());
+    EXPECT_EQ(8U, pages[13].size());
+    EXPECT_EQ(24U, pages[48].size());
+}
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
@@ -21,7 +33,6 @@ TEST(ScsiCdTest, DeviceDefaults)
     EXPECT_TRUE(cd.IsReadOnly());
     EXPECT_TRUE(cd.IsRemovable());
     EXPECT_FALSE(cd.IsRemoved());
-    EXPECT_TRUE(cd.IsLockable());
     EXPECT_FALSE(cd.IsLocked());
     EXPECT_TRUE(cd.IsStoppable());
     EXPECT_FALSE(cd.IsStopped());
@@ -29,18 +40,6 @@ TEST(ScsiCdTest, DeviceDefaults)
     EXPECT_EQ("SCSI2Pi", cd.GetVendor());
     EXPECT_EQ("SCSI CD-ROM", cd.GetProduct());
     EXPECT_EQ(TestShared::GetVersion(), cd.GetRevision());
-}
-
-void ScsiCdTest_SetUpModePages(map<int, vector<byte>> &pages)
-{
-    EXPECT_EQ(7U, pages.size()) << "Unexpected number of mode pages";
-    EXPECT_EQ(12U, pages[1].size());
-    EXPECT_EQ(16U, pages[2].size());
-    EXPECT_EQ(12U, pages[7].size());
-    EXPECT_EQ(12U, pages[8].size());
-    EXPECT_EQ(8U, pages[10].size());
-    EXPECT_EQ(8U, pages[13].size());
-    EXPECT_EQ(24U, pages[48].size());
 }
 
 TEST(ScsiCdTest, Inquiry)
@@ -51,15 +50,15 @@ TEST(ScsiCdTest, Inquiry)
         "file.is1");
 }
 
-TEST(ScsiCdTest, GetSectorSizes)
+TEST(ScsiCdTest, GetBlockSizes)
 {
     ScsiCd cd(0);
 
-    const auto &sector_sizes = cd.GetSupportedSectorSizes();
-    EXPECT_EQ(2U, sector_sizes.size());
+    const auto &sizes = cd.GetSupportedBlockSizes();
+    EXPECT_EQ(2U, sizes.size());
 
-    EXPECT_TRUE(sector_sizes.contains(512));
-    EXPECT_TRUE(sector_sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(2048));
 }
 
 TEST(ScsiCdTest, SetUpModePages)
@@ -69,12 +68,12 @@ TEST(ScsiCdTest, SetUpModePages)
 
     // Non changeable
     cd.SetUpModePages(pages, 0x3f, false);
-    ScsiCdTest_SetUpModePages(pages);
+    ValidateModePages(pages);
 
     // Changeable
     pages.clear();
     cd.SetUpModePages(pages, 0x3f, true);
-    ScsiCdTest_SetUpModePages(pages);
+    ValidateModePages(pages);
 }
 
 TEST(ScsiCdTest, Open)
@@ -103,22 +102,22 @@ TEST(ScsiCdTest, ReadToc)
 
     controller.AddDevice(cd);
 
-    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::not_ready, asc::medium_not_present,
+    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::not_ready, asc::medium_not_present,
         "Drive is not ready");
 
     cd->SetReady(true);
 
     controller.SetCdbByte(6, 2);
-    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
     controller.SetCdbByte(6, 1);
-    TestShared::Dispatch(*cd, scsi_command::cmd_read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    TestShared::Dispatch(*cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Invalid track number");
 
     controller.SetCdbByte(6, 0);
     EXPECT_CALL(controller, DataIn());
-    EXPECT_NO_THROW(cd->Dispatch(scsi_command::cmd_read_toc));
+    EXPECT_NO_THROW(cd->Dispatch(scsi_command::read_toc));
 }
 
 TEST(ScsiCdTest, ReadData)

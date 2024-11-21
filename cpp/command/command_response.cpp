@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -30,7 +30,8 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     properties.set_protectable(device->IsProtectable());
     properties.set_stoppable(device->IsStoppable());
     properties.set_removable(device->IsRemovable());
-    properties.set_lockable(device->IsLockable());
+    // All emulated removable media devices are lockable
+    properties.set_lockable(device->IsRemovable());
     properties.set_supports_file(device->SupportsFile());
     properties.set_supports_params(device->SupportsParams());
 
@@ -40,10 +41,11 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
         }
     }
 
-#ifdef BUILD_DISK
-    if (const auto disk = dynamic_pointer_cast<Disk>(device); disk && disk->IsSectorSizeConfigurable()) {
-        for (const auto &sector_size : disk->GetSupportedSectorSizes()) {
-            properties.add_block_sizes(sector_size);
+#ifdef BUILD_STORAGE_DEVICE
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+        for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
+            properties.add_block_sizes(block_size);
         }
     }
 #endif
@@ -64,8 +66,6 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device) const
 {
     pb_device.set_id(device->GetId());
@@ -90,17 +90,20 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         }
     }
 
+#ifdef BUILD_STORAGE_DEVICE
+    if (device->SupportsFile()) {
+        const auto storage_device = static_pointer_cast<const StorageDevice>(device);
+        pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
+        pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
+        GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
+    }
+#endif
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
-        pb_device.set_block_size(disk->IsRemoved() ? 0 : disk->GetSectorSizeInBytes());
-        pb_device.set_block_count(disk->IsRemoved() ? 0 : disk->GetBlockCount());
         pb_device.set_caching_mode(disk->GetCachingMode());
-
-        GetImageFile(*pb_device.mutable_file(), disk->IsReady() ? disk->GetFilename() : "");
     }
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filename) const
 {

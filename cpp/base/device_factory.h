@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2021-2024 Uwe Seimet
 //
@@ -42,8 +42,6 @@ public:
 private:
 
     DeviceFactory();
-
-    static string GetExtensionLowerCase(string_view);
 
     inline static const unordered_map<string_view, PbDeviceType> DEVICE_MAPPING = {
         { "daynaport", SCDP },

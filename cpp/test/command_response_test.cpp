@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -158,7 +158,7 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
     PbDeviceTypesInfo info;
     response.GetDeviceTypesInfo(info);
-    EXPECT_EQ(8, info.properties().size());
+    EXPECT_EQ(9, info.properties().size());
 }
 
 TEST(CommandResponseTest, GetServerInfo)
@@ -245,7 +245,7 @@ TEST(CommandResponseTest, GetMappingInfo)
 
     PbMappingInfo info;
     response.GetMappingInfo(info);
-    EXPECT_EQ(9U, info.mapping().size());
+    EXPECT_EQ(10U, info.mapping().size());
 }
 
 TEST(CommandResponseTest, GetStatisticsInfo)

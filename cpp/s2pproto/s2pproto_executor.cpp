@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2023-2024 Uwe Seimet
 //
@@ -61,14 +61,14 @@ string S2pProtoExecutor::Execute(const string &filename, protobuf_format input_f
     cdb[7] = static_cast<uint8_t>(length >> 8);
     cdb[8] = static_cast<uint8_t>(length);
 
-    if (initiator_executor->Execute(scsi_command::cmd_execute_operation, cdb, buffer, length)) {
+    if (initiator_executor->Execute(scsi_command::execute_operation, cdb, buffer, length)) {
         return "Can't execute operation";
     }
 
     cdb[7] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[8] = static_cast<uint8_t>(buffer.size());
 
-    if (initiator_executor->Execute(scsi_command::cmd_receive_operation_results, cdb, buffer, buffer.size())) {
+    if (initiator_executor->Execute(scsi_command::receive_operation_results, cdb, buffer, buffer.size())) {
         return "Can't read operation result";
     }
 

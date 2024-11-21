@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -74,7 +74,9 @@ private:
     string command;
     string data;
 
-    string log_level = "info";
+    string log_level;
+
+    string last_input;
 
     // Required for the termination handler
     static inline S2pExec *instance;

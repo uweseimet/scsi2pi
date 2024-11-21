@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2022-2024 Uwe Seimet
 //
@@ -13,6 +13,7 @@
 #include "buses/bus.h"
 #include "phase_handler.h"
 #include "base/device_logger.h"
+#include "base/memory_util.h"
 #include "base/s2p_defs.h"
 
 class PrimaryDevice;
@@ -82,10 +83,6 @@ public:
     {
         return cdb;
     }
-    int GetCdbByte(int index) const
-    {
-        return cdb[index];
-    }
 
 protected:
 
@@ -143,8 +140,8 @@ private:
 
     array<int, 16> cdb = { };
 
-    // Transfer data buffer, dynamically resized
-    vector<uint8_t> buffer;
+    // Transfer data buffer, dynamically resized, initial size matches the biggest block size supported
+    vector<uint8_t> buffer = vector<uint8_t>(4096);
     // Transfer offset
     int offset = 0;
     // Total number of bytes to be transferred

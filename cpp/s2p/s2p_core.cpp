@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 //
-// SCSI device emulator and SCSI tools for the Raspberry Pi
+// SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
@@ -33,9 +33,9 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
-bool S2p::InitBus(bool in_process)
+bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::Instance().CreateBus(true, in_process);
+    bus = BusFactory::Instance().CreateBus(true, in_process, log_signals);
     if (!bus) {
         return false;
     }
@@ -110,7 +110,7 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-int S2p::Run(span<char*> args, bool in_process)
+int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -146,7 +146,7 @@ int S2p::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    if (!InitBus(in_process)) {
+    if (!InitBus(in_process, log_signals)) {
         cerr << "Error: Can't initialize bus" << endl;
         return EXIT_FAILURE;
     }
@@ -188,7 +188,11 @@ int S2p::Run(span<char*> args, bool in_process)
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
     LogDevices(device_list);
-    cout << device_list << flush;
+
+    // Show the device list only once
+    if (get_level() > level::info) {
+        cout << device_list << flush;
+    }
 
     if (!in_process && !bus->IsRaspberryPi()) {
         cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
@@ -366,8 +370,8 @@ void S2p::AttachInitialDevices(PbCommand &command)
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
         for (auto device : controller_factory.GetAllDevices()) {
-            if (auto host_services = dynamic_pointer_cast<HostServices>(device); host_services) {
-                host_services->SetDispatcher(dispatcher);
+            if (device->GetType() == SCHS) {
+                static_pointer_cast<HostServices>(device)->SetDispatcher(dispatcher);
             }
         }
 #endif
