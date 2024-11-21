@@ -89,7 +89,7 @@ TEST(PrinterTest, Print)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, DataOut());
-    EXPECT_NO_THROW(printer->Dispatch(scsi_command::print));
+    EXPECT_NO_THROW(Dispatch(*printer, scsi_command::print));
 
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);

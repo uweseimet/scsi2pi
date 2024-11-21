@@ -153,7 +153,8 @@ TEST(HostServicesTest, ModeSense6)
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense_6), scsi_exception)<< "Subpages are not supported";
+    Dispatch(*services, scsi_command::mode_sense_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Subpages are not supported");
 }
 
 TEST(HostServicesTest, ModeSense10)
@@ -188,14 +189,15 @@ TEST(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn());
-    EXPECT_NO_THROW(services->Dispatch(scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    EXPECT_THROW(services->Dispatch(scsi_command::mode_sense_10), scsi_exception)<< "Subpages are not supported";
+    Dispatch(*services, scsi_command::mode_sense_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Subpages are not supported");
 }
 
 TEST(HostServicesTest, SetUpModePages)

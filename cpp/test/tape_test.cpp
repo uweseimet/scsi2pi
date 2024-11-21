@@ -220,7 +220,7 @@ TEST(TapeTest, Read6)
     Dispatch(*tape, scsi_command::request_sense);
     // TODO
 //    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-//    EXPECT_EQ(0x40, controller->GetBuffer()[2] & 0x40) << "ILI must be set";
+//    EXPECT_EQ(0x40, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
 //    exit(0);
 
     Dispatch(*tape, scsi_command::rewind);
@@ -256,7 +256,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_TRUE(controller->GetBuffer()[2] & 0x40) << "ILI must be set";
+    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(256, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 }
 
@@ -358,21 +358,21 @@ TEST(TapeTest, Space6_simh)
 
     // BLOCK, count < 0
     controller->SetCdbByte(2, 0xff);
-    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6);
 
     // BLOCK, count > 0
     controller->SetCdbByte(2, 1);
-    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6);
 
     // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
     controller->SetCdbByte(2, 1);
-    Dispatch(*tape, scsi_command::space_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6, sense_key::medium_error);
 
     // End-of-data, count < 0
     controller->SetCdbByte(1, 0b011);
     controller->SetCdbByte(2, 0xff);
-    Dispatch(*tape, scsi_command::space_6, sense_key::medium_error, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6, sense_key::medium_error);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
@@ -415,7 +415,7 @@ TEST(TapeTest, Space6_simh)
     // Try to space over 5 filemarks (only 4 are left)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 5);
-    Dispatch(*tape, scsi_command::space_6, sense_key::blank_check, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6, sense_key::blank_check);
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
@@ -463,7 +463,7 @@ TEST(TapeTest, Space6_simh)
     // Try to space over 6 blocks, in order to hit the filemark
     controller->SetCdbByte(1, 0b000);
     controller->SetCdbByte(4, 6);
-    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 2630, 8);
 
     // Reverse-space over 1 filemark
@@ -479,7 +479,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
@@ -494,7 +494,7 @@ TEST(TapeTest, Space6_simh)
 
     // Space over 2 blocks, which hits the filemark
     controller->SetCdbByte(4, 2);
-    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 524, 1);
 
     // Space over 1 block
@@ -506,7 +506,7 @@ TEST(TapeTest, Space6_simh)
     // Space over 1 block
     controller->SetCdbByte(1, 0b000);
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::space_6, sense_key::blank_check, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::space_6, sense_key::blank_check);
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
@@ -547,8 +547,7 @@ TEST(TapeTest, WriteFileMarks6_simh)
     // Count = 100
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 100);
-    Dispatch(*tape, scsi_command::write_filemarks_6, sense_key::volume_overflow,
-        asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::write_filemarks_6, sense_key::volume_overflow);
     CheckPositions(tape, 512, 0);
 
     tape->SetProtected(true);
@@ -574,11 +573,11 @@ TEST(TapeTest, Locate10_simh)
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    Dispatch(*tape, scsi_command::locate_10, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::locate_10);
 
     // BT
     controller->SetCdbByte(1, 0x04);
-    Dispatch(*tape, scsi_command::locate_10, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::locate_10);
     controller->SetCdbByte(1, 0x04);
     controller->SetCdbByte(6, 1);
     Dispatch(*tape, scsi_command::locate_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -618,11 +617,11 @@ TEST(TapeTest, Locate16_simh)
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    Dispatch(*tape, scsi_command::locate_16, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::locate_16);
 
     // BT
     controller->SetCdbByte(1, 0x04);
-    Dispatch(*tape, scsi_command::locate_16, sense_key::no_sense, asc::no_additional_sense_information);
+    Dispatch(*tape, scsi_command::locate_16);
     controller->SetCdbByte(1, 0x04);
     controller->SetCdbByte(11, 1);
     Dispatch(*tape, scsi_command::locate_16, sense_key::illegal_request, asc::invalid_field_in_cdb);

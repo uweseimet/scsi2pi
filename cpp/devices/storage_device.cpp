@@ -76,12 +76,12 @@ void StorageDevice::StartStopUnit()
         if (load) {
             if (IsLocked()) {
                 // Cannot be ejected because it is locked
-                throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
+                throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
             }
 
             // Eject
             if (!Eject(false)) {
-                throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
+                throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
             }
         }
         else {
@@ -91,7 +91,7 @@ void StorageDevice::StartStopUnit()
     else if (load && !last_filename.empty()) {
         SetFilename(last_filename);
         if (!ReserveFile()) {
-            throw scsi_exception(sense_key::illegal_request, asc::load_or_eject_failed);
+            throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
         }
 
         SetMediumChanged(true);

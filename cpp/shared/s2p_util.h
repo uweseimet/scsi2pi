@@ -113,7 +113,7 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::medium_not_present, "MEDIUM NOT PRESENT" },
     { asc::command_phase_error, "COMMAND PHASE ERROR" },
     { asc::data_phase_error, "DATA PHASE ERROR" },
-    { asc::load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
+    { asc::medium_load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
 };
 
 static const unordered_map<status_code, const char*> STATUS_MAPPING = {

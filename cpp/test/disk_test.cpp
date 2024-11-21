@@ -30,11 +30,11 @@ TEST(DiskTest, Dispatch)
     disk->SetMediumChanged(false);
     disk->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(disk->Dispatch(scsi_command::test_unit_ready));
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    EXPECT_THROW(disk->Dispatch(scsi_command::test_unit_ready), scsi_exception);
+    Dispatch(*disk, scsi_command::test_unit_ready, sense_key::unit_attention, asc::not_ready_to_ready_change);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
