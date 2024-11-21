@@ -614,7 +614,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
             LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", position));
-            SetInformation(count - actual_count);
+            SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_partition_medium_detected);
             throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
         }
@@ -625,7 +625,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
 
             LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
                 type == object_type::block ? "blocks" : "filemarks"));
-            SetInformation(count - actual_count);
+            SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_data_detected);
             throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
         }

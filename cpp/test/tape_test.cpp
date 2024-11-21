@@ -512,7 +512,7 @@ TEST(TapeTest, Space6_simh)
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
-    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(1, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 2);
 }
 
