@@ -231,13 +231,17 @@ TEST(TapeTest, Read6)
 
     Dispatch(*tape, scsi_command::rewind);
 
-    // Non-fixed, 4 bytes (less than block size)
+    // Non-fixed, 1 byte
+    controller->SetCdbByte(4, 1);
+    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
+
+    // Non-fixed, 4 bytes
     controller->SetCdbByte(4, 4);
     Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::no_additional_sense_information);
 
     Dispatch(*tape, scsi_command::rewind);
 
-    // Non-fixed, 4 bytes (less than block size)
+    // Non-fixed, 4 bytes
     controller->SetCdbByte(4, 4);
     // SILI
     controller->SetCdbByte(1, 0x02);
@@ -280,7 +284,7 @@ TEST(TapeTest, Write6)
     // Non-fixed, 1 byte
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
 
     // Non-fixed, 4 bytes
     controller->SetCdbByte(1, 0x00);
