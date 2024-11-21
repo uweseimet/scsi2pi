@@ -873,7 +873,7 @@ void Tape::CheckLength(int length)
 
             SetIli();
             SetInformation(length / GetBlockSize() - blocks_read);
-            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
 
         // In non-fixed mode the error handling depends on SILI.
@@ -889,7 +889,7 @@ void Tape::CheckLength(int length)
 
                 SetIli();
                 SetInformation(length - record_length);
-                throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+                throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
             }
             else {
                 // Move position to the end of the record, so that the trailing length can be verified
