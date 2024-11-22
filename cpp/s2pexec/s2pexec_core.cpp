@@ -125,9 +125,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     request_sense = true;
     reset_bus = false;
     binary_input_filename.clear();
-    binary_output_filename.clear();
     hex_input_filename.clear();
-    hex_output_filename.clear();
 
     optind = 1;
     int opt;
@@ -255,7 +253,7 @@ bool S2pExec::ParseArguments(span<char*> args)
             throw parser_exception("There can only be a single input file");
         }
 
-        if (!!binary_output_filename.empty() && !hex_output_filename.empty()) {
+        if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
             throw parser_exception("There can only be a single output file");
         }
 
@@ -458,10 +456,14 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         debug("Received {} data byte(s)", count);
 
         if (count) {
-            if (const string &error = WriteData(count); !error.empty()) {
+            if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);
             }
         }
+
+        // Do not re-use input files
+        binary_input_filename.clear();
+        hex_input_filename.clear();
     }
 
     return {sense_key {0}, asc {0}, 0};
@@ -495,17 +497,15 @@ string S2pExec::ReadData()
     return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
 }
 
-string S2pExec::WriteData(int count)
+string S2pExec::WriteData(span<const uint8_t> data)
 {
     const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
     const bool text = binary_output_filename.empty();
 
-    string hex = FormatBytes(buffer, count, hex_only);
+    string hex = FormatBytes(data, static_cast<int>(data.size()), hex_only);
 
     if (filename.empty()) {
-        if (count) {
-            cout << hex << '\n';
-        }
+        cout << hex << '\n';
     }
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
@@ -513,12 +513,10 @@ string S2pExec::WriteData(int count)
             return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
         }
 
-        if (count) {
-            hex += "\n";
-            out.write(text ? hex.data() : (const char*)buffer.data(), hex.size());
-            if (out.fail()) {
-                return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
-            }
+        hex += "\n";
+        out.write(text ? hex.data() : (const char*)data.data(), hex.size());
+        if (out.fail()) {
+            return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
         }
     }
 

@@ -272,7 +272,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     return bytes;
 }
 
-string s2p_util::FormatBytes(vector<uint8_t> &bytes, int count, bool hex_only)
+string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, bool hex_only)
 {
     string str;
 
