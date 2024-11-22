@@ -315,7 +315,7 @@ TEST(TapeTest, Erase6_simh)
 
 TEST(TapeTest, Erase6_tar)
 {
-    auto [_, tape] = CreateTape();
+    auto [__, tape] = CreateTape();
     CreateTapeFile(*tape, 512, "tar");
 
     Dispatch(*tape, scsi_command::erase_6, sense_key::illegal_request,

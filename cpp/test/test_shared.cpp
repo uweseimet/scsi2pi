@@ -138,8 +138,8 @@ pair<int, path> testing::OpenTempFile(const string &extension)
 {
     char *f = strdup(CreateTempName().c_str());
     const int fd = mkstemp(f);
-    const string filename = f;
-    free(f);
+    const path filename = f;
+    free(f); // NOSONAR Required because of mkstemp
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
 
     path effective_name = filename;
