@@ -37,7 +37,7 @@ private:
     tuple<sense_key, asc, int> ExecuteCommand();
 
     string ReadData();
-    string WriteData(int);
+    string WriteData(span<const uint8_t>);
     string ConvertData(const string&);
 
     void CleanUp() const;

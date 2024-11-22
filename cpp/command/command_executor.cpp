@@ -212,6 +212,13 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
+    param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
+    if (!device->SupportsFile()) {
+        // Legacy clients like scsictl might have sent both "file" and "interfaces"
+        params.erase("file");
+    }
+    device->SetParams(params);
+
     const PbCachingMode caching_mode =
         pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
     if (caching_mode == PbCachingMode::DEFAULT) {
@@ -265,13 +272,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
-    if (!device->SupportsFile()) {
-        // Legacy clients like scsictl might have sent both "file" and "interfaces"
-        params.erase("file");
-    }
-
-    if (!device->Init(params)) {
+    if (!device->Init()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
             fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
     }
@@ -507,7 +508,9 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     try {
         storage_device.Open();
     }
-    catch (const io_exception&) {
+    catch (const io_exception &e) {
+        error(e.what());
+
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
     }
 #endif

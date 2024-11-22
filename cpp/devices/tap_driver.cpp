@@ -34,7 +34,7 @@ TapDriver::TapDriver()
 bool TapDriver::Init(const param_map &const_params)
 {
     param_map params = const_params;
-    stringstream s(params["interface"]);
+    stringstream s(params[INTERFACE]);
     string interface;
     while (getline(s, interface, ',')) {
         if (available_interfaces.contains(interface)) {
@@ -57,9 +57,9 @@ bool TapDriver::Init(const param_map &const_params)
     return false;
 #else
 
-    const bool create_bridge = params["bridge"] == "true";
+    const bool create_bridge = params[BRIDGE] == "true";
 
-    inet = params["inet"];
+    inet = params[INET];
 
     trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
 
@@ -160,9 +160,9 @@ void TapDriver::CleanUp() const
 param_map TapDriver::GetDefaultParams() const
 {
     return {
-        {   "interface", Join(available_interfaces, ",")},
-        {   "inet", DEFAULT_IP},
-        {   "bridge", "true"}
+        {   BRIDGE, "true"},
+        {   INET, DEFAULT_IP},
+        {   INTERFACE, Join(available_interfaces, ",")}
     };
 }
 

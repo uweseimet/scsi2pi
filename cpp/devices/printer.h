@@ -53,6 +53,8 @@ private:
 
     static constexpr int NOT_RESERVED = -2;
 
+    static constexpr const char *CMD = "cmd";
+
     static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
 
     static constexpr const char *FILE_PRINT_COUNT = "file_print_count";

@@ -128,6 +128,8 @@ private:
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;
 
+    static constexpr const char *APPEND = "append";
+
     static constexpr const char *READ_ERROR_COUNT = "read_error_count";
     static constexpr const char *WRITE_ERROR_COUNT = "write_error_count";
 };

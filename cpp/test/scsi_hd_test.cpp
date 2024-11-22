@@ -189,7 +189,7 @@ TEST(ScsiHdTest, ModeSense6)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init( { }));
+    EXPECT_TRUE(hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data
@@ -222,7 +222,7 @@ TEST(ScsiHdTest, ModeSense10)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init( { }));
+    EXPECT_TRUE(hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data

@@ -128,6 +128,10 @@ void Disk::CleanUp()
 
 void Disk::ValidateFile()
 {
+    if (!GetBlockCount()) {
+        throw io_exception("Device has 0 blocks");
+    }
+
     StorageDevice::ValidateFile();
 
     if (!SetUpCache()) {

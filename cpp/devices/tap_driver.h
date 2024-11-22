@@ -75,5 +75,9 @@ private:
 
     static constexpr const char *DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
     static constexpr const char *DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
+
+    static constexpr const char *BRIDGE = "bridge";
+    static constexpr const char *INET = "inet";
+    static constexpr const char *INTERFACE = "interface";
 };
 

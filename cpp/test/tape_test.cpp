@@ -39,7 +39,8 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
     auto tape = make_shared<Tape>(0);
-    EXPECT_TRUE(tape->Init( { }));
+    tape->SetParams( { });
+    EXPECT_TRUE(tape->Init());
     EXPECT_TRUE(controller->AddDevice(tape));
 
     return {controller, tape};
@@ -97,6 +98,15 @@ TEST(TapeTest, Device_Defaults)
     EXPECT_EQ(TestShared::GetVersion(), tape.GetRevision());
 }
 
+TEST(TapeTest, GetDefaultParams)
+{
+    Tape tape(0);
+
+    auto params = tape.GetDefaultParams();
+    EXPECT_EQ(1U, params.size());
+    EXPECT_EQ("0", params["append"]);
+}
+
 TEST(TapeTest, Inquiry)
 {
     TestShared::Inquiry(SCTP, device_type::sequential_access, scsi_level::scsi_2, "SCSI2Pi SCSI TAPE       ", 0x1f,
@@ -120,6 +130,7 @@ TEST(TapeTest, ValidateFile)
 TEST(TapeTest, Open)
 {
     Tape tape(0);
+    tape.SetParams( { });
 
     EXPECT_THROW(tape.Open(), io_exception);
 

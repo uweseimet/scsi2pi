@@ -123,6 +123,7 @@ public:
     {
         return params;
     }
+    void SetParams(const param_map&);
     virtual param_map GetDefaultParams() const
     {
         return {};
@@ -171,7 +172,6 @@ protected:
     }
 
     string GetParam(const string&) const;
-    void SetParams(const param_map&);
 
 private:
 

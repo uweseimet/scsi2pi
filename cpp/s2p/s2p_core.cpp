@@ -425,14 +425,6 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
             device.set_scsi_level(scsi_level);
         }
     }
-    else if (key == PropertyHandler::APPEND) {
-        if (int append; !GetAsUnsignedInt(value, append)) {
-            throw parser_exception(fmt::format("Invalid maximum file size: '{}'", value));
-        }
-        else {
-            SetParam(device, PropertyHandler::APPEND, value);
-        }
-    }
     else if (key == PropertyHandler::BLOCK_SIZE) {
         if (int block_size; !GetAsUnsignedInt(value, block_size)) {
             throw parser_exception(fmt::format("Invalid block size: '{}'", value));
@@ -451,7 +443,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         ParseParameters(device, value);
     }
     else {
-        throw parser_exception(fmt::format("Unknown device definition key: '{}'", key));
+        SetParam(device, key, value);
     }
 }
 

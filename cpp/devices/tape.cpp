@@ -17,6 +17,7 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
+#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -258,6 +259,13 @@ void Tape::Open()
         throw io_exception("Invalid block size: " + to_string(GetConfiguredBlockSize()));
     }
 
+    if (int append; !GetAsUnsignedInt(GetParam(APPEND), append)) {
+        throw parser_exception(fmt::format("Invalid maximum file size: '{}'", GetParam(APPEND)));
+    }
+    else {
+        max_file_size = append;
+    }
+
     if (max_file_size && max_file_size < GetBlockSize()) {
         throw io_exception("Maximum file size " + to_string(max_file_size) + " is smaller than block size "
         + to_string(GetBlockSize()));
@@ -304,9 +312,8 @@ bool Tape::Eject(bool force)
 
 param_map Tape::GetDefaultParams() const
 {
-    // TODO In general, default params are evluated too late (after opening the file)
     return {
-        {   "append", "0"}
+        {   APPEND, "0"}
     };
 }
 
