@@ -426,7 +426,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         ParseParameters(device, value);
     }
     else {
-        throw parser_exception(fmt::format("Unknown device definition key: '{}'", key));
+        SetParam(device, key, value);
     }
 }
 
