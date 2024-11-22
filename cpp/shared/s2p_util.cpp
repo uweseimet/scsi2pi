@@ -114,12 +114,13 @@ string s2p_util::GetLocale()
 
 string s2p_util::GetLine(const string &prompt)
 {
+    string input;
+    string line;
     while (true) {
-        if (isatty(STDIN_FILENO)) {
+        if (!line.ends_with('\\') && isatty(STDIN_FILENO)) {
             cout << prompt << ">";
         }
 
-        string line;
         getline(cin, line);
         line = Trim(line);
 
@@ -130,9 +131,15 @@ string s2p_util::GetLine(const string &prompt)
             return "";
         }
 
-        if (!line.empty() && line[0] != '#') {
-            return line;
+        if (line.starts_with('#')) {
+            continue;
         }
+
+        if (!line.empty() && !line.ends_with('\\')) {
+            return input + line;
+        }
+
+        input += line.substr(0, line.size() - 1);
     }
 }
 
