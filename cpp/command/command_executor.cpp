@@ -507,7 +507,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     try {
         storage_device.Open();
     }
-    catch (const io_exception&) {
+    catch (const io_exception& e) {
         error(e.what());
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
