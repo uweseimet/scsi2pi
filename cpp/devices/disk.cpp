@@ -404,6 +404,7 @@ int Disk::ReadData(span<uint8_t> buf)
     CheckReady();
 
     if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
+        SetInformation(next_sector);
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
@@ -426,6 +427,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
         const auto length = linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
         if (!length) {
+            SetInformation(next_sector);
             throw scsi_exception(sense_key::medium_error, asc::write_fault);
         }
 
@@ -436,6 +438,7 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
 
     if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
+        SetInformation(next_sector);
         throw scsi_exception(sense_key::medium_error, asc::write_fault);
     }
 
@@ -558,7 +561,7 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode) const
+tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
 {
     uint64_t start;
     uint32_t count;
@@ -592,6 +595,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
                 start, count));
+        SetInformation(start + count <= capacity ? start + count : capacity);
         throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
     }
 

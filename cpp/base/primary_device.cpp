@@ -111,8 +111,12 @@ void PrimaryDevice::SetIli()
 
 void PrimaryDevice::SetInformation(int64_t value)
 {
-    information = static_cast<int32_t>(value);
-    valid = true;
+    assert(value < 0x100000000);
+
+    if (value < 0x100000000) {
+        information = static_cast<int32_t>(value);
+        valid = true;
+    }
 }
 
 int PrimaryDevice::GetId() const
