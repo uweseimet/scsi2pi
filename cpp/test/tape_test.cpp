@@ -25,11 +25,11 @@ static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, u
     if (position_or_block_location != GetInt32(controller.GetBuffer(), 4)
         || position_or_block_location != GetInt32(controller.GetBuffer(), 8)) {
         if (controller.GetCdb()[1] & 0x01) {
-            const int position = position_or_block_location;
+            const auto position = position_or_block_location;
             EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4));
         }
         else {
-            const int block_location = position_or_block_location;
+            const auto block_location = position_or_block_location;
             EXPECT_EQ(block_location, GetInt32(controller.GetBuffer(), 4));
         }
     }

@@ -135,12 +135,11 @@ void Tape::Write6()
     if (byte_count) {
         remaining_count = byte_count;
 
-        // When writing a SIMH file the block size is the record length
-        record_length = GetBlockSize();
+        record_length = 0;
 
-        GetController()->SetTransferSize(byte_count, GetBlockSize());
+        GetController()->SetTransferSize(byte_count, byte_count < GetBlockSize() ? byte_count : GetBlockSize());
 
-        DataOutPhase(GetBlockSize());
+        DataOutPhase(byte_count < GetBlockSize() ? byte_count : GetBlockSize());
     }
     else {
         StatusPhase();
@@ -205,18 +204,16 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
 {
     CheckReady();
 
-    if (IsAtRecordBoundary()) {
-        WriteMetaData(object_type::block, GetBlockSize());
-    }
+    const uint32_t size =
+        byte_count < static_cast<uint32_t>(GetController()->GetChunkSize()) ?
+            byte_count : static_cast<uint32_t>(GetController()->GetChunkSize());
 
-    const uint32_t size = GetController()->GetChunkSize();
+    if (IsAtRecordBoundary()) {
+        WriteMetaData(object_type::block, size);
+    }
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, position,
-            record_length));
-
-    if (position + size > max_file_size) {
-        throw scsi_exception(sense_key::volume_overflow);
-    }
+        record_length));
 
     file.seekp(position);
     file.write((const char*)buf.data(), size);
@@ -234,12 +231,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
             ++position;
         }
 
-        // Trailing length
-        file.write((const char*)ToLittleEndian( { simh_class::tape_mark_good_data_record, record_length }).data(),
-            META_DATA_SIZE);
-        CheckForWriteError();
-
-        position += META_DATA_SIZE;
+        position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
     }
 
     if (!remaining_count) {
@@ -639,7 +631,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         SimhMetaData meta_data = { };
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} objects",
+        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} object(s)",
             static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count));
 
         if (type == scsi_type && count <= 1) {
