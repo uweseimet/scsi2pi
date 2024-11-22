@@ -46,7 +46,7 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
 bool Printer::SetUp()
 {
     if (GetParam("cmd").find("%f") == string::npos) {
-        LogTrace("Missing filename specifier '%f'");
+        LogError("Missing filename specifier '%f'");
         return false;
     }
 

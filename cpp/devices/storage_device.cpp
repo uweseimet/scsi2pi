@@ -363,12 +363,16 @@ bool StorageDevice::IsReadOnlyFile() const
     return access(filename.c_str(), W_OK);
 }
 
-off_t StorageDevice::GetFileSize() const
+off_t StorageDevice::GetFileSize(bool ignore) const
 {
     try {
         return file_size(filename);
     }
     catch (const filesystem_error &e) {
+        if (ignore) {
+            return 0;
+        }
+
         throw io_exception("Can't get size of '" + filename.string() + "': " + e.what());
     }
 }

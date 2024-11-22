@@ -35,7 +35,7 @@ void ScriptGenerator::AddCdb(int id, int lun, span<int> cdb)
 
     for (int i = 0; i < count; i++) {
         if (i) {
-            file << ":";
+            file << ':';
         }
         file << setfill('0') << setw(2) << cdb[i];
     }
@@ -51,7 +51,12 @@ void ScriptGenerator::AddData(span<uint8_t> data)
 
     for (size_t i = 0; i < data.size(); i++) {
         if (i) {
-            file << ":";
+            if (!(i % 16)) {
+                file << "\\\n";
+            }
+            else {
+                file << ':';
+            }
         }
         file << setfill('0') << setw(2) << static_cast<int>(data[i]);
     }

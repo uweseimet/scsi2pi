@@ -38,6 +38,7 @@ public:
 
     // Device-specific property keys
     static constexpr const char *ACTIVE = "active";
+    static constexpr const char *APPEND = "append";
     static constexpr const char *TYPE = "type";
     static constexpr const char *SCSI_LEVEL = "scsi_level";
     static constexpr const char *BLOCK_SIZE = "block_size";

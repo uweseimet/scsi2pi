@@ -27,6 +27,8 @@ public:
     bool SetUp() override;
     void CleanUp() override;
 
+    param_map GetDefaultParams() const override;
+
     bool Eject(bool) override;
 
     int WriteData(span<const uint8_t>, scsi_command) override;
@@ -95,7 +97,7 @@ private:
     pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, bool, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
-    void CheckLength(int);
+    void CheckBlockLength(int);
 
     bool IsAtRecordBoundary() const;
 
@@ -118,6 +120,8 @@ private:
     uint32_t remaining_count = 0;
 
     off_t file_size = 0;
+
+    off_t max_file_size = 0;
 
     bool tar_file = false;
 
