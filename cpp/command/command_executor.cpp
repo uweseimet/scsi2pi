@@ -508,6 +508,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         storage_device.Open();
     }
     catch (const io_exception&) {
+        error(e.what());
+
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
     }
 #endif
