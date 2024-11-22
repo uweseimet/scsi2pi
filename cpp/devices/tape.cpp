@@ -28,6 +28,7 @@ using namespace s2p_util;
 Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 512, 1024, 2048, 4096, 8192 })
 {
     SetProduct("SCSI TAPE");
+    SupportsParams(true);
     SetProtectable(true);
     SetRemovable(true);
 }
