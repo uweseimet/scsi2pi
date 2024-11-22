@@ -34,7 +34,7 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 
     auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
     const param_map params;
-    d->Init(params);
+    d->Init();
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));
 
     PbServerInfo info;

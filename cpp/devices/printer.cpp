@@ -45,8 +45,8 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
 
 bool Printer::SetUp()
 {
-    if (GetParam("cmd").find("%f") == string::npos) {
-        LogTrace("Missing filename specifier '%f'");
+    if (GetParam(CMD).find("%f") == string::npos) {
+        LogError("Missing filename specifier '%f'");
         return false;
     }
 
@@ -87,7 +87,7 @@ void Printer::CleanUp()
 param_map Printer::GetDefaultParams() const
 {
     return {
-        {   "cmd", "lp -oraw %f"}
+        {   CMD, "lp -oraw %f"}
     };
 }
 
@@ -129,7 +129,7 @@ void Printer::SynchronizeBuffer()
 
     out.close();
 
-    string cmd = GetParam("cmd");
+    string cmd = GetParam(CMD);
     const size_t file_position = cmd.find("%f");
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);

@@ -70,7 +70,7 @@ string GetScsiLevel(int);
 string FormatSenseData(sense_key, asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-string FormatBytes(span<uint8_t>, int, bool = false);
+string FormatBytes(span<const uint8_t>, int, bool = false);
 int HexToDec(char);
 
 string Trim(const string&);

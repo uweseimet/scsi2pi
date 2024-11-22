@@ -304,10 +304,6 @@ bool StorageDevice::ValidateBlockSize(uint32_t size) const
 
 void StorageDevice::ValidateFile()
 {
-    if (!blocks) {
-        throw io_exception("Device has 0 blocks");
-    }
-
     if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
         throw io_exception("Image files > 2 TiB are not supported");
     }
@@ -363,12 +359,16 @@ bool StorageDevice::IsReadOnlyFile() const
     return access(filename.c_str(), W_OK);
 }
 
-off_t StorageDevice::GetFileSize() const
+off_t StorageDevice::GetFileSize(bool ignore_error) const
 {
     try {
         return file_size(filename);
     }
     catch (const filesystem_error &e) {
+        if (ignore_error) {
+            return 0;
+        }
+
         throw io_exception("Can't get size of '" + filename.string() + "': " + e.what());
     }
 }

@@ -17,6 +17,7 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
+#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -113,7 +114,7 @@ void Tape::Read6()
 
         remaining_count = byte_count;
 
-        // The record length is taken from the SIMH meta data
+        // The record length is set from the SIMH meta data later
         record_length = 0;
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
@@ -159,7 +160,7 @@ int Tape::ReadData(span<uint8_t> buf)
 
         position -= record_length + META_DATA_SIZE;
 
-        CheckLength(size);
+        CheckBlockLength(size);
     }
 
     LogTrace(
@@ -173,7 +174,7 @@ int Tape::ReadData(span<uint8_t> buf)
     position += size;
 
     if (IsAtRecordBoundary()) {
-        position += GetPadding(record_length);
+        position += record_length > GetBlockSize() ? 0 : record_length - size + GetPadding(record_length);
 
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data = { };
@@ -213,7 +214,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, position,
             record_length));
 
-    if (position + size > file_size) {
+    if (position + size > max_file_size) {
         throw scsi_exception(sense_key::volume_overflow);
     }
 
@@ -255,10 +256,39 @@ void Tape::Open()
 
     // Block size and number of blocks
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw io_exception("Invalid block size");
+        throw io_exception("Invalid block size: " + to_string(GetConfiguredBlockSize()));
     }
 
-    file_size = GetFileSize();
+    if (int append; !GetAsUnsignedInt(GetParam(APPEND), append)) {
+        throw parser_exception(fmt::format("Invalid maximum file size: '{}'", GetParam(APPEND)));
+    }
+    else {
+        max_file_size = append;
+    }
+
+    if (max_file_size && max_file_size < GetBlockSize()) {
+        throw io_exception("Maximum file size " + to_string(max_file_size) + " is smaller than block size "
+        + to_string(GetBlockSize()));
+    }
+
+    file_size = GetFileSize(true);
+
+    // In append mode, ensure that the image file size is at least the block size
+    if (max_file_size && file_size < GetBlockSize()) {
+        file.open(GetFilename(), ios::out | ios::binary);
+        file.seekp(GetBlockSize() - 1);
+        file.put(0);
+        file.flush();
+        if (file.bad()) {
+            file.close();
+            throw io_exception("Can't write to '" + GetFilename() + "'");
+        }
+        file.close();
+    }
+
+    if (!max_file_size && file_size) {
+        max_file_size = file_size;
+    }
 
     SetBlockCount(static_cast<uint32_t>(file_size / GetBlockSize()));
 
@@ -278,6 +308,13 @@ bool Tape::Eject(bool force)
     }
 
     return status;
+}
+
+param_map Tape::GetDefaultParams() const
+{
+    return {
+        {   APPEND, "0"}
+    };
 }
 
 vector<uint8_t> Tape::InquiryInternal() const
@@ -850,7 +887,7 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
         fmt::format("Writing SIMH meta_data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
         value, position));
 
-    if (position + META_DATA_SIZE > file_size) {
+    if (position + META_DATA_SIZE > max_file_size) {
         ++write_error_count;
         throw scsi_exception(sense_key::volume_overflow);
     }
@@ -861,40 +898,26 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
     return META_DATA_SIZE;
 }
 
-void Tape::CheckLength(int length)
+void Tape::CheckBlockLength(int length)
 {
     if (static_cast<int>(record_length) != length) {
         // In fixed mode an incorrect length always results in an error.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (fixed) {
-            LogError(fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
-                record_length, length));
-
             SetIli();
-            SetInformation(length / GetBlockSize() - blocks_read);
+            SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
-
-        // In non-fixed mode the error handling depends on SILI.
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        else {
-            if (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length)) {
-                LogError(
-                    fmt::format("Actual block length of {0} byte(s) does not match requested length of {1} byte(s)",
-                        record_length, length));
-
-                SetIli();
-                SetInformation(length - record_length);
-                throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
-            }
-            else {
-                // Move position to the end of the record, so that the trailing length can be verified
-                position += record_length - length;
-            }
+        else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize())
+            || length > static_cast<int>(record_length)) {
+            SetIli();
+            SetInformation(length - record_length);
+            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
     }
 }

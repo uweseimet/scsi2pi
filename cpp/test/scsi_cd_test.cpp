@@ -98,7 +98,7 @@ TEST(ScsiCdTest, ReadToc)
 {
     MockAbstractController controller;
     auto cd = make_shared<MockScsiCd>(0);
-    EXPECT_TRUE(cd->Init( { }));
+    EXPECT_TRUE(cd->Init());
 
     controller.AddDevice(cd);
 

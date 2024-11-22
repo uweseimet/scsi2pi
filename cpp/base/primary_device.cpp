@@ -12,10 +12,8 @@
 using namespace memory_util;
 using namespace s2p_util;
 
-bool PrimaryDevice::Init(const param_map &params)
+bool PrimaryDevice::Init()
 {
-    SetParams(params);
-
     // Mandatory SCSI primary commands
     AddCommand(scsi_command::test_unit_ready, [this]
         {

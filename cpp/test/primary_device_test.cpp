@@ -16,7 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(id);
     auto device = make_shared<MockPrimaryDevice>(0);
-    EXPECT_TRUE(device->Init( { }));
+    EXPECT_TRUE(device->Init());
     EXPECT_TRUE(controller->AddDevice(device));
 
     return {controller, device};
@@ -394,8 +394,8 @@ TEST(PrimaryDeviceTest, ReportLuns)
     auto controller = make_shared<MockAbstractController>(0);
     auto device1 = make_shared<MockPrimaryDevice>(LUN1);
     auto device2 = make_shared<MockPrimaryDevice>(LUN2);
-    EXPECT_TRUE(device1->Init( { }));
-    EXPECT_TRUE(device2->Init( { }));
+    EXPECT_TRUE(device1->Init());
+    EXPECT_TRUE(device2->Init());
 
     controller->AddDevice(device1);
     EXPECT_TRUE(controller->GetDeviceForLun(LUN1));
@@ -436,7 +436,7 @@ TEST(PrimaryDeviceTest, Init)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_TRUE(device.Init( {})) << "Initialization of primary device must not fail";
+    EXPECT_TRUE(device.Init( )) << "Initialization of primary device must not fail";
 }
 
 TEST(PrimaryDeviceTest, GetDelayAfterBytes)

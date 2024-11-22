@@ -16,7 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
     auto disk = make_shared<MockDisk>();
-    EXPECT_TRUE(disk->Init( { }));
+    EXPECT_TRUE(disk->Init());
     EXPECT_TRUE(controller->AddDevice(disk));
 
     return {controller, disk};
