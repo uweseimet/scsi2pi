@@ -236,7 +236,7 @@ string s2p_util::GetScsiLevel(int scsi_level)
 
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
-    const string &s = FormatSenseData(static_cast<sense_key>(sense_data[2] & byte { 0x0f }),
+    const string &s = FormatSenseData(static_cast<sense_key>(static_cast<uint8_t>(sense_data[2]) & 0x0f),
         static_cast<asc>(sense_data[12]), static_cast<int>(sense_data[13]));
 
     if (!(static_cast<uint8_t>(sense_data[0]) & 0x80)) {

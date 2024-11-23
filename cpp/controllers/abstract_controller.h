@@ -14,8 +14,8 @@
 #include "script_generator.h"
 #include "buses/bus.h"
 #include "base/device_logger.h"
-#include "base/memory_util.h"
 #include "base/s2p_defs.h"
+#include "shared/memory_util.h"
 
 class PrimaryDevice;
 

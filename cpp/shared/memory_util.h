@@ -21,7 +21,7 @@ int GetInt16(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);
 
-    return (static_cast<int>(buf[offset]) << 8) | buf[offset + 1];
+    return (static_cast<uint32_t>(buf[offset]) << 8) | static_cast<uint32_t>(buf[offset + 1]);
 }
 
 template<typename T> void SetInt16(vector<T>&, int, int);

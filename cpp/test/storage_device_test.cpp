@@ -10,6 +10,8 @@
 #include "devices/storage_device.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace memory_util;
+
 pair<shared_ptr<MockAbstractController>, shared_ptr<MockStorageDevice>> CreateStorageDevice()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);

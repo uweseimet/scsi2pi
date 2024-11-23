@@ -2,12 +2,12 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "base/memory_util.h"
+#include "shared/memory_util.h"
 
 using namespace memory_util;
 

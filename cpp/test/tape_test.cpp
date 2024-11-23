@@ -8,6 +8,8 @@
 
 #include "mocks.h"
 
+using namespace memory_util;
+
 #define CheckPositions(device, position, block_location) ({\
     auto c = static_cast<MockAbstractController*>(device->GetController());\
     c->ResetCdb();\
@@ -46,7 +48,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
     return {controller, tape};
 }
 
-void WriteSimhObject(ostream &file, const vector<uint8_t> &leading, int length = 0, const vector<uint8_t> &trailing = { })
+void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0, span<const uint8_t> trailing = { })
 {
     assert(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
 

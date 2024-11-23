@@ -301,6 +301,10 @@ bool S2pExec::RunInteractive(bool in_process)
         if (input == "!!") {
             input = last_input;
             cout << input << '\n';
+        }
+        else if (!input.starts_with('-')) {
+            cerr << "Error: Missing command" << endl;
+            continue;
         } else {
             last_input = input;
         }
