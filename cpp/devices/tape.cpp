@@ -136,6 +136,7 @@ void Tape::Write6()
     if (byte_count) {
         remaining_count = byte_count;
 
+        // TODO Verify
         record_length = 0;
 
         GetController()->SetTransferSize(byte_count, byte_count < GetBlockSize() ? byte_count : GetBlockSize());
