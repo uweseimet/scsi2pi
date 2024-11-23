@@ -100,11 +100,6 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
 
 void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
 {
-    // Explicitly reset the device status because Controller::Execute() is not called during the unit tests
-    if (cmd != scsi_command::request_sense) {
-        device.ResetStatus();
-    }
-
     try {
         device.Dispatch(cmd);
         if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {

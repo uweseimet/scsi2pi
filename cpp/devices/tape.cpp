@@ -627,7 +627,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
 
     while (true) {
         if (reverse) {
-            MoveBackwards(count);
+            position -= MoveBackwards(count);
         }
 
         SimhMetaData meta_data = { };
@@ -654,8 +654,8 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
             position -= META_DATA_SIZE;
 
-            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over {1}", position,
-                type == object_type::block ? "blocks" : "filemarks"));
+            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type{1}", position,
+                static_cast<int>(type)));
             SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_data_detected);
             throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
@@ -667,7 +667,9 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
                 position -= META_DATA_SIZE;
             }
 
-            LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", position));
+            LogTrace(
+                fmt::format("Encountered filemark at position {} while spacing over blocks",
+                    reverse ? position : position - META_DATA_SIZE));
             SetInformation(actual_count);
             SetFilemark();
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
@@ -688,8 +690,7 @@ void Tape::ResetPosition()
 void Tape::AdjustForSpacing(const SimhMetaData &meta_data, bool reverse)
 {
     if (reverse) {
-        position -=
-            IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + 2 * META_DATA_SIZE : META_DATA_SIZE;
+        position -= META_DATA_SIZE;
     }
     else if (IsRecord(meta_data)) {
         position += meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE;
@@ -707,9 +708,12 @@ void Tape::AdjustForSpacing(const SimhMetaData &meta_data, bool reverse)
 
 void Tape::AdjustForReading(const SimhMetaData &meta_data, bool reverse)
 {
+    if (reverse) {
+        position -= 2 * META_DATA_SIZE;
+    }
+
     if (IsRecord(meta_data)) {
         if (reverse) {
-            position -= meta_data.value + GetPadding(meta_data.value) + 2 * META_DATA_SIZE;
             --block_location;
         }
         else {
@@ -725,7 +729,9 @@ uint32_t Tape::AdjustResult(const SimhMetaData &meta_data, bool reverse, object_
         if (type == object_type::block) {
             AdjustForSpacing(meta_data, true);
         }
-        position -= META_DATA_SIZE;
+        else {
+            position -= META_DATA_SIZE;
+        }
     }
     else {
         AdjustForSpacing(meta_data, false);
@@ -734,7 +740,7 @@ uint32_t Tape::AdjustResult(const SimhMetaData &meta_data, bool reverse, object_
     return meta_data.value;
 }
 
-bool Tape::MoveBackwards(int64_t count)
+int64_t Tape::MoveBackwards(int64_t count)
 {
     if (position < META_DATA_SIZE) {
         LogTrace("Encountered beginning-of-partition while reverse-spacing");
@@ -754,7 +760,7 @@ bool Tape::MoveBackwards(int64_t count)
         throw scsi_exception(sense_key::medium_error, asc::read_error);
     }
 
-    return position - (IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE : 0) >= 0;
+    return IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE : 0;
 }
 
 uint32_t Tape::GetByteCount()
@@ -854,21 +860,24 @@ pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, boo
             LogTrace(
                 meta_data.value == static_cast<int>(simh_marker::erase_gap) ?
                     "Skipping SIMH erase gap" : "Skipping unknown SIMH reserved marker");
+            AdjustForReading(meta_data, reverse);
             break;
 
         case simh_class::private_marker:
             if ((meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
                 LogTrace(fmt::format("Found SCSI2Pi private marker for object type {0} at position {1}",
-                    (meta_data.value >> 24) & 0x0f, position));
+                    (meta_data.value >> 24) & 0x0f, position - META_DATA_SIZE));
+                AdjustForReading(meta_data, reverse);
                 return {static_cast<object_type>((meta_data.value >> 24) & 0x0f), 0};
             }
             LogTrace(fmt::format("Skipping unknown SIMH private marker, value ${0:07x} at position {1}",
-                static_cast<int>(meta_data.value), position));
+                static_cast<int>(meta_data.value), position - META_DATA_SIZE));
+            AdjustForReading(meta_data, reverse);
             break;
 
         default:
             LogTrace(fmt::format("Skipping unknown SIMH class {0:1X} at position {1}",
-                static_cast<int>(meta_data.cls), position));
+                static_cast<int>(meta_data.cls), position - META_DATA_SIZE));
             AdjustForReading(meta_data, reverse);
             break;
         }

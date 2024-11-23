@@ -333,7 +333,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
-    EXPECT_EQ(0x00, data[2]);
+    EXPECT_EQ(0x40, data[2]) << "EOM must be set";
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(static_cast<uint8_t>(ascq::end_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
@@ -344,7 +344,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
-    EXPECT_EQ(0x00, data[2]);
+    EXPECT_EQ(0x40, data[2]) << "EOM must be set";
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(static_cast<uint8_t>(ascq::beginning_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
@@ -355,7 +355,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
-    EXPECT_EQ(0x20, data[2]);
+    EXPECT_EQ(0x20, data[2]) << "ILI must be set";
     EXPECT_EQ(10, data[7]);
 
     device->SetInformation(0x12345678);
