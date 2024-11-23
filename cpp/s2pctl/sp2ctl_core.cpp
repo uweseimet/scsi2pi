@@ -65,7 +65,7 @@ void S2pCtl::Banner(bool usage) const
             << "  --list-reserved-ids/-I         List reserved device IDs.\n"
             << "  --list-devices/-l              Display device list.\n"
             << "  --list-device-types/-T         List available device types.\n"
-            << "  --list-extensions/-m           List supported file extensions\n"
+            << "  --list-extensions              List supported file extensions\n"
             << "                                 and the device types they map to.\n"
             << "  --list-interfaces/-N           List network interfaces that are up.\n"
             << "  --list-operations/-o           List available remote interface operations.\n"
@@ -201,7 +201,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     optind = 1;
     int opt;
     while ((opt = getopt_long(static_cast<int>(args.size()), args.data(),
-        "e::hlmos::vDINOPSTVXa:b:-c:d:f:i:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
+        "e::hlos::vDINOPSTVXa:b:-c:d:f:i:m:n:p:r:t:x:C:E:F:H:L:P::R:", options.data(), nullptr)) != -1) {
         switch (opt) { // NOSONAR Acceptable complexity for parsing
         case 'i':
             id_and_lun = optarg;

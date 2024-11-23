@@ -67,6 +67,7 @@ string Banner(string_view);
 
 string GetScsiLevel(int);
 
+string FormatSenseData(span<const byte>);
 string FormatSenseData(sense_key, asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
@@ -74,6 +75,8 @@ string FormatBytes(span<const uint8_t>, int, bool = false);
 int HexToDec(char);
 
 string Trim(const string&);
+
+uint32_t GetInt32(span<const byte>, int);
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

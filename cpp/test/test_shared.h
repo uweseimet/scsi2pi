@@ -40,11 +40,8 @@ void SetUpProperties(string_view, string_view = "", const property_map& = { });
 void Dispatch(PrimaryDevice&, scsi_command, sense_key = sense_key::no_sense, asc = asc::no_additional_sense_information,
     const string& = "");
 
-int GetInt16(const vector<byte>&, int);
-uint32_t GetInt32(const vector<byte>&, int);
-uint32_t GetInt16(const vector<uint8_t>&, int);
-uint32_t GetInt32(const vector<uint8_t>&, int);
-uint64_t GetInt64(const vector<uint8_t>&, int);
+uint32_t GetInt32(span<const byte>, int);
+uint32_t GetInt32(span<const uint8_t>, int);
 
 class TestShared
 {

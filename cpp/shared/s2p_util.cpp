@@ -124,6 +124,10 @@ string s2p_util::GetLine(const string &prompt)
         getline(cin, line);
         line = Trim(line);
 
+        if (const auto comment = line.find_first_of('#'); comment != string::npos) {
+            line = line.substr(0, comment);
+        }
+
         if (cin.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
@@ -228,6 +232,19 @@ string s2p_util::GetScsiLevel(int scsi_level)
         return "SPC-" + to_string(scsi_level - 2);
         break;
     }
+}
+
+string s2p_util::FormatSenseData(span<const byte> sense_data)
+{
+    const string &s = FormatSenseData(static_cast<sense_key>(static_cast<uint8_t>(sense_data[2]) & 0x0f),
+        static_cast<asc>(sense_data[12]), static_cast<int>(sense_data[13]));
+
+    if (!(static_cast<uint8_t>(sense_data[0]) & 0x80)) {
+        return s;
+    }
+
+    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", !(static_cast<uint8_t>(sense_data[2]) & 0x20) ? "1" : "0",
+        GetInt32(sense_data, 3));
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
@@ -335,4 +352,13 @@ string s2p_util::Trim(const string &s)
     }
     const size_t last = s.find_last_not_of(' ');
     return s.substr(first, (last - first + 1));
+}
+
+// TODO Move to memory_util?
+uint32_t s2p_util::GetInt32(span<const byte> buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 3);
+
+    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
+        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
 }

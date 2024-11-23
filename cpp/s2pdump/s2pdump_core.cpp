@@ -386,7 +386,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
     return sasi ? DisplaySasiInquiry(buf, check_type) : DisplayScsiInquiry(buf, check_type);
 }
 
-bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
+bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 {
     const auto type = static_cast<int>(buf[0]) & 0x0f;
     if (type == 0x1f) {
@@ -460,7 +460,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     return true;
 }
 
-bool S2pDump::DisplaySasiInquiry(const vector<uint8_t> &buf, bool check_type) const
+bool S2pDump::DisplaySasiInquiry(span<const uint8_t> buf, bool check_type) const
 {
     const auto type = buf[0];
     if (!type) {

@@ -204,7 +204,7 @@ public:
     void ResetCdb()
     {
         for (size_t i = 0; i < GetCdb().size(); i++) {
-            SetCdbByte(i, 0);
+            SetCdbByte(static_cast<int>(i), 0);
         }
     }
 };

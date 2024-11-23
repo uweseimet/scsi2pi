@@ -68,9 +68,9 @@ TEST(SimhUtilTest, IsRecord)
 
 TEST(SimhUtilTest, GetPadding)
 {
-    EXPECT_EQ(0, GetPadding(0));
-    EXPECT_EQ(0, GetPadding(6));
-    EXPECT_EQ(1, GetPadding(7));
+    EXPECT_EQ(0U, GetPadding(0));
+    EXPECT_EQ(0U, GetPadding(6));
+    EXPECT_EQ(1U, GetPadding(7));
 }
 
 TEST(SimhUtilTest, FromLittleEndian)

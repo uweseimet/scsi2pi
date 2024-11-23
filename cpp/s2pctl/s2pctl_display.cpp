@@ -117,7 +117,7 @@ string S2pCtlDisplay::DisplayVersionInfo(const PbVersionInfo &version_info) cons
         }
     }
 
-    version += version_info.suffix() + "\n";
+    version += version_info.suffix() + '\n';
 
     return version;
 }
@@ -146,26 +146,50 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
 {
     ostringstream s;
 
-    s << "Supported device types and their properties:";
+    if (device_types_info.properties().empty()) {
+        return "";
+    }
 
+    s << "Supported device types and their properties:\n";
+
+    bool has_type = false;
+    string indent;
     for (const auto &device_type_info : device_types_info.properties()) {
-        s << "\n  " << PbDeviceType_Name(device_type_info.type()) << "  ";
+        if (has_type) {
+            s << '\n';
+        }
+        has_type = true;
+
+        s << "  " << PbDeviceType_Name(device_type_info.type());
+
+        indent = "  ";
 
         const PbDeviceProperties &properties = device_type_info.properties();
 
-        s << DisplayAttributes(properties);
+        const string &props = DisplayAttributes(properties);
+        if (!props.empty()) {
+            s << indent << props;
+            indent = "        ";
+        }
 
         if (properties.supports_file()) {
-            s << "Image files are supported\n        ";
+            s << indent << "Image files are supported";
+            indent = "\n        ";
         }
 
         if (properties.supports_params()) {
-            s << "Parameters are supported\n        ";
+            s << indent << "Parameters are supported";
+            indent = "\n        ";
         }
 
-        s << DisplayDefaultParameters(properties);
+        if (!properties.default_params().empty()) {
+            s << indent << DisplayDefaultParameters(properties);
+            indent = "\n        ";
+        }
 
-        s << DisplayBlockSizes(properties);
+        if (properties.block_sizes_size()) {
+            s << indent << DisplayBlockSizes(properties);
+        }
     }
 
     s << '\n';
@@ -335,7 +359,7 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
 
     s << "s2p properties:\n";
     for (const auto& [key, value] : sorted_properties) {
-        s << "  " << key << "=" << value << "\n";
+        s << "  " << key << "=" << value << '\n';
     }
 
     return s.str();
@@ -373,7 +397,7 @@ string S2pCtlDisplay::DisplayAttributes(const PbDeviceProperties &props) const
     }
 
     if (!properties.empty()) {
-        s << "Properties: " << Join(properties) << "\n        ";
+        s << "Properties: " << Join(properties) << '\n';
     }
 
     return s.str();
@@ -384,12 +408,23 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
     ostringstream s;
 
     if (!properties.default_params().empty()) {
-        set<string, less<>> params;
+        s << "Default parameters: ";
+
+        set<string, less<>> sorted_params;
         for (const auto& [key, value] : properties.default_params()) {
-            params.insert(key + "=" + value);
+            sorted_params.insert(key + "=" + value);
         }
 
-        s << "Default parameters: " << Join(params, "\n                            ");
+        string p;
+
+        for (const auto &param : sorted_params) {
+            if (!p.empty()) {
+                p += "\n                            ";
+            }
+            p += param;
+        }
+
+        s << p;
     }
 
     return s.str();
@@ -401,7 +436,8 @@ string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) co
 
     if (properties.block_sizes_size()) {
         const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
-        s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: " << Join(sorted_sizes);
+        s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: "
+            << Join(sorted_sizes);
     }
 
     return s.str();

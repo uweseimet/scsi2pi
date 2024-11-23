@@ -100,11 +100,6 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
 
 void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
 {
-    // Explicitly reset the device status because Controller::Execute() is not called during the unit tests
-    if (cmd != scsi_command::request_sense) {
-        device.ResetStatus();
-    }
-
     try {
         device.Dispatch(cmd);
         if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {
@@ -138,8 +133,8 @@ pair<int, path> testing::OpenTempFile(const string &extension)
 {
     char *f = strdup(CreateTempName().c_str());
     const int fd = mkstemp(f);
-    const string filename = f;
-    free(f);
+    const path filename = f;
+    free(f); // NOSONAR Required because of mkstemp
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
 
     path effective_name = filename;
@@ -200,14 +195,7 @@ void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s,
     TestShared::Dispatch(device, command, s, a, msg);
 }
 
-int testing::GetInt16(const vector<byte> &buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 1);
-
-    return (to_integer<int>(buf[offset]) << 8) | to_integer<int>(buf[offset + 1]);
-}
-
-uint32_t testing::GetInt32(const vector<byte> &buf, int offset)
+uint32_t testing::GetInt32(span<const byte> buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
 
@@ -215,27 +203,10 @@ uint32_t testing::GetInt32(const vector<byte> &buf, int offset)
         | (to_integer<uint32_t>(buf[offset + 2]) << 8) | to_integer<uint32_t>(buf[offset + 3]);
 }
 
-uint32_t testing::GetInt16(const vector<uint8_t> &buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 1);
-
-    return (static_cast<uint32_t>(buf[offset]) << 8) | static_cast<uint32_t>(buf[offset + 1]);
-}
-
-uint32_t testing::GetInt32(const vector<uint8_t> &buf, int offset)
+uint32_t testing::GetInt32(span<const uint8_t> buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
 
     return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16)
         | (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
-}
-
-uint64_t testing::GetInt64(const vector<uint8_t> &buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 7);
-
-    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
-        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
-        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
-        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }

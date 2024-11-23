@@ -44,8 +44,8 @@ private:
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
-    bool DisplayScsiInquiry(vector<uint8_t>&, bool);
-    bool DisplaySasiInquiry(const vector<uint8_t>&, bool) const;
+    bool DisplayScsiInquiry(span<const uint8_t>, bool);
+    bool DisplaySasiInquiry(span<const uint8_t>, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
     bool GetDeviceInfo();

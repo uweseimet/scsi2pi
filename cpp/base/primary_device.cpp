@@ -295,34 +295,36 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
     }
 
-    // 18 bytes including extended sense data
     vector<byte> buf(18);
 
-    // Current error
-    buf[0] = (byte)0x70;
+    // In SCSI-1 mode only return the extended format if more than 4 bytes have been requested
+    const bool extended = level >= scsi_level::scsi_2 || GetCdbByte(4) > 4;
 
-    buf[2] = (byte)sense_key | (filemark ? (byte)0x80 : (byte)0x00) | (ili ? (byte)0x20 : (byte)0x00);
-    buf[7] = (byte)10;
-    buf[12] = (byte)asc;
-    if (asc == asc::no_additional_sense_information) {
-        assert(!filemark || eom == ascq::none);
-        if (filemark) {
-            buf[13] = (byte)ascq::filemark_detected;
-        }
-        else {
-            buf[13] = (byte)eom;
-        }
+    if (extended) {
+        // Current error
+        buf[0] = (byte)0x70;
     }
 
     if (valid) {
         buf[0] |= (byte)0x80;
-        SetInt32(buf, 3, information);
+        SetInt32(buf, extended ? 3 : 1, information);
     }
 
-    LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(sense_key, asc)));
-    if (valid) {
-        LogTrace(fmt::format("ILI: {0}, INFORMATION: {1}", ili ? "1" : "0", information));
+    buf[2] = (byte)sense_key | (ili ? (byte)0x20 : (byte)0x00);
+    buf[7] = (byte)10;
+    buf[12] = (byte)asc;
+
+    if (filemark) {
+        buf[2] |= byte { 0x80 };
+        buf[13] = static_cast<byte>(ascq::filemark_detected);
     }
+
+    if (eom != ascq::none) {
+        buf[2] |= byte { 0x40 };
+        buf[13] = static_cast<byte>(eom);
+    }
+
+    LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
 
     return buf;
 }
