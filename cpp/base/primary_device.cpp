@@ -106,12 +106,14 @@ void PrimaryDevice::SetEom(ascq e)
 
 void PrimaryDevice::SetIli()
 {
-    ili = true;
+    if (level >= scsi_level::scsi_2) {
+        ili = true;
+    }
 }
 
 void PrimaryDevice::SetInformation(int64_t value)
 {
-    if (value < 0x100000000) {
+    if (level >= scsi_level::scsi_2 && value < 0x100000000) {
         information = static_cast<int32_t>(value);
         valid = true;
     }
