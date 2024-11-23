@@ -239,11 +239,11 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
     const string &s = FormatSenseData(static_cast<sense_key>(sense_data[2] & byte { 0x0f }),
         static_cast<asc>(sense_data[12]), static_cast<int>(sense_data[13]));
 
-    if ((sense_data[0] & byte { 0x80 }) == byte { 0 }) {
+    if (!(static_cast<uint8_t>(sense_data[0]) & 0x80)) {
         return s;
     }
 
-    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", (sense_data[2] & byte { 0x20 }) != byte { 0 } ? "1" : "0",
+    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", !(static_cast<uint8_t>(sense_data[2]) & 0x20) ? "1" : "0",
         GetInt32(sense_data, 3));
 }
 
