@@ -166,8 +166,7 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
 
         const PbDeviceProperties &properties = device_type_info.properties();
 
-        const string &props = DisplayAttributes(properties);
-        if (!props.empty()) {
+        if (const string &props = DisplayAttributes(properties); !props.empty()) {
             s << indent << props;
             indent = "        ";
         }

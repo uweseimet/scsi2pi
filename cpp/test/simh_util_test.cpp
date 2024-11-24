@@ -66,11 +66,11 @@ TEST(SimhUtilTest, IsRecord)
     EXPECT_FALSE(IsRecord( { simh_class::reserved_marker, 0 }));
 }
 
-TEST(SimhUtilTest, GetPadding)
+TEST(SimhUtilTest, Pad)
 {
-    EXPECT_EQ(0U, GetPadding(0));
-    EXPECT_EQ(0U, GetPadding(6));
-    EXPECT_EQ(1U, GetPadding(7));
+    EXPECT_EQ(0U, Pad(0));
+    EXPECT_EQ(6U, Pad(6));
+    EXPECT_EQ(8U, Pad(7));
 }
 
 TEST(SimhUtilTest, FromLittleEndian)

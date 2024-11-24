@@ -46,11 +46,11 @@ bool simh_util::IsRecord(const SimhMetaData &meta_data)
     return meta_data.cls != simh_class::private_marker && meta_data.cls != simh_class::reserved_marker;
 }
 
-uint32_t simh_util::GetPadding(int length)
+uint32_t simh_util::Pad(int length)
 {
     assert(length >= 0);
 
-    return length % 2 ? 1 : 0;
+    return length + (length % 2 ? 1 : 0);
 }
 
 simh_util::SimhMetaData simh_util::FromLittleEndian(span<const uint8_t> value)

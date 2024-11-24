@@ -36,7 +36,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
     trace(FormatBytes(buf, executor.GetByteCount()));
 
     if (executor.GetByteCount() < 14) {
-        warn("Device did not return standard REQUEST SENSE data");
+        warn("Device did not return standard REQUEST SENSE data, sense data details are not available");
         return {sense_key {-1}, asc {-1}, -1};
     }
 

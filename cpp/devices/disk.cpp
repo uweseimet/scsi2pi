@@ -560,7 +560,7 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
+tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode) const
 {
     uint64_t start;
     uint32_t count;

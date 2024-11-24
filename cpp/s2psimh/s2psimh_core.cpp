@@ -245,7 +245,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
         cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
     }
 
-    position += meta_data.value + GetPadding(meta_data.value);
+    position += Pad(meta_data.value);
 
     array<uint8_t, META_DATA_SIZE> data = { };
     file.seekg(position, ios::beg);

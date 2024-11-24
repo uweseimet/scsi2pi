@@ -52,7 +52,7 @@ bool ReadMetaData(istream&, SimhMetaData&);
 
 bool IsRecord(const SimhMetaData&);
 
-uint32_t GetPadding(int);
+uint32_t Pad(int);
 
 SimhMetaData FromLittleEndian(span<const uint8_t>);
 array<uint8_t, 4> ToLittleEndian(const SimhMetaData&);
