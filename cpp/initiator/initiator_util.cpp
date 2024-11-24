@@ -24,7 +24,7 @@ void initiator_util::ResetBus(Bus &bus)
 
 tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
-    array<uint8_t, 14> buf = { };
+    array<uint8_t, 255> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
