@@ -908,6 +908,8 @@ void Tape::CheckBlockLength(int length)
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (fixed) {
+            position += record_length + META_DATA_SIZE;
+
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
@@ -918,6 +920,8 @@ void Tape::CheckBlockLength(int length)
         // If SILI is set report CHECK CONDITION for the overlength condition only.
         else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize())
             || length > static_cast<int>(record_length)) {
+            position += record_length + META_DATA_SIZE;
+
             SetIli();
             SetInformation(length - record_length);
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
