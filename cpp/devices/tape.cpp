@@ -654,7 +654,7 @@ uint32_t Tape::FindNextObject(object_type type, int64_t count)
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
             position -= META_DATA_SIZE;
 
-            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type{1}", position,
+            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type {1}", position,
                 static_cast<int>(type)));
             SetInformation(count - actual_count + 1);
             SetEom(ascq::end_of_data_detected);
