@@ -350,7 +350,7 @@ string s2p_util::Trim(const string &s)
     if (first == string::npos) {
         return s;
     }
-    const size_t last = s.find_last_not_of(' ');
+    const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));
 }
 
