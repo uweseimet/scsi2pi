@@ -24,7 +24,7 @@ TEST(SimhUtilTest, ReadMetaData)
     file.write((const char*)ToLittleEndian( { simh_class::private_marker, 0b011 }).data(), META_DATA_SIZE);
     file.write((const char*)ToLittleEndian( { simh_class::reserved_marker, 0 }).data(), META_DATA_SIZE);
 
-    file.seekg(0, ios::beg);
+    file.seekg(0);
 
     SimhMetaData meta_data;
     EXPECT_TRUE(ReadMetaData(file, meta_data));

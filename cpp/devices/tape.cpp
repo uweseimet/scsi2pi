@@ -155,7 +155,7 @@ int Tape::ReadData(span<uint8_t> buf)
     const int size = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
-        file.seekg(tape_position, ios::beg);
+        file.seekg(tape_position);
 
         current_meta_data = FindNextObject(object_type::block, 0, true);
 
@@ -174,7 +174,7 @@ int Tape::ReadData(span<uint8_t> buf)
     LogTrace(
         fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, tape_position, record_length));
 
-    file.seekg(tape_position, ios::beg);
+    file.seekg(tape_position);
     file.read((char*)buf.data(), size);
     CheckForReadError();
 
@@ -186,7 +186,7 @@ int Tape::ReadData(span<uint8_t> buf)
 
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data = { };
-        file.seekg(tape_position, ios::beg);
+        file.seekg(tape_position);
         file.read((char*)data.data(), data.size());
         CheckForReadError();
 
@@ -674,6 +674,15 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
     }
 }
 
+void Tape::RaiseBeginningOfPartition(int64_t info)
+{
+    LogTrace("Encountered beginning-of-partition while reverse-spacing");
+    ResetPosition();
+    SetInformation(info);
+    SetEom(ascq::beginning_of_partition_medium_detected);
+    throw scsi_exception(sense_key::no_sense);
+}
+
 void Tape::RaiseEndOfPartition(int64_t info)
 {
     LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", tape_position));
@@ -730,18 +739,14 @@ void Tape::ResetPosition()
 void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
 {
     if (reverse) {
-        if (tape_position < META_DATA_SIZE) {
-            LogTrace("Encountered beginning-of-partition while reverse-spacing");
-            ResetPosition();
-            SetInformation(count);
-            SetEom(ascq::beginning_of_partition_medium_detected);
-            throw scsi_exception(sense_key::no_sense);
-        }
-
         // Position before trailing length or marker
         tape_position -= META_DATA_SIZE;
 
-        file.seekg(tape_position, ios::beg);
+        if (tape_position < 0) {
+            RaiseBeginningOfPartition(count);
+        }
+
+        file.seekg(tape_position);
         if (!ReadMetaData(file, meta_data)) {
             ++read_error_count;
             throw scsi_exception(sense_key::medium_error, asc::read_error);
@@ -749,7 +754,7 @@ void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse
         tape_position -= IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
     }
     else {
-        file.seekg(tape_position, ios::beg);
+        file.seekg(tape_position);
         if (!ReadMetaData(file, meta_data)) {
             ++read_error_count;
             throw scsi_exception(sense_key::medium_error, asc::read_error);

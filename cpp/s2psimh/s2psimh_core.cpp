@@ -125,7 +125,7 @@ int S2pSimh::Analyze()
     while (position < file_size) {
         old_position = position;
 
-        file.seekg(position, ios::beg);
+        file.seekg(position);
 
         SimhMetaData meta_data;
         if (!ReadMetaData(file, meta_data)) {
@@ -248,7 +248,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     position += Pad(meta_data.value);
 
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.seekg(position, ios::beg);
+    file.seekg(position);
     file.read((char*)data.data(), data.size());
     if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta_data.value) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length

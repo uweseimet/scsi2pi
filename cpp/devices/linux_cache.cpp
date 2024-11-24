@@ -42,7 +42,7 @@ int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)
 {
     assert(length);
 
-    file.seekg(sector_size * start, ios::beg);
+    file.seekg(sector_size * start);
     file.read((char*)buf.data(), length);
     if (file.fail()) {
         file.clear();

@@ -77,6 +77,7 @@ private:
     SimhMetaData FindNextObject(Tape::object_type, int64_t, bool = false);
     void ReadNextMetaData(SimhMetaData&, int64_t, bool);
 
+    [[noreturn]] void RaiseBeginningOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfData(Tape::object_type, int64_t);
     [[noreturn]] void RaiseFilemark(int64_t);
