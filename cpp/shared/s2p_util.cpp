@@ -243,7 +243,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
         return s;
     }
 
-    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", !(static_cast<uint8_t>(sense_data[2]) & 0x20) ? "1" : "0",
+    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", static_cast<uint8_t>(sense_data[2]) & 0x20 ? "1" : "0",
         GetInt32(sense_data, 3));
 }
 
