@@ -207,7 +207,7 @@ TEST(TapeTest, Read6)
     // Fixed, 1 block, bad data
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6);
+    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
     CheckPositions(tape, 1064, 4);
 
     const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
@@ -262,6 +262,18 @@ TEST(TapeTest, Read6)
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(256, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
+
+
+    // Leading length != trailing length
+    const vector<uint8_t> &bad_trailing = { 0x01, 0x00, 0x00, 0x00 };
+    file.seekp(0);
+    WriteSimhObject(file, good_data_non_fixed, good_data_non_fixed[0], bad_trailing);
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Non-fixed, 12 bytes
+    controller->SetCdbByte(4, 12);
+    Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
 }
 
 TEST(TapeTest, Write6)
@@ -386,6 +398,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 1);
     Dispatch(*tape, scsi_command::space_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
+
     // Write 6 filemarks and 1 end-of-data
     ofstream file(filename);
     const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
@@ -444,6 +457,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b011);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
     CheckPositions(tape, 24, 0);
+
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
@@ -511,6 +525,7 @@ TEST(TapeTest, Space6_simh)
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
+
     // Write 1 block, 1 filemark, 1 block, 1 end-of-data
     file.seekp(0);
     WriteSimhObject(file, good_data, 512, good_data);
@@ -546,7 +561,7 @@ TEST(TapeTest, Space6_simh)
 
 TEST(TapeTest, Space6_tar)
 {
-    auto [_, tape] = CreateTape();
+    auto [___, tape] = CreateTape();
     CreateTapeFile(*tape, 512, "tar");
 
     Dispatch(*tape, scsi_command::space_6, sense_key::illegal_request,
