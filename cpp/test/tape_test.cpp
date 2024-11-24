@@ -19,14 +19,13 @@ using namespace memory_util;
     CheckPosition(*c, *device, block_location);\
 })
 
-static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position_or_block_location)
+static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position)
 {
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, scsi_command::read_position);
 
-    if (position_or_block_location != GetInt32(controller.GetBuffer(), 4)
-        || position_or_block_location != GetInt32(controller.GetBuffer(), 8)) {
-        EXPECT_EQ(position_or_block_location, GetInt32(controller.GetBuffer(), 4));
+    if (position != GetInt32(controller.GetBuffer(), 4) || position != GetInt32(controller.GetBuffer(), 8)) {
+        EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4));
     }
 }
 
@@ -162,14 +161,16 @@ TEST(TapeTest, Read6)
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
-    const vector<uint8_t> &bad_data_recovered = { 0x00, 0x02, 0x00, 0x80 };
-    const vector<uint8_t> &bad_data = { 0x00, 0x01, 0x00, 0x80 };
+    const vector<uint8_t> &bad_data = { 0x00, 0x02, 0x00, 0x80 };
+    const vector<uint8_t> &bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
+    const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
     WriteSimhObject(file, good_data_non_fixed);
     file << "123456789012";
     WriteSimhObject(file, good_data_non_fixed);
     WriteSimhObject(file, good_data_fixed, 512, good_data_fixed);
-    WriteSimhObject(file, bad_data_recovered, 512, bad_data_recovered);
     WriteSimhObject(file, bad_data, 512, bad_data);
+    WriteSimhObject(file, bad_data_not_recovered);
+    WriteSimhObject(file, end_of_data);
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -189,21 +190,25 @@ TEST(TapeTest, Read6)
     EXPECT_EQ('0', controller->GetBuffer()[9]);
     EXPECT_EQ('1', controller->GetBuffer()[10]);
     EXPECT_EQ('2', controller->GetBuffer()[11]);
+    CheckPositions(tape, 20, 1);
 
     // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
+    CheckPositions(tape, 540, 2);
 
     // Fixed, 1 block, bad data recovered
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
+    CheckPositions(tape, 1060, 3);
 
     // Fixed, 1 block, bad data
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::read_6);
+    CheckPositions(tape, 1064, 4);
 
     const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
     file.seekp(0);
@@ -215,6 +220,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::read_6);
+    CheckPositions(tape, 264, 1);
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
@@ -353,14 +359,17 @@ TEST(TapeTest, Space6_simh)
 
     // BLOCK, count = 0
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    CheckPositions(tape, 0, 0);
 
     // BLOCK, count < 0
     controller->SetCdbByte(2, 0xff);
     Dispatch(*tape, scsi_command::space_6);
+    CheckPositions(tape, 0, 0);
 
     // BLOCK, count > 0
     controller->SetCdbByte(2, 1);
     Dispatch(*tape, scsi_command::space_6);
+    CheckPositions(tape, 4, 0);
 
     // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
@@ -423,6 +432,18 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 10);
     Dispatch(*tape, scsi_command::space_6, sense_key::blank_check);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(5, GetInt32(controller->GetBuffer(), 3));
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Search for end-of-data
+    controller->SetCdbByte(1, 0b011);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    CheckPositions(tape, 24, 0);
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
@@ -431,7 +452,7 @@ TEST(TapeTest, Space6_simh)
     const vector<uint8_t> &bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
     const vector<uint8_t> &private_marker = { 0x00, 0x00, 0x00, 0x70 };
     const vector<uint8_t> &reserved_marker = { 0x00, 0x00, 0x00, 0xf0 };
-    const vector<uint8_t> &erase_gap = { 0xff, 0xff, 0xff, 0x7f };
+    const vector<uint8_t> &erase_gap = { 0xfe, 0xff, 0xff, 0xff };
     const vector<uint8_t> &tape_description_data_record = { 0x01, 0x00, 0x00, 0xe0 };
     WriteSimhObject(file, good_data, 512, good_data);
     WriteSimhObject(file, bad_data_not_recovered);
@@ -487,9 +508,8 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
     Dispatch(*tape, scsi_command::space_6);
-    // TODO
-    // CheckPositions(tape, 0, 0);
-    // EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
+    CheckPositions(tape, 0, 0);
+    EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
     // Write 1 block, 1 filemark, 1 block, 1 end-of-data
     file.seekp(0);
@@ -520,7 +540,7 @@ TEST(TapeTest, Space6_simh)
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
-    EXPECT_EQ(1, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 2);
 }
 

@@ -24,7 +24,7 @@ void initiator_util::ResetBus(Bus &bus)
 
 tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
-    array<uint8_t, 14> buf = { };
+    array<uint8_t, 255> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
@@ -33,12 +33,12 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
         return {sense_key {-1}, asc {-1}, -1};
     }
 
-    if (executor.GetByteCount() < static_cast<int>(buf.size())) {
-        warn("Device did not return standard REQUEST SENSE data");
+    trace(FormatBytes(buf, executor.GetByteCount()));
+
+    if (executor.GetByteCount() < 14) {
+        warn("Device did not return standard REQUEST SENSE data, sense data details are not available");
         return {sense_key {-1}, asc {-1}, -1};
     }
-
-    trace(FormatBytes(buf, static_cast<int>(buf.size())));
 
     return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
 }

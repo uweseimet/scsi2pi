@@ -125,7 +125,7 @@ private:
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
     uint64_t ValidateBlockAddress(access_mode) const;
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode);
+    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
 
     shared_ptr<Cache> cache;
 

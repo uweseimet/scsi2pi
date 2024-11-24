@@ -75,8 +75,11 @@ private:
 
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     uint32_t FindNextObject(Tape::object_type, int64_t);
+    void ReadNextMetaData(SimhMetaData&, int64_t, bool);
 
-    int64_t MoveBackwards(int64_t);
+    [[noreturn]] void EndOfPartition(int64_t);
+    [[noreturn]] void EndOfData(Tape::object_type, int64_t);
+    [[noreturn]] void Filemark(int64_t);
 
     uint32_t GetByteCount();
 
@@ -90,11 +93,8 @@ private:
     void Erase();
 
     void ResetPosition();
-    void AdjustForSpacing(const SimhMetaData&, bool);
-    void AdjustForReading(const SimhMetaData&, bool);
-    uint32_t AdjustResult(const SimhMetaData&, bool, object_type);
 
-    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, bool, bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int64_t, bool, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckBlockLength(int);
@@ -106,7 +106,7 @@ private:
 
     fstream file;
 
-    int64_t position = 0;
+    int64_t tape_position = 0;
 
     bool fixed = false;
 

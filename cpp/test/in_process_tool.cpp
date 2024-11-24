@@ -112,8 +112,6 @@ int main(int argc, char *argv[])
 
     vector<char*> target_args;
     add_arg(target_args, "s2p");
-    add_arg(target_args, "--port");
-    add_arg(target_args, "6870");
     for (const auto &arg : Split(t_args, ' ')) {
         add_arg(target_args, arg);
     }
@@ -131,8 +129,6 @@ int main(int argc, char *argv[])
         // Ensure that s2p is listening on its socket
         sleep(1);
 
-        add_arg(client_args, "--port");
-        add_arg(client_args, "6870");
         auto s2pctl = make_unique<S2pCtl>();
         s2pctl->Run(client_args);
     }

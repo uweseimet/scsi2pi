@@ -155,48 +155,47 @@ int Tape::ReadData(span<uint8_t> buf)
     const int size = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
-        file.seekg(position, ios::beg);
+        file.seekg(tape_position, ios::beg);
 
         record_length = FindNextObject(object_type::block, 0);
 
-        position -= record_length + META_DATA_SIZE;
+        tape_position -= record_length + META_DATA_SIZE;
 
         CheckBlockLength(size);
     }
 
     LogTrace(
-        fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, position, record_length));
+        fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, tape_position, record_length));
 
-    file.seekg(position, ios::beg);
+    file.seekg(tape_position, ios::beg);
     file.read((char*)buf.data(), size);
     CheckForReadError();
 
     remaining_count -= size;
-    position += size;
+    tape_position += size;
 
     if (IsAtRecordBoundary()) {
-        position += record_length > GetBlockSize() ? 0 : record_length - size + GetPadding(record_length);
+        tape_position += record_length > GetBlockSize() ? 0 : Pad(record_length) - size;
 
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data = { };
-        file.seekg(position, ios::beg);
+        file.seekg(tape_position, ios::beg);
         file.read((char*)data.data(), data.size());
         CheckForReadError();
 
         if (const int trailing_length = FromLittleEndian(data).value; static_cast<int>(record_length)
             != trailing_length) {
             LogError(fmt::format("Trailing record length {0} at position {1} does not match leading length {2}",
-                trailing_length, position, record_length));
+                trailing_length, tape_position, record_length));
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
 
         // Skip trailing length
-        position += META_DATA_SIZE;
-    }
+        tape_position += META_DATA_SIZE;
 
-    if (!remaining_count) {
-        ++block_location;
-        ++blocks_read;
+        if (!remaining_count) {
+            ++blocks_read;
+        }
     }
 
     return size;
@@ -214,26 +213,25 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         WriteMetaData(object_type::block, size);
     }
 
-    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, position,
+    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, tape_position,
         record_length));
 
-    file.seekp(position);
+    file.seekp(tape_position);
     file.write((const char*)buf.data(), size);
     CheckForWriteError();
 
     remaining_count -= size;
-    position += size;
-    if (!remaining_count) {
-        ++block_location;
-    }
+    tape_position += size;
 
     if (IsAtRecordBoundary()) {
-        if (!remaining_count && GetPadding(record_length)) {
+        if (!remaining_count && record_length != Pad(record_length)) {
             file << '\0';
-            ++position;
+            ++tape_position;
         }
 
-        position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
+        tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
+
+        ++block_location;
     }
 
     if (!remaining_count) {
@@ -455,6 +453,11 @@ void Tape::Space6()
 
     switch (const auto code = static_cast<object_type>(GetCdbByte(1) & 0x07); code) {
     case object_type::block:
+        if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
+            FindNextObject(code, count);
+        }
+        break;
+
     case object_type::filemark:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
             FindNextObject(code, count);
@@ -463,6 +466,7 @@ void Tape::Space6()
 
     case object_type::end_of_data:
         FindNextObject(object_type::end_of_data, 0);
+        tape_position -= META_DATA_SIZE;
         break;
 
     default:
@@ -513,11 +517,11 @@ void Tape::Locate(bool locate16)
                 throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
             }
 
-            position = identifier;
+            tape_position = identifier;
             block_location = identifier / GetBlockSize();
         }
         else {
-            position = identifier * GetBlockSize();
+            tape_position = identifier * GetBlockSize();
             block_location = identifier;
         }
     }
@@ -539,12 +543,12 @@ void Tape::ReadPosition() const
     fill_n(buf.begin(), 20, 0);
 
     // BOP
-    if (!position) {
+    if (!tape_position) {
         buf[0] = 0b10000000;
     }
 
     // EOP
-    if (position >= file_size) {
+    if (tape_position >= file_size) {
         buf[0] += 0b01000000;
     }
 
@@ -552,8 +556,8 @@ void Tape::ReadPosition() const
 
     // BT (SCSI-2)/service action 01 (since SSC-2)
     const bool bt = GetCdbByte(1) & 0x01;
-    SetInt32(buf, 4, static_cast<uint32_t>(bt ? position : block_location));
-    SetInt32(buf, 8, static_cast<uint32_t>(bt ? position : block_location));
+    SetInt32(buf, 4, static_cast<uint32_t>(bt ? tape_position : block_location));
+    SetInt32(buf, 8, static_cast<uint32_t>(bt ? tape_position : block_location));
 
     DataInPhase(20);
 }
@@ -566,7 +570,7 @@ void Tape::FormatMedium()
 
     CheckWritePreconditions();
 
-    if (position) {
+    if (tape_position) {
         throw scsi_exception(sense_key::illegal_request, asc::sequential_positioning_error);
     }
 
@@ -587,12 +591,12 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 
     assert(!(size & 0xf0000000));
 
-    file.seekp(position);
+    file.seekp(tape_position);
 
     switch (type) {
     case object_type::block:
     case object_type::filemark:
-        position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
+        tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
         break;
 
     case object_type::end_of_data:
@@ -612,155 +616,131 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     CheckForWriteError();
 }
 
-uint32_t Tape::FindNextObject(object_type type, int64_t count)
+uint32_t Tape::FindNextObject(object_type type, int64_t requested_count)
 {
-    const bool reverse = count < 0;
+    const bool reverse = requested_count < 0;
 
     LogTrace(fmt::format("{0}-spacing for object type {1}, count {2}", reverse ? "Reverse" : "Forward",
-        static_cast<int>(type), count));
+        static_cast<int>(type), requested_count));
 
     if (reverse) {
-        count = -count;
+        requested_count = -requested_count;
     }
 
     int64_t actual_count = 0;
 
     while (true) {
-        if (reverse) {
-            position -= MoveBackwards(count);
-        }
-
         SimhMetaData meta_data = { };
-        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse, true);
+        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, requested_count, reverse, true);
 
-        LogTrace(fmt::format("Found object type {0} at position {1}, length {2}, spaced over {3} object(s)",
-            static_cast<int>(scsi_type), position - META_DATA_SIZE, length, actual_count));
+        --requested_count;
+        ++actual_count;
 
-        if (type == scsi_type && count <= 1) {
-            return AdjustResult(meta_data, reverse, type);
+        LogTrace(
+            fmt::format("Found object type {0}, length {1}, spaced over {2} object(s)", static_cast<int>(scsi_type),
+                length, actual_count));
+
+        if (type == scsi_type && requested_count <= 0) {
+            if (!reverse) {
+                tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
+            }
+
+            return meta_data.value;
         }
 
-        --count;
-
-        // End-of-partition
         if (scsi_type == object_type::end_of_partition) {
-            LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", position));
-            SetInformation(count - actual_count + 1);
-            SetEom(ascq::end_of_partition_medium_detected);
-            throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+            EndOfPartition(reverse ? -requested_count + actual_count - 1 : actual_count - 1);
         }
 
         // End-of-data while spacing over blocks or filemarks
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
-            position -= META_DATA_SIZE;
-
-            LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type{1}", position,
-                static_cast<int>(type)));
-            SetInformation(count - actual_count + 1);
-            SetEom(ascq::end_of_data_detected);
-            throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
+            EndOfData(type, reverse ? -requested_count + actual_count - 1 : actual_count - 1);
         }
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            if (reverse) {
-                position -= META_DATA_SIZE;
-            }
-
-            LogTrace(
-                fmt::format("Encountered filemark at position {} while spacing over blocks",
-                    reverse ? position : position - META_DATA_SIZE));
-            SetInformation(actual_count);
-            SetFilemark();
-            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
+            Filemark(reverse ? -actual_count : actual_count);
         }
 
-        ++actual_count;
-
-        AdjustForSpacing(meta_data, reverse);
+        if (!reverse && IsRecord(meta_data)) {
+            tape_position += Pad(meta_data.value) + META_DATA_SIZE;
+        }
     }
+}
+
+void Tape::EndOfPartition(int64_t info)
+{
+    LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", tape_position));
+
+    SetInformation(info);
+    SetEom(ascq::end_of_partition_medium_detected);
+
+    throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
+}
+
+void Tape::EndOfData(object_type type, int64_t info)
+{
+    LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type {1}", tape_position,
+        static_cast<int>(type)));
+
+    tape_position -= META_DATA_SIZE;
+
+    SetInformation(info);
+    SetEom(ascq::end_of_data_detected);
+
+    throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
+}
+
+void Tape::Filemark(int64_t info)
+{
+    LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
+
+    SetInformation(info);
+    SetFilemark();
+
+    throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
 }
 
 void Tape::ResetPosition()
 {
-    position = 0;
+    tape_position = 0;
     block_location = 0;
 }
 
-void Tape::AdjustForSpacing(const SimhMetaData &meta_data, bool reverse)
+void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
 {
     if (reverse) {
-        position -= META_DATA_SIZE;
+        if (tape_position < META_DATA_SIZE) {
+            LogTrace("Encountered beginning-of-partition while reverse-spacing");
+            ResetPosition();
+            SetInformation(count);
+            SetEom(ascq::beginning_of_partition_medium_detected);
+            throw scsi_exception(sense_key::no_sense);
+        }
+
+        // Position before trailing length or marker
+        tape_position -= META_DATA_SIZE;
+
+        file.seekg(tape_position, ios::beg);
+        if (!ReadMetaData(file, meta_data)) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+        tape_position -= IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
     }
-    else if (IsRecord(meta_data)) {
-        position += meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE;
+    else {
+        file.seekg(tape_position, ios::beg);
+        if (!ReadMetaData(file, meta_data)) {
+            throw scsi_exception(sense_key::medium_error, asc::read_error);
+        }
+        tape_position += META_DATA_SIZE;
     }
 
     if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)) {
-        if (reverse) {
-            --block_location;
-        }
-        else {
-            ++block_location;
-        }
-    }
-}
-
-void Tape::AdjustForReading(const SimhMetaData &meta_data, bool reverse)
-{
-    if (reverse) {
-        position -= 2 * META_DATA_SIZE;
+        block_location += reverse ? -1 : 1;
     }
 
-    if (IsRecord(meta_data)) {
-        if (reverse) {
-            --block_location;
-        }
-        else {
-            position += meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE;
-            ++block_location;
-        }
-    }
-}
-
-uint32_t Tape::AdjustResult(const SimhMetaData &meta_data, bool reverse, object_type type)
-{
-    if (reverse) {
-        if (type == object_type::block) {
-            AdjustForSpacing(meta_data, true);
-        }
-        else {
-            position -= META_DATA_SIZE;
-        }
-    }
-    else {
-        AdjustForSpacing(meta_data, false);
-    }
-
-    return meta_data.value;
-}
-
-int64_t Tape::MoveBackwards(int64_t count)
-{
-    if (position < META_DATA_SIZE) {
-        LogTrace("Encountered beginning-of-partition while reverse-spacing");
-        ResetPosition();
-        SetInformation(count);
-        SetEom(ascq::beginning_of_partition_medium_detected);
-        throw scsi_exception(sense_key::no_sense);
-    }
-
-    // Position before trailing length or marker
-    position -= META_DATA_SIZE;
-
-    file.seekg(position, ios::beg);
-
-    SimhMetaData meta_data;
-    if (!ReadMetaData(file, meta_data)) {
-        throw scsi_exception(sense_key::medium_error, asc::read_error);
-    }
-
-    return IsRecord(meta_data) ? meta_data.value + GetPadding(meta_data.value) + META_DATA_SIZE : 0;
+    LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
+        static_cast<int>(meta_data.cls), meta_data.value, reverse ? tape_position : tape_position - META_DATA_SIZE));
 }
 
 uint32_t Tape::GetByteCount()
@@ -770,14 +750,14 @@ uint32_t Tape::GetByteCount()
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
 
-    LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", position, count));
+    LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", tape_position, count));
 
     return count;
 }
 
 void Tape::Erase()
 {
-    file.seekp(position);
+    file.seekp(tape_position);
 
     // Erase in chunks, using SIMH gaps as a pattern (little endian)
     vector<uint8_t> buf;
@@ -790,7 +770,7 @@ void Tape::Erase()
         buf.push_back((gap >> 24) & 0xff);
     }
 
-    uint64_t remaining = file_size - position;
+    uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
         uint64_t chunk = remaining;
         if (chunk > buf.size()) {
@@ -801,7 +781,7 @@ void Tape::Erase()
         CheckForWriteError();
 
         remaining -= chunk;
-        position += chunk;
+        tape_position += chunk;
         block_location += chunk / GetBlockSize();
     }
 }
@@ -828,19 +808,11 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, bool reverse, bool find_only)
+pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int64_t count, bool reverse,
+    bool find_only)
 {
     while (true) {
-        file.seekg(position, ios::beg);
-
-        if (!ReadMetaData(file, meta_data)) {
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
-        }
-
-        LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
-            static_cast<int>(meta_data.cls), meta_data.value, position));
-
-        position += META_DATA_SIZE;
+        ReadNextMetaData(meta_data, count, reverse);
 
         switch (meta_data.cls) {
         case simh_class::tape_mark_good_data_record:
@@ -860,25 +832,24 @@ pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, boo
             LogTrace(
                 meta_data.value == static_cast<int>(simh_marker::erase_gap) ?
                     "Skipping SIMH erase gap" : "Skipping unknown SIMH reserved marker");
-            AdjustForReading(meta_data, reverse);
             break;
 
         case simh_class::private_marker:
             if ((meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
                 LogTrace(fmt::format("Found SCSI2Pi private marker for object type {0} at position {1}",
-                    (meta_data.value >> 24) & 0x0f, position - META_DATA_SIZE));
-                AdjustForReading(meta_data, reverse);
+                    (meta_data.value >> 24) & 0x0f, tape_position - META_DATA_SIZE));
                 return {static_cast<object_type>((meta_data.value >> 24) & 0x0f), 0};
             }
             LogTrace(fmt::format("Skipping unknown SIMH private marker, value ${0:07x} at position {1}",
-                static_cast<int>(meta_data.value), position - META_DATA_SIZE));
-            AdjustForReading(meta_data, reverse);
+                static_cast<int>(meta_data.value), tape_position - META_DATA_SIZE));
             break;
 
         default:
             LogTrace(fmt::format("Skipping unknown SIMH class {0:1X} at position {1}",
-                static_cast<int>(meta_data.cls), position - META_DATA_SIZE));
-            AdjustForReading(meta_data, reverse);
+                static_cast<int>(meta_data.cls), tape_position - META_DATA_SIZE));
+            if (!reverse && IsRecord(meta_data)) {
+                tape_position += Pad(meta_data.value) + META_DATA_SIZE;
+            }
             break;
         }
     }
@@ -888,9 +859,9 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
 {
     LogTrace(
         fmt::format("Writing SIMH meta_data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, position));
+        value, tape_position));
 
-    if (position + META_DATA_SIZE > max_file_size) {
+    if (tape_position + META_DATA_SIZE > max_file_size) {
         ++write_error_count;
         throw scsi_exception(sense_key::volume_overflow);
     }
@@ -908,6 +879,8 @@ void Tape::CheckBlockLength(int length)
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (fixed) {
+            tape_position += record_length + META_DATA_SIZE;
+
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
@@ -918,6 +891,8 @@ void Tape::CheckBlockLength(int length)
         // If SILI is set report CHECK CONDITION for the overlength condition only.
         else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize())
             || length > static_cast<int>(record_length)) {
+            tape_position += record_length + META_DATA_SIZE;
+
             SetIli();
             SetInformation(length - record_length);
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
