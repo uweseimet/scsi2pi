@@ -26,6 +26,7 @@ void S2pSimh::Banner(bool help)
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
             << "  --add/-a CLASS1:VALUE1,...  Add objects.\n"
+            << "  --data DATA_FILE            Optional file to read the record data from.\n"
             << "  --dump/-d                   Dump data record contents.\n"
             << "  --limit/-l LIMIT            Limit dump size to LIMIT bytes.\n"
             << "  --truncate/-t               Truncate file before adding objects.\n"
@@ -36,8 +37,11 @@ void S2pSimh::Banner(bool help)
 
 bool S2pSimh::ParseArguments(span<char*> args)
 {
+    const int OPT_DATA = 2;
+
     const vector<option> options = {
         { "add", required_argument, nullptr, 'a' },
+        { "data", required_argument, nullptr, OPT_DATA },
         { "dump", no_argument, nullptr, 'd' },
         { "limit", required_argument, nullptr, 'l' },
         { "truncate", no_argument, nullptr, 't' },
@@ -88,12 +92,20 @@ bool S2pSimh::ParseArguments(span<char*> args)
             break;
 
         case 1:
-            filename = optarg;
+            simh_filename = optarg;
+            break;
+
+        case OPT_DATA:
+            data_filename = optarg;
             break;
 
         default:
             Banner(false);
             return false;
+        }
+
+        if (!simh_filename.empty()) {
+            break;
         }
     }
 
@@ -107,19 +119,19 @@ bool S2pSimh::ParseArguments(span<char*> args)
         return false;
     }
 
-    if (filename.empty()) {
+    if (simh_filename.empty()) {
         Banner(true);
         return false;
     }
 
     if (truncate) {
-        ofstream f(filename);
+        ofstream f(simh_filename);
         if (f.fail()) {
-            cerr << "Error: Can't open '" << filename << "'" << endl;
+            cerr << "Error: Can't open '" << simh_filename << "'" << endl;
             return false;
         }
         f.close();
-        ::truncate(filename.c_str(), 0);
+        ::truncate(simh_filename.c_str(), 0);
     }
 
     return true;
@@ -131,9 +143,9 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    file.open(filename, ios::in | ios::out | ios::binary);
-    if (file.fail()) {
-        cerr << "Error: Can't open '" << filename << "':" << strerror(errno) << endl;
+    simh_file.open(simh_filename, ios::in | ios::out | ios::binary);
+    if (simh_file.fail()) {
+        cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << endl;
         return EXIT_FAILURE;
     }
 
@@ -147,21 +159,21 @@ int S2pSimh::Run(span<char*> args)
 int S2pSimh::Analyze()
 {
     try {
-        file_size = filesystem::file_size(filename);
+        simh_file_size = filesystem::file_size(simh_filename);
     }
     catch (const filesystem::filesystem_error &e) {
-        cerr << "Error: Can't get size of '" << filename << "': " << e.what() << endl;
+        cerr << "Error: Can't get size of '" << simh_filename << "': " << e.what() << endl;
         return EXIT_FAILURE;
     }
 
-    while (position < file_size) {
+    while (position < simh_file_size) {
         old_position = position;
 
-        file.seekg(position);
+        simh_file.seekg(position);
 
         SimhMetaData meta_data;
-        if (!ReadMetaData(file, meta_data)) {
-            cerr << "Error: Can't read from '" << filename << "': " << strerror(errno) << endl;
+        if (!ReadMetaData(simh_file, meta_data)) {
+            cerr << "Error: Can't read from '" << simh_filename << "': " << strerror(errno) << endl;
             return EXIT_FAILURE;
         }
 
@@ -245,20 +257,52 @@ int S2pSimh::Analyze()
 
 int S2pSimh::Add()
 {
+    if (!data_filename.empty()) {
+        data_file.open(data_filename, ios::in);
+        if (!data_file.is_open()) {
+            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << endl;
+            return EXIT_FAILURE;
+        }
+    }
+
+    simh_file.seekp(0, ios::end);
+
     for (const auto &object : meta_data) {
         const auto &data = ToLittleEndian(object);
-        file.seekp(0, ios::end);
-        file.write((const char*)data.data(), data.size());
-        if (file.bad()) {
-            cerr << "Can't write to '" << filename << "': " << strerror(errno) << endl;
+        simh_file.write((const char*)data.data(), data.size());
+        if (simh_file.bad()) {
+            cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << endl;
             return EXIT_FAILURE;
         }
 
         if (IsRecord(object) && !(object.cls == simh_class::bad_data_record && !object.value)) {
-            file.seekp(Pad(object.value & 0x0fffffff), ios::cur);
-            file.write((const char*)data.data(), data.size());
-            if (file.bad()) {
-                cerr << "Can't write to '" << filename << "': " << strerror(errno) << endl;
+            const uint32_t length = object.value & 0x0fffffff;
+
+            if (data_file.is_open()) {
+                vector<uint8_t> record_data(length);
+                data_file.read((char*)record_data.data(), record_data.size());
+                if (data_file.bad()) {
+                    cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << endl;
+                    return EXIT_FAILURE;
+                }
+                if (data_file.eof()) {
+                    cerr << "Error: Not enough record data in '" << data_filename << "'" << endl;
+                    return EXIT_FAILURE;
+                }
+                simh_file.write((const char*)record_data.data(), record_data.size());
+            }
+            else {
+                simh_file.seekp(Pad(length), ios::cur);
+            }
+
+            if (length != Pad(length)) {
+                simh_file << '\0';
+            }
+
+            simh_file.write((const char*)data.data(), data.size());
+
+            if (simh_file.bad()) {
+                cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << endl;
                 return EXIT_FAILURE;
             }
         }
@@ -304,8 +348,8 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     position += Pad(meta_data.value);
 
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.seekg(position);
-    file.read((char*)data.data(), data.size());
+    simh_file.seekg(position);
+    simh_file.read((char*)data.data(), data.size());
     if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta_data.value) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
             << ") does not match leading length " << dec << meta_data.value << hex << " ($" << meta_data.value << ")"
@@ -342,13 +386,13 @@ bool S2pSimh::PrintReservedMarker(const simh_util::SimhMetaData &meta_data)
 
 bool S2pSimh::ReadRecord(span<uint8_t> buf)
 {
-    if (static_cast<off_t>(position + buf.size()) > file_size) {
+    if (static_cast<off_t>(position + buf.size()) > simh_file_size) {
         return false;
     }
 
-    file.read((char*)buf.data(), buf.size());
+    simh_file.read((char*)buf.data(), buf.size());
 
-    return file.good();
+    return simh_file.good();
 }
 
 vector<SimhMetaData> S2pSimh::ParseObject(const string &s)

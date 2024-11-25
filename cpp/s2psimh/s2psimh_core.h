@@ -42,11 +42,13 @@ private:
 
     vector<simh_util::SimhMetaData> ParseObject(const string&);
 
-    string filename;
+    string simh_filename;
+    string data_filename;
 
-    off_t file_size;
+    fstream simh_file;
+    ifstream data_file;
 
-    fstream file;
+    off_t simh_file_size;
 
     int64_t position = 0;
     int64_t old_position = 0;
