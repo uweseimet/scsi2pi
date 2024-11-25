@@ -197,13 +197,13 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Logical unit number (0-31 for SCSI, 0-1 for SASI). The LUN defaults to 0. This option is used when there are multiple SCSI/SASI devices for the same SCSI ID.
 
 .SH EXAMPLES
-Show the completer remote service information.
+Display the completer remote service information.
    s2pctl -s
 
 Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "hdimage0.hds".
    s2pctl -i 0 -f hdimage0.hds
 
 .SH SEE ALSO
-s2p(1), s2pdump(1), s2pexec(1), s2pproto(1), s2psimh(1)
+s2p(1), s2pdump(1), s2pexec(1), s2pproto(1), s2psimh(1), s2ptool(1)
 
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.
