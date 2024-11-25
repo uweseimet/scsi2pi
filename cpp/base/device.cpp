@@ -76,12 +76,12 @@ void Device::SetParams(const param_map &set_params)
     }
 
     for (const auto& [key, value] : set_params) {
-        // It is assumed that there are default parameters for all supported parameters
+        // It is assumed that there are defaults for all supported parameters
         if (params.contains(key)) {
             params[key] = value;
         }
         else {
-            warn("Ignored unknown parameter '" + key + "'");
+            warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
         }
     }
 }

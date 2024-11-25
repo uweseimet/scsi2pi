@@ -185,7 +185,7 @@ int Tape::ReadData(span<uint8_t> buf)
         tape_position += record_length > GetBlockSize() ? 0 : Pad(record_length) - size;
 
         // Trailing length
-        array<uint8_t, META_DATA_SIZE> data = { };
+        array<uint8_t, META_DATA_SIZE> data;
         file.seekg(tape_position);
         file.read((char*)data.data(), data.size());
         CheckForReadError();
@@ -635,7 +635,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
     int64_t actual_count = 0;
 
     while (true) {
-        SimhMetaData meta_data = { };
+        SimhMetaData meta_data;
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, requested_count, reverse);
 
         // Bad data (not recovered) during READ(6)?
