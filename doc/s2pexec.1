@@ -7,7 +7,7 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--sasi-target/-h\fR \fIID[:LUN]\fR]
 [\fB\--board-id/-B\fR \fIBOARD_ID\fR]
 [\fB\--cdb/-c\fR \fICDB[:CDB:...]\fR]
-[\fB\--data/-c\fR \fIDATA\fR]
+[\fB\--data/-d\fR \fIDATA\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
@@ -47,7 +47,7 @@ Initiator ID used by s2pexec. If not specified, s2pexec will use the board (init
 Command blocks to send in hexecimal format. Hexadecimal numbers may be separated by a colon. s2pexec also accepts linked commands.
 .TP
 .BR --data/-d\fI " "\fIDATA
-Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase.
+Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase. If DATA starts with @, the remaining string is the name of a file in hexadecimal format to read the data from.
 .TP
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 Buffer size for received data, the default is 131072 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.

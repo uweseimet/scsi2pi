@@ -50,16 +50,15 @@ void S2pExec::Banner(bool header, bool usage)
             << "                                default LUN is 0.\n"
             << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
             << "  --cdb/-c CDB[:CDB:...]        Command blocks to send in hexadecimal format.\n"
-            << "  --data/-d DATA                Data to send with the command in\n"
-            << "                                hexadecimal format.\n"
+            << "  --data/-d DATA                Data to send with the command in hexadecimal\n"
+            << "                                format. @ denotes a filename, e.g. @data.txt.\n"
             << "  --buffer-size/-b SIZE         Buffer size for received data,\n"
             << "                                default is 131072 bytes.\n"
             << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error|\n"
             << "                                critical|off), default is 'info'.\n"
             << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
             << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
-            << "  --hex-input-file/-t FILE      Hexadecimal text input file with data to send.\n"
-            << "  --hex-input-file/-T FILE      Hexadecimal text output file for data received.\n"
+            << "  --hex-output-file/-T FILE     Hexadecimal text output file for data received.\n"
             << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
             << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
             << "  --reset-bus/-r                Reset the bus.\n"
@@ -101,7 +100,6 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "cdb", required_argument, nullptr, 'c' },
         { "data", required_argument, nullptr, 'd' },
         { "help", no_argument, nullptr, 'H' },
-        { "hex-input-file", required_argument, nullptr, 't' },
         { "hex-only", no_argument, nullptr, 'x' },
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "no-request-sense", no_argument, nullptr, 'n' },
@@ -129,7 +127,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:t:T:Hnrvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:T:Hnrvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -145,7 +143,12 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         case 'd':
-            data = optarg;
+            if (const string d = optarg; d.starts_with('@')) {
+                hex_input_filename = d.substr(1);
+            }
+            else {
+                data = d;
+            }
             break;
 
         case 'f':
@@ -183,10 +186,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'r':
             reset_bus = true;
-            break;
-
-        case 't':
-            hex_input_filename = optarg;
             break;
 
         case 'T':
