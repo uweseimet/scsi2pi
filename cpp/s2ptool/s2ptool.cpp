@@ -18,19 +18,19 @@ using namespace s2p_util;
 
 void usage()
 {
-    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Test Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Tool)\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2023-2024 Uwe Seimet\n";
 
-    cout << "Usage: in_process_tool [options]\n"
-        << "  --client/-c       In-process client to run against s2p (s2pctl|s2pdump|\n"
-        << "                    s2pexec|s2pproto), default is s2pexec.\n"
-        << "  --client-args/-a  Arguments to run client with,\n"
-        << "                    optional for s2pctl and s2pexec.\n"
-        << "  --s2p-args/-s     Arguments to run s2p with.\n"
-        << "  --log-signals/-l  On log level trace also log bus signals.\n"
-        << "  --version/-v      Display the program version.\n"
-        << "  --help/-h         Display this help.\n";
+    cout << "Usage: s2ptool [options]\n"
+        << "  --client/-c CLIENT  The client tool to run against s2p (s2pctl|s2pdump|\n"
+        << "                      s2pexec|s2pproto), default is s2pexec.\n"
+        << "  --client-args/-a    Arguments to run the client tool with,\n"
+        << "                      optional for s2pctl and s2pexec.\n"
+        << "  --s2p-args/-s       Arguments to run s2p with.\n"
+        << "  --log-signals/-l    On log level trace also log bus signals.\n"
+        << "  --version/-v        Display the program version.\n"
+        << "  --help/-h           Display this help.\n";
 }
 
 void add_arg(vector<char*> &args, const string &arg)
