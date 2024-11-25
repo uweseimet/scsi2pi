@@ -74,12 +74,14 @@ private:
     void Locate(bool);
 
     void WriteMetaData(Tape::object_type, uint32_t = 0);
-    uint32_t FindNextObject(Tape::object_type, int64_t);
+    SimhMetaData FindNextObject(Tape::object_type, int64_t, bool = false);
     void ReadNextMetaData(SimhMetaData&, int64_t, bool);
 
-    [[noreturn]] void EndOfPartition(int64_t);
-    [[noreturn]] void EndOfData(Tape::object_type, int64_t);
-    [[noreturn]] void Filemark(int64_t);
+    [[noreturn]] void RaiseBeginningOfPartition(int64_t);
+    [[noreturn]] void RaiseEndOfPartition(int64_t);
+    [[noreturn]] void RaiseEndOfData(Tape::object_type, int64_t);
+    [[noreturn]] void RaiseFilemark(int64_t);
+    [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
     uint32_t GetByteCount();
 
@@ -94,7 +96,7 @@ private:
 
     void ResetPosition();
 
-    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int64_t, bool, bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int64_t, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckBlockLength(int);
@@ -105,6 +107,8 @@ private:
     void CheckForWriteError();
 
     fstream file;
+
+    SimhMetaData current_meta_data = { };
 
     int64_t tape_position = 0;
 

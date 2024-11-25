@@ -281,7 +281,13 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
                 i++;
             }
 
-            bytes.push_back(static_cast<byte>((HexToDec(line_lower[i]) << 4) + HexToDec(line_lower[i + 1])));
+            const int b1 = HexToDec(line_lower[i]) << 4;
+            const int b2 = HexToDec(line_lower[i + 1]);
+            if (b1 == -1 || b2 == -1) {
+                throw out_of_range("");
+            }
+
+            bytes.push_back(static_cast<byte>(b1 + b2));
 
             i += 2;
         }
@@ -342,7 +348,7 @@ int s2p_util::HexToDec(char c)
         return c - 'a' + 10;
     }
 
-    throw out_of_range("");
+    return -1;
 }
 
 string s2p_util::Trim(const string &s)

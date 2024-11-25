@@ -11,6 +11,7 @@
 #include <cstring>
 #include <filesystem>
 #include <getopt.h>
+#include <unistd.h>
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
@@ -18,36 +19,49 @@ using namespace simh_util;
 
 void S2pSimh::Banner(bool help)
 {
-    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SIMH .tap File Analysis Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SIMH .tap File Tool)\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2024 Uwe Seimet\n";
 
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
-            << "  --dump/-d         Dump record contents.\n"
-            << "  --limit/-l LIMIT  Limit record contents dump size to LIMIT bytes.\n"
-            << "  --version/-v      Display the program version.\n"
-            << "  --help/-h         Display this help.\n";
+            << "  --add/-a CLASS1:VALUE1,...  Add objects.\n"
+            << "  --dump/-d                   Dump data record contents.\n"
+            << "  --limit/-l LIMIT            Limit dump size to LIMIT bytes.\n"
+            << "  --truncate/-t               Truncate file before adding objects.\n"
+            << "  --version/-v                Display the program version.\n"
+            << "  --help/-h                   Display this help.\n";
     }
 }
 
 bool S2pSimh::ParseArguments(span<char*> args)
 {
     const vector<option> options = {
+        { "add", required_argument, nullptr, 'a' },
         { "dump", no_argument, nullptr, 'd' },
         { "limit", required_argument, nullptr, 'l' },
+        { "truncate", no_argument, nullptr, 't' },
         { "help", no_argument, nullptr, 'h' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
 
+    bool truncate = false;
     bool version = false;
     bool help = false;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-dhl:v", options.data(), nullptr)) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-a:dhl:tv", options.data(), nullptr)) != -1) {
         switch (opt) {
+        case 'a': {
+            meta_data = ParseObject(optarg);
+            if (meta_data.empty()) {
+                return false;
+            }
+        }
+            break;
+
         case 'd':
             dump = true;
             break;
@@ -63,6 +77,10 @@ bool S2pSimh::ParseArguments(span<char*> args)
 
         case 'h':
             help = true;
+            break;
+
+        case 't':
+            truncate = true;
             break;
 
         case 'v':
@@ -94,6 +112,16 @@ bool S2pSimh::ParseArguments(span<char*> args)
         return false;
     }
 
+    if (truncate) {
+        ofstream f(filename);
+        if (f.fail()) {
+            cerr << "Error: Can't open '" << filename << "'" << endl;
+            return false;
+        }
+        f.close();
+        ::truncate(filename.c_str(), 0);
+    }
+
     return true;
 }
 
@@ -103,12 +131,21 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    file.open(filename, ios::in | ios::binary);
+    file.open(filename, ios::in | ios::out | ios::binary);
     if (file.fail()) {
         cerr << "Error: Can't open '" << filename << "':" << strerror(errno) << endl;
         return EXIT_FAILURE;
     }
 
+    if (meta_data.empty()) {
+        return Analyze();
+    }
+
+    return Add();
+}
+
+int S2pSimh::Analyze()
+{
     try {
         file_size = filesystem::file_size(filename);
     }
@@ -117,15 +154,10 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_FAILURE;
     }
 
-    return Analyze();
-}
-
-int S2pSimh::Analyze()
-{
     while (position < file_size) {
         old_position = position;
 
-        file.seekg(position, ios::beg);
+        file.seekg(position);
 
         SimhMetaData meta_data;
         if (!ReadMetaData(file, meta_data)) {
@@ -211,6 +243,30 @@ int S2pSimh::Analyze()
     return EXIT_SUCCESS;
 }
 
+int S2pSimh::Add()
+{
+    for (const auto &object : meta_data) {
+        const auto &data = ToLittleEndian(object);
+        file.seekp(0, ios::end);
+        file.write((const char*)data.data(), data.size());
+        if (file.bad()) {
+            cerr << "Can't write to '" << filename << "': " << strerror(errno) << endl;
+            return EXIT_FAILURE;
+        }
+
+        if (IsRecord(object) && !(object.cls == simh_class::bad_data_record && !object.value)) {
+            file.seekp(Pad(object.value & 0x0fffffff), ios::cur);
+            file.write((const char*)data.data(), data.size());
+            if (file.bad()) {
+                cerr << "Can't write to '" << filename << "': " << strerror(errno) << endl;
+                return EXIT_FAILURE;
+            }
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
 void S2pSimh::PrintClass(const SimhMetaData &meta_data) const
 {
     cout << "Offset " << old_position << hex << " ($" << old_position << "): Class " << uppercase
@@ -248,7 +304,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     position += Pad(meta_data.value);
 
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.seekg(position, ios::beg);
+    file.seekg(position);
     file.read((char*)data.data(), data.size());
     if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta_data.value) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
@@ -293,4 +349,35 @@ bool S2pSimh::ReadRecord(span<uint8_t> buf)
     file.read((char*)buf.data(), buf.size());
 
     return file.good();
+}
+
+vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
+{
+    vector<SimhMetaData> objects;
+
+    for (const auto &object : Split(s, ',')) {
+        const auto &components = Split(object, ':');
+        if (components.empty() || components.size() % 2) {
+            cerr << "Error: Invalid class/value definition '" << object << "'" << endl;
+            return {};
+        }
+
+        const string &cls = ToLower(components[0]);
+        const int c = HexToDec(cls[0]);
+        if (cls.size() > 1 || c == -1) {
+            cerr << "Error: Invalid class '" << cls << "'" << endl;
+            return {};
+        }
+
+        const string &value = components[1];
+        int v;
+        if (!GetAsUnsignedInt(value, v) || v > 0xffffffff) {
+            cerr << "Error: Invalid value '" << value << "'" << endl;
+            return {};
+        }
+
+        objects.push_back(SimhMetaData(static_cast<simh_class>(c), static_cast<uint32_t>(v)));
+    }
+
+    return objects;
 }

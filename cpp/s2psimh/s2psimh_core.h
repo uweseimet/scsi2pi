@@ -12,6 +12,7 @@
 #include <limits>
 #include <span>
 #include <string>
+#include <vector>
 #include "shared/simh_util.h"
 
 using namespace std;
@@ -29,6 +30,7 @@ private:
 
     bool ParseArguments(span<char*>);
 
+    int Add();
     int Analyze();
 
     void PrintClass(const simh_util::SimhMetaData&) const;
@@ -37,6 +39,8 @@ private:
     bool PrintReservedMarker(const simh_util::SimhMetaData&);
 
     bool ReadRecord(span<uint8_t>);
+
+    vector<simh_util::SimhMetaData> ParseObject(const string&);
 
     string filename;
 
@@ -48,5 +52,8 @@ private:
     int64_t old_position = 0;
 
     bool dump = false;
+
+    vector<simh_util::SimhMetaData> meta_data;
+
     uint32_t limit = numeric_limits<uint32_t>::max();
 };

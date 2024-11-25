@@ -1,29 +1,37 @@
 .TH s2psimh 1
 .SH NAME
-s2psimh \- SCSI2Pi SIMH .tap File Analysis Tool
+s2psimh \- SCSI2Pi SIMH .tap File Tool
 .SH SYNOPSIS
 .B s2psimh
+[\fB\--add/-a\fR \fICLASS1:VALUE1,...\fR]
 [\fB\--dump/-d\fR]
 [\fB\--limit/-l\fR \fILIMIT\fR]
+[\fB\--truncate/-t\fR]
 [\fB\--help/-h\fR]
 [\fB\--version/-v\fR]
 <SIMH_TAP_FILE>
 .SH DESCRIPTION
 .B s2psimh
-analyses .tap tape image files in SIMH format and display the file structure.
+analyses and manipulates SIMH .tap tape image files.
 
 .SH NOTES
 
 .B s2psimh
-ensures that a SIMH file has a proper format.
+displays SIMH file contents, checks that they have a proper format, and adds new SIMH objects.
 
 .SH OPTIONS
 .TP
-.BR --dump/-h\fI
-Dump record contents.
+.BR --add/-a\fI " " \fICLASS1:VALUE1,...
+Add objects.
+.TP
+.BR --dump/-d\fI
+Dump data record contents.
 .TP
 .BR --limit/-l\fI " " \fILIMIT
-Limit record contents dump size to LIMIT bytes.
+Limit dump size to LIMIT bytes.
+.TP
+.BR --truncate/-t\fI
+Truncate file before adding objects.
 .TP
 .BR --help/-h\fI
 Show a help text.
@@ -32,7 +40,7 @@ Show a help text.
 Show the s2psimh version.
 
 .SH EXIT STATUS
-0:  No error. -1: There was a general error and the file could not be analyzed.
+0:  No error. -1: There was a general error and the file could not be accessed.
 
 .SH SEE ALSO
 s2p(1), s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1)

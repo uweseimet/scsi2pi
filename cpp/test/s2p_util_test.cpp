@@ -229,9 +229,9 @@ TEST(S2pUtilTest, HexToDec)
     EXPECT_EQ(9, HexToDec('9'));
     EXPECT_EQ(10, HexToDec('a'));
     EXPECT_EQ(15, HexToDec('f'));
-    EXPECT_THROW(HexToDec('A'), out_of_range);
-    EXPECT_THROW(HexToDec('F'), out_of_range);
-    EXPECT_THROW(HexToDec('x'), out_of_range);
+    EXPECT_EQ(-1, HexToDec('A'));
+    EXPECT_EQ(-1, HexToDec('F'));
+    EXPECT_EQ(-1, HexToDec('x'));
 }
 
 TEST(S2pUtilTest, Trim)
