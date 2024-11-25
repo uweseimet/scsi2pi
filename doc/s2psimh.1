@@ -4,6 +4,7 @@ s2psimh \- SCSI2Pi SIMH .tap File Tool
 .SH SYNOPSIS
 .B s2psimh
 [\fB\--add/-a\fR \fICLASS1:VALUE1,...\fR]
+[\fB\--dump\fR \fIDATA_FILE\fR]
 [\fB\--dump/-d\fR]
 [\fB\--limit/-l\fR \fILIMIT\fR]
 [\fB\--truncate/-t\fR]
@@ -23,6 +24,9 @@ displays SIMH file contents, checks that they have a proper format, and adds new
 .TP
 .BR --add/-a\fI " " \fICLASS1:VALUE1,...
 Add objects.
+.TP
+.BR --data/\fI " " \fIDATA_FILE
+An optional file to read the record data from. If this file is not specified, the data record contents are undefined.
 .TP
 .BR --dump/-d\fI
 Dump data record contents.
