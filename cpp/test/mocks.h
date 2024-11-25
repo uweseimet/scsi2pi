@@ -222,6 +222,7 @@ class MockController : public Controller
     FRIEND_TEST(ControllerTest, Error);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
+    FRIEND_TEST(TapeTest, Write6);
 
 public:
 

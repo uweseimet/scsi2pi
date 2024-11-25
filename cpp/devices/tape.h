@@ -101,7 +101,7 @@ private:
 
     void CheckBlockLength(int);
 
-    bool IsAtRecordBoundary() const;
+    bool IsAtRecordBoundary();
 
     void CheckForReadError();
     void CheckForWriteError();
@@ -111,6 +111,8 @@ private:
     SimhMetaData current_meta_data = { };
 
     int64_t tape_position = 0;
+
+    bool initial = false;
 
     bool fixed = false;
 

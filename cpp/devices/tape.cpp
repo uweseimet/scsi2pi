@@ -115,8 +115,7 @@ void Tape::Read6()
 
         remaining_count = byte_count;
 
-        // The record length is set from the SIMH meta data later
-        record_length = 0;
+        initial = true;
 
         GetController()->SetTransferSize(byte_count, GetBlockSize());
 
@@ -136,8 +135,9 @@ void Tape::Write6()
     if (byte_count) {
         remaining_count = byte_count;
 
-        // TODO Verify
-        record_length = 0;
+        record_length = GetBlockSize() < byte_count ? GetBlockSize() : byte_count;
+
+        initial = true;
 
         GetController()->SetTransferSize(byte_count, byte_count < GetBlockSize() ? byte_count : GetBlockSize());
 
@@ -219,7 +219,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     }
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, tape_position,
-        record_length));
+        Pad(record_length)));
 
     file.seekp(tape_position);
     file.write((const char*)buf.data(), size);
@@ -229,7 +229,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
     tape_position += size;
 
     if (IsAtRecordBoundary()) {
-        if (!remaining_count && record_length != Pad(record_length)) {
+        if (!remaining_count && tape_position % 2) {
             file << '\0';
             ++tape_position;
         }
@@ -922,13 +922,17 @@ void Tape::CheckBlockLength(int length)
     }
 }
 
-bool Tape::IsAtRecordBoundary() const
+bool Tape::IsAtRecordBoundary()
 {
     if (tar_file) {
         return false;
     }
 
-    return fixed || !record_length || !remaining_count || byte_count - remaining_count == record_length;
+    const bool boundary = fixed || initial || !remaining_count || byte_count - remaining_count == record_length;
+
+    initial = false;
+
+    return boundary;
 }
 
 void Tape::CheckForReadError()

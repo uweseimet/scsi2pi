@@ -77,7 +77,7 @@ TEST(SimhUtilTest, FromLittleEndian)
 {
     const array<uint8_t, META_DATA_SIZE> &data = { 0x01, 0x02, 0x03, 0x74 };
     EXPECT_EQ(simh_class::private_marker, FromLittleEndian(data).cls);
-    EXPECT_EQ(0x04030201, FromLittleEndian(data).value);
+    EXPECT_EQ(0x04030201U, FromLittleEndian(data).value);
 }
 
 TEST(SimhUtilTest, ToLittleEndian)
