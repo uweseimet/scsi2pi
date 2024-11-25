@@ -29,6 +29,20 @@ static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, u
     }
 }
 
+static void CheckMetaData(istream &file, const SimhMetaData &expected)
+{
+    array<uint8_t, META_DATA_SIZE> data;
+    file.read((char*)data.data(), data.size());
+    SimhMetaData meta_data = FromLittleEndian(data);
+    EXPECT_EQ(expected.cls, meta_data.cls);
+    EXPECT_EQ(expected.value, meta_data.value);
+    file.seekg(Pad(expected.value), ios::cur);
+    file.read((char*)data.data(), data.size());
+    meta_data = FromLittleEndian(data);
+    EXPECT_EQ(expected.cls, meta_data.cls);
+    EXPECT_EQ(expected.value, meta_data.value);
+}
+
 pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
@@ -231,7 +245,7 @@ TEST(TapeTest, Read6)
 
     // Non-fixed, 1 byte
     controller->SetCdbByte(4, 1);
-    Dispatch(*tape, scsi_command::read_6);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -247,7 +261,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(3, 0x04);
     controller->SetCdbByte(4, 0x00);
     controller->SetCdbByte(1, 0x00);
-    Dispatch(*tape, scsi_command::read_6);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -255,13 +269,13 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(3, 0x04);
     // SILI
     controller->SetCdbByte(1, 0x02);
-    Dispatch(*tape, scsi_command::read_6);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-    EXPECT_EQ(256, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
+    EXPECT_EQ(256U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 
 
     // Leading length != trailing length
@@ -282,20 +296,57 @@ TEST(TapeTest, Write6)
 
     // Non-fixed
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    CheckPositions(tape, 0, 0);
 
     // Fixed
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    CheckPositions(tape, 0, 0);
+
+    const string &filename = CreateTapeFile(*tape);
+    ifstream file(filename);
+
+    // Non-fixed, 2 bytes
+    controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(4, 2);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    CheckMetaData(file, { simh_class::tape_mark_good_data_record, 2 });
+    CheckPositions(tape, 10, 1);
+
+    Dispatch(*tape, scsi_command::rewind);
+    file.seekg(0);
 
     // Non-fixed, 1 byte
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    CheckMetaData(file, { simh_class::tape_mark_good_data_record, 1 });
+    CheckPositions(tape, 10, 1);
+
+    Dispatch(*tape, scsi_command::rewind);
+    file.seekg(0);
+
+    // Non-fixed, 512 bytes
+    controller->SetCdbByte(1, 0x00);
+    controller->SetCdbByte(3, 2);
+    controller->SetCdbByte(4, 0);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
+    CheckPositions(tape, 520, 1);
+
+    Dispatch(*tape, scsi_command::rewind);
+    file.seekg(0);
 
     // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
+    CheckPositions(tape, 520, 1);
 }
 
 TEST(TapeTest, Erase6_simh)
@@ -341,7 +392,7 @@ TEST(TapeTest, ReadBlockLimits)
     CreateTapeFile(*tape);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_block_limits));
     EXPECT_EQ(8192U, GetInt32(controller->GetBuffer(), 0));
-    EXPECT_EQ(4U, GetInt16(controller->GetBuffer(), 4));
+    EXPECT_EQ(4, GetInt16(controller->GetBuffer(), 4));
 }
 
 TEST(TapeTest, Rewind)
@@ -449,7 +500,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(5, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(5U, GetInt32(controller->GetBuffer(), 3));
 
     Dispatch(*tape, scsi_command::rewind);
 
@@ -555,7 +606,7 @@ TEST(TapeTest, Space6_simh)
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
-    EXPECT_EQ(0, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 2);
 }
 
