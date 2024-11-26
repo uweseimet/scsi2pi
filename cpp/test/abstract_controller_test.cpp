@@ -47,7 +47,7 @@ TEST(AbstractControllerTest, Reset)
 
     controller.SetPhase(bus_phase::status);
     EXPECT_EQ(bus_phase::status, controller.GetPhase());
-    EXPECT_CALL(*bus, Reset());
+    EXPECT_CALL(*bus, Reset);
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
     EXPECT_EQ(status_code::good, controller.GetStatus());
@@ -130,8 +130,22 @@ TEST(AbstractControllerTest, ProcessOnController)
 {
     MockAbstractController controller(make_shared<MockBus>(), 1);
 
-    EXPECT_CALL(controller, Process());
+    EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x02);
-    EXPECT_CALL(controller, Process());
+    EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x06);
+}
+
+TEST(AbstractControllerTest, ScriptGenerator)
+{
+    MockAbstractController controller;
+    auto generator = make_shared<MockScriptGenerator>();
+    controller.SetScriptGenerator(generator);
+
+    // TODO
+//    EXPECT_CALL(*generator, AddCdb);
+    controller.AddCdbToScript();
+//    EXPECT_CALL(*generator, AddData);
+    array<uint8_t, 1> data = { };
+    controller.AddDataToScript(data);
 }

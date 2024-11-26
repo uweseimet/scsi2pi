@@ -113,7 +113,7 @@ TEST(ScsiCdTest, ReadToc)
         "Invalid track number");
 
     controller.SetCdbByte(6, 0);
-    EXPECT_CALL(controller, DataIn());
+    EXPECT_CALL(controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*cd, scsi_command::read_toc));
 }
 

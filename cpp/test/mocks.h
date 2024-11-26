@@ -173,6 +173,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, Locate16_simh);
     FRIEND_TEST(TapeTest, Locate16_tar);
     FRIEND_TEST(TapeTest, ReadPosition);
+    FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
 public:
 
@@ -498,4 +499,14 @@ public:
     MOCK_METHOD(bool, Stop, (shared_ptr<PrimaryDevice>, bool), (const));
 
     using CommandExecutor::CommandExecutor;
+};
+
+class MockScriptGenerator : public ScriptGenerator
+{
+public:
+
+    MOCK_METHOD(void, AddCdb, (int, int, span<int>), ());
+    MOCK_METHOD(void, AddData, (span<int>), ());
+
+    using ScriptGenerator::ScriptGenerator;
 };

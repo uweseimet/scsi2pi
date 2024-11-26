@@ -54,7 +54,7 @@ TEST(PrinterTest, TestUnitReady)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -68,7 +68,7 @@ TEST(PrinterTest, ReserveUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status()).Times(1);
+    EXPECT_CALL(*controller, Status).Times(1);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::reserve_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -77,7 +77,7 @@ TEST(PrinterTest, ReleaseUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status()).Times(1);
+    EXPECT_CALL(*controller, Status).Times(1);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::release_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -86,7 +86,7 @@ TEST(PrinterTest, Print)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, DataOut());
+    EXPECT_CALL(*controller, DataOut);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::print));
 
     controller->SetCdbByte(3, 0xff);
@@ -99,7 +99,7 @@ TEST(PrinterTest, StopPrint)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::stop_print));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }

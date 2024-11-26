@@ -170,7 +170,7 @@ TEST(DelegatingProcessBusTest, Reset)
     MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
-    EXPECT_CALL(bus, Reset());
+    EXPECT_CALL(bus, Reset);
     delegating_bus.Reset();
 }
 
@@ -230,6 +230,6 @@ TEST(DelegatingProcessBusTest, CleanUp)
     MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, false);
 
-    EXPECT_CALL(bus, CleanUp());
+    EXPECT_CALL(bus, CleanUp);
     delegating_bus.CleanUp();
 }
