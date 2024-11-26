@@ -214,7 +214,8 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
         WriteMetaData(object_type::block, record_length);
     }
 
-    const uint32_t length = byte_count < chunk_size ? byte_count : chunk_size;
+    const uint32_t length =
+        byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", length, tape_position,
         Pad(record_length)));
@@ -242,7 +243,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
         WriteMetaData(object_type::end_of_data);
     }
 
-    return length < remaining_count ? length : remaining_count;
+    return static_cast<int>(length < remaining_count ? length : remaining_count);
 }
 
 void Tape::Open()
