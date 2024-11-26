@@ -143,7 +143,7 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         case 'd':
-            if (const string d = optarg; d.starts_with('@')) {
+            if (const string &d = optarg; d.starts_with('@') && d.size() > 1) {
                 hex_input_filename = d.substr(1);
             }
             else {

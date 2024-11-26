@@ -352,8 +352,8 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     simh_file.read((char*)data.data(), data.size());
     if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta_data.value) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
-            << ") does not match leading length " << dec << meta_data.value << hex << " ($" << meta_data.value << ")"
-            << endl;
+            << ") at offset " << dec << position << " does not match leading length " << meta_data.value << hex
+            << " ($" << meta_data.value << ")" << endl;
         return false;
     }
 

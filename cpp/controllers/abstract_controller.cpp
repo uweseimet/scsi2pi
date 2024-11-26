@@ -25,7 +25,7 @@ void AbstractController::Reset()
     SetPhase(bus_phase::busfree);
 
     offset = 0;
-    total_length = 0;
+    remaining_length = 0;
     current_length = 0;
     chunk_size = 0;
 
@@ -74,9 +74,25 @@ void AbstractController::SetTransferSize(int length, int size)
 {
     // The total number of bytes to transfer for the current command
     total_length = length;
+    remaining_length = length;
 
     // The number of bytes to transfer in a single chunk
     chunk_size = length < size ? length : size;
+}
+
+bool AbstractController::UpdateTransferSize()
+{
+    remaining_length -= chunk_size;
+    if (remaining_length < chunk_size) {
+        chunk_size = remaining_length;
+    }
+    return remaining_length > 0;
+}
+
+void AbstractController::UpdateOffsetAndLength()
+{
+    offset += current_length;
+    current_length = 0;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted

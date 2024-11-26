@@ -475,7 +475,7 @@ TEST(DiskTest, WriteData)
 {
     MockDisk disk;
 
-    EXPECT_THAT([&] {disk.WriteData( {}, scsi_command::write_6);}, Throws<scsi_exception>(AllOf(
+    EXPECT_THAT([&] {disk.WriteData( {}, scsi_command::write_6, 0);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::not_ready),
                 Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
 }

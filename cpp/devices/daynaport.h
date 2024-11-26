@@ -48,7 +48,7 @@ public:
     }
 
     vector<uint8_t> InquiryInternal() const override;
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(span<const uint8_t>, scsi_command, int) override;
 
     void GetMessage6() override;
     void SendMessage6() const override;

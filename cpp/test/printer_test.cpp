@@ -119,7 +119,7 @@ TEST(PrinterTest, WriteData)
 
     const vector<uint8_t> buf(4);
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print));
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 0));
 }
 
 TEST(PrinterTest, GetStatistics)
