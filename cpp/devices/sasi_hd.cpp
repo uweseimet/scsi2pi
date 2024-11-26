@@ -50,7 +50,7 @@ void SasiHd::RequestSense()
     // Transfer 4 bytes when size is 0 (Shugart Associates System Interface specification)
     //vector<uint8_t> buf(allocation_length ? allocation_length : 4);
 
-    // SASI fixed to non-extended format
+    // Non-extended format
     const array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
