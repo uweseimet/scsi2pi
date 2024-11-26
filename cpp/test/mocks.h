@@ -500,13 +500,3 @@ public:
 
     using CommandExecutor::CommandExecutor;
 };
-
-class MockScriptGenerator : public ScriptGenerator
-{
-public:
-
-    MOCK_METHOD(void, AddCdb, (int, int, span<int>), ());
-    MOCK_METHOD(void, AddData, (span<int>), ());
-
-    using ScriptGenerator::ScriptGenerator;
-};

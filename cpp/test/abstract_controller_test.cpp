@@ -84,6 +84,15 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_FALSE(controller.RemoveDevice(*device));
 }
 
+TEST(AbstractControllerTest, AddDevice)
+{
+    MockAbstractController controller;
+
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockPrimaryDevice>(0)));
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockScsiHd>(1, false)));
+    EXPECT_FALSE(controller.AddDevice(make_shared<MockSasiHd>(2)));
+}
+
 TEST(AbstractControllerTest, TransferSize)
 {
     MockAbstractController controller;
@@ -139,13 +148,16 @@ TEST(AbstractControllerTest, ProcessOnController)
 TEST(AbstractControllerTest, ScriptGenerator)
 {
     MockAbstractController controller;
-    auto generator = make_shared<MockScriptGenerator>();
+    auto generator = make_shared<ScriptGenerator>();
     controller.SetScriptGenerator(generator);
+    const string &filename = CreateTempName();
+    generator->CreateFile(filename);
 
-    // TODO
-//    EXPECT_CALL(*generator, AddCdb);
     controller.AddCdbToScript();
-//    EXPECT_CALL(*generator, AddData);
     array<uint8_t, 1> data = { };
     controller.AddDataToScript(data);
+    ifstream file(filename);
+    string s;
+    getline(file, s);
+    EXPECT_EQ(s, "-i 0:0 -c 00:00:00:00:00:00 -d 00");
 }
