@@ -33,6 +33,13 @@ TEST(SasiHdTest, RequestSense)
     span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);
+
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 0);
+    EXPECT_CALL(*controller, DataIn());
+    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::request_sense));
+    EXPECT_EQ(0, buffer[0]);
+    EXPECT_EQ(LUN << 5, buffer[1]);
 }
 
 TEST(SasiHdTest, GetBlockSizes)
