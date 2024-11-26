@@ -416,7 +416,7 @@ int Disk::ReadData(span<uint8_t> buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-int Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
+void Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
@@ -426,14 +426,13 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         assert(linux_cache);
 
-        const auto length = linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize());
-        if (!length) {
+        if (!linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize())) {
             throw scsi_exception(sense_key::medium_error, asc::write_fault);
         }
 
         UpdateWriteCount(1);
 
-        return length;
+        return;
     }
 
     if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
@@ -444,8 +443,6 @@ int Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
     next_sector += sector_transfer_count;
 
     UpdateWriteCount(sector_transfer_count);
-
-    return GetBlockSize() * sector_transfer_count;
 }
 
 void Disk::ReAssignBlocks()

@@ -79,7 +79,7 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual int WriteData(span<const uint8_t>, scsi_command, int) = 0;
+    virtual void WriteData(span<const uint8_t>, scsi_command, int) = 0;
 
     virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
     {

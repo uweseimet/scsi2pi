@@ -154,7 +154,7 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-int Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
+void Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
 {
     assert(command == scsi_command::print);
     if (command != scsi_command::print) {
@@ -198,8 +198,6 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
         ++print_error_count;
         throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
     }
-
-    return length;
 }
 
 vector<PbStatistics> Printer::GetStatistics() const

@@ -428,7 +428,8 @@ void Controller::Receive()
     // Processing after receiving data
     switch (GetPhase()) {
     case bus_phase::dataout:
-        if (!XferOut(current_chunk_size, pending_data)) {
+        if (!XferOut(current_chunk_size < GetRemainingLength() ? current_chunk_size : GetRemainingLength(),
+            pending_data)) {
             return;
         }
         break;
@@ -503,9 +504,9 @@ bool Controller::XferOut(int length, bool pending_data)
         case scsi_command::write_long_10:
         case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
-            const auto next_length = device->WriteData(GetBuffer(), opcode, length);
+            device->WriteData(GetBuffer(), opcode, length);
             if (pending_data) {
-                SetCurrentLength(next_length);
+                SetCurrentLength(length);
                 ResetOffset();
             }
             break;

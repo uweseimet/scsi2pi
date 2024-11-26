@@ -47,6 +47,14 @@ vector<uint8_t> testing::CreateParameters(const string &hex)
     return parameters;
 }
 
+string testing::CreateImageFile(StorageDevice &device, size_t size, const string &extension)
+{
+    const auto &filename = CreateTempFile(size, extension);
+    device.SetFilename(filename.string());
+    device.Open();
+    return filename.string();
+}
+
 string testing::TestShared::GetVersion()
 {
     return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
