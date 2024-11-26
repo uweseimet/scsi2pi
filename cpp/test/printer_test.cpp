@@ -117,8 +117,13 @@ TEST(PrinterTest, SynchronizeBuffer)
     const vector<uint8_t> buf(4);
     controller->SetTransferSize(4, 4);
     EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
-
     Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
+
+    params["cmd"] = "true %f";
+    printer->SetParams(params);
+    controller->SetTransferSize(4, 4);
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
+    EXPECT_NO_THROW(Dispatch(*printer, scsi_command::synchronize_buffer));
 }
 
 TEST(PrinterTest, WriteData)
