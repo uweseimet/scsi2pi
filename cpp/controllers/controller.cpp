@@ -326,7 +326,7 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
-        if (length < 256 && get_level() == level::trace) {
+        if (GetTotalLength() < 256 && get_level() == level::trace) {
             LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
         }
         else {
@@ -409,7 +409,7 @@ void Controller::Receive()
 
         // Assume that data less than < 256 bytes in DATA OUT are parameters for a non block-oriented command
         // and are worth logging
-        if (IsDataOut() && !GetOffset() && GetTotal() < 256 && get_level() == level::trace) {
+        if (IsDataOut() && !GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
             LogTrace(
                 fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(GetBuffer(), length)));
         }

@@ -76,7 +76,7 @@ public:
     {
         return chunk_size;
     }
-    auto GetTotal() const
+    auto GetTotalLength() const
     {
         return total_length;
     }

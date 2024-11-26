@@ -216,6 +216,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
 
     const uint32_t length =
         byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
+    critical(length);
 
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", length, tape_position,
         Pad(record_length)));
