@@ -108,9 +108,18 @@ TEST(PrinterTest, SynchronizeBuffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
+    param_map params;
+    params["cmd"] = "false %f";
+    printer->SetParams(params);
+
     Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_nothing_to_print);
 
-    // Further testing would use the printing system
+    const vector<uint8_t> buf(4);
+    controller->SetTransferSize(4, 4);
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
+
+    Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
+    exit(0);
 }
 
 TEST(PrinterTest, WriteData)
@@ -119,7 +128,7 @@ TEST(PrinterTest, WriteData)
 
     const vector<uint8_t> buf(4);
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 0));
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
 }
 
 TEST(PrinterTest, GetStatistics)
