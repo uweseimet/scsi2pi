@@ -147,7 +147,7 @@ TEST(AbstractControllerTest, ProcessOnController)
 
 TEST(AbstractControllerTest, ScriptGenerator)
 {
-    MockAbstractController controller;
+    NiceMock<MockAbstractController> controller;
     auto generator = make_shared<ScriptGenerator>();
     controller.SetScriptGenerator(generator);
     const string &filename = CreateTempName();
