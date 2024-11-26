@@ -231,6 +231,7 @@ void PrimaryDevice::RequestSense()
     if (!allocation_length && level == scsi_level::scsi_1_ccs) {
         allocation_length = 4;
     }
+
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
     GetController()->CopyToBuffer(buf.data(), length);
 
