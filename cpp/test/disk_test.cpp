@@ -42,7 +42,11 @@ TEST(DiskTest, ValidateFile)
 {
     MockDisk disk;
 
-    EXPECT_THROW(disk.ValidateFile(), io_exception);
+    EXPECT_THROW(disk.ValidateFile(), io_exception)<< "Device has 0 blocks";
+
+    disk.SetBlockCount(1);
+    disk.SetFilename(CreateImageFile(disk, 512));
+    EXPECT_NO_THROW(disk.ValidateFile());
 }
 
 TEST(DiskTest, Rezero)
