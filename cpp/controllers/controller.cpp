@@ -422,13 +422,14 @@ void Controller::Receive()
         return;
     }
 
+    const int current_remaiing_length = GetRemainingLength();
     const int current_chunk_size = GetChunkSize();
     const bool pending_data = UpdateTransferSize();
 
     // Processing after receiving data
     switch (GetPhase()) {
     case bus_phase::dataout:
-        if (!XferOut(current_chunk_size < GetRemainingLength() ? current_chunk_size : GetRemainingLength(),
+        if (!XferOut(current_chunk_size < current_remaiing_length ? current_chunk_size : current_remaiing_length,
             pending_data)) {
             return;
         }
