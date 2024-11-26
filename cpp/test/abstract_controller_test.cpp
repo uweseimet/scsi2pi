@@ -89,10 +89,21 @@ TEST(AbstractControllerTest, TransferSize)
     MockAbstractController controller;
 
     controller.SetTransferSize(3, 1);
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(3, controller.GetRemainingLength());
     EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(2, controller.GetRemainingLength());
+    EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(1, controller.GetRemainingLength());
+    EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_FALSE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(0, controller.GetRemainingLength());
+    EXPECT_EQ(0, controller.GetChunkSize());
 }
 
 TEST(AbstractControllerTest, UpdateOffsetAndLength)
