@@ -340,6 +340,7 @@ public:
 class MockDisk : public Disk
 {
     FRIEND_TEST(DiskTest, Dispatch);
+    FRIEND_TEST(DiskTest, ValidateFile);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
     FRIEND_TEST(DiskTest, ReassignBlocks);

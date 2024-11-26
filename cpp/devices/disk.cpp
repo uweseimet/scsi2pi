@@ -273,10 +273,9 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 
     if (length > GetBlockSize()) {
         SetIli();
-        SetInformation(length - sector);
+        SetInformation(length - GetBlockSize());
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
-
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
     if (!linux_cache) {
@@ -527,7 +526,7 @@ void Disk::ReadCapacity16_ReadLong16()
 
 uint64_t Disk::ValidateBlockAddress(access_mode mode) const
 {
-    // The RelAdr bit is only permitted with linked commands
+    // RelAdr is not supported
     if (mode == RW10 && GetCdbByte(1) & 0x01) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
