@@ -45,3 +45,15 @@ TEST(SasiHdTest, GetBlockSizes)
     EXPECT_TRUE(sizes.contains(512));
     EXPECT_TRUE(sizes.contains(1024));
 }
+
+TEST(SasiHdTest, Open)
+{
+    MockSasiHd hd(0);
+
+    EXPECT_THROW(hd.Open(), io_exception)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    hd.SetFilename(filename.string());
+    hd.Open();
+    EXPECT_EQ(8U, hd.GetBlockCount());
+}

@@ -90,8 +90,6 @@ TEST(ScsiCdTest, Open)
     cd.SetFilename(filename.string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
-
-    // Further testing requires filesystem access
 }
 
 TEST(ScsiCdTest, ReadToc)

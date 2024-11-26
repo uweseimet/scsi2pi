@@ -386,13 +386,16 @@ public:
 
 class MockSasiHd : public SasiHd
 {
+
 public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockSasiHd(const unordered_set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockSasiHd() override = default;
 };
@@ -450,7 +453,14 @@ class MockOpticalMemory : public OpticalMemory
     FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
-    using OpticalMemory::OpticalMemory;
+public:
+
+    explicit MockOpticalMemory(int lun) : OpticalMemory(lun)
+    {
+        SetCachingMode(PbCachingMode::PISCSI);
+    }
+
+    ~MockOpticalMemory() override = default;
 };
 
 class MockHostServices : public HostServices

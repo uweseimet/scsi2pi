@@ -157,3 +157,15 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[9] = 0x0a;
     EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
 }
+
+TEST(OpticalMemoryTest, Open)
+{
+    MockOpticalMemory mo(0);
+
+    EXPECT_THROW(mo.Open(), io_exception)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    mo.SetFilename(filename.string());
+    mo.Open();
+    EXPECT_EQ(4U, mo.GetBlockCount());
+}
