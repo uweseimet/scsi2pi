@@ -10,9 +10,9 @@
 
 #include <filesystem>
 #include <span>
-#include "shared/s2p_util.h"
 #include "shared/scsi.h"
 #include "base/property_handler.h"
+#include "devices/storage_device.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
@@ -28,6 +28,8 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice
 
 vector<int> CreateCdb(scsi_command, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
+
+string CreateImageFile(StorageDevice&, size_t = 4096, const string& = "");
 
 string CreateTempName();
 pair<int, path> OpenTempFile(const string& = "");

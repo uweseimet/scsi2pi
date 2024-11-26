@@ -206,7 +206,7 @@ int Tape::ReadData(span<uint8_t> buf)
     return length;
 }
 
-int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
+void Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
 {
     CheckReady();
 
@@ -220,10 +220,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
     LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", length, tape_position,
         Pad(record_length)));
 
-    if (tape_position + length > max_file_size) {
-        ++write_error_count;
-        throw scsi_exception(sense_key::volume_overflow);
-    }
+    CheckForOverflow(length);
 
     file.seekp(tape_position);
     file.write((const char*)buf.data(), length);
@@ -247,8 +244,6 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
         // Ensure that there is always an end-of-data object
         WriteMetaData(object_type::end_of_data);
     }
-
-    return static_cast<int>(length < remaining_count ? length : remaining_count);
 }
 
 void Tape::Open()
@@ -619,8 +614,10 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     }
 
     // Ensure that there is always an end-of-data object after the last position
-    WriteSimhMetaData(simh_class::private_marker,
-        (static_cast<uint32_t>(object_type::end_of_data) << 24) | PRIVATE_MARKER_MAGIC);
+    if (file_size >= tape_position + META_DATA_SIZE) {
+        WriteSimhMetaData(simh_class::private_marker,
+            (static_cast<uint32_t>(object_type::end_of_data) << 24) | PRIVATE_MARKER_MAGIC);
+    }
 
     CheckForWriteError();
 }
@@ -887,10 +884,7 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
         fmt::format("Writing SIMH meta_data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
         value, tape_position));
 
-    if (tape_position + META_DATA_SIZE > max_file_size) {
-        ++write_error_count;
-        throw scsi_exception(sense_key::volume_overflow);
-    }
+    CheckForOverflow(tape_position + META_DATA_SIZE);
 
     file.write((const char*)ToLittleEndian( { cls, value }).data(), META_DATA_SIZE);
     CheckForWriteError();
@@ -937,6 +931,14 @@ bool Tape::IsAtRecordBoundary()
     initial = false;
 
     return boundary;
+}
+
+void Tape::CheckForOverflow(int64_t length)
+{
+    if (tape_position + length > max_file_size) {
+        ++write_error_count;
+        throw scsi_exception(sense_key::volume_overflow);
+    }
 }
 
 void Tape::CheckForReadError()

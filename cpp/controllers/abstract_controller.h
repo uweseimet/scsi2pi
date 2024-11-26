@@ -80,6 +80,10 @@ public:
     {
         return total_length;
     }
+    auto GetRemainingLength() const
+    {
+        return remaining_length;
+    }
     auto GetCurrentLength() const
     {
         return current_length;

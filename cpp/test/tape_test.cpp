@@ -77,14 +77,6 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(8U, pages[17].size());
 }
 
-static string CreateTapeFile(Tape &tape, size_t size = 4096, const string &extension = "")
-{
-    const auto &filename = CreateTempFile(size, extension);
-    tape.SetFilename(filename.string());
-    tape.Open();
-    return filename.string();
-}
-
 TEST(TapeTest, Device_Defaults)
 {
     Tape tape(0);
@@ -171,7 +163,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x03);
     Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    const string &filename = CreateTapeFile(*tape);
+    const string &filename = CreateImageFile(*tape);
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
@@ -303,14 +295,14 @@ TEST(TapeTest, Write6)
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
     CheckPositions(tape, 0, 0);
 
-    const string &filename = CreateTapeFile(*tape);
+    const string &filename = CreateImageFile(*tape);
     ifstream file(filename);
 
     // Non-fixed, 2 bytes
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 2);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 2);
+    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 2));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 2 });
     CheckPositions(tape, 10, 1);
 
@@ -321,7 +313,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 1);
+    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 1));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 1 });
     CheckPositions(tape, 10, 1);
 
@@ -333,7 +325,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(3, 2);
     controller->SetCdbByte(4, 0);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512);
+    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 
@@ -344,7 +336,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512);
+    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 }
@@ -353,7 +345,7 @@ TEST(TapeTest, Erase6_simh)
 {
     auto [controller, tape] = CreateTape();
 
-    CreateTapeFile(*tape, 4567);
+    CreateImageFile(*tape, 4567);
 
     tape->SetProtected(true);
     Dispatch(*tape, scsi_command::erase_6, sense_key::data_protect, asc::write_protected);
@@ -379,7 +371,7 @@ TEST(TapeTest, Erase6_simh)
 TEST(TapeTest, Erase6_tar)
 {
     auto [__, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     Dispatch(*tape, scsi_command::erase_6, sense_key::illegal_request,
         asc::invalid_command_operation_code);
@@ -389,7 +381,7 @@ TEST(TapeTest, ReadBlockLimits)
 {
     auto [controller, tape] = CreateTape();
 
-    CreateTapeFile(*tape);
+    CreateImageFile(*tape);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_block_limits));
     EXPECT_EQ(8192U, GetInt32(controller->GetBuffer(), 0));
     EXPECT_EQ(4, GetInt16(controller->GetBuffer(), 4));
@@ -399,7 +391,7 @@ TEST(TapeTest, Rewind)
 {
     auto [controller, tape] = CreateTape();
 
-    CreateTapeFile(*tape, 600);
+    CreateImageFile(*tape, 600);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::rewind));
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
@@ -418,7 +410,7 @@ TEST(TapeTest, Space6_simh)
 {
     auto [controller, tape] = CreateTape();
 
-    const string &filename = CreateTapeFile(*tape);
+    const string &filename = CreateImageFile(*tape);
 
     // BLOCK, count = 0
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
@@ -613,7 +605,7 @@ TEST(TapeTest, Space6_simh)
 TEST(TapeTest, Space6_tar)
 {
     auto [___, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     Dispatch(*tape, scsi_command::space_6, sense_key::illegal_request,
         asc::invalid_command_operation_code);
@@ -622,7 +614,7 @@ TEST(TapeTest, Space6_tar)
 TEST(TapeTest, WriteFileMarks6_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape, 512);
+    CreateImageFile(*tape, 1024);
 
     // Setmarks are not supported
     controller->SetCdbByte(1, 0b010);
@@ -652,7 +644,7 @@ TEST(TapeTest, WriteFileMarks6_simh)
 TEST(TapeTest, WriteFileMarks6_tar)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_filemarks_6));
@@ -661,7 +653,7 @@ TEST(TapeTest, WriteFileMarks6_tar)
 TEST(TapeTest, Locate10_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape);
+    CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -680,7 +672,7 @@ TEST(TapeTest, Locate10_simh)
 TEST(TapeTest, Locate10_tar)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -705,7 +697,7 @@ TEST(TapeTest, Locate10_tar)
 TEST(TapeTest, Locate16_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape);
+    CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -724,7 +716,7 @@ TEST(TapeTest, Locate16_simh)
 TEST(TapeTest, Locate16_tar)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -758,7 +750,7 @@ TEST(TapeTest, FormatMedium_simh)
 {
     auto [controller, tape] = CreateTape();
 
-    CreateTapeFile(*tape);
+    CreateImageFile(*tape);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::format_medium));
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
@@ -779,7 +771,7 @@ TEST(TapeTest, FormatMedium_simh)
 TEST(TapeTest, FormatMedium_tar)
 {
     auto [controller, tape] = CreateTape();
-    CreateTapeFile(*tape, 512, "tar");
+    CreateImageFile(*tape, 512, "tar");
 
     Dispatch(*tape, scsi_command::format_medium, sense_key::illegal_request,
         asc::invalid_command_operation_code);

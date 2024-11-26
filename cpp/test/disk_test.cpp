@@ -12,10 +12,10 @@
 
 using namespace memory_util;
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<MockDisk>> CreateDisk()
+pair<shared_ptr<MockAbstractController>, shared_ptr<NiceMock<MockDisk>>> CreateDisk()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
-    auto disk = make_shared<MockDisk>();
+    auto disk = make_shared<NiceMock<MockDisk>>();
     EXPECT_TRUE(disk->Init());
     EXPECT_TRUE(controller->AddDevice(disk));
 
@@ -194,6 +194,16 @@ TEST(DiskTest, Read6)
         "READ(6) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
+
+    disk->SetBlockCount(1);
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
+
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_6));
+
+    controller->SetCdbByte(4, 2);
+    Dispatch(*disk, scsi_command::read_6, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Read10)
@@ -206,11 +216,14 @@ TEST(DiskTest, Read10)
     EXPECT_EQ(0U, disk->GetNextSector());
 
     disk->SetBlockCount(1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
 
-    EXPECT_EQ(0U, disk->GetNextSector());
+    controller->SetCdbByte(8, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_10));
+
+    controller->SetCdbByte(8, 2);
+    Dispatch(*disk, scsi_command::read_10, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Read16)
@@ -220,12 +233,17 @@ TEST(DiskTest, Read16)
     Dispatch(*disk, scsi_command::read_16, sense_key::illegal_request, asc::lba_out_of_range,
         "READ(16) must fail for a medium with 0 blocks");
 
-    disk->SetBlockCount(1);
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-
     EXPECT_EQ(0U, disk->GetNextSector());
+
+    disk->SetBlockCount(1);
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
+
+    controller->SetCdbByte(13, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_16));
+
+    controller->SetCdbByte(13, 2);
+    Dispatch(*disk, scsi_command::read_16, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Write6)
@@ -243,6 +261,18 @@ TEST(DiskTest, Write6)
         "WRITE(6) must fail because drive is write-protected");
 
     EXPECT_EQ(0U, disk->GetNextSector());
+
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
+
+    disk->SetProtected(false);
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::write_6));
+    EXPECT_EQ(512, controller->GetRemainingLength());
+    EXPECT_NO_THROW(disk->WriteData(controller->GetBuffer(), scsi_command::write_6, 512));
+
+    controller->SetCdbByte(4, 2);
+    Dispatch(*disk, scsi_command::write_6, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Write10)
@@ -258,6 +288,18 @@ TEST(DiskTest, Write10)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
+
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
+
+    disk->SetProtected(false);
+    controller->SetCdbByte(8, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::write_10));
+    EXPECT_EQ(512, controller->GetRemainingLength());
+    EXPECT_NO_THROW(disk->WriteData(controller->GetBuffer(), scsi_command::write_10, 512));
+
+    controller->SetCdbByte(8, 2);
+    Dispatch(*disk, scsi_command::write_10, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Write16)
@@ -273,6 +315,18 @@ TEST(DiskTest, Write16)
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
+
+    disk->SetFilename(CreateImageFile(*disk, 512));
+    disk->ValidateFile();
+
+    disk->SetProtected(false);
+    controller->SetCdbByte(13, 1);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::write_16));
+    EXPECT_EQ(512, controller->GetRemainingLength());
+    EXPECT_NO_THROW(disk->WriteData(controller->GetBuffer(), scsi_command::write_16, 512));
+
+    controller->SetCdbByte(13, 2);
+    Dispatch(*disk, scsi_command::write_16, sense_key::illegal_request, asc::lba_out_of_range);
 }
 
 TEST(DiskTest, Verify10)
@@ -519,13 +573,14 @@ TEST(DiskTest, CachingMode)
 {
     MockDisk disk;
 
-    EXPECT_EQ(PbCachingMode::PISCSI, disk.GetCachingMode());
-
     disk.SetCachingMode(PbCachingMode::PISCSI);
     EXPECT_EQ(PbCachingMode::PISCSI, disk.GetCachingMode());
 
     disk.SetCachingMode(PbCachingMode::LINUX);
     EXPECT_EQ(PbCachingMode::LINUX, disk.GetCachingMode());
+
+    disk.SetCachingMode(PbCachingMode::LINUX_OPTIMIZED);
+    EXPECT_EQ(PbCachingMode::LINUX_OPTIMIZED, disk.GetCachingMode());
 
     disk.SetCachingMode(PbCachingMode::WRITE_THROUGH);
     EXPECT_EQ(PbCachingMode::WRITE_THROUGH, disk.GetCachingMode());

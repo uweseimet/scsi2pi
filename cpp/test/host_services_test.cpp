@@ -222,7 +222,7 @@ TEST(HostServicesTest, WriteData)
 
     EXPECT_THROW(services->WriteData(buf, scsi_command::test_unit_ready, 0), scsi_exception)<< "Illegal command";
 
-    EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation, 0));
+    EXPECT_NO_THROW(services->WriteData(buf, scsi_command::execute_operation, 0));
 
     controller->SetCdbByte(8, 1);
     EXPECT_THROW(services->WriteData(buf, scsi_command::execute_operation, 0), scsi_exception)<< "protobuf data are invalid";
