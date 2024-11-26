@@ -131,6 +131,7 @@ void Printer::SynchronizeBuffer()
 
     string cmd = GetParam(CMD);
     const size_t file_position = cmd.find("%f");
+    // The format has been verified before
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);
 
