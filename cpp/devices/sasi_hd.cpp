@@ -42,7 +42,7 @@ void SasiHd::Inquiry()
 vector<uint8_t> SasiHd::InquiryInternal() const
 {
     assert(false);
-    return vector<uint8_t>();
+    return {};
 }
 
 void SasiHd::RequestSense()
