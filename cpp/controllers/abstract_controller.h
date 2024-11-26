@@ -76,6 +76,10 @@ public:
     {
         return chunk_size;
     }
+    auto GetTotalLength() const
+    {
+        return total_length;
+    }
     auto GetCurrentLength() const
     {
         return current_length;
@@ -104,12 +108,6 @@ protected:
         cdb[index] = value;
     }
 
-    bool UpdateTransferSize()
-    {
-        total_length -= chunk_size;
-        return total_length != 0;
-    }
-
     void SetStatus(status_code s)
     {
         status = s;
@@ -123,11 +121,9 @@ protected:
     {
         offset = 0;
     }
-    void UpdateOffsetAndLength()
-    {
-        offset += current_length;
-        current_length = 0;
-    }
+
+    bool UpdateTransferSize();
+    void UpdateOffsetAndLength();
 
     void LogTrace(const string &s) const
     {
@@ -150,8 +146,10 @@ private:
     vector<uint8_t> buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;
-    // Total number of bytes to be transferred, updated during the transfer
+    // Total bytes to transfer
     int total_length = 0;
+    // Total remaining bytes to be transferred, updated during the transfer
+    int remaining_length = 0;
     // Remaining bytes to be transferred in a single handshake cycle
     int current_length = 0;
     // The number of bytes to be transferred with the current handshake cycle

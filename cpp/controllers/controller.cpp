@@ -326,7 +326,7 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
-        if (length < 256 && get_level() == level::trace) {
+        if (GetTotalLength() < 256 && get_level() == level::trace) {
             LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
         }
         else {
@@ -339,7 +339,7 @@ void Controller::Send()
         if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             if (IsDataIn()) {
-                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, command requires {1}", l, length));
+                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, {1} required", l, length));
             }
             Error(sense_key::aborted_command, asc::data_phase_error);
         }
@@ -399,17 +399,17 @@ void Controller::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Receiving {} byte(s)", length));
+        LogTrace(fmt::format("Receiving {0} byte(s)", length));
 
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
-            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, command requires {1}", l, length));
+            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, {1} required", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }
 
-        // Assume that data less than < 256 bytes in DATA OUT are parameters to a non block-oriented command
+        // Assume that data less than < 256 bytes in DATA OUT are parameters for a non block-oriented command
         // and are worth logging
-        if (IsDataOut() && !GetOffset() && length < 256 && get_level() == level::trace) {
+        if (IsDataOut() && !GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
             LogTrace(
                 fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(GetBuffer(), length)));
         }
@@ -422,12 +422,13 @@ void Controller::Receive()
         return;
     }
 
+    const int current_chunk_size = GetChunkSize();
     const bool pending_data = UpdateTransferSize();
 
     // Processing after receiving data
     switch (GetPhase()) {
     case bus_phase::dataout:
-        if (!XferOut(pending_data)) {
+        if (!XferOut(current_chunk_size, pending_data)) {
             return;
         }
         break;
@@ -484,7 +485,7 @@ bool Controller::XferIn()
     return true;
 }
 
-bool Controller::XferOut(bool pending_data)
+bool Controller::XferOut(int length, bool pending_data)
 {
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
@@ -502,9 +503,9 @@ bool Controller::XferOut(bool pending_data)
         case scsi_command::write_long_10:
         case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
-            const auto length = device->WriteData(GetBuffer(), opcode);
+            const auto next_length = device->WriteData(GetBuffer(), opcode, length);
             if (pending_data) {
-                SetCurrentLength(length);
+                SetCurrentLength(next_length);
                 ResetOffset();
             }
             break;

@@ -310,7 +310,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 2);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 2);
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 2 });
     CheckPositions(tape, 10, 1);
 
@@ -321,7 +321,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 1);
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 1 });
     CheckPositions(tape, 10, 1);
 
@@ -333,7 +333,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(3, 2);
     controller->SetCdbByte(4, 0);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512);
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 
@@ -344,7 +344,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    tape->WriteData(controller->GetBuffer(), scsi_command::write_6);
+    tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512);
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 }

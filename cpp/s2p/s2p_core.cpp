@@ -93,9 +93,9 @@ void S2p::ReadAccessToken(const path &filename)
     }
 }
 
-void S2p::LogDevices(string_view devices) const
+void S2p::LogDevices(const string &devices) const
 {
-    stringstream ss(devices.data());
+    stringstream ss(devices);
     string line;
 
     while (getline(ss, line)) {

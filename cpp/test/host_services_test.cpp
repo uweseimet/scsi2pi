@@ -220,10 +220,10 @@ TEST(HostServicesTest, WriteData)
     auto [controller, services] = CreateDevice(SCHS);
     array<uint8_t, 1> buf = { };
 
-    EXPECT_THROW(services->WriteData(buf, scsi_command::test_unit_ready), scsi_exception)<< "Illegal command";
+    EXPECT_THROW(services->WriteData(buf, scsi_command::test_unit_ready, 0), scsi_exception)<< "Illegal command";
 
-    EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation));
+    EXPECT_EQ(0, services->WriteData(buf, scsi_command::execute_operation, 0));
 
     controller->SetCdbByte(8, 1);
-    EXPECT_THROW(services->WriteData(buf, scsi_command::execute_operation), scsi_exception)<< "protobuf data are invalid";
+    EXPECT_THROW(services->WriteData(buf, scsi_command::execute_operation, 0), scsi_exception)<< "protobuf data are invalid";
 }

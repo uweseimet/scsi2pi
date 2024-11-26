@@ -416,7 +416,7 @@ int Disk::ReadData(span<uint8_t> buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-int Disk::WriteData(span<const uint8_t> buf, scsi_command command)
+int Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 

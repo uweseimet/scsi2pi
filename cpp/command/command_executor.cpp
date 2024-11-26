@@ -448,10 +448,10 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device)
     info(msg);
 }
 
-string CommandExecutor::SetReservedIds(string_view ids)
+string CommandExecutor::SetReservedIds(const string &ids)
 {
     set<int> ids_to_reserve;
-    stringstream ss(ids.data());
+    stringstream ss(ids);
     string id;
     while (getline(ss, id, ',')) {
         int res_id;

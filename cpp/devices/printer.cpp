@@ -154,7 +154,7 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
+int Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
 {
     assert(command == scsi_command::print);
     if (command != scsi_command::print) {

@@ -135,7 +135,7 @@ void Tape::Write6()
     if (byte_count) {
         remaining_count = byte_count;
 
-        record_length = GetBlockSize() < byte_count ? GetBlockSize() : byte_count;
+        record_length = fixed ? GetBlockSize() : byte_count;
 
         initial = true;
 
@@ -152,7 +152,7 @@ int Tape::ReadData(span<uint8_t> buf)
 {
     CheckReady();
 
-    const int size = GetController()->GetChunkSize();
+    const int length = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
         file.seekg(tape_position);
@@ -168,21 +168,21 @@ int Tape::ReadData(span<uint8_t> buf)
 
         tape_position -= record_length + META_DATA_SIZE;
 
-        CheckBlockLength(size);
+        CheckBlockLength(length);
     }
 
     LogTrace(
-        fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", size, tape_position, record_length));
+        fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", length, tape_position, record_length));
 
     file.seekg(tape_position);
-    file.read((char*)buf.data(), size);
+    file.read((char*)buf.data(), length);
     CheckForReadError();
 
-    remaining_count -= size;
-    tape_position += size;
+    remaining_count -= length;
+    tape_position += length;
 
     if (IsAtRecordBoundary()) {
-        tape_position += record_length > GetBlockSize() ? 0 : Pad(record_length) - size;
+        tape_position += record_length > GetBlockSize() ? 0 : Pad(record_length) - length;
 
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data;
@@ -203,38 +203,42 @@ int Tape::ReadData(span<uint8_t> buf)
         }
     }
 
-    return size;
+    return length;
 }
 
-int Tape::WriteData(span<const uint8_t> buf, scsi_command)
+int Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
 {
     CheckReady();
 
-    const uint32_t size =
-        byte_count < static_cast<uint32_t>(GetController()->GetChunkSize()) ?
-            byte_count : static_cast<uint32_t>(GetController()->GetChunkSize());
-
     if (IsAtRecordBoundary()) {
-        WriteMetaData(object_type::block, size);
+        WriteMetaData(object_type::block, record_length);
     }
 
-    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", size, tape_position,
+    const uint32_t length =
+        byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
+
+    LogTrace(fmt::format("Writing {0} data byte(s) to position {1}, record length is {2}", length, tape_position,
         Pad(record_length)));
 
+    if (tape_position + length > max_file_size) {
+        ++write_error_count;
+        throw scsi_exception(sense_key::volume_overflow);
+    }
+
     file.seekp(tape_position);
-    file.write((const char*)buf.data(), size);
+    file.write((const char*)buf.data(), length);
     CheckForWriteError();
 
-    remaining_count -= size;
-    tape_position += size;
+    remaining_count -= length;
+    tape_position += length;
 
     if (IsAtRecordBoundary()) {
-        if (!remaining_count && tape_position % 2) {
+        if (tape_position % 2) {
             file << '\0';
             ++tape_position;
         }
 
-        tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
+        tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, record_length);
 
         ++block_location;
     }
@@ -244,7 +248,7 @@ int Tape::WriteData(span<const uint8_t> buf, scsi_command)
         WriteMetaData(object_type::end_of_data);
     }
 
-    return size;
+    return static_cast<int>(length < remaining_count ? length : remaining_count);
 }
 
 void Tape::Open()
