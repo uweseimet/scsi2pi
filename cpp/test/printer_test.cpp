@@ -119,7 +119,6 @@ TEST(PrinterTest, SynchronizeBuffer)
     EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
 
     Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
-    exit(0);
 }
 
 TEST(PrinterTest, WriteData)
