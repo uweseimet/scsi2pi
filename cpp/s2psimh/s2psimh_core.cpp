@@ -415,7 +415,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
 
         const string &value = components[1];
         int v;
-        if (!GetAsUnsignedInt(value, v) || v > 0xffffffff) {
+        if (!GetAsUnsignedInt(value, v)) {
             cerr << "Error: Invalid value '" << value << "'" << endl;
             return {};
         }
