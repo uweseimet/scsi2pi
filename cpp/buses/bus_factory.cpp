@@ -44,14 +44,14 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::send_diagnostic, 6, "SEND DIAGNOSTIC", { 3, 2, false });
     AddCommand(scsi_command::prevent_allow_medium_removal, 6, "PREVENT ALLOW MEDIUM REMOVAL", { 0, 0, false });
     AddCommand(scsi_command::read_capacity_10, 10, "READ CAPACITY(10)", { -8, 0, false });
-    AddCommand(scsi_command::read_10, 10, "READ(10)", { 2, 4, true });
-    AddCommand(scsi_command::write_10, 10, "WRITE(10)", { 2, 4, true });
+    AddCommand(scsi_command::read_10, 10, "READ(10)", { 7, 2, true });
+    AddCommand(scsi_command::write_10, 10, "WRITE(10)", { 7, 2, true });
     AddCommand(scsi_command::seek_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, false });
-    AddCommand(scsi_command::verify_10, 10, "VERIFY(10)", { 2, 4, true });
+    AddCommand(scsi_command::verify_10, 10, "VERIFY(10)", { 7, 2, true });
     AddCommand(scsi_command::synchronize_cache_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, false });
     AddCommand(scsi_command::read_defect_data_10, 10, "READ DEFECT DATA(10)", { 7, 2, false });
-    AddCommand(scsi_command::read_long_10, 10, "READ LONG(10)", { 2, 4, false });
-    AddCommand(scsi_command::write_long_10, 10, "WRITE LONG(10)", { 2, 4, false });
+    AddCommand(scsi_command::read_long_10, 10, "READ LONG(10)", { 7, 2, false });
+    AddCommand(scsi_command::write_long_10, 10, "WRITE LONG(10)", { 7, 2, false });
     AddCommand(scsi_command::read_toc, 10, "READ TOC", { 7, 2, false });
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)", { 7, 2, false });
     AddCommand(scsi_command::mode_sense_10, 10, "MODE SENSE(10)", { 7, 2, false });
@@ -61,8 +61,8 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::read_position, 10, "READ POSITION", { 7, 2, false });
     AddCommand(scsi_command::synchronize_cache_16, 16, "SYNCHRONIZE CACHE(16)", { 0, 0, false });
     AddCommand(scsi_command::locate_16, 16, "LOCATE(16)", { 0, 0, false });
-    AddCommand(scsi_command::read_capacity_16_read_long_16, 16, "READ CAPACITY(16)/READ LONG(16)", { 10, 4, false });
-    AddCommand(scsi_command::write_long_16, 16, "WRITE LONG(16)", { 10, 4, false });
+    AddCommand(scsi_command::read_capacity_16_read_long_16, 16, "READ CAPACITY(16)/READ LONG(16)", { 12, 2, false });
+    AddCommand(scsi_command::write_long_16, 16, "WRITE LONG(16)", { 12, 2, false });
     AddCommand(scsi_command::report_luns, 12, "REPORT LUNS", { 6, 4, false });
     AddCommand(scsi_command::execute_operation, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, false });
     AddCommand(scsi_command::receive_operation_results, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)", { 7, 2,
@@ -117,7 +117,7 @@ int BusFactory::GetAllocationLength(span<const int> cdb)
         break;
     }
 
-    // TODO Try to support other block sizes than 512 bytes
+    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
     return desc.block ? 512 * allocation_length : allocation_length;
 }
 
