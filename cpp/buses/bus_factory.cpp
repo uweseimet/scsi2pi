@@ -109,7 +109,7 @@ int BusFactory::GetAllocationLength(span<const int> cdb)
         break;
 
     case 8:
-        allocation_length = GetInt64(cdb, desc.offset);
+        allocation_length = static_cast<int>(GetInt64(cdb, desc.offset));
         break;
 
     default:

@@ -106,14 +106,16 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const
 
     io_hdr.interface_id = 'S';
 
-    if (GetController()->GetRemainingLength()) {
+    const int length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+
+    if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
     }
     else {
         io_hdr.dxfer_direction = SG_DXFER_NONE;
     }
 
-    io_hdr.dxfer_len = GetController()->GetRemainingLength();
+    io_hdr.dxfer_len = length;
     io_hdr.dxferp = io_hdr.dxfer_len ? buf : nullptr;
 
     array<uint8_t, 13> sense_data = { };
@@ -122,16 +124,16 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const
 
     vector<uint8_t> cdb;
     for (int i = 0; i < count; i++) {
-        cdb.push_back(GetController()->GetCdb()[i]);
+        cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
     io_hdr.cmdp = cdb.data();
-    io_hdr.cmd_len = cdb.size();
+    io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
 
     io_hdr.timeout = timeout * 1000;
 
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
-    if (!status && sense_data[2] & 0x0f) {
-        status = sense_data[2] & 0x0f;
+    if (!status && static_cast<int>(sense_data[2]) & 0x0f) {
+        status = static_cast<int>(sense_data[2]) & 0x0f;
     }
 
     if (status) {
