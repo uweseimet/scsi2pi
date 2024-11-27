@@ -35,18 +35,18 @@ TEST(PrinterTest, GetDefaultParams)
 {
     Printer printer(0);
 
-    auto params = printer.GetDefaultParams();
+    const auto &params = printer.GetDefaultParams();
     EXPECT_EQ(1U, params.size());
-    EXPECT_EQ("lp -oraw %f", params["cmd"]);
+    EXPECT_EQ("lp -oraw %f", params.at("cmd"));
 }
 
 TEST(PrinterTest, Init)
 {
     Printer printer(0);
-    printer.SetParams( { });
 
     param_map params;
     params["cmd"] = "%f";
+    printer.SetParams(params);
     EXPECT_TRUE(printer.Init());
 }
 
