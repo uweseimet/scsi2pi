@@ -35,11 +35,11 @@ TEST(DaynaportTest, GetDefaultParams)
 {
     DaynaPort daynaport(0);
 
-    const auto params = daynaport.GetDefaultParams();
+    const auto &params = daynaport.GetDefaultParams();
     EXPECT_EQ(3U, params.size());
     EXPECT_TRUE(params.contains("interface"));
     EXPECT_TRUE(params.contains("inet"));
-    EXPECT_TRUE(params.contains("bridge"));
+    EXPECT_EQ("true", params.at("bridge"));
 }
 
 TEST(DaynaportTest, Inquiry)
