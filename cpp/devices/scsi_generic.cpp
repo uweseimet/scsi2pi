@@ -10,7 +10,6 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <libudev.h>
 #include <sys/ioctl.h>
 #include <scsi/sg.h>
 #include "buses/bus_factory.h"
