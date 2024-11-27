@@ -61,8 +61,8 @@ void AbstractController::AddDataToScript(span<uint8_t> data) const
 
 void AbstractController::SetCurrentLength(int length)
 {
-    if (length + 8192 > static_cast<int>(buffer.size())) {
-        buffer.resize(length + 8192);
+    if (length > static_cast<int>(buffer.size())) {
+        buffer.resize(length);
     }
 
     current_length = length;
