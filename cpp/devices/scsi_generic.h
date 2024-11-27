@@ -35,7 +35,7 @@ public:
 
 private:
 
-    int ReadWriteData(span<uint8_t>, bool) const;
+    int ReadWriteData(void*, bool) const;
 
     string device;
 
@@ -44,6 +44,11 @@ private:
     int timeout = 0;
 
     int fd = -1;
+
+    inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::write_6, scsi_command::write_10,
+        scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16, scsi_command::write_long_10,
+        scsi_command::write_long_16, scsi_command::mode_select_6, scsi_command::mode_select_10,
+        scsi_command::execute_operation };
 
     static constexpr const char *DEVICE = "device";
     static constexpr const char *TIMEOUT = "timeout";

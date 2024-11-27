@@ -64,9 +64,14 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
     GetController()->SetTransferSize(allocation_length, allocation_length);
-
     GetController()->SetCurrentLength(allocation_length);
-    DataInPhase(ReadData(GetController()->GetBuffer()));
+
+    if (WRITE_COMMANDS.contains(static_cast<scsi_command>(GetController()->GetCdb()[0]))) {
+        DataOutPhase(allocation_length);
+    }
+    else {
+        DataInPhase(ReadData(GetController()->GetBuffer()));
+    }
 }
 
 param_map ScsiGeneric::GetDefaultParams() const
@@ -85,15 +90,15 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(span<uint8_t> buf)
 {
-    return GetController()->GetRemainingLength() - ReadWriteData(buf, false);
+    return GetController()->GetRemainingLength() - ReadWriteData(buf.data(), false);
 }
 
-void ScsiGeneric::WriteData(span<const uint8_t>, scsi_command, int)
+void ScsiGeneric::WriteData(span<const uint8_t> buf, scsi_command, int)
 {
-    assert(false);
+    ReadWriteData((void*)buf.data(), true);
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write) const
+int ScsiGeneric::ReadWriteData(void *buf, bool write) const
 {
     assert(count);
 
@@ -109,7 +114,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write) const
     }
 
     io_hdr.dxfer_len = GetController()->GetRemainingLength();
-    io_hdr.dxferp = io_hdr.dxfer_len ? buf.data() : nullptr;
+    io_hdr.dxferp = io_hdr.dxfer_len ? buf : nullptr;
 
     array<uint8_t, 13> sense_data = { };
     io_hdr.sbp = sense_data.data();
