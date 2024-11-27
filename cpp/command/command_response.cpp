@@ -37,7 +37,9 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
 
     if (device->SupportsParams()) {
         for (const auto& [key, value] : device->GetDefaultParams()) {
-            (*properties.mutable_default_params())[key] = value;
+            if (!value.empty()) {
+                (*properties.mutable_default_params())[key] = value;
+            }
         }
     }
 
