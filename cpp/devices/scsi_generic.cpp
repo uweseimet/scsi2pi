@@ -132,7 +132,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
 
     if (ioctl(fd, SG_IO, &io_hdr) == -1) {
         LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
-        throw scsi_exception(sense_key::aborted_command);
+        throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
     }
 
     int status = io_hdr.status;
