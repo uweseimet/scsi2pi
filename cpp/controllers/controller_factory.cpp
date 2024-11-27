@@ -22,10 +22,7 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
     if (!device->GetLun()) {
         if (auto controller = make_shared<Controller>(bus, id); controller->AddDevice(device)) {
             controller->Init();
-
-            if (script_generator) {
-                controller->SetScriptGenerator(script_generator);
-            }
+            controller->SetScriptGenerator(script_generator);
 
             controllers[id] = controller;
 

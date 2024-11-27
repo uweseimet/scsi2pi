@@ -47,7 +47,7 @@ TEST(AbstractControllerTest, Reset)
 
     controller.SetPhase(bus_phase::status);
     EXPECT_EQ(bus_phase::status, controller.GetPhase());
-    EXPECT_CALL(*bus, Reset());
+    EXPECT_CALL(*bus, Reset);
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
     EXPECT_EQ(status_code::good, controller.GetStatus());
@@ -84,15 +84,35 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_FALSE(controller.RemoveDevice(*device));
 }
 
+TEST(AbstractControllerTest, AddDevice)
+{
+    MockAbstractController controller;
+
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockPrimaryDevice>(0)));
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockScsiHd>(1, false)));
+    EXPECT_FALSE(controller.AddDevice(make_shared<MockSasiHd>(2)));
+}
+
 TEST(AbstractControllerTest, TransferSize)
 {
     MockAbstractController controller;
 
     controller.SetTransferSize(3, 1);
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(3, controller.GetRemainingLength());
     EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(2, controller.GetRemainingLength());
+    EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_TRUE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(1, controller.GetRemainingLength());
+    EXPECT_EQ(1, controller.GetChunkSize());
     EXPECT_FALSE(controller.UpdateTransferSize());
+    EXPECT_EQ(3, controller.GetTotalLength());
+    EXPECT_EQ(0, controller.GetRemainingLength());
+    EXPECT_EQ(0, controller.GetChunkSize());
 }
 
 TEST(AbstractControllerTest, UpdateOffsetAndLength)
@@ -119,8 +139,25 @@ TEST(AbstractControllerTest, ProcessOnController)
 {
     MockAbstractController controller(make_shared<MockBus>(), 1);
 
-    EXPECT_CALL(controller, Process());
+    EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x02);
-    EXPECT_CALL(controller, Process());
+    EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x06);
+}
+
+TEST(AbstractControllerTest, ScriptGenerator)
+{
+    NiceMock<MockAbstractController> controller;
+    auto generator = make_shared<ScriptGenerator>();
+    controller.SetScriptGenerator(generator);
+    const string &filename = CreateTempName();
+    generator->CreateFile(filename);
+
+    controller.AddCdbToScript();
+    array<uint8_t, 1> data = { };
+    controller.AddDataToScript(data);
+    ifstream file(filename);
+    string s;
+    getline(file, s);
+    EXPECT_EQ(s, "-i 0:0 -c 00:00:00:00:00:00 -d 00");
 }

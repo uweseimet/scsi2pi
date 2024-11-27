@@ -44,7 +44,7 @@ private:
 
     static RpiBus::PiType CheckForPi();
 
+    // These are arrays instead of maps because of performance reasons
     array<int, 256> command_byte_counts;
-
     array<string_view, 256> command_names;
 };

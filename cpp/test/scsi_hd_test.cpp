@@ -544,3 +544,16 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
+
+TEST(ScsiHdTest, Open)
+{
+    MockScsiHd hd(0, false);
+
+    EXPECT_THROW(hd.Open(), io_exception)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    hd.SetFilename(filename.string());
+    hd.Open();
+    EXPECT_EQ(4U, hd.GetBlockCount());
+}
+

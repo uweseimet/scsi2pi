@@ -90,8 +90,6 @@ TEST(ScsiCdTest, Open)
     cd.SetFilename(filename.string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
-
-    // Further testing requires filesystem access
 }
 
 TEST(ScsiCdTest, ReadToc)
@@ -115,7 +113,7 @@ TEST(ScsiCdTest, ReadToc)
         "Invalid track number");
 
     controller.SetCdbByte(6, 0);
-    EXPECT_CALL(controller, DataIn());
+    EXPECT_CALL(controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*cd, scsi_command::read_toc));
 }
 
