@@ -44,6 +44,8 @@ enum PbDeviceType {
     SCLP = 9;
     // Tape device
     SCTP = 10;
+    // Linux SG
+    SCSG = 11;
 }
 
 // Remote operations, returning PbResult
