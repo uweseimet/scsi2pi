@@ -63,10 +63,11 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 
-    // TODO List with allocation length offsets for the known commands
-    GetController()->SetTransferSize(512, 512);
+    const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
-    GetController()->SetCurrentLength(512);
+    GetController()->SetTransferSize(allocation_length, allocation_length);
+
+    GetController()->SetCurrentLength(allocation_length);
     DataInPhase(ReadData(GetController()->GetBuffer()));
 }
 

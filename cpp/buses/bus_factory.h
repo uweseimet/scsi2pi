@@ -24,6 +24,8 @@ public:
         return instance;
     }
 
+    int GetAllocationLength(span<const int>);
+
     unique_ptr<Bus> CreateBus(bool, bool, bool = false);
 
     int GetCommandBytesCount(scsi_command opcode) const
@@ -38,13 +40,23 @@ public:
 
 private:
 
+    using AllocationLengthDesc = struct _AllocationLengthDesc {
+        _AllocationLengthDesc(int o = 0, int s = 0, bool b = false) : offset(o), size(s), block(b) {}
+
+        int offset;
+        int size;
+        bool block;
+    };
+
+
     BusFactory();
 
-    void AddCommand(scsi_command, int, const char*);
+    void AddCommand(scsi_command, int, const char*, const AllocationLengthDesc&);
 
     static RpiBus::PiType CheckForPi();
 
     // These are arrays instead of maps because of performance reasons
     array<int, 256> command_byte_counts;
     array<string_view, 256> command_names;
+    array<AllocationLengthDesc, 256> allocation_length_descs;
 };
