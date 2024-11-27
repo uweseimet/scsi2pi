@@ -73,7 +73,7 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
 {
     command_byte_counts[static_cast<int>(opcode)] = byte_count;
     command_names[static_cast<int>(opcode)] = name;
-    assert(desc.offset < 11);
+    assert(desc.offset <= 12);
     assert(!desc.size || desc.size == 1 || desc.size == 2 || desc.size == 3 || desc.size == 4 || desc.size == 8);
     allocation_length_descs[static_cast<int>(opcode)] = desc;
 }
