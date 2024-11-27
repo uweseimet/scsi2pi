@@ -131,7 +131,7 @@ TEST(HostServicesTest, ModeSense6)
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_6));
-    vector<uint8_t> &buffer = controller->GetBuffer();
+    auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
     // Minor version 0
@@ -174,7 +174,7 @@ TEST(HostServicesTest, ModeSense10)
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_10));
-    vector<uint8_t> &buffer = controller->GetBuffer();
+    auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
     // Minor version 0
