@@ -104,25 +104,18 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
     sg_io_hdr io_hdr = { };
 
     io_hdr.interface_id = 'S';
-    io_hdr.flags = SG_FLAG_DIRECT_IO;
 
     const int length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
-    void *aligned_buf = nullptr;
     if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
-
-        aligned_buf = aligned_alloc(sysconf(_SC_PAGESIZE), length);
-        if (write) {
-            memcpy(aligned_buf, buf, length);
-        }
     }
     else {
         io_hdr.dxfer_direction = SG_DXFER_NONE;
     }
 
     io_hdr.dxfer_len = length;
-    io_hdr.dxferp = aligned_buf;
+    io_hdr.dxferp = io_hdr.dxfer_len ? buf : nullptr;
 
     array<uint8_t, 13> sense_data = { };
     io_hdr.sbp = sense_data.data();
@@ -140,14 +133,6 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
     if (!status && static_cast<int>(sense_data[2]) & 0x0f) {
         status = static_cast<int>(sense_data[2]) & 0x0f;
-    }
-
-    if (aligned_buf) {
-        if (!write && !status) {
-            memcpy(buf, aligned_buf, length);
-        }
-
-        free(aligned_buf);
     }
 
     if (status) {
