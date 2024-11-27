@@ -85,6 +85,16 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(span<uint8_t> buf)
 {
+    return GetController()->GetRemainingLength() - ReadWriteData(buf, false);
+}
+
+void ScsiGeneric::WriteData(span<const uint8_t>, scsi_command, int)
+{
+    assert(false);
+}
+
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write) const
+{
     assert(count);
 
     sg_io_hdr io_hdr = { };
@@ -92,9 +102,7 @@ int ScsiGeneric::ReadData(span<uint8_t> buf)
     io_hdr.interface_id = 'S';
 
     if (GetController()->GetRemainingLength()) {
-        io_hdr.dxfer_direction =
-            WRITE_COMMANDS.contains(static_cast<scsi_command>(GetController()->GetCdb()[0])) ?
-                SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
+        io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
     }
     else {
         io_hdr.dxfer_direction = SG_DXFER_NONE;
@@ -125,10 +133,5 @@ int ScsiGeneric::ReadData(span<uint8_t> buf)
         throw scsi_exception(static_cast<enum sense_key>(sense_data[2] & 0x0f), static_cast<enum asc>(sense_data[12]));
     }
 
-    return GetController()->GetRemainingLength() - io_hdr.resid;
-}
-
-void ScsiGeneric::WriteData(span<const uint8_t>, scsi_command, int)
-{
-    assert(false);
+    return io_hdr.resid;
 }
