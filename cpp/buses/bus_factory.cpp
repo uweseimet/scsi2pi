@@ -78,7 +78,7 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
     allocation_length_descs[static_cast<int>(opcode)] = desc;
 }
 
-int BusFactory::GetAllocationLength(span<const int> cdb)
+int BusFactory::GetAllocationLength(span<const int> cdb) const
 {
     const AllocationLengthDesc &desc = allocation_length_descs[cdb[0]];
 
