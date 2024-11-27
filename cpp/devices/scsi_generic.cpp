@@ -130,7 +130,12 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
 
     io_hdr.timeout = timeout * 1000;
 
-    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    if (ioctl(fd, SG_IO, &io_hdr) == -1) {
+        LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
+        throw scsi_exception(sense_key::aborted_command);
+    }
+
+    int status = io_hdr.status;
     if (!status && static_cast<int>(sense_data[2]) & 0x0f) {
         status = static_cast<int>(sense_data[2]) & 0x0f;
     }
