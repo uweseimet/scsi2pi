@@ -21,7 +21,7 @@ BusFactory::BusFactory()
     // This mapping only contains the commands supported by s2p
     AddCommand(scsi_command::test_unit_ready, 6, "TEST UNIT READY", { 0, 0, false });
     AddCommand(scsi_command::rezero, 6, "REZERO/REWIND", { 0, 0, false });
-    AddCommand(scsi_command::read_block_limits, 6, "READ BLOCK LIMITS", { 0, 0, false });
+    AddCommand(scsi_command::read_block_limits, 6, "READ BLOCK LIMITS", { -6, 0, false });
     AddCommand(scsi_command::request_sense, 6, "REQUEST SENSE", { 4, 1, false });
     AddCommand(scsi_command::format_unit, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, false });
     AddCommand(scsi_command::reassign_blocks, 6, "REASSIGN BLOCKS", { 0, 0, false });
@@ -41,18 +41,18 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::erase_6, 6, "ERASE(6)", { 0, 0, false });
     AddCommand(scsi_command::mode_sense_6, 6, "MODE SENSE(6)", { 4, 1, false });
     AddCommand(scsi_command::start_stop, 6, "START STOP UNIT/STOP PRINT", { 0, 0, false });
-    AddCommand(scsi_command::send_diagnostic, 6, "SEND DIAGNOSTIC", { 0, 0, false });
+    AddCommand(scsi_command::send_diagnostic, 6, "SEND DIAGNOSTIC", { 3, 2, false });
     AddCommand(scsi_command::prevent_allow_medium_removal, 6, "PREVENT ALLOW MEDIUM REMOVAL", { 0, 0, false });
-    AddCommand(scsi_command::read_capacity_10, 10, "READ CAPACITY(10)", { 0, 0, false });
+    AddCommand(scsi_command::read_capacity_10, 10, "READ CAPACITY(10)", { -8, 0, false });
     AddCommand(scsi_command::read_10, 10, "READ(10)", { 2, 4, true });
     AddCommand(scsi_command::write_10, 10, "WRITE(10)", { 2, 4, true });
     AddCommand(scsi_command::seek_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, false });
     AddCommand(scsi_command::verify_10, 10, "VERIFY(10)", { 2, 4, true });
     AddCommand(scsi_command::synchronize_cache_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, false });
-    AddCommand(scsi_command::read_defect_data_10, 10, "READ DEFECT DATA(10)", { 0, 0, false });
+    AddCommand(scsi_command::read_defect_data_10, 10, "READ DEFECT DATA(10)", { 7, 2, false });
     AddCommand(scsi_command::read_long_10, 10, "READ LONG(10)", { 2, 4, false });
     AddCommand(scsi_command::write_long_10, 10, "WRITE LONG(10)", { 2, 4, false });
-    AddCommand(scsi_command::read_toc, 10, "READ TOC", { 0, 0, false });
+    AddCommand(scsi_command::read_toc, 10, "READ TOC", { 7, 2, false });
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)", { 7, 2, false });
     AddCommand(scsi_command::mode_sense_10, 10, "MODE SENSE(10)", { 7, 2, false });
     AddCommand(scsi_command::read_16, 16, "READ(16)", { 10, 4, true });
@@ -73,7 +73,7 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
 {
     command_byte_counts[static_cast<int>(opcode)] = byte_count;
     command_names[static_cast<int>(opcode)] = name;
-    assert(desc.offset < 12);
+    assert(desc.offset < 11);
     assert(!desc.size || desc.size == 1 || desc.size == 2 || desc.size == 3 || desc.size == 4 || desc.size == 8);
     allocation_length_descs[static_cast<int>(opcode)] = desc;
 }
@@ -81,6 +81,11 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
 int BusFactory::GetAllocationLength(span<const int> cdb)
 {
     const AllocationLengthDesc &desc = allocation_length_descs[cdb[0]];
+
+    // For commands without allocation length field the length is coded as a negative offset
+    if (desc.offset < 0) {
+        return -desc.offset;
+    }
 
     int allocation_length = 0;
     switch (desc.size) {
