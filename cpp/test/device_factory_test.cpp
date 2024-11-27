@@ -27,6 +27,7 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCDP, device_factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCLP, device_factory.CreateDevice(SCLP, 0, "")->GetType());
     EXPECT_EQ(SCHS, device_factory.CreateDevice(SCHS, 0, "")->GetType());
+    EXPECT_EQ(SCSG, device_factory.CreateDevice(SCSG, 0, "")->GetType());
     EXPECT_EQ(SCTP, device_factory.CreateDevice(SCTP, 0, "")->GetType());
     EXPECT_EQ(SAHD, device_factory.CreateDevice(SAHD, 0, "")->GetType());
 
