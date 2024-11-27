@@ -98,7 +98,7 @@ void ScsiGeneric::WriteData(span<const uint8_t> buf, scsi_command, int)
     ReadWriteData((void*)buf.data(), true);
 }
 
-int ScsiGeneric::ReadWriteData(void *buf, bool write) const
+int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver API requires void *
 {
     assert(count);
 
@@ -137,7 +137,8 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const
     }
 
     if (status) {
-        throw scsi_exception(static_cast<enum sense_key>(sense_data[2] & 0x0f), static_cast<enum asc>(sense_data[12]));
+        throw scsi_exception(static_cast<enum sense_key>(static_cast<int>(sense_data[2]) & 0x0f),
+            static_cast<enum asc>(sense_data[12]));
     }
 
     return io_hdr.resid;
