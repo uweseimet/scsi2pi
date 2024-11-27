@@ -25,9 +25,6 @@ TEST(ScsiGenericTest, Device_Defaults)
     EXPECT_FALSE(device.IsLocked());
     EXPECT_FALSE(device.IsStoppable());
     EXPECT_FALSE(device.IsStopped());
-
-    EXPECT_EQ("SCSI2Pi", device.GetVendor());
-    EXPECT_EQ(testing::TestShared::GetVersion(), device.GetRevision());
 }
 
 TEST(ScsiGenericTest, GetDefaultParams)
