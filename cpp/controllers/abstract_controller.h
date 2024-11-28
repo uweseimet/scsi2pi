@@ -141,7 +141,7 @@ private:
     array<int, 16> cdb = { };
 
     // Shared ransfer data buffer, dynamically resized
-    inline static vector<uint8_t> buffer = vector<uint8_t>(4096);
+    inline static vector<uint8_t> buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;
     // Total number of bytes to be transferred
