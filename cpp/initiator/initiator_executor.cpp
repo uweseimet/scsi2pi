@@ -226,7 +226,7 @@ void InitiatorExecutor::Status()
     }
 }
 
-void InitiatorExecutor::DataIn(span<uint8_t> buffer, int &length)
+void InitiatorExecutor::DataIn(data_in_t buf, int &length)
 {
     if (!length) {
         throw phase_exception("Buffer full in DATA IN phase");
@@ -234,12 +234,12 @@ void InitiatorExecutor::DataIn(span<uint8_t> buffer, int &length)
 
     trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
-    byte_count = bus.ReceiveHandShake(buffer.data(), length);
+    byte_count = bus.ReceiveHandShake(buf.data(), length);
 
     length -= byte_count;
 }
 
-void InitiatorExecutor::DataOut(span<uint8_t> buffer, int &length)
+void InitiatorExecutor::DataOut(data_out_t buf, int &length)
 {
     if (!length) {
         throw phase_exception("No more data for DATA OUT phase");
@@ -247,7 +247,7 @@ void InitiatorExecutor::DataOut(span<uint8_t> buffer, int &length)
 
     trace("Sending {0} byte(s) in DATA OUT phase", length);
 
-    byte_count = bus.SendHandShake(buffer.data(), length);
+    byte_count = bus.SendHandShake(buf.data(), length);
     if (byte_count != length) {
         error("Sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
         throw phase_exception("DATA OUT phase failed");

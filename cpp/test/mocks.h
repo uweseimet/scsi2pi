@@ -279,7 +279,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (span<const uint8_t>, scsi_command, int), (override));
+    MOCK_METHOD(void, WriteData, (data_out_t, scsi_command, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
@@ -315,7 +315,7 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (span<const uint8_t>, scsi_command, int), (override));
+    MOCK_METHOD(void, WriteData, (data_out_t, scsi_command, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
