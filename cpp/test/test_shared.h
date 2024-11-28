@@ -42,9 +42,6 @@ void SetUpProperties(string_view, string_view = "", const property_map& = { });
 void Dispatch(PrimaryDevice&, scsi_command, sense_key = sense_key::no_sense, asc = asc::no_additional_sense_information,
     const string& = "");
 
-uint32_t GetInt32(span<const byte>, int);
-uint32_t GetInt32(span<const uint8_t>, int);
-
 class TestShared
 {
 

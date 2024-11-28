@@ -197,8 +197,8 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const auto allocation_length = static_cast<size_t>(GetCdbInt16(7));
-    const auto length = static_cast<int>(min(allocation_length, data.size()));
+    const int allocation_length = GetCdbInt16(7);
+    const int length = min(allocation_length, static_cast<int>(data.size()));
     if (!length) {
         StatusPhase();
     }
@@ -216,7 +216,7 @@ int HostServices::ModeSense6(cdb_t cdb, data_in_t buf) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
+    const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
     const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
@@ -234,7 +234,7 @@ int HostServices::ModeSense10(cdb_t cdb, data_in_t buf) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
+    const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
     fill_n(buf.begin(), length, 0);
 
     const int size = page_handler->AddModePages(cdb, buf, 8, length, 65535);

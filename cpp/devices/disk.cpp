@@ -129,7 +129,7 @@ void Disk::CleanUp()
 void Disk::ValidateFile()
 {
     if (!GetBlockCount()) {
-        throw io_exception("Device has 0 blocks");
+        throw io_exception("Device has 0 sectors");
     }
 
     StorageDevice::ValidateFile();
@@ -158,10 +158,10 @@ bool Disk::SetUpCache()
 bool Disk::InitCache(const string &path)
 {
     if (caching_mode == PbCachingMode::PISCSI) {
-        cache = make_shared<DiskCache>(path, GetBlockSize(), static_cast<uint32_t>(GetBlockCount()));
+        cache = make_shared<DiskCache>(path, GetBlockSize(), GetBlockCount());
     }
     else {
-        cache = make_shared<LinuxCache>(path, GetBlockSize(), static_cast<uint32_t>(GetBlockCount()),
+        cache = make_shared<LinuxCache>(path, GetBlockSize(), GetBlockCount(),
             caching_mode == PbCachingMode::WRITE_THROUGH);
     }
 
@@ -313,14 +313,14 @@ void Disk::SynchronizeCache()
 
 void Disk::ReadDefectData10() const
 {
-    const size_t allocation_length = min(static_cast<size_t>(GetCdbInt16(7)), static_cast<size_t>(4));
+    const int allocation_length = min(GetCdbInt16(7), 4);
 
-    GetController()->SetCurrentLength(static_cast<int>(allocation_length));
+    GetController()->SetCurrentLength(allocation_length);
 
     // The defect list is empty
     fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
 
-    DataInPhase(static_cast<int>(allocation_length));
+    DataInPhase(allocation_length);
 }
 
 bool Disk::Eject(bool force)
@@ -479,12 +479,10 @@ void Disk::ReadCapacity10()
         throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
     }
 
-    vector<uint8_t> &buf = GetController()->GetBuffer();
-
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
     const uint64_t capacity = GetBlockCount() - 1;
-    SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
-    SetInt32(buf, 4, GetBlockSize());
+    SetInt32(GetController()->GetBuffer(), 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
+    SetInt32(GetController()->GetBuffer(), 4, GetBlockSize());
 
     DataInPhase(8);
 }
@@ -497,13 +495,12 @@ void Disk::ReadCapacity16()
         throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
     }
 
-    vector<uint8_t> &buf = GetController()->GetBuffer();
-    fill_n(buf.begin(), 32, 0);
+    fill_n(GetController()->GetBuffer().begin(), 32, 0);
 
-    SetInt64(buf, 0, GetBlockCount() - 1);
-    SetInt32(buf, 8, GetBlockSize());
+    SetInt64(GetController()->GetBuffer(), 0, GetBlockCount() - 1);
+    SetInt32(GetController()->GetBuffer(), 8, GetBlockSize());
 
-    DataInPhase(min(32, static_cast<int>(GetCdbInt32(10))));
+    DataInPhase(min(32U, GetCdbInt32(10)));
 }
 
 void Disk::ReadCapacity16_ReadLong16()
@@ -544,11 +541,9 @@ uint64_t Disk::ValidateBlockAddress(access_mode mode) const
 
 void Disk::ChangeBlockSize(uint32_t new_size)
 {
-    const auto current_size = GetBlockSize();
+    if (new_size != GetBlockSize()) {
+        StorageDevice::ChangeBlockSize(new_size);
 
-    StorageDevice::ChangeBlockSize(new_size);
-
-    if (new_size != current_size) {
         FlushCache();
         if (cache) {
             SetUpCache();

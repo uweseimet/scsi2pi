@@ -85,7 +85,7 @@ private:
 
     uint32_t GetByteCount();
 
-    int VerifyBlockSizeChange(int, bool) const override;
+    uint32_t VerifyBlockSizeChange(uint32_t, bool) const override;
 
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
