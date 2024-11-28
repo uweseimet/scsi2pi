@@ -135,11 +135,11 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
 
     if (!changeable) {
         // 2 seconds for inactive timer
-        buf[3] = (byte)0x05;
+        buf[3] = byte { 0x05 };
 
         // MSF multiples are 60 and 75 respectively
-        buf[5] = (byte)60;
-        buf[7] = (byte)75;
+        buf[5] = byte { 60 };
+        buf[7] = byte { 75 };
     }
 
     pages[13] = buf;

@@ -122,10 +122,10 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     }
 
     if (IsReady()) {
-        // Set the number of tracks in one zone to 8
-        buf[3] = (byte)0x08;
+        // 8 tracks in one zone
+        buf[3] = byte { 0x08 };
 
-        // Set sector/track to 25
+        // 25 sectors/tracks
         SetInt16(buf, 10, 25);
 
         // The current sector size
@@ -141,10 +141,10 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
         SetInt16(buf, 18, 20);
     }
 
-    buf[20] = IsRemovable() ? (byte)0x20 : (byte)0x00;
+    buf[20] = IsRemovable() ? byte { 0x20 } : byte { 0x00 };
 
     // Hard-sectored
-    buf[20] |= (byte)0x40;
+    buf[20] |= byte { 0x40 };
 
     pages[3] = buf;
 }
@@ -168,8 +168,8 @@ void ScsiHd::AddDrivePage(map<int, vector<byte>> &pages, bool changeable) const
         cylinders /= 25;
         SetInt32(buf, 0x01, static_cast<uint32_t>(cylinders));
 
-        // Fix the head at 8
-        buf[0x05] = (byte)0x8;
+        // 8 heads
+        buf[0x05] = byte { 0x8 };
 
         // Medium rotation rate 7200
         SetInt16(buf, 0x14, 7200);

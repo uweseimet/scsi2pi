@@ -361,7 +361,7 @@ void Disk::AddVerifyErrorRecoveryPage(map<int, vector<byte>> &pages, bool change
         // The page data are those of an IBM DORS-39130 drive
 
         // Verify retry count
-        buf[3] = (byte)1;
+        buf[3] = byte { 1 };
     }
 
     pages[7] = buf;

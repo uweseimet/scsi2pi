@@ -154,8 +154,7 @@ bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
     }
 
     try {
-        auto v = stoul(value);
-        result = (int)v;
+        result = static_cast<int>(stoul(value));
     }
     catch (const invalid_argument&) {
         return false;

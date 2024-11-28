@@ -49,7 +49,7 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
 
     const bool changeable = (cdb[2] & 0xc0) == 0x40;
 
-    const int page_code = cdb[2] & 0x3f;
+    const auto page_code = cdb[2] & 0x3f;
 
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;
@@ -78,9 +78,9 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
             // Page data
             result.insert(result.end(), page_data.cbegin(), page_data.cend());
             // Page code, PS bit may already have been set
-            result[off] |= (byte)index;
+            result[off] |= static_cast<byte>(index);
             // Page payload size, does not count itself and the page code field
-            result[off + 1] = (byte)(page_data.size() - 2);
+            result[off + 1] = static_cast<byte>(page_data.size() - 2);
         }
     }
 
@@ -137,7 +137,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (page_code != (static_cast<int>(page_data[0]) & 0x3f)) {
+            if (page_code != to_integer<int>(page_data[0] & byte { 0x3f })) {
                 warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
                 continue;
             }
