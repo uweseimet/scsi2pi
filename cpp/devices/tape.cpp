@@ -362,15 +362,15 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
     vector<byte> buf(12);
 
     // Page size, the size field does not count itself
-    buf[0] = (byte)11;
+    buf[0] = byte { 11 };
 
     // WP
     if (IsProtected()) {
-        buf[2] = (byte)0x80;
+        buf[2] = byte { 0x80 };
     }
 
     // Block descriptor length
-    buf[3] = (byte)8;
+    buf[3] = byte { 8 };
 
     // Size of fixed blocks
     SetInt32(buf, 8, GetBlockSize());
@@ -391,10 +391,10 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool change
 
     if (!changeable) {
         // BIS/LOIS (logical block identifiers supported)
-        buf[8] = (byte)0b01000000;
+        buf[8] = byte { 0b01000000 };
 
         // EEG (enable EOD generation)
-        buf[10] = (byte)0b00010000;
+        buf[10] = byte { 0b00010000 };
     }
 
     pages[16] = buf;
@@ -406,7 +406,7 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeabl
 
     if (!changeable) {
         // Fixed data partitions, PSUM (descriptor unit in MB)
-        buf[4] = (byte)0b10010000;
+        buf[4] = byte { 0b10010000 };
     }
 
     pages[17] = buf;

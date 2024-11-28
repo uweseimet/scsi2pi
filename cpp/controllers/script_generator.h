@@ -23,7 +23,7 @@ public:
     bool CreateFile(const string&);
 
     void AddCdb(int, int, cdb_t);
-    void AddData(span<uint8_t>);
+    void AddData(span<const uint8_t>);
 
     void WriteEol();
 

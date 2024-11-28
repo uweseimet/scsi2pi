@@ -132,7 +132,7 @@ void Controller::Command()
             return;
         }
 
-        const int control = GetCdb()[command_bytes_count - 1];
+        const auto control = GetCdb()[command_bytes_count - 1];
         linked = control & 0x01;
         flag = control & 0x02;
 
@@ -204,7 +204,8 @@ void Controller::Status()
 
     // If this is a successfully terminated linked command convert the status code
     GetBuffer()[0] =
-        linked && GetStatus() == status_code::good ? (uint8_t)status_code::intermediate : (uint8_t)GetStatus();
+        linked && GetStatus() == status_code::good ?
+            static_cast<uint8_t>(status_code::intermediate) : static_cast<uint8_t>(GetStatus());
 }
 
 void Controller::MsgIn()
