@@ -31,9 +31,9 @@ public:
 
     bool Eject(bool) override;
 
-    void WriteData(span<const uint8_t>, scsi_command, int) override;
+    void WriteData(data_out_t, scsi_command, int) override;
 
-    int ReadData(span<uint8_t>) override;
+    int ReadData(data_in_t) override;
 
     void Open() override;
 

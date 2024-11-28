@@ -398,7 +398,7 @@ void Disk::AddAppleVendorPage(map<int, vector<byte>> &pages, bool changeable) co
     }
 }
 
-int Disk::ReadData(span<uint8_t> buf)
+int Disk::ReadData(data_in_t buf)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
@@ -415,7 +415,7 @@ int Disk::ReadData(span<uint8_t> buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(span<const uint8_t> buf, scsi_command command, int)
+void Disk::WriteData(data_out_t buf, scsi_command command, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 

@@ -113,7 +113,7 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
     return HandleInquiry(device_type::cd_rom, true);
 }
 
-void ScsiCd::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
+void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 {
     Disk::ModeSelect(cdb, buf, length);
 
@@ -145,7 +145,7 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
     pages[13] = buf;
 }
 
-int ScsiCd::ReadData(span<uint8_t> buf)
+int ScsiCd::ReadData(data_in_t buf)
 {
     CheckReady();
 

@@ -131,7 +131,7 @@ bool StorageDevice::Eject(bool force)
     return status;
 }
 
-void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
+void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 {
     // PF
     if (!(cdb[1] & 0x10)) {
@@ -216,7 +216,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
     ChangeBlockSize(size);
 }
 
-pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, span<const uint8_t> buf, int size) const
+pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size) const
 {
     assert(cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10);
 
@@ -373,7 +373,7 @@ off_t StorageDevice::GetFileSize(bool ignore_error) const
     }
 }
 
-int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
+int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
 {
     // Subpages are not supported
     if (cdb[3]) {
@@ -420,7 +420,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     return size;
 }
 
-int StorageDevice::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
+int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
 {
     // Subpages are not supported
     if (cdb[3]) {

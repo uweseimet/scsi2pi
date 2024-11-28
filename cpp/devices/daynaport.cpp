@@ -188,7 +188,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-void DaynaPort::WriteData(span<const uint8_t> buf, scsi_command command, int)
+void DaynaPort::WriteData(data_out_t buf, scsi_command command, int)
 {
     assert(command == scsi_command::send_message_6);
     if (command != scsi_command::send_message_6) {

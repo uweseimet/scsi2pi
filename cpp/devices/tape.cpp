@@ -148,7 +148,7 @@ void Tape::Write6()
     }
 }
 
-int Tape::ReadData(span<uint8_t> buf)
+int Tape::ReadData(data_in_t buf)
 {
     CheckReady();
 
@@ -206,7 +206,7 @@ int Tape::ReadData(span<uint8_t> buf)
     return length;
 }
 
-void Tape::WriteData(span<const uint8_t> buf, scsi_command, int chunk_size)
+void Tape::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
     CheckReady();
 

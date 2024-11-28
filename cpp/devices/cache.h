@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <span>
+#include "base/s2p_defs.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
@@ -21,8 +21,8 @@ public:
 
     virtual ~Cache() = default;
 
-    virtual int ReadSectors(span<uint8_t>, uint64_t, uint32_t) = 0;
-    virtual int WriteSectors(span<const uint8_t>, uint64_t, uint32_t) = 0;
+    virtual int ReadSectors(data_in_t, uint64_t, uint32_t) = 0;
+    virtual int WriteSectors(data_out_t, uint64_t, uint32_t) = 0;
 
     virtual bool Flush() = 0;
 

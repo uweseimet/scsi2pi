@@ -40,7 +40,7 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports
         });
 }
 
-int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int length, int max_size) const
+int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, int max_size) const
 {
     const int max_length = length - offset;
     if (max_length < 0) {

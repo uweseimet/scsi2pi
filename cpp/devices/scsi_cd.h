@@ -24,8 +24,8 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    int ReadData(span<uint8_t>) override;
+    void ModeSelect(cdb_t, data_out_t, int) override;
+    int ReadData(data_in_t) override;
 
 protected:
 

@@ -49,7 +49,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
+int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
 {
     assert(count == 1);
     if (count != 1) {
@@ -65,7 +65,7 @@ int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
     return disktrk->ReadSector(buf, sector & 0xff);
 }
 
-int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t count)
+int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
 {
     assert(count == 1);
     if (count != 1) {

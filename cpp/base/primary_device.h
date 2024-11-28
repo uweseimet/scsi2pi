@@ -71,7 +71,7 @@ public:
 
     void Reset();
 
-    virtual int ReadData(span<uint8_t>)
+    virtual int ReadData(data_in_t)
     {
         // Devices that implement a DATA IN phase have to override this method
 
@@ -79,9 +79,9 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual void WriteData(span<const uint8_t>, scsi_command, int) = 0;
+    virtual void WriteData(data_out_t, scsi_command, int) = 0;
 
-    virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
+    virtual void ModeSelect(cdb_t, data_out_t, int)
     {
         // There is no default implementation of MODE SELECT
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -119,12 +119,12 @@ protected:
     void ReserveUnit() override;
     void ReleaseUnit() override;
 
-    virtual int ModeSense6(cdb_t, vector<uint8_t>&) const
+    virtual int ModeSense6(cdb_t, data_in_t) const
     {
         // Nothing to do in base class
         return 0;
     }
-    virtual int ModeSense10(cdb_t, vector<uint8_t>&) const
+    virtual int ModeSense10(cdb_t, data_in_t) const
     {
         // Nothing to do in base class
         return 0;

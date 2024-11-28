@@ -31,7 +31,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    void WriteData(span<const uint8_t>, scsi_command, int) override;
+    void WriteData(data_out_t, scsi_command, int) override;
 
     void CheckForFileError();
 
