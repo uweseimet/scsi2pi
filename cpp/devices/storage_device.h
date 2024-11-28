@@ -115,8 +115,8 @@ protected:
         blocks = b;
     }
 
-    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    pair<int, int> EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int) const;
+    void ModeSelect(cdb_t, data_out_t, int) override;
+    pair<int, int> EvaluateBlockDescriptors(scsi_command, data_out_t, int) const;
     virtual int VerifyBlockSizeChange(int, bool) const;
     unordered_set<uint32_t> GetBlockSizes() const;
     bool SetBlockSize(uint32_t);
@@ -145,8 +145,8 @@ private:
 
     bool IsReadOnlyFile() const;
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
+    int ModeSense6(cdb_t, data_in_t) const override;
+    int ModeSense10(cdb_t, data_in_t) const override;
 
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
     void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;

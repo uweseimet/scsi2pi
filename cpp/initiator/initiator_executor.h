@@ -48,8 +48,8 @@ private:
     bool Selection() const;
     void Command(span<uint8_t>);
     void Status();
-    void DataIn(span<uint8_t>, int&);
-    void DataOut(span<uint8_t>, int&);
+    void DataIn(data_in_t, int&);
+    void DataOut(data_out_t, int&);
     void MsgIn();
     void MsgOut();
 

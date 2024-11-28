@@ -27,7 +27,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    void WriteData(span<const uint8_t>, scsi_command, int) override;
+    void WriteData(data_out_t, scsi_command, int) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {
@@ -64,8 +64,8 @@ private:
     void ExecuteOperation();
     void ReceiveOperationResults();
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
+    int ModeSense6(cdb_t, data_in_t) const override;
+    int ModeSense10(cdb_t, data_in_t) const override;
 
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
 

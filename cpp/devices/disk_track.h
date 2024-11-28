@@ -13,10 +13,9 @@
 
 #pragma once
 
-#include <cstdint>
-#include <span>
 #include <string>
 #include <vector>
+#include "base/s2p_defs.h"
 
 using namespace std;
 
@@ -49,8 +48,8 @@ private:
     bool Load(const string&, uint64_t&);
     bool Save(const string&, uint64_t&);
 
-    int ReadSector(span<uint8_t>, int) const;
-    int WriteSector(span<const uint8_t> buf, int);
+    int ReadSector(data_in_t, int) const;
+    int WriteSector(data_out_t, int);
 
     int GetTrack() const
     {

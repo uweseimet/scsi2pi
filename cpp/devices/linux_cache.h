@@ -22,11 +22,11 @@ public:
     }
     ~LinuxCache() override = default;
 
-    int ReadSectors(span<uint8_t>, uint64_t, uint32_t) override;
-    int WriteSectors(span<const uint8_t>, uint64_t, uint32_t) override;
+    int ReadSectors(data_in_t, uint64_t, uint32_t) override;
+    int WriteSectors(data_out_t, uint64_t, uint32_t) override;
 
-    int ReadLong(span<uint8_t>, uint64_t, int);
-    int WriteLong(span<const uint8_t>, uint64_t, int);
+    int ReadLong(data_in_t, uint64_t, int);
+    int WriteLong(data_out_t, uint64_t, int);
 
     bool Init() override;
 
@@ -36,8 +36,8 @@ public:
 
 private:
 
-    int Read(span<uint8_t>, uint64_t, int);
-    int Write(span<const uint8_t>, uint64_t, int);
+    int Read(data_in_t, uint64_t, int);
+    int Write(data_out_t, uint64_t, int);
 
     string filename;
 

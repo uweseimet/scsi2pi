@@ -171,7 +171,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     return true;
 }
 
-int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
+int DiskTrack::ReadSector(data_in_t buf, int sec) const
 {
     assert(sec >= 0 && sec < 256);
 
@@ -192,7 +192,7 @@ int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
     return length;
 }
 
-int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
+int DiskTrack::WriteSector(data_out_t buf, int sec)
 {
     assert(sec >= 0 && sec < 256);
 
