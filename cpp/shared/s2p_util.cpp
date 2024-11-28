@@ -352,9 +352,9 @@ int s2p_util::HexToDec(char c)
 
 string s2p_util::Trim(const string &s)
 {
-    const size_t first = s.find_first_not_of(' ');
+    const size_t first = s.find_first_not_of(" \r");
     if (first == string::npos) {
-        return s;
+        return "";
     }
     const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));

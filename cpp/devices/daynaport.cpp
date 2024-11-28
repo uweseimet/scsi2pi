@@ -253,8 +253,7 @@ void DaynaPort::RetrieveStats() const
     LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
         buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
-    const auto length = static_cast<int>(min(sizeof(SCSI_LINK_STATS),
-        static_cast<size_t>(GetCdbInt16(3))));
+    const int length = min(static_cast<int>(sizeof(SCSI_LINK_STATS)), GetCdbInt16(3));
     GetController()->SetTransferSize(length, length);
 
     DataInPhase(length);

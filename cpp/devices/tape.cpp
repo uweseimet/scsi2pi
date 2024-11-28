@@ -324,7 +324,7 @@ bool Tape::ValidateBlockSize(uint32_t size) const
     return size && !(size % 4);
 }
 
-int Tape::VerifyBlockSizeChange(int requested_size, bool temporary) const
+uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
 {
     // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
     return
@@ -543,7 +543,7 @@ void Tape::Locate(bool locate16)
 
 void Tape::ReadPosition() const
 {
-    vector<uint8_t> &buf = GetController()->GetBuffer();
+    auto &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), 20, 0);
 
     // BOP

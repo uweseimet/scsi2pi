@@ -169,9 +169,9 @@ void PrimaryDevice::Inquiry()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const vector<uint8_t> &buf = InquiryInternal();
+    const auto &buf = InquiryInternal();
 
-    const size_t allocation_length = min(buf.size(), static_cast<size_t>(GetCdbInt16(3)));
+    const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
 
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
@@ -181,7 +181,7 @@ void PrimaryDevice::Inquiry()
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
-    DataInPhase(static_cast<int>(allocation_length));
+    DataInPhase(allocation_length);
 }
 
 void PrimaryDevice::ReportLuns()
@@ -193,7 +193,7 @@ void PrimaryDevice::ReportLuns()
 
     const uint32_t allocation_length = GetCdbInt32(6);
 
-    vector<uint8_t> &buf = GetController()->GetBuffer();
+    auto &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;

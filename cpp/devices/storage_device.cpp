@@ -181,11 +181,11 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
         }
 
         // The page size field does not count itself and the page code field
-        const size_t page_size = buf[offset + 1] + 2;
+        const int page_size = buf[offset + 1] + 2;
 
         // The page size in the parameters must match the actual page size, otherwise report
         // INVALID FIELD IN PARAMETER LIST (SCSI-2 8.2.8).
-        if (it->second.size() != page_size || page_size > static_cast<size_t>(length)) {
+        if (static_cast<int>(it->second.size()) != page_size || page_size > length) {
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
         }
 
@@ -202,7 +202,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
             // With this page the block size for a subsequent FORMAT can be selected, but only a few devices
             // support this, e.g. FUJITSU M2624S.
             // We are fine as long as the permanent current block size remains unchanged.
-            VerifyBlockSizeChange(GetInt16(buf, offset + 12), false);
+            VerifyBlockSizeChange(static_cast<uint32_t>(GetInt16(buf, offset + 12)), false);
             break;
 
         default:
@@ -232,16 +232,16 @@ pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_ou
 
     // Check for temporary block size change in first block descriptor
     if (descriptor_length && buf.size() >= required_length + 8) {
-        size = VerifyBlockSizeChange(GetInt16(buf, static_cast<int>(required_length) + 6), true);
+        size = VerifyBlockSizeChange(GetInt16(buf, static_cast<uint32_t>(required_length) + 6), true);
     }
 
     // Offset and (potentially new) size
     return {static_cast<int>(descriptor_length + required_length), size};
 }
 
-int StorageDevice::VerifyBlockSizeChange(int requested_size, bool temporary) const
+uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
 {
-    if (requested_size == static_cast<int>(GetBlockSize())) {
+    if (requested_size == GetBlockSize()) {
         return requested_size;
     }
 
@@ -269,7 +269,7 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
     const auto current_size = block_size;
     if (new_size != current_size) {
         block_size = new_size;
-        blocks = static_cast<uint32_t>(current_size * blocks / block_size);
+        blocks = current_size * blocks / block_size;
 
         LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, block_size));
     }
@@ -380,7 +380,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
+    const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
     const bool page_0 = !(cdb[2] & 0x3f);
@@ -427,7 +427,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
+    const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
     fill_n(buf.begin(), length, 0);
 
     const bool page_0 = !(cdb[2] & 0x3f);
