@@ -236,6 +236,9 @@ TEST(S2pUtilTest, HexToDec)
 
 TEST(S2pUtilTest, Trim)
 {
+    EXPECT_EQ("", Trim(""));
+    EXPECT_EQ("", Trim(" "));
+    EXPECT_EQ("x", Trim("x"));
     EXPECT_EQ("x", Trim(" x"));
     EXPECT_EQ("x", Trim("x\r"));
     EXPECT_EQ("x", Trim("x "));

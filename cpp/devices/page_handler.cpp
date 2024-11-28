@@ -94,7 +94,7 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto size = static_cast<int>(min(static_cast<size_t>(max_length), result.size()));
+    const int size = min(max_length, static_cast<int>(result.size()));
     memcpy(&buf.data()[offset], result.data(), size);
 
     // Do not return more than the requested number of bytes

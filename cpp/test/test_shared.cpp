@@ -205,18 +205,3 @@ void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s,
     TestShared::Dispatch(device, command, s, a, msg);
 }
 
-uint32_t testing::GetInt32(span<const byte> buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    return (to_integer<uint32_t>(buf[offset]) << 24) | (to_integer<uint32_t>(buf[offset + 1]) << 16)
-        | (to_integer<uint32_t>(buf[offset + 2]) << 8) | to_integer<uint32_t>(buf[offset + 3]);
-}
-
-uint32_t testing::GetInt32(span<const uint8_t> buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16)
-        | (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
-}
