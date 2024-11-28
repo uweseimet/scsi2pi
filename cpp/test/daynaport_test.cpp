@@ -35,11 +35,11 @@ TEST(DaynaportTest, GetDefaultParams)
 {
     DaynaPort daynaport(0);
 
-    const auto params = daynaport.GetDefaultParams();
+    const auto &params = daynaport.GetDefaultParams();
     EXPECT_EQ(3U, params.size());
     EXPECT_TRUE(params.contains("interface"));
     EXPECT_TRUE(params.contains("inet"));
-    EXPECT_TRUE(params.contains("bridge"));
+    EXPECT_EQ("true", params.at("bridge"));
 }
 
 TEST(DaynaportTest, Inquiry)
@@ -51,7 +51,7 @@ TEST(DaynaportTest, TestUnitReady)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*daynaport, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -119,7 +119,7 @@ TEST(DaynaportTest, TestRetrieveStats)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*daynaport, scsi_command::retrieve_stats));
 }
 
@@ -132,12 +132,12 @@ TEST(DaynaportTest, SetInterfaceMode)
 
     // Not implemented, do nothing
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*daynaport, scsi_command::set_iface_mode));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
-    EXPECT_CALL(*controller, DataOut());
+    EXPECT_CALL(*controller, DataOut);
     EXPECT_NO_THROW(Dispatch(*daynaport, scsi_command::set_iface_mode));
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_STATS);
@@ -161,7 +161,7 @@ TEST(DaynaportTest, SetMcastAddr)
         "Length of 0 is not supported");
 
     controller->SetCdbByte(4, 1);
-    EXPECT_CALL(*controller, DataOut());
+    EXPECT_CALL(*controller, DataOut);
     EXPECT_NO_THROW(Dispatch(*daynaport, scsi_command::set_mcast_addr));
 }
 

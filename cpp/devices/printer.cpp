@@ -131,6 +131,7 @@ void Printer::SynchronizeBuffer()
 
     string cmd = GetParam(CMD);
     const size_t file_position = cmd.find("%f");
+    // The format has been verified before
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);
 
@@ -181,11 +182,7 @@ void Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
         filename = f.data();
 
         out.open(filename, ios::binary);
-        if (out.fail()) {
-            out.clear();
-            ++print_error_count;
-            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
-        }
+        CheckForFileError();
 
         LogTrace("Created printer output file '" + filename + "'");
     }
@@ -193,6 +190,11 @@ void Printer::WriteData(span<const uint8_t> buf, scsi_command command, int)
     LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
 
     out.write((const char*)buf.data(), length);
+    CheckForFileError();
+}
+
+void Printer::CheckForFileError()
+{
     if (out.fail()) {
         out.clear();
         ++print_error_count;

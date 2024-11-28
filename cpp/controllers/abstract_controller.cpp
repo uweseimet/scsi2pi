@@ -42,8 +42,6 @@ void AbstractController::Reset()
 
 void AbstractController::SetScriptGenerator(shared_ptr<ScriptGenerator> s)
 {
-    assert(script_generator);
-
     script_generator = s;
 }
 

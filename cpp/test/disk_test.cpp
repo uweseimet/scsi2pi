@@ -40,9 +40,13 @@ TEST(DiskTest, Dispatch)
 
 TEST(DiskTest, ValidateFile)
 {
-    MockDisk disk;
+    NiceMock<MockDisk> disk;
 
-    EXPECT_THROW(disk.ValidateFile(), io_exception);
+    EXPECT_THROW(disk.ValidateFile(), io_exception)<< "Device has 0 blocks";
+
+    disk.SetBlockCount(1);
+    disk.SetFilename(CreateImageFile(disk, 512));
+    EXPECT_NO_THROW(disk.ValidateFile());
 }
 
 TEST(DiskTest, Rezero)
@@ -346,7 +350,7 @@ TEST(DiskTest, Verify10)
     disk->SetReady(true);
     // Verify 0 sectors
     disk->SetBlockCount(1);
-    EXPECT_CALL(*disk, FlushCache());
+    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::verify_10));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -362,7 +366,7 @@ TEST(DiskTest, Verify16)
     disk->SetReady(true);
     // Verify 0 sectors
     disk->SetBlockCount(1);
-    EXPECT_CALL(*disk, FlushCache());
+    EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::verify_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -666,7 +670,7 @@ TEST(DiskTest, ChangeBlockSize)
 
     disk.SetBlockSize(1024);
     disk.SetBlockCount(10);
-    EXPECT_CALL(disk, FlushCache());
+    EXPECT_CALL(disk, FlushCache);
     disk.ChangeBlockSize(512);
     EXPECT_EQ(512U, disk.GetBlockSize());
 }

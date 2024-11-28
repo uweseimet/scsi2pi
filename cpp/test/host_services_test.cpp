@@ -40,7 +40,7 @@ TEST(HostServicesTest, TestUnitReady)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -55,19 +55,19 @@ TEST(HostServicesTest, StartStopUnit)
     auto [controller, services] = CreateDevice(SCHS);
 
     // STOP
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::start_stop));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
@@ -129,9 +129,9 @@ TEST(HostServicesTest, ModeSense6)
     controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_6));
-    vector<uint8_t> &buffer = controller->GetBuffer();
+    auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
     // Minor version 0
@@ -145,7 +145,7 @@ TEST(HostServicesTest, ModeSense6)
     controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_6));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
@@ -172,9 +172,9 @@ TEST(HostServicesTest, ModeSense10)
     controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_10));
-    vector<uint8_t> &buffer = controller->GetBuffer();
+    auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
     // Minor version 0
@@ -188,7 +188,7 @@ TEST(HostServicesTest, ModeSense10)
     controller->SetCdbByte(2, 0x20);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
-    EXPECT_CALL(*controller, DataIn());
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*services, scsi_command::mode_sense_10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);

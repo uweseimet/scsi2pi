@@ -68,7 +68,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     mo.SetBlockCount(0x12345678);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
-    vector<byte> &page_32 = pages[32];
+    auto &page_32 = pages[32];
     EXPECT_EQ(12U, page_32.size());
     EXPECT_EQ(0, to_integer<int>(page_32[2])) << "Wrong format mode";
     EXPECT_EQ(0, to_integer<int>(page_32[3])) << "Wrong format type";
@@ -127,7 +127,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     vector<uint8_t> buf(32);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_6, "10");
+    auto cdb = CreateCdb(scsi_command::mode_select_6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
@@ -156,4 +156,16 @@ TEST(OpticalMemoryTest, ModeSelect)
     // Page length
     buf[9] = 0x0a;
     EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
+}
+
+TEST(OpticalMemoryTest, Open)
+{
+    MockOpticalMemory mo(0);
+
+    EXPECT_THROW(mo.Open(), io_exception)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    mo.SetFilename(filename.string());
+    mo.Open();
+    EXPECT_EQ(4U, mo.GetBlockCount());
 }

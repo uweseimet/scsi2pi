@@ -259,7 +259,7 @@ TEST(ScsiHdTest, ModeSelect)
     hd.SetBlockSize(512);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_6, "10");
+    auto cdb = CreateCdb(scsi_command::mode_select_6, "10");
 
     // Page 0
     EXPECT_THROW(hd.ModeSelect(cdb, buf, 16), scsi_exception);
@@ -287,7 +287,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     MockScsiHd hd( { 512, 1024, 2048 });
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_6);
+    auto cdb = CreateCdb(scsi_command::mode_select_6);
     hd.SetBlockSize(1024);
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(1024U, hd.GetBlockSize());
@@ -389,8 +389,8 @@ TEST(ScsiHdTest, ModeSelect6_Multiple)
     hd.SetBlockSize(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<uint8_t> buf = CreateParameters(format_device_1);
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_6, fmt::format("10:00:00:{:02x}", buf.size()));
+    auto buf = CreateParameters(format_device_1);
+    auto cdb = CreateCdb(scsi_command::mode_select_6, fmt::format("10:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
@@ -419,7 +419,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     MockScsiHd hd( { 512, 1024, 2048 });
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_10);
+    auto cdb = CreateCdb(scsi_command::mode_select_10);
     hd.SetBlockSize(1024);
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(1024U, hd.GetBlockSize());
@@ -521,9 +521,8 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     hd.SetBlockSize(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<uint8_t> buf = CreateParameters(format_device_1);
-    vector<int> cdb = CreateCdb(scsi_command::mode_select_10,
-        fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    auto buf = CreateParameters(format_device_1);
+    auto cdb = CreateCdb(scsi_command::mode_select_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
@@ -545,3 +544,16 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
+
+TEST(ScsiHdTest, Open)
+{
+    MockScsiHd hd(0, false);
+
+    EXPECT_THROW(hd.Open(), io_exception)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    hd.SetFilename(filename.string());
+    hd.Open();
+    EXPECT_EQ(4U, hd.GetBlockCount());
+}
+

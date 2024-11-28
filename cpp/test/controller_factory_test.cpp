@@ -70,6 +70,17 @@ TEST(ControllerFactoryTest, AttachToController)
     EXPECT_FALSE(controller_factory.AttachToController(bus, ID, device));
 }
 
+TEST(ControllerFactoryTest, SetScriptFile)
+{
+    ControllerFactory controller_factory;
+
+    EXPECT_FALSE(controller_factory.SetScriptFile(""));
+    const string &filename = CreateTempName();
+    EXPECT_TRUE(controller_factory.SetScriptFile(filename));
+    ifstream file(filename);
+    EXPECT_TRUE(file.good());
+}
+
 TEST(ControllerFactoryTest, ProcessOnController)
 {
     const int VALID_ID = 0;

@@ -35,18 +35,18 @@ TEST(PrinterTest, GetDefaultParams)
 {
     Printer printer(0);
 
-    auto params = printer.GetDefaultParams();
+    const auto &params = printer.GetDefaultParams();
     EXPECT_EQ(1U, params.size());
-    EXPECT_EQ("lp -oraw %f", params["cmd"]);
+    EXPECT_EQ("lp -oraw %f", params.at("cmd"));
 }
 
 TEST(PrinterTest, Init)
 {
     Printer printer(0);
-    printer.SetParams( { });
 
     param_map params;
     params["cmd"] = "%f";
+    printer.SetParams(params);
     EXPECT_TRUE(printer.Init());
 }
 
@@ -54,7 +54,7 @@ TEST(PrinterTest, TestUnitReady)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::test_unit_ready));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -68,7 +68,7 @@ TEST(PrinterTest, ReserveUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status()).Times(1);
+    EXPECT_CALL(*controller, Status).Times(1);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::reserve_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -77,7 +77,7 @@ TEST(PrinterTest, ReleaseUnit)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status()).Times(1);
+    EXPECT_CALL(*controller, Status).Times(1);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::release_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -86,7 +86,7 @@ TEST(PrinterTest, Print)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, DataOut());
+    EXPECT_CALL(*controller, DataOut);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::print));
 
     controller->SetCdbByte(3, 0xff);
@@ -99,7 +99,7 @@ TEST(PrinterTest, StopPrint)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status());
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::stop_print));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
@@ -108,9 +108,22 @@ TEST(PrinterTest, SynchronizeBuffer)
 {
     auto [controller, printer] = CreateDevice(SCLP);
 
+    param_map params;
+    params["cmd"] = "false %f";
+    printer->SetParams(params);
+
     Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_nothing_to_print);
 
-    // Further testing would use the printing system
+    const vector<uint8_t> buf(4);
+    controller->SetTransferSize(4, 4);
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
+    Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
+
+    params["cmd"] = "true %f";
+    printer->SetParams(params);
+    controller->SetTransferSize(4, 4);
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
+    EXPECT_NO_THROW(Dispatch(*printer, scsi_command::synchronize_buffer));
 }
 
 TEST(PrinterTest, WriteData)
@@ -119,7 +132,7 @@ TEST(PrinterTest, WriteData)
 
     const vector<uint8_t> buf(4);
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 0));
+    EXPECT_NO_THROW(printer->WriteData(buf, scsi_command::print, 4));
 }
 
 TEST(PrinterTest, GetStatistics)

@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <fstream>
 #include <span>
+#include "base/s2p_defs.h"
 
 using namespace std;
 
@@ -21,7 +22,7 @@ public:
 
     bool CreateFile(const string&);
 
-    void AddCdb(int, int, span<int>);
+    void AddCdb(int, int, cdb_t);
     void AddData(span<uint8_t>);
 
     void WriteEol();

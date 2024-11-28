@@ -33,6 +33,8 @@ public:
 
     void WriteData(span<const uint8_t>, scsi_command, int) override;
 
+    void CheckForFileError();
+
     vector<PbStatistics> GetStatistics() const override;
 
 private:

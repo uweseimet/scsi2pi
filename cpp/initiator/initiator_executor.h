@@ -9,9 +9,8 @@
 #pragma once
 
 #include <ctime>
-#include <stdexcept>
 #include <memory>
-#include <span>
+#include <stdexcept>
 #include "buses/bus.h"
 
 using namespace std;

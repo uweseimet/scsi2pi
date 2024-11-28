@@ -27,6 +27,15 @@ TEST(ControllerTest, Reset)
     EXPECT_EQ(-1, controller->GetInitiatorId());
 }
 
+TEST(ControllerTest, Process)
+{
+    auto bus = BusFactory::Instance().CreateBus(true, true);
+    auto controller = make_shared<Controller>(*bus, 2);
+
+    bus->SetRST(true);
+    EXPECT_FALSE(controller->Process());
+}
+
 TEST(ControllerTest, GetInitiatorId)
 {
     const int TARGET_ID = 0;

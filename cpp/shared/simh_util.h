@@ -44,7 +44,7 @@ enum class simh_marker
 };
 
 using SimhMetaData = struct _SimhMetaData {
-    _SimhMetaData(simh_class c =simh_class::bad_data_record , uint32_t v = 0) : cls(c), value(v) {}
+    _SimhMetaData(simh_class c =simh_class::bad_data_record, uint32_t v = 0) : cls(c), value(v) {}
 
     simh_class cls;
     uint32_t value;

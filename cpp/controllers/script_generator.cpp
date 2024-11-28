@@ -21,7 +21,7 @@ bool ScriptGenerator::CreateFile(const string &filename)
     return file.good();
 }
 
-void ScriptGenerator::AddCdb(int id, int lun, span<int> cdb)
+void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 {
     assert(!cdb.empty());
 
