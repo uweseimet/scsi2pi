@@ -222,7 +222,7 @@ int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
     const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
-    buf[0] = (uint8_t)(size - 1);
+    buf[0] = static_cast<uint8_t>((size - 1));
 
     return size;
 }

@@ -376,10 +376,10 @@ int TapDriver::Receive(uint8_t *buf) const
         // The Linux network subsystem removes it, since most software apps shouldn't ever need it.
         const int crc = Crc32(span(buf, bytes_received));
 
-        buf[bytes_received + 0] = (uint8_t)((crc >> 0) & 0xff);
-        buf[bytes_received + 1] = (uint8_t)((crc >> 8) & 0xff);
-        buf[bytes_received + 2] = (uint8_t)((crc >> 16) & 0xff);
-        buf[bytes_received + 3] = (uint8_t)((crc >> 24) & 0xff);
+        buf[bytes_received + 0] = static_cast<uint8_t>((crc >> 0) & 0xff);
+        buf[bytes_received + 1] = static_cast<uint8_t>((crc >> 8) & 0xff);
+        buf[bytes_received + 2] = static_cast<uint8_t>((crc >> 16) & 0xff);
+        buf[bytes_received + 3] = static_cast<uint8_t>((crc >> 24) & 0xff);
         bytes_received += 4;
     }
 

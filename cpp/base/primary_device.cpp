@@ -303,17 +303,17 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
     if (extended) {
         // Current error
-        buf[0] = (byte)0x70;
+        buf[0] = byte { 0x70 };
     }
 
     if (valid) {
-        buf[0] |= (byte)0x80;
+        buf[0] |= byte { 0x80 };
         SetInt32(buf, extended ? 3 : 1, information);
     }
 
-    buf[2] = (byte)sense_key | (ili ? (byte)0x20 : (byte)0x00);
-    buf[7] = (byte)10;
-    buf[12] = (byte)asc;
+    buf[2] = static_cast<byte>(sense_key) | (ili ? byte { 0x20 } : byte { 0x00 });
+    buf[7] = byte { 10 };
+    buf[12] = static_cast<byte>(asc);
 
     if (filemark) {
         buf[2] |= byte { 0x80 };

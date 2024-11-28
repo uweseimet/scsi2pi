@@ -322,17 +322,7 @@ void RpiBus::SetIO(bool state)
 
 inline uint8_t RpiBus::GetDAT()
 {
-#if !defined BOARD_STANDARD && !defined BOARD_FULLSPEC
-    uint32_t data = Acquire();
-    data = ((data >> (PIN_DT0 - 0)) & (1 << 0)) | ((data >> (PIN_DT1 - 1)) & (1 << 1)) |
-        ((data >> (PIN_DT2 - 2)) & (1 << 2)) | ((data >> (PIN_DT3 - 3)) & (1 << 3)) |
-        ((data >> (PIN_DT4 - 4)) & (1 << 4)) | ((data >> (PIN_DT5 - 5)) & (1 << 5)) |
-        ((data >> (PIN_DT6 - 6)) & (1 << 6)) | ((data >> (PIN_DT7 - 7)) & (1 << 7));
-
-    return (uint8_t)data;
-#else
     return static_cast<uint8_t>(Acquire() >> PIN_DT0);
-#endif
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)

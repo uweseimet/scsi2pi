@@ -414,7 +414,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
 
     if (!page_0) {
         // The size field does not count itself
-        buf[0] = (uint8_t)(size - 1);
+        buf[0] = static_cast<uint8_t>(size - 1);
     }
 
     return size;
@@ -506,12 +506,12 @@ void StorageDevice::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages)
     vector<byte> buf(12);
 
     // TB, PER, DTE (required for OpenVMS/VAX compatibility, see PiSCSI issue #1117)
-    buf[2] = (byte)0x26;
+    buf[2] = byte { 0x26 };
 
     // Read/write retry count and recovery time limit are those of an IBM DORS-39130 drive
-    buf[3] = (byte)1;
-    buf[8] = (byte)1;
-    buf[11] = (byte)218;
+    buf[3] = byte { 1 };
+    buf[8] = byte { 1 };
+    buf[11] = byte { 218 };
 
     pages[1] = buf;
 }

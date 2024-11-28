@@ -43,7 +43,7 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
     file << flush;
 }
 
-void ScriptGenerator::AddData(span<uint8_t> data)
+void ScriptGenerator::AddData(span<const uint8_t> data)
 {
     assert(!data.empty());
 
