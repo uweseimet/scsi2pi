@@ -242,29 +242,13 @@ public:
     ~MockController() override = default;
 };
 
-class MockDevice : public Device
+class MockPrimaryDevice : public PrimaryDevice
 {
+    FRIEND_TEST(DeviceTest, GetDefaultParams);
     FRIEND_TEST(DeviceTest, Properties);
-    FRIEND_TEST(DeviceTest, StatusCode);
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
     FRIEND_TEST(DeviceTest, Eject);
-
-public:
-
-    MOCK_METHOD(int, GetId, (), (const, override));
-
-    explicit MockDevice(int lun) : Device(UNDEFINED, lun)
-    {
-    }
-    explicit MockDevice(PbDeviceType type) : Device(type, 0)
-    {
-    }
-    ~MockDevice() override = default;
-};
-
-class MockPrimaryDevice : public PrimaryDevice
-{
     FRIEND_TEST(PrimaryDeviceTest, Reset);
     FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
