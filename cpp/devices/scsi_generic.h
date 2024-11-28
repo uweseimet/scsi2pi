@@ -30,8 +30,8 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    int ReadData(span<uint8_t>) override;
-    void WriteData(span<const uint8_t>, scsi_command, int) override;
+    int ReadData(data_in_t) override;
+    void WriteData(data_out_t, scsi_command, int) override;
 
 private:
 

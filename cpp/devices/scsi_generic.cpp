@@ -87,12 +87,12 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
     return {};
 }
 
-int ScsiGeneric::ReadData(span<uint8_t> buf)
+int ScsiGeneric::ReadData(data_in_t buf)
 {
     return GetController()->GetRemainingLength() - ReadWriteData(buf.data(), false);
 }
 
-void ScsiGeneric::WriteData(span<const uint8_t> buf, scsi_command, int)
+void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int)
 {
     ReadWriteData((void*)buf.data(), true);
 }

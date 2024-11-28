@@ -35,8 +35,6 @@ public:
 
     void CheckForFileError();
 
-    void CheckForFileError();
-
     vector<PbStatistics> GetStatistics() const override;
 
 private:
