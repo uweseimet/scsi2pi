@@ -31,7 +31,7 @@ TEST(AbstractControllerTest, SetCurrentLength)
 {
     MockAbstractController controller;
 
-    EXPECT_EQ(4096U, controller.GetBuffer().size());
+    EXPECT_EQ(512U, controller.GetBuffer().size());
     controller.SetCurrentLength(1);
     EXPECT_LE(1U, controller.GetBuffer().size());
     controller.SetCurrentLength(10000);
