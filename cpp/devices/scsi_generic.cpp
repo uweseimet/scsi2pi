@@ -54,7 +54,11 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    // Commands not known by s2p have already been rejected by the controller
+    count = BusFactory::Instance().GetCommandBytesCount(cmd);
+    if (!count) {
+        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    }
 
     const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
