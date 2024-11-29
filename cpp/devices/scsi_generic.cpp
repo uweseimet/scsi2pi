@@ -55,10 +55,7 @@ void ScsiGeneric::CleanUp()
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
-    if (!count) {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
-    }
+    assert(count);
 
     const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
