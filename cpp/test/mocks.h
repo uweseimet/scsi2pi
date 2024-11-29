@@ -129,6 +129,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, Verify16);
     FRIEND_TEST(DiskTest, ReadCapacity10);
     FRIEND_TEST(DiskTest, ReadCapacity16);
+    FRIEND_TEST(DiskTest, ReadFormatCapacities);
     FRIEND_TEST(DiskTest, ReadLong10);
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);
@@ -341,6 +342,7 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, Verify16);
     FRIEND_TEST(DiskTest, ReadCapacity10);
     FRIEND_TEST(DiskTest, ReadCapacity16);
+    FRIEND_TEST(DiskTest, ReadFormatCapacities);
     FRIEND_TEST(DiskTest, ReadLong10);
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);

@@ -182,6 +182,28 @@ TEST(DiskTest, ReadCapacity16)
     EXPECT_EQ(0x0400U, GetInt16(buf, 10));
 }
 
+TEST(DiskTest, ReadFormatCapacities)
+{
+    auto [controller, disk] = CreateDisk();
+
+    TestShared::Dispatch(*disk, scsi_command::read_format_capacities, sense_key::not_ready, asc::medium_not_present,
+        "READ FORMAT CAPACITIES must fail because drive is not ready");
+
+    disk->SetReady(true);
+    disk->SetBlockCount(1000);
+    disk->SetBlockSize(2048);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::read_format_capacities));
+    const auto &buf = controller->GetBuffer();
+    EXPECT_EQ(14, GetInt32(buf, 0));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
+    EXPECT_EQ(0x0200, GetInt16(buf, 8));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt16(buf, 10));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 12));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 16));
+}
+
 TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();

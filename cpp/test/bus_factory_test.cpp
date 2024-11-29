@@ -43,6 +43,7 @@ TEST(BusFactoryTest, GetCommandBytesCount)
     EXPECT_EQ(6, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x1b)));
     EXPECT_EQ(6, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x1d)));
     EXPECT_EQ(6, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x1e)));
+    EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x23)));
     EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x25)));
     EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x28)));
     EXPECT_EQ(10, bus_factory.GetCommandBytesCount(static_cast<scsi_command>(0x2a)));
@@ -74,7 +75,7 @@ TEST(BusFactoryTest, GetCommandBytesCount)
             ++command_count;
         }
     }
-    EXPECT_EQ(47, command_count);
+    EXPECT_EQ(48, command_count);
 }
 
 TEST(BusFactoryTest, GetCommandName)
@@ -113,6 +114,7 @@ TEST(BusFactoryTest, GetCommandName)
     EXPECT_EQ("SEND DIAGNOSTIC", bus_factory.GetCommandName(scsi_command::send_diagnostic));
     EXPECT_EQ("PREVENT ALLOW MEDIUM REMOVAL",
         bus_factory.GetCommandName(scsi_command::prevent_allow_medium_removal));
+    EXPECT_EQ("READ FORMAT CAPACITIES", bus_factory.GetCommandName(scsi_command::read_format_capacities));
     EXPECT_EQ("READ CAPACITY(10)", bus_factory.GetCommandName(scsi_command::read_capacity10));
     EXPECT_EQ("READ(10)", bus_factory.GetCommandName(scsi_command::read10));
     EXPECT_EQ("WRITE(10)", bus_factory.GetCommandName(scsi_command::write10));

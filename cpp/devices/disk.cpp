@@ -115,6 +115,10 @@ bool Disk::SetUp()
         {
             ReadCapacity16_ReadLong16();
         });
+    AddCommand(scsi_command::read_format_capacities, [this]
+        {
+            ReadFormatCapacities();
+        });
 
     return StorageDevice::SetUp();
 }
@@ -502,6 +506,21 @@ void Disk::ReadCapacity16()
     SetInt32(buf, 8, GetBlockSize());
 
     DataInPhase(min(32, static_cast<int>(GetCdbInt32(10))));
+}
+
+void Disk::ReadFormatCapacities()
+{
+    CheckReady();
+
+    auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 0, 14);
+    SetInt32(buf, 4, GetBlockCount());
+    SetInt16(buf, 8, 0x0200);
+    SetInt16(buf, 10, GetBlockSize());
+    SetInt32(buf, 12, GetBlockCount());
+    SetInt32(buf, 16, GetBlockSize());
+
+    DataInPhase(min(20, GetCdbInt16(7)));
 }
 
 void Disk::ReadCapacity16_ReadLong16()
