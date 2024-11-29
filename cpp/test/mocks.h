@@ -242,6 +242,27 @@ public:
     ~MockController() override = default;
 };
 
+class MockDevice : public Device
+{
+    FRIEND_TEST(DeviceTest, Properties);
+    FRIEND_TEST(DeviceTest, StatusCode);
+    FRIEND_TEST(DeviceTest, Start);
+    FRIEND_TEST(DeviceTest, Stop);
+    FRIEND_TEST(DeviceTest, Eject);
+
+public:
+
+    MOCK_METHOD(int, GetId, (), (const, override));
+
+    explicit MockDevice(int lun) : Device(UNDEFINED, lun)
+    {
+    }
+    explicit MockDevice(PbDeviceType type) : Device(type, 0)
+    {
+    }
+    ~MockDevice() override = default;
+};
+
 class MockPrimaryDevice : public PrimaryDevice
 {
     FRIEND_TEST(DeviceTest, GetDefaultParams);
@@ -380,6 +401,10 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
+    explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
+    {
+        SetCachingMode(PbCachingMode::PISCSI);
+    }
     ~MockSasiHd() override = default;
 };
 
@@ -406,8 +431,7 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    explicit MockScsiHd(const unordered_set<uint32_t> &sector_sizes)
-    : ScsiHd(0, false, false, false, sector_sizes)
+    explicit MockScsiHd(const set<uint32_t> &sector_sizes) : ScsiHd(0, false, false, false, sector_sizes)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
