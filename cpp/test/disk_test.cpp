@@ -203,6 +203,7 @@ TEST(DiskTest, ReadFormatCapacities)
 
     disk->SetReady(true);
     disk->SetBlockCount(8192);
+    disk->SetBlockSize(512);
     // Allocation length
     controller->SetCdbByte(8, 255);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_format_capacities));
