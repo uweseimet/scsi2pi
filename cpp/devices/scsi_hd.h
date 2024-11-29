@@ -16,7 +16,7 @@ class ScsiHd : public Disk
 
 public:
 
-    ScsiHd(int, bool, bool, bool, const unordered_set<uint32_t>& = { 512, 1024, 2048, 4096 });
+    ScsiHd(int, bool, bool, bool, const set<uint32_t>& = { 512, 1024, 2048, 4096 });
     ~ScsiHd() override = default;
 
     void FinalizeSetup();

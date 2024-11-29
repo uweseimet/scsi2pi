@@ -350,7 +350,7 @@ int s2p_util::HexToDec(char c)
     return -1;
 }
 
-string s2p_util::Trim(const string &s)
+string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
 {
     const size_t first = s.find_first_not_of(" \r");
     if (first == string::npos) {

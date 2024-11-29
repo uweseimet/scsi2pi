@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 TEST(DeviceTest, GetDefaultParams)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     const auto params = device.GetDefaultParams();
     EXPECT_TRUE(params.empty());
@@ -20,7 +20,7 @@ TEST(DeviceTest, Properties)
 {
     const int LUN = 5;
 
-    MockDevice device(LUN);
+    MockPrimaryDevice device(LUN);
 
     EXPECT_FALSE(device.IsReady()) << "Wrong default value";
     device.SetReady(true);
@@ -112,7 +112,7 @@ TEST(DeviceTest, Properties)
 
 TEST(DeviceTest, Vendor)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     EXPECT_THROW(device.SetVendor(""), invalid_argument);
     EXPECT_THROW(device.SetVendor("123456789"), invalid_argument);
@@ -122,7 +122,7 @@ TEST(DeviceTest, Vendor)
 
 TEST(DeviceTest, Product)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     EXPECT_THROW(device.SetProduct(""), invalid_argument);
     EXPECT_THROW(device.SetProduct("12345678901234567"), invalid_argument);
@@ -134,7 +134,7 @@ TEST(DeviceTest, Product)
 
 TEST(DeviceTest, Revision)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     EXPECT_THROW(device.SetRevision(""), invalid_argument);
     EXPECT_THROW(device.SetRevision("12345"), invalid_argument);
@@ -144,7 +144,7 @@ TEST(DeviceTest, Revision)
 
 TEST(DeviceTest, GetPaddedName)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     device.SetVendor("V");
     device.SetProduct("P");
@@ -155,7 +155,7 @@ TEST(DeviceTest, GetPaddedName)
 
 TEST(DeviceTest, Start)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     device.SetStopped(true);
     device.SetReady(false);
@@ -168,7 +168,7 @@ TEST(DeviceTest, Start)
 
 TEST(DeviceTest, Stop)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     device.SetReady(true);
     device.SetAttn(true);
@@ -181,7 +181,7 @@ TEST(DeviceTest, Stop)
 
 TEST(DeviceTest, Eject)
 {
-    MockDevice device(0);
+    MockPrimaryDevice device(0);
 
     device.SetReady(false);
     device.SetRemovable(false);

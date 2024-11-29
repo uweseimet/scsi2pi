@@ -51,7 +51,7 @@ public:
 
 protected:
 
-    Disk(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t>&);
+    Disk(PbDeviceType, scsi_level, int, bool, bool, const set<uint32_t>&);
 
     void ValidateFile() override;
 

@@ -202,18 +202,23 @@ TEST(DiskTest, ReadFormatCapacities)
         "READ FORMAT CAPACITIES must fail because drive is not ready");
 
     disk->SetReady(true);
-    disk->SetBlockCount(1000);
-    disk->SetBlockSize(2048);
+    disk->SetBlockCount(8192);
+    disk->SetBlockSize(512);
     // Allocation length
     controller->SetCdbByte(8, 255);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_format_capacities));
     const auto &buf = controller->GetBuffer();
-    EXPECT_EQ(14, GetInt32(buf, 0));
+    EXPECT_EQ(32U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
-    EXPECT_EQ(0x0200, GetInt16(buf, 8));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt16(buf, 10));
-    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 12));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 16));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(8192U, GetInt32(buf, 12));
+    EXPECT_EQ(512U, GetInt32(buf, 16));
+    EXPECT_EQ(4096U, GetInt32(buf, 20));
+    EXPECT_EQ(1024U, GetInt32(buf, 24));
+    EXPECT_EQ(2048U, GetInt32(buf, 28));
+    EXPECT_EQ(2048U, GetInt32(buf, 32));
+    EXPECT_EQ(1024U, GetInt32(buf, 36));
+    EXPECT_EQ(4096U, GetInt32(buf, 40));
 }
 
 TEST(DiskTest, Read6)

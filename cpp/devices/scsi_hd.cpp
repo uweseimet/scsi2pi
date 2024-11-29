@@ -11,7 +11,7 @@
 
 using namespace memory_util;
 
-ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const unordered_set<uint32_t> &sector_sizes)
+ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
 : Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.

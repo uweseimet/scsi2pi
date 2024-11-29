@@ -232,7 +232,7 @@ void PrimaryDevice::RequestSense()
         allocation_length = 4;
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
+    const int length = min(static_cast<int>(buf.size()), allocation_length);
     GetController()->CopyToBuffer(buf.data(), length);
 
     ResetStatus();
