@@ -156,7 +156,7 @@ private:
 
     uint64_t blocks = 0;
 
-    // Block sizes in bytes, sorted so that for convenience READ FORMATTED CAPACITIES returns ascending sizes
+    // Block sizes in bytes, sorted so that for convenience READ FORMAT CAPACITIES returns ascending sizes
     set<uint32_t> supported_block_sizes;
     uint32_t configured_block_size = 0;
     uint32_t block_size = 0;
