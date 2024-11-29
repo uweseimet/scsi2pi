@@ -195,7 +195,7 @@ TEST(DiskTest, ReadFormatCapacities)
     // Allocation length
     controller->SetCdbByte(8, 255);
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::read_format_capacities));
-    const auto &buf = controller->GetBuffer();
+    auto &buf = controller->GetBuffer();
     EXPECT_EQ(32U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
     EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
@@ -207,6 +207,15 @@ TEST(DiskTest, ReadFormatCapacities)
     EXPECT_EQ(2048U, GetInt32(buf, 32));
     EXPECT_EQ(1024U, GetInt32(buf, 36));
     EXPECT_EQ(4096U, GetInt32(buf, 40));
+
+    disk->SetReadOnly(true);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::read_format_capacities));
+    buf = controller->GetBuffer();
+    EXPECT_EQ(0U, GetInt32(buf, 0));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
 }
 
 TEST(DiskTest, Read6)
