@@ -373,7 +373,7 @@ TEST(CommandExecutorTest, SetReservedIds)
 
     error = executor->SetReservedIds("7,1,2,3,5");
     EXPECT_TRUE(error.empty());
-    unordered_set<int> reserved_ids = executor->GetReservedIds();
+    const unordered_set<int> reserved_ids = executor->GetReservedIds();
     EXPECT_EQ(5U, reserved_ids.size());
     EXPECT_TRUE(reserved_ids.contains(1));
     EXPECT_TRUE(reserved_ids.contains(2));
@@ -468,7 +468,7 @@ TEST(CommandExecutorTest, SetBlockSize)
     PbCommand command;
     CommandContext context(command);
 
-    unordered_set<uint32_t> sizes;
+    set<uint32_t> sizes;
 
     sizes.insert(512);
     auto hd = make_shared<MockScsiHd>(sizes);

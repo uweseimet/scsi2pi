@@ -95,7 +95,7 @@ public:
 
 protected:
 
-    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const unordered_set<uint32_t> &sizes)
+    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const set<uint32_t> &sizes)
     : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
         p)
     {
@@ -156,8 +156,8 @@ private:
 
     uint64_t blocks = 0;
 
-    // Block sizes in bytes
-    unordered_set<uint32_t> supported_block_sizes;
+    // Block sizes in bytes, sorted so that for convenience READ FORMAT CAPACITIES returns ascending sizes
+    set<uint32_t> supported_block_sizes;
     uint32_t configured_block_size = 0;
     uint32_t block_size = 0;
 
