@@ -61,7 +61,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     GetController()->SetTransferSize(allocation_length, allocation_length);
     GetController()->SetCurrentLength(allocation_length);
 
-    if (WRITE_COMMANDS.contains(static_cast<scsi_command>(GetController()->GetCdb()[0]))) {
+    if (WRITE_COMMANDS.contains(cmd)) {
         DataOutPhase(allocation_length);
     }
     else {

@@ -43,6 +43,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::start_stop, 6, "START STOP UNIT/STOP PRINT", { 0, 0, false });
     AddCommand(scsi_command::send_diagnostic, 6, "SEND DIAGNOSTIC", { 3, 2, false });
     AddCommand(scsi_command::prevent_allow_medium_removal, 6, "PREVENT ALLOW MEDIUM REMOVAL", { 0, 0, false });
+    AddCommand(scsi_command::read_format_capacities, 10, "READ FORMAT CAPACITIES", { 7, 2, false });
     AddCommand(scsi_command::read_capacity_10, 10, "READ CAPACITY(10)", { -8, 0, false });
     AddCommand(scsi_command::read_10, 10, "READ(10)", { 7, 2, true });
     AddCommand(scsi_command::write_10, 10, "WRITE(10)", { 7, 2, true });
