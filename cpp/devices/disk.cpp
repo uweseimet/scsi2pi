@@ -115,6 +115,10 @@ bool Disk::SetUp()
         {
             ReadCapacity16_ReadLong16();
         });
+    AddCommand(scsi_command::read_format_capacities, [this]
+        {
+            ReadFormatCapacities();
+        });
 
     return StorageDevice::SetUp();
 }

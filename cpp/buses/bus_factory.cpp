@@ -41,6 +41,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::start_stop, 6, "START STOP UNIT/STOP PRINT");
     AddCommand(scsi_command::send_diagnostic, 6, "SEND DIAGNOSTIC");
     AddCommand(scsi_command::prevent_allow_medium_removal, 6, "PREVENT ALLOW MEDIUM REMOVAL");
+    AddCommand(scsi_command::read_format_capacities, 10, "READ FORMAT CAPACITIES");
     AddCommand(scsi_command::read_capacity_10, 10, "READ CAPACITY(10)");
     AddCommand(scsi_command::read_10, 10, "READ(10)");
     AddCommand(scsi_command::write_10, 10, "WRITE(10)");
