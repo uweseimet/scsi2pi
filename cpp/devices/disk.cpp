@@ -22,7 +22,7 @@ using namespace memory_util;
 using namespace s2p_util;
 
 Disk::Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-    const unordered_set<uint32_t> &s)
+    const set<uint32_t> &s)
 : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters, s)
 {
     SetStoppable(true);
@@ -513,14 +513,20 @@ void Disk::ReadFormatCapacities()
     CheckReady();
 
     auto &buf = GetController()->GetBuffer();
-    SetInt32(buf, 0, 14);
     SetInt32(buf, 4, GetBlockCount());
-    SetInt16(buf, 8, 0x0200);
-    SetInt16(buf, 10, GetBlockSize());
-    SetInt32(buf, 12, GetBlockCount());
-    SetInt32(buf, 16, GetBlockSize());
+    SetInt32(buf, 8, GetBlockSize());
 
-    DataInPhase(min(20, GetCdbInt16(7)));
+    // Return the list of default block sizes
+    int offset = 12;
+    for (const auto size : GetSupportedBlockSizes()) {
+        SetInt32(buf, offset, GetBlockSize() * GetBlockCount() / size);
+        SetInt32(buf, offset + 4, size);
+        offset += 8;
+    }
+
+    SetInt32(buf, 0, offset - 12);
+
+    DataInPhase(min(offset, GetCdbInt16(7)));
 }
 
 void Disk::ReadCapacity16_ReadLong16()

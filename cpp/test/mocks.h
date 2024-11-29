@@ -377,7 +377,7 @@ public:
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
     }
-    explicit MockSasiHd(const unordered_set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
+    explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
     }
     ~MockSasiHd() override = default;
@@ -406,7 +406,7 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    explicit MockScsiHd(const unordered_set<uint32_t> &sector_sizes)
+    explicit MockScsiHd(const set<uint32_t> &sector_sizes)
     : ScsiHd(0, false, false, false, sector_sizes)
     {
         SetCachingMode(PbCachingMode::PISCSI);
