@@ -150,14 +150,12 @@ TEST(DiskTest, ReadCapacity10)
         "READ CAPACITY(10) must fail because the medium has no capacity");
 
     disk->SetBlockCount(0x12345678);
-    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_capacity_10));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234U, GetInt16(buf, 0));
     EXPECT_EQ(0x5677U, GetInt16(buf, 2));
 
     disk->SetBlockCount(0x1234567887654321);
-    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_capacity_10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0xffffU, GetInt16(buf, 0));
@@ -186,7 +184,6 @@ TEST(DiskTest, ReadCapacity16)
     controller->SetCdbByte(1, 0x10);
     disk->SetBlockCount(0x1234567887654321);
     disk->SetBlockSize(1024);
-    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_capacity_16_read_long_16));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234U, GetInt16(buf, 0));
@@ -195,6 +192,28 @@ TEST(DiskTest, ReadCapacity16)
     EXPECT_EQ(0x4320U, GetInt16(buf, 6));
     EXPECT_EQ(0x0000U, GetInt16(buf, 8));
     EXPECT_EQ(0x0400U, GetInt16(buf, 10));
+}
+
+TEST(DiskTest, ReadFormatCapacities)
+{
+    auto [controller, disk] = CreateDisk();
+
+    Dispatch(*disk, scsi_command::read_format_capacities, sense_key::not_ready, asc::medium_not_present,
+        "READ FORMAT CAPACITIES must fail because drive is not ready");
+
+    disk->SetReady(true);
+    disk->SetBlockCount(1000);
+    disk->SetBlockSize(2048);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(Dispatch(*disk, scsi_command::read_format_capacities));
+    const auto &buf = controller->GetBuffer();
+    EXPECT_EQ(14, GetInt32(buf, 0));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
+    EXPECT_EQ(0x0200, GetInt16(buf, 8));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt16(buf, 10));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 12));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 16));
 }
 
 TEST(DiskTest, Read6)

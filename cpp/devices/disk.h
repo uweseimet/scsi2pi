@@ -106,6 +106,7 @@ private:
     void Seek10();
     void ReadCapacity10() override;
     void ReadCapacity16() override;
+    void ReadFormatCapacities();
     void FormatUnit() override;
     void Seek6();
     void Read(access_mode);

@@ -481,8 +481,9 @@ void Disk::ReadCapacity10()
 
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
     const uint64_t capacity = GetBlockCount() - 1;
-    SetInt32(GetController()->GetBuffer(), 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
-    SetInt32(GetController()->GetBuffer(), 4, GetBlockSize());
+    auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 0, static_cast<uint32_t>(capacity > 0xffffffff ? -1 : capacity));
+    SetInt32(buf, 4, GetBlockSize());
 
     DataInPhase(8);
 }
@@ -497,10 +498,26 @@ void Disk::ReadCapacity16()
 
     fill_n(GetController()->GetBuffer().begin(), 32, 0);
 
-    SetInt64(GetController()->GetBuffer(), 0, GetBlockCount() - 1);
-    SetInt32(GetController()->GetBuffer(), 8, GetBlockSize());
+    auto &buf = GetController()->GetBuffer();
+    SetInt64(buf, 0, GetBlockCount() - 1);
+    SetInt32(buf, 8, GetBlockSize());
 
     DataInPhase(min(32U, GetCdbInt32(10)));
+}
+
+void Disk::ReadFormatCapacities()
+{
+    CheckReady();
+
+    auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 0, 14);
+    SetInt32(buf, 4, GetBlockCount());
+    SetInt16(buf, 8, 0x0200);
+    SetInt16(buf, 10, GetBlockSize());
+    SetInt32(buf, 12, GetBlockCount());
+    SetInt32(buf, 16, GetBlockSize());
+
+    DataInPhase(min(20, GetCdbInt16(7)));
 }
 
 void Disk::ReadCapacity16_ReadLong16()
