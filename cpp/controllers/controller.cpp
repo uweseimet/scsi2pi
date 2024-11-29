@@ -327,7 +327,7 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
-        if (GetTotalLength() < 256 && get_level() == level::trace) {
+        if (!GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
             LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
         }
         else {
