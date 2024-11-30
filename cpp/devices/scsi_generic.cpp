@@ -179,18 +179,18 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
     }
 
+    if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
+        && GetController()->GetEffectiveLun() > 0) {
+        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+        GetController()->GetBuffer().data()[0] = 0x7f;
+    }
+
     if (status) {
         deferred_sense_key = static_cast<enum sense_key>(sense_data.data()[2] & 0x0f);
         deferred_asc = static_cast<enum asc>(sense_data.data()[12]);
 
         // This is just to set the return status to CHECK CONDITION
         throw scsi_exception(sense_key::no_sense);
-    }
-
-    if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
-        && GetController()->GetEffectiveLun() > 0) {
-        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-        GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
     return io_hdr.resid;
