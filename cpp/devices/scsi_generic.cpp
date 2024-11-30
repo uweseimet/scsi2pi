@@ -76,6 +76,25 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         }
     }
 
+    if (cmd == scsi_command::request_sense && deferred_sense_key != sense_key::no_sense) {
+        GetController()->SetCurrentLength(18);
+
+        auto &buf = GetController()->GetBuffer();
+
+        fill_n(buf.begin(), 18, 0);
+        buf[0] = 0x70;
+        buf[2] = static_cast<uint8_t>(deferred_sense_key);
+        buf[7] = 10;
+        buf[12] = static_cast<uint8_t>(deferred_asc);
+
+        deferred_sense_key = sense_key::no_sense;
+        deferred_asc = asc::no_additional_sense_information;
+
+        GetController()->DataIn();
+
+        return;
+    }
+
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
     assert(count);
 
@@ -161,8 +180,11 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     }
 
     if (status) {
-        throw scsi_exception(static_cast<enum sense_key>(sense_data.data()[2] & 0x0f),
-            static_cast<enum asc>(sense_data.data()[12]));
+        deferred_sense_key = static_cast<enum sense_key>(sense_data.data()[2] & 0x0f);
+        deferred_asc = static_cast<enum asc>(sense_data.data()[12]);
+
+        // This is just to set the return status to CHECK CONDITION
+        throw scsi_exception(sense_key::no_sense);
     }
 
     if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
