@@ -99,11 +99,18 @@ void Controller::Command()
         GetBus().SetCD(true);
         GetBus().SetIO(false);
 
+        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
+        if (deferred_error) {
+            deferred_error = false;
+            Error(sense_key::illegal_request, asc::invalid_command_operation_code);
+        }
+
         auto &buf = GetBuffer();
 
         const int actual_count = GetBus().CommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
+                deferred_error = true;
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
                 Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             }

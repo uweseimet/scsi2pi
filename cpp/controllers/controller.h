@@ -63,6 +63,8 @@ private:
 
     bool flag = false;
 
+    bool deferred_error = false;
+
     vector<uint8_t> msg_bytes;
 };
 
