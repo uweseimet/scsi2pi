@@ -29,12 +29,12 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
     EXPECT_EQ(scsi_level::scsi_2, device.GetScsiLevel());
 
     EXPECT_FALSE(device.SetScsiLevel(scsi_level::none));
-    EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(9)));
+    EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(10)));
 
     EXPECT_TRUE(device.SetScsiLevel(scsi_level::scsi_1_ccs));
     EXPECT_EQ(scsi_level::scsi_1_ccs, device.GetScsiLevel());
-    EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_6));
-    EXPECT_EQ(scsi_level::spc_6, device.GetScsiLevel());
+    EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_7));
+    EXPECT_EQ(scsi_level::spc_7, device.GetScsiLevel());
 }
 
 TEST(PrimaryDeviceTest, Status)
