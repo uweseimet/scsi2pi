@@ -222,7 +222,7 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status_code::good);
+        GetController()->Error(sense_key::illegal_request, asc::logical_unit_not_supported, status_code::good);
     }
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
