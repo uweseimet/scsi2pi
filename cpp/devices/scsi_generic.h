@@ -35,7 +35,7 @@ public:
 
 private:
 
-    int ReadWriteData(void*, bool) const;
+    int ReadWriteData(void*, bool);
 
     string device;
 
@@ -44,6 +44,10 @@ private:
     int timeout = 0;
 
     int fd = -1;
+
+    enum sense_key deferred_sense_key = sense_key::no_sense;
+    enum asc deferred_asc = asc::no_additional_sense_information;
+    uint8_t deferred_ascq = 0;
 
     inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::write_6, scsi_command::write_10,
         scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16, scsi_command::write_long_10,

@@ -54,6 +54,26 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
+    if (cmd == scsi_command::request_sense && deferred_sense_key != sense_key::no_sense) {
+        auto &buf = GetController()->GetBuffer();
+
+        fill_n(buf.begin(), 18, 0);
+        buf[0] = 0x70;
+        buf[2] = static_cast<uint8_t>(deferred_sense_key);
+        buf[7] = 10;
+        buf[12] = static_cast<uint8_t>(deferred_asc);
+        buf[13] = deferred_ascq;
+
+        deferred_sense_key = sense_key::no_sense;
+        deferred_asc = asc::no_additional_sense_information;
+        deferred_ascq = 0;
+
+        GetController()->SetCurrentLength(18);
+        GetController()->DataIn();
+
+        return;
+    }
+
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
     assert(count);
 
@@ -94,7 +114,7 @@ void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int)
     ReadWriteData((void*)buf.data(), true);
 }
 
-int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver API requires void *
+int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API requires void *
 {
     assert(count);
 
@@ -140,8 +160,10 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
     }
 
     if (status) {
-        throw scsi_exception(static_cast<enum sense_key>(static_cast<int>(sense_data[2]) & 0x0f),
-            static_cast<enum asc>(sense_data[12]));
+        deferred_sense_key = static_cast<enum sense_key>(static_cast<int>(sense_data[2]) & 0x0f);
+        deferred_asc = static_cast<enum asc>(sense_data[12]);
+        deferred_ascq = sense_data[13];
+        throw scsi_exception(deferred_sense_key, deferred_asc);
     }
 
     return io_hdr.resid;
