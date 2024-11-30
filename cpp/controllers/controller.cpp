@@ -104,12 +104,11 @@ void Controller::Command()
         const int actual_count = GetBus().CommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
-                deferred_error = true;
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
-                Error(sense_key::illegal_request, asc::invalid_command_operation_code);
+                RaiseDeferredError(sense_key::illegal_request, asc::invalid_command_operation_code);
             }
             else {
-                Error(sense_key::aborted_command, asc::command_phase_error);
+                RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
             }
             return;
         }
@@ -120,6 +119,7 @@ void Controller::Command()
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }
+        AddCdbToScript();
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
@@ -129,14 +129,7 @@ void Controller::Command()
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_bytes_count, GetCdb()[0], actual_count));
-            Error(sense_key::aborted_command, asc::command_phase_error);
-            return;
-        }
-
-        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_error && static_cast<scsi_command>(GetCdb()[0]) == scsi_command::request_sense) {
-            deferred_error = false;
-            ProvideSenseData(sense_key::illegal_request, asc::invalid_command_operation_code);
+            RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
 
@@ -145,11 +138,18 @@ void Controller::Command()
         flag = control & 0x02;
 
         if (flag && !linked) {
-            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            RaiseDeferredError(sense_key::illegal_request, asc::invalid_field_in_cdb);
             return;
         }
 
-        AddCdbToScript();
+        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
+        if (deferred_sense_key != sense_key::no_sense
+            && static_cast<scsi_command>(GetCdb()[0]) == scsi_command::request_sense) {
+            ProvideSenseData();
+            return;
+        }
+        deferred_sense_key = sense_key::no_sense;
+        deferred_asc = asc::no_additional_sense_information;
 
         Execute();
     }
@@ -616,15 +616,25 @@ void Controller::ProcessEndOfMessage()
     }
 }
 
-void Controller::ProvideSenseData(sense_key s, asc a)
+void Controller::RaiseDeferredError(sense_key s, asc a)
+{
+    deferred_sense_key = s;
+    deferred_asc = a;
+    Error(s, a);
+}
+
+void Controller::ProvideSenseData()
 {
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
-    Error(s, a);
     buf[0] = 0x70;
-    buf[2] = static_cast<uint8_t>(s);
+    buf[2] = static_cast<uint8_t>(deferred_sense_key);
     buf[7] = 10;
-    buf[12] = static_cast<uint8_t>(a);
+    buf[12] = static_cast<uint8_t>(deferred_asc);
+
+    deferred_sense_key = sense_key::no_sense;
+    deferred_asc = asc::no_additional_sense_information;
+
     SetCurrentLength(18);
     DataIn();
 }

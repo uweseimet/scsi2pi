@@ -52,7 +52,8 @@ private:
     void ProcessMessage();
     void ProcessEndOfMessage();
 
-    void ProvideSenseData(sense_key, asc);
+    void RaiseDeferredError(sense_key, asc);
+    void ProvideSenseData();
 
     void LogCdb() const;
 
@@ -65,7 +66,9 @@ private:
 
     bool flag = false;
 
-    bool deferred_error = false;
+    // For the last error reported by the controller the controller and not the device has to provide the sense data
+    sense_key deferred_sense_key = sense_key::no_sense;
+    asc deferred_asc = asc::no_additional_sense_information;
 
     vector<uint8_t> msg_bytes;
 };
