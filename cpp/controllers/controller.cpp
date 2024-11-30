@@ -99,12 +99,6 @@ void Controller::Command()
         GetBus().SetCD(true);
         GetBus().SetIO(false);
 
-        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_error) {
-            deferred_error = false;
-            Error(sense_key::illegal_request, asc::invalid_command_operation_code);
-        }
-
         auto &buf = GetBuffer();
 
         const int actual_count = GetBus().CommandHandShake(buf);
@@ -136,6 +130,13 @@ void Controller::Command()
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_bytes_count, GetCdb()[0], actual_count));
             Error(sense_key::aborted_command, asc::command_phase_error);
+            return;
+        }
+
+        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
+        if (deferred_error && static_cast<scsi_command>(GetCdb()[0]) == scsi_command::request_sense) {
+            deferred_error = false;
+            ProvideSenseData(sense_key::illegal_request, asc::invalid_command_operation_code);
             return;
         }
 
@@ -613,6 +614,19 @@ void Controller::ProcessEndOfMessage()
     } else {
         BusFree();
     }
+}
+
+void Controller::ProvideSenseData(sense_key s, asc a)
+{
+    auto &buf = GetBuffer();
+    fill_n(buf.begin(), 18, 0);
+    Error(s, a);
+    buf[0] = 0x70;
+    buf[2] = static_cast<uint8_t>(s);
+    buf[7] = 10;
+    buf[12] = static_cast<uint8_t>(a);
+    SetCurrentLength(18);
+    DataIn();
 }
 
 int Controller::GetEffectiveLun() const

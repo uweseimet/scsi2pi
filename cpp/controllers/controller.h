@@ -52,6 +52,8 @@ private:
     void ProcessMessage();
     void ProcessEndOfMessage();
 
+    void ProvideSenseData(sense_key, asc);
+
     void LogCdb() const;
 
     // The LUN from the IDENTIFY message
