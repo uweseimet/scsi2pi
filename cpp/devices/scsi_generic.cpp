@@ -55,11 +55,10 @@ void ScsiGeneric::CleanUp()
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if (GetController()->GetCdb()[1] & 0b11100000) {
-        if (cmd == scsi_command::inquiry) {
-            inquiry_for_lun_x = true;
-        }
-        else {
+    if (GetController()->GetEffectiveLun() > 0 && cmd != scsi_command::inquiry) {
+        if (cmd == scsi_command::request_sense) {
+            GetController()->SetCurrentLength(18);
+
             auto &buf = GetController()->GetBuffer();
 
             fill_n(buf.begin(), 18, 0);
@@ -72,27 +71,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
             return;
         }
-    }
-
-    if (cmd == scsi_command::request_sense && deferred_sense_key != sense_key::no_sense) {
-        GetController()->SetCurrentLength(18);
-
-        auto &buf = GetController()->GetBuffer();
-
-        fill_n(buf.begin(), 18, 0);
-        buf[0] = 0x70;
-        buf[2] = static_cast<uint8_t>(deferred_sense_key);
-        buf[7] = 10;
-        buf[12] = static_cast<uint8_t>(deferred_asc);
-        buf[13] = deferred_ascq;
-
-        deferred_sense_key = sense_key::no_sense;
-        deferred_asc = asc::no_additional_sense_information;
-        deferred_ascq = 0;
-
-        GetController()->DataIn();
-
-        return;
+        else {
+            throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
+        }
     }
 
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
@@ -183,13 +164,8 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         status = static_cast<int>(sense_data[2]) & 0x0f;
     }
 
-    if (status) {
-        deferred_sense_key = static_cast<enum sense_key>(static_cast<int>(sense_data[2]) & 0x0f);
-        deferred_asc = static_cast<enum asc>(sense_data[12]);
-        deferred_ascq = sense_data[13];
-        throw scsi_exception(deferred_sense_key, deferred_asc);
-    }
-    else if (inquiry_for_lun_x) {
+    if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
+        && GetController()->GetEffectiveLun() > 0) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
