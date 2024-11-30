@@ -45,6 +45,7 @@ private:
 
     int fd = -1;
 
+    // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
     enum sense_key deferred_sense_key = sense_key::no_sense;
     enum asc deferred_asc = asc::no_additional_sense_information;
     uint8_t deferred_ascq = 0;
