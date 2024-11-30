@@ -52,9 +52,6 @@ private:
     void ProcessMessage();
     void ProcessEndOfMessage();
 
-    void RaiseDeferredError(sense_key, asc);
-    void ProvideSenseData();
-
     void LogCdb() const;
 
     // The LUN from the IDENTIFY message
@@ -65,10 +62,6 @@ private:
     bool linked = false;
 
     bool flag = false;
-
-    // For the last error reported by the controller the controller and not the device has to provide the sense data
-    sense_key deferred_sense_key = sense_key::no_sense;
-    asc deferred_asc = asc::no_additional_sense_information;
 
     vector<uint8_t> msg_bytes;
 };

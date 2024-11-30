@@ -105,10 +105,10 @@ void Controller::Command()
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
-                RaiseDeferredError(sense_key::illegal_request, asc::invalid_command_operation_code);
+                Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             }
             else {
-                RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
+                Error(sense_key::aborted_command, asc::command_phase_error);
             }
             return;
         }
@@ -119,7 +119,6 @@ void Controller::Command()
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }
-        AddCdbToScript();
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
@@ -129,7 +128,7 @@ void Controller::Command()
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_bytes_count, GetCdb()[0], actual_count));
-            RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
+            Error(sense_key::aborted_command, asc::command_phase_error);
             return;
         }
 
@@ -138,18 +137,11 @@ void Controller::Command()
         flag = control & 0x02;
 
         if (flag && !linked) {
-            RaiseDeferredError(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
             return;
         }
 
-        // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_sense_key != sense_key::no_sense
-            && static_cast<scsi_command>(GetCdb()[0]) == scsi_command::request_sense) {
-            ProvideSenseData();
-            return;
-        }
-        deferred_sense_key = sense_key::no_sense;
-        deferred_asc = asc::no_additional_sense_information;
+        AddCdbToScript();
 
         Execute();
     }
@@ -614,29 +606,6 @@ void Controller::ProcessEndOfMessage()
     } else {
         BusFree();
     }
-}
-
-void Controller::RaiseDeferredError(sense_key s, asc a)
-{
-    deferred_sense_key = s;
-    deferred_asc = a;
-    Error(s, a);
-}
-
-void Controller::ProvideSenseData()
-{
-    auto &buf = GetBuffer();
-    fill_n(buf.begin(), 18, 0);
-    buf[0] = 0x70;
-    buf[2] = static_cast<uint8_t>(deferred_sense_key);
-    buf[7] = 10;
-    buf[12] = static_cast<uint8_t>(deferred_asc);
-
-    deferred_sense_key = sense_key::no_sense;
-    deferred_asc = asc::no_additional_sense_information;
-
-    SetCurrentLength(18);
-    DataIn();
 }
 
 int Controller::GetEffectiveLun() const
