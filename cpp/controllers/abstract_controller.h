@@ -64,7 +64,7 @@ public:
     shutdown_mode ProcessOnController(int);
 
     void CopyToBuffer(const void*, size_t);
-    auto& GetBuffer()
+    auto& GetBuffer() const
     {
         return buffer;
     }

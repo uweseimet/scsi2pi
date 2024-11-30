@@ -63,7 +63,7 @@ void PrimaryDevice::Dispatch(scsi_command cmd)
         command();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
+        LogTrace(fmt::format("Device received unsupported command: ${:02x}", static_cast<int>(cmd)));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
