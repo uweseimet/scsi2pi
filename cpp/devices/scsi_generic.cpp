@@ -54,6 +54,26 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
+    // There is no explicit LUN support, the SG driver maps each LUN to a device file
+    if (GetController()->GetCdb()[1] & 0b11100000) {
+        if (cmd == scsi_command::inquiry) {
+            inquiry_for_lun_x = true;
+        }
+        else {
+            auto &buf = GetController()->GetBuffer();
+
+            fill_n(buf.begin(), 18, 0);
+            buf[0] = 0x70;
+            buf[2] = static_cast<uint8_t>(sense_key::illegal_request);
+            buf[7] = 10;
+            buf[12] = static_cast<uint8_t>(asc::invalid_lun);
+
+            GetController()->DataIn();
+
+            return;
+        }
+    }
+
     if (cmd == scsi_command::request_sense && deferred_sense_key != sense_key::no_sense) {
         GetController()->SetCurrentLength(18);
 
@@ -143,6 +163,9 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     for (int i = 0; i < count; i++) {
         cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
+    // Enforce LUN 0
+    cdb[1] &= 0b00011111;
+
     io_hdr.cmdp = cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
 
@@ -165,6 +188,10 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         deferred_asc = static_cast<enum asc>(sense_data[12]);
         deferred_ascq = sense_data[13];
         throw scsi_exception(deferred_sense_key, deferred_asc);
+    }
+    else if (inquiry_for_lun_x) {
+        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+        GetController()->GetBuffer().data()[0] = 0x7f;
     }
 
     return io_hdr.resid;
