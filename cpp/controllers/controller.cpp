@@ -111,7 +111,6 @@ void Controller::Command()
         if (actual_count <= 0) {
             if (!actual_count) {
                 deferred_error = true;
-
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
                 Error(sense_key::illegal_request, asc::invalid_command_operation_code);
             }
