@@ -119,6 +119,7 @@ void Controller::Command()
         for (int i = 0; i < command_bytes_count; i++) {
             SetCdbByte(i, buf[i]);
         }
+        AddCdbToScript();
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
@@ -140,8 +141,6 @@ void Controller::Command()
             Error(sense_key::illegal_request, asc::invalid_field_in_cdb);
             return;
         }
-
-        AddCdbToScript();
 
         Execute();
     }
