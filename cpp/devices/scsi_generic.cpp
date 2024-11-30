@@ -66,7 +66,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
             buf[0] = 0x70;
             buf[2] = static_cast<uint8_t>(sense_key::illegal_request);
             buf[7] = 10;
-            buf[12] = static_cast<uint8_t>(asc::invalid_lun);
+            buf[12] = static_cast<uint8_t>(asc::logincal_unit_not_supported);
 
             GetController()->DataIn();
 

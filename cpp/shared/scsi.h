@@ -169,7 +169,7 @@ enum class asc
     invalid_command_operation_code = 0x20,
     lba_out_of_range = 0x21,
     invalid_field_in_cdb = 0x24,
-    invalid_lun = 0x25,
+    logincal_unit_not_supported = 0x25,
     invalid_field_in_parameter_list = 0x26,
     write_protected = 0x27,
     not_ready_to_ready_change = 0x28,
