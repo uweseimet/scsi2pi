@@ -55,6 +55,8 @@ void ScsiGeneric::CleanUp()
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     if (cmd == scsi_command::request_sense && deferred_sense_key != sense_key::no_sense) {
+        GetController()->SetCurrentLength(18);
+
         auto &buf = GetController()->GetBuffer();
 
         fill_n(buf.begin(), 18, 0);
@@ -68,7 +70,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         deferred_asc = asc::no_additional_sense_information;
         deferred_ascq = 0;
 
-        GetController()->SetCurrentLength(18);
         GetController()->DataIn();
 
         return;

@@ -625,6 +625,8 @@ void Controller::RaiseDeferredError(sense_key s, asc a)
 
 void Controller::ProvideSenseData()
 {
+    SetCurrentLength(18);
+
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
     buf[0] = 0x70;
@@ -635,7 +637,6 @@ void Controller::ProvideSenseData()
     deferred_sense_key = sense_key::no_sense;
     deferred_asc = asc::no_additional_sense_information;
 
-    SetCurrentLength(18);
     DataIn();
 }
 
