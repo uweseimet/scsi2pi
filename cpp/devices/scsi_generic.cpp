@@ -154,20 +154,20 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
 
     LogTrace(fmt::format("Executing command ${0:02x} with SG driver, transfer length is {1} byte(s)", cdb[0], length));
 
-    if (ioctl(fd, SG_IO, &io_hdr) == -1) {
+    int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
+    if (status == -1) {
         LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
-    }
-
-    int status = io_hdr.status;
-    if (!status && static_cast<int>(sense_data[2]) & 0x0f) {
-        status = static_cast<int>(sense_data[2]) & 0x0f;
     }
 
     if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
         && GetController()->GetEffectiveLun() > 0) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         GetController()->GetBuffer().data()[0] = 0x7f;
+    }
+
+    if (!status && static_cast<int>(sense_data[2]) & 0x0f) {
+        status = static_cast<int>(sense_data[2]) & 0x0f;
     }
 
     return io_hdr.resid;
