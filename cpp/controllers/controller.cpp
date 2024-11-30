@@ -166,7 +166,7 @@ void Controller::Execute()
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
         if (opcode != scsi_command::inquiry && opcode != scsi_command::request_sense) {
-            Error(sense_key::illegal_request, asc::logincal_unit_not_supported);
+            Error(sense_key::illegal_request, asc::logical_unit_not_supported);
             return;
         }
 
@@ -312,7 +312,7 @@ void Controller::Error(sense_key sense_key, asc asc, status_code status)
     }
 
     int lun = GetEffectiveLun();
-    if (asc == asc::logincal_unit_not_supported || !GetDeviceForLun(lun)) {
+    if (asc == asc::logical_unit_not_supported || !GetDeviceForLun(lun)) {
         lun = 0;
     }
 

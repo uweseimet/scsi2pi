@@ -107,7 +107,7 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
     { asc::lba_out_of_range, "LBA OUT OF RANGE" },
     { asc::invalid_field_in_cdb, "INVALID FIELD IN CDB" },
-    { asc::logincal_unit_not_supported, "LOGICAL UNIT NOT SUPPORTED" },
+    { asc::logical_unit_not_supported, "LOGICAL UNIT NOT SUPPORTED" },
     { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
     { asc::write_protected, "WRITE PROTECTED" },
     { asc::not_ready_to_ready_change, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
