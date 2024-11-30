@@ -127,6 +127,8 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) const // NOSONAR SG driver
 
     io_hdr.timeout = timeout * 1000;
 
+    LogTrace(fmt::format("Executing command ${0:02x} with SG driver, transfer length is {1} byte(s)", cdb[0], length));
+
     if (ioctl(fd, SG_IO, &io_hdr) == -1) {
         LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
