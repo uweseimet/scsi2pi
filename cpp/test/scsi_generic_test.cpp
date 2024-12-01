@@ -6,10 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
-#ifdef linux
+#ifdef __linux__
 
 #include <gtest/gtest.h>
-#include "test_shared.h"
 #include "devices/scsi_generic.h"
 
 TEST(ScsiGenericTest, Device_Defaults)

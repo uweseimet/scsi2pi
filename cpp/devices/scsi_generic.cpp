@@ -8,7 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
-#if defined linux
+#ifdef __linux__
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
