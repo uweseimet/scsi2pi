@@ -147,7 +147,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 
     ostringstream s;
     s << "+----+-----+------+-------------------------------------\n"
-        << "| ID | LUN | Type | Image File or Device File\n"
+        << "| ID | LUN | Type | Image File/Device File/Description\n"
         << "+----+-----+------+-------------------------------------\n";
 
     vector<PbDevice> devices(pb_devices);
