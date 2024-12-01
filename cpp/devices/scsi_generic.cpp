@@ -174,7 +174,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     }
 
     if (!status) {
-        status = sense_data[2] & 0x0f;
+        status = static_cast<int>(sense_data[2]) & 0x0f;
 
         if (static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
             && GetController()->GetEffectiveLun()) {
