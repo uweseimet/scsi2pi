@@ -46,8 +46,8 @@ private:
     int fd = -1;
 
     // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
-    enum sense_key deferred_sense_key = sense_key::no_sense;
-    enum asc deferred_asc = asc::no_additional_sense_information;
+    array<uint8_t, 18> deferred_sense_data = { };
+    bool deferred_sense_data_valid = false;
 
     inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::write_6, scsi_command::write_10,
         scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16, scsi_command::write_long_10,
