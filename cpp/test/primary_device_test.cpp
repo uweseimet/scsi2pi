@@ -298,10 +298,13 @@ TEST(PrimaryDeviceTest, RequestSense)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
+    const auto &data = controller->GetBuffer();
+
+    // DESC
+    controller->SetCdbByte(1, 0x01);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-
-    const auto &data = controller->GetBuffer();
+    Dispatch(*device, scsi_command::request_sense, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     device->SetReady(false);
     TestShared::Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);

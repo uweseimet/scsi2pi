@@ -175,6 +175,11 @@ void PrimaryDevice::ReportLuns()
 
 void PrimaryDevice::RequestSense()
 {
+    // The descriptor format is not supported
+    if (GetController()->GetCdb()[1] & 0x01) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     int effective_lun = GetController()->GetEffectiveLun();
 
     // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
