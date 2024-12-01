@@ -54,6 +54,9 @@ private:
         scsi_command::write_long_16, scsi_command::mode_select_6, scsi_command::mode_select_10,
         scsi_command::execute_operation };
 
+    // Linux limits the number of bytes that can be transferred in one go
+    static const int MAX_TRANSFER_LENGTH = 65536;
+
     static constexpr const char *DEVICE = "device";
     static constexpr const char *TIMEOUT = "timeout";
 };

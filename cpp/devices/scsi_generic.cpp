@@ -57,13 +57,13 @@ void ScsiGeneric::CleanUp()
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     const int block_count = BusFactory::Instance().GetBlockCount(GetController()->GetCdb());
-    int allocation_length;
+    int transfer_length;
     if (block_count == -1) {
-        allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+        transfer_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
     }
     else {
         // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-        allocation_length = block_count * 512;
+        transfer_length = block_count * 512;
     }
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
@@ -80,7 +80,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         buf[7] = 10;
         buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
 
-        const int length = min(18, allocation_length);
+        const int length = min(18, transfer_length);
         GetController()->SetTransferSize(length, length);
         GetController()->SetCurrentLength(length);
         GetController()->DataIn();
@@ -93,7 +93,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
-        const int length = min(18, allocation_length);
+        const int length = min(18, transfer_length);
         GetController()->SetTransferSize(length, length);
         GetController()->SetCurrentLength(length);
         GetController()->DataIn();
@@ -106,11 +106,13 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
     assert(count);
 
-    GetController()->SetTransferSize(allocation_length, allocation_length);
-    GetController()->SetCurrentLength(allocation_length);
+    // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
+    GetController()->SetTransferSize(transfer_length,
+        transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
+    GetController()->SetCurrentLength(transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
 
     if (WRITE_COMMANDS.contains(cmd)) {
-        DataOutPhase(allocation_length);
+        DataOutPhase(transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
     }
     else {
         DataInPhase(ReadData(GetController()->GetBuffer()));
