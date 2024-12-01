@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #if defined linux
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <scsi/sg.h>
@@ -194,4 +195,5 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
 
     return io_hdr.resid;
 }
+
 #endif
