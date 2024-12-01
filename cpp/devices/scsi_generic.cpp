@@ -55,25 +55,25 @@ void ScsiGeneric::CleanUp()
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if (GetController()->GetEffectiveLun() > 0 && cmd != scsi_command::inquiry) {
-        if (cmd == scsi_command::request_sense) {
-            GetController()->SetCurrentLength(18);
-
-            auto &buf = GetController()->GetBuffer();
-
-            fill_n(buf.begin(), 18, 0);
-            buf[0] = 0x70;
-            buf[2] = static_cast<uint8_t>(sense_key::illegal_request);
-            buf[7] = 10;
-            buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
-
-            GetController()->DataIn();
-
-            return;
-        }
-        else {
+    if (GetController()->GetEffectiveLun() && cmd != scsi_command::inquiry) {
+        if (cmd != scsi_command::request_sense) {
             throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
         }
+
+        GetController()->SetCurrentLength(18);
+
+        auto &buf = GetController()->GetBuffer();
+
+        fill_n(buf.begin(), 18, 0);
+        buf[0] = 0x70;
+        buf[2] = static_cast<uint8_t>(sense_key::illegal_request);
+        buf[7] = 10;
+        buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
+
+        GetController()->DataIn();
+
+        // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
+        return;
     }
 
     if (cmd == scsi_command::request_sense && deferred_sense_data_valid) {
@@ -174,7 +174,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     }
 
     if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
-        && GetController()->GetEffectiveLun() > 0) {
+        && GetController()->GetEffectiveLun()) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         GetController()->GetBuffer().data()[0] = 0x7f;
     }
