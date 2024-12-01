@@ -56,7 +56,15 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+    const int block_count = BusFactory::Instance().GetBlockCount(GetController()->GetCdb());
+    int allocation_length;
+    if (block_count == -1) {
+        allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+    }
+    else {
+        // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
+        allocation_length = block_count * 512;
+    }
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
     if (GetController()->GetEffectiveLun() && cmd != scsi_command::inquiry) {

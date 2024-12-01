@@ -146,7 +146,7 @@ int BusFactory::GetBlockCount(span<const int> cdb) const
         break;
     }
 
-    return 0;
+    return -1;
 }
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)
