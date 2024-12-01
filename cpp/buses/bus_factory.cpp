@@ -74,8 +74,11 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
 {
     command_byte_counts[static_cast<int>(opcode)] = byte_count;
     command_names[static_cast<int>(opcode)] = name;
-    assert(desc.offset <= 12);
-    assert(!desc.size || desc.size == 1 || desc.size == 2 || desc.size == 3 || desc.size == 4 || desc.size == 8);
+    assert(desc.allocation_length_offset <= 12);
+    assert(
+        !desc.allocation_length_size || desc.allocation_length_size == 1 || desc.allocation_length_size == 2
+            || desc.allocation_length_size == 3 || desc.allocation_length_size == 4
+            || desc.allocation_length_size == 8);
     allocation_length_descs[static_cast<int>(opcode)] = desc;
 }
 
@@ -84,33 +87,33 @@ int BusFactory::GetAllocationLength(span<const int> cdb) const
     const AllocationLengthDesc &desc = allocation_length_descs[cdb[0]];
 
     // For commands without allocation length field the length is coded as a negative offset
-    if (desc.offset < 0) {
-        return -desc.offset;
+    if (desc.allocation_length_offset < 0) {
+        return -desc.allocation_length_offset;
     }
 
     int allocation_length = 0;
-    switch (desc.size) {
+    switch (desc.allocation_length_size) {
     case 0:
         break;
 
     case 1:
-        allocation_length = cdb[desc.offset];
+        allocation_length = cdb[desc.allocation_length_offset];
         break;
 
     case 2:
-        allocation_length = GetInt16(cdb, desc.offset);
+        allocation_length = GetInt16(cdb, desc.allocation_length_offset);
         break;
 
     case 3:
-        allocation_length = GetInt24(cdb, desc.offset);
+        allocation_length = GetInt24(cdb, desc.allocation_length_offset);
         break;
 
     case 4:
-        allocation_length = GetInt32(cdb, desc.offset);
+        allocation_length = GetInt32(cdb, desc.allocation_length_offset);
         break;
 
     case 8:
-        allocation_length = static_cast<int>(GetInt64(cdb, desc.offset));
+        allocation_length = static_cast<int>(GetInt64(cdb, desc.allocation_length_offset));
         break;
 
     default:
@@ -119,7 +122,7 @@ int BusFactory::GetAllocationLength(span<const int> cdb) const
     }
 
     // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-    return desc.block ? 512 * allocation_length : allocation_length;
+    return desc.block_command ? 512 * allocation_length : allocation_length;
 }
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)

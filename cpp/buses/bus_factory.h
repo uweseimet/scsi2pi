@@ -41,11 +41,12 @@ public:
 private:
 
     using AllocationLengthDesc = struct _AllocationLengthDesc {
-        _AllocationLengthDesc(int o = 0, int s = 0, bool b = false) : offset(o), size(s), block(b) {}
+        _AllocationLengthDesc(int o = 0, int s = 0, bool b = false)
+        : allocation_length_offset(o), allocation_length_size(s), block_command(b) {}
 
-        int offset;
-        int size;
-        bool block;
+        int allocation_length_offset;
+        int allocation_length_size;
+        bool block_command;
     };
 
 
