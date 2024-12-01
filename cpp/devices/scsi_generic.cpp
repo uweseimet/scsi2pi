@@ -149,7 +149,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     io_hdr.dxfer_len = length;
     io_hdr.dxferp = io_hdr.dxfer_len ? buf : nullptr;
 
-    array<uint8_t, 13> sense_data = { };
+    array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
     io_hdr.mx_sb_len = sense_data.size();
 
