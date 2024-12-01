@@ -526,7 +526,7 @@ void Disk::ReadFormatCapacities()
         }
     }
 
-    SetInt32(buf, 0, offset - 12);
+    SetInt32(buf, 0, offset - 4);
 
     DataInPhase(min(offset, GetCdbInt16(7)));
 }
