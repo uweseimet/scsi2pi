@@ -40,24 +40,25 @@ public:
 
 private:
 
-    using AllocationLengthDesc = struct _AllocationLengthDesc {
-        _AllocationLengthDesc(int o = 0, int s = 0, bool b = false)
-        : allocation_length_offset(o), allocation_length_size(s), block_command(b) {}
+    using CdbMetaData = struct _CdbMetaData {
+        _CdbMetaData(int alo = 0, int als = 0, int bo = 0, int bs = 0)
+        : allocation_length_offset(alo), allocation_length_size(als), block_offset(bo), block_size(bs) {}
 
         int allocation_length_offset;
         int allocation_length_size;
-        bool block_command;
+        int block_offset;
+        int block_size;
     };
 
 
     BusFactory();
 
-    void AddCommand(scsi_command, int, const char*, const AllocationLengthDesc&);
+    void AddCommand(scsi_command, int, const char*, const CdbMetaData&);
 
     static RpiBus::PiType CheckForPi();
 
     // These are arrays instead of maps because of performance reasons
     array<int, 256> command_byte_counts;
     array<string_view, 256> command_names;
-    array<AllocationLengthDesc, 256> allocation_length_descs;
+    array<CdbMetaData, 256> cdb_meta_data;
 };
