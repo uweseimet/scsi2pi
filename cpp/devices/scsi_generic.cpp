@@ -159,8 +159,6 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     for (int i = 0; i < count; i++) {
         cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
-    // Enforce LUN 0
-    cdb[1] &= 0b00011111;
 
     io_hdr.cmdp = cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
