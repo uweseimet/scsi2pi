@@ -205,7 +205,8 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     }
 
     if (GetBlockCount() != -1) {
-        IncrementBlockData(length);
+        // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
+        IncrementBlockData(length / 512);
     }
 
     return io_hdr.resid;
