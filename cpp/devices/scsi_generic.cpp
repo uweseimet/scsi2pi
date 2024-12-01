@@ -257,9 +257,7 @@ int ScsiGeneric::GetAllocationLength() const
 
 int ScsiGeneric::GetBlockCount() const
 {
-    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
-
-    switch (meta_data.block_size) {
+    switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
     case 0:
         break;
 
@@ -270,7 +268,7 @@ int ScsiGeneric::GetBlockCount() const
         return GetInt32(cdb, meta_data.block_offset);
 
     case 8:
-        return GetInt64(cdb, meta_data.block_offset);
+        return static_cast<int>(GetInt64(cdb, meta_data.block_offset));
 
     default:
         assert(false);
@@ -280,21 +278,19 @@ int ScsiGeneric::GetBlockCount() const
     return -1;
 }
 
-void ScsiGeneric::IncrementBlockData(int count)
+void ScsiGeneric::IncrementBlockData(int length)
 {
-    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
-
-    switch (meta_data.block_size) {
+    switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
     case 3:
-        SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + count);
+        SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
         break;
 
     case 4:
-        SetInt32(cdb, meta_data.block_offset, GetInt32(cdb, meta_data.block_offset) + count);
+        SetInt32(cdb, meta_data.block_offset, GetInt32(cdb, meta_data.block_offset) + length);
         break;
 
     case 8:
-        SetInt64(cdb, meta_data.block_offset, GetInt64(cdb, meta_data.block_offset) + count);
+        SetInt64(cdb, meta_data.block_offset, GetInt64(cdb, meta_data.block_offset) + length);
         break;
 
     default:
@@ -309,7 +305,7 @@ void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
 
     buf[offset] = static_cast<uint8_t>(value >> 16);
     buf[offset + 1] = static_cast<uint8_t>(value >> 8);
-    buf[offset + 2] = value;
+    buf[offset + 2] = static_cast<uint8_t>(value);
 }
 
 #endif
