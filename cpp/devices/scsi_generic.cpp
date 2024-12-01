@@ -60,8 +60,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
             throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
         }
 
-        GetController()->SetCurrentLength(18);
-
         auto &buf = GetController()->GetBuffer();
 
         fill_n(buf.begin(), 18, 0);
@@ -70,6 +68,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         buf[7] = 10;
         buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
 
+        GetController()->SetCurrentLength(18);
         GetController()->DataIn();
 
         // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
@@ -77,11 +76,10 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     if (cmd == scsi_command::request_sense && deferred_sense_data_valid) {
-        GetController()->SetCurrentLength(18);
-
         memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
+        GetController()->SetCurrentLength(18);
         GetController()->DataIn();
 
         return;
