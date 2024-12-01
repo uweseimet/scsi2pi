@@ -92,6 +92,7 @@ void PrimaryDevice::ResetStatus()
     ili = false;
     information = 0;
     eom = ascq::none;
+    sksv = 0;
 }
 
 void PrimaryDevice::SetFilemark()
@@ -107,6 +108,11 @@ void PrimaryDevice::SetEom(ascq e)
 void PrimaryDevice::SetIli()
 {
     ili = true;
+}
+
+void PrimaryDevice::SetSksv(int s)
+{
+    sksv = s;
 }
 
 void PrimaryDevice::SetInformation(int64_t value)
@@ -323,6 +329,10 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }
+
+    buf[15] = static_cast<byte>(sksv >> 16);
+    buf[16] = static_cast<byte>(sksv >> 8);
+    buf[17] = static_cast<byte>(sksv);
 
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
 

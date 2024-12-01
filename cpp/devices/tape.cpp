@@ -903,6 +903,8 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
+            SetSksv(0b000000001100101000000000);
+
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
@@ -915,6 +917,8 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation(length - record_length);
+            SetSksv(0b000000001100101000000000);
+
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
     }
