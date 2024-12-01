@@ -37,6 +37,12 @@ private:
 
     int ReadWriteData(void*, bool);
 
+    int GetAllocationLength() const;
+    int GetBlockCount() const;
+    void IncrementBlockData(int);
+
+    static void SetInt24(span<uint8_t>, int, int);
+
     string device;
 
     int count = 0;
@@ -44,6 +50,8 @@ private:
     int timeout = 0;
 
     int fd = -1;
+
+    vector<uint8_t> cdb;
 
     // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
     array<uint8_t, 18> deferred_sense_data = { };

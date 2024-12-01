@@ -18,14 +18,23 @@ class BusFactory
 
 public:
 
+    using CdbMetaData = struct _CdbMetaData {
+        _CdbMetaData(int alo = 0, int als = 0, int bo = 0, int bs = 0)
+        : allocation_length_offset(alo), allocation_length_size(als), block_offset(bo), block_size(bs) {}
+
+        int allocation_length_offset;
+        int allocation_length_size;
+        int block_offset;
+        int block_size;
+    };
+
     static BusFactory& Instance()
     {
         static BusFactory instance; // NOSONAR instance cannot be inlined
         return instance;
     }
 
-    int GetAllocationLength(span<const int>) const;
-    int GetBlockCount(span<const int>) const;
+    CdbMetaData GetCdbMetaData(scsi_command) const;
 
     unique_ptr<Bus> CreateBus(bool, bool, bool = false);
 
@@ -40,17 +49,6 @@ public:
     }
 
 private:
-
-    using CdbMetaData = struct _CdbMetaData {
-        _CdbMetaData(int alo = 0, int als = 0, int bo = 0, int bs = 0)
-        : allocation_length_offset(alo), allocation_length_size(als), block_offset(bo), block_size(bs) {}
-
-        int allocation_length_offset;
-        int allocation_length_size;
-        int block_offset;
-        int block_size;
-    };
-
 
     BusFactory();
 

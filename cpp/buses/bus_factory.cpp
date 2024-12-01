@@ -81,72 +81,9 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
     cdb_meta_data[static_cast<int>(opcode)] = meta_data;
 }
 
-int BusFactory::GetAllocationLength(span<const int> cdb) const
+BusFactory::CdbMetaData BusFactory::GetCdbMetaData(scsi_command cmd) const
 {
-    const CdbMetaData &meta_data = cdb_meta_data[cdb[0]];
-
-    // For commands without allocation length field the length is coded as a negative offset
-    if (meta_data.allocation_length_offset < 0) {
-        return -meta_data.allocation_length_offset;
-    }
-
-    int length = 0;
-    switch (meta_data.allocation_length_size) {
-    case 0:
-        break;
-
-    case 1:
-        length = cdb[meta_data.allocation_length_offset];
-        break;
-
-    case 2:
-        length = GetInt16(cdb, meta_data.allocation_length_offset);
-        break;
-
-    case 3:
-        length = GetInt24(cdb, meta_data.allocation_length_offset);
-        break;
-
-    case 4:
-        length = GetInt32(cdb, meta_data.allocation_length_offset);
-        break;
-
-    case 8:
-        length = static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
-
-    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-    return meta_data.block_offset ? 512 * length : length;
-}
-
-int BusFactory::GetBlockCount(span<const int> cdb) const
-{
-    const CdbMetaData &meta_data = cdb_meta_data[cdb[0]];
-
-    switch (meta_data.block_size) {
-    case 0:
-        break;
-
-    case 3:
-        return GetInt24(cdb, meta_data.block_offset) & 0x0fffff;
-
-    case 4:
-        return GetInt32(cdb, meta_data.block_offset);
-
-    case 8:
-        return GetInt64(cdb, meta_data.block_offset);
-
-    default:
-        assert(false);
-        break;
-    }
-
-    return -1;
+    return cdb_meta_data[static_cast<int>(cmd)];
 }
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)

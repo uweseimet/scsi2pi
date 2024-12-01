@@ -17,6 +17,7 @@
 #include "shared/s2p_exceptions.h"
 #include "scsi_generic.h"
 
+using namespace memory_util;
 using namespace s2p_util;
 
 ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, scsi_level::scsi_2, lun)
@@ -56,10 +57,15 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    const int block_count = BusFactory::Instance().GetBlockCount(GetController()->GetCdb());
+    cdb.clear();
+    for (int i = 0; i < count; i++) {
+        cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
+    }
+
+    const int block_count = GetBlockCount();
     int transfer_length;
     if (block_count == -1) {
-        transfer_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+        transfer_length = GetAllocationLength();
     }
     else {
         // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
@@ -147,11 +153,11 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
 {
     assert(count);
 
+    const int length = GetController()->GetChunkSize();
+
     sg_io_hdr io_hdr = { };
 
     io_hdr.interface_id = 'S';
-
-    const int length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
     if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
@@ -166,11 +172,6 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
     array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
     io_hdr.mx_sb_len = sense_data.size();
-
-    vector<uint8_t> cdb;
-    for (int i = 0; i < count; i++) {
-        cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
-    }
 
     io_hdr.cmdp = cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
@@ -203,7 +204,111 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         throw scsi_exception(sense_key::no_sense);
     }
 
+    if (GetBlockCount() != -1) {
+        IncrementBlockData(length);
+    }
+
     return io_hdr.resid;
+}
+
+int ScsiGeneric::GetAllocationLength() const
+{
+    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+
+    // For commands without allocation length field the length is coded as a negative offset
+    if (meta_data.allocation_length_offset < 0) {
+        return -meta_data.allocation_length_offset;
+    }
+
+    int length = 0;
+    switch (meta_data.allocation_length_size) {
+    case 0:
+        break;
+
+    case 1:
+        length = cdb[meta_data.allocation_length_offset];
+        break;
+
+    case 2:
+        length = GetInt16(cdb, meta_data.allocation_length_offset);
+        break;
+
+    case 3:
+        length = GetInt24(cdb, meta_data.allocation_length_offset);
+        break;
+
+    case 4:
+        length = GetInt32(cdb, meta_data.allocation_length_offset);
+        break;
+
+    case 8:
+        length = static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+
+    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
+    return meta_data.block_offset ? 512 * length : length;
+}
+
+int ScsiGeneric::GetBlockCount() const
+{
+    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+
+    switch (meta_data.block_size) {
+    case 0:
+        break;
+
+    case 3:
+        return GetInt24(cdb, meta_data.block_offset) & 0x0fffff;
+
+    case 4:
+        return GetInt32(cdb, meta_data.block_offset);
+
+    case 8:
+        return GetInt64(cdb, meta_data.block_offset);
+
+    default:
+        assert(false);
+        break;
+    }
+
+    return -1;
+}
+
+void ScsiGeneric::IncrementBlockData(int count)
+{
+    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+
+    switch (meta_data.block_size) {
+    case 3:
+        SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + count);
+        break;
+
+    case 4:
+        SetInt32(cdb, meta_data.block_offset, GetInt32(cdb, meta_data.block_offset) + count);
+        break;
+
+    case 8:
+        SetInt64(cdb, meta_data.block_offset, GetInt64(cdb, meta_data.block_offset) + count);
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+}
+
+void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 3);
+
+    buf[offset] = static_cast<uint8_t>(value >> 16);
+    buf[offset + 1] = static_cast<uint8_t>(value >> 8);
+    buf[offset + 2] = value;
 }
 
 #endif
