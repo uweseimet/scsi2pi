@@ -54,6 +54,8 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
+    const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
+
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
     if (GetController()->GetEffectiveLun() && cmd != scsi_command::inquiry) {
         if (cmd != scsi_command::request_sense) {
@@ -68,7 +70,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         buf[7] = 10;
         buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
 
-        GetController()->SetCurrentLength(18);
+        const int length = min(18, allocation_length);
+        GetController()->SetTransferSize(length, length);
+        GetController()->SetCurrentLength(length);
         GetController()->DataIn();
 
         // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
@@ -79,7 +83,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
-        GetController()->SetCurrentLength(18);
+        const int length = min(18, allocation_length);
+        GetController()->SetTransferSize(length, length);
+        GetController()->SetCurrentLength(length);
         GetController()->DataIn();
 
         return;
@@ -89,8 +95,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     count = BusFactory::Instance().GetCommandBytesCount(cmd);
     assert(count);
-
-    const int allocation_length = BusFactory::Instance().GetAllocationLength(GetController()->GetCdb());
 
     GetController()->SetTransferSize(allocation_length, allocation_length);
     GetController()->SetCurrentLength(allocation_length);
