@@ -90,29 +90,29 @@ int BusFactory::GetAllocationLength(span<const int> cdb) const
         return -meta_data.allocation_length_offset;
     }
 
-    int allocation_length = 0;
+    int length = 0;
     switch (meta_data.allocation_length_size) {
     case 0:
         break;
 
     case 1:
-        allocation_length = cdb[meta_data.allocation_length_offset];
+        length = cdb[meta_data.allocation_length_offset];
         break;
 
     case 2:
-        allocation_length = GetInt16(cdb, meta_data.allocation_length_offset);
+        length = GetInt16(cdb, meta_data.allocation_length_offset);
         break;
 
     case 3:
-        allocation_length = GetInt24(cdb, meta_data.allocation_length_offset);
+        length = GetInt24(cdb, meta_data.allocation_length_offset);
         break;
 
     case 4:
-        allocation_length = GetInt32(cdb, meta_data.allocation_length_offset);
+        length = GetInt32(cdb, meta_data.allocation_length_offset);
         break;
 
     case 8:
-        allocation_length = static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
+        length = static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
         break;
 
     default:
@@ -121,7 +121,32 @@ int BusFactory::GetAllocationLength(span<const int> cdb) const
     }
 
     // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-    return meta_data.block_offset ? 512 * allocation_length : allocation_length;
+    return meta_data.block_offset ? 512 * length : length;
+}
+
+int BusFactory::GetBlockCount(span<const int> cdb) const
+{
+    const CdbMetaData &meta_data = cdb_meta_data[cdb[0]];
+
+    switch (meta_data.block_size) {
+    case 0:
+        break;
+
+    case 3:
+        return GetInt24(cdb, meta_data.block_offset) & 0x0fffff;
+
+    case 4:
+        return GetInt32(cdb, meta_data.block_offset);
+
+    case 8:
+        return GetInt64(cdb, meta_data.block_offset);
+
+    default:
+        assert(false);
+        break;
+    }
+
+    return 0;
 }
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)

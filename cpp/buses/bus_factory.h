@@ -25,6 +25,7 @@ public:
     }
 
     int GetAllocationLength(span<const int>) const;
+    int GetBlockCount(span<const int>) const;
 
     unique_ptr<Bus> CreateBus(bool, bool, bool = false);
 
