@@ -6,6 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
+#ifdef linux
+
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "devices/scsi_generic.h"
@@ -36,3 +38,5 @@ TEST(ScsiGenericTest, GetDefaultParams)
     EXPECT_EQ("3", params.at("timeout"));
     EXPECT_EQ("", params.at("device"));
 }
+
+#endif
