@@ -175,10 +175,14 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
     }
 
-    if (!status && static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
-        && GetController()->GetEffectiveLun()) {
-        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-        GetController()->GetBuffer().data()[0] = 0x7f;
+    if (!status) {
+        status = sense_data[2] & 0x0f;
+
+        if (static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
+            && GetController()->GetEffectiveLun()) {
+            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+            GetController()->GetBuffer().data()[0] = 0x7f;
+        }
     }
 
     if (status) {
