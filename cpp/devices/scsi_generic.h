@@ -39,15 +39,20 @@ private:
 
     int GetAllocationLength() const;
     int GetBlockCount() const;
-    void UpdateBlockData(int);
+    void UpdateStartBlock(int);
+    void SetBlockCount(int);
 
     static void SetInt24(span<uint8_t>, int, int);
 
     string device;
 
+    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
+    uint32_t block_size = 512;
+
     int count = 0;
 
     uint32_t byte_count = 0;
+    uint32_t remaining_count = 0;
 
     int timeout = 0;
 
@@ -65,7 +70,7 @@ private:
         scsi_command::execute_operation };
 
     // Linux limits the number of bytes that can be transferred in one go
-    static const int MAX_TRANSFER_LENGTH = 65536;
+    static const int MAX_TRANSFER_LENGTH = 1024;
 
     static constexpr const char *DEVICE = "device";
     static constexpr const char *TIMEOUT = "timeout";
