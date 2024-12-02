@@ -121,7 +121,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         DataOutPhase(chunk_size);
     }
     else {
-        GetController()->SetCurrentLength(chunk_size);
+        GetController()->SetCurrentLength(byte_count);
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
 }
@@ -142,7 +142,7 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return GetController()->GetRemainingLength() - ReadWriteData(buf.data(), false, GetController()->GetChunkSize());
+    return ReadWriteData(buf.data(), false, MAX_TRANSFER_LENGTH);
 }
 
 void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
@@ -154,6 +154,9 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 {
     const uint32_t length =
         byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
+
+    spdlog::critical(byte_count);
+    spdlog::critical(length);
 
     sg_io_hdr io_hdr = { };
 
@@ -209,11 +212,9 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
         UpdateBlockData(length / 512);
     }
 
-    spdlog::critical(io_hdr.resid);
-    spdlog::critical(length);
-    spdlog::critical(length - io_hdr.resid);
+    byte_count -= length;
 
-    return length - io_hdr.resid;
+    return length;
 }
 
 int ScsiGeneric::GetAllocationLength() const
