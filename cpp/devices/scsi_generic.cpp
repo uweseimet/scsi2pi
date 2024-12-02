@@ -131,7 +131,7 @@ param_map ScsiGeneric::GetDefaultParams() const
 {
     return {
         {   DEVICE, ""},
-        {   TIMEOUT, "3"}
+        {   TIMEOUT, "5"}
     };
 }
 
@@ -179,14 +179,15 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
     io_hdr.cmdp = cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
 
-    io_hdr.timeout = timeout * 1000;
+    io_hdr.timeout = (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ? TIMEOUT_FORMAT_SECONDS : timeout)
+        * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (get_level() <= level::debug) {
         LogDebug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
     }
 
-    LogTrace(fmt::format("SG driver transfer length is {0} byte(s), timeout is {1} second(s)", length, timeout));
+    LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
     if (status == -1) {

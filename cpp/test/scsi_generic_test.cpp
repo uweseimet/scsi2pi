@@ -34,7 +34,7 @@ TEST(ScsiGenericTest, GetDefaultParams)
 
     const auto &params = device.GetDefaultParams();
     EXPECT_EQ(2U, params.size());
-    EXPECT_EQ("3", params.at("timeout"));
+    EXPECT_EQ("5", params.at("timeout"));
     EXPECT_EQ("", params.at("device"));
 }
 
