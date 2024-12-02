@@ -311,7 +311,9 @@ void ScsiGeneric::UpdateInternalBlockSize(int length)
     if (block_size != size) {
         LogTrace(fmt::format("Updating internal block size to {} bytes", size));
         assert(size);
-        block_size = size;
+        if (size) {
+            block_size = size;
+        }
     }
 }
 
