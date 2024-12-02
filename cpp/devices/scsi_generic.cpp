@@ -151,8 +151,6 @@ void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 
 int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR SG driver API requires void *
 {
-    assert(count);
-
     const uint32_t length =
         byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
 
@@ -212,7 +210,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
     spdlog::critical(io_hdr.resid);
     spdlog::critical(length);
-    spdlog::critical(chunk_size);
+    spdlog::critical(length - io_hdr.resid);
 
     return length - io_hdr.resid;
 }
