@@ -142,19 +142,17 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf.data(), false, 0);
+    return ReadWriteData(buf.data(), false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int)
+void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
-    ReadWriteData((void*)buf.data(), true, 0);
+    ReadWriteData((void*)buf.data(), true, chunk_size);
 }
 
-int ScsiGeneric::ReadWriteData(void *buf, bool write, int) // NOSONAR SG driver API requires void *
+int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR SG driver API requires void *
 {
-    uint32_t length =
-        remaining_count < static_cast<uint32_t>(GetController()->GetChunkSize()) ?
-            remaining_count : static_cast<uint32_t>(GetController()->GetChunkSize());
+    int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
 
     SetBlockCount(length / block_size);

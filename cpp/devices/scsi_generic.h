@@ -50,8 +50,8 @@ private:
 
     int count = 0;
 
-    uint32_t byte_count = 0;
-    uint32_t remaining_count = 0;
+    int byte_count = 0;
+    int remaining_count = 0;
 
     int timeout = 0;
 
