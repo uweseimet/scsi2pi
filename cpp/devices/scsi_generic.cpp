@@ -191,6 +191,11 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
     LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
+    if (write && get_level() == level::trace && byte_count == remaining_count) {
+        LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length,
+            FormatBytes(GetController()->GetBuffer(), length, 128)));
+    }
+
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
     if (status == -1) {
         LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
@@ -213,6 +218,11 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
         // This is just to set the return status to CHECK CONDITION
         throw scsi_exception(sense_key::no_sense);
+    }
+
+    if (!write && get_level() == level::trace && byte_count == remaining_count) {
+        LogTrace(fmt::format("{0} byte(s) of received data:\n{1}", length,
+            FormatBytes(GetController()->GetBuffer(), length, 128)));
     }
 
     UpdateInternalBlockSize(length);
