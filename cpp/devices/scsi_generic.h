@@ -38,7 +38,6 @@ private:
     int ReadWriteData(void*, bool, int);
 
     int GetAllocationLength() const;
-    int GetBlockCount() const;
     void UpdateStartBlock(int);
     void SetBlockCount(int);
 
