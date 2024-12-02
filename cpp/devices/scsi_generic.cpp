@@ -299,7 +299,7 @@ void ScsiGeneric::SetBlockCount(int length)
 
 void ScsiGeneric::UpdateInternalBlockSize(int length)
 {
-    uint32_t size = 0;
+    uint32_t size = block_size;
     const auto cmd = static_cast<scsi_command>(cdb[0]);
     if (cmd == scsi_command::read_capacity_10 && length >= 8) {
         size = GetInt32(GetController()->GetBuffer(), 4);
