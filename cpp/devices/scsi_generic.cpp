@@ -90,8 +90,8 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
         const int length = min(18, static_cast<int>(byte_count));
         GetController()->SetTransferSize(length, length);
-        GetController()->SetCurrentLength(length);
-        GetController()->DataIn();
+
+        DataInPhase(length);
 
         // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
         return;
@@ -103,9 +103,10 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
         const int length = min(18, static_cast<int>(byte_count));
         GetController()->SetTransferSize(length, length);
-        GetController()->SetCurrentLength(length);
-        GetController()->DataIn();
 
+        DataInPhase(length);
+
+        // REQUEST SENSE does not fail
         return;
     }
 
