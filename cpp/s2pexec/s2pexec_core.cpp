@@ -505,7 +505,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
     const bool text = binary_output_filename.empty();
 
-    string hex = FormatBytes(data, static_cast<int>(data.size()), hex_only);
+    string hex = FormatBytes(data, static_cast<int>(data.size()), 0, hex_only);
 
     if (filename.empty()) {
         cout << hex << '\n';
