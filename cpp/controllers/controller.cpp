@@ -325,12 +325,10 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
-        if (!GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
-            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
-        }
-        else {
-            LogTrace(fmt::format("Sending {} byte(s)", length));
+        // Log up to 128 data bytes
+        if (get_level() == level::trace && !GetOffset()) {
+            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length,
+                FormatBytes(GetBuffer(), length < 128 ? length : 128)));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -407,11 +405,10 @@ void Controller::Receive()
             return;
         }
 
-        // Assume that data less than < 256 bytes in DATA OUT are parameters for a non block-oriented command
-        // and are worth logging
-        if (IsDataOut() && !GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
-            LogTrace(
-                fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(GetBuffer(), length)));
+        // Log up to 128 data bytes
+        if (get_level() == level::trace && IsDataOut() && !GetOffset()) {
+            LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length,
+                FormatBytes(GetBuffer(), length < 128 ? length : 128)));
         }
 
         if (length && IsDataOut()) {
