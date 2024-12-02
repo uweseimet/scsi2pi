@@ -9,8 +9,8 @@
 #include "initiator_executor.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
-#include "shared/command_meta_data.h"
 #include "initiator_util.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
 using namespace std;
