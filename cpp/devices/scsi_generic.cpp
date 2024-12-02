@@ -88,7 +88,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         buf[7] = 10;
         buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
 
-        const int length = min(18, static_cast<int>(byte_count));
+        const int length = min(18, byte_count);
         GetController()->SetTransferSize(length, length);
 
         DataInPhase(length);
@@ -101,7 +101,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
-        const int length = min(18, static_cast<int>(byte_count));
+        const int length = min(18, byte_count);
         GetController()->SetTransferSize(length, length);
 
         DataInPhase(length);
