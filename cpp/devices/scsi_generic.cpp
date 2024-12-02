@@ -57,6 +57,9 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
+    count = BusFactory::Instance().GetCommandBytesCount(cmd);
+    assert(count);
+
     cdb.clear();
     for (int i = 0; i < count; i++) {
         cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
@@ -108,9 +111,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     deferred_sense_data_valid = false;
-
-    count = BusFactory::Instance().GetCommandBytesCount(cmd);
-    assert(count);
 
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
     GetController()->SetTransferSize(transfer_length,
