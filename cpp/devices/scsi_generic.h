@@ -63,6 +63,7 @@ private:
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
 
+    // TODO Add to bus factory meta data?
     inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::write_6, scsi_command::write_10,
         scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16, scsi_command::write_long_10,
         scsi_command::write_long_16, scsi_command::mode_select_6, scsi_command::mode_select_10,
