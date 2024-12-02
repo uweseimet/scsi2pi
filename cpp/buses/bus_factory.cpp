@@ -27,7 +27,7 @@ BusFactory::BusFactory()
     AddCommand(scsi_command::reassign_blocks, 6, "REASSIGN BLOCKS", { 0, 0, 0, 0 });
     AddCommand(scsi_command::read_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3 });
     AddCommand(scsi_command::retrieve_stats, 6, "RETRIEVE STATS", { 4, 1, 0, 0 });
-    AddCommand(scsi_command::write_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 2 });
+    AddCommand(scsi_command::write_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 3 });
     AddCommand(scsi_command::seek_6, 6, "SEEK(6)", { 0, 0, 0, 0 });
     AddCommand(scsi_command::set_iface_mode, 6, "SET INTERFACE MODE", { 0, 0, 0, 0 });
     AddCommand(scsi_command::set_mcast_addr, 6, "SET MULTICAST ADDRESS", { 0, 0, 0, 0 });
