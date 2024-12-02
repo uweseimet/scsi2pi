@@ -55,8 +55,6 @@ private:
     void RaiseDeferredError(sense_key, asc);
     void ProvideSenseData();
 
-    void LogCdb() const;
-
     // The LUN from the IDENTIFY message
     int identified_lun = -1;
 

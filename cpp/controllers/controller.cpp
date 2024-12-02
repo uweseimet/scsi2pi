@@ -124,7 +124,7 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
-            LogCdb();
+            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
         if (actual_count != command_bytes_count) {
@@ -639,19 +639,4 @@ int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
     return identified_lun != -1 ? identified_lun : GetCdb()[1] >> 5;
-}
-
-void Controller::LogCdb() const
-{
-    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
-    const string_view &command_name = CommandMetaData::Instance().GetCommandName(opcode);
-    string s = fmt::format("Controller is executing {}, CDB ",
-        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdb()[0]));
-    for (int i = 0; i < CommandMetaData::Instance().GetCommandBytesCount(opcode); i++) {
-        if (i) {
-            s += ":";
-        }
-        s += fmt::format("{:02x}", GetCdb()[i]);
-    }
-    LogDebug(s);
 }

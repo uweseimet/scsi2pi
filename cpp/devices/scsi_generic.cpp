@@ -183,7 +183,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (get_level() <= level::debug) {
-        LogCdb();
+        LogDebug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
     }
 
     LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
@@ -299,22 +299,6 @@ void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
     buf[offset] = static_cast<uint8_t>(value >> 16);
     buf[offset + 1] = static_cast<uint8_t>(value >> 8);
     buf[offset + 2] = static_cast<uint8_t>(value);
-}
-
-// TODO Remove duplicate code (controller.cpp)
-void ScsiGeneric::LogCdb() const
-{
-    const auto opcode = static_cast<scsi_command>(cdb[0]);
-    const string_view &command_name = CommandMetaData::Instance().GetCommandName(opcode);
-    string s = fmt::format("SG driver is executing {}, CDB ",
-        !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
-    for (int i = 0; i < CommandMetaData::Instance().GetCommandBytesCount(opcode); i++) {
-        if (i) {
-            s += ":";
-        }
-        s += fmt::format("{:02x}", cdb[i]);
-    }
-    LogDebug(s);
 }
 
 #endif

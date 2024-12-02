@@ -7,7 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include <cassert>
+#include <spdlog/spdlog.h>
 #include "command_meta_data.h"
+
+using namespace spdlog;
 
 CommandMetaData::CommandMetaData()
 {
@@ -59,8 +62,8 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::write_long_16, 16, "WRITE LONG(16)", { 12, 2, 0, 0 });
     AddCommand(scsi_command::report_luns, 12, "REPORT LUNS", { 6, 4, 0, 0 });
     AddCommand(scsi_command::execute_operation, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0 });
-    AddCommand(scsi_command::receive_operation_results, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)", { 7, 2,
-        0, 0 });
+    AddCommand(scsi_command::receive_operation_results, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)",
+        { 7, 2, 0, 0 });
 }
 
 void CommandMetaData::AddCommand(scsi_command opcode, int byte_count, const char *name, const CdbMetaData &meta_data)
@@ -76,4 +79,21 @@ void CommandMetaData::AddCommand(scsi_command opcode, int byte_count, const char
 CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(scsi_command cmd) const
 {
     return cdb_meta_data[static_cast<int>(cmd)];
+}
+
+string CommandMetaData::LogCdb(span<uint8_t> cdb, const string &type) const
+{
+    const auto opcode = static_cast<scsi_command>(cdb[0]);
+    const string_view &command_name = GetCommandName(opcode);
+    string msg = fmt::format("{0} is executing {1}, CDB ", type,
+        !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
+
+    for (int i = 0; i < GetCommandBytesCount(opcode); i++) {
+        if (i) {
+            msg += ":";
+        }
+        msg += fmt::format("{:02x}", cdb[i]);
+    }
+
+    return msg;
 }

@@ -9,6 +9,8 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
+#include <span>
 #include <string>
 #include "scsi.h"
 
@@ -46,6 +48,8 @@ public:
     {
         return command_names[static_cast<int>(opcode)];
     }
+
+    string LogCdb(span<uint8_t>, const string&) const;
 
 private:
 
