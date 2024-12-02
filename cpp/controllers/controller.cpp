@@ -334,10 +334,8 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        // Log up to 128 data bytes
         if (get_level() == level::trace && !GetOffset()) {
-            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length,
-                FormatBytes(GetBuffer(), length < 128 ? length : 128)));
+            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length, 128)));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -414,10 +412,9 @@ void Controller::Receive()
             return;
         }
 
-        // Log up to 128 data bytes
         if (get_level() == level::trace && IsDataOut() && !GetOffset()) {
             LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length,
-                FormatBytes(GetBuffer(), length < 128 ? length : 128)));
+                FormatBytes(GetBuffer(), length, 128)));
         }
 
         if (length && IsDataOut()) {

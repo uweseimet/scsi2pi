@@ -295,12 +295,16 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     return bytes;
 }
 
-string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, bool hex_only)
+string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, int limit, bool hex_only)
 {
     string str;
 
+    if (!limit || limit > count) {
+        limit = count;
+    }
+
     int offset = 0;
-    while (offset < count) {
+    while (offset < limit) {
         string output_offset;
         string output_hex;
         string output_ascii;
@@ -310,7 +314,7 @@ string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, bool hex_only
         }
 
         int index = -1;
-        while (++index < 16 && offset < count) {
+        while (++index < 16 && offset < limit) {
             if (index) {
                 output_hex += ":";
             }
@@ -329,9 +333,13 @@ string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, bool hex_only
             str.erase(str.find_last_not_of(' ') + 1);
         }
 
-        if (offset < count) {
+        if (offset < limit) {
             str += "\n";
         }
+    }
+
+    if (count > limit) {
+        str += "\n...";
     }
 
     return str;
