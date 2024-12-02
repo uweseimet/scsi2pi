@@ -9,8 +9,8 @@
 //---------------------------------------------------------------------------
 
 #include "controller.h"
-#include "buses/bus_factory.h"
 #include "base/primary_device.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -113,7 +113,8 @@ void Controller::Command()
             return;
         }
 
-        const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+        const int command_bytes_count = CommandMetaData::Instance().GetCommandBytesCount(
+            static_cast<scsi_command>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
         for (int i = 0; i < command_bytes_count; i++) {
@@ -643,10 +644,10 @@ int Controller::GetEffectiveLun() const
 void Controller::LogCdb() const
 {
     const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
-    const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
+    const string_view &command_name = CommandMetaData::Instance().GetCommandName(opcode);
     string s = fmt::format("Controller is executing {}, CDB ",
         !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdb()[0]));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
+    for (int i = 0; i < CommandMetaData::Instance().GetCommandBytesCount(opcode); i++) {
         if (i) {
             s += ":";
         }

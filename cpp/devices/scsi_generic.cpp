@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <scsi/sg.h>
-#include "buses/bus_factory.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "scsi_generic.h"
 
@@ -58,7 +58,7 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    count = BusFactory::Instance().GetCommandBytesCount(cmd);
+    count = CommandMetaData::Instance().GetCommandBytesCount(cmd);
     assert(count);
 
     cdb.clear();
@@ -66,7 +66,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
 
-    if (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(cmd); meta_data.block_size)
+    if (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd); meta_data.block_size)
     {
         byte_count = GetAllocationLength() * block_size;
     }
@@ -221,7 +221,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
 int ScsiGeneric::GetAllocationLength() const
 {
-    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
 
     // For commands without allocation length field the length is coded as a negative offset
     if (meta_data.allocation_length_offset < 0) {
@@ -251,7 +251,7 @@ int ScsiGeneric::GetAllocationLength() const
 
 void ScsiGeneric::UpdateStartBlock(int length)
 {
-    switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
+    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
     case 3:
         SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
         break;
@@ -271,7 +271,7 @@ void ScsiGeneric::UpdateStartBlock(int length)
 
 void ScsiGeneric::SetBlockCount(int length)
 {
-    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
     if (meta_data.block_size) {
         switch (meta_data.allocation_length_size) {
         case 1:
@@ -305,10 +305,10 @@ void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
 void ScsiGeneric::LogCdb() const
 {
     const auto opcode = static_cast<scsi_command>(cdb[0]);
-    const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
+    const string_view &command_name = CommandMetaData::Instance().GetCommandName(opcode);
     string s = fmt::format("SG driver is executing {}, CDB ",
         !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
+    for (int i = 0; i < CommandMetaData::Instance().GetCommandBytesCount(opcode); i++) {
         if (i) {
             s += ":";
         }

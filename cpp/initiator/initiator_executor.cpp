@@ -9,8 +9,8 @@
 #include "initiator_executor.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
-#include "buses/bus_factory.h"
 #include "initiator_util.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
 using namespace std;
@@ -34,13 +34,13 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     const auto cmd = static_cast<scsi_command>(cdb[0]);
 
-    auto command_name = string(BusFactory::Instance().GetCommandName(cmd));
+    auto command_name = string(CommandMetaData::Instance().GetCommandName(cmd));
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
 
     // Only report byte count mismatch for non-linked commands
-    if (const int count = BusFactory::Instance().GetCommandBytesCount(cmd); count
+    if (const int count = CommandMetaData::Instance().GetCommandBytesCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
         warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
@@ -203,7 +203,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     const auto cmd = static_cast<scsi_command>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
-        if (const string_view &command_name = BusFactory::Instance().GetCommandName(cmd); !command_name.empty()) {
+        if (const string_view &command_name = CommandMetaData::Instance().GetCommandName(cmd); !command_name.empty()) {
             error("Command {} failed", command_name);
         }
         else {
