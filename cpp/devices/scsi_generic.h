@@ -35,7 +35,7 @@ public:
 
 private:
 
-    int ReadWriteData(void*, bool);
+    int ReadWriteData(void*, bool, int);
 
     int GetAllocationLength() const;
     int GetBlockCount() const;
@@ -46,6 +46,8 @@ private:
     string device;
 
     int count = 0;
+
+    uint32_t byte_count = 0;
 
     int timeout = 0;
 

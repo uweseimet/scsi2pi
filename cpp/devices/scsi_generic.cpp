@@ -66,13 +66,12 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     const int block_count = GetBlockCount();
-    int transfer_length;
     if (block_count == -1) {
-        transfer_length = GetAllocationLength();
+        byte_count = GetAllocationLength();
     }
     else {
         // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-        transfer_length = GetAllocationLength() * 512;
+        byte_count = GetAllocationLength() * 512;
     }
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
@@ -89,7 +88,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         buf[7] = 10;
         buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
 
-        const int length = min(18, transfer_length);
+        const int length = min(18, static_cast<int>(byte_count));
         GetController()->SetTransferSize(length, length);
         GetController()->SetCurrentLength(length);
         GetController()->DataIn();
@@ -102,7 +101,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
-        const int length = min(18, transfer_length);
+        const int length = min(18, static_cast<int>(byte_count));
         GetController()->SetTransferSize(length, length);
         GetController()->SetCurrentLength(length);
         GetController()->DataIn();
@@ -112,10 +111,10 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     deferred_sense_data_valid = false;
 
-    const int chunk_size = transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH;
+    const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
 
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
-    GetController()->SetTransferSize(transfer_length, chunk_size);
+    GetController()->SetTransferSize(byte_count, chunk_size);
 
     if (WRITE_COMMANDS.contains(cmd)) {
         DataOutPhase(chunk_size);
@@ -142,19 +141,20 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return GetController()->GetRemainingLength() - ReadWriteData(buf.data(), false);
+    return GetController()->GetRemainingLength() - ReadWriteData(buf.data(), false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int)
+void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
-    ReadWriteData((void*)buf.data(), true);
+    ReadWriteData((void*)buf.data(), true, chunk_size);
 }
 
-int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API requires void *
+int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR SG driver API requires void *
 {
     assert(count);
 
-    const int length = GetController()->GetChunkSize();
+    const uint32_t length =
+        byte_count < static_cast<uint32_t>(chunk_size) ? byte_count : static_cast<uint32_t>(chunk_size);
 
     sg_io_hdr io_hdr = { };
 
@@ -212,8 +212,9 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
 
     spdlog::critical(io_hdr.resid);
     spdlog::critical(length);
+    spdlog::critical(chunk_size);
 
-    return length;
+    return length - io_hdr.resid;
 }
 
 int ScsiGeneric::GetAllocationLength() const
