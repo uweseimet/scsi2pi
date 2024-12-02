@@ -186,7 +186,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
         LogDebug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
     }
 
-    LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
+    LogTrace(fmt::format("SG driver transfer length is {0} byte(s), timeout is {1} second(s)", length, timeout));
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
     if (status == -1) {
