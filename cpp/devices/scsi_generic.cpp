@@ -17,6 +17,7 @@
 #include "shared/s2p_exceptions.h"
 #include "scsi_generic.h"
 
+using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
@@ -180,7 +181,12 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
 
     io_hdr.timeout = timeout * 1000;
 
-    LogTrace(fmt::format("Executing command ${0:02x} with SG driver, transfer length is {1} byte(s)", cdb[0], length));
+    // Check the log level in order to avoid an unnecessary time-consuming string construction
+    if (get_level() <= level::debug) {
+        LogCdb();
+    }
+
+    LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
     if (status == -1) {
@@ -290,6 +296,22 @@ void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
     buf[offset] = static_cast<uint8_t>(value >> 16);
     buf[offset + 1] = static_cast<uint8_t>(value >> 8);
     buf[offset + 2] = static_cast<uint8_t>(value);
+}
+
+// TODO Remove duplicate code (controller.cpp)
+void ScsiGeneric::LogCdb() const
+{
+    const auto opcode = static_cast<scsi_command>(cdb[0]);
+    const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
+    string s = fmt::format("SG driver is executing {}, CDB ",
+        !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
+    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
+        if (i) {
+            s += ":";
+        }
+        s += fmt::format("{:02x}", cdb[i]);
+    }
+    LogDebug(s);
 }
 
 #endif

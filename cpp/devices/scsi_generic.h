@@ -43,6 +43,8 @@ private:
 
     static void SetInt24(span<uint8_t>, int, int);
 
+    void LogCdb() const;
+
     string device;
 
     // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
