@@ -206,10 +206,6 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int) // NOSONAR SG driver 
 
     remaining_count -= length;
 
-    spdlog::critical(length);
-    spdlog::critical(io_hdr.resid);
-    spdlog::critical(length - io_hdr.resid);
-
     return length - io_hdr.resid;
 }
 
