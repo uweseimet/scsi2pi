@@ -271,21 +271,24 @@ void ScsiGeneric::UpdateStartBlock(int length)
 
 void ScsiGeneric::SetBlockCount(int length)
 {
-    switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.allocation_length_size) {
-    case 1:
-        cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
-        break;
+    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    if (meta_data.block_size) {
+        switch (meta_data.allocation_length_size) {
+        case 1:
+            cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
+            break;
 
-    case 2:
-        SetInt16(cdb, meta_data.allocation_length_offset, length);
-        break;
+        case 2:
+            SetInt16(cdb, meta_data.allocation_length_offset, length);
+            break;
 
-    case 4:
-        SetInt32(cdb, meta_data.allocation_length_offset, length);
-        break;
+        case 4:
+            SetInt32(cdb, meta_data.allocation_length_offset, length);
+            break;
 
-    default:
-        break;
+        default:
+            break;
+        }
     }
 }
 
