@@ -76,8 +76,6 @@ int HexToDec(char);
 
 string Trim(const string&);
 
-uint32_t GetInt32(span<const byte>, int);
-
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",
