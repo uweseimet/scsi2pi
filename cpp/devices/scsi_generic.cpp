@@ -271,11 +271,11 @@ void ScsiGeneric::SetBlockCount(int length)
         break;
 
     case 2:
-        SetInt16(cdb, meta_data.allocation_length_size, length);
+        SetInt16(cdb, meta_data.allocation_length_offset, length);
         break;
 
     case 4:
-        SetInt32(cdb, meta_data.allocation_length_size, length);
+        SetInt32(cdb, meta_data.allocation_length_offset, length);
         break;
 
     default:
