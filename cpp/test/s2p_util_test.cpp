@@ -220,8 +220,9 @@ TEST(S2pUtilTest, FormatBytes)
         bytes.emplace_back(i);
     }
     EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size()), 0));
-    EXPECT_EQ(str_hex_only, FormatBytes(bytes, static_cast<int>(bytes.size()), 0, true));
+    EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size()), 10000));
 
+    EXPECT_EQ(str_hex_only, FormatBytes(bytes, static_cast<int>(bytes.size()), 0, true));
     EXPECT_EQ("40:41\n...", FormatBytes(bytes, static_cast<int>(bytes.size()), 2, true));
 }
 
