@@ -8,6 +8,8 @@
 //
 //---------------------------------------------------------------------------
 
+// TODO Convert READ/WRITE(6) to READ/WRITE(10) if required, otherwise old drivers may not work
+
 #ifdef __linux__
 
 #include <fcntl.h>
