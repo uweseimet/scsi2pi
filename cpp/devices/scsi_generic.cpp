@@ -72,7 +72,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
     else {
         // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-        transfer_length = block_count * 512;
+        transfer_length = GetAllocationLength() * 512;
     }
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
@@ -206,7 +206,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
 
     if (GetBlockCount() != -1) {
         // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-        IncrementBlockData(length / 512);
+        UpdateBlockData(length / 512);
     }
 
     return io_hdr.resid;
@@ -221,38 +221,31 @@ int ScsiGeneric::GetAllocationLength() const
         return -meta_data.allocation_length_offset;
     }
 
-    int length = 0;
     switch (meta_data.allocation_length_size) {
     case 0:
         break;
 
     case 1:
-        length = cdb[meta_data.allocation_length_offset];
-        break;
+        return cdb[meta_data.allocation_length_offset];
 
     case 2:
-        length = GetInt16(cdb, meta_data.allocation_length_offset);
-        break;
+        return GetInt16(cdb, meta_data.allocation_length_offset);
 
     case 3:
-        length = GetInt24(cdb, meta_data.allocation_length_offset);
-        break;
+        return GetInt24(cdb, meta_data.allocation_length_offset);
 
     case 4:
-        length = GetInt32(cdb, meta_data.allocation_length_offset);
-        break;
+        return GetInt32(cdb, meta_data.allocation_length_offset);
 
     case 8:
-        length = static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
-        break;
+        return static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
 
     default:
         assert(false);
         break;
     }
 
-    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
-    return meta_data.block_offset ? 512 * length : length;
+    return 0;
 }
 
 int ScsiGeneric::GetBlockCount() const
@@ -278,7 +271,7 @@ int ScsiGeneric::GetBlockCount() const
     return -1;
 }
 
-void ScsiGeneric::IncrementBlockData(int length)
+void ScsiGeneric::UpdateBlockData(int length)
 {
     switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
     case 3:

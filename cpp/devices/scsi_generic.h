@@ -39,7 +39,7 @@ private:
 
     int GetAllocationLength() const;
     int GetBlockCount() const;
-    void IncrementBlockData(int);
+    void UpdateBlockData(int);
 
     static void SetInt24(span<uint8_t>, int, int);
 
