@@ -213,6 +213,8 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
         throw scsi_exception(sense_key::no_sense);
     }
 
+    UpdateInternalBlockSize(length);
+
     UpdateStartBlock(length / block_size);
 
     remaining_count -= length;
@@ -290,6 +292,17 @@ void ScsiGeneric::SetBlockCount(int length)
         default:
             break;
         }
+    }
+}
+
+void ScsiGeneric::UpdateInternalBlockSize(int length)
+{
+    const scsi_command cmd = static_cast<scsi_command>(cdb[0]);
+    if (cmd == scsi_command::read_capacity_10 && length >= 8) {
+        block_size = GetInt32(GetController()->GetBuffer(), 4);
+    }
+    else if (cmd == scsi_command::read_capacity_16_read_long_16 && (cdb[1] & 0x10) && length >= 12) {
+        block_size = GetInt32(GetController()->GetBuffer(), 8);
     }
 }
 

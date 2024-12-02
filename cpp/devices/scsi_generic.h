@@ -41,11 +41,13 @@ private:
     void UpdateStartBlock(int);
     void SetBlockCount(int);
 
+    void UpdateInternalBlockSize(int);
+
     static void SetInt24(span<uint8_t>, int, int);
 
     string device;
 
-    // TODO Try to support other block sizes than 512 bytes, e.g. by running READ CAPACITY on startup
+    // The block size is update when a READ CAPACITY command is detected
     uint32_t block_size = 512;
 
     int count = 0;
