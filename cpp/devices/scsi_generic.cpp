@@ -269,7 +269,7 @@ void ScsiGeneric::SetBlockCount(int length)
 {
     switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.allocation_length_size) {
     case 1:
-        cdb[meta_data.allocation_length_offset] = length;
+        cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
         break;
 
     case 2:
