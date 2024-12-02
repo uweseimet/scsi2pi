@@ -76,8 +76,7 @@ void BusFactory::AddCommand(scsi_command opcode, int byte_count, const char *nam
     command_names[static_cast<int>(opcode)] = name;
     assert(meta_data.allocation_length_offset <= 12);
     assert(!meta_data.allocation_length_size || meta_data.allocation_length_size == 1
-            || meta_data.allocation_length_size == 2 || meta_data.allocation_length_size == 3
-            || meta_data.allocation_length_size == 4 || meta_data.allocation_length_size == 8);
+        || meta_data.allocation_length_size == 2 || meta_data.allocation_length_size == 4);
     cdb_meta_data[static_cast<int>(opcode)] = meta_data;
 }
 

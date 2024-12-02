@@ -112,15 +112,16 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     deferred_sense_data_valid = false;
 
+    const int chunk_size = transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH;
+
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
-    GetController()->SetTransferSize(transfer_length,
-        transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
-    GetController()->SetCurrentLength(transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
+    GetController()->SetTransferSize(transfer_length, chunk_size);
 
     if (WRITE_COMMANDS.contains(cmd)) {
-        DataOutPhase(transfer_length < MAX_TRANSFER_LENGTH ? transfer_length : MAX_TRANSFER_LENGTH);
+        DataOutPhase(chunk_size);
     }
     else {
+        GetController()->SetCurrentLength(chunk_size);
         DataInPhase(ReadData(GetController()->GetBuffer()));
     }
 }
@@ -209,7 +210,10 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write) // NOSONAR SG driver API r
         UpdateBlockData(length / 512);
     }
 
-    return io_hdr.resid;
+    spdlog::critical(io_hdr.resid);
+    spdlog::critical(length);
+
+    return length;
 }
 
 int ScsiGeneric::GetAllocationLength() const
@@ -231,14 +235,8 @@ int ScsiGeneric::GetAllocationLength() const
     case 2:
         return GetInt16(cdb, meta_data.allocation_length_offset);
 
-    case 3:
-        return GetInt24(cdb, meta_data.allocation_length_offset);
-
     case 4:
         return GetInt32(cdb, meta_data.allocation_length_offset);
-
-    case 8:
-        return static_cast<int>(GetInt64(cdb, meta_data.allocation_length_offset));
 
     default:
         assert(false);
@@ -273,7 +271,9 @@ int ScsiGeneric::GetBlockCount() const
 
 void ScsiGeneric::UpdateBlockData(int length)
 {
-    switch (const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
+    const auto &meta_data = BusFactory::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+
+    switch (meta_data.block_size) {
     case 3:
         SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
         break;
@@ -284,6 +284,24 @@ void ScsiGeneric::UpdateBlockData(int length)
 
     case 8:
         SetInt64(cdb, meta_data.block_offset, GetInt64(cdb, meta_data.block_offset) + length);
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+
+    switch (meta_data.allocation_length_size) {
+    case 1:
+        cdb[meta_data.allocation_length_offset] -= length;
+        break;
+
+    case 2:
+        SetInt16(cdb, meta_data.allocation_length_size, GetInt16(cdb, meta_data.allocation_length_size) - length);
+        break;
+
+    case 4:
+        SetInt32(cdb, meta_data.allocation_length_size, GetInt32(cdb, meta_data.allocation_length_size) - length);
         break;
 
     default:
