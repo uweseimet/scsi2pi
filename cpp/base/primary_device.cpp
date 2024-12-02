@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "primary_device.h"
-#include "buses/bus_factory.h"
+#include "shared/command_meta_data.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -58,7 +58,7 @@ void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::Instance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }

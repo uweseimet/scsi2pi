@@ -52,8 +52,6 @@ private:
     void ProcessMessage();
     void ProcessEndOfMessage();
 
-    void LogCdb() const;
-
     // The LUN from the IDENTIFY message
     int identified_lun = -1;
 

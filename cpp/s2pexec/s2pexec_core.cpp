@@ -13,6 +13,7 @@
 #include <iostream>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
@@ -445,7 +446,8 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
             return executor->GetSenseData();
         }
         else {
-            const string_view &command_name = BusFactory::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]));
+            const string_view &command_name = CommandMetaData::Instance().GetCommandName(
+                static_cast<scsi_command>(cdb[0]));
             throw execution_exception(
                 fmt::format("Can't execute command {}",
                     !command_name.empty() ?
