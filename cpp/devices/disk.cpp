@@ -179,8 +179,8 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
-    // FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
-    if ((GetCdbByte(1) & 0x10) && GetCdbByte(4)) {
+    // FMTDATA is not supported
+    if (GetCdbByte(1) & 0x10) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

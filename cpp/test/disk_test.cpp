@@ -65,8 +65,8 @@ TEST(DiskTest, FormatUnit)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::format_unit));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
+    // FMTDATA
     controller->SetCdbByte(1, 0x10);
-    controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*disk, scsi_command::format_unit, sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
