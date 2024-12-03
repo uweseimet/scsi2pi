@@ -145,15 +145,15 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf.data(), false, GetController()->GetChunkSize());
+    return ReadWriteData(buf, false, GetController()->GetChunkSize());
 }
 
 void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
-    ReadWriteData((void*)buf.data(), true, chunk_size);
+    ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size);
 }
 
-int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR SG driver API requires void *
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
 
@@ -179,7 +179,7 @@ int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR
     }
 
     io_hdr.dxfer_len = length;
-    io_hdr.dxferp = io_hdr.dxfer_len ? buf : nullptr;
+    io_hdr.dxferp = io_hdr.dxfer_len ? buf.data() : nullptr;
 
     array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
