@@ -204,8 +204,6 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
         LogDebug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
     }
 
-    LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
-
     if (write && get_level() == level::trace && byte_count == remaining_count) {
         LogTrace(fmt::format("Sending {0} byte(s) of data:\n{1}", length, FormatBytes(buf, length, 128)));
     }
