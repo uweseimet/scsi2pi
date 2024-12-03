@@ -81,7 +81,7 @@ public:
     // For DATA OUT phase, except for MODE SELECT
     virtual void WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int)
+    virtual void ModeSelect(cdb_t, data_out_t, int, int)
     {
         // There is no default implementation of MODE SELECT
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
