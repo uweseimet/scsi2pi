@@ -64,9 +64,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     count = CommandMetaData::Instance().GetCommandBytesCount(cmd);
     assert(count);
 
-    cdb.clear();
+    local_cdb.clear();
     for (int i = 0; i < count; i++) {
-        cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
+        local_cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
 
     if (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd); meta_data.block_size)
@@ -78,7 +78,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1])
+    if (local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(local_cdb[1])
         & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
@@ -157,10 +157,11 @@ int ScsiGeneric::ReadData(data_in_t buf)
     return ReadWriteData(buf, false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
+void ScsiGeneric::WriteData(cdb_t cdb, data_out_t buf, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header and update the transfer size
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1]) & 0x10)) {
+    const auto command = static_cast<scsi_command>(cdb[0]);
+    if (command == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)) {
         byte_count = 4 + GetInt16(buf, 2);
         remaining_count = byte_count;
         chunk_size = byte_count;
@@ -193,15 +194,15 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     io_hdr.sbp = sense_data.data();
     io_hdr.mx_sb_len = sense_data.size();
 
-    io_hdr.cmdp = cdb.data();
-    io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
+    io_hdr.cmdp = local_cdb.data();
+    io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
-    io_hdr.timeout = (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ? TIMEOUT_FORMAT_SECONDS : timeout)
+    io_hdr.timeout = (local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ? TIMEOUT_FORMAT_SECONDS : timeout)
         * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (get_level() <= level::debug) {
-        LogDebug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
+        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb, "SG driver"));
     }
 
     if (write && get_level() == level::trace && byte_count == remaining_count) {
@@ -248,7 +249,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 
 int ScsiGeneric::GetAllocationLength() const
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0]));
 
     // For commands without allocation length field the length is coded as a negative offset
     if (meta_data.allocation_length_offset < 0) {
@@ -260,13 +261,13 @@ int ScsiGeneric::GetAllocationLength() const
         break;
 
     case 1:
-        return cdb[meta_data.allocation_length_offset];
+        return local_cdb[meta_data.allocation_length_offset];
 
     case 2:
-        return GetInt16(cdb, meta_data.allocation_length_offset);
+        return GetInt16(local_cdb, meta_data.allocation_length_offset);
 
     case 4:
-        return GetInt32(cdb, meta_data.allocation_length_offset);
+        return GetInt32(local_cdb, meta_data.allocation_length_offset);
 
     default:
         assert(false);
@@ -278,17 +279,17 @@ int ScsiGeneric::GetAllocationLength() const
 
 void ScsiGeneric::UpdateStartBlock(int length)
 {
-    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
+    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])); meta_data.block_size) {
     case 3:
-        SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
+        SetInt24(local_cdb, meta_data.block_offset, GetInt24(local_cdb, meta_data.block_offset) + length);
         break;
 
     case 4:
-        SetInt32(cdb, meta_data.block_offset, GetInt32(cdb, meta_data.block_offset) + length);
+        SetInt32(local_cdb, meta_data.block_offset, GetInt32(local_cdb, meta_data.block_offset) + length);
         break;
 
     case 8:
-        SetInt64(cdb, meta_data.block_offset, GetInt64(cdb, meta_data.block_offset) + length);
+        SetInt64(local_cdb, meta_data.block_offset, GetInt64(local_cdb, meta_data.block_offset) + length);
         break;
 
     default:
@@ -298,19 +299,19 @@ void ScsiGeneric::UpdateStartBlock(int length)
 
 void ScsiGeneric::SetBlockCount(int length)
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0]));
     if (meta_data.block_size) {
         switch (meta_data.allocation_length_size) {
         case 1:
-            cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
+            local_cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
             break;
 
         case 2:
-            SetInt16(cdb, meta_data.allocation_length_offset, length);
+            SetInt16(local_cdb, meta_data.allocation_length_offset, length);
             break;
 
         case 4:
-            SetInt32(cdb, meta_data.allocation_length_offset, length);
+            SetInt32(local_cdb, meta_data.allocation_length_offset, length);
             break;
 
         default:
@@ -322,10 +323,10 @@ void ScsiGeneric::SetBlockCount(int length)
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 {
     uint32_t size = block_size;
-    if (const auto cmd = static_cast<scsi_command>(cdb[0]); cmd == scsi_command::read_capacity_10 && length >= 8) {
+    if (const auto cmd = static_cast<scsi_command>(local_cdb[0]); cmd == scsi_command::read_capacity_10 && length >= 8) {
         size = GetInt32(buf, 4);
     }
-    else if (cmd == scsi_command::read_capacity_16_read_long_16 && (static_cast<int>(cdb[1]) & 0x10) && length >= 12) {
+    else if (cmd == scsi_command::read_capacity_16_read_long_16 && (static_cast<int>(local_cdb[1]) & 0x10) && length >= 12) {
         size = GetInt32(buf, 8);
     }
 

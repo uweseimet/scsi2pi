@@ -31,7 +31,7 @@ public:
     vector<uint8_t> InquiryInternal() const override;
 
     int ReadData(data_in_t) override;
-    void WriteData(data_out_t, scsi_command, int) override;
+    void WriteData(cdb_t, data_out_t, int) override;
 
 private:
 
@@ -59,7 +59,7 @@ private:
 
     int fd = -1;
 
-    vector<uint8_t> cdb;
+    vector<uint8_t> local_cdb;
 
     // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
     array<uint8_t, 18> deferred_sense_data = { };
