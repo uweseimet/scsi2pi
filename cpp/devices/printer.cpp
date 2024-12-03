@@ -155,7 +155,7 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-void Printer::WriteData(cdb_t cdb, data_out_t buf, int)
+void Printer::WriteData(cdb_t cdb, data_out_t buf, int, int)
 {
     const auto command = static_cast<scsi_command>(cdb[0]);
     assert(command == scsi_command::print);

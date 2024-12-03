@@ -116,14 +116,14 @@ TEST(PrinterTest, SynchronizeBuffer)
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
+    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
     Dispatch(*printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
 
     params["cmd"] = "true %f";
     printer->SetParams(params);
     controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
+    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
     EXPECT_NO_THROW(Dispatch(*printer, scsi_command::synchronize_buffer));
 }
 
@@ -133,7 +133,7 @@ TEST(PrinterTest, WriteData)
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
+    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
 }
 
 TEST(PrinterTest, GetStatistics)

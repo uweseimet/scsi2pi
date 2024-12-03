@@ -221,12 +221,12 @@ TEST(HostServicesTest, WriteData)
     array<uint8_t, 1> buf = { };
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::test_unit_ready));
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), scsi_exception)<< "Illegal command";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf,0, 0), scsi_exception)<< "Illegal command";
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::execute_operation));
-    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0));
+    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0, 0));
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::execute_operation));
     controller->SetCdbByte(8, 1);
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), scsi_exception)<< "protobuf data are invalid";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0,0), scsi_exception)<< "protobuf data are invalid";
 }

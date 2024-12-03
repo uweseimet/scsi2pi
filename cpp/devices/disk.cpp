@@ -419,7 +419,7 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(cdb_t cdb, data_out_t buf, int)
+void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
