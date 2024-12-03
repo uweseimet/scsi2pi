@@ -105,7 +105,7 @@ TEST(DeviceTest, Properties)
     device.SupportsParams(false);
     EXPECT_FALSE(device.SupportsParams());
 
-    EXPECT_FALSE(device.SupportsFile()) << "Wrong default value";
+    EXPECT_FALSE(device.SupportsImageFile()) << "Wrong default value";
 
     EXPECT_EQ(LUN, device.GetLun());
 }

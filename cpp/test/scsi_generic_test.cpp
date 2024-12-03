@@ -16,7 +16,7 @@ TEST(ScsiGenericTest, Device_Defaults)
     ScsiGeneric device(0);
 
     EXPECT_EQ(SCSG, device.GetType());
-    EXPECT_FALSE(device.SupportsFile());
+    EXPECT_FALSE(device.SupportsImageFile());
     EXPECT_TRUE(device.SupportsParams());
     EXPECT_FALSE(device.IsProtectable());
     EXPECT_FALSE(device.IsProtected());

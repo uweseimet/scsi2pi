@@ -56,7 +56,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHD, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
+    EXPECT_TRUE(device->SupportsImageFile());
     EXPECT_FALSE(device->SupportsParams());
     EXPECT_TRUE(device->IsProtectable());
     EXPECT_FALSE(device->IsProtected());

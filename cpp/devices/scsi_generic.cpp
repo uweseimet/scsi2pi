@@ -78,7 +78,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1]) & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
@@ -159,13 +159,13 @@ int ScsiGeneric::ReadData(data_in_t buf)
 void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header and update the transfer size
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1]) & 0x10)) {
         byte_count = 4 + GetInt16(buf, 2);
         remaining_count = byte_count;
         chunk_size = byte_count;
     }
 
-    ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size);
+    ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size); // NOSONAR Cast required for SG driver API
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
@@ -323,8 +323,7 @@ void ScsiGeneric::SetBlockCount(int length)
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 {
     uint32_t size = block_size;
-    const auto cmd = static_cast<scsi_command>(cdb[0]);
-    if (cmd == scsi_command::read_capacity_10 && length >= 8) {
+    if (const auto cmd = static_cast<scsi_command>(cdb[0]); cmd == scsi_command::read_capacity_10 && length >= 8) {
         size = GetInt32(buf, 4);
     }
     else if (cmd == scsi_command::read_capacity_16_read_long_16 && (static_cast<int>(cdb[1]) & 0x10) && length >= 12) {

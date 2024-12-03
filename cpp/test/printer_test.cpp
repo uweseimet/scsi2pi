@@ -15,7 +15,7 @@ TEST(PrinterTest, Device_Defaults)
     Printer printer(0);
 
     EXPECT_EQ(SCLP, printer.GetType());
-    EXPECT_FALSE(printer.SupportsFile());
+    EXPECT_FALSE(printer.SupportsImageFile());
     EXPECT_TRUE(printer.SupportsParams());
     EXPECT_FALSE(printer.IsProtectable());
     EXPECT_FALSE(printer.IsProtected());
