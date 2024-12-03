@@ -340,6 +340,16 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     buf[16] = static_cast<byte>(sksv >> 8);
     buf[17] = static_cast<byte>(sksv);
 
+    // TODO Remove work-around
+    if (sksv) {
+        buf.resize(26);
+        buf[7] = byte { 18 };
+        buf[16] = byte { 0 };
+        buf[23] = byte { 0x1d };
+        buf[24] = byte { 0x1e };
+        buf[25] = byte { 0x3a };
+    }
+
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
 
     return buf;
