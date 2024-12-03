@@ -157,7 +157,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
     return ReadWriteData(buf, false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(cdb_t cdb, data_out_t buf, int chunk_size)
+void ScsiGeneric::WriteData(cdb_t cdb, data_out_t buf, int, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header and update the transfer size
     if (static_cast<scsi_command>(cdb[0]) == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)) {
