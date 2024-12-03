@@ -156,6 +156,13 @@ void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 int ScsiGeneric::ReadWriteData(void *buf, bool write, int chunk_size) // NOSONAR SG driver API requires void *
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
+
+    // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
+        // Format descriptor length
+        length = GetInt16(GetController()->GetBuffer(), 2);
+    }
+
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
 
     SetBlockCount(length / block_size);
