@@ -24,7 +24,7 @@ public:
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
-    void ModeSelect(cdb_t, data_out_t, int) override;
+    void ModeSelect(cdb_t, data_out_t, int, int) override;
     int ReadData(data_in_t) override;
 
 protected:
