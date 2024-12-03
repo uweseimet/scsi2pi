@@ -78,7 +78,8 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1]) & 0x10)) {
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(cdb[1])
+        & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
@@ -206,7 +207,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
     if (write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(buf, length, 128)));
+        LogTrace(fmt::format("{0} byte(s) of DATA OUT data:\n{1}", length, FormatBytes(buf, length, 128)));
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
@@ -234,7 +235,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     if (!write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("{0} byte(s) of received data:\n{1}", length,
+        LogTrace(fmt::format("{0} byte(s) of DATA IN data:\n{1}", length,
             FormatBytes(buf, length, 128)));
     }
 
