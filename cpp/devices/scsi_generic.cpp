@@ -75,6 +75,13 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     else {
         byte_count = GetAllocationLength();
     }
+
+    // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
+        // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
+        byte_count = 12;
+    }
+
     remaining_count = byte_count;
 
     auto &buf = GetController()->GetBuffer();
@@ -156,15 +163,7 @@ void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
-
-    // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
-        // Format descriptor length
-        length = GetInt16(buf, 2);
-    }
-
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
-
     SetBlockCount(length / block_size);
 
     sg_io_hdr io_hdr = { };

@@ -65,11 +65,10 @@ private:
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
 
-    // TODO Add to command meta data?
-    inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::write_6, scsi_command::write_10,
-        scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16, scsi_command::write_long_10,
-        scsi_command::write_long_16, scsi_command::mode_select_6, scsi_command::mode_select_10,
-        scsi_command::execute_operation };
+    inline static const unordered_set<scsi_command> WRITE_COMMANDS = { scsi_command::format_unit, scsi_command::write_6,
+        scsi_command::write_10, scsi_command::write_16, scsi_command::verify_10, scsi_command::verify_16,
+        scsi_command::write_long_10, scsi_command::write_long_16, scsi_command::mode_select_6,
+        scsi_command::mode_select_10, scsi_command::execute_operation };
 
     // Linux limits the number of bytes that can be transferred in a single SCSI request
     static const int MAX_TRANSFER_LENGTH = 65536;
