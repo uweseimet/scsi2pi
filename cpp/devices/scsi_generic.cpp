@@ -207,7 +207,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
     if (write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("{0} byte(s) of DATA OUT data:\n{1}", length, FormatBytes(buf, length, 128)));
+        LogTrace(fmt::format("Sending {0} byte(s) of data:\n{1}", length, FormatBytes(buf, length, 128)));
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
@@ -235,7 +235,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     if (!write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("{0} byte(s) of DATA IN data:\n{1}", length,
+        LogTrace(fmt::format("Receiving {0} byte(s) of data:\n{1}", length,
             FormatBytes(buf, length, 128)));
     }
 
