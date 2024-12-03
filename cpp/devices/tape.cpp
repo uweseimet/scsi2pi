@@ -206,7 +206,7 @@ int Tape::ReadData(data_in_t buf)
     return length;
 }
 
-void Tape::WriteData(data_out_t buf, scsi_command, int chunk_size)
+void Tape::WriteData(cdb_t, data_out_t buf, int chunk_size)
 {
     CheckReady();
 
