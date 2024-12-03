@@ -498,7 +498,7 @@ bool Controller::XferOut(int length, bool pending_data)
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
         case scsi_command::mode_select_6:
         case scsi_command::mode_select_10:
-            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), 0);
+            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), -1);
             break;
 
         case scsi_command::format_unit:
@@ -510,7 +510,7 @@ bool Controller::XferOut(int length, bool pending_data)
         case scsi_command::write_long_10:
         case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
-            device->WriteData(GetCdb(), GetBuffer(), GetOffset(), length);
+            device->WriteData(GetCdb(), GetBuffer(), -1, length);
             if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
