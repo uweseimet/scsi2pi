@@ -187,8 +187,9 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-void DaynaPort::WriteData(data_out_t buf, scsi_command command, int)
+void DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int)
 {
+    const auto command = static_cast<scsi_command>(cdb[0]);
     assert(command == scsi_command::send_message_6);
     if (command != scsi_command::send_message_6) {
         throw scsi_exception(sense_key::aborted_command);

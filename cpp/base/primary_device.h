@@ -79,7 +79,7 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual void WriteData(data_out_t, scsi_command, int) = 0;
+    virtual void WriteData(cdb_t, data_out_t, int) = 0;
 
     virtual void ModeSelect(cdb_t, data_out_t, int)
     {

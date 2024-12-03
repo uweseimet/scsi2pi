@@ -419,11 +419,13 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(data_out_t buf, scsi_command command, int)
+void Disk::WriteData(cdb_t cdb, data_out_t buf, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
     CheckReady();
+
+    const auto command = static_cast<scsi_command>(cdb[0]);
 
     if (command == scsi_command::write_long_10 || command == scsi_command::write_long_16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
