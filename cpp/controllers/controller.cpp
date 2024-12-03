@@ -501,6 +501,7 @@ bool Controller::XferOut(int length, bool pending_data)
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
             break;
 
+        case scsi_command::format_unit:
         case scsi_command::write_6:
         case scsi_command::write_10:
         case scsi_command::write_16:

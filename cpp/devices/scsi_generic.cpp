@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 // TODO Convert READ/WRITE(6) to READ/WRITE(10) if required, otherwise old drivers may not work
+// TODO MODE SELECT?
 
 #ifdef __linux__
 
@@ -79,7 +80,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
     if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
-        byte_count = 12;
+        byte_count = 4;
     }
 
     remaining_count = byte_count;
@@ -157,6 +158,13 @@ int ScsiGeneric::ReadData(data_in_t buf)
 
 void ScsiGeneric::WriteData(data_out_t buf, scsi_command, int chunk_size)
 {
+    // Evaluate the FORMAT UNIT format list header and update the transfer size
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
+        byte_count = 4 + GetInt16(buf, 2);
+        remaining_count = byte_count;
+        chunk_size = byte_count;
+    }
+
     ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size);
 }
 
