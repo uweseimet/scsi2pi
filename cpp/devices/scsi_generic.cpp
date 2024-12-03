@@ -77,13 +77,13 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
     remaining_count = byte_count;
 
+    auto &buf = GetController()->GetBuffer();
+
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
     if (GetController()->GetEffectiveLun() && cmd != scsi_command::inquiry) {
         if (cmd != scsi_command::request_sense) {
             throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
         }
-
-        auto &buf = GetController()->GetBuffer();
 
         fill_n(buf.begin(), 18, 0);
         buf[0] = 0x70;
@@ -101,7 +101,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     if (cmd == scsi_command::request_sense && deferred_sense_data_valid) {
-        memcpy(GetController()->GetBuffer().data(), deferred_sense_data.data(), deferred_sense_data.size());
+        memcpy(buf.data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
         const int length = min(18, byte_count);
@@ -125,7 +125,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
     else {
         GetController()->SetCurrentLength(byte_count);
-        DataInPhase(ReadData(GetController()->GetBuffer()));
+        DataInPhase (ReadData(buf));
     }
 }
 
@@ -160,7 +160,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
     if (cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (cdb[1] & 0x10)) {
         // Format descriptor length
-        length = GetInt16(GetController()->GetBuffer(), 2);
+        length = GetInt16(buf, 2);
     }
 
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -199,8 +199,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     LogTrace(fmt::format("SG driver transfer length is {} byte(s)", length));
 
     if (write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length,
-            FormatBytes(GetController()->GetBuffer(), length, 128)));
+        LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(buf, length, 128)));
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
@@ -215,7 +214,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
         if (static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
             && GetController()->GetEffectiveLun()) {
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-            GetController()->GetBuffer().data()[0] = 0x7f;
+            buf[0] = 0x7f;
         }
     }
 
@@ -229,10 +228,10 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 
     if (!write && get_level() == level::trace && byte_count == remaining_count) {
         LogTrace(fmt::format("{0} byte(s) of received data:\n{1}", length,
-            FormatBytes(GetController()->GetBuffer(), length, 128)));
+            FormatBytes(buf, length, 128)));
     }
 
-    UpdateInternalBlockSize(length);
+    UpdateInternalBlockSize(buf, length);
 
     UpdateStartBlock(length / block_size);
 
@@ -314,15 +313,15 @@ void ScsiGeneric::SetBlockCount(int length)
     }
 }
 
-void ScsiGeneric::UpdateInternalBlockSize(int length)
+void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 {
     uint32_t size = block_size;
     const auto cmd = static_cast<scsi_command>(cdb[0]);
     if (cmd == scsi_command::read_capacity_10 && length >= 8) {
-        size = GetInt32(GetController()->GetBuffer(), 4);
+        size = GetInt32(buf, 4);
     }
     else if (cmd == scsi_command::read_capacity_16_read_long_16 && (static_cast<int>(cdb[1]) & 0x10) && length >= 12) {
-        size = GetInt32(GetController()->GetBuffer(), 8);
+        size = GetInt32(buf, 8);
     }
 
     if (block_size != size) {

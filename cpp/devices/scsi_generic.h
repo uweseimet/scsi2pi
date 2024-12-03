@@ -41,7 +41,7 @@ private:
     void UpdateStartBlock(int);
     void SetBlockCount(int);
 
-    void UpdateInternalBlockSize(int);
+    void UpdateInternalBlockSize(span<uint8_t> buf, int);
 
     static void SetInt24(span<uint8_t>, int, int);
 
