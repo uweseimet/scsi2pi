@@ -276,7 +276,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-void HostServices::WriteData(cdb_t cdb, data_out_t buf, int)
+void HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int)
 {
     if (static_cast<scsi_command>(cdb[0]) != scsi_command::execute_operation) {
         throw scsi_exception(sense_key::aborted_command);

@@ -500,7 +500,7 @@ bool Controller::XferOut(int length, bool pending_data)
         case scsi_command::write_long_10:
         case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
-            device->WriteData(GetCdb(), GetBuffer(), length);
+            device->WriteData(GetCdb(), GetBuffer(), GetOffset(), length);
             if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
