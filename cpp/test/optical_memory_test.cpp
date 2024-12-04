@@ -133,13 +133,13 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf,0, 28), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28, 0), scsi_exception)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 0, 16));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16, 0));
     buf[4] = 0;
     buf[5] = 0;
 
@@ -149,13 +149,13 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[8] = 0x04;
     // Page length
     buf[9] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf,0, 32), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32, 0), scsi_exception)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 0, 20));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20, 0));
 }
 
 TEST(OpticalMemoryTest, Open)
