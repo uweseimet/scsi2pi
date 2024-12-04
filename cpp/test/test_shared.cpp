@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "mocks.h"
 #include "base/device_factory.h"
-#include "buses/bus_factory.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 
@@ -36,8 +36,8 @@ vector<int> testing::CreateCdb(scsi_command cmd, const string &hex)
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
     ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
-    if (BusFactory::Instance().GetCommandBytesCount(cmd)) {
-        cdb.resize(BusFactory::Instance().GetCommandBytesCount(cmd));
+    if (CommandMetaData::Instance().GetCommandBytesCount(cmd)) {
+        cdb.resize(CommandMetaData::Instance().GetCommandBytesCount(cmd));
     }
     return cdb;
 }

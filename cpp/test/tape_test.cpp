@@ -299,10 +299,11 @@ TEST(TapeTest, Write6)
     ifstream file(filename);
 
     // Non-fixed, 2 bytes
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_6));
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 2);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 2));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 2));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 2 });
     CheckPositions(tape, 10, 1);
 
@@ -310,10 +311,11 @@ TEST(TapeTest, Write6)
     file.seekg(0);
 
     // Non-fixed, 1 byte
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_6));
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 1));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 1));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 1 });
     CheckPositions(tape, 10, 1);
 
@@ -321,11 +323,12 @@ TEST(TapeTest, Write6)
     file.seekg(0);
 
     // Non-fixed, 512 bytes
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_6));
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(3, 2);
     controller->SetCdbByte(4, 0);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 
@@ -333,10 +336,11 @@ TEST(TapeTest, Write6)
     file.seekg(0);
 
     // Fixed, 1 block
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_6));
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetBuffer(), scsi_command::write_6, 512));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 }

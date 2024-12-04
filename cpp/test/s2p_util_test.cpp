@@ -213,14 +213,17 @@ TEST(S2pUtilTest, FormatBytes)
     for (int i = 0; i < 256; i++) {
         bytes.emplace_back(i);
     }
-    EXPECT_EQ(str_all, FormatBytes(bytes, static_cast<int>(bytes.size())));
+    EXPECT_EQ(str_all, FormatBytes(bytes, static_cast<int>(bytes.size()), 0));
 
     bytes.clear();
     for (int i = 64; i < 79; i++) {
         bytes.emplace_back(i);
     }
-    EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size())));
-    EXPECT_EQ(str_hex_only, FormatBytes(bytes, static_cast<int>(bytes.size()), true));
+    EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size()), 0));
+    EXPECT_EQ(str_partial, FormatBytes(bytes, static_cast<int>(bytes.size()), 10000));
+
+    EXPECT_EQ(str_hex_only, FormatBytes(bytes, static_cast<int>(bytes.size()), 0, true));
+    EXPECT_EQ("40:41\n...", FormatBytes(bytes, static_cast<int>(bytes.size()), 2, true));
 }
 
 TEST(S2pUtilTest, HexToDec)

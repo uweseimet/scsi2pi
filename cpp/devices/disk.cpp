@@ -183,8 +183,8 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
-    // FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
-    if ((GetCdbByte(1) & 0x10) && GetCdbByte(4)) {
+    // FMTDATA is not supported
+    if (GetCdbByte(1) & 0x10) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -419,11 +419,13 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(data_out_t buf, scsi_command command, int)
+void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
     CheckReady();
+
+    const auto command = static_cast<scsi_command>(cdb[0]);
 
     if (command == scsi_command::write_long_10 || command == scsi_command::write_long_16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
@@ -527,7 +529,7 @@ void Disk::ReadFormatCapacities()
         }
     }
 
-    SetInt32(buf, 0, offset - 12);
+    SetInt32(buf, 0, offset - 4);
 
     DataInPhase(min(offset, GetCdbInt16(7)));
 }

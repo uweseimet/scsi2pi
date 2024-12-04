@@ -206,7 +206,7 @@ int Tape::ReadData(data_in_t buf)
     return length;
 }
 
-void Tape::WriteData(data_out_t buf, scsi_command, int chunk_size)
+void Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 {
     CheckReady();
 
@@ -903,6 +903,8 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
+            SetSksv(0x00ca00);
+
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
@@ -915,6 +917,8 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation(length - record_length);
+            SetSksv(0x00ca00);
+
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
     }

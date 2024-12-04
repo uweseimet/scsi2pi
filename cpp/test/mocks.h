@@ -156,6 +156,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(HostServicesTest, ModeSense10);
     FRIEND_TEST(HostServicesTest, SetUpModePages);
     FRIEND_TEST(PrinterTest, Print);
+    FRIEND_TEST(PrinterTest, SynchronizeBuffer);
+    FRIEND_TEST(PrinterTest, WriteData);
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
@@ -285,7 +287,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (data_out_t, scsi_command, int), (override));
+    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
@@ -321,7 +323,7 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (data_out_t, scsi_command, int), (override));
+    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 

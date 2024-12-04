@@ -48,7 +48,7 @@ public:
     }
 
     vector<uint8_t> InquiryInternal() const override;
-    void WriteData(data_out_t, scsi_command, int) override;
+    void WriteData(cdb_t, data_out_t, int, int) override;
 
     void GetMessage6() override;
     void SendMessage6() const override;

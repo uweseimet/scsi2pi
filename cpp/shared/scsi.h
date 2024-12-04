@@ -19,7 +19,8 @@ enum class scsi_level
     spc_4 = 6,
     spc_5 = 7,
     spc_6 = 8,
-    last = 9
+    spc_7 = 9,
+    last = 10
 };
 
 enum class bus_phase
@@ -168,7 +169,7 @@ enum class asc
     invalid_command_operation_code = 0x20,
     lba_out_of_range = 0x21,
     invalid_field_in_cdb = 0x24,
-    invalid_lun = 0x25,
+    logical_unit_not_supported = 0x25,
     invalid_field_in_parameter_list = 0x26,
     write_protected = 0x27,
     not_ready_to_ready_change = 0x28,

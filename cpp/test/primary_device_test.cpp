@@ -29,12 +29,12 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
     EXPECT_EQ(scsi_level::scsi_2, device.GetScsiLevel());
 
     EXPECT_FALSE(device.SetScsiLevel(scsi_level::none));
-    EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(9)));
+    EXPECT_FALSE(device.SetScsiLevel(static_cast<scsi_level>(10)));
 
     EXPECT_TRUE(device.SetScsiLevel(scsi_level::scsi_1_ccs));
     EXPECT_EQ(scsi_level::scsi_1_ccs, device.GetScsiLevel());
-    EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_6));
-    EXPECT_EQ(scsi_level::spc_6, device.GetScsiLevel());
+    EXPECT_TRUE(device.SetScsiLevel(scsi_level::spc_7));
+    EXPECT_EQ(scsi_level::spc_7, device.GetScsiLevel());
 }
 
 TEST(PrimaryDeviceTest, Status)
@@ -161,7 +161,7 @@ TEST(PrimaryDeviceTest, ModeSelect)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_THROW(device.ModeSelect( { }, { }, 0), scsi_exception);
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0, 0), scsi_exception);
 }
 
 TEST(PrimaryDeviceTest, ModeSense6)
@@ -298,10 +298,13 @@ TEST(PrimaryDeviceTest, RequestSense)
 {
     auto [controller, device] = CreatePrimaryDevice(5);
 
+    const auto &data = controller->GetBuffer();
+
+    // DESC
+    controller->SetCdbByte(1, 0x01);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-
-    const auto &data = controller->GetBuffer();
+    Dispatch(*device, scsi_command::request_sense, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     device->SetReady(false);
     Dispatch(*device, scsi_command::request_sense, sense_key::not_ready, asc::medium_not_present);
@@ -315,6 +318,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x00, data[2]);
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(0U, GetInt32(data, 3));
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
 
     device->SetFilemark();
     // ALLOCATION LENGTH
@@ -326,6 +330,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(static_cast<uint8_t>(ascq::filemark_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
 
     device->SetEom(ascq::end_of_partition_medium_detected);
     // ALLOCATION LENGTH
@@ -337,6 +342,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(static_cast<uint8_t>(ascq::end_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
 
     device->SetEom(ascq::beginning_of_partition_medium_detected);
     // ALLOCATION LENGTH
@@ -348,6 +354,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(static_cast<uint8_t>(ascq::beginning_of_partition_medium_detected), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
 
     device->SetIli();
     // ALLOCATION LENGTH
@@ -357,6 +364,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x20, data[2]) << "ILI must be set";
     EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
 
     device->SetInformation(0x12345678);
     // ALLOCATION LENGTH
@@ -367,6 +375,16 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x00, data[2]);
     EXPECT_EQ(10, data[7]);
     EXPECT_EQ(0x12345678U, GetInt32(data, 3));
+    EXPECT_EQ(0x000000, GetInt32(data, 14));
+
+    device->SetSksv(0x123456);
+    // ALLOCATION LENGTH
+    controller->SetCdbByte(4, 255);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
+    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_EQ(0x70, data[0]);
+    EXPECT_EQ(10, data[7]);
+    EXPECT_EQ(0x123456, GetInt32(data, 14));
 
     device->SetScsiLevel(scsi_level::scsi_1_ccs);
     // ALLOCATION LENGTH

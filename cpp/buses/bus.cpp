@@ -11,7 +11,7 @@
 #include "bus.h"
 #include <chrono>
 #include <spdlog/spdlog.h>
-#include "bus_factory.h"
+#include "shared/command_meta_data.h"
 
 bool Bus::Init(bool mode)
 {
@@ -67,7 +67,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+    const int command_byte_count = CommandMetaData::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 

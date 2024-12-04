@@ -26,25 +26,9 @@ public:
 
     unique_ptr<Bus> CreateBus(bool, bool, bool = false);
 
-    int GetCommandBytesCount(scsi_command opcode) const
-    {
-        return command_byte_counts[static_cast<int>(opcode)];
-    }
-
-    auto GetCommandName(scsi_command opcode) const
-    {
-        return command_names[static_cast<int>(opcode)];
-    }
-
 private:
 
-    BusFactory();
-
-    void AddCommand(scsi_command, int, const char*);
+    BusFactory() = default;
 
     static RpiBus::PiType CheckForPi();
-
-    // These are arrays instead of maps because of performance reasons
-    array<int, 256> command_byte_counts;
-    array<string_view, 256> command_names;
 };

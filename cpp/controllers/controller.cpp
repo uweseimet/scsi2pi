@@ -9,8 +9,8 @@
 //---------------------------------------------------------------------------
 
 #include "controller.h"
-#include "buses/bus_factory.h"
 #include "base/primary_device.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -113,7 +113,8 @@ void Controller::Command()
             return;
         }
 
-        const int command_bytes_count = BusFactory::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+        const int command_bytes_count = CommandMetaData::Instance().GetCommandBytesCount(
+            static_cast<scsi_command>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
         for (int i = 0; i < command_bytes_count; i++) {
@@ -123,7 +124,7 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
-            LogCdb();
+            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
         if (actual_count != command_bytes_count) {
@@ -157,7 +158,7 @@ void Controller::Execute()
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
         if (opcode != scsi_command::inquiry && opcode != scsi_command::request_sense) {
-            Error(sense_key::illegal_request, asc::invalid_lun);
+            Error(sense_key::illegal_request, asc::logical_unit_not_supported);
             return;
         }
 
@@ -303,7 +304,7 @@ void Controller::Error(sense_key sense_key, asc asc, status_code status)
     }
 
     int lun = GetEffectiveLun();
-    if (asc == asc::invalid_lun || !GetDeviceForLun(lun)) {
+    if (asc == asc::logical_unit_not_supported || !GetDeviceForLun(lun)) {
         lun = 0;
     }
 
@@ -325,12 +326,8 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        // Assume that data less than < 256 bytes in DATA IN are data for a non block-oriented command
-        if (!GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
-            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length)));
-        }
-        else {
-            LogTrace(fmt::format("Sending {} byte(s)", length));
+        if (get_level() == level::trace && !GetOffset()) {
+            LogTrace(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(GetBuffer(), length, 128)));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -407,11 +404,9 @@ void Controller::Receive()
             return;
         }
 
-        // Assume that data less than < 256 bytes in DATA OUT are parameters for a non block-oriented command
-        // and are worth logging
-        if (IsDataOut() && !GetOffset() && GetTotalLength() < 256 && get_level() == level::trace) {
-            LogTrace(
-                fmt::format("{0} byte(s) of command parameter data:\n{1}", length, FormatBytes(GetBuffer(), length)));
+        if (get_level() == level::trace && IsDataOut() && !GetOffset()) {
+            LogTrace(fmt::format("{0} byte(s) of command parameter data:\n{1}", length,
+                FormatBytes(GetBuffer(), length, 128)));
         }
 
         if (length && IsDataOut()) {
@@ -494,7 +489,7 @@ bool Controller::XferOut(int length, bool pending_data)
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
         case scsi_command::mode_select_6:
         case scsi_command::mode_select_10:
-            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
+            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), -1);
             break;
 
         case scsi_command::write_6:
@@ -505,7 +500,7 @@ bool Controller::XferOut(int length, bool pending_data)
         case scsi_command::write_long_10:
         case scsi_command::write_long_16:
         case scsi_command::execute_operation: {
-            device->WriteData(GetBuffer(), opcode, length);
+            device->WriteData(GetCdb(), GetBuffer(), -1, length);
             if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
@@ -611,19 +606,4 @@ int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
     return identified_lun != -1 ? identified_lun : GetCdb()[1] >> 5;
-}
-
-void Controller::LogCdb() const
-{
-    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
-    const string_view &command_name = BusFactory::Instance().GetCommandName(opcode);
-    string s = fmt::format("Controller is executing {}, CDB ",
-        !command_name.empty() ? command_name : fmt::format("{:02x}", GetCdb()[0]));
-    for (int i = 0; i < BusFactory::Instance().GetCommandBytesCount(opcode); i++) {
-        if (i) {
-            s += ":";
-        }
-        s += fmt::format("{:02x}", GetCdb()[i]);
-    }
-    LogDebug(s);
 }

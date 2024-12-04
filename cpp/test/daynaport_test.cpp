@@ -61,10 +61,11 @@ TEST(DaynaportTest, WriteData)
     auto [controller, daynaport] = CreateDevice(SCDP);
     vector<int> cdb(6);
 
+    controller->SetCdbByte(0, static_cast<int>(scsi_command::send_message_6));
     // Unknown data format must be ignored
     controller->SetCdbByte(5, 0xff);
     vector<uint8_t> buf(0);
-    EXPECT_NO_THROW(daynaport->WriteData(buf, scsi_command::send_message_6, 0));
+    EXPECT_NO_THROW(daynaport->WriteData(controller->GetCdb(), buf, 0, 0));
 }
 
 TEST(DaynaportTest, GetMessage6)

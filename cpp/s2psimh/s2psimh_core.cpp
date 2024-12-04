@@ -342,7 +342,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
             return false;
         }
 
-        cout << FormatBytes(record, static_cast<int>(record.size())) << '\n';
+        cout << FormatBytes(record, static_cast<int>(record.size()), 0) << '\n';
     }
 
     position += Pad(meta_data.value);

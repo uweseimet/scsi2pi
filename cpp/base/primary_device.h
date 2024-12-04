@@ -79,9 +79,9 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual void WriteData(data_out_t, scsi_command, int) = 0;
+    virtual void WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int)
+    virtual void ModeSelect(cdb_t, data_out_t, int, int)
     {
         // There is no default implementation of MODE SELECT
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -138,6 +138,7 @@ protected:
     void SetEom(ascq);
     void SetIli();
     void SetInformation(int64_t);
+    void SetSksv(int);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
@@ -208,6 +209,7 @@ private:
     ascq eom = ascq::none;
     bool ili = false;
     int32_t information = 0;
+    int sksv = 0;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

@@ -150,9 +150,8 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (get_level() == level::trace) {
-        LogTrace(
-            fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
-                FormatBytes(buf, rx_packet_size)));
+        LogTrace(fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
+            FormatBytes(buf, rx_packet_size, 128)));
     }
 
     byte_read_count += rx_packet_size;
@@ -188,8 +187,9 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-void DaynaPort::WriteData(data_out_t buf, scsi_command command, int)
+void DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int)
 {
+    const auto command = static_cast<scsi_command>(cdb[0]);
     assert(command == scsi_command::send_message_6);
     if (command != scsi_command::send_message_6) {
         throw scsi_exception(sense_key::aborted_command);
@@ -214,7 +214,8 @@ void DaynaPort::WriteData(data_out_t buf, scsi_command command, int)
     if (buf.size() && get_level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf, back_inserter(data));
-        LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length)));
+        LogTrace(
+            fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length, 128)));
     }
 
     GetController()->SetTransferSize(0, 0);

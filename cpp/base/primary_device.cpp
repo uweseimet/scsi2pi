@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "primary_device.h"
-#include "buses/bus_factory.h"
+#include "shared/command_meta_data.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -58,7 +58,7 @@ void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
 void PrimaryDevice::Dispatch(scsi_command cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", BusFactory::Instance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::Instance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }
@@ -92,6 +92,7 @@ void PrimaryDevice::ResetStatus()
     ili = false;
     information = 0;
     eom = ascq::none;
+    sksv = 0;
 }
 
 void PrimaryDevice::SetFilemark()
@@ -107,6 +108,11 @@ void PrimaryDevice::SetEom(ascq e)
 void PrimaryDevice::SetIli()
 {
     ili = true;
+}
+
+void PrimaryDevice::SetSksv(int s)
+{
+    sksv = s;
 }
 
 void PrimaryDevice::SetInformation(int64_t value)
@@ -211,6 +217,11 @@ void PrimaryDevice::ReportLuns()
 
 void PrimaryDevice::RequestSense()
 {
+    // The descriptor format is not supported
+    if (GetController()->GetCdb()[1] & 0x01) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     int effective_lun = GetController()->GetEffectiveLun();
 
     // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
@@ -222,7 +233,7 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(sense_key::illegal_request, asc::invalid_lun, status_code::good);
+        GetController()->Error(sense_key::illegal_request, asc::logical_unit_not_supported, status_code::good);
     }
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -324,6 +335,10 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }
+
+    buf[15] = static_cast<byte>(sksv >> 16);
+    buf[16] = static_cast<byte>(sksv >> 8);
+    buf[17] = static_cast<byte>(sksv);
 
     LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
 
