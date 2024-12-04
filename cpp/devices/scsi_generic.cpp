@@ -33,8 +33,8 @@ ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, scsi_level::scsi_2, lun)
 bool ScsiGeneric::SetUp()
 {
     device = GetParam(DEVICE);
-    if (device.empty()) {
-        LogError(fmt::format("Missing device file parameter"));
+    if (!device.starts_with("/dev/sg")) {
+        LogError(fmt::format("Missing or invalid device file parameter"));
         return false;
     }
 
@@ -157,14 +157,30 @@ int ScsiGeneric::ReadData(data_in_t buf)
     return ReadWriteData(buf, false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(cdb_t cdb, data_out_t buf, int, int chunk_size)
+void ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, and update the transfer size
-    if (static_cast<scsi_command>(cdb[0]) == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)
-        && byte_count == remaining_count) {
-        byte_count = GetInt16(buf, 2);
-        remaining_count = byte_count;
-        chunk_size = byte_count;
+    if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::format_unit
+        && (static_cast<int>(local_cdb[1]) & 0x10)) {
+        if (format_header.empty()) {
+            format_header.push_back(buf[0]);
+            format_header.push_back(buf[1]);
+            format_header.push_back(buf[2]);
+            format_header.push_back(buf[3]);
+            byte_count = GetInt16(buf, 2);
+            remaining_count = byte_count;
+            GetController()->SetTransferSize(byte_count, byte_count);
+
+            // TODO Return pending data length?
+            return;
+        }
+        else {
+            remaining_count = byte_count;
+            for (int i = 0; i < remaining_count; i++) {
+                format_header.push_back(buf[i]);
+            }
+            buf = format_header;
+        }
     }
 
     ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size); // NOSONAR Cast required for SG driver API
@@ -210,6 +226,9 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
+
+    format_header.clear();
+
     if (status == -1) {
         LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
