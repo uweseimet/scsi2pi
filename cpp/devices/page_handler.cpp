@@ -137,7 +137,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (page_code != to_integer<int>(page_data[0] & byte { 0x3f })) {
+            if (page_code && (page_code != to_integer<int>(page_data[0] & byte { 0x3f }))) {
                 warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
                 continue;
             }

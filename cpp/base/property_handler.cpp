@@ -48,6 +48,8 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
             AddProperty(key, value);
         }
     }
+
+    RemoveProperties("mode_page.");
 }
 
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
