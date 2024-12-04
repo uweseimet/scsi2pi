@@ -131,7 +131,7 @@ bool StorageDevice::Eject(bool force)
     return status;
 }
 
-void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int, int length)
+void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 {
     // PF
     if (!(cdb[1] & 0x10)) {
