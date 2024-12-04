@@ -161,7 +161,7 @@ void ScsiGeneric::WriteData(cdb_t cdb, data_out_t buf, int, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, and update the transfer size
     if (static_cast<scsi_command>(cdb[0]) == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)
-        && byte_count == remaining count)) {
+        && byte_count == remaining_count) {
         byte_count = GetInt16(buf, 2);
         remaining_count = byte_count;
         chunk_size = byte_count;
