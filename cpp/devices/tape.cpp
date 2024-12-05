@@ -267,6 +267,8 @@ void Tape::Open()
         + to_string(GetBlockSize()));
     }
 
+    descriptor_block_size = GetBlockSize();
+
     file_size = GetFileSize(true);
 
     // In append mode, ensure that the image file size is at least the block size
@@ -324,10 +326,11 @@ bool Tape::ValidateBlockSize(uint32_t size) const
     return size && !(size % 4);
 }
 
-uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
+uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary)
 {
     // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
     if (!requested_size && temporary) {
+        descriptor_block_size = 0;
         return 0;
     }
 
@@ -377,7 +380,7 @@ void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
     buf[3] = byte { 8 };
 
     // Size of fixed blocks
-    SetInt32(buf, 8, GetBlockSize());
+    SetInt32(buf, 8, descriptor_block_size);
 
     pages[0] = buf;
 }

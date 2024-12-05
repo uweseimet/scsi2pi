@@ -217,7 +217,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
     ChangeBlockSize(size);
 }
 
-pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size) const
+pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size)
 {
     assert(cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10);
 
@@ -240,7 +240,7 @@ pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_ou
     return {static_cast<int>(descriptor_length + required_length), size};
 }
 
-uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
+uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temporary)
 {
     if (requested_size == GetBlockSize()) {
         return requested_size;
