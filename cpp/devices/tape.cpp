@@ -267,7 +267,7 @@ void Tape::Open()
         + to_string(GetBlockSize()));
     }
 
-    block_descriptor = GetBlockSize();
+    block_size_for_descriptor = GetBlockSize();
 
     file_size = GetFileSize(true);
 
@@ -330,7 +330,7 @@ uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary)
 {
     // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
     if (!requested_size && temporary) {
-        block_descriptor = 0;
+        block_size_for_descriptor = 0;
         return 0;
     }
 
@@ -761,7 +761,7 @@ uint32_t Tape::GetByteCount()
     fixed = GetCdbByte(1) & 0x01;
 
     // Drive is not in fixed-length mode
-    if (fixed && !block_descriptor) {
+    if (fixed && !block_size_for_descriptor) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 

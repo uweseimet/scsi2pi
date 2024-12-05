@@ -402,8 +402,9 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
         buf[3] = 0x08;
 
         // Short LBA mode parameter block descriptor (number of blocks and block length)
-        SetInt32(buf, 4, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-        SetInt32(buf, 8, GetBlockDescriptor());
+        SetInt32(buf, 4,
+            static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCountForDescriptor() : 0xffffffff));
+        SetInt32(buf, 8, GetBlockSizeForDescriptor());
 
         size += 8;
     }
@@ -446,8 +447,9 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
             buf[7] = 0x08;
 
             // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 8, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-            SetInt32(buf, 12, GetBlockDescriptor());
+            SetInt32(buf, 8,
+                static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCount() : 0xffffffff));
+            SetInt32(buf, 12, GetBlockSizeForDescriptor());
 
             size += 8;
         }
@@ -459,8 +461,8 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
             buf[7] = 0x10;
 
             // Long LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt64(buf, 8, blocks);
-            SetInt32(buf, 20, GetBlockDescriptor());
+            SetInt64(buf, 8, GetBlockCountForDescriptor());
+            SetInt32(buf, 20, GetBlockSizeForDescriptor());
 
             size += 16;
         }
