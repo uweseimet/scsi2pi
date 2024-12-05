@@ -41,6 +41,11 @@ public:
 
     bool ValidateBlockSize(uint32_t) const override;
 
+    uint32_t GetBlockDescriptor() const override
+    {
+        return descriptor_block_size;
+    }
+
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
