@@ -281,7 +281,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 12);
     Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
 
-    // Hitting filemark when reaing
+    // Hitting filemark when reading
     file.seekp(0);
     const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
     WriteSimhObject(file, filemark);
@@ -296,6 +296,18 @@ TEST(TapeTest, Read6)
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(90U, GetInt32(controller->GetBuffer(), 3));
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
+    Dispatch(*tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Write6)
