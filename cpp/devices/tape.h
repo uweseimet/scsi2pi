@@ -49,6 +49,8 @@ protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
+    uint32_t VerifyBlockSizeChange(uint32_t, bool) override;
+
 private:
 
     enum class object_type
@@ -85,8 +87,6 @@ private:
 
     uint32_t GetByteCount();
 
-    uint32_t VerifyBlockSizeChange(uint32_t, bool) const override;
-
     void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDataCompressionPage(map<int, vector<byte>>&) const;
@@ -116,6 +116,8 @@ private:
     bool initial = false;
 
     bool fixed = false;
+
+    int descriptor_block_size = 0;
 
     int blocks_read = 0;
 
