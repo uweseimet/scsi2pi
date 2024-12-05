@@ -133,13 +133,6 @@ bool StorageDevice::Eject(bool force)
 
 void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 {
-    // PF
-    if (!(cdb[1] & 0x10)) {
-        // Vendor-specific parameters (all parameters in SCSI-1 are vendor-specific) are not supported.
-        // Do not report an error in order to support Apple's HD SC Setup.
-        return;
-    }
-
     // The page data are optional
     if (!length) {
         return;
