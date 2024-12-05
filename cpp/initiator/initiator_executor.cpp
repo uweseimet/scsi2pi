@@ -245,7 +245,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
         throw phase_exception("No more data for DATA OUT phase");
     }
 
-    debug(fmt::format("Sending {0} byte(s) in DATA OUT phase:\n{1}", length, FormatBytes(buf, length, 128)));
+    debug(fmt::format("Sending {0} byte(s):\n{1}", length, FormatBytes(buf, length, 128)));
 
     byte_count = bus.SendHandShake(buf.data(), length);
     if (byte_count != length) {
