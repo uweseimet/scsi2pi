@@ -433,13 +433,11 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         if (const string &error = ConvertData(data); !error.empty()) {
             throw execution_exception(error);
         }
-        debug("Sending {} data bytes", buffer.size());
     }
     else if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
         if (const string &error = ReadData(); !error.empty()) {
             throw execution_exception(error);
         }
-        debug("Sending {} data byte(s)", buffer.size());
     }
 
     const int status = executor->ExecuteCommand(cdb, buffer, timeout);
