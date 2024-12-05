@@ -198,7 +198,7 @@ void Controller::Status()
         return;
     }
 
-    LogTrace(fmt::format("Status phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
+    LogTrace(fmt::format("STATUS phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
         static_cast<int>(GetStatus())));
 
     SetPhase(bus_phase::status);
