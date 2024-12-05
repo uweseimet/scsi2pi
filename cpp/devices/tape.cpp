@@ -718,7 +718,12 @@ void Tape::RaiseFilemark(int64_t info)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
-    SetInformation(info);
+    if (!fixed) {
+        SetInformation(GetByteCount());
+    }
+    else {
+        SetInformation(info);
+    }
     SetFilemark();
 
     throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
