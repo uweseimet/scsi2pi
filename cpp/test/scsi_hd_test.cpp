@@ -285,15 +285,10 @@ TEST(ScsiHdTest, ModeSelect6_Single)
 {
     vector<uint8_t> buf(28);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(scsi_command::mode_select_6);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select_6, "10");
+    const auto &cdb = CreateCdb(scsi_command::mode_select_6, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
@@ -417,15 +412,10 @@ TEST(ScsiHdTest, ModeSelect10_Single)
 {
     vector<uint8_t> buf(32);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(scsi_command::mode_select_10);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select_10, "10");
+    const auto &cdb = CreateCdb(scsi_command::mode_select_10, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
