@@ -788,7 +788,7 @@ uint32_t Tape::GetByteCount()
     fixed = GetCdbByte(1) & 0x01;
 
     // Drive is not in fixed-length mode
-    if (fixed && !GetBlockSize()) {
+    if (fixed && !descriptor_block_size) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
