@@ -43,7 +43,7 @@ public:
 
     uint32_t GetBlockDescriptor() const override
     {
-        return descriptor_block_size;
+        return block_descriptor;
     }
 
     vector<PbStatistics> GetStatistics() const override;
@@ -122,7 +122,7 @@ private:
 
     bool fixed = false;
 
-    int descriptor_block_size = 0;
+    int block_descriptor = 0;
 
     int blocks_read = 0;
 
