@@ -831,6 +831,18 @@ TEST(TapeTest, SetUpModePages)
     EXPECT_EQ(byte { 0x80 }, pages.at(0)[2]);
 }
 
+TEST(TapeTest, VerifyBlockSizeChange)
+{
+    MockTape tape;
+    tape.SetBlockSize(512);
+
+    EXPECT_EQ(0, tape.VerifyBlockSizeChange(0, true));
+
+    EXPECT_THAT([&] { tape.VerifyBlockSizeChange(0, false) ; }, Throws<scsi_exception>(AllOf(
+        Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+        Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
+}
+
 TEST(TapeTest, GetStatistics)
 {
     Tape tape(0);
