@@ -140,7 +140,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 
     auto [offset, size] = EvaluateBlockDescriptors(static_cast<scsi_command>(cdb[0]), span(buf.data(), length),
         block_size);
-    if (!size) {
+    if (size) {
         block_size = size;
     }
 
