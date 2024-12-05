@@ -26,7 +26,7 @@ class InitiatorExecutor
 
 public:
 
-    InitiatorExecutor(Bus &b, int id, logger &l) : bus(b), initiator_id(id), logger(l)
+    InitiatorExecutor(Bus &b, int id, logger &l) : bus(b), initiator_id(id), initiator_logger(l)
     {
     }
     ~InitiatorExecutor() = default;
@@ -69,7 +69,7 @@ private:
 
     int initiator_id;
 
-    logger &logger;
+    logger &initiator_logger;
 
     int target_id = -1;
     int target_lun = -1;
