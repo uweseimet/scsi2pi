@@ -327,6 +327,10 @@ bool Tape::ValidateBlockSize(uint32_t size) const
 uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
 {
     // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
+    if (!requested_size && temporary) {
+        return 0;
+    }
+
     return
         requested_size || !temporary ? StorageDevice::VerifyBlockSizeChange(requested_size, temporary) : GetBlockSize();
 }

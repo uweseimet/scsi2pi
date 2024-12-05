@@ -140,8 +140,16 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 
     auto [offset, size] = EvaluateBlockDescriptors(static_cast<scsi_command>(cdb[0]), span(buf.data(), length),
         block_size);
-    length -= offset;
     block_size = size;
+
+    // PF
+    if (!(cdb[1] & 0x10)) {
+        // Vendor-specific parameters (all parameters in SCSI-1 are vendor-specific) are not supported.
+        // Do not report an error in order to support Apple's HD SC Setup.
+        return;
+    }
+
+    length -= offset;
 
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
