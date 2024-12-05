@@ -45,7 +45,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    trace("Executing command {0} for device {1}:{2}", command_name, target_id, target_lun);
+    debug(CommandMetaData::Instance().LogCdb(cdb, "Initiator"));
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
