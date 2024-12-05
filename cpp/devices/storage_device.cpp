@@ -265,7 +265,7 @@ uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temp
 
 void StorageDevice::ChangeBlockSize(uint32_t new_size)
 {
-    if (!GetSupportedBlockSizes().contains(new_size) && new_size % 4) {
+    if (!new_size || (!GetSupportedBlockSizes().contains(new_size) && new_size % 4)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
     }
 
