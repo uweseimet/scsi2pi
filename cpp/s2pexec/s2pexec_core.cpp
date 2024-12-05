@@ -12,12 +12,10 @@
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
-using namespace spdlog;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -76,7 +74,7 @@ bool S2pExec::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pExecExecutor>(*bus, initiator_id);
+    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *logger);
 
     instance = this;
     // Signal handler for cleaning up
@@ -217,7 +215,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel(log_level)) {
+    if (!SetLogLevel(*logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
@@ -455,7 +453,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         if (const int count = executor->GetByteCount(); count) {
-            debug("Initiator received {} data byte(s)", count);
+            logger->debug("Initiator received {} data byte(s)", count);
 
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);

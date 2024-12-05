@@ -7,10 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "initiator_util.h"
-#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 
 void initiator_util::ResetBus(Bus &bus)
@@ -43,10 +41,10 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
     return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
 }
 
-bool initiator_util::SetLogLevel(const string &log_level)
+bool initiator_util::SetLogLevel(logger &logger, const string &log_level)
 {
     // Default spdlog format without the timestamp
-    set_pattern("[%^%l%$] %v");
+    logger.set_pattern("[%^%l%$] %v");
 
     if (log_level.empty()) {
         return true;
@@ -54,7 +52,7 @@ bool initiator_util::SetLogLevel(const string &log_level)
 
     // Compensate for spdlog using 'off' for unknown levels
     if (const level::level_enum level = level::from_str(log_level); to_string_view(level) == log_level) {
-        set_level(level);
+        logger.set_level(level);
         return true;
     }
 

@@ -18,7 +18,7 @@ class S2pDumpExecutor
 
 public:
 
-    S2pDumpExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
+    S2pDumpExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l))
     {
     }
     ~S2pDumpExecutor() = default;

@@ -15,13 +15,11 @@
 #include <iostream>
 #include <regex>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
-using namespace spdlog;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -82,7 +80,7 @@ bool S2pDump::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
+    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id, *default_logger());
 
     instance = this;
     // Signal handler for cleaning up
@@ -225,7 +223,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         return false;
     }
 
-    if (!SetLogLevel(log_level)) {
+    if (!SetLogLevel(*default_logger(), log_level)) {
         throw parser_exception("Invalid log level '" + log_level + "'");
     }
 
