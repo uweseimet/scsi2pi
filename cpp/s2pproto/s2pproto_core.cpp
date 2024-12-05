@@ -11,7 +11,6 @@
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include "buses/bus_factory.h"
@@ -20,7 +19,6 @@
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace spdlog;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -74,7 +72,7 @@ bool S2pProto::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pProtoExecutor>(*bus, initiator_id);
+    executor = make_unique<S2pProtoExecutor>(*bus, initiator_id, *default_logger());
 
     instance = this;
     // Signal handler for cleaning up
@@ -179,7 +177,7 @@ bool S2pProto::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel(log_level)) {
+    if (!SetLogLevel(*default_logger(), log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 

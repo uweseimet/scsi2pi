@@ -133,13 +133,6 @@ bool StorageDevice::Eject(bool force)
 
 void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 {
-    // PF
-    if (!(cdb[1] & 0x10)) {
-        // Vendor-specific parameters (all parameters in SCSI-1 are vendor-specific) are not supported.
-        // Do not report an error in order to support Apple's HD SC Setup.
-        return;
-    }
-
     // The page data are optional
     if (!length) {
         return;
@@ -147,8 +140,18 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 
     auto [offset, size] = EvaluateBlockDescriptors(static_cast<scsi_command>(cdb[0]), span(buf.data(), length),
         block_size);
+    if (size) {
+        block_size = size;
+    }
+
+    // PF
+    if (!(cdb[1] & 0x10)) {
+        // Vendor-specific parameters (all parameters in SCSI-1 are vendor-specific) are not supported.
+        // Do not report an error in order to support Apple's HD SC Setup.
+        return;
+    }
+
     length -= offset;
-    block_size = size;
 
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
@@ -216,7 +219,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
     ChangeBlockSize(size);
 }
 
-pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size) const
+pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size)
 {
     assert(cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10);
 
@@ -239,7 +242,7 @@ pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_ou
     return {static_cast<int>(descriptor_length + required_length), size};
 }
 
-uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
+uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temporary)
 {
     if (requested_size == GetBlockSize()) {
         return requested_size;
@@ -383,39 +386,35 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
     const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
-    const bool page_0 = !(cdb[2] & 0x3f);
-
     int size = 0;
 
-    // Page 0 has no standardized fields
-    if (!page_0) {
-        // DEVICE SPECIFIC PARAMETER
-        if (IsProtected()) {
-            buf[2] = 0x80;
-        }
-
-        // Basic information
-        size = 4;
-
-        // Only add block descriptor if DBD is 0
-        if (!(cdb[1] & 0x08) && IsReady()) {
-            // Mode parameter header, block descriptor length
-            buf[3] = 0x08;
-
-            // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 4, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-            SetInt32(buf, 8, block_size);
-
-            size += 8;
-        }
+    // DEVICE SPECIFIC PARAMETER
+    if (IsProtected()) {
+        buf[2] = 0x80;
     }
 
-    size = page_handler->AddModePages(cdb, buf, size, length, 255);
+    // Basic information
+    size = 4;
 
-    if (!page_0) {
-        // The size field does not count itself
-        buf[0] = static_cast<uint8_t>(size - 1);
+    // Only add block descriptor if DBD is 0
+    if (!(cdb[1] & 0x08) && IsReady()) {
+        // Mode parameter header, block descriptor length
+        buf[3] = 0x08;
+
+        // Short LBA mode parameter block descriptor (number of blocks and block length)
+        SetInt32(buf, 4,
+            static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCountForDescriptor() : 0xffffffff));
+        SetInt32(buf, 8, GetBlockSizeForDescriptor());
+
+        size += 8;
     }
+
+    if (cdb[2] & 0x3f) {
+        size = page_handler->AddModePages(cdb, buf, size, length, 255);
+    }
+
+    // The size field does not count itself
+    buf[0] = static_cast<uint8_t>(size - 1);
 
     return size;
 }
@@ -430,55 +429,51 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
     const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
     fill_n(buf.begin(), length, 0);
 
-    const bool page_0 = !(cdb[2] & 0x3f);
-
     int size = 0;
 
-    // Page 0 has no standardized fields
-    if (!page_0) {
-        // DEVICE SPECIFIC PARAMETER
-        if (IsProtected()) {
-            buf[3] = 0x80;
+    // DEVICE SPECIFIC PARAMETER
+    if (IsProtected()) {
+        buf[3] = 0x80;
+    }
+
+    // Basic information
+    size = 8;
+
+    // Only add block descriptor if DBD is 0
+    if (!(cdb[1] & 0x08) && IsReady()) {
+        // Check LLBAA for short or long block descriptor
+        if (!(cdb[1] & 0x10)) {
+            // Mode parameter header, block descriptor length
+            buf[7] = 0x08;
+
+            // Short LBA mode parameter block descriptor (number of blocks and block length)
+            SetInt32(buf, 8,
+                static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCount() : 0xffffffff));
+            SetInt32(buf, 12, GetBlockSizeForDescriptor());
+
+            size += 8;
         }
+        else {
+            // Mode parameter header, LONGLBA
+            buf[4] = 0x01;
 
-        // Basic information
-        size = 8;
+            // Mode parameter header, block descriptor length
+            buf[7] = 0x10;
 
-        // Only add block descriptor if DBD is 0
-        if (!(cdb[1] & 0x08) && IsReady()) {
-            // Check LLBAA for short or long block descriptor
-            if (!(cdb[1] & 0x10)) {
-                // Mode parameter header, block descriptor length
-                buf[7] = 0x08;
+            // Long LBA mode parameter block descriptor (number of blocks and block length)
+            SetInt64(buf, 8, GetBlockCountForDescriptor());
+            SetInt32(buf, 20, GetBlockSizeForDescriptor());
 
-                // Short LBA mode parameter block descriptor (number of blocks and block length)
-                SetInt32(buf, 8, static_cast<uint32_t>(blocks <= 0xffffffff ? blocks : 0xffffffff));
-                SetInt32(buf, 12, block_size);
-
-                size += 8;
-            }
-            else {
-                // Mode parameter header, LONGLBA
-                buf[4] = 0x01;
-
-                // Mode parameter header, block descriptor length
-                buf[7] = 0x10;
-
-                // Long LBA mode parameter block descriptor (number of blocks and block length)
-                SetInt64(buf, 8, blocks);
-                SetInt32(buf, 20, block_size);
-
-                size += 16;
-            }
+            size += 16;
         }
     }
 
-    size = page_handler->AddModePages(cdb, buf, size, length, 65535);
-
-    if (!page_0) {
-        // The size field does not count itself
-        SetInt16(buf, 0, size - 2);
+    if (cdb[2] & 0x3f) {
+        size = page_handler->AddModePages(cdb, buf, size, length, 65535);
     }
+
+    // The size field does not count itself
+    SetInt16(buf, 0, size - 2);
 
     return size;
 }

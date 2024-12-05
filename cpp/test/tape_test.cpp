@@ -155,7 +155,14 @@ TEST(TapeTest, Read6)
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
-    // Fixed, 0 bytes
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
+    Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Drive is not in fixed mode, block size is 0");
+
+    const string &filename = CreateImageFile(*tape);
+
+    // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
@@ -163,7 +170,6 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x03);
     Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    const string &filename = CreateImageFile(*tape);
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
@@ -280,20 +286,47 @@ TEST(TapeTest, Read6)
     // Non-fixed, 12 bytes
     controller->SetCdbByte(4, 12);
     Dispatch(*tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
+
+    // Hitting filemark when reading
+    file.seekp(0);
+    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
+    WriteSimhObject(file, filemark);
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Non-fixed, 90 byte
+    controller->SetCdbByte(4, 90);
+    Dispatch(*tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(90U, GetInt32(controller->GetBuffer(), 3));
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(4, 1);
+    Dispatch(*tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
 
-    // Non-fixed
+    // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    CheckPositions(tape, 0, 0);
 
-    // Fixed
+    // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    CheckPositions(tape, 0, 0);
+    Dispatch(*tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Drive is not in fixed mode, block size is 0");
 
     const string &filename = CreateImageFile(*tape);
     ifstream file(filename);
@@ -819,16 +852,18 @@ TEST(TapeTest, SetUpModePages)
     pages.clear();
     tape.SetUpModePages(pages, 0x3f, true);
     ValidateModePages(pages);
+}
 
-    pages.clear();
-    tape.SetUpModePages(pages, 0x00, false);
-    EXPECT_EQ(byte { 0x0b }, pages.at(0)[0]);
-    EXPECT_EQ(byte { 0x00 }, pages.at(0)[2]);
+TEST(TapeTest, VerifyBlockSizeChange)
+{
+    MockTape tape;
+    tape.SetBlockSize(512);
 
-    pages.clear();
-    tape.SetProtected(true);
-    tape.SetUpModePages(pages, 0x00, false);
-    EXPECT_EQ(byte { 0x80 }, pages.at(0)[2]);
+    EXPECT_EQ(0, tape.VerifyBlockSizeChange(0, true));
+
+    EXPECT_THAT([&] { tape.VerifyBlockSizeChange(0, false) ; }, Throws<scsi_exception>(AllOf(
+        Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
+        Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))));
 }
 
 TEST(TapeTest, GetStatistics)

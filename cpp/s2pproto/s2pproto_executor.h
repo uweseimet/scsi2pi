@@ -27,7 +27,7 @@ public:
         text = 0b100
     };
 
-    S2pProtoExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
+    S2pProtoExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l))
     {
     }
     ~S2pProtoExecutor() = default;

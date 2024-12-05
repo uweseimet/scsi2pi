@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus_factory.h"
 #include "s2pexec_executor.h"
 
@@ -74,6 +75,7 @@ private:
     string command;
     string data;
 
+    shared_ptr<logger> logger = stdout_color_mt("initiator");
     string log_level;
 
     string last_input;

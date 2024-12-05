@@ -11,9 +11,11 @@
 #include <ctime>
 #include <memory>
 #include <stdexcept>
+#include <spdlog/spdlog.h>
 #include "buses/bus.h"
 
 using namespace std;
+using namespace spdlog;
 
 class InitiatorExecutor
 {
@@ -24,7 +26,7 @@ class InitiatorExecutor
 
 public:
 
-    InitiatorExecutor(Bus &b, int id) : bus(b), initiator_id(id)
+    InitiatorExecutor(Bus &b, int id, logger &l) : bus(b), initiator_id(id), initiator_logger(l)
     {
     }
     ~InitiatorExecutor() = default;
@@ -66,6 +68,8 @@ private:
     Bus &bus;
 
     int initiator_id;
+
+    logger &initiator_logger;
 
     int target_id = -1;
     int target_lun = -1;

@@ -71,6 +71,15 @@ public:
     bool SetConfiguredBlockSize(uint32_t);
     virtual bool ValidateBlockSize(uint32_t) const;
 
+    virtual uint32_t GetBlockSizeForDescriptor() const
+    {
+        return block_size;
+    }
+    virtual uint64_t GetBlockCountForDescriptor() const
+    {
+        return blocks;
+    }
+
     bool ReserveFile() const;
     void UnreserveFile();
 
@@ -116,8 +125,8 @@ protected:
     }
 
     void ModeSelect(cdb_t, data_out_t, int, int) override;
-    pair<int, int> EvaluateBlockDescriptors(scsi_command, data_out_t, int) const;
-    virtual uint32_t VerifyBlockSizeChange(uint32_t, bool) const;
+    pair<int, int> EvaluateBlockDescriptors(scsi_command, data_out_t, int);
+    virtual uint32_t VerifyBlockSizeChange(uint32_t, bool);
     unordered_set<uint32_t> GetBlockSizes() const;
     bool SetBlockSize(uint32_t);
 

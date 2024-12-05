@@ -16,6 +16,8 @@
 //
 //---------------------------------------------------------------------------
 
+// TODO Return block_descriptor_length for all pages?
+
 #include "tape.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
@@ -267,6 +269,8 @@ void Tape::Open()
         + to_string(GetBlockSize()));
     }
 
+    block_size_for_descriptor = GetBlockSize();
+
     file_size = GetFileSize(true);
 
     // In append mode, ensure that the image file size is at least the block size
@@ -324,9 +328,14 @@ bool Tape::ValidateBlockSize(uint32_t size) const
     return size && !(size % 4);
 }
 
-uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) const
+uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary)
 {
     // Special handling of block size 0 for sequential-access devices, according to the SCSI-2 specification
+    if (!requested_size && temporary) {
+        block_size_for_descriptor = 0;
+        return 0;
+    }
+
     return
         requested_size || !temporary ? StorageDevice::VerifyBlockSizeChange(requested_size, temporary) : GetBlockSize();
 }
@@ -334,12 +343,6 @@ uint32_t Tape::VerifyBlockSizeChange(uint32_t requested_size, bool temporary) co
 void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     StorageDevice::SetUpModePages(pages, page, changeable);
-
-    // Page 0 (mode block descriptor), used by tools like tar.
-    // Due to its format page 0 cannot be returned with a page list. This has been verified with an HP 35470A.
-    if (page == 0x00) {
-        AddModeBlockDescriptor(pages);
-    }
 
     // Page 15 (data compression)
     if (page == 0x0f || page == 0x3f) {
@@ -355,27 +358,6 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
     if (page == 0x11 || page == 0x3f) {
         AddMediumPartitionPage(pages, changeable);
     }
-}
-
-void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
-{
-    vector<byte> buf(12);
-
-    // Page size, the size field does not count itself
-    buf[0] = byte { 11 };
-
-    // WP
-    if (IsProtected()) {
-        buf[2] = byte { 0x80 };
-    }
-
-    // Block descriptor length
-    buf[3] = byte { 8 };
-
-    // Size of fixed blocks
-    SetInt32(buf, 8, GetBlockSize());
-
-    pages[0] = buf;
 }
 
 void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const
@@ -711,7 +693,12 @@ void Tape::RaiseFilemark(int64_t info)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
-    SetInformation(info);
+    if (!fixed) {
+        SetInformation(GetByteCount());
+    }
+    else {
+        SetInformation(info);
+    }
     SetFilemark();
 
     throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
@@ -774,6 +761,12 @@ void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse
 uint32_t Tape::GetByteCount()
 {
     fixed = GetCdbByte(1) & 0x01;
+
+    // Drive is not in fixed-length mode
+    if (fixed && !block_size_for_descriptor) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);
