@@ -457,7 +457,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         if (const int count = executor->GetByteCount(); count) {
-            debug("Received {} data byte(s)", count);
+            debug("Initiator received {} data byte(s)", count);
 
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);
