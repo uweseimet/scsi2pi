@@ -786,6 +786,12 @@ void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse
 uint32_t Tape::GetByteCount()
 {
     fixed = GetCdbByte(1) & 0x01;
+
+    // Drive is not in fixed-length mode
+    if (fixed && !GetBlockSize()) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     const int32_t count = fixed ?
             GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
             GetSignedInt24(GetController()->GetCdb(), 2);

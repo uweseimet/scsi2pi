@@ -155,7 +155,14 @@ TEST(TapeTest, Read6)
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
-    // Fixed, 0 bytes
+    // Fixed, 1 block
+    controller->SetCdbByte(1, 0x01);
+    Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Drive is not in fixed mode, block size is 0");
+
+    const string &filename = CreateImageFile(*tape);
+
+    // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
@@ -163,7 +170,6 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x03);
     Dispatch(*tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    const string &filename = CreateImageFile(*tape);
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
@@ -314,14 +320,13 @@ TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
 
-    // Non-fixed
+    // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    CheckPositions(tape, 0, 0);
 
-    // Fixed
+    // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));
-    CheckPositions(tape, 0, 0);
+    Dispatch(*tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+        "Drive is not in fixed mode, block size is 0");
 
     const string &filename = CreateImageFile(*tape);
     ifstream file(filename);
