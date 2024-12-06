@@ -327,8 +327,8 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         if (get_level() == level::trace && IsDataIn()) {
-            LogTrace(fmt::format("Sending {0} byte(s) in DATA IN phase:\n{1}", length,
-                FormatBytes(GetBuffer(), length, 128)));
+            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length, GetOffset(),
+                FormatBuffer(length)));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -394,7 +394,7 @@ void Controller::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Receiving {0} byte(s)", length));
+        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
 
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
@@ -403,8 +403,7 @@ void Controller::Receive()
         }
 
         if (get_level() == level::trace && IsDataOut()) {
-            LogTrace(fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length,
-                FormatBytes(GetBuffer(), length, 128)));
+            LogTrace(fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length, FormatBuffer(length)));
         }
 
         if (IsDataOut()) {
