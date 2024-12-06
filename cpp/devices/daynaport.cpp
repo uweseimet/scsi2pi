@@ -151,7 +151,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
     }
     else if (get_level() == level::trace) {
         LogTrace(fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
-            FormatBytes(buf, rx_packet_size, 128)));
+            GetController()->FormatBuffer(rx_packet_size)));
     }
 
     byte_read_count += rx_packet_size;
