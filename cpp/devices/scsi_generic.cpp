@@ -218,7 +218,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
         LogDebug(CommandMetaData::Instance().LogCdb(local_cdb, "SG driver"));
     }
 
-    if (write && get_level() == level::trace && byte_count == remaining_count) {
+    if (write && get_level() == level::trace) {
         LogTrace(
             fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length, FormatBytes(buf, length, 128)));
     }
@@ -250,7 +250,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
         throw scsi_exception(sense_key::no_sense);
     }
 
-    if (!write && get_level() == level::trace && byte_count == remaining_count) {
+    if (!write && get_level() == level::trace) {
         LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", length,
             FormatBytes(buf, length, 128)));
     }
