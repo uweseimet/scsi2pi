@@ -72,7 +72,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         // Sector number
         SetInt32(local_cdb, 2, GetInt24(local_cdb, 1));
         local_cdb[1] = 0;
-        local_cdb[0] |= 0x20;
+        local_cdb[0] = cmd == scsi_command::write_6 ? 0x2a : 0x28;
     }
 
     if (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd); meta_data.block_size)
