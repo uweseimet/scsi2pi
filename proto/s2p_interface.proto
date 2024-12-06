@@ -14,7 +14,7 @@
 // All operations also accept an optional locale, specified with the "locale" parameter. If there is
 // a localized error message it is returned, with English being the fallback language.
 // This interface is backwards compatible with PiSCSI. Numbers 100 and higher are used for messages
-// and fields not supported by PISCSI 23.11.01 and newer.
+// and fields not known by PISCSI 23.11.01 and newer.
 //
 
 syntax = "proto3";
@@ -44,7 +44,7 @@ enum PbDeviceType {
     SCLP = 9;
     // Tape device
     SCTP = 10;
-    // Linux SG
+    // Linux SG Driver (e.g. for a SCSI-to-USB bridge)
     SCSG = 11;
 }
 
