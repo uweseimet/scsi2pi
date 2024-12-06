@@ -415,7 +415,7 @@ void Controller::Receive()
         }
 
         if (get_level() == level::trace && IsDataOut() && !GetOffset()) {
-            LogTrace(fmt::format("{0} byte(s) in DATA OUT phase:\n{1}", length,
+            LogTrace(fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length,
                 FormatBytes(GetBuffer(), length, 128)));
         }
 
