@@ -336,7 +336,7 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         if (get_level() == level::trace) {
-            LogTrace(fmt::format("Sending {0} byte(s) in DATA IN phase at offset {1}:\n{2}", length,
+            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length,
                 FormatBytes(GetBuffer(), length, 128), GetOffset()));
         }
 
@@ -406,7 +406,7 @@ void Controller::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
+        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1} in DATA OUT phase", length, GetOffset()));
 
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, {1} required", l, length));
