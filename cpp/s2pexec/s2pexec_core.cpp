@@ -331,9 +331,7 @@ bool S2pExec::RunInteractive(bool in_process)
         }
 
         if (!command.empty() || reset_bus) {
-            if (Run() == -1) {
-                break;
-            }
+            Run();
         }
     }
 
