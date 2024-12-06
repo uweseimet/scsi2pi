@@ -423,18 +423,20 @@ void Controller::Receive()
             AddDataToScript(span(GetBuffer().data() + GetOffset(), length));
         }
 
-        UpdateOffsetAndLength();
-        return;
+        if (GetCurrentLength()) {
+            UpdateOffsetAndLength();
+            return;
+        }
     }
 
-    const int current_remaiing_length = GetRemainingLength();
+    const int current_remaining_length = GetRemainingLength();
     const int current_chunk_size = GetChunkSize();
     const bool pending_data = UpdateTransferSize();
 
     // Processing after receiving data
     switch (GetPhase()) {
     case bus_phase::dataout:
-        if (!XferOut(current_chunk_size < current_remaiing_length ? current_chunk_size : current_remaiing_length,
+        if (!XferOut(current_chunk_size < current_remaining_length ? current_chunk_size : current_remaining_length,
             pending_data)) {
             return;
         }
