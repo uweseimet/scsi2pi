@@ -65,7 +65,7 @@ void PrimaryDevice::Dispatch(scsi_command cmd)
         command();
     }
     else {
-        LogTrace(fmt::format("Received unsupported command: ${:02x}", static_cast<int>(cmd)));
+        LogTrace(fmt::format("Device received unsupported command: ${:02x}", static_cast<int>(cmd)));
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 }
@@ -175,6 +175,11 @@ void PrimaryDevice::ReportLuns()
 
 void PrimaryDevice::RequestSense()
 {
+    // The descriptor format is not supported
+    if (GetController()->GetCdb()[1] & 0x01) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     int effective_lun = GetController()->GetEffectiveLun();
 
     // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result

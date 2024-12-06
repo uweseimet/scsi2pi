@@ -22,7 +22,7 @@ using namespace memory_util;
 using namespace s2p_util;
 
 Disk::Disk(PbDeviceType type, scsi_level level, int lun, bool supports_mode_select, bool supports_save_parameters,
-    const unordered_set<uint32_t> &s)
+    const set<uint32_t> &s)
 : StorageDevice(type, level, lun, supports_mode_select, supports_save_parameters, s)
 {
     SetStoppable(true);
@@ -115,6 +115,10 @@ bool Disk::SetUp()
         {
             ReadCapacity16_ReadLong16();
         });
+    AddCommand(scsi_command::read_format_capacities, [this]
+        {
+            ReadFormatCapacities();
+        });
 
     return StorageDevice::SetUp();
 }
@@ -175,8 +179,8 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
-    // FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
-    if ((GetCdbByte(1) & 0x10) && GetCdbByte(4)) {
+    // FMTDATA is not supported
+    if (GetCdbByte(1) & 0x10) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -502,6 +506,29 @@ void Disk::ReadCapacity16()
     SetInt32(buf, 8, GetBlockSize());
 
     DataInPhase(min(32, static_cast<int>(GetCdbInt32(10))));
+}
+
+void Disk::ReadFormatCapacities()
+{
+    CheckReady();
+
+    auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
+    SetInt32(buf, 8, GetBlockSize());
+
+    int offset = 12;
+    if (!IsReadOnly()) {
+        // Return the list of default block sizes
+        for (const auto size : GetSupportedBlockSizes()) {
+            SetInt32(buf, offset, static_cast<uint32_t>(GetBlockSize() * GetBlockCount() / size));
+            SetInt32(buf, offset + 4, size);
+            offset += 8;
+        }
+    }
+
+    SetInt32(buf, 0, offset - 4);
+
+    DataInPhase(min(offset, GetCdbInt16(7)));
 }
 
 void Disk::ReadCapacity16_ReadLong16()

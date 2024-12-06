@@ -289,12 +289,6 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
 {
     StorageDevice::SetUpModePages(pages, page, changeable);
 
-    // Page 0 (mode block descriptor), used by tools like tar.
-    // Due to its format page 0 cannot be returned with a page list. This has been verified with an HP 35470A.
-    if (page == 0x00) {
-        AddModeBlockDescriptor(pages);
-    }
-
     // Page 15 (data compression)
     if (page == 0x0f || page == 0x3f) {
         AddDataCompressionPage(pages);
@@ -309,27 +303,6 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
     if (page == 0x11 || page == 0x3f) {
         AddMediumPartitionPage(pages, changeable);
     }
-}
-
-void Tape::AddModeBlockDescriptor(map<int, vector<byte>> &pages) const
-{
-    vector<byte> buf(12);
-
-    // Page size, the size field does not count itself
-    buf[0] = (byte)11;
-
-    // WP
-    if (IsProtected()) {
-        buf[2] = (byte)0x80;
-    }
-
-    // Block descriptor length
-    buf[3] = (byte)8;
-
-    // Size of fixed blocks
-    SetInt32(buf, 8, GetBlockSize());
-
-    pages[0] = buf;
 }
 
 void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const

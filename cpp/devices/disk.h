@@ -51,7 +51,7 @@ public:
 
 protected:
 
-    Disk(PbDeviceType, scsi_level, int, bool, bool, const unordered_set<uint32_t>&);
+    Disk(PbDeviceType, scsi_level, int, bool, bool, const set<uint32_t>&);
 
     void ValidateFile() override;
 
@@ -106,6 +106,7 @@ private:
     void Seek10();
     void ReadCapacity10() override;
     void ReadCapacity16() override;
+    void ReadFormatCapacities();
     void FormatUnit() override;
     void Seek6();
     void Read(access_mode);

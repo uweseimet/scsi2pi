@@ -129,6 +129,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DiskTest, Verify16);
     FRIEND_TEST(DiskTest, ReadCapacity10);
     FRIEND_TEST(DiskTest, ReadCapacity16);
+    FRIEND_TEST(DiskTest, ReadFormatCapacities);
     FRIEND_TEST(DiskTest, ReadLong10);
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);
@@ -341,6 +342,7 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, Verify16);
     FRIEND_TEST(DiskTest, ReadCapacity10);
     FRIEND_TEST(DiskTest, ReadCapacity16);
+    FRIEND_TEST(DiskTest, ReadFormatCapacities);
     FRIEND_TEST(DiskTest, ReadLong10);
     FRIEND_TEST(DiskTest, ReadLong16);
     FRIEND_TEST(DiskTest, WriteLong10);
@@ -375,7 +377,7 @@ public:
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
     }
-    explicit MockSasiHd(const unordered_set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
+    explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
     }
     ~MockSasiHd() override = default;
@@ -404,7 +406,7 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    explicit MockScsiHd(const unordered_set<uint32_t> &sector_sizes)
+    explicit MockScsiHd(const set<uint32_t> &sector_sizes)
     : ScsiHd(0, false, false, false, sector_sizes)
     {
         SetCachingMode(PbCachingMode::PISCSI);

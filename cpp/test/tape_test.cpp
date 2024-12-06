@@ -279,16 +279,6 @@ TEST(TapeTest, SetUpModePages)
     pages.clear();
     tape.SetUpModePages(pages, 0x3f, true);
     ValidateModePages(pages);
-
-    pages.clear();
-    tape.SetUpModePages(pages, 0x00, false);
-    EXPECT_EQ(byte { 0x0b }, pages.at(0)[0]);
-    EXPECT_EQ(byte { 0x00 }, pages.at(0)[2]);
-
-    pages.clear();
-    tape.SetProtected(true);
-    tape.SetUpModePages(pages, 0x00, false);
-    EXPECT_EQ(byte { 0x80 }, pages.at(0)[2]);
 }
 
 TEST(TapeTest, GetStatistics)

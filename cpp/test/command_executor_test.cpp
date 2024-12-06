@@ -373,7 +373,7 @@ TEST(CommandExecutorTest, SetReservedIds)
 
     error = executor->SetReservedIds("7,1,2,3,5");
     EXPECT_TRUE(error.empty());
-    unordered_set<int> reserved_ids = executor->GetReservedIds();
+    const unordered_set<int> reserved_ids = executor->GetReservedIds();
     EXPECT_EQ(5U, reserved_ids.size());
     EXPECT_TRUE(reserved_ids.contains(1));
     EXPECT_TRUE(reserved_ids.contains(2));
@@ -448,16 +448,21 @@ TEST(CommandExecutorTest, CreateDevice)
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    PbDeviceDefinition device;
     PbCommand command;
     CommandContext context(command);
 
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, UNDEFINED, 0, ""));
+    device.set_type(UNDEFINED);
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, SCBR, 0, ""));
+    device.set_type(SCBR);
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
 #pragma GCC diagnostic pop
-    EXPECT_NE(nullptr, executor->CreateDevice(context, UNDEFINED, 0, "services"));
-    EXPECT_NE(nullptr, executor->CreateDevice(context, SCHS, 0, ""));
+    device.set_type(UNDEFINED);
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device, "services"));
+    device.set_type(SCHS);
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device, ""));
 }
 
 TEST(CommandExecutorTest, SetBlockSize)
@@ -468,7 +473,7 @@ TEST(CommandExecutorTest, SetBlockSize)
     PbCommand command;
     CommandContext context(command);
 
-    unordered_set<uint32_t> sizes;
+    set<uint32_t> sizes;
 
     sizes.insert(512);
     auto hd = make_shared<MockScsiHd>(sizes);

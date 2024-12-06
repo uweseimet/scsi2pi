@@ -65,8 +65,8 @@ TEST(DiskTest, FormatUnit)
     EXPECT_NO_THROW(disk->Dispatch(scsi_command::format_unit));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
+    // FMTDATA
     controller->SetCdbByte(1, 0x10);
-    controller->SetCdbByte(4, 1);
     TestShared::Dispatch(*disk, scsi_command::format_unit, sense_key::illegal_request, asc::invalid_field_in_cdb);
 }
 
@@ -180,6 +180,42 @@ TEST(DiskTest, ReadCapacity16)
     EXPECT_EQ(0x4320U, GetInt16(buf, 6));
     EXPECT_EQ(0x0000U, GetInt16(buf, 8));
     EXPECT_EQ(0x0400U, GetInt16(buf, 10));
+}
+
+TEST(DiskTest, ReadFormatCapacities)
+{
+    auto [controller, disk] = CreateDisk();
+
+    TestShared::Dispatch(*disk, scsi_command::read_format_capacities, sense_key::not_ready, asc::medium_not_present,
+        "READ FORMAT CAPACITIES must fail because drive is not ready");
+
+    disk->SetReady(true);
+    disk->SetBlockCount(8192);
+    disk->SetBlockSize(512);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::read_format_capacities));
+    auto &buf = controller->GetBuffer();
+    EXPECT_EQ(40U, GetInt32(buf, 0));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(8192U, GetInt32(buf, 12));
+    EXPECT_EQ(512U, GetInt32(buf, 16));
+    EXPECT_EQ(4096U, GetInt32(buf, 20));
+    EXPECT_EQ(1024U, GetInt32(buf, 24));
+    EXPECT_EQ(2048U, GetInt32(buf, 28));
+    EXPECT_EQ(2048U, GetInt32(buf, 32));
+    EXPECT_EQ(1024U, GetInt32(buf, 36));
+    EXPECT_EQ(4096U, GetInt32(buf, 40));
+
+    disk->SetReadOnly(true);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
+    EXPECT_NO_THROW(disk->Dispatch(scsi_command::read_format_capacities));
+    buf = controller->GetBuffer();
+    EXPECT_EQ(8U, GetInt32(buf, 0));
+    EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
+    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
 }
 
 TEST(DiskTest, Read6)

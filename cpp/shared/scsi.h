@@ -84,6 +84,7 @@ enum class scsi_command
     stop_print = 0x1b,
     send_diagnostic = 0x1d,
     prevent_allow_medium_removal = 0x1e,
+    read_format_capacities = 0x23,
     read_capacity10 = 0x25,
     read10 = 0x28,
     write10 = 0x2a,

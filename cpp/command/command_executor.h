@@ -44,11 +44,11 @@ public:
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>&, bool) const;
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
     void DetachAll() const;
-    string SetReservedIds(string_view);
+    string SetReservedIds(const string&);
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
-    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceType, int, const string&) const;
+    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&, const string&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     mutex& GetExecutionLocker()

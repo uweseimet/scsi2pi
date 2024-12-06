@@ -61,7 +61,7 @@ public:
     shutdown_mode ProcessOnController(int);
 
     void CopyToBuffer(const void*, size_t);
-    auto& GetBuffer()
+    auto& GetBuffer() const
     {
         return buffer;
     }
@@ -140,8 +140,8 @@ private:
 
     array<int, 16> cdb = { };
 
-    // Transfer data buffer, dynamically resized, initial size matches the biggest block size supported
-    vector<uint8_t> buffer = vector<uint8_t>(4096);
+    // Shared ransfer data buffer, dynamically resized
+    inline static vector<uint8_t> buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;
     // Total number of bytes to be transferred

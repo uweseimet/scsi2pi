@@ -13,6 +13,7 @@
 #include <limits>
 #include <sstream>
 #include <unordered_map>
+#include <span>
 #include <vector>
 #include "scsi.h"
 
@@ -69,7 +70,7 @@ string GetScsiLevel(int);
 string FormatSenseData(sense_key, asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-string FormatBytes(vector<uint8_t>&, int, bool = false);
+string FormatBytes(span<const uint8_t>, int, bool = false);
 int HexToDec(char);
 
 string Trim(const string&);

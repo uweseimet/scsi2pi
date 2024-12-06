@@ -28,7 +28,7 @@ private:
     bool InitBus(bool, bool);
     void CleanUp();
     void ReadAccessToken(const path&);
-    void LogDevices(string_view) const;
+    void LogDevices(const string&) const;
     bool ParseProperties(const property_map&, int&, bool);
     void SetUpEnvironment();
     string MapExtensions() const;

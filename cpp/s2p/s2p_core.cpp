@@ -93,9 +93,9 @@ void S2p::ReadAccessToken(const path &filename)
     }
 }
 
-void S2p::LogDevices(string_view devices) const
+void S2p::LogDevices(const string &devices) const
 {
-    stringstream ss(devices.data());
+    stringstream ss(devices);
     string line;
 
     while (getline(ss, line)) {
@@ -426,7 +426,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         ParseParameters(device, value);
     }
     else {
-        throw parser_exception(fmt::format("Unknown device definition key: '{}'", key));
+        SetParam(device, key, value);
     }
 }
 
