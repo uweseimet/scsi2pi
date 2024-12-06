@@ -271,7 +271,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 
     remaining_count -= length;
 
-    LogTrace(fmt::format("{} byte(s) remaining", remaining_count));
+    LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", length - io_hdr.resid, remaining_count));
 
     return length - io_hdr.resid;
 }
