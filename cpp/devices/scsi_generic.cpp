@@ -8,7 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-// TODO Convert READ/WRITE(6) to READ/WRITE(10) if required, otherwise old drivers may not work
 // TODO MODE SELECT?
 
 #ifdef __linux__
@@ -64,6 +63,20 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         local_cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
     }
 
+    // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
+    if (cmd == scsi_command::read_6 || cmd == scsi_command::write_6) {
+        local_cdb.push_back(0);
+        // Sector count
+        local_cdb.push_back(0);
+        local_cdb.push_back(local_cdb[4]);
+        // Control
+        local_cdb.push_back(local_cdb[5]);
+        // Sector number
+        SetInt32(local_cdb, 2, GetInt24(local_cdb, 1));
+        local_cdb[1] = 0;
+        local_cdb[0] |= 0x20;
+    }
+
     if (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd); meta_data.block_size)
     {
         byte_count = GetAllocationLength() * block_size;
@@ -73,8 +86,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     }
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) && (static_cast<int>(local_cdb[1])
-        & 0x10)) {
+    if (cmd == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
