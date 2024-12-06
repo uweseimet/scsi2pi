@@ -217,7 +217,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     if (write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("Sending {0} byte(s) of data to SG driver:\n{1}", length, FormatBytes(buf, length, 128)));
+        LogTrace(
+            fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length, FormatBytes(buf, length, 128)));
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
@@ -225,7 +226,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     format_header.clear();
 
     if (status == -1) {
-        LogError(fmt::format("SCSI transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
+        LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
     }
 
@@ -248,7 +249,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     if (!write && get_level() == level::trace && byte_count == remaining_count) {
-        LogTrace(fmt::format("Received {0} byte(s) of data from SG driver:\n{1}", length,
+        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", length,
             FormatBytes(buf, length, 128)));
     }
 
