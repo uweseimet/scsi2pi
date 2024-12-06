@@ -473,13 +473,6 @@ void Controller::Receive()
 
 bool Controller::XferIn()
 {
-    // Limited to read commands with DATA IN phase
-    assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_10 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_16 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::get_message_6 ||
-        static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_capacity_16_read_long_16);
-
     try {
         SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
     }
