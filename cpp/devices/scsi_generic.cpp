@@ -163,7 +163,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
     return ReadWriteData(buf, false, GetController()->GetChunkSize());
 }
 
-void ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
+int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, and update the transfer size
     if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::format_unit
@@ -178,7 +178,7 @@ void ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
             GetController()->SetTransferSize(byte_count, byte_count);
 
             // TODO Return pending data length?
-            return;
+            return 0;
         }
         else {
             remaining_count = byte_count;
@@ -189,7 +189,7 @@ void ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
         }
     }
 
-    ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, chunk_size); // NOSONAR Cast required for SG driver API
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)

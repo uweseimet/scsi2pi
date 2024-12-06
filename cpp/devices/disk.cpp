@@ -419,7 +419,7 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
+int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
@@ -437,7 +437,7 @@ void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
 
         UpdateWriteCount(1);
 
-        return;
+        return l;
     }
 
     if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
@@ -448,6 +448,8 @@ void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
     next_sector += sector_transfer_count;
 
     UpdateWriteCount(sector_transfer_count);
+
+    return l;
 }
 
 void Disk::ReAssignBlocks()
