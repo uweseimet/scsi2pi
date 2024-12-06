@@ -176,6 +176,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, Locate16_simh);
     FRIEND_TEST(TapeTest, Locate16_tar);
     FRIEND_TEST(TapeTest, ReadPosition);
+    FRIEND_TEST(TapeTest, ModeSense6);
+    FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
 public:
@@ -482,8 +484,9 @@ class MockHostServices : public HostServices
 class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
-    FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, Unload);
+    FRIEND_TEST(TapeTest, ModeSense6);
+    FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
 

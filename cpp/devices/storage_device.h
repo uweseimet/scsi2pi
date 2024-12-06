@@ -73,7 +73,7 @@ public:
 
     virtual uint32_t GetBlockSizeForDescriptor(bool changeable) const
     {
-        return changeable ? 0x00ffffff : block_size;
+        return changeable ? 0x0000ffff : block_size;
     }
     virtual uint64_t GetBlockCountForDescriptor() const
     {
