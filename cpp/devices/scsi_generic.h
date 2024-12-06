@@ -55,8 +55,6 @@ private:
     int byte_count = 0;
     int remaining_count = 0;
 
-    int timeout = 0;
-
     int fd = -1;
 
     vector<uint8_t> local_cdb;
@@ -75,9 +73,10 @@ private:
     // Linux limits the number of bytes that can be transferred in a single SCSI request
     static const int MAX_TRANSFER_LENGTH = 65536;
 
+    static const int TIMEOUT_DEFAULT_SECONDS = 5;
+
     // Sufficient for formatting a floppy disk in a USB floppy drive
     static const int TIMEOUT_FORMAT_SECONDS = 120;
 
     static constexpr const char *DEVICE = "device";
-    static constexpr const char *TIMEOUT = "timeout";
 };

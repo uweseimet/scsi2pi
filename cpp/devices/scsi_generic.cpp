@@ -38,11 +38,6 @@ bool ScsiGeneric::SetUp()
         return false;
     }
 
-    if (!GetAsUnsignedInt(GetParam(TIMEOUT), timeout) || !timeout) {
-        LogError(fmt::format("Invalid timeout value '{}'", GetParam(TIMEOUT)));
-        return false;
-    }
-
     fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
         LogError(fmt::format("Can't open '{0}': {1}", device, strerror(errno)));
@@ -141,8 +136,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 param_map ScsiGeneric::GetDefaultParams() const
 {
     return {
-        {   DEVICE, ""},
-        {   TIMEOUT, "5"}
+        {   DEVICE, ""}
     };
 }
 
@@ -213,8 +207,9 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     io_hdr.cmdp = local_cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
-    io_hdr.timeout = (local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ? TIMEOUT_FORMAT_SECONDS : timeout)
-        * 1000;
+    io_hdr.timeout = (
+        local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ?
+            TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (get_level() <= level::debug) {
