@@ -74,7 +74,7 @@ bool S2pExec::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *logger);
+    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *initiator_logger);
 
     instance = this;
     // Signal handler for cleaning up
@@ -215,7 +215,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel(*logger, log_level)) {
+    if (!SetLogLevel(*initiator_logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
@@ -453,7 +453,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         if (const int count = executor->GetByteCount(); count) {
-            logger->debug("Initiator received {} data byte(s)", count);
+            initiator_logger->debug("Initiator received {} data byte(s)", count);
 
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);
