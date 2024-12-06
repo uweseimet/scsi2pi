@@ -119,6 +119,8 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     deferred_sense_data_valid = false;
 
+    LogTrace(fmt::format("Preparing transfer of {} byte(s) with SG driver", byte_count));
+
     const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
 
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
