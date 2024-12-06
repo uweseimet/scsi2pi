@@ -492,6 +492,7 @@ bool Controller::XferOut(int length, bool pending_data)
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
         case scsi_command::mode_select_6:
         case scsi_command::mode_select_10:
+            // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), -1);
             break;
 
