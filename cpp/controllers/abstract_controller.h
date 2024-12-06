@@ -95,9 +95,9 @@ public:
         return cdb;
     }
 
-    string FormatBuffer(int length) const
+    string FormatBytes(span<const uint8_t> buf, int length) const
     {
-        return s2p_util::FormatBytes(buffer, length, 128);
+        return s2p_util::FormatBytes(buf, length, 128);
     }
 
 protected:
