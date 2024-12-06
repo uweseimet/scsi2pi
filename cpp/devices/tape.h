@@ -41,9 +41,9 @@ public:
 
     bool ValidateBlockSize(uint32_t) const override;
 
-    uint32_t GetBlockSizeForDescriptor() const override
+    uint32_t GetBlockSizeForDescriptor(bool changeable) const override
     {
-        return block_size_for_descriptor;
+        return changeable ? 0x00ffffff : block_size_for_descriptor;
     }
     uint64_t GetBlockCountForDescriptor() const override
     {
