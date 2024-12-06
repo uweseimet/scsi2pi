@@ -413,8 +413,10 @@ void Controller::Receive()
             AddDataToScript(span(GetBuffer().data() + GetOffset(), length));
         }
 
-        UpdateOffsetAndLength();
-        return;
+        if (GetCurrentLength()) {
+            UpdateOffsetAndLength();
+            return;
+        }
     }
 
     const int current_remaiing_length = GetRemainingLength();
