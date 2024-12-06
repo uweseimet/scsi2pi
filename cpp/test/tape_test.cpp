@@ -43,10 +43,10 @@ static void CheckMetaData(istream &file, const SimhMetaData &expected)
     EXPECT_EQ(expected.value, meta_data.value);
 }
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
+pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
-    auto tape = make_shared<Tape>(0);
+    auto tape = make_shared<MockTape>();
     tape->SetParams( { });
     EXPECT_TRUE(tape->Init());
     EXPECT_TRUE(controller->AddDevice(tape));
@@ -837,6 +837,52 @@ TEST(TapeTest, ValidateBlockSize)
     EXPECT_FALSE(tape.ValidateBlockSize(7));
     EXPECT_TRUE(tape.ValidateBlockSize(512));
     EXPECT_TRUE(tape.ValidateBlockSize(131072));
+}
+
+TEST(TapeTest, ModeSense6)
+{
+    auto [controller, tape] = CreateTape();
+
+    // Drive must be ready in order to return all data
+    tape->SetReady(true);
+
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
+}
+
+TEST(TapeTest, ModeSense10)
+{
+    auto [controller, tape] = CreateTape();
+
+    // Drive must be ready in order to return all data
+    tape->SetReady(true);
+
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
 }
 
 TEST(TapeTest, SetUpModePages)

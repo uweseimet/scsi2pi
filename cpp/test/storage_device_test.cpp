@@ -453,7 +453,7 @@ TEST(StorageDeviceTest, ModeSense6)
     device->SetBlockSize(1024);
     EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
+    EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
 
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
@@ -534,7 +534,7 @@ TEST(StorageDeviceTest, ModeSense10)
     device->SetBlockSize(1024);
     EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
+    EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
