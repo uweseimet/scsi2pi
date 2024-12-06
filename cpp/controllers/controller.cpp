@@ -335,7 +335,7 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        if (get_level() == level::trace) {
+        if (get_level() == level::trace && IsDataIn()) {
             LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length, GetOffset(),
                 FormatBytes(GetBuffer(), length, 128)));
         }
@@ -345,15 +345,12 @@ void Controller::Send()
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
         if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
-            if (IsDataIn()) {
-                LogWarn(fmt::format("Sent {0} byte(s) in DATA IN phase, {1} required", l, length));
-            }
+            LogWarn(fmt::format("Sent {0} byte(s), {1} required", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
-        }
-        else {
-            UpdateOffsetAndLength();
+            return;
         }
 
+        UpdateOffsetAndLength();
         return;
     }
 
@@ -406,15 +403,15 @@ void Controller::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1} in DATA OUT phase", length, GetOffset()));
+        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
 
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
-            LogWarn(fmt::format("Received {0} byte(s) in DATA OUT phase, {1} required", l, length));
+            LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
             Error(sense_key::aborted_command, asc::data_phase_error);
             return;
         }
 
-        if (get_level() == level::trace && IsDataOut() && !GetOffset()) {
+        if (get_level() == level::trace && IsDataOut()) {
             LogTrace(fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length,
                 FormatBytes(GetBuffer(), length, 128)));
         }
