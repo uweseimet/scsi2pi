@@ -419,7 +419,7 @@ void Controller::Receive()
                 FormatBytes(GetBuffer(), length, 128)));
         }
 
-        if (length && IsDataOut()) {
+        if (IsDataOut()) {
             AddDataToScript(span(GetBuffer().data() + GetOffset(), length));
         }
 
