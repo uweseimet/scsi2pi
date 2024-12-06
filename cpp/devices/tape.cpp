@@ -894,7 +894,6 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
-            SetSksv(0x00ca00);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
@@ -908,7 +907,6 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation(length - record_length);
-            SetSksv(0x00ca00);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
