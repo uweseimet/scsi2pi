@@ -207,7 +207,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
     const string &filename = GetParam(pb_device, "file");
 
-    const auto device = CreateDevice(context, type, lun, filename);
+    const auto device = CreateDevice(context, pb_device, filename);
     if (!device) {
         return false;
     }
@@ -614,16 +614,18 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand 
             true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, to_string((*it).first));
 }
 
-shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context, const PbDeviceType type,
-    int lun, const string &filename) const
+shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,
+    const PbDeviceDefinition &pb_device, const string &filename) const
 {
-    auto device = DeviceFactory::Instance().CreateDevice(type, lun, filename);
+    auto device = DeviceFactory::Instance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
     if (!device) {
-        if (type == UNDEFINED) {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, filename);
+        if (pb_device.type() == UNDEFINED) {
+            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, to_string(pb_device.id()),
+                to_string(pb_device.unit()), filename);
         }
         else {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, PbDeviceType_Name(type));
+        context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
+                to_string(pb_device.unit()), PbDeviceType_Name(pb_device.type()));
         }
 
         return nullptr;
