@@ -435,6 +435,8 @@ void Controller::Receive()
             pending_data)) {
             return;
         }
+        SetCurrentLength(GetRemainingLength());
+        ResetOffset();
         break;
 
     case bus_phase::msgout:
