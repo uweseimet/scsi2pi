@@ -336,8 +336,8 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         if (get_level() == level::trace) {
-            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length,
-                FormatBytes(GetBuffer(), length, 128), GetOffset()));
+            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length, GetOffset(),
+                FormatBytes(GetBuffer(), length, 128)));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
