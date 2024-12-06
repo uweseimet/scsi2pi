@@ -152,6 +152,8 @@ TEST(TapeTest, Read6)
 {
     auto [controller, tape] = CreateTape();
 
+    Dispatch(*tape, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
+
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
 
@@ -319,6 +321,8 @@ TEST(TapeTest, Read6)
 TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
+
+    Dispatch(*tape, scsi_command::test_unit_ready, sense_key::unit_attention, asc::power_on_or_reset);
 
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::write_6));

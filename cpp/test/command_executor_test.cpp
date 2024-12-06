@@ -448,16 +448,21 @@ TEST(CommandExecutorTest, CreateDevice)
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    PbDeviceDefinition device;
     PbCommand command;
     CommandContext context(command);
 
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, UNDEFINED, 0, ""));
+    device.set_type(UNDEFINED);
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, SCBR, 0, ""));
+    device.set_type(SCBR);
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
 #pragma GCC diagnostic pop
-    EXPECT_NE(nullptr, executor->CreateDevice(context, UNDEFINED, 0, "services"));
-    EXPECT_NE(nullptr, executor->CreateDevice(context, SCHS, 0, ""));
+    device.set_type(UNDEFINED);
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device, "services"));
+    device.set_type(SCHS);
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device, ""));
 }
 
 TEST(CommandExecutorTest, SetBlockSize)
