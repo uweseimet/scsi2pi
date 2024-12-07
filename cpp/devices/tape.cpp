@@ -608,8 +608,8 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 {
     const bool reverse = requested_count < 0;
 
-    LogTrace(fmt::format("{0}-spacing for object type {1}, count {2}", reverse ? "Reverse" : "Forward",
-        static_cast<int>(type), requested_count));
+    LogTrace(fmt::format("{0}-spacing at position {1} for object type {2}, count {3}", reverse ? "Reverse" : "Forward",
+        tape_position, static_cast<int>(type), requested_count));
 
     if (reverse) {
         requested_count = -requested_count;
