@@ -516,7 +516,9 @@ void Tape::Locate(bool locate16)
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         } else {
             ResetPosition();
-            FindNextObject(object_type::block, identifier, false);
+            if (identifier) {
+                FindNextObject(object_type::block, identifier, false);
+            }
         }
     }
 
