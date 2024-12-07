@@ -75,7 +75,8 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         local_cdb[0] = cmd == scsi_command::write_6 ? 0x2a : 0x28;
     }
 
-    if (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd); meta_data.block_size)
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd);
+    if (meta_data.block_size)
     {
         byte_count = GetAllocationLength() * block_size;
     }
@@ -136,7 +137,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
     GetController()->SetTransferSize(byte_count, chunk_size);
 
-    if (WRITE_COMMANDS.contains(cmd)) {
+    if (meta_data.has_data_out) {
         DataOutPhase(chunk_size);
     }
     else {

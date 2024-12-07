@@ -22,13 +22,14 @@ class CommandMetaData
 public:
 
     using CdbMetaData = struct _CdbMetaData {
-        _CdbMetaData(int alo = 0, int als = 0, int bo = 0, int bs = 0)
-        : allocation_length_offset(alo), allocation_length_size(als), block_offset(bo), block_size(bs) {}
+        _CdbMetaData(int alo = 0, int als = 0, int bo = 0, int bs = 0, bool d = false)
+        : allocation_length_offset(alo), allocation_length_size(als), block_offset(bo), block_size(bs), has_data_out(d) {}
 
         int allocation_length_offset;
         int allocation_length_size;
         int block_offset;
         int block_size;
+        bool has_data_out;
     };
 
     static CommandMetaData& Instance()
