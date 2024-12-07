@@ -41,9 +41,9 @@ public:
 
     bool ValidateBlockSize(uint32_t) const override;
 
-    uint32_t GetBlockSizeForDescriptor() const override
+    uint32_t GetBlockSizeForDescriptor(bool changeable) const override
     {
-        return block_size_for_descriptor;
+        return changeable ? 0x00ffffff : block_size_for_descriptor;
     }
     uint64_t GetBlockCountForDescriptor() const override
     {
@@ -85,13 +85,13 @@ private:
     void Locate(bool);
 
     void WriteMetaData(Tape::object_type, uint32_t = 0);
-    SimhMetaData FindNextObject(Tape::object_type, int64_t, bool = false);
+    SimhMetaData FindNextObject(Tape::object_type, int64_t, bool);
     void ReadNextMetaData(SimhMetaData&, int64_t, bool);
 
     [[noreturn]] void RaiseBeginningOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfData(Tape::object_type, int64_t);
-    [[noreturn]] void RaiseFilemark(int64_t);
+    [[noreturn]] void RaiseFilemark(int64_t, bool);
     [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
     uint32_t GetByteCount();

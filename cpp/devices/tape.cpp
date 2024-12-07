@@ -417,7 +417,7 @@ void Tape::Erase6()
 
 void Tape::ReadBlockLimits()
 {
-    SetInt32(GetController()->GetBuffer(), 0, *ranges::max_element(GetSupportedBlockSizes()));
+    SetInt32(GetController()->GetBuffer(), 0, 0xffffff);
     SetInt16(GetController()->GetBuffer(), 4, 4);
 
     DataInPhase(6);
@@ -440,18 +440,18 @@ void Tape::Space6()
     switch (const auto code = static_cast<object_type>(GetCdbByte(1) & 0x07); code) {
     case object_type::block:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count);
+            FindNextObject(code, count, false);
         }
         break;
 
     case object_type::filemark:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count);
+            FindNextObject(code, count, false);
         }
         break;
 
     case object_type::end_of_data:
-        FindNextObject(object_type::end_of_data, 0);
+        FindNextObject(object_type::end_of_data, 0, false);
         tape_position -= META_DATA_SIZE;
         break;
 
@@ -516,7 +516,9 @@ void Tape::Locate(bool locate16)
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         } else {
             ResetPosition();
-            FindNextObject(object_type::block, identifier);
+            if (identifier) {
+                FindNextObject(object_type::block, identifier, false);
+            }
         }
     }
 
@@ -608,8 +610,8 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 {
     const bool reverse = requested_count < 0;
 
-    LogTrace(fmt::format("{0}-spacing for object type {1}, count {2}", reverse ? "Reverse" : "Forward",
-        static_cast<int>(type), requested_count));
+    LogTrace(fmt::format("{0}-spacing at position {1} for object type {2}, count {3}", reverse ? "Reverse" : "Forward",
+        tape_position, static_cast<int>(type), requested_count));
 
     if (reverse) {
         requested_count = -requested_count;
@@ -619,7 +621,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 
     while (true) {
         SimhMetaData meta_data;
-        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, requested_count, reverse);
+        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, actual_count, reverse);
 
         // Bad data (not recovered) during READ(6)?
         if (read && scsi_type == object_type::block && !length) {
@@ -652,7 +654,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            RaiseFilemark(reverse ? -actual_count : actual_count);
+            RaiseFilemark(requested_count + 1, read);
         }
     }
 }
@@ -689,11 +691,11 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
     throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseFilemark(int64_t info)
+void Tape::RaiseFilemark(int64_t info, bool read)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
-    if (!fixed) {
+    if (read && !fixed) {
         SetInformation(GetByteCount());
     }
     else {
@@ -896,7 +898,6 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
-            SetSksv(0x00ca00);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
@@ -910,7 +911,6 @@ void Tape::CheckBlockLength(int length)
 
             SetIli();
             SetInformation(length - record_length);
-            SetSksv(0x00ca00);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }

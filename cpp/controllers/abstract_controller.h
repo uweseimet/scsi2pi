@@ -14,8 +14,8 @@
 #include "script_generator.h"
 #include "buses/bus.h"
 #include "base/device_logger.h"
-#include "base/s2p_defs.h"
 #include "shared/memory_util.h"
+#include "shared/s2p_util.h"
 
 class PrimaryDevice;
 
@@ -93,6 +93,11 @@ public:
     auto& GetCdb() const
     {
         return cdb;
+    }
+
+    string FormatBytes(span<const uint8_t> buf, int length) const
+    {
+        return s2p_util::FormatBytes(buf, length, 128);
     }
 
 protected:

@@ -138,7 +138,6 @@ protected:
     void SetEom(ascq);
     void SetIli();
     void SetInformation(int64_t);
-    void SetSksv(int);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
@@ -209,7 +208,6 @@ private:
     ascq eom = ascq::none;
     bool ili = false;
     int32_t information = 0;
-    int sksv = 0;
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;

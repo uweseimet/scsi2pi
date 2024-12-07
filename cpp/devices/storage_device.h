@@ -71,9 +71,9 @@ public:
     bool SetConfiguredBlockSize(uint32_t);
     virtual bool ValidateBlockSize(uint32_t) const;
 
-    virtual uint32_t GetBlockSizeForDescriptor() const
+    virtual uint32_t GetBlockSizeForDescriptor(bool changeable) const
     {
-        return block_size;
+        return changeable ? 0x0000ffff : block_size;
     }
     virtual uint64_t GetBlockCountForDescriptor() const
     {

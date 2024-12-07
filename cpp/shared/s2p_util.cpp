@@ -235,16 +235,17 @@ string s2p_util::GetScsiLevel(int scsi_level)
 
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
-    const string &s = FormatSenseData(static_cast<sense_key>(static_cast<uint8_t>(sense_data[2]) & 0x0f), // NOSONAR Using byte type does not work with the bullseye compiler
-        static_cast<asc>(sense_data[12]), static_cast<int>(sense_data[13]));
+    const auto flags = static_cast<int>(sense_data[2]);
 
+    const string &s = FormatSenseData(static_cast<sense_key>(flags & 0x0f), static_cast<asc>(sense_data[12]),
+        static_cast<int>(sense_data[13]));
 
-    if (!(static_cast<uint8_t>(sense_data[0]) & 0x80)) { // NOSONAR Using byte type does not work with the bullseye compiler
+    if (!(static_cast<int>(sense_data[0]) & 0x80)) {
         return s;
     }
 
-    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", static_cast<uint8_t>(sense_data[2]) & 0x20 ? "1" : "0", // NOSONAR Using byte type does not work with the bullseye compiler
-    GetInt32(sense_data, 3));
+    return s + fmt::format(", EOM: {0}, ILI: {1}, INFORMATION: {2}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
+            GetInt32(sense_data, 3));
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)

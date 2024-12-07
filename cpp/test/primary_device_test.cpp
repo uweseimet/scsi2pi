@@ -377,15 +377,6 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x12345678U, GetInt32(data, 3));
     EXPECT_EQ(0x000000, GetInt32(data, 14));
 
-    device->SetSksv(0x123456);
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
-    EXPECT_EQ(0x70, data[0]);
-    EXPECT_EQ(10, data[7]);
-    EXPECT_EQ(0x123456, GetInt32(data, 14));
-
     device->SetScsiLevel(scsi_level::scsi_1_ccs);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 0);

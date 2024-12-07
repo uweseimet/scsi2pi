@@ -43,10 +43,10 @@ static void CheckMetaData(istream &file, const SimhMetaData &expected)
     EXPECT_EQ(expected.value, meta_data.value);
 }
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<Tape>> CreateTape()
+pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
-    auto tape = make_shared<Tape>(0);
+    auto tape = make_shared<MockTape>();
     tape->SetParams( { });
     EXPECT_TRUE(tape->Init());
     EXPECT_TRUE(controller->AddDevice(tape));
@@ -313,7 +313,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Write6)
@@ -420,7 +420,7 @@ TEST(TapeTest, ReadBlockLimits)
 
     CreateImageFile(*tape);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_block_limits));
-    EXPECT_EQ(8192U, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(0xffffff, GetInt32(controller->GetBuffer(), 0));
     EXPECT_EQ(4, GetInt16(controller->GetBuffer(), 4));
 }
 
@@ -496,13 +496,13 @@ TEST(TapeTest, Space6_simh)
     // Space over 1 filemark
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 4, 0);
 
     // Space over 3 filemarks
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 3);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 16, 0);
 
     // Reverse-space over 1 filemark
@@ -510,7 +510,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 12, 0);
 
     // Reverse-space over 2 filemarks
@@ -518,7 +518,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xfe);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 4, 0);
 
     // Try to space over 10 filemarks
@@ -537,6 +537,25 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b011);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
     CheckPositions(tape, 24, 0);
+
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Space over 1 filemark, then reverse-space over more filemarks than available
+    controller->SetCdbByte(1, 0b001);
+    controller->SetCdbByte(4, 1);
+    Dispatch(*tape, scsi_command::space_6);
+    CheckPositions(tape, 4, 0);
+    controller->SetCdbByte(1, 0b001);
+    controller->SetCdbByte(2, 0xff);
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0x00);
+    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0b01000000, controller->GetBuffer()[2]) << "EOM must be set";
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
@@ -690,13 +709,26 @@ TEST(TapeTest, WriteFileMarks6_tar)
 TEST(TapeTest, Locate10_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateImageFile(*tape);
+    const string &filename = CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
+    fstream file(filename);
+    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
+    WriteSimhObject(file, good_data, 512, good_data);
+    WriteSimhObject(file, good_data, 512, good_data);
+
+    // Locate block 2
+    controller->SetCdbByte(6, 0x02);
     Dispatch(*tape, scsi_command::locate_10);
+    CheckPositions(tape, 1040, 2);
+
+    // Locate block 0
+    controller->SetCdbByte(6, 0x00);
+    Dispatch(*tape, scsi_command::locate_10);
+    CheckPositions(tape, 0, 0);
 
     // BT
     controller->SetCdbByte(1, 0x04);
@@ -734,13 +766,26 @@ TEST(TapeTest, Locate10_tar)
 TEST(TapeTest, Locate16_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateImageFile(*tape);
+    const string &filename = CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
+    fstream file(filename);
+    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
+    WriteSimhObject(file, good_data, 512, good_data);
+    WriteSimhObject(file, good_data, 512, good_data);
+
+    // Locate block 2
+    controller->SetCdbByte(11, 0x02);
     Dispatch(*tape, scsi_command::locate_16);
+    CheckPositions(tape, 1040, 2);
+
+    // Locate block 0
+    controller->SetCdbByte(11, 0x00);
+    Dispatch(*tape, scsi_command::locate_16);
+    CheckPositions(tape, 0, 0);
 
     // BT
     controller->SetCdbByte(1, 0x04);
@@ -837,6 +882,52 @@ TEST(TapeTest, ValidateBlockSize)
     EXPECT_FALSE(tape.ValidateBlockSize(7));
     EXPECT_TRUE(tape.ValidateBlockSize(512));
     EXPECT_TRUE(tape.ValidateBlockSize(131072));
+}
+
+TEST(TapeTest, ModeSense6)
+{
+    auto [controller, tape] = CreateTape();
+
+    // Drive must be ready in order to return all data
+    tape->SetReady(true);
+
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
+}
+
+TEST(TapeTest, ModeSense10)
+{
+    auto [controller, tape] = CreateTape();
+
+    // Drive must be ready in order to return all data
+    tape->SetReady(true);
+
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
 }
 
 TEST(TapeTest, SetUpModePages)

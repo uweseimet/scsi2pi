@@ -438,6 +438,23 @@ TEST(StorageDeviceTest, ModeSense6)
     // Drive must be ready in order to return all data
     device->SetReady(true);
 
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    device->SetBlockSize(1024);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    device->SetBlockSize(1024);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_6));
+    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
+
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
@@ -501,6 +518,23 @@ TEST(StorageDeviceTest, ModeSense10)
 
     // Drive must be ready in order to return all data
     device->SetReady(true);
+
+    controller->SetCdbByte(2, 0x00);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 12);
+    device->SetBlockSize(1024);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
+
+    // Changeable values
+    controller->SetCdbByte(2, 0x40);
+    // ALLOCATION LENGTH, block descriptor only
+    controller->SetCdbByte(4, 8);
+    device->SetBlockSize(1024);
+    EXPECT_NO_THROW(Dispatch(*device, scsi_command::mode_sense_10));
+    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
+    EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
 
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);

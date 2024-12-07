@@ -151,7 +151,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
     }
     else if (get_level() == level::trace) {
         LogTrace(fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
-            FormatBytes(buf, rx_packet_size, 128)));
+            GetController()->FormatBytes(buf, rx_packet_size)));
     }
 
     byte_read_count += rx_packet_size;
@@ -214,8 +214,8 @@ void DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int)
     if (buf.size() && get_level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf, back_inserter(data));
-        LogTrace(
-            fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length, FormatBytes(data, data_length, 128)));
+        LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length,
+            GetController()->FormatBytes(data, data_length)));
     }
 
     GetController()->SetTransferSize(0, 0);
