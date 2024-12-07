@@ -280,7 +280,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
 
     UpdateStartBlock(length / block_size);
 
-    // The remaining count for non-block oriented commands is always 0
+    // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
     if (CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
         remaining_count -= transferred_length;
     }
