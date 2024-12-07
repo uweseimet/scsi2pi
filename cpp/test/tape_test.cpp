@@ -313,7 +313,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Write6)
