@@ -496,13 +496,13 @@ TEST(TapeTest, Space6_simh)
     // Space over 1 filemark
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 4, 0);
 
     // Space over 3 filemarks
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 3);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 16, 0);
 
     // Reverse-space over 1 filemark
@@ -510,7 +510,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 12, 0);
 
     // Reverse-space over 2 filemarks
@@ -518,7 +518,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xfe);
-    EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
+    Dispatch(*tape, scsi_command::space_6);
     CheckPositions(tape, 4, 0);
 
     // Try to space over 10 filemarks
@@ -538,6 +538,23 @@ TEST(TapeTest, Space6_simh)
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
     CheckPositions(tape, 24, 0);
 
+    Dispatch(*tape, scsi_command::rewind);
+
+    // Space over 1 filemark, then reverse-space over more than available
+    controller->SetCdbByte(1, 0b001);
+    controller->SetCdbByte(4, 1);
+    Dispatch(*tape, scsi_command::space_6);
+    CheckPositions(tape, 4, 0);
+    controller->SetCdbByte(1, 0b001);
+    controller->SetCdbByte(2, 0xff);
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0x00);
+    Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
