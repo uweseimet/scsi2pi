@@ -175,6 +175,7 @@ enum class asc
     write_protected = 0x27,
     not_ready_to_ready_change = 0x28,
     power_on_or_reset = 0x29,
+    incompatible_medium_installed = 0x30,
     sequential_positioning_error = 0x38,
     medium_not_present = 0x3a,
     command_phase_error = 0x4a,
