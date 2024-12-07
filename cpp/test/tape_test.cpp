@@ -709,13 +709,26 @@ TEST(TapeTest, WriteFileMarks6_tar)
 TEST(TapeTest, Locate10_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateImageFile(*tape);
+    const string &filename = CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
+    fstream file(filename);
+    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
+    WriteSimhObject(file, good_data, 512, good_data);
+    WriteSimhObject(file, good_data, 512, good_data);
+
+    // Locate block 2
+    controller->SetCdbByte(6, 0x02);
     Dispatch(*tape, scsi_command::locate_10);
+    CheckPositions(tape, 1040, 2);
+
+    // Locate block 0
+    controller->SetCdbByte(6, 0x00);
+    Dispatch(*tape, scsi_command::locate_10);
+    CheckPositions(tape, 0, 0);
 
     // BT
     controller->SetCdbByte(1, 0x04);
@@ -753,13 +766,26 @@ TEST(TapeTest, Locate10_tar)
 TEST(TapeTest, Locate16_simh)
 {
     auto [controller, tape] = CreateTape();
-    CreateImageFile(*tape);
+    const string &filename = CreateImageFile(*tape);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(*tape, scsi_command::locate_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
+    fstream file(filename);
+    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
+    WriteSimhObject(file, good_data, 512, good_data);
+    WriteSimhObject(file, good_data, 512, good_data);
+
+    // Locate block 2
+    controller->SetCdbByte(11, 0x02);
     Dispatch(*tape, scsi_command::locate_16);
+    CheckPositions(tape, 1040, 2);
+
+    // Locate block 0
+    controller->SetCdbByte(11, 0x00);
+    Dispatch(*tape, scsi_command::locate_16);
+    CheckPositions(tape, 0, 0);
 
     // BT
     controller->SetCdbByte(1, 0x04);
