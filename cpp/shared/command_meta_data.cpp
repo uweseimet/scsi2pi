@@ -71,14 +71,16 @@ void CommandMetaData::AddCommand(scsi_command opcode, int byte_count, const char
     command_names[static_cast<int>(opcode)] = name;
 }
 
-string CommandMetaData::LogCdb(span<uint8_t> cdb, const string &type) const
+string CommandMetaData::LogCdb(span<const uint8_t> cdb, const string &type) const
 {
-    const auto opcode = static_cast<scsi_command>(cdb[0]);
-    const string_view &command_name = GetCommandName(opcode);
+    const auto cmd = static_cast<scsi_command>(cdb[0]);
+    assert(GetCommandBytesCount(cmd));
+
+    const string_view &command_name = GetCommandName(cmd);
     string msg = fmt::format("{0} is executing {1}, CDB ", type,
         !command_name.empty() ? command_name : fmt::format("{:02x}", cdb[0]));
 
-    for (int i = 0; i < GetCommandBytesCount(opcode); i++) {
+    for (int i = 0; i < GetCommandBytesCount(cmd); i++) {
         if (i) {
             msg += ":";
         }
