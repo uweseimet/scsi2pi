@@ -540,7 +540,7 @@ TEST(TapeTest, Space6_simh)
 
     Dispatch(*tape, scsi_command::rewind);
 
-    // Space over 1 filemark, then reverse-space over more than available
+    // Space over 1 filemark, then reverse-space over more filemarks than available
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::space_6);
@@ -553,8 +553,10 @@ TEST(TapeTest, Space6_simh)
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(*tape, scsi_command::request_sense);
+    EXPECT_EQ(0b01000000, controller->GetBuffer()[2]) << "EOM must be set";
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
+
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
