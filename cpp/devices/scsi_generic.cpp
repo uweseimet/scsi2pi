@@ -263,20 +263,22 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
         throw scsi_exception(sense_key::no_sense);
     }
 
+    const int transferred_length = length - io_hdr.resid;
+
     if (!write && get_level() == level::trace) {
-        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", length,
-            FormatBytes(buf, length, 128)));
+        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
+            FormatBytes(buf, transferred_length, 128)));
     }
 
-    UpdateInternalBlockSize(buf, length);
+    UpdateInternalBlockSize(buf, transferred_length);
 
-    UpdateStartBlock(length / block_size);
+    UpdateStartBlock(transferred_length / block_size);
 
-    remaining_count -= length + io_hdr.resid;
+    remaining_count -= transferred_length;
 
-    LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", length - io_hdr.resid, remaining_count));
+    LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
 
-    return length - io_hdr.resid;
+    return transferred_length;
 }
 
 int ScsiGeneric::GetAllocationLength() const
