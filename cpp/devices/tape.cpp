@@ -440,18 +440,18 @@ void Tape::Space6()
     switch (const auto code = static_cast<object_type>(GetCdbByte(1) & 0x07); code) {
     case object_type::block:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count);
+            FindNextObject(code, count, false);
         }
         break;
 
     case object_type::filemark:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count);
+            FindNextObject(code, count, false);
         }
         break;
 
     case object_type::end_of_data:
-        FindNextObject(object_type::end_of_data, 0);
+        FindNextObject(object_type::end_of_data, 0, false);
         tape_position -= META_DATA_SIZE;
         break;
 
@@ -516,7 +516,7 @@ void Tape::Locate(bool locate16)
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         } else {
             ResetPosition();
-            FindNextObject(object_type::block, identifier);
+            FindNextObject(object_type::block, identifier, false);
         }
     }
 
@@ -652,7 +652,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            RaiseFilemark(reverse ? -actual_count : actual_count);
+            RaiseFilemark(reverse ? -requested_count : requested_count + 1, read);
         }
     }
 }
@@ -689,11 +689,11 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
     throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseFilemark(int64_t info)
+void Tape::RaiseFilemark(int64_t info, bool read)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
-    if (!fixed) {
+    if (read && !fixed) {
         SetInformation(GetByteCount());
     }
     else {
