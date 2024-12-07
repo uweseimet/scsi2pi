@@ -520,13 +520,12 @@ void Disk::ReadFormatCapacities()
     SetInt32(buf, 8, GetBlockSize());
 
     int offset = 12;
-    if (!IsReadOnly()) {
-        // Return the list of default block sizes
-        for (const auto size : GetSupportedBlockSizes()) {
-            SetInt32(buf, offset, static_cast<uint32_t>(GetBlockSize() * GetBlockCount() / size));
-            SetInt32(buf, offset + 4, size);
-            offset += 8;
-        }
+
+    // Return the list of default block sizes
+    for (const auto size : GetSupportedBlockSizes()) {
+        SetInt32(buf, offset, static_cast<uint32_t>(GetBlockSize() * GetBlockCount() / size));
+        SetInt32(buf, offset + 4, size);
+        offset += 8;
     }
 
     SetInt32(buf, 0, offset - 4);
