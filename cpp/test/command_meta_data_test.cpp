@@ -56,6 +56,7 @@ TEST(CommandMetaDataTest, GetCommandBytesCount)
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::read_defect_data_10));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::read_long_10));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::write_long_10));
+    EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::read_sub_channel));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::read_toc));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::mode_select_10));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::mode_sense_10));
@@ -77,7 +78,7 @@ TEST(CommandMetaDataTest, GetCommandBytesCount)
             ++command_count;
         }
     }
-    EXPECT_EQ(48, command_count);
+    EXPECT_EQ(49, command_count);
 }
 
 TEST(CommandMetaDataTest, GetCommandName)
@@ -128,6 +129,7 @@ TEST(CommandMetaDataTest, GetCommandName)
     EXPECT_EQ("READ DEFECT DATA(10)", meta_data.GetCommandName(scsi_command::read_defect_data_10));
     EXPECT_EQ("READ LONG(10)", meta_data.GetCommandName(scsi_command::read_long_10));
     EXPECT_EQ("WRITE LONG(10)", meta_data.GetCommandName(scsi_command::write_long_10));
+    EXPECT_EQ("READ SUB-CHANNEL", meta_data.GetCommandName(scsi_command::read_sub_channel));
     EXPECT_EQ("READ TOC", meta_data.GetCommandName(scsi_command::read_toc));
     EXPECT_EQ("MODE SELECT(10)", meta_data.GetCommandName(scsi_command::mode_select_10));
     EXPECT_EQ("MODE SENSE(10)", meta_data.GetCommandName(scsi_command::mode_sense_10));

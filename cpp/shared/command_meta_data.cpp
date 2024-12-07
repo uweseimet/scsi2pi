@@ -14,7 +14,7 @@ using namespace spdlog;
 
 CommandMetaData::CommandMetaData()
 {
-    // This mapping only contains the commands supported by s2p
+    // This mapping contains the commands supported by s2p and some commands useful with the SG driver (SCSG)
     AddCommand(scsi_command::test_unit_ready, 6, "TEST UNIT READY", { 0, 0, 0, 0, false });
     AddCommand(scsi_command::rezero, 6, "REZERO/REWIND", { 0, 0, 0, 0, false });
     AddCommand(scsi_command::read_block_limits, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false });
@@ -49,6 +49,8 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::read_defect_data_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::read_long_10, 10, "READ LONG(10)", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::write_long_10, 10, "WRITE LONG(10)", { 7, 2, 0, 0, false });
+    // For SCSG
+    AddCommand(scsi_command::read_sub_channel, 10, "READ SUB-CHANNEL", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::read_toc, 10, "READ TOC", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true });
     AddCommand(scsi_command::mode_sense_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false });

@@ -97,6 +97,7 @@ enum class scsi_command
     read_defect_data_10 = 0x37,
     read_long_10 = 0x3e,
     write_long_10 = 0x3f,
+    read_sub_channel = 0x42,
     read_toc = 0x43,
     mode_select_10 = 0x55,
     mode_sense_10 = 0x5a,
