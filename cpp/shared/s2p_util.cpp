@@ -240,7 +240,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
     const string &s = FormatSenseData(static_cast<sense_key>(flags & 0x0f), static_cast<asc>(sense_data[12]),
         static_cast<int>(sense_data[13]));
 
-    if (!(static_cast<uint8_t>(sense_data[0]) & static_cast<int>(0x80))) {
+    if (!(static_cast<int>(sense_data[0]) & 0x80)) {
         return s;
     }
 
