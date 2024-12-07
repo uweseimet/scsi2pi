@@ -420,7 +420,7 @@ TEST(TapeTest, ReadBlockLimits)
 
     CreateImageFile(*tape);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_block_limits));
-    EXPECT_EQ(8192U, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(0xffffff, GetInt32(controller->GetBuffer(), 0));
     EXPECT_EQ(4, GetInt16(controller->GetBuffer(), 4));
 }
 

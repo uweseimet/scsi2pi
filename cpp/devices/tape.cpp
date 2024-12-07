@@ -417,7 +417,7 @@ void Tape::Erase6()
 
 void Tape::ReadBlockLimits()
 {
-    SetInt32(GetController()->GetBuffer(), 0, *ranges::max_element(GetSupportedBlockSizes()));
+    SetInt32(GetController()->GetBuffer(), 0, 0xffffff);
     SetInt16(GetController()->GetBuffer(), 4, 4);
 
     DataInPhase(6);
