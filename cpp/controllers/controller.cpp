@@ -35,6 +35,7 @@ bool Controller::Process()
         return false;
     }
 
+    // TODO Cath scsi_exception here instead of everywhere else and call Error()?
     if (!ProcessPhase()) {
         Error(sense_key::aborted_command, asc::controller_process_phase);
         return false;
