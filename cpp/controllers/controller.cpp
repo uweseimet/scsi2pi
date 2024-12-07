@@ -486,38 +486,21 @@ bool Controller::TransferToHost()
 
 bool Controller::TransferFromHost(int length, bool pending_data)
 {
+    const scsi_command cmd = static_cast<scsi_command>(GetCdb()[0]);
     assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
 
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
-        switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
-        case scsi_command::mode_select_6:
-        case scsi_command::mode_select_10:
+        if (cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), -1);
-            break;
-
-        case scsi_command::format_unit:
-        case scsi_command::write_6:
-        case scsi_command::write_10:
-        case scsi_command::write_16:
-        case scsi_command::verify_10:
-        case scsi_command::verify_16:
-        case scsi_command::write_long_10:
-        case scsi_command::write_long_16:
-        case scsi_command::execute_operation: {
+        }
+        else {
             length = device->WriteData(GetCdb(), GetBuffer(), -1, length);
             if (pending_data) {
                 SetCurrentLength(length);
                 ResetOffset();
             }
-            break;
-        }
-
-        default:
-            // Limited to write/verify/mode commands with DATA OUT phase
-            assert(false);
-            return false;
         }
     }
     catch (const scsi_exception &e) {
