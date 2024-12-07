@@ -470,6 +470,8 @@ void Controller::Receive()
 
 bool Controller::TransferToHost()
 {
+    assert(!CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
+
     try {
         SetCurrentLength(GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer()));
     }
@@ -484,6 +486,8 @@ bool Controller::TransferToHost()
 
 bool Controller::TransferFromHost(int length, bool pending_data)
 {
+    assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
+
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
         switch (const auto opcode = static_cast<scsi_command>(GetCdb()[0]); opcode) {
