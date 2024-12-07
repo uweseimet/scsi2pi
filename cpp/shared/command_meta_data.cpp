@@ -84,7 +84,7 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(scsi_command cmd) c
 string CommandMetaData::LogCdb(span<const uint8_t> cdb, const string &type) const
 {
     const auto cmd = static_cast<scsi_command>(cdb[0]);
-    assert(GetCommandBytesCount(cmd));
+    assert(static_cast<int>(cdb.size()) == GetCommandBytesCount(cmd));
 
     const string_view &command_name = GetCommandName(cmd);
     string msg = fmt::format("{0} is executing {1}, CDB ", type,
