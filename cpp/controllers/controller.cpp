@@ -486,7 +486,7 @@ bool Controller::TransferToHost()
 
 bool Controller::TransferFromHost(int length, bool pending_data)
 {
-    const scsi_command cmd = static_cast<scsi_command>(GetCdb()[0]);
+    const auto cmd = static_cast<scsi_command>(GetCdb()[0]);
     assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
 
     const auto device = GetDeviceForLun(GetEffectiveLun());
