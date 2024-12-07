@@ -39,14 +39,14 @@ public:
 
     CdbMetaData GetCdbMetaData(scsi_command) const;
 
-    int GetCommandBytesCount(scsi_command opcode) const
+    int GetCommandBytesCount(scsi_command cmd) const
     {
-        return command_byte_counts[static_cast<int>(opcode)];
+        return command_byte_counts[static_cast<int>(cmd)];
     }
 
-    auto GetCommandName(scsi_command opcode) const
+    auto GetCommandName(scsi_command cmd) const
     {
-        return command_names[static_cast<int>(opcode)];
+        return command_names[static_cast<int>(cmd)];
     }
 
     string LogCdb(span<const uint8_t>, const string&) const;
