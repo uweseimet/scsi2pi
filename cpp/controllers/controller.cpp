@@ -491,6 +491,7 @@ bool Controller::TransferFromHost(int length, bool pending_data)
 
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
+        // TODO Try to remove this special case
         if (cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), -1);
