@@ -41,6 +41,12 @@ bool ScsiGeneric::SetUp()
         return false;
     }
 
+    if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
+        CleanUp();
+        LogError(fmt::format("'{0}' does not appear to be an SG device: {1}", device, strerror(errno)));
+        return false;
+    }
+
     return true;
 }
 
@@ -236,7 +242,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
             fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length, FormatBytes(buf, length, 128)));
     }
 
-    int status = ioctl(fd, SG_IO, &io_hdr) == -1 ? -1 : io_hdr.status;
+    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
 
     format_header.clear();
 
