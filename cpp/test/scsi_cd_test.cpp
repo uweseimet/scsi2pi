@@ -26,7 +26,7 @@ TEST(ScsiCdTest, DeviceDefaults)
     ScsiCd cd(0);
 
     EXPECT_EQ(SCCD, cd.GetType());
-    EXPECT_TRUE(cd.SupportsFile());
+    EXPECT_TRUE(cd.SupportsImageFile());
     EXPECT_FALSE(cd.SupportsParams());
     EXPECT_FALSE(cd.IsProtectable());
     EXPECT_FALSE(cd.IsProtected());

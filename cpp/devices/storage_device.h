@@ -29,7 +29,7 @@ public:
 
     void Dispatch(scsi_command) override;
 
-    bool SupportsFile() const override
+    bool SupportsImageFile() const override
     {
         return true;
     }

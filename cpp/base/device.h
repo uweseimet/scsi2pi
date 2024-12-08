@@ -107,7 +107,7 @@ public:
     void SetRevision(const string&);
     string GetPaddedName() const;
 
-    virtual bool SupportsFile() const
+    virtual bool SupportsImageFile() const
     {
         return false;
     }

@@ -20,7 +20,7 @@ TEST(HostServicesTest, DeviceDefaults)
     HostServices services(0);
 
     EXPECT_EQ(SCHS, services.GetType());
-    EXPECT_FALSE(services.SupportsFile());
+    EXPECT_FALSE(services.SupportsImageFile());
     EXPECT_FALSE(services.SupportsParams());
     EXPECT_FALSE(services.IsProtectable());
     EXPECT_FALSE(services.IsProtected());

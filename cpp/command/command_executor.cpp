@@ -213,7 +213,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
-    if (!device->SupportsFile()) {
+    if (!device->SupportsImageFile()) {
         // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
@@ -239,7 +239,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
@@ -282,7 +282,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (!device->IsRemoved() && device->SupportsFile()) {
+    if (!device->IsRemoved() && device->SupportsImageFile()) {
         static_pointer_cast<StorageDevice>(device)->ReserveFile();
     }
 #endif
@@ -299,7 +299,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, bool dryRun) const
 {
-    if (!device->SupportsFile()) {
+    if (!device->SupportsImageFile()) {
         return false;
     }
 
@@ -409,7 +409,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     PropertyHandler::Instance().AddProperty(identifier + "name",
         device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         if (storage_device->GetConfiguredBlockSize()) {
             PropertyHandler::Instance().AddProperty(identifier + "block_size",
@@ -658,7 +658,7 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
-        if (device->SupportsFile()) {
+        if (device->SupportsImageFile()) {
             if (const auto storage_device = static_pointer_cast<StorageDevice>(device); !storage_device->SetConfiguredBlockSize(
                 block_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));

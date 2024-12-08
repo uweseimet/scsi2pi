@@ -82,7 +82,7 @@ TEST(TapeTest, Device_Defaults)
     Tape tape(0);
 
     EXPECT_EQ(SCTP, tape.GetType());
-    EXPECT_TRUE(tape.SupportsFile());
+    EXPECT_TRUE(tape.SupportsImageFile());
     EXPECT_TRUE(tape.SupportsParams());
     EXPECT_TRUE(tape.IsProtectable());
     EXPECT_FALSE(tape.IsProtected());

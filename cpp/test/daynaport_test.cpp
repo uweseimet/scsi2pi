@@ -15,7 +15,7 @@ TEST(DaynaportTest, Device_Defaults)
     DaynaPort daynaport(0);
 
     EXPECT_EQ(SCDP, daynaport.GetType());
-    EXPECT_FALSE(daynaport.SupportsFile());
+    EXPECT_FALSE(daynaport.SupportsImageFile());
     EXPECT_TRUE(daynaport.SupportsParams());
     EXPECT_FALSE(daynaport.IsProtectable());
     EXPECT_FALSE(daynaport.IsProtected());
