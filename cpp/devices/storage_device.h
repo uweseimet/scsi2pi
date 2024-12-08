@@ -104,9 +104,8 @@ public:
 
 protected:
 
-    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const set<uint32_t> &sizes)
-    : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
-        p)
+    StorageDevice(PbDeviceType type, int lun, bool s, bool p, const set<uint32_t> &sizes)
+    : PrimaryDevice(type, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
     {
     }
 

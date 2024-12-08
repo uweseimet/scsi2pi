@@ -13,10 +13,10 @@
 
 using namespace memory_util;
 
-ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, false,
-    { 512, 2048 })
+ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, lun, true, false, { 512, 2048 })
 {
     SetProduct("SCSI CD-ROM");
+    SetScsiLevel(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2);
     SetReadOnly(true);
     SetRemovable(true);
 }

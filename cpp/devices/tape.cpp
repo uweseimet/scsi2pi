@@ -25,7 +25,7 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Tape::Tape(int lun) : StorageDevice(SCTP, scsi_level::scsi_2, lun, true, false, { 512, 1024, 2048, 4096, 8192 })
+Tape::Tape(int lun) : StorageDevice(SCTP, lun, true, false, { 512, 1024, 2048, 4096, 8192 })
 {
     SetProduct("SCSI TAPE");
     SupportsParams(true);
