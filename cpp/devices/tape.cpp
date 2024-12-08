@@ -725,14 +725,14 @@ void Tape::ResetPosition()
     object_location = 0;
 }
 
-void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
+bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
 {
     if (reverse) {
         // Position before trailing length or marker
         tape_position -= META_DATA_SIZE;
 
         if (tape_position < 0) {
-            RaiseBeginningOfPartition(count);
+            return false;
         }
 
         file.seekg(tape_position);
@@ -757,6 +757,8 @@ void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse
 
     LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
         static_cast<int>(meta_data.cls), meta_data.value, reverse ? tape_position : tape_position - META_DATA_SIZE));
+
+    return true;
 }
 
 uint32_t Tape::GetByteCount()
@@ -833,7 +835,9 @@ vector<PbStatistics> Tape::GetStatistics() const
 pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
 {
     while (true) {
-        ReadNextMetaData(meta_data, count, reverse);
+        if (!ReadNextMetaData(meta_data, reverse)) {
+            RaiseBeginningOfPartition(reverse ? -count : count);
+        }
 
         switch (meta_data.cls) {
         case simh_class::tape_mark_good_data_record:
