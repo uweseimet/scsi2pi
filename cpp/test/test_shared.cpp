@@ -66,7 +66,7 @@ void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> contro
 {
     // Allocation length
     controller->SetCdbByte(4, 255);
-    Dispatch(*device, scsi_command::request_sense);
+    Dispatch(device, scsi_command::request_sense);
 }
 
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
@@ -115,10 +115,11 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_EQ(GetVersion(), device->GetRevision());
 }
 
-void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
+void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command cmd, sense_key s, asc a,
+    const string &msg)
 {
     try {
-        device.Dispatch(cmd);
+        device->Dispatch(cmd);
         if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {
             FAIL() << msg;
         }
@@ -131,7 +132,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         }
     }
 
-    auto controller = static_cast<MockAbstractController*>(device.GetController());
+    auto controller = static_cast<MockAbstractController*>(device->GetController());
     if (controller) {
         controller->ResetCdb();
     }
@@ -212,7 +213,7 @@ void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared
     TestShared::RequestSense(controller, device);
 }
 
-void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s, asc a, const string &msg)
+void testing::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command command, sense_key s, asc a, const string &msg)
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }

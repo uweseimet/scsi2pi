@@ -15,7 +15,7 @@ TEST(SasiHdTest, Inquiry)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::inquiry));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::inquiry));
     auto &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(0, buffer[1]);
@@ -29,7 +29,7 @@ TEST(SasiHdTest, RequestSense)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 4);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::request_sense));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::request_sense));
     auto &buffer = controller->GetBuffer();
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);
@@ -37,7 +37,7 @@ TEST(SasiHdTest, RequestSense)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 0);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::request_sense));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::request_sense));
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);
 }
