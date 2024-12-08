@@ -409,9 +409,9 @@ TEST(StorageDeviceTest, VerifyBlockSizeChange)
     MockStorageDevice device;
     device.SetBlockSize(512);
 
-    EXPECT_EQ(512, device.VerifyBlockSizeChange(512, false));
+    EXPECT_EQ(512U, device.VerifyBlockSizeChange(512, false));
 
-    EXPECT_EQ(1024, device.VerifyBlockSizeChange(1024, true));
+    EXPECT_EQ(1024U, device.VerifyBlockSizeChange(1024, true));
 
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(2048, false);}, Throws<scsi_exception>(AllOf(
                 Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
