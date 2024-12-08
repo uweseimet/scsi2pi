@@ -489,13 +489,13 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 1);
     Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 4, 0);
+    CheckPositions(tape, 4, 1);
 
     // Space over 3 filemarks
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 3);
     Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 16, 0);
+    CheckPositions(tape, 16, 4);
 
     // Reverse-space over 1 filemark
     controller->SetCdbByte(1, 0b001);
@@ -503,7 +503,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
     Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 12, 0);
+    CheckPositions(tape, 12, 3);
 
     // Reverse-space over 2 filemarks
     controller->SetCdbByte(1, 0b001);
@@ -511,7 +511,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xfe);
     Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 4, 0);
+    CheckPositions(tape, 4, 1);
 
     // Try to space over 10 filemarks
     controller->SetCdbByte(1, 0b001);
@@ -526,7 +526,7 @@ TEST(TapeTest, Space6_simh)
     // Search for end-of-data
     controller->SetCdbByte(1, 0b011);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
-    CheckPositions(tape, 24, 0);
+    CheckPositions(tape, 24, 6);
 
     Dispatch(tape, scsi_command::rewind);
 
@@ -534,7 +534,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 1);
     Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 4, 0);
+    CheckPositions(tape, 4, 1);
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
@@ -601,8 +601,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
-    // TODO 8 is probably wrong, should be 7?
-    CheckPositions(tape, 2626, 8);
+    CheckPositions(tape, 2626, 7);
 
     // Try to reverse-space over non-existing filemark
     controller->SetCdbByte(1, 0b001);
