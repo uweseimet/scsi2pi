@@ -44,7 +44,7 @@ TEST(SasiHdTest, RequestSense)
 
 TEST(SasiHdTest, GetBlockSizes)
 {
-    SasiHd hd(0);
+    MockSasiHd hd(0);
 
     const auto &sizes = hd.GetSupportedBlockSizes();
     EXPECT_EQ(3U, sizes.size());
