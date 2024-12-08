@@ -237,7 +237,7 @@ void Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 
         tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, record_length);
 
-        ++block_location;
+        ++object_location;
     }
 
     if (!remaining_count) {
@@ -502,11 +502,11 @@ void Tape::Locate(bool locate16)
             }
 
             tape_position = identifier;
-            block_location = identifier / GetBlockSize();
+            object_location = identifier / GetBlockSize();
         }
         else {
             tape_position = identifier * GetBlockSize();
-            block_location = identifier;
+            object_location = identifier;
         }
     }
     else {
@@ -542,8 +542,8 @@ void Tape::ReadPosition() const
 
     // BT (SCSI-2)/service action 01 (since SSC-2)
     const bool bt = GetCdbByte(1) & 0x01;
-    SetInt32(buf, 4, static_cast<uint32_t>(bt ? tape_position : block_location));
-    SetInt32(buf, 8, static_cast<uint32_t>(bt ? tape_position : block_location));
+    SetInt32(buf, 4, static_cast<uint32_t>(bt ? tape_position : object_location));
+    SetInt32(buf, 8, static_cast<uint32_t>(bt ? tape_position : object_location));
 
     DataInPhase(20);
 }
@@ -652,7 +652,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            block_location += reverse ? -1 : 1;
+            object_location += reverse ? -1 : 1;
             RaiseFilemark(requested_count + 1, read);
         }
     }
@@ -722,7 +722,7 @@ void Tape::RaiseReadError(const SimhMetaData &meta_data)
 void Tape::ResetPosition()
 {
     tape_position = 0;
-    block_location = 0;
+    object_location = 0;
 }
 
 void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
@@ -752,7 +752,7 @@ void Tape::ReadNextMetaData(SimhMetaData &meta_data, int64_t count, bool reverse
     }
 
     if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)) {
-        block_location += reverse ? -1 : 1;
+        object_location += reverse ? -1 : 1;
     }
 
     LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
@@ -804,7 +804,7 @@ void Tape::Erase()
 
         remaining -= chunk;
         tape_position += chunk;
-        block_location += chunk / GetBlockSize();
+        object_location += chunk / GetBlockSize();
     }
 }
 

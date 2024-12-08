@@ -132,7 +132,7 @@ private:
 
     uint32_t record_length = 0;
 
-    uint64_t block_location = 0;
+    uint64_t object_location = 0;
 
     uint32_t byte_count = 0;
     uint32_t remaining_count = 0;

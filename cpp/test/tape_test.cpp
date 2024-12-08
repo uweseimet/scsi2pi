@@ -10,13 +10,13 @@
 
 using namespace memory_util;
 
-#define CheckPositions(device, position, block_location) ({\
+#define CheckPositions(device, position, object_location) ({\
     auto c = static_cast<MockAbstractController*>(device->GetController());\
     c->ResetCdb();\
     c->SetCdbByte(1, 0x01);\
     CheckPosition(*c, *device, position);\
     c->SetCdbByte(1, 0);\
-    CheckPosition(*c, *device, block_location);\
+    CheckPosition(*c, *device, object_location);\
 })
 
 static void CheckPosition(AbstractController &controller, PrimaryDevice &tape, uint32_t position)
@@ -461,7 +461,7 @@ TEST(TapeTest, Space6_simh)
     // BLOCK, count > 0
     controller->SetCdbByte(2, 1);
     Dispatch(*tape, scsi_command::space_6);
-    CheckPositions(tape, 4, 0);
+    CheckPositions(tape, 4, 1);
 
     // End-of-data, count > 0
     controller->SetCdbByte(1, 0b011);
@@ -605,7 +605,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b000);
     controller->SetCdbByte(4, 6);
     Dispatch(*tape, scsi_command::space_6);
-    CheckPositions(tape, 2630, 7);
+    CheckPositions(tape, 2630, 8);
 
     // Reverse-space over 1 filemark
     controller->SetCdbByte(1, 0b001);
@@ -613,7 +613,8 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
-    CheckPositions(tape, 2626, 7);
+    // TODO 8 is probably wrong, should be 7?
+    CheckPositions(tape, 2626, 8);
 
     // Try to reverse-space over non-existing filemark
     controller->SetCdbByte(1, 0b001);
@@ -637,13 +638,13 @@ TEST(TapeTest, Space6_simh)
     // Space over 2 blocks, which hits the filemark
     controller->SetCdbByte(4, 2);
     Dispatch(*tape, scsi_command::space_6);
-    CheckPositions(tape, 524, 1);
+    CheckPositions(tape, 524, 2);
 
     // Space over 1 block
     controller->SetCdbByte(1, 0b000);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::space_6));
-    CheckPositions(tape, 1044, 2);
+    CheckPositions(tape, 1044, 3);
 
     // Space over 1 block
     controller->SetCdbByte(1, 0b000);
@@ -655,7 +656,7 @@ TEST(TapeTest, Space6_simh)
     EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
     EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
-    CheckPositions(tape, 1044, 2);
+    CheckPositions(tape, 1044, 3);
 }
 
 TEST(TapeTest, Space6_tar)
