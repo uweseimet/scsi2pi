@@ -68,7 +68,8 @@ private:
         filemark = 0b001,
         end_of_data = 0b011,
         // SCSI2Pi-specific
-        end_of_partition = -1,
+        beginning_of_partition = -1,
+        end_of_partition = -2
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -85,7 +86,7 @@ private:
     void Locate(bool);
 
     void WriteMetaData(Tape::object_type, uint32_t = 0);
-    SimhMetaData FindNextObject(Tape::object_type, int64_t, bool);
+    SimhMetaData FindNextObject(Tape::object_type, int32_t, bool);
     bool ReadNextMetaData(SimhMetaData&, bool);
 
     [[noreturn]] void RaiseBeginningOfPartition(int64_t);
@@ -105,7 +106,7 @@ private:
 
     void ResetPosition();
 
-    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int64_t, bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckBlockLength(int);

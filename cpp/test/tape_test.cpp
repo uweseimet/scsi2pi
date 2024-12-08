@@ -555,7 +555,7 @@ TEST(TapeTest, Space6_simh)
     Dispatch(*tape, scsi_command::request_sense);
     EXPECT_EQ(0b01000000, controller->GetBuffer()[2]) << "EOM must be set";
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(0xffffffffU, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0xffU, GetInt32(controller->GetBuffer(), 3));
 
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
