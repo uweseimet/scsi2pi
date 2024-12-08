@@ -323,7 +323,7 @@ int S2pSimh::Add()
 
     simh_file.seekp(0, ios::end);
 
-    off_t data_index = 0;
+    size_t data_index = 0;
 
     for (const auto &object : meta_data) {
         const auto &data = ToLittleEndian(object);
@@ -336,11 +336,11 @@ int S2pSimh::Add()
         if (IsRecord(object) && !(object.cls == simh_class::bad_data_record && !object.value)) {
             const uint32_t length = object.value & 0x0fffffff;
             if (has_data_file) {
-                if (data_index >= filesize) {
+                if (data_index >= input_data.size()) {
                     cerr << "Error: Not enough record data in '" << data_filename << "'" << endl;
                     return EXIT_FAILURE;
                 }
-                simh_file.write((const char*)input_data.data(), length);
+                simh_file.write((const char*)input_data.data() + data_index, length);
                 data_index += length;
             }
             else {
