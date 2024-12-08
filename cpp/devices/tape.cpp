@@ -631,9 +631,11 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
         --requested_count;
         ++actual_count;
 
-        LogTrace(
-            fmt::format("Found object type {0}, length {1}, spaced over {2} object(s)", static_cast<int>(scsi_type),
-                length, actual_count));
+        if (scsi_type != object_type::beginning_of_partition && scsi_type != object_type::end_of_partition) {
+            LogTrace(
+                fmt::format("Found object type {0}, length {1}, spaced over {2} object(s)", static_cast<int>(scsi_type),
+                    length, actual_count));
+        }
 
         if (!reverse) {
             tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
@@ -648,12 +650,12 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
         }
 
         if (scsi_type == object_type::end_of_partition) {
-            RaiseEndOfPartition(actual_count);
+            RaiseEndOfPartition(requested_count + 1);
         }
 
         // End-of-data while spacing over blocks or filemarks
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
-            RaiseEndOfData(type, actual_count - 1);
+            RaiseEndOfData(type, requested_count + 1);
         }
 
         // Terminate while spacing over blocks and a filemark is found
