@@ -493,7 +493,7 @@ void Tape::Locate(bool locate16)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const uint64_t identifier = locate16 ? GetCdbInt64(4) : GetCdbInt32(3);
+    const auto identifier = static_cast<int>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
     const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_file) {
