@@ -444,9 +444,7 @@ TEST(DiskTest, ReadLong10)
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
     Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(disk, scsi_command::request_sense);
+    RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -492,9 +490,7 @@ TEST(DiskTest, ReadLong16)
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
     Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(disk, scsi_command::request_sense);
+    RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -536,9 +532,7 @@ TEST(DiskTest, WriteLong10)
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
     Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(disk, scsi_command::request_sense);
+    RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -576,9 +570,7 @@ TEST(DiskTest, WriteLong16)
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
     Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(disk, scsi_command::request_sense);
+    RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
