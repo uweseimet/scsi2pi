@@ -62,6 +62,13 @@ string testing::TestShared::GetVersion()
     return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
+void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+{
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(*device, scsi_command::request_sense);
+}
+
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
@@ -198,6 +205,11 @@ void testing::SetUpProperties(string_view properties1, string_view properties2, 
         close(fd2);
     }
     PropertyHandler::Instance().Init(filenames, cmd_properties, true);
+}
+
+void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+{
+    TestShared::RequestSense(controller, device);
 }
 
 void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s, asc a, const string &msg)
