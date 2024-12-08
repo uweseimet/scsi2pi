@@ -606,7 +606,7 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
     CheckForWriteError();
 }
 
-SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, bool read)
+SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, bool read)
 {
     const bool reverse = requested_count < 0;
 
@@ -617,11 +617,11 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
         requested_count = -requested_count;
     }
 
-    int64_t actual_count = 0;
+    int32_t actual_count = 0;
 
     while (true) {
         SimhMetaData meta_data;
-        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, actual_count, reverse);
+        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse);
 
         // Bad data (not recovered) during READ(6)?
         if (read && scsi_type == object_type::block && !length) {
@@ -643,13 +643,17 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
             return meta_data;
         }
 
+        if (scsi_type == object_type::beginning_of_partition) {
+            RaiseBeginningOfPartition(requested_count + 1);
+        }
+
         if (scsi_type == object_type::end_of_partition) {
-            RaiseEndOfPartition(reverse ? -requested_count + actual_count - 1 : actual_count - 1);
+            RaiseEndOfPartition(actual_count);
         }
 
         // End-of-data while spacing over blocks or filemarks
         if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
-            RaiseEndOfData(type, reverse ? -requested_count + actual_count - 1 : actual_count - 1);
+            RaiseEndOfData(type, actual_count - 1);
         }
 
         // Terminate while spacing over blocks and a filemark is found
@@ -834,11 +838,11 @@ vector<PbStatistics> Tape::GetStatistics() const
     return statistics;
 }
 
-pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int64_t count, bool reverse)
+pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, bool reverse)
 {
     while (true) {
         if (!ReadNextMetaData(meta_data, reverse)) {
-            RaiseBeginningOfPartition(reverse ? -count : count);
+            return {object_type::beginning_of_partition, 0};
         }
 
         switch (meta_data.cls) {
