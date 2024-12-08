@@ -21,7 +21,7 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, scsi_level::scsi_2, lun)
+ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, lun)
 {
     SupportsParams(true);
     SetReady(true);
