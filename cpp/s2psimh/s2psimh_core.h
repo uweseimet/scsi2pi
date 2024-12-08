@@ -43,7 +43,9 @@ private:
     vector<simh_util::SimhMetaData> ParseObject(const string&);
 
     string simh_filename;
-    string data_filename;
+
+    string binary_data_filename;
+    string hex_data_filename;
 
     fstream simh_file;
     ifstream data_file;
