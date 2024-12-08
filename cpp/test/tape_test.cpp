@@ -233,9 +233,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::read_6);
     CheckPositions(tape, 264, 1);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
 
@@ -268,9 +266,7 @@ TEST(TapeTest, Read6)
     // SILI
     controller->SetCdbByte(1, 0x02);
     EXPECT_NO_THROW(Dispatch(*tape, scsi_command::read_6));
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(256U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
@@ -297,9 +293,7 @@ TEST(TapeTest, Read6)
     // Non-fixed, 90 byte
     controller->SetCdbByte(4, 90);
     Dispatch(*tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(90U, GetInt32(controller->GetBuffer(), 3));
 
@@ -309,9 +303,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
 }
@@ -525,9 +517,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 10);
     Dispatch(*tape, scsi_command::space_6, sense_key::blank_check);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(5U, GetInt32(controller->GetBuffer(), 3));
 
@@ -550,9 +540,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0x00);
     Dispatch(*tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(0b01000000, controller->GetBuffer()[2]) << "EOM must be set";
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0xffU, GetInt32(controller->GetBuffer(), 3));
@@ -650,9 +638,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(1, 0b000);
     controller->SetCdbByte(4, 1);
     Dispatch(*tape, scsi_command::space_6, sense_key::blank_check);
-    // Allocation length
-    controller->SetCdbByte(4, 255);
-    Dispatch(*tape, scsi_command::request_sense);
+    RequestSense(controller, tape);
     EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
