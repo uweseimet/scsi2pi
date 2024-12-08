@@ -16,8 +16,6 @@
 //
 //---------------------------------------------------------------------------
 
-// TODO Return block_descriptor_length for all pages?
-
 #include "tape.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
