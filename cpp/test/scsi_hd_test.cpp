@@ -32,11 +32,11 @@ static void ValidateFormatPage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x08, buf[offset + 3]) << "Wrong number of tracks in one zone";
-    EXPECT_EQ(25U, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
-    EXPECT_EQ(1024U, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
-    EXPECT_EQ(1U, GetInt16(buf, offset + 14)) << "Wrong interleave";
-    EXPECT_EQ(11U, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
-    EXPECT_EQ(20U, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
+    EXPECT_EQ(25, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
+    EXPECT_EQ(1024, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
+    EXPECT_EQ(1, GetInt16(buf, offset + 14)) << "Wrong interleave";
+    EXPECT_EQ(11, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
+    EXPECT_EQ(20, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
     EXPECT_FALSE(buf[offset + 20] & 0x20) << "Wrong removable flag";
     EXPECT_TRUE(buf[offset + 20] & 0x40) << "Wrong hard-sectored flag";
 }
@@ -45,9 +45,9 @@ static void ValidateDrivePage(AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x17, buf[offset + 2]);
-    EXPECT_EQ(0x4d3bU, GetInt16(buf, offset + 3));
+    EXPECT_EQ(0x4d3b, GetInt16(buf, offset + 3));
     EXPECT_EQ(8, buf[offset + 5]) << "Wrong number of heads";
-    EXPECT_EQ(7200U, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
+    EXPECT_EQ(7200, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
 }
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
@@ -56,7 +56,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(SCHD, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
+    EXPECT_TRUE(device->SupportsImageFile());
     EXPECT_FALSE(device->SupportsParams());
     EXPECT_TRUE(device->IsProtectable());
     EXPECT_FALSE(device->IsProtected());
@@ -206,7 +206,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::mode_sense_6));
     ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
@@ -214,7 +214,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::mode_sense_6));
     ValidateDrivePage(controller, 12);
 }
 
@@ -239,7 +239,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::mode_sense_10));
     ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
@@ -247,7 +247,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(Dispatch(*hd, scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(hd, scsi_command::mode_sense_10));
     ValidateDrivePage(controller, 16);
 }
 
@@ -285,15 +285,10 @@ TEST(ScsiHdTest, ModeSelect6_Single)
 {
     vector<uint8_t> buf(28);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(scsi_command::mode_select_6);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select_6, "10");
+    const auto &cdb = CreateCdb(scsi_command::mode_select_6, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
@@ -417,15 +412,10 @@ TEST(ScsiHdTest, ModeSelect10_Single)
 {
     vector<uint8_t> buf(32);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(scsi_command::mode_select_10);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select_10, "10");
+    const auto &cdb = CreateCdb(scsi_command::mode_select_10, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);

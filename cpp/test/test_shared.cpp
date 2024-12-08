@@ -62,6 +62,13 @@ string testing::TestShared::GetVersion()
     return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
+void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+{
+    // Allocation length
+    controller->SetCdbByte(4, 255);
+    Dispatch(device, scsi_command::request_sense);
+}
+
 void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
@@ -92,7 +99,7 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
+    EXPECT_TRUE(device->SupportsImageFile());
     EXPECT_FALSE(device->SupportsParams());
     EXPECT_TRUE(device->IsProtectable());
     EXPECT_FALSE(device->IsProtected());
@@ -108,10 +115,11 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_EQ(GetVersion(), device->GetRevision());
 }
 
-void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sense_key s, asc a, const string &msg)
+void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command cmd, sense_key s, asc a,
+    const string &msg)
 {
     try {
-        device.Dispatch(cmd);
+        device->Dispatch(cmd);
         if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {
             FAIL() << msg;
         }
@@ -124,7 +132,7 @@ void testing::TestShared::Dispatch(PrimaryDevice &device, scsi_command cmd, sens
         }
     }
 
-    auto controller = static_cast<MockAbstractController*>(device.GetController());
+    auto controller = static_cast<MockAbstractController*>(device->GetController());
     if (controller) {
         controller->ResetCdb();
     }
@@ -200,8 +208,12 @@ void testing::SetUpProperties(string_view properties1, string_view properties2, 
     PropertyHandler::Instance().Init(filenames, cmd_properties, true);
 }
 
-void testing::Dispatch(PrimaryDevice &device, scsi_command command, sense_key s, asc a, const string &msg)
+void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+{
+    TestShared::RequestSense(controller, device);
+}
+
+void testing::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command command, sense_key s, asc a, const string &msg)
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }
-

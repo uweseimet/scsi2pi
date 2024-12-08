@@ -45,8 +45,8 @@ private:
     void Send();
     void Receive();
     void XferMsg();
-    bool XferIn();
-    bool XferOut(int, bool);
+    bool TransferToHost();
+    bool TransferFromHost(int, bool);
 
     void ParseMessage();
     void ProcessMessage();

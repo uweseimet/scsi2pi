@@ -181,6 +181,8 @@ TEST(S2pUtilTest, GetHexBytes)
     EXPECT_THROW(HexToBytes("ab::cd12"), out_of_range);
     EXPECT_THROW(HexToBytes("9"), out_of_range);
     EXPECT_THROW(HexToBytes("012"), out_of_range);
+    EXPECT_THROW(HexToBytes("x0"), out_of_range);
+    EXPECT_THROW(HexToBytes("0x"), out_of_range);
 }
 
 TEST(S2pUtilTest, FormatBytes)

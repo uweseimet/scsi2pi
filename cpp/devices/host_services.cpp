@@ -96,9 +96,10 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun)
+HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
 {
     SetProduct("Host Services");
+    SetScsiLevel(scsi_level::spc_3);
     SetReady(true);
 }
 

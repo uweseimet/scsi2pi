@@ -347,7 +347,7 @@ void Controller::Send()
 
     const bool pending_data = UpdateTransferSize();
 
-    if (pending_data && IsDataIn() && !XferIn()) {
+    if (pending_data && IsDataIn() && !TransferToHost()) {
         return;
     }
 
@@ -422,7 +422,7 @@ void Controller::Receive()
     // Processing after receiving data
     switch (GetPhase()) {
     case bus_phase::dataout:
-        if (!XferOut(current_chunk_size < current_remaiing_length ? current_chunk_size : current_remaiing_length,
+        if (!TransferFromHost(current_chunk_size < current_remaiing_length ? current_chunk_size : current_remaiing_length,
             pending_data)) {
             return;
         }
@@ -459,7 +459,7 @@ void Controller::Receive()
     }
 }
 
-bool Controller::XferIn()
+bool Controller::TransferToHost()
 {
     // Limited to read commands with DATA IN phase
     assert(static_cast<scsi_command>(GetCdb()[0]) == scsi_command::read_6 ||
@@ -480,7 +480,7 @@ bool Controller::XferIn()
     return true;
 }
 
-bool Controller::XferOut(int length, bool pending_data)
+bool Controller::TransferFromHost(int length, bool pending_data)
 {
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {

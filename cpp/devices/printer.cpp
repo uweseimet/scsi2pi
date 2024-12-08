@@ -36,7 +36,7 @@
 using namespace filesystem;
 using namespace memory_util;
 
-Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
+Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
     SetProduct("SCSI PRINTER");
     SupportsParams(true);

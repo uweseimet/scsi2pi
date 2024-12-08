@@ -293,7 +293,7 @@ public:
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
-    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, scsi_level::scsi_2, lun)
+    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
     {
     }
     ~MockPrimaryDevice() override = default;
@@ -329,7 +329,7 @@ public:
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 256, 512, 1024, 2048, 4096 })
+    MockStorageDevice() : StorageDevice(UNDEFINED, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
     }
     ~MockStorageDevice() override = default;
@@ -388,7 +388,7 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, 0, false, false, { 512, 1024, 2048, 4096 })
     {
         SetCachingMode(PbCachingMode::LINUX);
         SetBlockSize(512);

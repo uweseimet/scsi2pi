@@ -37,7 +37,7 @@ public:
         return command_names[static_cast<int>(opcode)];
     }
 
-    string LogCdb(span<uint8_t>, const string&) const;
+    string LogCdb(span<const uint8_t>, const string&) const;
 
 private:
 

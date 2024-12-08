@@ -100,8 +100,8 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = SEND_NO_DELAY)
-    : Device(type, lun), level(l), delay_after_bytes(delay)
+    PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
+    : Device(type, lun), delay_after_bytes(delay)
     {
     }
 
@@ -198,7 +198,7 @@ private:
 
     DeviceLogger device_logger;
 
-    scsi_level level = scsi_level::none;
+    scsi_level level = scsi_level::scsi_2;
 
     enum sense_key sense_key = sense_key::no_sense;
     enum asc asc = asc::no_additional_sense_information;

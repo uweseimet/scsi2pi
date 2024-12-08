@@ -32,7 +32,7 @@ using namespace s2p_util;
 
 // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
 // It appears as if the real DaynaPort hardware indeed has this delay.
-DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAYNAPORT_READ_HEADER_SZ)
+DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
     SetVendor("Dayna");

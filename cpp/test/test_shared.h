@@ -39,8 +39,10 @@ string ReadTempFileToString(const string&);
 
 void SetUpProperties(string_view, string_view = "", const property_map& = { });
 
-void Dispatch(PrimaryDevice&, scsi_command, sense_key = sense_key::no_sense, asc = asc::no_additional_sense_information,
-    const string& = "");
+void Dispatch(shared_ptr<PrimaryDevice>, scsi_command, sense_key = sense_key::no_sense, asc =
+    asc::no_additional_sense_information, const string& = "");
+
+void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
 
 class TestShared
 {
@@ -48,9 +50,10 @@ class TestShared
 public:
 
     static string GetVersion();
+    static void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
     static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
-    static void Dispatch(PrimaryDevice&, scsi_command, sense_key = sense_key::no_sense, asc =
+    static void Dispatch(shared_ptr<PrimaryDevice>, scsi_command, sense_key = sense_key::no_sense, asc =
         asc::no_additional_sense_information, const string& = "");
 
     static void CleanUp()
