@@ -621,7 +621,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
         SimhMetaData meta_data;
         const auto [scsi_type, length] = ReadSimhMetaData(meta_data, reverse);
 
-        // Bad data (not recovered) during READ(6)?
+        // Bad data (not recovered) during READ(6)
         if (read && scsi_type == object_type::block && !length) {
             return meta_data;
         }
