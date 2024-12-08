@@ -700,7 +700,7 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
 
 void Tape::RaiseFilemark(int64_t info, bool read)
 {
-    LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
+    LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position - 4));
 
     if (read && !fixed) {
         SetInformation(GetByteCount());
