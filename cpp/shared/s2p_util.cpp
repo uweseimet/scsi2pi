@@ -281,13 +281,13 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
                 i++;
             }
 
-            const int b1 = HexToDec(line_lower[i]) << 4;
+            const int b1 = HexToDec(line_lower[i]);
             const int b2 = HexToDec(line_lower[i + 1]);
             if (b1 == -1 || b2 == -1) {
                 throw out_of_range("");
             }
 
-            bytes.push_back(static_cast<byte>(b1 + b2));
+            bytes.push_back(static_cast<byte>((b1 << 4) + b2));
 
             i += 2;
         }
