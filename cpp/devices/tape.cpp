@@ -660,7 +660,6 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
-            object_location += reverse ? -1 : 1;
             RaiseFilemark(requested_count + 1, read);
         }
     }
@@ -759,7 +758,9 @@ bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
         tape_position += META_DATA_SIZE;
     }
 
-    if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)) {
+    // Update object location for valid data records and tape marks
+    if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
+        || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
         object_location += reverse ? -1 : 1;
     }
 
