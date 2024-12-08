@@ -652,6 +652,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int64_t requested_count, boo
 
         // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
+            block_location += reverse ? -1 : 1;
             RaiseFilemark(requested_count + 1, read);
         }
     }
