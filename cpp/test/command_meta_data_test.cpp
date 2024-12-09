@@ -60,6 +60,7 @@ TEST(CommandMetaDataTest, GetCommandBytesCount)
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::read_toc));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::mode_select_10));
     EXPECT_EQ(10, meta_data.GetCommandBytesCount(scsi_command::mode_sense_10));
+    EXPECT_EQ(16, meta_data.GetCommandBytesCount(scsi_command::write_filemarks_16));
     EXPECT_EQ(16, meta_data.GetCommandBytesCount(scsi_command::read_16));
     EXPECT_EQ(16, meta_data.GetCommandBytesCount(scsi_command::write_16));
     EXPECT_EQ(16, meta_data.GetCommandBytesCount(scsi_command::verify_16));
@@ -78,7 +79,7 @@ TEST(CommandMetaDataTest, GetCommandBytesCount)
             ++command_count;
         }
     }
-    EXPECT_EQ(49, command_count);
+    EXPECT_EQ(50, command_count);
 }
 
 TEST(CommandMetaDataTest, LogCdb)

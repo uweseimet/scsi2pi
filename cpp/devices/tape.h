@@ -78,6 +78,7 @@ private:
     void Rewind() override;
     void Space6() override;
     void WriteFilemarks6() override;
+    void WriteFilemarks(bool);
     void FormatMedium();
     void ReadPosition() const;
     void Locate(bool);

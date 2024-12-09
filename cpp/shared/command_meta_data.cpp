@@ -55,6 +55,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::read_toc, 10, "READ TOC", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true });
     AddCommand(scsi_command::mode_sense_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false });
+    AddCommand(scsi_command::write_filemarks_16, 16, "WRITE FILEMARKS(16)", { 0, 0, 0, 0, false });
     AddCommand(scsi_command::read_16, 16, "READ(16)", { 10, 4, 2, 8, false });
     AddCommand(scsi_command::write_16, 16, "WRITE(16)", { 10, 4, 2, 8, true });
     AddCommand(scsi_command::verify_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true });
