@@ -292,7 +292,7 @@ void Tape::Open()
 
     ValidateFile();
 
-    ResetPosition();
+    ResetPositions();
 }
 
 bool Tape::Eject(bool force)
@@ -405,7 +405,7 @@ void Tape::Erase6()
         Erase();
 
         // After a Long erase according to the standard the position is undefined, for SCSI2Pi it is 0
-        ResetPosition();
+        ResetPositions();
     }
 
     WriteMetaData(object_type::end_of_data);
@@ -423,7 +423,7 @@ void Tape::ReadBlockLimits()
 
 void Tape::Rewind()
 {
-    ResetPosition();
+    ResetPositions();
 
     StatusPhase();
 }
@@ -491,7 +491,7 @@ void Tape::Locate(bool locate16)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    auto identifier = static_cast<int>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
+    auto identifier = static_cast<uint32_t>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
     const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_file) {
@@ -513,21 +513,9 @@ void Tape::Locate(bool locate16)
         if (bt && identifier) {
             throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
         } else {
-            ResetPosition();
+            ResetPositions();
             if (identifier) {
-                while (true) {
-                    SimhMetaData meta_data;
-                    ReadSimhMetaData(meta_data, 0, false);
-                    if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
-                        || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
-                        tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
-
-                        --identifier;
-                        if (!identifier) {
-                            break;
-                        }
-                    }
-                }
+                FindObject(identifier);
             }
         }
     }
@@ -574,7 +562,7 @@ void Tape::FormatMedium()
 
     Erase();
 
-    ResetPosition();
+    ResetPositions();
 
     WriteMetaData(object_type::end_of_data);
 
@@ -668,7 +656,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
 void Tape::RaiseBeginningOfPartition(int64_t info)
 {
     LogTrace("Encountered beginning-of-partition while reverse-spacing");
-    ResetPosition();
+    ResetPositions();
     SetInformation(info);
     SetEom(ascq::beginning_of_partition_medium_detected);
     throw scsi_exception(sense_key::no_sense);
@@ -726,7 +714,7 @@ void Tape::RaiseReadError(const SimhMetaData &meta_data)
     throw scsi_exception(sense_key::medium_error, asc::read_error);
 }
 
-void Tape::ResetPosition()
+void Tape::ResetPositions()
 {
     tape_position = 0;
     object_location = 0;
@@ -768,6 +756,24 @@ bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
         static_cast<int>(meta_data.cls), meta_data.value, reverse ? tape_position : tape_position - META_DATA_SIZE));
 
     return true;
+}
+
+void Tape::FindObject(uint32_t identifier)
+{
+    while (true) {
+        SimhMetaData meta_data;
+        ReadSimhMetaData(meta_data, 0, false);
+
+        if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
+            || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
+            tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
+
+            --identifier;
+            if (!identifier) {
+                break;
+            }
+        }
+    }
 }
 
 uint32_t Tape::GetByteCount()
