@@ -79,6 +79,11 @@ static void WriteGoodData(ostream &file, int length = 512)
     WriteSimhObject(file, data, length, data);
 }
 
+static void Rewind(shared_ptr<Tape> tape)
+{
+    Dispatch(tape, scsi_command::rewind);
+}
+
 static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
@@ -196,7 +201,7 @@ TEST(TapeTest, Read6)
     WriteSimhObject(file, bad_data_not_recovered);
     WriteSimhObject(file, end_of_data);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 12 bytes
     controller->SetCdbByte(1, 0x00);
@@ -238,7 +243,7 @@ TEST(TapeTest, Read6)
     file.seekp(0);
     WriteSimhObject(file, block_size_mismatch, 256, block_size_mismatch);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Fixed, 1 block, block size mismatch
     controller->SetCdbByte(1, 0x01);
@@ -249,13 +254,13 @@ TEST(TapeTest, Read6)
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 1 byte
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 1 byte
     controller->SetCdbByte(4, 1);
@@ -263,7 +268,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x02);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 1024 bytes (more than block size)
     controller->SetCdbByte(3, 0x04);
@@ -271,7 +276,7 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(1, 0x00);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 1024 bytes (more than block size)
     controller->SetCdbByte(3, 0x04);
@@ -289,7 +294,7 @@ TEST(TapeTest, Read6)
     file.seekp(0);
     WriteSimhObject(file, good_data_non_fixed, good_data_non_fixed[0], bad_trailing);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 12 bytes
     controller->SetCdbByte(4, 12);
@@ -298,7 +303,7 @@ TEST(TapeTest, Read6)
     file.seekp(0);
     WriteFilemark(file);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Non-fixed, 90 byte
     controller->SetCdbByte(4, 90);
@@ -307,7 +312,7 @@ TEST(TapeTest, Read6)
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(90U, GetInt32(controller->GetBuffer(), 3));
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
@@ -342,7 +347,7 @@ TEST(TapeTest, Write6)
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 2 });
     CheckPositions(tape, 10, 1);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
     file.seekg(0);
 
     // Non-fixed, 1 byte
@@ -354,7 +359,7 @@ TEST(TapeTest, Write6)
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 1 });
     CheckPositions(tape, 10, 1);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
     file.seekg(0);
 
     // Non-fixed, 512 bytes
@@ -367,7 +372,7 @@ TEST(TapeTest, Write6)
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
     file.seekg(0);
 
     // Fixed, 1 block
@@ -394,7 +399,8 @@ TEST(TapeTest, Erase6_simh)
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "EOP must be set";
 
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::rewind));
+    Rewind(tape);
+
     // Set filemark in order to advance the tape position
     controller->SetCdbByte(4, 0x01);
     Dispatch(tape, scsi_command::write_filemarks_6);
@@ -431,7 +437,7 @@ TEST(TapeTest, Rewind)
     auto [controller, tape] = CreateTape();
 
     CreateImageFile(*tape, 600);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::rewind));
+    Rewind(tape);
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
@@ -440,7 +446,7 @@ TEST(TapeTest, Rewind)
     Dispatch(tape, scsi_command::write_filemarks_6);
     CheckPositions(tape, 4, 0);
     controller->SetCdbByte(1, 0x00);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::rewind));
+    Rewind(tape);
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 }
@@ -492,7 +498,7 @@ TEST(TapeTest, Space6_simh)
     WriteFilemark(file);
     WriteSimhObject(file, end_of_data);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Space over 1 filemark
     controller->SetCdbByte(1, 0b001);
@@ -530,14 +536,14 @@ TEST(TapeTest, Space6_simh)
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(5U, GetInt32(controller->GetBuffer(), 3));
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Search for end-of-data
     controller->SetCdbByte(1, 0b011);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
     CheckPositions(tape, 24, 6);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Space over 1 filemark, then reverse-space over more filemarks than available
     controller->SetCdbByte(1, 0b001);
@@ -578,7 +584,7 @@ TEST(TapeTest, Space6_simh)
     WriteGoodData(file);
     WriteFilemark(file);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Space over 1 block
     controller->SetCdbByte(1, 0b000);
@@ -631,7 +637,7 @@ TEST(TapeTest, Space6_simh)
     WriteGoodData(file);
     WriteSimhObject(file, end_of_data);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Space over 2 blocks, which hits the filemark
     controller->SetCdbByte(4, 2);
@@ -654,7 +660,7 @@ TEST(TapeTest, Space6_simh)
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 3);
 
-    Dispatch(tape, scsi_command::rewind);
+    Rewind(tape);
 
     // Space for end-of-data
     controller->SetCdbByte(1, 0b011);
