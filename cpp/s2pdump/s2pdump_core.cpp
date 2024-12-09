@@ -376,6 +376,9 @@ bool S2pDump::DisplayInquiry(bool check_type)
 
     executor->SetTarget(target_id, target_lun, sasi);
 
+    // Clear potential UNIT ATTENTION status
+    executor->TestUnitReady();
+
     vector<uint8_t> buf(36);
     if (!executor->Inquiry(buf)) {
         return false;
