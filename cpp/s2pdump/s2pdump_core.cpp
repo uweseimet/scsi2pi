@@ -449,9 +449,10 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     if (check_type && scsi_device_info.type != static_cast<byte>(device_type::direct_access) &&
         scsi_device_info.type != static_cast<byte>(device_type::cd_rom)
-        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)) {
+        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)
+        && scsi_device_info.type != static_cast<byte>(device_type::sequential_access)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD/DVD-RAM and OPTICAL MEMORY" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL access" << endl;
         return false;
     }
 
