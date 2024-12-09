@@ -72,10 +72,11 @@ static void WriteFilemark(ostream &file)
     WriteSimhObject(file, filemark);
 }
 
-static void WriteGoodData(ostream &file)
+static void WriteGoodData(ostream &file, int length = 512)
 {
-    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
-    WriteSimhObject(file, good_data, 512, good_data);
+    const array<uint8_t, 4> data = { static_cast<uint8_t>(length & 0xff), static_cast<uint8_t>((length >> 8) & 0xff),
+        static_cast<uint8_t>((length >> 16) & 0xff), static_cast<uint8_t>((length >> 24) & 0xff) };
+    WriteSimhObject(file, data, length, data);
 }
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
@@ -184,14 +185,13 @@ TEST(TapeTest, Read6)
 
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
-    const vector<uint8_t> &good_data_fixed = { 0x00, 0x02, 0x00, 0x00 };
     const vector<uint8_t> &bad_data = { 0x00, 0x02, 0x00, 0x80 };
     const vector<uint8_t> &bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
     const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
     WriteSimhObject(file, good_data_non_fixed);
     file << "123456789012";
     WriteSimhObject(file, good_data_non_fixed);
-    WriteSimhObject(file, good_data_fixed, 512, good_data_fixed);
+    WriteGoodData(file);
     WriteSimhObject(file, bad_data, 512, bad_data);
     WriteSimhObject(file, bad_data_not_recovered);
     WriteSimhObject(file, end_of_data);
