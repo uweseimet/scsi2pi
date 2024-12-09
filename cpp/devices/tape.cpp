@@ -468,7 +468,7 @@ void Tape::WriteFilemarks6()
         return;
     }
 
-    // Since SSC-2 setmarks are not supported anymore
+    // Since SSC-3 setmarks are not supported anymore
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
