@@ -538,8 +538,9 @@ TEST(TapeTest, Space6_simh)
 
     Rewind(tape);
 
-    // Search for end-of-data
+    // Search for end-of-data, the count is ignored
     controller->SetCdbByte(1, 0b011);
+    controller->SetCdbByte(4, 10);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
     CheckPositions(tape, 24, 6);
 

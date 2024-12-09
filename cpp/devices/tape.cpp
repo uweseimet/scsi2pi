@@ -659,7 +659,8 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
             tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
         }
 
-        if (type == scsi_type && requested_count <= 0) {
+        // For end-of-data the count is ignored
+        if (type == scsi_type && (type == object_type::end_of_data || requested_count <= 0)) {
             return meta_data;
         }
 
