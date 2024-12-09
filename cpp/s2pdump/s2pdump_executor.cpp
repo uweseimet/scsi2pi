@@ -8,8 +8,10 @@
 
 #include "s2pdump_executor.h"
 #include <spdlog/spdlog.h>
+#include "shared/memory_util.h"
 
 using namespace spdlog;
+using namespace memory_util;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
@@ -44,7 +46,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
         return {0, 0};
     }
 
-    uint64_t capacity = GetInt32(buffer);
+    uint64_t capacity = GetInt32(buffer, 0);
 
     int sector_size_offset = 4;
 
@@ -58,7 +60,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
             return {0, 0};
         }
 
-        capacity = GetInt64(buffer);
+        capacity = GetInt64(buffer, 0);
 
         sector_size_offset = 8;
     }
@@ -141,18 +143,4 @@ set<int> S2pDumpExecutor::ReportLuns()
     }
 
     return luns;
-}
-
-uint32_t S2pDumpExecutor::GetInt32(span<uint8_t> buf, int offset)
-{
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
-        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
-}
-
-uint64_t S2pDumpExecutor::GetInt64(span<uint8_t> buf, int offset)
-{
-    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
-        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
-        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
-        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }
