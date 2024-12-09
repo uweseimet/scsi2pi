@@ -704,10 +704,10 @@ void Tape::RaiseEndOfPartition(int64_t info)
 
 void Tape::RaiseEndOfData(object_type type, int64_t info)
 {
+    tape_position -= META_DATA_SIZE;
+
     LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type {1}", tape_position,
         static_cast<int>(type)));
-
-    tape_position -= META_DATA_SIZE;
 
     SetInformation(info);
     SetEom(ascq::end_of_data_detected);
