@@ -648,9 +648,6 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
             return meta_data;
         }
 
-        --requested_count;
-        ++actual_count;
-
         LogTrace(
             fmt::format("Found object type {0}, length {1}, spaced over {2} object(s)", static_cast<int>(scsi_type),
                 length, actual_count));
@@ -665,7 +662,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
             }
             else {
                 // End-of-data while spacing over something else
-                RaiseEndOfData(type, requested_count + 1);
+                RaiseEndOfData(type, requested_count);
             }
         }
 
@@ -676,10 +673,15 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
 
         if (scsi_type == object_type::filemark && type == object_type::block) {
             // Terminate while spacing over blocks and a filemark is found
-            RaiseFilemark(requested_count + 1, read);
+            RaiseFilemark(requested_count, read);
         }
 
-        if (scsi_type == type && requested_count <= 0) {
+        if (scsi_type == type) {
+            --requested_count;
+            ++actual_count;
+        }
+
+        if (requested_count <= 0) {
             return meta_data;
         }
     }
@@ -776,12 +778,6 @@ bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
             throw scsi_exception(sense_key::medium_error, asc::read_error);
         }
         tape_position += META_DATA_SIZE;
-    }
-
-    // Update object location for valid data records and tape marks
-    if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
-        || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
-        object_location += reverse ? -1 : 1;
     }
 
     LogTrace(fmt::format("Read SIMH meta data with class {0:1X}, value ${1:07x} at position {2}",
@@ -884,6 +880,12 @@ pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int
     while (true) {
         if (!ReadNextMetaData(meta_data, reverse)) {
             RaiseBeginningOfPartition(count);
+        }
+
+        // Update object location for data records and tape marks
+        if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
+            || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
+            object_location += reverse ? -1 : 1;
         }
 
         switch (meta_data.cls) {
