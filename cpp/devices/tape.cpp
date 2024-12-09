@@ -659,19 +659,28 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
             tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
         }
 
+        if (scsi_type == object_type::end_of_data) {
+            if (type == object_type::end_of_data) {
+                return meta_data;
+            }
+            else {
+                // End-of-data while spacing over something else
+                RaiseEndOfData(type, requested_count + 1);
+            }
+        }
+
         // For end-of-data the count is ignored
-        if (type == scsi_type && (type == object_type::end_of_data || requested_count <= 0)) {
-            return meta_data;
+        if (type == object_type::end_of_data) {
+            continue;
         }
 
-        // End-of-data while spacing over blocks or filemarks
-        if (scsi_type == object_type::end_of_data && type != object_type::end_of_data) {
-            RaiseEndOfData(type, requested_count + 1);
-        }
-
-        // Terminate while spacing over blocks and a filemark is found
         if (scsi_type == object_type::filemark && type == object_type::block) {
+            // Terminate while spacing over blocks and a filemark is found
             RaiseFilemark(requested_count + 1, read);
+        }
+
+        if (scsi_type == type && requested_count <= 0) {
+            return meta_data;
         }
     }
 }

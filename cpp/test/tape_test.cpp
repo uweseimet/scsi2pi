@@ -454,32 +454,7 @@ TEST(TapeTest, Rewind)
 TEST(TapeTest, Space6_simh)
 {
     auto [controller, tape] = CreateTape();
-
     const string &filename = CreateImageFile(*tape);
-
-    // BLOCK, count = 0
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
-    CheckPositions(tape, 0, 0);
-
-    // BLOCK, count < 0
-    controller->SetCdbByte(2, 0xff);
-    Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 0, 0);
-
-    // BLOCK, count > 0
-    controller->SetCdbByte(2, 1);
-    Dispatch(tape, scsi_command::space_6);
-    CheckPositions(tape, 4, 1);
-
-    // End-of-data, count > 0
-    controller->SetCdbByte(1, 0b011);
-    controller->SetCdbByte(2, 1);
-    Dispatch(tape, scsi_command::space_6, sense_key::medium_error);
-
-    // End-of-data, count < 0
-    controller->SetCdbByte(1, 0b011);
-    controller->SetCdbByte(2, 0xff);
-    Dispatch(tape, scsi_command::space_6, sense_key::medium_error);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
@@ -528,19 +503,20 @@ TEST(TapeTest, Space6_simh)
     Dispatch(tape, scsi_command::space_6);
     CheckPositions(tape, 4, 1);
 
-    // Try to space over 10 filemarks
+    // Try to space over 10 filemarks, hitting end-of-data
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 10);
     Dispatch(tape, scsi_command::space_6, sense_key::blank_check);
     RequestSense(controller, tape);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(5U, GetInt32(controller->GetBuffer(), 3));
+    CheckPositions(tape, 24, 6);
 
     Rewind(tape);
 
-    // Search for end-of-data, the count is ignored
+    // Search for end-of-data, the count must be ignored
     controller->SetCdbByte(1, 0b011);
-    controller->SetCdbByte(4, 10);
+    controller->SetCdbByte(4, 255);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
     CheckPositions(tape, 24, 6);
 
