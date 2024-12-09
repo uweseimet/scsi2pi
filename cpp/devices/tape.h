@@ -85,6 +85,7 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     SimhMetaData FindNextObject(Tape::object_type, int32_t, bool);
     bool ReadNextMetaData(SimhMetaData&, bool);
+    void FindObject(uint32_t);
 
     [[noreturn]] void RaiseBeginningOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfPartition(int64_t);
@@ -101,7 +102,7 @@ private:
 
     void Erase();
 
-    void ResetPosition();
+    void ResetPositions();
 
     pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
     int WriteSimhMetaData(simh_class, uint32_t);

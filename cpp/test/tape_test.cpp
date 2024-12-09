@@ -66,6 +66,18 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
     file.flush();
 }
 
+static void WriteFilemark(ostream &file)
+{
+    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
+    WriteSimhObject(file, filemark);
+}
+
+static void WriteGoodData(ostream &file)
+{
+    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
+    WriteSimhObject(file, good_data, 512, good_data);
+}
+
 static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(6U, pages.size()) << "Unexpected number of mode pages";
@@ -283,10 +295,8 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 12);
     Dispatch(tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
 
-    // Hitting filemark when reading
     file.seekp(0);
-    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
-    WriteSimhObject(file, filemark);
+    WriteFilemark(file);
 
     Dispatch(tape, scsi_command::rewind);
 
@@ -473,14 +483,13 @@ TEST(TapeTest, Space6_simh)
 
     // Write 6 filemarks and 1 end-of-data
     ofstream file(filename);
-    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
     const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
+    WriteFilemark(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
     WriteSimhObject(file, end_of_data);
 
     Dispatch(tape, scsi_command::rewind);
@@ -551,24 +560,23 @@ TEST(TapeTest, Space6_simh)
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
     file.seekp(0);
-    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
     const vector<uint8_t> &bad_data = { 0x00, 0x02, 0x00, 0x80 };
     const vector<uint8_t> &bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
     const vector<uint8_t> &private_marker = { 0x00, 0x00, 0x00, 0x70 };
     const vector<uint8_t> &reserved_marker = { 0x00, 0x00, 0x00, 0xf0 };
     const vector<uint8_t> &erase_gap = { 0xfe, 0xff, 0xff, 0xff };
     const vector<uint8_t> &tape_description_data_record = { 0x01, 0x00, 0x00, 0xe0 };
-    WriteSimhObject(file, good_data, 512, good_data);
+    WriteGoodData(file);
     WriteSimhObject(file, bad_data_not_recovered);
-    WriteSimhObject(file, good_data, 512, good_data);
+    WriteGoodData(file);
     WriteSimhObject(file, bad_data, 512, bad_data);
-    WriteSimhObject(file, good_data, 512, good_data);
+    WriteGoodData(file);
     WriteSimhObject(file, erase_gap);
     WriteSimhObject(file, private_marker);
     WriteSimhObject(file, reserved_marker);
     WriteSimhObject(file, tape_description_data_record, 2, tape_description_data_record);
-    WriteSimhObject(file, good_data, 512, good_data);
-    WriteSimhObject(file, filemark);
+    WriteGoodData(file);
+    WriteFilemark(file);
 
     Dispatch(tape, scsi_command::rewind);
 
@@ -618,9 +626,9 @@ TEST(TapeTest, Space6_simh)
 
     // Write 1 block, 1 filemark, 1 block, 1 end-of-data
     file.seekp(0);
-    WriteSimhObject(file, good_data, 512, good_data);
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, good_data, 512, good_data);
+    WriteGoodData(file);
+    WriteFilemark(file);
+    WriteGoodData(file);
     WriteSimhObject(file, end_of_data);
 
     Dispatch(tape, scsi_command::rewind);
@@ -705,12 +713,10 @@ TEST(TapeTest, Locate10_simh)
     Dispatch(tape, scsi_command::locate_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     fstream file(filename);
-    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
-    WriteSimhObject(file, good_data, 512, good_data);
-    WriteSimhObject(file, good_data, 512, good_data);
-    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
-    WriteSimhObject(file, filemark);
-    WriteSimhObject(file, filemark);
+    WriteGoodData(file);
+    WriteGoodData(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
 
     // Locate object 2
     controller->SetCdbByte(6, 0x02);
@@ -770,19 +776,25 @@ TEST(TapeTest, Locate16_simh)
     Dispatch(tape, scsi_command::locate_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
     fstream file(filename);
-    const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
-    WriteSimhObject(file, good_data, 512, good_data);
-    WriteSimhObject(file, good_data, 512, good_data);
+    WriteGoodData(file);
+    WriteGoodData(file);
+    WriteFilemark(file);
+    WriteFilemark(file);
 
-    // Locate block 2
+    // Locate object 2
     controller->SetCdbByte(11, 0x02);
     Dispatch(tape, scsi_command::locate_16);
     CheckPositions(tape, 1040, 2);
 
-    // Locate block 0
+    // Locate object 0
     controller->SetCdbByte(11, 0x00);
     Dispatch(tape, scsi_command::locate_16);
     CheckPositions(tape, 0, 0);
+
+    // Locate object 4
+    controller->SetCdbByte(11, 0x04);
+    Dispatch(tape, scsi_command::locate_16);
+    CheckPositions(tape, 1048, 4);
 
     // BT
     controller->SetCdbByte(1, 0x04);
