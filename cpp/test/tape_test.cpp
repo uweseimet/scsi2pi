@@ -653,6 +653,14 @@ TEST(TapeTest, Space6_simh)
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 3);
+
+    Dispatch(tape, scsi_command::rewind);
+
+    // Space for end-of-data
+    controller->SetCdbByte(1, 0b011);
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::space_6));
+    CheckPositions(tape, 1044, 3);
 }
 
 TEST(TapeTest, Space6_tar)
