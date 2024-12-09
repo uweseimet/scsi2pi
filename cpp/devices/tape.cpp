@@ -690,9 +690,11 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
 void Tape::RaiseBeginningOfPartition(int64_t info)
 {
     LogTrace("Encountered beginning-of-partition while reverse-spacing");
+
     ResetPositions();
     SetInformation(info);
     SetEom(ascq::beginning_of_partition_medium_detected);
+
     throw scsi_exception(sense_key::no_sense);
 }
 
@@ -714,7 +716,6 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
         static_cast<int>(type)));
 
     SetInformation(info);
-    SetEom(ascq::end_of_data_detected);
 
     throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
 }
