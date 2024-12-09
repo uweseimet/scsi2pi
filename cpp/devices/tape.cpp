@@ -475,10 +475,8 @@ void Tape::WriteFilemarks6()
 
     CheckWritePreconditions();
 
-    if (const int count = GetCdbInt24(2); count) {
-        for (int i = 0; i < count; i++) {
-            WriteMetaData(object_type::filemark);
-        }
+    for (int i = 0; i < GetCdbInt24(2); i++) {
+        WriteMetaData(object_type::filemark);
     }
 
     StatusPhase();
