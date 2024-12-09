@@ -541,9 +541,12 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 0x00);
     Dispatch(tape, scsi_command::space_6, sense_key::no_sense, asc::no_additional_sense_information);
     RequestSense(controller, tape);
-    EXPECT_EQ(0b01000000, controller->GetBuffer()[2]) << "EOM must be set";
-    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(0xffU, GetInt32(controller->GetBuffer(), 3));
+    const auto &buf = controller->GetBuffer();
+    EXPECT_EQ(0b01000000, buf[2]) << "EOM must be set";
+    EXPECT_EQ(0x80, buf[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(ascq::beginning_of_partition_medium_detected, static_cast<ascq>(buf[13]))
+        << "ASCQ must be beginning-of-medium";
+    EXPECT_EQ(0xffU, GetInt32(buf, 3));
 
 
     // Write 6 data records (bad and good) and different markers, 1 filemark
