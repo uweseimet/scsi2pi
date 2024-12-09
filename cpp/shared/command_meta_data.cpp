@@ -52,6 +52,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::read_toc, 10, "READ TOC");
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)");
     AddCommand(scsi_command::mode_sense_10, 10, "MODE SENSE(10)");
+    AddCommand(scsi_command::write_filemarks_16, 16, "WRITE FILEMARKS(16)");
     AddCommand(scsi_command::read_16, 16, "READ(16)");
     AddCommand(scsi_command::write_16, 16, "WRITE(16)");
     AddCommand(scsi_command::verify_16, 16, "VERIFY(16)");

@@ -100,6 +100,7 @@ enum class scsi_command
     read_toc = 0x43,
     mode_select_10 = 0x55,
     mode_sense_10 = 0x5a,
+    write_filemarks_16 = 0x80,
     read_16 = 0x88,
     write_16 = 0x8a,
     verify_16 = 0x8f,

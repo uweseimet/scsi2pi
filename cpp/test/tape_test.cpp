@@ -687,17 +687,17 @@ TEST(TapeTest, WriteFileMarks6_simh)
     controller->SetCdbByte(1, 0b010);
     Dispatch(tape, scsi_command::write_filemarks_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
 
-    // Count = 0
+    // 0 filemarks
     controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_6));
 
-    // Count = 100
+    // 100 filemarks
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 100);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_6));
     CheckPositions(tape, 400, 0);
 
-    // Count = 100
+    // 100 filemarks
     controller->SetCdbByte(1, 0b001);
     controller->SetCdbByte(4, 100);
     Dispatch(tape, scsi_command::write_filemarks_6, sense_key::volume_overflow);
@@ -713,8 +713,37 @@ TEST(TapeTest, WriteFileMarks6_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
-    controller->SetCdbByte(1, 0b001);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_6));
+}
+
+TEST(TapeTest, WriteFileMarks16_simh)
+{
+    auto [controller, tape] = CreateTape();
+    CreateImageFile(*tape, 1024);
+
+    // 0 filemarks
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_16));
+
+    // 100 filemarks
+    controller->SetCdbByte(14, 100);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_16));
+    CheckPositions(tape, 400, 0);
+
+    // 100 filemarks
+    controller->SetCdbByte(14, 100);
+    Dispatch(tape, scsi_command::write_filemarks_16, sense_key::volume_overflow);
+    CheckPositions(tape, 512, 0);
+
+    tape->SetProtected(true);
+    Dispatch(tape, scsi_command::write_filemarks_16, sense_key::data_protect, asc::write_protected);
+}
+
+TEST(TapeTest, WriteFileMarks16_tar)
+{
+    auto [controller, tape] = CreateTape();
+    CreateImageFile(*tape, 512, "tar");
+
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_filemarks_16));
 }
 
 TEST(TapeTest, Locate10_simh)

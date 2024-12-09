@@ -63,6 +63,10 @@ bool Tape::SetUp()
         {
             WriteFilemarks6();
         });
+    AddCommand(scsi_command::write_filemarks_16, [this]
+        {
+            WriteFilemarks(true);
+        });
     AddCommand(scsi_command::locate_10, [this]
         {
             Locate(false);
@@ -462,8 +466,13 @@ void Tape::Space6()
 
 void Tape::WriteFilemarks6()
 {
+    WriteFilemarks(false);
+}
+
+void Tape::WriteFilemarks(bool write_filemarks_16)
+{
     if (tar_file) {
-        LogTrace("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS(6) command is ignored");
+        LogTrace("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS command is ignored");
         StatusPhase();
         return;
     }
@@ -475,21 +484,34 @@ void Tape::WriteFilemarks6()
 
     CheckWritePreconditions();
 
-    for (int i = 0; i < GetCdbInt24(2); i++) {
+    int count;
+    if (write_filemarks_16) {
+        if (const auto identifier = static_cast<uint32_t>(GetCdbInt64(4)); identifier) {
+            ResetPositions();
+            FindObject(identifier);
+        }
+
+        count = GetCdbInt24(12);
+    }
+    else {
+        count = GetCdbInt24(2);
+    }
+
+    for (int i = 0; i < count; i++) {
         WriteMetaData(object_type::filemark);
     }
 
     StatusPhase();
 }
 
-void Tape::Locate(bool locate16)
+void Tape::Locate(bool locate_16)
 {
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    auto identifier = static_cast<uint32_t>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
+    auto identifier = static_cast<uint32_t>(locate_16 ? GetCdbInt64(4) : GetCdbInt32(3));
     const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_file) {
