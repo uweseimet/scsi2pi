@@ -438,8 +438,10 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     const int status = executor->ExecuteCommand(cdb, buffer, timeout);
     if (status) {
-        if (status != 0xff && request_sense) {
-            return executor->GetSenseData();
+        if (status != 0xff) {
+            if (request_sense) {
+                return executor->GetSenseData();
+            }
         }
         else {
             const string_view &command_name = CommandMetaData::Instance().GetCommandName(
