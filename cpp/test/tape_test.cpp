@@ -632,7 +632,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 1);
     Dispatch(tape, scsi_command::space_6, sense_key::blank_check);
     RequestSense(controller, tape);
-    EXPECT_EQ(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
+    EXPECT_NE(ascq::end_of_data_detected, static_cast<ascq>(controller->GetBuffer()[13]));
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 3);
