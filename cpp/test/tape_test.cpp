@@ -708,16 +708,24 @@ TEST(TapeTest, Locate10_simh)
     const vector<uint8_t> &good_data = { 0x00, 0x02, 0x00, 0x00 };
     WriteSimhObject(file, good_data, 512, good_data);
     WriteSimhObject(file, good_data, 512, good_data);
+    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
+    WriteSimhObject(file, filemark);
+    WriteSimhObject(file, filemark);
 
-    // Locate block 2
+    // Locate object 2
     controller->SetCdbByte(6, 0x02);
     Dispatch(tape, scsi_command::locate_10);
     CheckPositions(tape, 1040, 2);
 
-    // Locate block 0
+    // Locate object 0
     controller->SetCdbByte(6, 0x00);
     Dispatch(tape, scsi_command::locate_10);
     CheckPositions(tape, 0, 0);
+
+    // Locate object 4
+    controller->SetCdbByte(6, 0x04);
+    Dispatch(tape, scsi_command::locate_10);
+    CheckPositions(tape, 1048, 4);
 
     // BT
     controller->SetCdbByte(1, 0x04);

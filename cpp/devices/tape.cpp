@@ -493,7 +493,7 @@ void Tape::Locate(bool locate16)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const auto identifier = static_cast<int>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
+    auto identifier = static_cast<int>(locate16 ? GetCdbInt64(4) : GetCdbInt32(3));
     const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_file) {
@@ -517,7 +517,19 @@ void Tape::Locate(bool locate16)
         } else {
             ResetPosition();
             if (identifier) {
-                FindNextObject(object_type::block, identifier, false);
+                while (true) {
+                    SimhMetaData meta_data;
+                    ReadSimhMetaData(meta_data, 0, false);
+                    if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
+                        || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
+                        tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
+
+                        --identifier;
+                        if (!identifier) {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
