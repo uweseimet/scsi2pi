@@ -716,6 +716,7 @@ void Tape::RaiseFilemark(int32_t info, bool read)
     throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
 }
 
+// TODO Raise a read error with information field set also for other read errors
 void Tape::RaiseReadError(const SimhMetaData &meta_data)
 {
     LogError(fmt::format("Trailing record length {0} at position {1} does not match leading length {2}",
