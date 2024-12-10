@@ -14,14 +14,13 @@
 #pragma once
 
 #include <tuple>
-#include "base/interfaces/scsi_block_commands.h"
 #include "storage_device.h"
 
 using namespace std;
 
 class Cache;
 
-class Disk : public StorageDevice, public ScsiBlockCommands
+class Disk : public StorageDevice
 {
 
 public:
@@ -82,11 +81,11 @@ private:
     {
         Read(RW6);
     }
-    void Read10() override
+    void Read10()
     {
         Read(RW10);
     }
-    void Read16() override
+    void Read16()
     {
         Read(RW16);
     }
@@ -94,20 +93,20 @@ private:
     {
         Write(RW6);
     }
-    void Write10() override
+    void Write10()
     {
         Write(RW10);
     }
-    void Write16() override
+    void Write16()
     {
         Write(RW16);
     }
     void ReAssignBlocks();
     void Seek10();
-    void ReadCapacity10() override;
-    void ReadCapacity16() override;
+    void ReadCapacity10();
+    void ReadCapacity16();
     void ReadFormatCapacities();
-    void FormatUnit() override;
+    void FormatUnit();
     void Seek6();
     void Read(access_mode);
     void Write(access_mode);
