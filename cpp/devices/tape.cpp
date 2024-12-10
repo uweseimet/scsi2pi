@@ -605,12 +605,11 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
         break;
 
     default:
-        // Write tape object types not supported by SIMH (e.g. end-of-data) as private markers
-        WriteSimhMetaData(simh_class::private_marker, (static_cast<uint32_t>(type) << 24) | PRIVATE_MARKER_MAGIC);
+        assert(false);
         break;
     }
 
-    // Ensure that there is always an end-of-data object after the last position
+    // Ensure that there is always an end-of-data object behind the last position
     if (file_size >= tape_position + META_DATA_SIZE) {
         WriteSimhMetaData(simh_class::private_marker,
             (static_cast<uint32_t>(object_type::end_of_data) << 24) | PRIVATE_MARKER_MAGIC);
@@ -922,8 +921,8 @@ pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int
 int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
 {
     LogTrace(
-        fmt::format("Writing SIMH meta_data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, tape_position));
+        fmt::format("Writing SIMH meta data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
+            value, tape_position));
 
     CheckForOverflow(tape_position + META_DATA_SIZE);
 
