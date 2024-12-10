@@ -15,14 +15,15 @@
 #include <regex>
 #include <getopt.h>
 #include "buses/bus_factory.h"
+#include "disk_executor.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/simh_util.h"
 
 using namespace filesystem;
 using namespace s2p_util;
-using namespace simh_util;
 using namespace initiator_util;
+using namespace simh_util;
 
 void S2pDump::CleanUp() const
 {
@@ -81,7 +82,7 @@ bool S2pDump::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id, *default_logger());
+    executor = make_unique<DiskExecutor>(*bus, initiator_id, *default_logger());
 
     instance = this;
     // Signal handler for cleaning up

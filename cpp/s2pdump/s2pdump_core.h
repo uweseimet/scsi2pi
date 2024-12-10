@@ -11,7 +11,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <vector>
-#include "s2pdump_executor.h"
+#include "disk_executor.h"
 
 using namespace std;
 
@@ -60,7 +60,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> executor;
+    unique_ptr<DiskExecutor> executor;
 
     scsi_device_info_t scsi_device_info = { };
 
