@@ -643,22 +643,16 @@ string S2pDump::DumpTape(ostream &file)
             return "Can't transfer block";
         }
 
-        if (restore) {
-            assert(false);
-            return "TODO";
+        if (length) {
+            if (!WriteGoodData(file, buffer, length)) {
+                return "Can't write SIMH data record";
+            }
+
+            byte_count += length;
         }
         else {
-            if (length) {
-                if (!WriteGoodData(file, buffer, length)) {
-                    return "Can't write SIMH data record";
-                }
-
-                byte_count += length;
-            }
-            else {
-                if (!WriteFilemark(file)) {
-                    return "Can't write SIMH tape mark";
-                }
+            if (!WriteFilemark(file)) {
+                return "Can't write SIMH tape mark";
             }
         }
     }
