@@ -23,9 +23,7 @@ void TapeExecutor::Rewind()
 int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
 {
     vector<uint8_t> cdb(6);
-    cdb[2] = static_cast<uint8_t>(default_length >> 16);
-    cdb[3] = static_cast<uint8_t>(default_length >> 8);
-    cdb[4] = static_cast<uint8_t>(default_length);
+    SetInt32(cdb, 1, default_length);
 
     int status = initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
         default_length, 300);
@@ -51,9 +49,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
 
     debug("Found block with {} byte(s)", default_length);
 
-    cdb[2] = static_cast<uint8_t>(default_length >> 16);
-    cdb[3] = static_cast<uint8_t>(default_length >> 8);
-    cdb[4] = static_cast<uint8_t>(default_length);
+    SetInt32(cdb, 1, default_length);
 
     status = initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
         default_length, 300);

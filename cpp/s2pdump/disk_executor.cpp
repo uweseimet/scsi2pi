@@ -50,22 +50,15 @@ bool DiskExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t ble
 {
     if (bstart < 16777216 && blength <= 256) {
         vector<uint8_t> cdb(6);
-        cdb[1] = static_cast<uint8_t>(bstart >> 16);
-        cdb[2] = static_cast<uint8_t>(bstart >> 8);
-        cdb[3] = static_cast<uint8_t>(bstart);
-        cdb[4] = static_cast<uint8_t>(blength);
+        SetInt32(cdb, 1, bstart);
 
         return !initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
             length);
     }
     else {
         vector<uint8_t> cdb(10);
-        cdb[2] = static_cast<uint8_t>(bstart >> 24);
-        cdb[3] = static_cast<uint8_t>(bstart >> 16);
-        cdb[4] = static_cast<uint8_t>(bstart >> 8);
-        cdb[5] = static_cast<uint8_t>(bstart);
-        cdb[7] = static_cast<uint8_t>(blength >> 8);
-        cdb[8] = static_cast<uint8_t>(blength);
+        SetInt32(cdb, 2, bstart);
+        SetInt16(cdb, 7, blength);
 
         return !initiator_executor->Execute(is_write ? scsi_command::write_10 : scsi_command::read_10, cdb, buffer,
             length);
