@@ -29,5 +29,6 @@ private:
 
     unique_ptr<S2pDumpExecutor> s2pdump_executor;
 
-    int default_length = 0xffffff;
+    // TODO 0xffffff
+    int default_length = 0x0fffff;
 };
