@@ -217,4 +217,3 @@ void testing::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command command, s
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }
-
