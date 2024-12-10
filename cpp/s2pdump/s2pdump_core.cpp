@@ -581,9 +581,6 @@ string S2pDump::DumpRestoreDisk(fstream &fs)
 
 string S2pDump::DumpRestoreTape(fstream &fs)
 {
-    // TODO
-    assert(!restore);
-
     cout << "Starting " << (restore ? "restore" : "dump") << "\n";
 
     tape_executor->Rewind();
@@ -596,6 +593,7 @@ string S2pDump::DumpRestoreTape(fstream &fs)
 
         if (restore) {
             assert(false);
+            return "TODO";
         }
         else {
             if (length) {
