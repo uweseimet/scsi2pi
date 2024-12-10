@@ -586,7 +586,7 @@ string S2pDump::DumpRestoreDisk(fstream &file)
 
 string S2pDump::DumpRestoreTape(fstream &file)
 {
-    cout << "Starting " << (restore ? "restore from " : "dump to '") << filename << "'\n";
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
 
     if (tape_executor->Rewind()) {
         return "Can't rewind tape";
@@ -620,7 +620,7 @@ string S2pDump::DumpRestoreTape(fstream &file)
         }
     }
 
-    cout << "Finished " << (restore ? "restore from" : "dump to '") << filename << "'\n";
+    cout << "Finished " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
 
     return "";
 }
