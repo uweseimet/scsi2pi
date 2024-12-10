@@ -53,13 +53,14 @@ uint32_t simh_util::Pad(int length)
     return length + (length % 2 ? 1 : 0);
 }
 
-void simh_util::WriteFilemark(ostream &file)
+bool simh_util::WriteFilemark(ostream &file)
 {
     const array<uint8_t, 4> &filemark = { 0, 0, 0, 0 };
     file.write((const char*)filemark.data(), filemark.size());
+    return file.good();
 }
 
-void simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int length)
+bool simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int length)
 {
     const array<uint8_t, 4> good_data = { static_cast<uint8_t>(length & 0xff),
         static_cast<uint8_t>((length >> 8) & 0xff), static_cast<uint8_t>((length >> 16) & 0xff),
@@ -67,6 +68,7 @@ void simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int lengt
     file.write((const char*)good_data.data(), good_data.size());
     file.write((const char*)data.data(), length);
     file.write((const char*)good_data.data(), good_data.size());
+    return file.good();
 }
 
 simh_util::SimhMetaData simh_util::FromLittleEndian(span<const uint8_t> value)
