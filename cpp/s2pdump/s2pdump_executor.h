@@ -28,9 +28,6 @@ public:
     bool ModeSense6(span<uint8_t>);
     set<int> ReportLuns();
 
-    void Rewind();
-    int ReadWriteTape(span<uint8_t>, bool);
-
     void SetTarget(int id, int lun, bool sasi)
     {
         initiator_executor->SetTarget(id, lun, sasi);
@@ -39,8 +36,4 @@ public:
 protected:
 
     unique_ptr<InitiatorExecutor> initiator_executor;
-
-private:
-
-    int default_length = 0xffffff;
 };
