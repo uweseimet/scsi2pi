@@ -31,8 +31,6 @@ int GetInt24(const auto &buf, int offset)
     return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
 }
 
-int32_t GetSignedInt24(span<const int>, int);
-
 uint32_t GetInt32(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);

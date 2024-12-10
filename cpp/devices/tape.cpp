@@ -991,3 +991,9 @@ void Tape::CheckForWriteError()
 
     file.flush();
 }
+
+int32_t Tape::GetSignedInt24(span<const int> buf, int offset)
+{
+    const int value = GetInt24(buf, offset);
+    return value >= 0x800000 ? value - 0x1000000 : value;
+}
