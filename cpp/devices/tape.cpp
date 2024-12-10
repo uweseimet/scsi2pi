@@ -594,19 +594,8 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 
     file.seekp(tape_position);
 
-    switch (type) {
-    case object_type::block:
-    case object_type::filemark:
+    if (type == object_type::block || type == object_type::filemark) {
         tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
-        break;
-
-    case object_type::end_of_data:
-        // Handled below
-        break;
-
-    default:
-        assert(false);
-        break;
     }
 
     // Ensure that there is always an end-of-data object behind the last position
