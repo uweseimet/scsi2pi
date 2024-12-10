@@ -31,7 +31,6 @@ void S2pDumpExecutor::RequestSense() const
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
 {
     vector<uint8_t> cdb(6);
-    cdb[3] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[4] = static_cast<uint8_t>(buffer.size());
 
     return !initiator_executor->Execute(scsi_command::inquiry, cdb, buffer, static_cast<int>(buffer.size()));
