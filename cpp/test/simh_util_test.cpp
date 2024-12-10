@@ -79,7 +79,7 @@ TEST(SimhUtilTest, WriteFilemark)
     const string &filename = CreateTempFile();
     fstream file(filename);
 
-    WriteFilemark(file);
+    EXPECT_TRUE(WriteFilemark(file));
     file.flush();
 
     EXPECT_EQ(4, file_size(filename));
@@ -96,7 +96,7 @@ TEST(SimhUtilTest, WriteGoodData)
     fstream file(filename);
 
     vector<uint8_t> data = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
-    WriteGoodData(file, data, 8);
+    EXPECT_TRUE(WriteGoodData(file, data, 8));
     file.flush();
 
     EXPECT_EQ(16, file_size(filename));

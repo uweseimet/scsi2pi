@@ -172,7 +172,7 @@ int Tape::ReadData(data_in_t buf)
 
         tape_position -= record_length + META_DATA_SIZE;
 
-        CheckBlockLength(length);
+        CheckBlockLength();
     }
 
     LogTrace(
@@ -594,23 +594,11 @@ void Tape::WriteMetaData(Tape::object_type type, uint32_t size)
 
     file.seekp(tape_position);
 
-    switch (type) {
-    case object_type::block:
-    case object_type::filemark:
+    if (type == object_type::block || type == object_type::filemark) {
         tape_position += WriteSimhMetaData(simh_class::tape_mark_good_data_record, size);
-        break;
-
-    case object_type::end_of_data:
-        // Handled below
-        break;
-
-    default:
-        // Write tape object types not supported by SIMH (e.g. end-of-data) as private markers
-        WriteSimhMetaData(simh_class::private_marker, (static_cast<uint32_t>(type) << 24) | PRIVATE_MARKER_MAGIC);
-        break;
     }
 
-    // Ensure that there is always an end-of-data object after the last position
+    // Ensure that there is always an end-of-data object behind the last position
     if (file_size >= tape_position + META_DATA_SIZE) {
         WriteSimhMetaData(simh_class::private_marker,
             (static_cast<uint32_t>(object_type::end_of_data) << 24) | PRIVATE_MARKER_MAGIC);
@@ -680,7 +668,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
     }
 }
 
-void Tape::RaiseBeginningOfPartition(int64_t info)
+void Tape::RaiseBeginningOfPartition(int32_t info)
 {
     LogTrace("Encountered beginning-of-partition while reverse-spacing");
 
@@ -691,7 +679,7 @@ void Tape::RaiseBeginningOfPartition(int64_t info)
     throw scsi_exception(sense_key::no_sense);
 }
 
-void Tape::RaiseEndOfPartition(int64_t info)
+void Tape::RaiseEndOfPartition(int32_t info)
 {
     LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", tape_position));
 
@@ -701,7 +689,7 @@ void Tape::RaiseEndOfPartition(int64_t info)
     throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseEndOfData(object_type type, int64_t info)
+void Tape::RaiseEndOfData(object_type type, int32_t info)
 {
     tape_position -= META_DATA_SIZE;
 
@@ -713,7 +701,7 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
     throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseFilemark(int64_t info, bool read)
+void Tape::RaiseFilemark(int32_t info, bool read)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
@@ -922,8 +910,8 @@ pair<Tape::object_type, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int
 int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
 {
     LogTrace(
-        fmt::format("Writing SIMH meta_data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
-        value, tape_position));
+        fmt::format("Writing SIMH meta data with class {0:1X}, value ${1:07x} to position {2}", static_cast<int>(cls),
+            value, tape_position));
 
     CheckForOverflow(tape_position + META_DATA_SIZE);
 
@@ -933,9 +921,9 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
     return META_DATA_SIZE;
 }
 
-void Tape::CheckBlockLength(int length)
+void Tape::CheckBlockLength()
 {
-    if (static_cast<int>(record_length) != length) {
+    if (record_length != byte_count) {
         // In fixed mode an incorrect length always results in an error.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
@@ -951,12 +939,11 @@ void Tape::CheckBlockLength(int length)
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize())
-            || length > static_cast<int>(record_length)) {
+        else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize()) || byte_count > record_length) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
-            SetInformation(length - record_length);
+            SetInformation(byte_count - record_length);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }

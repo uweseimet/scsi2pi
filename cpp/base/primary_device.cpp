@@ -109,9 +109,9 @@ void PrimaryDevice::SetIli()
     ili = true;
 }
 
-void PrimaryDevice::SetInformation(int64_t value)
+void PrimaryDevice::SetInformation(int32_t value)
 {
-    information = static_cast<int32_t>(value);
+    information = value;
     valid = true;
 }
 

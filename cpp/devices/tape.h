@@ -86,10 +86,10 @@ private:
     bool ReadNextMetaData(SimhMetaData&, bool);
     void FindObject(uint32_t);
 
-    [[noreturn]] void RaiseBeginningOfPartition(int64_t);
-    [[noreturn]] void RaiseEndOfPartition(int64_t);
-    [[noreturn]] void RaiseEndOfData(Tape::object_type, int64_t);
-    [[noreturn]] void RaiseFilemark(int64_t, bool);
+    [[noreturn]] void RaiseBeginningOfPartition(int32_t);
+    [[noreturn]] void RaiseEndOfPartition(int32_t);
+    [[noreturn]] void RaiseEndOfData(Tape::object_type, int32_t);
+    [[noreturn]] void RaiseFilemark(int32_t, bool);
     [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
     uint32_t GetByteCount();
@@ -106,7 +106,7 @@ private:
     pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
-    void CheckBlockLength(int);
+    void CheckBlockLength();
 
     bool IsAtRecordBoundary();
 

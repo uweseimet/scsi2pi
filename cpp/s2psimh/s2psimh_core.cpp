@@ -154,7 +154,7 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    simh_file.open(simh_filename, ios::in | ios::out | ios::binary);
+    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
     if (simh_file.fail()) {
         cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << endl;
         return EXIT_FAILURE;
@@ -365,7 +365,7 @@ int S2pSimh::Add()
 
 void S2pSimh::PrintClass(const SimhMetaData &meta_data) const
 {
-    cout << "Offset " << old_position << hex << " ($" << old_position << "): Class " << uppercase
+    cout << "Offset " << old_position << hex << "/$" << old_position << ": Class " << uppercase
         << static_cast<int>(meta_data.cls) << nouppercase << dec;
 }
 
