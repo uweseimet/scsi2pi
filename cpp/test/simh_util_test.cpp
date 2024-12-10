@@ -16,13 +16,14 @@ using namespace testing;
 TEST(SimhUtilTest, ReadMetaData)
 {
     fstream file;
-    file.open(CreateTempName(), ios::in | ios::out | ios::binary);
+    file.open(CreateTempFile(), ios::in | ios::out | ios::binary);
     file.write((const char*)ToLittleEndian( { simh_class::tape_mark_good_data_record, 0 }).data(), META_DATA_SIZE);
     file.write((const char*)ToLittleEndian( { simh_class::tape_mark_good_data_record, 0x1234567 }).data(),
         META_DATA_SIZE);
     // end-of-data
     file.write((const char*)ToLittleEndian( { simh_class::private_marker, 0b011 }).data(), META_DATA_SIZE);
     file.write((const char*)ToLittleEndian( { simh_class::reserved_marker, 0 }).data(), META_DATA_SIZE);
+    file.flush();
 
     file.seekg(0);
 
@@ -71,6 +72,53 @@ TEST(SimhUtilTest, Pad)
     EXPECT_EQ(0U, Pad(0));
     EXPECT_EQ(6U, Pad(6));
     EXPECT_EQ(8U, Pad(7));
+}
+
+TEST(SimhUtilTest, WriteFilemark)
+{
+    const string &filename = CreateTempFile();
+    fstream file(filename);
+
+    WriteFilemark(file);
+    file.flush();
+
+    EXPECT_EQ(4, file_size(filename));
+    array<uint8_t, 4> data;
+    file.seekg(0);
+    file.read((char*)data.data(), data.size());
+    EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
+    EXPECT_EQ(0U, FromLittleEndian(data).value);
+}
+
+TEST(SimhUtilTest, WriteGoodData)
+{
+    const string &filename = CreateTempFile();
+    fstream file(filename);
+
+    vector<uint8_t> data = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    WriteGoodData(file, data, 8);
+    file.flush();
+
+    EXPECT_EQ(16, file_size(filename));
+    file.seekg(0);
+    data.resize(4);
+    file.read((char*)data.data(), data.size());
+    EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
+    EXPECT_EQ(8U, FromLittleEndian(data).value);
+    data.resize(8);
+    file.read((char*)data.data(), data.size());
+    EXPECT_EQ(0x01, data[0]);
+    EXPECT_EQ(0x02, data[1]);
+    EXPECT_EQ(0x03, data[2]);
+    EXPECT_EQ(0x04, data[3]);
+    EXPECT_EQ(0x05, data[4]);
+    EXPECT_EQ(0x06, data[5]);
+    EXPECT_EQ(0x07, data[6]);
+    EXPECT_EQ(0x08, data[7]);
+    data.resize(4);
+    file.read((char*)data.data(), data.size());
+    EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
+    EXPECT_EQ(8U, FromLittleEndian(data).value);
 }
 
 TEST(SimhUtilTest, FromLittleEndian)
