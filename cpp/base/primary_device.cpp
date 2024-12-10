@@ -184,7 +184,7 @@ void PrimaryDevice::Inquiry()
     DataInPhase(allocation_length);
 }
 
-void PrimaryDevice::ReportLuns()
+void PrimaryDevice::ReportLuns() const
 {
     // Only SELECT REPORT mode 0 is supported
     if (GetCdbByte(2)) {
@@ -244,7 +244,7 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic()
+void PrimaryDevice::SendDiagnostic() const
 {
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {

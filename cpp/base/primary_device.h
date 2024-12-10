@@ -110,7 +110,7 @@ protected:
 
     virtual void Inquiry();
     virtual void RequestSense();
-    void SendDiagnostic();
+    void SendDiagnostic() const;
     void ReserveUnit();
     void ReleaseUnit();
 
@@ -187,7 +187,7 @@ private:
     void SetController(AbstractController*);
 
     void TestUnitReady();
-    void ReportLuns();
+    void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;
 
