@@ -595,30 +595,36 @@ string S2pDump::DumpRestoreTape(fstream &file)
     uint64_t byte_count = 0;
 
     while (true) {
-        const int length = tape_executor->ReadWrite(buffer, restore);
-        if (length == -2) {
-            break;
-        }
-
-        if (length == -1) {
-            return "Can't transfer block";
-        }
-
         if (restore) {
             assert(false);
             return "TODO";
         }
         else {
-            if (length) {
-                if (!WriteGoodData(file, buffer, length)) {
-                    return "Can't write SIMH data record";
-                }
+            const int length = tape_executor->ReadWrite(buffer, restore);
+            if (length == -2) {
+                break;
+            }
 
-                byte_count += length;
+            if (length == -1) {
+                return "Can't transfer block";
+            }
+
+            if (restore) {
+                assert(false);
+                return "TODO";
             }
             else {
-                if (!WriteFilemark(file)) {
-                    return "Can't write SIMH tape mark";
+                if (length) {
+                    if (!WriteGoodData(file, buffer, length)) {
+                        return "Can't write SIMH data record";
+                    }
+
+                    byte_count += length;
+                }
+                else {
+                    if (!WriteFilemark(file)) {
+                        return "Can't write SIMH tape mark";
+                    }
                 }
             }
         }
