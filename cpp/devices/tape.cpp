@@ -797,9 +797,8 @@ uint32_t Tape::GetByteCount()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int32_t count = fixed ?
-            GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
-            GetSignedInt24(GetController()->GetCdb(), 2);
+    const int32_t count =
+        fixed ? GetInt24(GetController()->GetCdb(), 2) * GetBlockSize() : GetInt24(GetController()->GetCdb(), 2);
 
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", tape_position, count));
 
