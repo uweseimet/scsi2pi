@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,20 +12,21 @@
 
 using namespace std;
 
-class DiskExecutor : public S2pDumpExecutor
+class TapeExecutor : public S2pDumpExecutor
 {
 
 public:
 
-    DiskExecutor(Bus &b, int i, logger &l) : S2pDumpExecutor(b, i, l)
+    TapeExecutor(Bus &b, int i, logger &l) : S2pDumpExecutor(b, i, l)
     {
     }
 
-    pair<uint64_t, uint32_t> ReadCapacity();
-    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
-    void SynchronizeCache();
+    void Rewind();
+    int ReadWrite(span<uint8_t>, bool);
 
 private:
 
     unique_ptr<S2pDumpExecutor> s2pdump_executor;
+
+    int default_length = 0xffffff;
 };

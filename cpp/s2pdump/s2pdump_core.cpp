@@ -16,6 +16,7 @@
 #include <getopt.h>
 #include "buses/bus_factory.h"
 #include "disk_executor.h"
+#include "tape_executor.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/simh_util.h"
@@ -82,7 +83,8 @@ bool S2pDump::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<DiskExecutor>(*bus, initiator_id, *default_logger());
+    disk_executor = make_unique<DiskExecutor>(*bus, initiator_id, *default_logger());
+    tape_executor = make_unique<TapeExecutor>(*bus, initiator_id, *default_logger());
 
     instance = this;
     // Signal handler for cleaning up
@@ -359,7 +361,7 @@ void S2pDump::ScanBus()
             continue;
         }
 
-        auto luns = executor->ReportLuns();
+        auto luns = disk_executor->ReportLuns();
         // LUN 0 has already been dealt with
         luns.erase(0);
 
@@ -376,13 +378,13 @@ bool S2pDump::DisplayInquiry(bool check_type)
     cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
         << target_lun << "\n" << flush;
 
-    executor->SetTarget(target_id, target_lun, sasi);
+    disk_executor->SetTarget(target_id, target_lun, sasi);
 
     // Clear potential UNIT ATTENTION status
-    executor->TestUnitReady();
+    disk_executor->TestUnitReady();
 
     vector<uint8_t> buf(36);
-    if (!executor->Inquiry(buf)) {
+    if (!disk_executor->Inquiry(buf)) {
         return false;
     }
 
@@ -564,7 +566,7 @@ string S2pDump::DumpRestoreDisk(fstream &fs)
 
     if (restore) {
         // Ensure that if the target device is also a SCSI2Pi instance its image file becomes complete immediately
-        executor->SynchronizeCache();
+        disk_executor->SynchronizeCache();
     }
 
     cout << DIVIDER
@@ -584,10 +586,10 @@ string S2pDump::DumpRestoreTape(fstream &fs)
 
     cout << "Starting " << (restore ? "restore" : "dump") << "\n";
 
-    executor->Rewind();
+    tape_executor->Rewind();
 
     while (true) {
-        const int length = executor->ReadWriteTape(buffer, restore);
+        const int length = tape_executor->ReadWrite(buffer, restore);
         if (length == -1) {
             return "Can't transfer block";
         }
@@ -616,11 +618,11 @@ string S2pDump::ReadWriteDisk(fstream &fs, int sector_offset, uint32_t sector_co
             return "Error reading from file '" + filename + "'";
         }
 
-        if (!executor->ReadWriteDisk(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+        if (!disk_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
             return "Error/interrupted while writing to device";
         }
     } else {
-        if (!executor->ReadWriteDisk(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+        if (!disk_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
             return "Error/interrupted while reading from device";
         }
 
@@ -691,14 +693,14 @@ bool S2pDump::GetDeviceInfo()
     }
 
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    disk_executor->RequestSense();
 
     if (scsi_device_info.type == static_cast<byte>(device_type::sequential_access)) {
         return true;
     }
 
     if (!sasi) {
-        const auto [capacity, sector_size] = executor->ReadCapacity();
+        const auto [capacity, sector_size] = disk_executor->ReadCapacity();
         if (!capacity || !sector_size) {
             trace("Can't read device capacity");
             return false;
@@ -732,7 +734,7 @@ bool S2pDump::GetDeviceInfo()
 void S2pDump::DisplayProperties(int id, int lun) const
 {
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    disk_executor->RequestSense();
 
     cout << "\nDevice properties for s2p properties file:\n";
 
@@ -766,7 +768,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     vector<uint8_t> buf(255);
 
-    if (!executor->ModeSense6(buf)) {
+    if (!disk_executor->ModeSense6(buf)) {
         cout << "Warning: Can't get mode page data, medium may be missing or drive was not ready, try again\n" << flush;
         return;
     }

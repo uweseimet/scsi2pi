@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2023-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ pair<uint64_t, uint32_t> DiskExecutor::ReadCapacity()
     return {capacity + 1, sector_size};
 }
 
-bool DiskExecutor::ReadWriteDisk(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool is_write)
+bool DiskExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
     if (bstart < 16777216 && blength <= 256) {
         vector<uint8_t> cdb(6);

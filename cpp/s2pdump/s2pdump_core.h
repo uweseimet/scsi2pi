@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include "disk_executor.h"
+#include "tape_executor.h"
 
 using namespace std;
 
@@ -60,7 +61,8 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<DiskExecutor> executor;
+    unique_ptr<DiskExecutor> disk_executor;
+    unique_ptr<TapeExecutor> tape_executor;
 
     scsi_device_info_t scsi_device_info = { };
 
