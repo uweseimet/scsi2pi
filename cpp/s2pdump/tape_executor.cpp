@@ -20,18 +20,11 @@ int TapeExecutor::Rewind()
     return initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, 300);
 }
 
-int TapeExecutor::Space(bool filemark, bool reverse)
+int TapeExecutor::Space(bool filemark, int count)
 {
     vector<uint8_t> cdb(6);
+    SetInt32(cdb, 1, count);
     cdb[1] = filemark ? 0b001 : 0b000;
-    if (reverse) {
-        cdb[2] = 0xff;
-        cdb[3] = 0xff;
-        cdb[4] = 0xff;
-    }
-    else {
-        cdb[4] = 0x01;
-    }
 
     return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, 3);
 }
@@ -66,6 +59,12 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
     default_length -= GetInt32(buffer, 3);
 
     debug("Found block with {} byte(s)", default_length);
+
+    // Space back
+    if (Space(false, -1)) {
+        error("Can't space back");
+        return -1;
+    }
 
     SetInt32(cdb, 1, default_length);
     status = initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,

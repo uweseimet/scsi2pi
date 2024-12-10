@@ -22,7 +22,7 @@ public:
     }
 
     int Rewind();
-    int Space(bool, bool);
+    int Space(bool, int);
     int ReadWrite(span<uint8_t>, bool);
 
 private:
