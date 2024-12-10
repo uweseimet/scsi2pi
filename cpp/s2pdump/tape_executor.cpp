@@ -42,6 +42,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 {
     vector<uint8_t> cdb(6);
 
+    // Restore
     if (length) {
         SetInt24(cdb, 2, length);
 
@@ -51,55 +52,51 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         return length;
     }
-    else {
-        bool retry = false;
 
-        while (true) {
-            SetInt24(cdb, 2, default_length);
+    // Dump
+    bool retry = false;
+    while (true) {
+        SetInt24(cdb, 2, default_length);
 
-            if (!initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT, false)) {
-                debug("Read block with {} byte(s)", default_length);
-
-                return default_length;
-            }
-
-            if (retry) {
-                throw io_exception("Block read retry failed");
-            }
-
-            fill_n(cdb.begin(), cdb.size(), 0);
-            cdb[4] = 14;
-            const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
-                false);
-            if (status && status != 0x02) {
-                throw io_exception("Unknown error");
-            }
-
-            if (static_cast<sense_key>(buf[2] & 0x0f) == sense_key::blank_check) {
-                debug("No more data");
-                return -1;
-            }
-
-            if (buf[2] & 0x80) {
-                debug("Encountered filemark");
-                return 0;
-            }
-
-            if (!(buf[0] & 0x80)) {
-                throw io_exception("INFORMATION field is not valid");
-            }
-
-            default_length -= GetInt32(buf, 3);
-
-            if (SpaceBack()) {
-                throw io_exception("Can't space back");
-            }
-
-            retry = true;
+        if (!initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT, false)) {
+            debug("Read block with {} byte(s)", default_length);
+            return default_length;
         }
-    }
 
-    return 0;
+        if (retry) {
+            throw io_exception("Block read retry failed");
+        }
+
+        fill_n(cdb.begin(), cdb.size(), 0);
+        cdb[4] = 14;
+        const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
+            false);
+        if (status && status != 0x02) {
+            throw io_exception("Unknown error");
+        }
+
+        if (static_cast<sense_key>(buf[2] & 0x0f) == sense_key::blank_check) {
+            debug("No more data");
+            return -1;
+        }
+
+        if (buf[2] & 0x80) {
+            debug("Encountered filemark");
+            return 0;
+        }
+
+        if (!(buf[0] & 0x80)) {
+            throw io_exception("INFORMATION field is not valid");
+        }
+
+        default_length -= GetInt32(buf, 3);
+
+        if (SpaceBack()) {
+            throw io_exception("Can't space back");
+        }
+
+        retry = true;
+    }
 }
 
 void TapeExecutor::SetInt24(span<uint8_t> buf, int offset, int value)
