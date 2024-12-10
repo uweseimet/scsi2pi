@@ -604,7 +604,7 @@ string S2pDump::DumpRestoreTape(fstream &file)
         else {
             if (length) {
                 if (!WriteGoodData(file, buffer, length)) {
-                    return "Can't write SIMH data";
+                    return "Can't write SIMH data record";
                 }
             }
             else {
