@@ -21,13 +21,15 @@ int TapeExecutor::Rewind()
     return initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, LONG_TIMEOUT, true);
 }
 
-int TapeExecutor::SpaceBack()
+void TapeExecutor::SpaceBack()
 {
     vector<uint8_t> cdb(6);
     cdb[1] = 0b000;
     SetInt24(cdb, 2, -1);
 
-    return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, SHORT_TIMEOUT, true);
+    if (initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, SHORT_TIMEOUT, false)) {
+        throw io_exception("Can't space back");
+    }
 }
 
 int TapeExecutor::WriteFilemark()
@@ -54,17 +56,13 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
     }
 
     // Dump
-    bool retry = false;
+    bool has_error = false;
     while (true) {
         SetInt24(cdb, 2, default_length);
 
         if (!initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT, false)) {
             debug("Read block with {} byte(s)", default_length);
             return default_length;
-        }
-
-        if (retry) {
-            return -2;
         }
 
         fill_n(cdb.begin(), cdb.size(), 0);
@@ -75,9 +73,23 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             throw io_exception(fmt::format("Unknown error status {}", status));
         }
 
-        if (static_cast<sense_key>(buf[2] & 0x0f) == sense_key::blank_check) {
+        const sense_key sense_key = static_cast<enum sense_key>(buf[2] & 0x0f);
+
+        if (sense_key == sense_key::medium_error) {
+            if (has_error) {
+                return BAD_BLOCK;
+            }
+
+            has_error = true;
+
+            SpaceBack();
+
+            continue;
+        }
+
+        if (sense_key == sense_key::blank_check) {
             debug("No more data");
-            return -1;
+            return NO_MORE_DATA;
         }
 
         if (buf[2] & 0x80) {
@@ -91,11 +103,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         default_length -= GetInt32(buf, 3);
 
-        if (SpaceBack()) {
-            throw io_exception("Can't space back");
-        }
-
-        retry = true;
+        SpaceBack();
     }
 }
 

@@ -25,9 +25,12 @@ public:
     int WriteFilemark();
     int ReadWrite(span<uint8_t>, int);
 
+    static const int NO_MORE_DATA = -1;
+    static const int BAD_BLOCK = -2;
+
 private:
 
-    int SpaceBack();
+    void SpaceBack();
 
     static void SetInt24(span<uint8_t>, int, int);
 

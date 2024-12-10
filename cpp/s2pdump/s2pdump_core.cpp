@@ -635,19 +635,18 @@ void S2pDump::DumpTape(ostream &file)
 {
     while (true) {
         const int length = tape_executor->ReadWrite(buffer, 0);
-        if (length == -1) {
+        if (length == TapeExecutor::NO_MORE_DATA) {
             break;
         }
 
-        if (length == -2) {
+        if (length == TapeExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
             file.write((const char*)bad_data.data(), bad_data.size());
             if (file.bad()) {
                 throw io_exception("Can't write SIMH bad data record");
             }
         }
-
-        if (length) {
+        else if (length) {
             if (!WriteGoodData(file, buffer, length)) {
                 throw io_exception("Can't write SIMH good data record");
             }
