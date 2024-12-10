@@ -494,17 +494,17 @@ string S2pDump::DumpRestore()
         return "Can't get device information";
     }
 
-    fstream fs(filename, (restore ? ios::in : ios::out) | ios::binary);
-    if (fs.fail()) {
+    fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
+    if (file.fail()) {
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
     return
         scsi_device_info.type == static_cast<byte>(device_type::sequential_access) ?
-            DumpRestoreTape(fs) : DumpRestoreDisk(fs);
+            DumpRestoreTape(file) : DumpRestoreDisk(file);
 }
 
-string S2pDump::DumpRestoreDisk(fstream &fs)
+string S2pDump::DumpRestoreDisk(fstream &file)
 {
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
@@ -546,7 +546,7 @@ string S2pDump::DumpRestoreDisk(fstream &fs)
         debug("Data transfer size: " + to_string(sector_count * sector_size));
         debug("Image file chunk size: " + to_string(byte_count));
 
-        if (const string &error = ReadWriteDisk(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWriteDisk(file, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
         }
 
@@ -579,7 +579,7 @@ string S2pDump::DumpRestoreDisk(fstream &fs)
     return "";
 }
 
-string S2pDump::DumpRestoreTape(fstream &fs)
+string S2pDump::DumpRestoreTape(fstream &file)
 {
     cout << "Starting " << (restore ? "restore" : "dump") << "\n";
 
@@ -599,12 +599,12 @@ string S2pDump::DumpRestoreTape(fstream &fs)
         }
         else {
             if (length) {
-                if (!WriteGoodData(fs, buffer, length)) {
+                if (!WriteGoodData(file, buffer, length)) {
                     return "Can't write SIMH data";
                 }
             }
             else {
-                if (!WriteFilemark(fs)) {
+                if (!WriteFilemark(file)) {
                     return "Can't write SIMH tape mark";
                 }
 
@@ -619,11 +619,11 @@ string S2pDump::DumpRestoreTape(fstream &fs)
     return "";
 }
 
-string S2pDump::ReadWriteDisk(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::ReadWriteDisk(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
 {
     if (restore) {
-        fs.read((char*)buffer.data(), byte_count);
-        if (fs.fail()) {
+        file.read((char*)buffer.data(), byte_count);
+        if (file.fail()) {
             return "Error reading from file '" + filename + "'";
         }
 
@@ -635,8 +635,8 @@ string S2pDump::ReadWriteDisk(fstream &fs, int sector_offset, uint32_t sector_co
             return "Error/interrupted while reading from device";
         }
 
-        fs.write((const char*)buffer.data(), byte_count);
-        if (fs.fail()) {
+        file.write((const char*)buffer.data(), byte_count);
+        if (file.fail()) {
             return "Error writing to file '" + filename + "'";
         }
     }
