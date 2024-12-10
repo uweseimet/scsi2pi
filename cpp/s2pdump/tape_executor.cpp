@@ -72,7 +72,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
             false);
         if (status && status != 0x02) {
-            throw io_exception("Unknown error");
+            throw io_exception(fmt::format("Unknown error status {}", status));
         }
 
         if (static_cast<sense_key>(buf[2] & 0x0f) == sense_key::blank_check) {
