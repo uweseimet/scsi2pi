@@ -73,7 +73,7 @@ private:
     void Read6();
     void Write6();
     void Erase6();
-    void ReadBlockLimits();
+    void ReadBlockLimits() const;
     void Rewind();
     void Space6();
     void WriteFilemarks(bool);

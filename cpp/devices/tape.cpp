@@ -417,7 +417,7 @@ void Tape::Erase6()
     StatusPhase();
 }
 
-void Tape::ReadBlockLimits()
+void Tape::ReadBlockLimits() const
 {
     SetInt32(GetController()->GetBuffer(), 0, 0xffffff);
     SetInt16(GetController()->GetBuffer(), 4, 4);
