@@ -44,7 +44,16 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
 
     fill_n(cdb.begin(), cdb.size(), 0);
     cdb[4] = 14;
-    initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3);
+    status = initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3);
+    if (status && status != 0x02) {
+        error("Unknown error");
+        return -2;
+    }
+
+    if ((buffer[2] & 0x0f) == 0x08) {
+        debug("No more data");
+        return -2;
+    }
 
     if (buffer[2] & 0x80) {
         debug("Hit filemark");
@@ -63,7 +72,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
     // Space back
     if (Space(false, -1)) {
         error("Can't space back");
-        return -1;
+        return -2;
     }
 
     SetInt32(cdb, 1, default_length);
@@ -76,8 +85,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
     fill_n(cdb.begin(), cdb.size(), 0);
     cdb[4] = 14;
     initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3);
-    spdlog::error(buffer[2] & 0x0f);
-    spdlog::error(buffer[12]);
+
     // TODO Print sense data
 
     return -1;

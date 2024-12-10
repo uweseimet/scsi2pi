@@ -594,6 +594,10 @@ string S2pDump::DumpRestoreTape(fstream &file)
 
     while (true) {
         const int length = tape_executor->ReadWrite(buffer, restore);
+        if (length == -2) {
+            break;
+        }
+
         if (length == -1) {
             return "Can't transfer block";
         }
