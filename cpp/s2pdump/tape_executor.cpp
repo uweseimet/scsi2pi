@@ -42,8 +42,6 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 {
     vector<uint8_t> cdb(6);
 
-    bool retry = false;
-
     if (length) {
         SetInt24(cdb, 2, length);
 
@@ -55,6 +53,8 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         return length;
     }
     else {
+        bool retry = false;
+
         while (true) {
             SetInt24(cdb, 2, default_length);
 
