@@ -63,13 +63,6 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
     if (!trailing.empty()) {
         file.write((const char*)trailing.data(), trailing.size());
     }
-    file.flush();
-}
-
-static void WriteFilemark(ostream &file)
-{
-    const vector<uint8_t> &filemark = { 0, 0, 0, 0 };
-    WriteSimhObject(file, filemark);
 }
 
 static void WriteGoodData(ostream &file, int length = 512)
@@ -200,6 +193,7 @@ TEST(TapeTest, Read6)
     WriteSimhObject(file, bad_data, 512, bad_data);
     WriteSimhObject(file, bad_data_not_recovered);
     WriteSimhObject(file, end_of_data);
+    file.flush();
 
     Rewind(tape);
 
@@ -242,6 +236,7 @@ TEST(TapeTest, Read6)
     const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
     file.seekp(0);
     WriteSimhObject(file, block_size_mismatch, 256, block_size_mismatch);
+    file.flush();
 
     Rewind(tape);
 
@@ -293,6 +288,7 @@ TEST(TapeTest, Read6)
     const vector<uint8_t> &bad_trailing = { 0x01, 0x00, 0x00, 0x00 };
     file.seekp(0);
     WriteSimhObject(file, good_data_non_fixed, good_data_non_fixed[0], bad_trailing);
+    file.flush();
 
     Rewind(tape);
 
@@ -302,6 +298,7 @@ TEST(TapeTest, Read6)
 
     file.seekp(0);
     WriteFilemark(file);
+    file.flush();
 
     Rewind(tape);
 
@@ -472,6 +469,7 @@ TEST(TapeTest, Space6_simh)
     WriteFilemark(file);
     WriteFilemark(file);
     WriteSimhObject(file, end_of_data);
+    file.flush();
 
     Rewind(tape);
 
@@ -560,6 +558,7 @@ TEST(TapeTest, Space6_simh)
     WriteSimhObject(file, tape_description_data_record, 2, tape_description_data_record);
     WriteGoodData(file);
     WriteFilemark(file);
+    file.flush();
 
     Rewind(tape);
 
@@ -613,6 +612,7 @@ TEST(TapeTest, Space6_simh)
     WriteFilemark(file);
     WriteGoodData(file);
     WriteSimhObject(file, end_of_data);
+    file.flush();
 
     Rewind(tape);
 
@@ -737,6 +737,7 @@ TEST(TapeTest, Locate10_simh)
     WriteGoodData(file);
     WriteFilemark(file);
     WriteFilemark(file);
+    file.flush();
 
     // Locate object 2
     controller->SetCdbByte(6, 0x02);
@@ -800,6 +801,7 @@ TEST(TapeTest, Locate16_simh)
     WriteGoodData(file);
     WriteFilemark(file);
     WriteFilemark(file);
+    file.flush();
 
     // Locate object 2
     controller->SetCdbByte(11, 0x02);
