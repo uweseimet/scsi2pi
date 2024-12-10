@@ -13,14 +13,14 @@
 using namespace spdlog;
 using namespace memory_util;
 
-void TapeExecutor::Rewind()
+int TapeExecutor::Rewind()
 {
     vector<uint8_t> cdb(6);
 
-    initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, 300);
+    return initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, 300);
 }
 
-void TapeExecutor::Space(bool filemark, bool reverse)
+int TapeExecutor::Space(bool filemark, bool reverse)
 {
     vector<uint8_t> cdb(6);
     cdb[1] = filemark ? 0b001 : 0b000;
@@ -33,7 +33,7 @@ void TapeExecutor::Space(bool filemark, bool reverse)
         cdb[4] = 0x01;
     }
 
-    initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, 3);
+    return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, 3);
 }
 
 int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)

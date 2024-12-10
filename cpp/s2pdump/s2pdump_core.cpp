@@ -583,7 +583,9 @@ string S2pDump::DumpRestoreTape(fstream &fs)
 {
     cout << "Starting " << (restore ? "restore" : "dump") << "\n";
 
-    tape_executor->Rewind();
+    if (tape_executor->Rewind()) {
+        return "Can't rewind tape";
+    }
 
     while (true) {
         const int length = tape_executor->ReadWrite(buffer, restore);
@@ -597,13 +599,19 @@ string S2pDump::DumpRestoreTape(fstream &fs)
         }
         else {
             if (length) {
-                WriteGoodData(fs, buffer, length);
+                if (!WriteGoodData(fs, buffer, length)) {
+                    return "Can't write SIMH data";
+                }
             }
             else {
-                WriteFilemark(fs);
+                if (!WriteFilemark(fs)) {
+                    return "Can't write SIMH type mark";
+                }
 
                 // Space over filemark
-                tape_executor->Space(true, false);
+                if (tape_executor->Space(true, false)) {
+                    return "Can't space over filemark";
+                }
             }
         }
     }

@@ -21,8 +21,8 @@ public:
     {
     }
 
-    void Rewind();
-    void Space(bool, bool);
+    int Rewind();
+    int Space(bool, bool);
     int ReadWrite(span<uint8_t>, bool);
 
 private:
