@@ -45,7 +45,7 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
@@ -67,8 +67,9 @@ void S2pDump::Banner(bool header) const
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
-        << "  --start-sector/-S START            Start sector, default is 0.\n"
-        << "  --sector-count/-C COUNT            Sector count, default is the capacity.\n"
+        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "                                     default is the capacity.\n"
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
