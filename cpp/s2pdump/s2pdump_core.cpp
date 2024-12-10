@@ -499,6 +499,10 @@ string S2pDump::DumpRestore()
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
+    if (!restore) {
+        status(filename).permissions(perms::group_read | perms::others_read);
+    }
+
     return
         scsi_device_info.type == static_cast<byte>(device_type::sequential_access) ?
             DumpRestoreTape(file) : DumpRestoreDisk(file);
@@ -506,10 +510,6 @@ string S2pDump::DumpRestore()
 
 string S2pDump::DumpRestoreDisk(fstream &file)
 {
-    if (!restore) {
-        status(filename).permissions(perms::group_read | perms::others_read);
-    }
-
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
         return "";
