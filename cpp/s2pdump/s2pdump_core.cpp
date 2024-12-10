@@ -596,77 +596,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
         return "Can't rewind tape";
     }
 
-    uint64_t byte_count = 0;
-
-    while (true) {
-        if (restore) {
-            SimhMetaData meta_data;
-            if (!ReadMetaData(file, meta_data)) {
-                break;
-            }
-
-            if (meta_data.cls == simh_class::reserved_marker
-                && meta_data.value == static_cast<uint32_t>(simh_marker::end_of_medium)) {
-                break;
-            }
-
-            // Tape mark
-            if (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value) {
-                debug("Writing filemark");
-
-                if (tape_executor->WriteFilemark()) {
-                    return "Can't write filemark";
-                }
-            }
-            else if ((meta_data.cls == simh_class::tape_mark_good_data_record
-                || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
-                debug("Writing {} byte(s) block", meta_data.value);
-
-                buffer.resize(meta_data.value);
-
-                file.read((char*)buffer.data(), buffer.size());
-                if (file.bad()) {
-                    return "Can't read SIMH data record";
-                }
-
-                if (tape_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
-                    return "Can't write block";
-                }
-
-                file.seekg(META_DATA_SIZE, ios::cur);
-
-                byte_count += buffer.size();
-            }
-        }
-        else {
-            const int length = tape_executor->ReadWrite(buffer, 0);
-            if (length == -2) {
-                break;
-            }
-
-            if (length == -1) {
-                return "Can't transfer block";
-            }
-
-            if (restore) {
-                assert(false);
-                return "TODO";
-            }
-            else {
-                if (length) {
-                    if (!WriteGoodData(file, buffer, length)) {
-                        return "Can't write SIMH data record";
-                    }
-
-                    byte_count += length;
-                }
-                else {
-                    if (!WriteFilemark(file)) {
-                        return "Can't write SIMH tape mark";
-                    }
-                }
-            }
-        }
+    if (const string &error = restore ? RestoreTape(file) : DumpTape(file); !error.empty()) {
+        return error;
     }
 
     cout << "Finished " << (restore ? "restore from '" : "dump to '") << filename << "', " << byte_count
@@ -694,6 +625,86 @@ string S2pDump::ReadWriteDisk(fstream &file, int sector_offset, uint32_t sector_
         file.write((const char*)buffer.data(), byte_count);
         if (file.fail()) {
             return "Error writing to file '" + filename + "'";
+        }
+    }
+
+    return "";
+}
+
+string S2pDump::DumpTape(ostream &file)
+{
+    while (true) {
+        const int length = tape_executor->ReadWrite(buffer, 0);
+        if (length == -2) {
+            break;
+        }
+
+        if (length == -1) {
+            return "Can't transfer block";
+        }
+
+        if (restore) {
+            assert(false);
+            return "TODO";
+        }
+        else {
+            if (length) {
+                if (!WriteGoodData(file, buffer, length)) {
+                    return "Can't write SIMH data record";
+                }
+
+                byte_count += length;
+            }
+            else {
+                if (!WriteFilemark(file)) {
+                    return "Can't write SIMH tape mark";
+                }
+            }
+        }
+    }
+
+    return "";
+}
+
+string S2pDump::RestoreTape(istream &file)
+{
+    while (true) {
+        SimhMetaData meta_data;
+        if (!ReadMetaData(file, meta_data)) {
+            break;
+        }
+
+        if (meta_data.cls == simh_class::reserved_marker
+            && meta_data.value == static_cast<uint32_t>(simh_marker::end_of_medium)) {
+            break;
+        }
+
+        // Tape mark
+        if (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value) {
+            debug("Writing filemark");
+
+            if (tape_executor->WriteFilemark()) {
+                return "Can't write filemark";
+            }
+        }
+        else if ((meta_data.cls == simh_class::tape_mark_good_data_record
+            || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
+            debug("Writing {} byte(s) block", meta_data.value);
+
+            buffer.resize(meta_data.value);
+
+            file.read((char*)buffer.data(), buffer.size());
+            if (file.bad()) {
+                return "Can't read SIMH data record";
+            }
+
+            if (tape_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
+                return "Can't write block";
+            }
+
+            file.seekg(META_DATA_SIZE, ios::cur);
+
+            byte_count += buffer.size();
         }
     }
 

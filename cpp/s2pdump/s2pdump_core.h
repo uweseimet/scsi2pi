@@ -59,6 +59,9 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
+    string DumpTape(ostream&);
+    string RestoreTape(istream&);
+
     unique_ptr<Bus> bus;
 
     unique_ptr<DiskExecutor> disk_executor;
@@ -83,6 +86,8 @@ private:
 
     int start = 0;
     int count = 0;
+
+    uint64_t byte_count = 0;
 
     bool run_inquiry = false;
 
