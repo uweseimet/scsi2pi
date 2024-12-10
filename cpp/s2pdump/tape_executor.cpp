@@ -64,7 +64,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         }
 
         if (retry) {
-            throw io_exception("Block read retry failed");
+            return -2;
         }
 
         fill_n(cdb.begin(), cdb.size(), 0);

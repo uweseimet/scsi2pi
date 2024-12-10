@@ -26,9 +26,6 @@ using namespace s2p_util;
 using namespace initiator_util;
 using namespace simh_util;
 
-// TODO Refactor
-// TODO Handling of bad tape blocks
-
 void S2pDump::CleanUp() const
 {
     if (bus) {
@@ -642,9 +639,17 @@ void S2pDump::DumpTape(ostream &file)
             break;
         }
 
+        if (length == -2) {
+            const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
+            file.write((const char*)bad_data.data(), bad_data.size());
+            if (file.bad()) {
+                throw io_exception("Can't write SIMH bad data record");
+            }
+        }
+
         if (length) {
             if (!WriteGoodData(file, buffer, length)) {
-                throw io_exception("Can't write SIMH data record");
+                throw io_exception("Can't write SIMH good data record");
             }
 
             byte_count += length;
