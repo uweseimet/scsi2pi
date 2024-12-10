@@ -27,17 +27,15 @@
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif
-#include "base/interfaces/scsi_communications_commands.h"
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice, public ScsiCommunicationsCommands
+class DaynaPort : public PrimaryDevice
 {
 
 public:
 
     explicit DaynaPort(int);
-    ~DaynaPort() override = default;
 
     bool SetUp() override;
     void CleanUp() override;
@@ -50,8 +48,8 @@ public:
     vector<uint8_t> InquiryInternal() const override;
     void WriteData(cdb_t, data_out_t, int, int) override;
 
-    void GetMessage6() override;
-    void SendMessage6() const override;
+    void GetMessage6();
+    void SendMessage6() const;
     void RetrieveStats() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
