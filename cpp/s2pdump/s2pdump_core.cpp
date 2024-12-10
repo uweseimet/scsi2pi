@@ -506,6 +506,10 @@ string S2pDump::DumpRestore()
 
 string S2pDump::DumpRestoreDisk(fstream &file)
 {
+    if (!restore) {
+        status(filename).permissions(perms::group_read | perms::others_read);
+    }
+
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
         return "";
