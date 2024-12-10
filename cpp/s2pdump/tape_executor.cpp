@@ -24,8 +24,8 @@ int TapeExecutor::Rewind()
 int TapeExecutor::SpaceBack()
 {
     vector<uint8_t> cdb(6);
-    SetInt32(cdb, 1, -1);
-    cdb[1] = 0b00;
+    cdb[1] = 0b000;
+    SetInt24(cdb, 2, -1);
 
     return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, SHORT_TIMEOUT, true);
 }
@@ -33,23 +33,21 @@ int TapeExecutor::SpaceBack()
 int TapeExecutor::WriteFilemark()
 {
     vector<uint8_t> cdb(6);
-    SetInt32(cdb, 1, 1);
+    SetInt24(cdb, 2, 1);
 
     return initiator_executor->Execute(scsi_command::write_filemarks_6, cdb, { }, 0, SHORT_TIMEOUT, true);
 }
 
-int TapeExecutor::ReadWrite(span<uint8_t> buffer, int length)
+int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 {
     vector<uint8_t> cdb(6);
 
     bool retry = false;
 
     if (length) {
-        cdb[2] = static_cast<uint8_t>(length >> 16);
-        cdb[3] = static_cast<uint8_t>(length >> 8);
-        cdb[4] = static_cast<uint8_t>(length);
+        SetInt24(cdb, 2, length);
 
-        const int status = initiator_executor->Execute(scsi_command::write_6, cdb, buffer, length, LONG_TIMEOUT, false);
+        const int status = initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
         if (status) {
             throw io_exception("Can't write to tape");
         }
@@ -58,11 +56,9 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, int length)
     }
     else {
         while (true) {
-            cdb[2] = static_cast<uint8_t>(default_length >> 16);
-            cdb[3] = static_cast<uint8_t>(default_length >> 8);
-            cdb[4] = static_cast<uint8_t>(default_length);
+            SetInt24(cdb, 2, default_length);
 
-            int status = initiator_executor->Execute(scsi_command::read_6, cdb, buffer, default_length, LONG_TIMEOUT,
+            int status = initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT,
                 false);
             if (!status) {
                 debug("Read {} byte(s) block", default_length);
@@ -76,26 +72,26 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, int length)
 
             fill_n(cdb.begin(), cdb.size(), 0);
             cdb[4] = 14;
-            status = initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, SHORT_TIMEOUT, false);
+            status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT, false);
             if (status && status != 0x02) {
                 throw io_exception("Unknown error");
             }
 
-            if ((buffer[2] & 0x0f) == 0x08) {
+            if ((buf[2] & 0x0f) == 0x08) {
                 debug("No more data");
                 return -1;
             }
 
-            if (buffer[2] & 0x80) {
+            if (buf[2] & 0x80) {
                 debug("Hit filemark");
                 return 0;
             }
 
-            if (!(buffer[0] & 0x80)) {
+            if (!(buf[0] & 0x80)) {
                 throw io_exception("VALID is not set");
             }
 
-            default_length -= GetInt32(buffer, 3);
+            default_length -= GetInt32(buf, 3);
 
             if (SpaceBack()) {
                 throw io_exception("Can't space back");
@@ -107,3 +103,13 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, int length)
 
     return 0;
 }
+
+void TapeExecutor::SetInt24(span<uint8_t> buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
+
+    buf[offset] = static_cast<uint8_t>(value >> 16);
+    buf[offset + 1] = static_cast<uint8_t>(value >> 8);
+    buf[offset + 2] = static_cast<uint8_t>(value);
+}
+
