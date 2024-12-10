@@ -132,7 +132,7 @@ protected:
     void SetFilemark();
     void SetEom(ascq);
     void SetIli();
-    void SetInformation(int64_t);
+    void SetInformation(int32_t);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
