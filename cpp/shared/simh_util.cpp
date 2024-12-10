@@ -25,7 +25,7 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 
         file.clear();
         meta_data.cls = simh_class::reserved_marker;
-        meta_data.value = static_cast<int>(simh_marker::end_of_medium);
+        meta_data.value = static_cast<uint32_t>(simh_marker::end_of_medium);
     }
 
     return true;

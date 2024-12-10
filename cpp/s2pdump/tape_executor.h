@@ -23,7 +23,8 @@ public:
 
     int Rewind();
     int Space(bool, int);
-    int ReadWrite(span<uint8_t>, bool);
+    int WriteFilemark();
+    int ReadWrite(span<uint8_t>, int);
 
 private:
 
