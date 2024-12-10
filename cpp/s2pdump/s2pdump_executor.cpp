@@ -29,43 +29,43 @@ void S2pDumpExecutor::RequestSense() const
     initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()));
 }
 
-bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
+bool S2pDumpExecutor::Inquiry(span<uint8_t> buf)
 {
     vector<uint8_t> cdb(6);
-    SetInt16(cdb, 0, buffer.size());
+    cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buffer, static_cast<int>(buffer.size()));
+    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buf, static_cast<int>(buf.size()));
 }
 
-bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
+bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf)
 {
     vector<uint8_t> cdb(6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
-    cdb[4] = static_cast<uint8_t>(buffer.size());
+    cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buffer, static_cast<int>(buffer.size()));
+    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buf, static_cast<int>(buf.size()));
 }
 
 set<int> S2pDumpExecutor::ReportLuns()
 {
-    vector<uint8_t> buffer(512);
+    vector<uint8_t> buf(512);
     vector<uint8_t> cdb(12);
-    SetInt16(cdb, 8, buffer.size());
+    SetInt16(cdb, 8, buf.size());
 
     // Assume 8 LUNs in case REPORT LUNS is not available
-    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
+    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buf, static_cast<int>(buf.size()))) {
         trace("Target does not support REPORT LUNS");
         return {0, 1, 2, 3, 4, 5, 6, 7};
     }
 
-    const auto lun_count = (static_cast<size_t>(buffer[2]) << 8) | static_cast<size_t>(buffer[3]) / 8;
+    const auto lun_count = (static_cast<size_t>(buf[2]) << 8) | static_cast<size_t>(buf[3]) / 8;
     trace("Target reported LUN count of " + to_string(lun_count));
 
     set<int> luns;
     int offset = 8;
-    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buffer.size(); i++, offset += 8) {
-        const uint64_t lun = GetInt64(buffer, offset);
+    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buf.size(); i++, offset += 8) {
+        const uint64_t lun = GetInt64(buf, offset);
         if (lun < 32) {
             luns.insert(static_cast<int>(lun));
         }
