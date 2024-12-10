@@ -22,14 +22,18 @@ public:
     }
 
     int Rewind();
-    int Space(bool, int);
     int WriteFilemark();
     int ReadWrite(span<uint8_t>, int);
 
 private:
 
+    int SpaceBack();
+
     unique_ptr<S2pDumpExecutor> s2pdump_executor;
 
     // TODO 0xffffff
     int default_length = 0x0fffff;
+
+    static const int SHORT_TIMEOUT = 3;
+    static const int LONG_TIMEOUT = 300;
 };

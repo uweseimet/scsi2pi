@@ -59,8 +59,8 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
-    string DumpTape(ostream&);
-    string RestoreTape(istream&);
+    void DumpTape(ostream&);
+    void RestoreTape(istream&);
 
     unique_ptr<Bus> bus;
 

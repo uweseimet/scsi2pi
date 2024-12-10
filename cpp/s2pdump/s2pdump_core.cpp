@@ -596,8 +596,11 @@ string S2pDump::DumpRestoreTape(fstream &file)
         return "Can't rewind tape";
     }
 
-    if (const string &error = restore ? RestoreTape(file) : DumpTape(file); !error.empty()) {
-        return error;
+    try {
+        restore ? RestoreTape(file) : DumpTape(file);
+    }
+    catch (const io_exception &e) {
+        return e.what();
     }
 
     cout << "Finished " << (restore ? "restore from '" : "dump to '") << filename << "', " << byte_count
@@ -631,36 +634,30 @@ string S2pDump::ReadWriteDisk(fstream &file, int sector_offset, uint32_t sector_
     return "";
 }
 
-string S2pDump::DumpTape(ostream &file)
+void S2pDump::DumpTape(ostream &file)
 {
     while (true) {
         const int length = tape_executor->ReadWrite(buffer, 0);
-        if (length == -2) {
-            break;
-        }
-
         if (length == -1) {
-            return "Can't transfer block";
+            break;
         }
 
         if (length) {
             if (!WriteGoodData(file, buffer, length)) {
-                return "Can't write SIMH data record";
+                throw io_exception("Can't write SIMH data record");
             }
 
             byte_count += length;
         }
         else {
             if (!WriteFilemark(file)) {
-                return "Can't write SIMH tape mark";
+                throw io_exception("Can't write SIMH tape mark");
             }
         }
     }
-
-    return "";
 }
 
-string S2pDump::RestoreTape(istream &file)
+void S2pDump::RestoreTape(istream &file)
 {
     while (true) {
         SimhMetaData meta_data;
@@ -678,7 +675,7 @@ string S2pDump::RestoreTape(istream &file)
             debug("Writing filemark");
 
             if (tape_executor->WriteFilemark()) {
-                return "Can't write filemark";
+                throw io_exception("Can't write filemark");
             }
         }
         else if ((meta_data.cls == simh_class::tape_mark_good_data_record
@@ -689,11 +686,11 @@ string S2pDump::RestoreTape(istream &file)
 
             file.read((char*)buffer.data(), buffer.size());
             if (file.bad()) {
-                return "Can't read SIMH data record";
+                throw io_exception("Can't read SIMH data record");
             }
 
             if (tape_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
-                return "Can't write block";
+                throw io_exception("Can't write block");
             }
 
             file.seekg(META_DATA_SIZE, ios::cur);
@@ -701,8 +698,6 @@ string S2pDump::RestoreTape(istream &file)
             byte_count += buffer.size();
         }
     }
-
-    return "";
 }
 
 long S2pDump::CalculateEffectiveSize()
