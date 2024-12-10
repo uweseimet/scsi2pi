@@ -22,17 +22,17 @@ void S2pDumpExecutor::TestUnitReady() const
 
 void S2pDumpExecutor::RequestSense() const
 {
-    array<uint8_t, 14> buf = { };
+    array<uint8_t, 14> buf;
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
+
     initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()));
 }
 
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
 {
     vector<uint8_t> cdb(6);
-    cdb[3] = static_cast<uint8_t>(buffer.size() >> 8);
-    cdb[4] = static_cast<uint8_t>(buffer.size());
+    SetInt16(cdb, 0, buffer.size());
 
     return !initiator_executor->Execute(scsi_command::inquiry, cdb, buffer, static_cast<int>(buffer.size()));
 }
