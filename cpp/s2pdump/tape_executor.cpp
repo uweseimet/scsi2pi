@@ -49,7 +49,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         const int status = initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
         if (status) {
-            throw io_exception("Can't write to tape");
+            throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
         }
 
         return length;
@@ -61,13 +61,13 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             int status = initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT,
                 false);
             if (!status) {
-                debug("Read {} byte(s) block", default_length);
+                debug("Read block with {} byte(s)", default_length);
 
                 return default_length;
             }
 
             if (retry) {
-                throw io_exception("Retry failed");
+                throw io_exception("Block read retry failed");
             }
 
             fill_n(cdb.begin(), cdb.size(), 0);
@@ -77,18 +77,18 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
                 throw io_exception("Unknown error");
             }
 
-            if ((buf[2] & 0x0f) == 0x08) {
+            if (static_cast<sense_key>(buf[2] & 0x0f) == sense_key::blank_check) {
                 debug("No more data");
                 return -1;
             }
 
             if (buf[2] & 0x80) {
-                debug("Hit filemark");
+                debug("Encountered filemark");
                 return 0;
             }
 
             if (!(buf[0] & 0x80)) {
-                throw io_exception("VALID is not set");
+                throw io_exception("INFORMATION field is not valid");
             }
 
             default_length -= GetInt32(buf, 3);
