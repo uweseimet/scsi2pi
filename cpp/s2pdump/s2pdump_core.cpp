@@ -620,6 +620,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
         }
     }
 
+    cout << "Finished " << (restore ? "restore" : "dump") << "\n";
+
     return "";
 }
 

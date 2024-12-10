@@ -17,7 +17,7 @@ void S2pDumpExecutor::TestUnitReady() const
 {
     vector<uint8_t> cdb(6);
 
-    initiator_executor->Execute(scsi_command::test_unit_ready, cdb, { }, 0);
+    initiator_executor->Execute(scsi_command::test_unit_ready, cdb, { }, 0, 1, false);
 }
 
 void S2pDumpExecutor::RequestSense() const
@@ -26,7 +26,7 @@ void S2pDumpExecutor::RequestSense() const
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()));
+    initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()), 1, false);
 }
 
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buf)
@@ -34,7 +34,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buf)
     vector<uint8_t> cdb(6);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buf, static_cast<int>(buf.size()));
+    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buf, static_cast<int>(buf.size()), 1, false);
 }
 
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf)
@@ -44,7 +44,7 @@ bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf)
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buf, static_cast<int>(buf.size()));
+    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buf, static_cast<int>(buf.size()), 3, false);
 }
 
 set<int> S2pDumpExecutor::ReportLuns()
@@ -54,7 +54,7 @@ set<int> S2pDumpExecutor::ReportLuns()
     SetInt16(cdb, 8, buf.size());
 
     // Assume 8 LUNs in case REPORT LUNS is not available
-    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buf, static_cast<int>(buf.size()))) {
+    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buf, static_cast<int>(buf.size()), 1, false)) {
         trace("Target does not support REPORT LUNS");
         return {0, 1, 2, 3, 4, 5, 6, 7};
     }

@@ -17,7 +17,7 @@ int TapeExecutor::Rewind()
 {
     vector<uint8_t> cdb(6);
 
-    return initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, 300);
+    return initiator_executor->Execute(scsi_command::rewind, cdb, { }, 0, 300, true);
 }
 
 int TapeExecutor::Space(bool filemark, int count)
@@ -26,7 +26,7 @@ int TapeExecutor::Space(bool filemark, int count)
     SetInt32(cdb, 1, count);
     cdb[1] = filemark ? 0b001 : 0b000;
 
-    return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, 3);
+    return initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, 3, true);
 }
 
 int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
@@ -37,14 +37,14 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
     cdb[4] = static_cast<uint8_t>(default_length);
 
     int status = initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
-        default_length, 300);
+        default_length, 300, false);
     if (!status) {
         return default_length;
     }
 
     fill_n(cdb.begin(), cdb.size(), 0);
     cdb[4] = 14;
-    status = initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3);
+    status = initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3, false);
     if (status && status != 0x02) {
         error("Unknown error");
         return -2;
@@ -77,16 +77,16 @@ int TapeExecutor::ReadWrite(span<uint8_t> buffer, bool is_write)
 
     SetInt32(cdb, 1, default_length);
     status = initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
-        default_length, 300);
+        default_length, 300, false);
     if (!status) {
         return default_length;
     }
 
     fill_n(cdb.begin(), cdb.size(), 0);
     cdb[4] = 14;
-    initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3);
+    initiator_executor->Execute(scsi_command::request_sense, cdb, buffer, 14, 3, true);
 
-    // TODO Print sense data
+    // TODO Print sense data in initiator_executor
 
     return -1;
 }
