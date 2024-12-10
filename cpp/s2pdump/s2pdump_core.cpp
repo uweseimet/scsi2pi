@@ -379,6 +379,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
         << target_lun << "\n" << flush;
 
     disk_executor->SetTarget(target_id, target_lun, sasi);
+    tape_executor->SetTarget(target_id, target_lun, sasi);
 
     // Clear potential UNIT ATTENTION status
     disk_executor->TestUnitReady();
