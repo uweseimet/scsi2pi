@@ -670,7 +670,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
     }
 }
 
-void Tape::RaiseBeginningOfPartition(int64_t info)
+void Tape::RaiseBeginningOfPartition(int32_t info)
 {
     LogTrace("Encountered beginning-of-partition while reverse-spacing");
 
@@ -681,7 +681,7 @@ void Tape::RaiseBeginningOfPartition(int64_t info)
     throw scsi_exception(sense_key::no_sense);
 }
 
-void Tape::RaiseEndOfPartition(int64_t info)
+void Tape::RaiseEndOfPartition(int32_t info)
 {
     LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", tape_position));
 
@@ -691,7 +691,7 @@ void Tape::RaiseEndOfPartition(int64_t info)
     throw scsi_exception(sense_key::medium_error, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseEndOfData(object_type type, int64_t info)
+void Tape::RaiseEndOfData(object_type type, int32_t info)
 {
     tape_position -= META_DATA_SIZE;
 
@@ -703,7 +703,7 @@ void Tape::RaiseEndOfData(object_type type, int64_t info)
     throw scsi_exception(sense_key::blank_check, asc::no_additional_sense_information);
 }
 
-void Tape::RaiseFilemark(int64_t info, bool read)
+void Tape::RaiseFilemark(int32_t info, bool read)
 {
     LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
 
