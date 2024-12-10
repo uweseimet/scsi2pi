@@ -365,7 +365,7 @@ int S2pSimh::Add()
 
 void S2pSimh::PrintClass(const SimhMetaData &meta_data) const
 {
-    cout << "Offset " << old_position << hex << " ($" << old_position << "): Class " << uppercase
+    cout << "Offset " << old_position << hex << "/$" << old_position << ": Class " << uppercase
         << static_cast<int>(meta_data.cls) << nouppercase << dec;
 }
 
