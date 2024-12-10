@@ -603,6 +603,9 @@ string S2pDump::DumpRestoreTape(fstream &fs)
             }
             else {
                 WriteFilemark(fs);
+
+                // Space over filemark
+                tape_executor->Space(true, false);
             }
         }
     }
