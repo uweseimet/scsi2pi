@@ -18,7 +18,7 @@ TEST(ScriptGeneratorTest, AddCdb)
 
     EXPECT_FALSE(generator.CreateFile(""));
 
-    const string &filename = CreateTempName();
+    const string &filename = CreateTempFile();
     EXPECT_TRUE(generator.CreateFile(filename));
 
     auto cdb = CreateCdb(scsi_command::test_unit_ready, "01:02:03:04:05");

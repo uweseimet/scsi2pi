@@ -59,7 +59,7 @@ void S2pDump::Banner(bool header) const
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
         << "                                     error|critical|off), default is 'info'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
-        << "                                     device properties for s2p property files.\n"
+        << "                                     device properties for property files.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
@@ -376,6 +376,9 @@ bool S2pDump::DisplayInquiry(bool check_type)
 
     executor->SetTarget(target_id, target_lun, sasi);
 
+    // Clear potential UNIT ATTENTION status
+    executor->TestUnitReady();
+
     vector<uint8_t> buf(36);
     if (!executor->Inquiry(buf)) {
         return false;
@@ -682,7 +685,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     // Clear any pending error condition, e.g. a medium just having being inserted
     executor->RequestSense();
 
-    cout << "\nDevice properties for s2p property file:\n";
+    cout << "\nDevice properties for s2p properties file:\n";
 
     string id_and_lun = "device." + to_string(id);
     if (lun > 0) {

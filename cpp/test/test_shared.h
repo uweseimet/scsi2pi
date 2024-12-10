@@ -33,7 +33,7 @@ string CreateImageFile(StorageDevice&, size_t = 4096, const string& = "");
 
 string CreateTempName();
 pair<int, path> OpenTempFile(const string& = "");
-path CreateTempFile(size_t, const string& = "");
+path CreateTempFile(size_t = 0, const string& = "");
 string CreateTempFileWithData(span<const byte>, const string& = "");
 string ReadTempFileToString(const string&);
 

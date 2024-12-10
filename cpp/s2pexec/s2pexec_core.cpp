@@ -59,7 +59,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
             << "  --hex-output-file/-T FILE     Hexadecimal text output file for data received.\n"
             << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
-            << "  --no-request-sense/-n         Do not run REQUEST SENSE on error.\n"
+            << "  --request-sense/-R            Automatically send REQUEST SENSE on error.\n"
             << "  --reset-bus/-r                Reset the bus.\n"
             << "  --hex-only/-x                 Do not display/save the offset and ASCII data.\n"
             << "  --version/-v                  Display the program version.\n"
@@ -101,7 +101,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "help", no_argument, nullptr, 'H' },
         { "hex-only", no_argument, nullptr, 'x' },
         { "hex-output-file", required_argument, nullptr, 'T' },
-        { "no-request-sense", no_argument, nullptr, 'n' },
+        { "request-sense", no_argument, nullptr, 'R' },
         { "log-level", required_argument, nullptr, 'L' },
         { "reset-bus", no_argument, nullptr, 'r' },
         { "scsi-target", required_argument, nullptr, 'i' },
@@ -119,14 +119,14 @@ bool S2pExec::ParseArguments(span<char*> args)
     // Resetting these is important for the interactive mode
     command.clear();
     data.clear();
-    request_sense = true;
+    request_sense = false;
     reset_bus = false;
     binary_input_filename.clear();
     hex_input_filename.clear();
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:T:Hnrvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:T:HrRvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -175,16 +175,16 @@ bool S2pExec::ParseArguments(span<char*> args)
             log_level = optarg;
             break;
 
-        case 'n':
-            request_sense = false;
-            break;
-
         case 'o':
             tout = optarg;
             break;
 
         case 'r':
             reset_bus = true;
+            break;
+
+        case 'R':
+            request_sense = true;
             break;
 
         case 'T':
@@ -438,8 +438,10 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     const int status = executor->ExecuteCommand(cdb, buffer, timeout);
     if (status) {
-        if (status != 0xff && request_sense) {
-            return executor->GetSenseData();
+        if (status != 0xff) {
+            if (request_sense) {
+                return executor->GetSenseData();
+            }
         }
         else {
             const string_view &command_name = CommandMetaData::Instance().GetCommandName(
@@ -488,7 +490,7 @@ string S2pExec::ReadData()
         }
     }
     else {
-        const size_t size = file_size(path(filename));
+        const size_t size = file_size(filename);
         buffer.resize(size);
         in.read((char*)buffer.data(), size);
     }

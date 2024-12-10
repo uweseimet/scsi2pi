@@ -8,10 +8,9 @@
 
 #pragma once
 
-#include "base/interfaces/scsi_mmc_commands.h"
 #include "disk.h"
 
-class ScsiCd : public Disk, public ScsiMmcCommands
+class ScsiCd : public Disk
 {
 
 public:
@@ -33,7 +32,7 @@ protected:
 
 private:
 
-    void ReadToc() override;
+    void ReadToc();
 
     void CreateDataTrack();
 

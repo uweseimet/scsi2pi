@@ -9,14 +9,13 @@
 #pragma once
 
 #include <fstream>
-#include "base/interfaces/scsi_stream_commands.h"
 #include "shared/simh_util.h"
 #include "storage_device.h"
 
 using namespace std;
 using namespace simh_util;
 
-class Tape : public StorageDevice, public ScsiStreamCommands
+class Tape : public StorageDevice
 {
 
 public:
@@ -67,20 +66,17 @@ private:
         block = 0b000,
         filemark = 0b001,
         end_of_data = 0b011,
-        // SCSI2Pi-specific
-        beginning_of_partition = -1,
-        end_of_partition = -2
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void Read6() override;
-    void Write6() override;
-    void Erase6() override;
-    void ReadBlockLimits() override;
-    void Rewind() override;
-    void Space6() override;
-    void WriteFilemarks6() override;
+    void Read6();
+    void Write6();
+    void Erase6();
+    void ReadBlockLimits() const;
+    void Rewind();
+    void Space6();
+    void WriteFilemarks(bool);
     void FormatMedium();
     void ReadPosition() const;
     void Locate(bool);
@@ -88,6 +84,7 @@ private:
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     SimhMetaData FindNextObject(Tape::object_type, int32_t, bool);
     bool ReadNextMetaData(SimhMetaData&, bool);
+    void FindObject(uint32_t);
 
     [[noreturn]] void RaiseBeginningOfPartition(int64_t);
     [[noreturn]] void RaiseEndOfPartition(int64_t);
@@ -104,9 +101,9 @@ private:
 
     void Erase();
 
-    void ResetPosition();
+    void ResetPositions();
 
-    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, bool);
+    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
     int WriteSimhMetaData(simh_class, uint32_t);
 
     void CheckBlockLength(int);

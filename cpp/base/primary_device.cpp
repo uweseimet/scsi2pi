@@ -184,7 +184,7 @@ void PrimaryDevice::Inquiry()
     DataInPhase(allocation_length);
 }
 
-void PrimaryDevice::ReportLuns()
+void PrimaryDevice::ReportLuns() const
 {
     // Only SELECT REPORT mode 0 is supported
     if (GetCdbByte(2)) {
@@ -245,7 +245,7 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic()
+void PrimaryDevice::SendDiagnostic() const
 {
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
@@ -287,6 +287,8 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
     buf[4] = 0x1f;
     // Signal support of linked commands
     buf[7] = 0x08;
+    // TODO Temporary: Signal support of linked commands and synchronous transfers
+    buf[7] = 0x18;
 
     // Padded vendor, product, revision
     memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);

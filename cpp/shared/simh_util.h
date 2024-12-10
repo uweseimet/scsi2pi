@@ -56,6 +56,9 @@ bool IsRecord(const SimhMetaData&);
 
 uint32_t Pad(int);
 
+void WriteFilemark(ostream&);
+void WriteGoodData(ostream&, span<const uint8_t>, int);
+
 SimhMetaData FromLittleEndian(span<const uint8_t>);
 array<uint8_t, 4> ToLittleEndian(const SimhMetaData&);
 

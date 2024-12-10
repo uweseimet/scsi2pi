@@ -150,7 +150,7 @@ TEST(AbstractControllerTest, ScriptGenerator)
     NiceMock<MockAbstractController> controller;
     auto generator = make_shared<ScriptGenerator>();
     controller.SetScriptGenerator(generator);
-    const string &filename = CreateTempName();
+    const string &filename = CreateTempFile();
     generator->CreateFile(filename);
 
     controller.AddCdbToScript();

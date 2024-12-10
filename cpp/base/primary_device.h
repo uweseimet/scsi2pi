@@ -11,13 +11,12 @@
 #pragma once
 
 #include <functional>
-#include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 #include "s2p_defs.h"
 #include "device.h"
 
-class PrimaryDevice : public ScsiPrimaryCommands, public Device
+class PrimaryDevice : public Device
 {
     friend class AbstractController;
     friend class PageHandler;
@@ -25,8 +24,6 @@ class PrimaryDevice : public ScsiPrimaryCommands, public Device
     using command = function<void()>;
 
 public:
-
-    ~PrimaryDevice() override = default;
 
     bool Init();
     virtual bool SetUp() = 0;
@@ -111,13 +108,11 @@ protected:
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
-    void Inquiry() override;
-    void RequestSense() override;
-
-
-    void SendDiagnostic() override;
-    void ReserveUnit() override;
-    void ReleaseUnit() override;
+    virtual void Inquiry();
+    virtual void RequestSense();
+    void SendDiagnostic() const;
+    void ReserveUnit();
+    void ReleaseUnit();
 
     virtual int ModeSense6(cdb_t, data_in_t) const
     {
@@ -191,8 +186,8 @@ private:
 
     void SetController(AbstractController*);
 
-    void TestUnitReady() override;
-    void ReportLuns() override;
+    void TestUnitReady();
+    void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;
 
