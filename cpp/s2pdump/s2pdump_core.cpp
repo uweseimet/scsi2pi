@@ -26,6 +26,9 @@ using namespace s2p_util;
 using namespace initiator_util;
 using namespace simh_util;
 
+// TODO Refactor
+// TODO Handling of bad tape blocks
+
 void S2pDump::CleanUp() const
 {
     if (bus) {
