@@ -520,7 +520,7 @@ string S2pDump::DumpRestoreDisk(fstream &file)
         return "";
     }
 
-    cout << "Starting " << (restore ? "restore" : "dump") << "\n"
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n"
         << "  Start sector is " << start << "\n"
         << "  Sector count is " << count << "\n"
         << "  Buffer size is " << buffer.size() << " bytes\n\n"
