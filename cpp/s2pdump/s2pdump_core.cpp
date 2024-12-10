@@ -605,7 +605,7 @@ string S2pDump::DumpRestoreTape(fstream &fs)
             }
             else {
                 if (!WriteFilemark(fs)) {
-                    return "Can't write SIMH type mark";
+                    return "Can't write SIMH tape mark";
                 }
 
                 // Space over filemark
