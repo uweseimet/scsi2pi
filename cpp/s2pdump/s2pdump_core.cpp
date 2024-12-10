@@ -592,6 +592,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
         return "Can't rewind tape";
     }
 
+    uint64_t byte_count = 0;
+
     while (true) {
         const int length = tape_executor->ReadWrite(buffer, restore);
         if (length == -2) {
@@ -611,6 +613,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
                 if (!WriteGoodData(file, buffer, length)) {
                     return "Can't write SIMH data record";
                 }
+
+                byte_count += length;
             }
             else {
                 if (!WriteFilemark(file)) {
@@ -620,7 +624,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
         }
     }
 
-    cout << "Finished " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
+    cout << "Finished " << (restore ? "restore from '" : "dump to '") << filename << "', " << byte_count
+        << " data bytes transferred\n";
 
     return "";
 }
