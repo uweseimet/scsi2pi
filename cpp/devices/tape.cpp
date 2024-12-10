@@ -61,7 +61,7 @@ bool Tape::SetUp()
         });
     AddCommand(scsi_command::write_filemarks_6, [this]
         {
-            WriteFilemarks6();
+            WriteFilemarks(false);
         });
     AddCommand(scsi_command::write_filemarks_16, [this]
         {
@@ -464,11 +464,6 @@ void Tape::Space6()
     }
 
     StatusPhase();
-}
-
-void Tape::WriteFilemarks6()
-{
-    WriteFilemarks(false);
 }
 
 void Tape::WriteFilemarks(bool write_filemarks_16)

@@ -9,14 +9,13 @@
 #pragma once
 
 #include <fstream>
-#include "base/interfaces/scsi_stream_commands.h"
 #include "shared/simh_util.h"
 #include "storage_device.h"
 
 using namespace std;
 using namespace simh_util;
 
-class Tape : public StorageDevice, public ScsiStreamCommands
+class Tape : public StorageDevice
 {
 
 public:
@@ -71,13 +70,12 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void Read6() override;
-    void Write6() override;
-    void Erase6() override;
-    void ReadBlockLimits() override;
-    void Rewind() override;
-    void Space6() override;
-    void WriteFilemarks6() override;
+    void Read6();
+    void Write6();
+    void Erase6();
+    void ReadBlockLimits();
+    void Rewind();
+    void Space6();
     void WriteFilemarks(bool);
     void FormatMedium();
     void ReadPosition() const;
