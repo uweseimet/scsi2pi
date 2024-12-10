@@ -103,6 +103,7 @@ TEST(SimhUtilTest, WriteGoodData)
     data.resize(4);
     file.read((char*)data.data(), data.size());
     EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
+    EXPECT_EQ(8U, FromLittleEndian(data).value);
     data.resize(8);
     file.read((char*)data.data(), data.size());
     EXPECT_EQ(0x01, data[0]);
@@ -116,6 +117,7 @@ TEST(SimhUtilTest, WriteGoodData)
     data.resize(4);
     file.read((char*)data.data(), data.size());
     EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
+    EXPECT_EQ(8U, FromLittleEndian(data).value);
 }
 
 TEST(SimhUtilTest, FromLittleEndian)
