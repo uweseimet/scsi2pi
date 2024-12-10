@@ -28,7 +28,8 @@ public:
 private:
 
     int SpaceBack();
-    void SetInt24(span<uint8_t>, int, int);
+
+    static void SetInt24(span<uint8_t>, int, int);
 
     unique_ptr<S2pDumpExecutor> s2pdump_executor;
 
