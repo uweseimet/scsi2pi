@@ -45,8 +45,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
     if (length) {
         SetInt24(cdb, 2, length);
 
-        const int status = initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
-        if (status) {
+        if (initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false)) {
             throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
         }
 
@@ -58,9 +57,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         while (true) {
             SetInt24(cdb, 2, default_length);
 
-            int status = initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT,
-                false);
-            if (!status) {
+            if (!initiator_executor->Execute(scsi_command::read_6, cdb, buf, default_length, LONG_TIMEOUT, false)) {
                 debug("Read block with {} byte(s)", default_length);
 
                 return default_length;
@@ -72,7 +69,8 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
 
             fill_n(cdb.begin(), cdb.size(), 0);
             cdb[4] = 14;
-            status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT, false);
+            const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
+                false);
             if (status && status != 0x02) {
                 throw io_exception("Unknown error");
             }
