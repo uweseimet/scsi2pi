@@ -490,7 +490,7 @@ string S2pExec::ReadData()
         }
     }
     else {
-        const size_t size = file_size(path(filename));
+        const size_t size = file_size(filename);
         buffer.resize(size);
         in.read((char*)buffer.data(), size);
     }

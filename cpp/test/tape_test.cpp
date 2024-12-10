@@ -67,9 +67,8 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
 
 static void WriteGoodData(ostream &file, int length = 512)
 {
-    const array<uint8_t, 4> data = { static_cast<uint8_t>(length & 0xff), static_cast<uint8_t>((length >> 8) & 0xff),
-        static_cast<uint8_t>((length >> 16) & 0xff), static_cast<uint8_t>((length >> 24) & 0xff) };
-    WriteSimhObject(file, data, length, data);
+    const vector<uint8_t> data(length);
+    WriteGoodData(file, data, length);
 }
 
 static void Rewind(shared_ptr<Tape> tape)
