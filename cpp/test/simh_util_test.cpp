@@ -84,6 +84,7 @@ TEST(SimhUtilTest, WriteFilemark)
 
     EXPECT_EQ(4, file_size(filename));
     array<uint8_t, 4> data;
+    file.seekg(0);
     file.read((char*)data.data(), data.size());
     EXPECT_EQ(simh_class::tape_mark_good_data_record, FromLittleEndian(data).cls);
     EXPECT_EQ(0U, FromLittleEndian(data).value);
