@@ -17,9 +17,11 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/simh_util.h"
 
 using namespace filesystem;
 using namespace s2p_util;
+using namespace simh_util;
 using namespace initiator_util;
 
 void S2pDump::CleanUp() const
@@ -603,21 +605,6 @@ string S2pDump::DumpRestoreTape(fstream &fs)
     }
 
     return "";
-}
-
-void S2pDump::WriteFilemark(ostream &file)
-{
-    const array<uint8_t, 4> &filemark = { };
-    file.write((const char*)filemark.data(), filemark.size());
-}
-
-void S2pDump::WriteGoodData(ostream &file, span<const uint8_t> buffer, int length)
-{
-    const array<uint8_t, 4> data = { static_cast<uint8_t>(length & 0xff), static_cast<uint8_t>((length >> 8) & 0xff),
-        static_cast<uint8_t>((length >> 16) & 0xff), static_cast<uint8_t>((length >> 24) & 0xff) };
-    file.write((const char*)data.data(), data.size());
-    file.write((const char*)buffer.data(), length);
-    file.write((const char*)data.data(), data.size());
 }
 
 string S2pDump::ReadWriteDisk(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)

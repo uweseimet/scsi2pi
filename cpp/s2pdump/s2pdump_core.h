@@ -58,9 +58,6 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
-    static void WriteFilemark(ostream&);
-    static void WriteGoodData(ostream&, span<const uint8_t>, int);
-
     unique_ptr<Bus> bus;
 
     unique_ptr<S2pDumpExecutor> executor;
