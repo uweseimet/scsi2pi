@@ -10,7 +10,6 @@
 #include <chrono>
 #include <csignal>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <regex>
@@ -440,8 +439,12 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         cout << "SCSI-2";
         break;
 
+    case 3:
+        cout << "SPC";
+        break;
+
     default:
-        cout << fmt::format("{:02x}", buf[3]);
+        cout << "SPC-" << buf[3] - 2;
         break;
     }
     cout << "\n";
@@ -491,6 +494,13 @@ string S2pDump::DumpRestore()
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
+    return
+        scsi_device_info.type == static_cast<byte>(device_type::sequential_access) ?
+            DumpRestoreTape(fs) : DumpRestoreDisk(fs);
+}
+
+string S2pDump::DumpRestoreDisk(fstream &fs)
+{
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
         return "";
@@ -531,7 +541,7 @@ string S2pDump::DumpRestore()
         debug("Data transfer size: " + to_string(sector_count * sector_size));
         debug("Image file chunk size: " + to_string(byte_count));
 
-        if (const string &error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWriteDisk(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
         }
 
@@ -564,7 +574,53 @@ string S2pDump::DumpRestore()
     return "";
 }
 
-string S2pDump::ReadWrite(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::DumpRestoreTape(fstream &fs)
+{
+    // TODO
+    assert(!restore);
+
+    cout << "Starting " << (restore ? "restore" : "dump") << "\n";
+
+    executor->Rewind();
+
+    while (true) {
+        const int length = executor->ReadWriteTape(buffer, restore);
+        if (length == -1) {
+            return "Can't transfer block";
+        }
+
+        if (restore) {
+            assert(false);
+        }
+        else {
+            if (length) {
+                WriteGoodData(fs, buffer, length);
+            }
+            else {
+                WriteFilemark(fs);
+            }
+        }
+    }
+
+    return "";
+}
+
+void S2pDump::WriteFilemark(ostream &file)
+{
+    const array<uint8_t, 4> &filemark = { };
+    file.write((const char*)filemark.data(), filemark.size());
+}
+
+void S2pDump::WriteGoodData(ostream &file, span<const uint8_t> buffer, int length)
+{
+    const array<uint8_t, 4> data = { static_cast<uint8_t>(length & 0xff), static_cast<uint8_t>((length >> 8) & 0xff),
+        static_cast<uint8_t>((length >> 16) & 0xff), static_cast<uint8_t>((length >> 24) & 0xff) };
+    file.write((const char*)data.data(), data.size());
+    file.write((const char*)buffer.data(), length);
+    file.write((const char*)data.data(), data.size());
+}
+
+string S2pDump::ReadWriteDisk(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
 {
     if (restore) {
         fs.read((char*)buffer.data(), byte_count);
@@ -572,11 +628,11 @@ string S2pDump::ReadWrite(fstream &fs, int sector_offset, uint32_t sector_count,
             return "Error reading from file '" + filename + "'";
         }
 
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+        if (!executor->ReadWriteDisk(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
             return "Error/interrupted while writing to device";
         }
     } else {
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+        if (!executor->ReadWriteDisk(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
             return "Error/interrupted while reading from device";
         }
 
@@ -648,6 +704,10 @@ bool S2pDump::GetDeviceInfo()
 
     // Clear any pending error condition, e.g. a medium just having being inserted
     executor->RequestSense();
+
+    if (scsi_device_info.type == static_cast<byte>(device_type::sequential_access)) {
+        return true;
+    }
 
     if (!sasi) {
         const auto [capacity, sector_size] = executor->ReadCapacity();

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <unordered_map>
 #include <vector>
 #include "s2pdump_executor.h"
@@ -40,7 +41,7 @@ private:
     bool Init(bool);
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWrite(fstream&, int, uint32_t, int, int);
+    string ReadWriteDisk(fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
@@ -48,12 +49,17 @@ private:
     bool DisplaySasiInquiry(span<const uint8_t>, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
+    string DumpRestoreDisk(fstream&);
+    string DumpRestoreTape(fstream&);
     bool GetDeviceInfo();
 
     void Reset() const;
 
     void CleanUp() const;
     static void TerminationHandler(int);
+
+    static void WriteFilemark(ostream&);
+    static void WriteGoodData(ostream&, span<const uint8_t>, int);
 
     unique_ptr<Bus> bus;
 

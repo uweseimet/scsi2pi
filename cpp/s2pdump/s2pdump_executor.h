@@ -27,10 +27,13 @@ public:
     void RequestSense() const;
     bool Inquiry(span<uint8_t>);
     pair<uint64_t, uint32_t> ReadCapacity();
-    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
+    bool ReadWriteDisk(span<uint8_t>, uint32_t, uint32_t, int, bool);
     bool ModeSense6(span<uint8_t>);
     void SynchronizeCache();
     set<int> ReportLuns();
+
+    void Rewind();
+    int ReadWriteTape(span<uint8_t>, bool);
 
     void SetTarget(int id, int lun, bool sasi)
     {
@@ -40,4 +43,6 @@ public:
 private:
 
     unique_ptr<InitiatorExecutor> initiator_executor;
+
+    int default_length = 0xffffff;
 };
