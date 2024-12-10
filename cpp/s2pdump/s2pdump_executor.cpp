@@ -71,29 +71,15 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
 
 bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
-    if (bstart < 16777216 && blength <= 256) {
-        vector<uint8_t> cdb(6);
-        cdb[1] = static_cast<uint8_t>(bstart >> 16);
-        cdb[2] = static_cast<uint8_t>(bstart >> 8);
-        cdb[3] = static_cast<uint8_t>(bstart);
-        cdb[4] = static_cast<uint8_t>(blength);
+    vector<uint8_t> cdb(10);
+    cdb[2] = static_cast<uint8_t>(bstart >> 24);
+    cdb[3] = static_cast<uint8_t>(bstart >> 16);
+    cdb[4] = static_cast<uint8_t>(bstart >> 8);
+    cdb[5] = static_cast<uint8_t>(bstart);
+    cdb[7] = static_cast<uint8_t>(blength >> 8);
+    cdb[8] = static_cast<uint8_t>(blength);
 
-        return !initiator_executor->Execute(is_write ? scsi_command::write_6 : scsi_command::read_6, cdb, buffer,
-            length);
-    }
-    else {
-        vector<uint8_t> cdb(10);
-        cdb[2] = static_cast<uint8_t>(bstart >> 24);
-        cdb[3] = static_cast<uint8_t>(bstart >> 16);
-        cdb[4] = static_cast<uint8_t>(bstart >> 8);
-        cdb[5] = static_cast<uint8_t>(bstart);
-        cdb[7] = static_cast<uint8_t>(blength >> 8);
-        cdb[8] = static_cast<uint8_t>(blength);
-
-        return !initiator_executor->Execute(is_write ? scsi_command::write_10 : scsi_command::read_10, cdb,
-            buffer,
-            length);
-    }
+    return !initiator_executor->Execute(is_write ? scsi_command::write_10 : scsi_command::read_10, cdb, buffer, length);
 }
 
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
