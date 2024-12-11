@@ -25,7 +25,6 @@ int GetInt16(const auto &buf, int offset)
 }
 
 int GetInt24(span<const int>, int);
-int32_t GetSignedInt24(span<const int>, int);
 
 uint32_t GetInt32(const auto &buf, int offset)
 {

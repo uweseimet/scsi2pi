@@ -25,17 +25,6 @@ TEST(MemoryUtilTest, GetInt24)
     EXPECT_EQ(0xf23456, GetInt24(vector { 0xf2, 0x34, 0x56 }, 0));
 }
 
-TEST(MemoryUtilTest, GetSignedInt24)
-{
-    EXPECT_EQ(0, GetSignedInt24(vector { 0x00, 0x00, 0x00 }, 0));
-
-    EXPECT_EQ(1, GetSignedInt24(vector { 0x00, 0x00, 0x01 }, 0));
-
-    EXPECT_EQ(-1, GetSignedInt24(vector { 0xff, 0xff, 0xff }, 0));
-
-    EXPECT_EQ(-2, GetSignedInt24(vector { 0xff, 0xff, 0xfe }, 0));
-}
-
 TEST(MemoryUtilTest, GetInt32)
 {
     EXPECT_EQ(0x12345678U, GetInt32(vector { 0x12, 0x34, 0x56, 0x78 }, 0));

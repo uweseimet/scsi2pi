@@ -10,18 +10,21 @@
 #include <chrono>
 #include <csignal>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <regex>
 #include <getopt.h>
 #include "buses/bus_factory.h"
+#include "disk_executor.h"
+#include "tape_executor.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/simh_util.h"
 
 using namespace filesystem;
 using namespace s2p_util;
 using namespace initiator_util;
+using namespace simh_util;
 
 void S2pDump::CleanUp() const
 {
@@ -42,7 +45,7 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
@@ -57,15 +60,16 @@ void S2pDump::Banner(bool header) const
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
         << "                                     default is 1 MiB.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
-        << "                                     error|critical|off), default is 'info'.\n"
+        << "                                     error|critical|off), default is 'warning'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
         << "                                     device properties for property files.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
-        << "  --start-sector/-S START            Start sector, default is 0.\n"
-        << "  --sector-count/-C COUNT            Sector count, default is the capacity.\n"
+        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "                                     default is the capacity.\n"
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
@@ -80,7 +84,8 @@ bool S2pDump::Init(bool in_process)
         return false;
     }
 
-    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id, *default_logger());
+    disk_executor = make_unique<DiskExecutor>(*bus, initiator_id, *initiator_logger);
+    tape_executor = make_unique<TapeExecutor>(*bus, initiator_id, *initiator_logger);
 
     instance = this;
     // Signal handler for cleaning up
@@ -357,7 +362,7 @@ void S2pDump::ScanBus()
             continue;
         }
 
-        auto luns = executor->ReportLuns();
+        auto luns = disk_executor->ReportLuns();
         // LUN 0 has already been dealt with
         luns.erase(0);
 
@@ -374,13 +379,14 @@ bool S2pDump::DisplayInquiry(bool check_type)
     cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
         << target_lun << "\n" << flush;
 
-    executor->SetTarget(target_id, target_lun, sasi);
+    disk_executor->SetTarget(target_id, target_lun, sasi);
+    tape_executor->SetTarget(target_id, target_lun, sasi);
 
     // Clear potential UNIT ATTENTION status
-    executor->TestUnitReady();
+    disk_executor->TestUnitReady();
 
     vector<uint8_t> buf(36);
-    if (!executor->Inquiry(buf)) {
+    if (!disk_executor->Inquiry(buf)) {
         return false;
     }
 
@@ -440,8 +446,12 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         cout << "SCSI-2";
         break;
 
+    case 3:
+        cout << "SPC";
+        break;
+
     default:
-        cout << fmt::format("{:02x}", buf[3]);
+        cout << "SPC-" << buf[3] - 2;
         break;
     }
     cout << "\n";
@@ -452,9 +462,10 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     if (check_type && scsi_device_info.type != static_cast<byte>(device_type::direct_access) &&
         scsi_device_info.type != static_cast<byte>(device_type::cd_rom)
-        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)) {
+        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)
+        && scsi_device_info.type != static_cast<byte>(device_type::sequential_access)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD/DVD-RAM and OPTICAL MEMORY" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL access" << endl;
         return false;
     }
 
@@ -485,11 +496,22 @@ string S2pDump::DumpRestore()
         return "Can't get device information";
     }
 
-    fstream fs(filename, (restore ? ios::in : ios::out) | ios::binary);
-    if (fs.fail()) {
+    fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
+    if (file.fail()) {
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
+    if (!restore) {
+        status(filename).permissions(perms::group_read | perms::others_read);
+    }
+
+    return
+        scsi_device_info.type == static_cast<byte>(device_type::sequential_access) ?
+            DumpRestoreTape(file) : DumpRestoreDisk(file);
+}
+
+string S2pDump::DumpRestoreDisk(fstream &file)
+{
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
         return "";
@@ -499,7 +521,7 @@ string S2pDump::DumpRestore()
         return "";
     }
 
-    cout << "Starting " << (restore ? "restore" : "dump") << "\n"
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n"
         << "  Start sector is " << start << "\n"
         << "  Sector count is " << count << "\n"
         << "  Buffer size is " << buffer.size() << " bytes\n\n"
@@ -511,7 +533,7 @@ string S2pDump::DumpRestore()
 
     auto remaining = effective_size;
 
-    const auto start_time = chrono::high_resolution_clock::now();
+    const auto start_time = high_resolution_clock::now();
 
     while (remaining) {
         const auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
@@ -524,13 +546,13 @@ string S2pDump::DumpRestore()
             sector_count = 256;
         }
 
-        debug("Remaining bytes: " + to_string(remaining));
-        debug("Current sector: " + to_string(sector_offset));
-        debug("Sector count: " + to_string(sector_count));
-        debug("Data transfer size: " + to_string(sector_count * sector_size));
-        debug("Image file chunk size: " + to_string(byte_count));
+        initiator_logger->info("Remaining bytes: {}", remaining);
+        initiator_logger->info("Current sector: {}", sector_offset);
+        initiator_logger->info("Sector count: {}", sector_count);
+        initiator_logger->info("Data transfer size: {}", sector_count * sector_size);
+        initiator_logger->info("Image file chunk size: {}", byte_count);
 
-        if (const string &error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWriteDisk(file, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
         }
 
@@ -542,50 +564,142 @@ string S2pDump::DumpRestore()
             << "/" << effective_size << " bytes)\n" << flush;
     }
 
-    auto duration = chrono::duration_cast<chrono::seconds>(chrono::high_resolution_clock::now()
-        - start_time).count();
-    if (!duration) {
-        duration = 1;
-    }
-
     if (restore) {
         // Ensure that if the target device is also a SCSI2Pi instance its image file becomes complete immediately
-        executor->SynchronizeCache();
+        disk_executor->SynchronizeCache();
     }
 
-    cout << DIVIDER
-        << "\nTransferred " << effective_size / 1024 / 1024 << " MiB (" << effective_size << " bytes)"
-        << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
-        << "\nAverage transfer rate: " << effective_size / duration << " bytes per second ("
-        << effective_size / 1024 / duration << " KiB per second)\n"
-        << DIVIDER << "\n" << flush;
+    DisplayStatistics(start_time, effective_size);
 
     return "";
 }
 
-string S2pDump::ReadWrite(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::DumpRestoreTape(fstream &file)
+{
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
+
+    const auto start_time = high_resolution_clock::now();
+
+    if (tape_executor->Rewind()) {
+        return "Can't rewind tape";
+    }
+
+    try {
+        restore ? RestoreTape(file) : DumpTape(file);
+    }
+    catch (const io_exception &e) {
+        return e.what();
+    }
+
+    DisplayStatistics(start_time, byte_count);
+
+    return "";
+}
+
+string S2pDump::ReadWriteDisk(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
 {
     if (restore) {
-        fs.read((char*)buffer.data(), byte_count);
-        if (fs.fail()) {
+        file.read((char*)buffer.data(), byte_count);
+        if (file.fail()) {
             return "Error reading from file '" + filename + "'";
         }
 
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+        if (!disk_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
             return "Error/interrupted while writing to device";
         }
     } else {
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+        if (!disk_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
             return "Error/interrupted while reading from device";
         }
 
-        fs.write((const char*)buffer.data(), byte_count);
-        if (fs.fail()) {
+        file.write((const char*)buffer.data(), byte_count);
+        if (file.fail()) {
             return "Error writing to file '" + filename + "'";
         }
     }
 
     return "";
+}
+
+void S2pDump::DumpTape(ostream &file)
+{
+    while (true) {
+        const int length = tape_executor->ReadWrite(buffer, 0);
+        if (length == TapeExecutor::NO_MORE_DATA) {
+            break;
+        }
+
+        if (length == TapeExecutor::BAD_BLOCK) {
+            const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
+            file.write((const char*)bad_data.data(), bad_data.size());
+            if (file.bad()) {
+                throw io_exception("Can't write SIMH bad data record");
+            }
+        }
+        else if (length) {
+            if (!WriteGoodData(file, buffer, length)) {
+                throw io_exception("Can't write SIMH good data record");
+            }
+
+            byte_count += length;
+        }
+        else {
+            if (!WriteFilemark(file)) {
+                throw io_exception("Can't write SIMH tape mark");
+            }
+        }
+
+        initiator_logger->info("Byte count: {}", byte_count);
+        initiator_logger->info("Block count: {}", block_count);
+        initiator_logger->info("Filemark count: {}", filemark_count);
+    }
+}
+
+void S2pDump::RestoreTape(istream &file)
+{
+    while (true) {
+        SimhMetaData meta_data;
+        if (!ReadMetaData(file, meta_data)) {
+            break;
+        }
+
+        if (meta_data.cls == simh_class::reserved_marker
+            && meta_data.value == static_cast<uint32_t>(simh_marker::end_of_medium)) {
+            break;
+        }
+
+        // Tape mark
+        if (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value) {
+            initiator_logger->debug("Writing filemark");
+
+            if (tape_executor->WriteFilemark()) {
+                throw io_exception("Can't write filemark");
+            }
+        }
+        else if ((meta_data.cls == simh_class::tape_mark_good_data_record
+            || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
+            initiator_logger->debug("Writing {} byte(s) block", meta_data.value);
+
+            buffer.resize(meta_data.value);
+
+            file.read((char*)buffer.data(), buffer.size());
+            if (file.bad()) {
+                throw io_exception("Can't read SIMH data record");
+            }
+
+            if (tape_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
+                throw io_exception("Can't write block");
+            }
+
+            file.seekg(META_DATA_SIZE, ios::cur);
+
+            byte_count += buffer.size();
+        }
+
+        initiator_logger->info("Byte count: {}", byte_count);
+        initiator_logger->info("Block count: {}", block_count);
+        initiator_logger->info("Filemark count: {}", filemark_count);
+    }
 }
 
 long S2pDump::CalculateEffectiveSize()
@@ -646,10 +760,14 @@ bool S2pDump::GetDeviceInfo()
     }
 
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    disk_executor->RequestSense();
+
+    if (scsi_device_info.type == static_cast<byte>(device_type::sequential_access)) {
+        return true;
+    }
 
     if (!sasi) {
-        const auto [capacity, sector_size] = executor->ReadCapacity();
+        const auto [capacity, sector_size] = disk_executor->ReadCapacity();
         if (!capacity || !sector_size) {
             trace("Can't read device capacity");
             return false;
@@ -683,7 +801,7 @@ bool S2pDump::GetDeviceInfo()
 void S2pDump::DisplayProperties(int id, int lun) const
 {
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    disk_executor->RequestSense();
 
     cout << "\nDevice properties for s2p properties file:\n";
 
@@ -717,7 +835,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     vector<uint8_t> buf(255);
 
-    if (!executor->ModeSense6(buf)) {
+    if (!disk_executor->ModeSense6(buf)) {
         cout << "Warning: Can't get mode page data, medium may be missing or drive was not ready, try again\n" << flush;
         return;
     }
@@ -747,4 +865,19 @@ void S2pDump::DisplayProperties(int id, int lun) const
     }
 
     cout << flush;
+}
+
+void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t count)
+{
+    auto duration = duration_cast<chrono::seconds>(high_resolution_clock::now() - start_time).count();
+    if (!duration) {
+        duration = 1;
+    }
+
+    cout << DIVIDER
+        << "\nTransferred " << count / 1024 / 1024 << " MiB (" << count << " bytes)"
+        << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
+        << "\nAverage transfer rate: " << count / duration << " bytes per second ("
+        << count / 1024 / duration << " KiB per second)\n"
+        << DIVIDER << "\n" << flush;
 }

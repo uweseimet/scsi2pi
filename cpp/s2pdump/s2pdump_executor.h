@@ -21,15 +21,11 @@ public:
     S2pDumpExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l))
     {
     }
-    ~S2pDumpExecutor() = default;
 
     void TestUnitReady() const;
     void RequestSense() const;
     bool Inquiry(span<uint8_t>);
-    pair<uint64_t, uint32_t> ReadCapacity();
-    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
     bool ModeSense6(span<uint8_t>);
-    void SynchronizeCache();
     set<int> ReportLuns();
 
     void SetTarget(int id, int lun, bool sasi)
@@ -37,7 +33,12 @@ public:
         initiator_executor->SetTarget(id, lun, sasi);
     }
 
-private:
+protected:
+
+    logger& GetLogger()
+    {
+        return initiator_executor->GetLogger();
+    }
 
     unique_ptr<InitiatorExecutor> initiator_executor;
 };

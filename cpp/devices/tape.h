@@ -114,6 +114,8 @@ private:
     void CheckForReadError();
     void CheckForWriteError();
 
+    static int32_t GetSignedInt24(span<const int>, int);
+
     fstream file;
 
     SimhMetaData current_meta_data = { };

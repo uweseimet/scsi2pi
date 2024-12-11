@@ -716,6 +716,7 @@ void Tape::RaiseFilemark(int32_t info, bool read)
     throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
 }
 
+// TODO Raise a read error with information field set also for other read errors
 void Tape::RaiseReadError(const SimhMetaData &meta_data)
 {
     LogError(fmt::format("Trailing record length {0} at position {1} does not match leading length {2}",
@@ -795,9 +796,8 @@ uint32_t Tape::GetByteCount()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int32_t count = fixed ?
-            GetSignedInt24(GetController()->GetCdb(), 2) * GetBlockSize() :
-            GetSignedInt24(GetController()->GetCdb(), 2);
+    const int32_t count =
+        fixed ? GetInt24(GetController()->GetCdb(), 2) * GetBlockSize() : GetInt24(GetController()->GetCdb(), 2);
 
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", tape_position, count));
 
@@ -989,4 +989,10 @@ void Tape::CheckForWriteError()
     }
 
     file.flush();
+}
+
+int32_t Tape::GetSignedInt24(span<const int> buf, int offset)
+{
+    const int value = GetInt24(buf, offset);
+    return value >= 0x800000 ? value - 0x1000000 : value;
 }

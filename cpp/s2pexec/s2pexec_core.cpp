@@ -436,7 +436,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         }
     }
 
-    const int status = executor->ExecuteCommand(cdb, buffer, timeout);
+    const int status = executor->ExecuteCommand(cdb, buffer, timeout, true);
     if (status) {
         if (status != 0xff) {
             if (request_sense) {

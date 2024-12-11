@@ -33,13 +33,17 @@ public:
 
     void SetTarget(int, int, bool);
 
-    // Execute command with a default timeout of 3 s
-    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int = 3);
-    int Execute(span<uint8_t>, span<uint8_t>, int, int = 3);
+    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int, bool);
+    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
 
     int GetByteCount() const
     {
         return byte_count;
+    }
+
+    logger& GetLogger()
+    {
+        return initiator_logger;
     }
 
 private:

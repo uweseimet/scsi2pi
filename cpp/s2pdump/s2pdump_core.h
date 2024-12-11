@@ -8,11 +8,15 @@
 
 #pragma once
 
+#include <fstream>
 #include <unordered_map>
 #include <vector>
-#include "s2pdump_executor.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include "disk_executor.h"
+#include "tape_executor.h"
 
 using namespace std;
+using namespace chrono;
 
 class S2pDump
 {
@@ -40,7 +44,7 @@ private:
     bool Init(bool);
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWrite(fstream&, int, uint32_t, int, int);
+    string ReadWriteDisk(fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
@@ -48,6 +52,8 @@ private:
     bool DisplaySasiInquiry(span<const uint8_t>, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
+    string DumpRestoreDisk(fstream&);
+    string DumpRestoreTape(fstream&);
     bool GetDeviceInfo();
 
     void Reset() const;
@@ -55,9 +61,15 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
+    void DumpTape(ostream&);
+    void RestoreTape(istream&);
+
+    static void DisplayStatistics(time_point<high_resolution_clock>, uint64_t);
+
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> executor;
+    unique_ptr<DiskExecutor> disk_executor;
+    unique_ptr<TapeExecutor> tape_executor;
 
     scsi_device_info_t scsi_device_info = { };
 
@@ -74,10 +86,15 @@ private:
 
     string filename;
 
-    string log_level = "info";
+    shared_ptr<logger> initiator_logger = stdout_color_mt("initiator");
+    string log_level = "warning";
 
     int start = 0;
     int count = 0;
+
+    uint64_t byte_count = 0;
+    uint32_t block_count = 0;
+    uint32_t filemark_count = 0;
 
     bool run_inquiry = false;
 
@@ -97,6 +114,7 @@ private:
 
     static inline const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
         { byte { 0 }, "SCHD" },
+        { byte { 1 }, "SCTP" },
         { byte { 2 }, "SCLP" },
         { byte { 3 }, "SCHS" },
         { byte { 5 }, "SCCD" },
