@@ -22,6 +22,13 @@ void Controller::Reset()
 
     identified_lun = -1;
 
+    ResetFlags();
+}
+
+void Controller::ResetFlags()
+{
+    linked = false;
+    flag = false;
     atn_msg = false;
 }
 
@@ -405,7 +412,9 @@ void Controller::Receive()
     assert(!GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
+        if (!IsMsgOut()) {
+            LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
+        }
 
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
@@ -520,21 +529,55 @@ void Controller::XferMsg()
 
     if (atn_msg) {
         msg_bytes.emplace_back(GetBuffer()[0]);
+
+        LogTrace(fmt::format("Received message byte ${:02x}", GetBuffer()[0]));
     }
 }
 
 void Controller::ParseMessage()
 {
-    for (const uint8_t message : msg_bytes) {
-        switch (message) {
-        case 0x01: {
-            LogTrace("Received EXTENDED MESSAGE");
+    bool extended = false;
+    for (const uint8_t msg_byte : msg_bytes) {
+        if (extended) {
+            switch (msg_byte) {
+            case 0x00:
+                LogTrace("Rejecting MODIFY DATA POINTERS message");
+                break;
+
+            case 0x01:
+                LogTrace("Rejecting SYNCHRONOUS DATA TRANFER REQUEST message");
+                break;
+
+            case 0x03:
+                LogTrace("Rejecting WIDE DATA TRANFER REQUEST message");
+                break;
+
+            case 0x04:
+                LogTrace("Rejecting PARALLEL PROTOCOL REQUEST message");
+                break;
+
+            case 0x05:
+                LogTrace("Rejecting MODIFY BIDIRECTIONAL DATA POINTER message");
+                break;
+
+            default:
+                LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_byte));
+                break;
+            }
+
+            extended = false;
             SetCurrentLength(1);
             SetTransferSize(1, 1);
             // MESSSAGE REJECT
             GetBuffer()[0] = 0x07;
             MsgIn();
             return;
+        }
+
+        switch (msg_byte) {
+        case 0x01: {
+            extended = true;
+            break;
         }
 
         case static_cast<uint8_t>(message_code::abort): {
@@ -554,8 +597,8 @@ void Controller::ParseMessage()
         }
 
         default:
-            if (message >= 0x80) {
-                identified_lun = static_cast<int>(message) & 0x1f;
+            if (msg_byte >= 0x80) {
+                identified_lun = static_cast<int>(msg_byte) & 0x1f;
                 LogTrace("Received IDENTIFY message for LUN " + to_string(identified_lun));
             }
             break;
@@ -583,11 +626,9 @@ void Controller::ProcessMessage()
 
 void Controller::ProcessEndOfMessage()
 {
-    // Completed sending response to extended message of IDENTIFY message or executing a linked command
+    // Completed sending response to extended message or IDENTIFY message or executing a linked command
     if (atn_msg || linked) {
-        atn_msg = false;
-        linked = false;
-        flag = false;
+        ResetFlags();
         Command();
     } else {
         BusFree();

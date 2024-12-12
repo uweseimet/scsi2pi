@@ -21,17 +21,17 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, lun)
+ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
+    SetProduct("SG 3 DEVICE");
     SupportsParams(true);
     SetReady(true);
 }
 
 bool ScsiGeneric::SetUp()
 {
-    device = GetParam(DEVICE);
     if (!device.starts_with("/dev/sg")) {
-        LogError(fmt::format("Missing or invalid device file parameter"));
+        LogError(fmt::format("Missing or invalid device file: '{}'", device));
         return false;
     }
 
@@ -150,13 +150,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         GetController()->SetCurrentLength(byte_count);
         DataInPhase(ReadData(buf));
     }
-}
-
-param_map ScsiGeneric::GetDefaultParams() const
-{
-    return {
-        {   DEVICE, ""}
-    };
 }
 
 vector<uint8_t> ScsiGeneric::InquiryInternal() const

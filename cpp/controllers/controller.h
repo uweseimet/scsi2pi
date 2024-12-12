@@ -41,6 +41,8 @@ public:
 
 private:
 
+    void ResetFlags();
+
     void Execute();
     void Send();
     void Receive();

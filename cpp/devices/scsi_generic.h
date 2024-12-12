@@ -18,15 +18,18 @@ class ScsiGeneric : public PrimaryDevice
 
 public:
 
-    explicit ScsiGeneric(int);
+    ScsiGeneric(int, const string&);
     ~ScsiGeneric() override = default;
 
     bool SetUp() override;
     void CleanUp() override;
 
-    void Dispatch(scsi_command) override;
+    string GetDevice() const
+    {
+        return device;
+    }
 
-    param_map GetDefaultParams() const override;
+    void Dispatch(scsi_command) override;
 
     vector<uint8_t> InquiryInternal() const override;
 
@@ -72,6 +75,4 @@ private:
 
     // Sufficient for formatting a floppy disk in a USB floppy drive
     static const int TIMEOUT_FORMAT_SECONDS = 120;
-
-    static constexpr const char *DEVICE = "device";
 };

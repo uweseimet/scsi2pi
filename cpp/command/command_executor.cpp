@@ -10,12 +10,13 @@
 #include <sstream>
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
+#include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
+#include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
-#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -624,7 +625,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
                 to_string(pb_device.unit()), filename);
         }
         else {
-        context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
+            context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
                 to_string(pb_device.unit()), PbDeviceType_Name(pb_device.type()));
         }
 

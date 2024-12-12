@@ -13,6 +13,7 @@
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
+#include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
@@ -103,6 +104,12 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
         pb_device.set_caching_mode(disk->GetCachingMode());
+    }
+#endif
+#ifdef BUILD_SCSG
+    if (const auto sg = dynamic_pointer_cast<const ScsiGeneric>(device); sg) {
+        pb_device.mutable_file()->set_name(sg->GetDevice());
+        pb_device.set_type(SCSG);
     }
 #endif
 }

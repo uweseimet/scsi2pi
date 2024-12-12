@@ -53,7 +53,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         }
     }
 
-    if (pb_device.properties().supports_file() && !pb_device.file().name().empty()) {
+    if (!pb_device.file().name().empty()) {
         s << "  " << pb_device.file().name();
     }
 
