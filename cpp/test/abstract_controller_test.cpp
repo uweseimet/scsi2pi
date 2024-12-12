@@ -93,7 +93,7 @@ TEST(AbstractControllerTest, AddDevice)
     EXPECT_FALSE(controller.AddDevice(make_shared<MockSasiHd>(2)));
 }
 
-TEST(AbstractControllerTest, TransferSize)
+TEST(AbstractControllerTest, Lengths)
 {
     MockAbstractController controller;
 
@@ -101,15 +101,15 @@ TEST(AbstractControllerTest, TransferSize)
     EXPECT_EQ(3, controller.GetTotalLength());
     EXPECT_EQ(3, controller.GetRemainingLength());
     EXPECT_EQ(1, controller.GetChunkSize());
-    EXPECT_TRUE(controller.UpdateTransferSize());
+    controller.UpdateTransferLength(1);
     EXPECT_EQ(3, controller.GetTotalLength());
     EXPECT_EQ(2, controller.GetRemainingLength());
     EXPECT_EQ(1, controller.GetChunkSize());
-    EXPECT_TRUE(controller.UpdateTransferSize());
+    controller.UpdateTransferLength(1);
     EXPECT_EQ(3, controller.GetTotalLength());
     EXPECT_EQ(1, controller.GetRemainingLength());
     EXPECT_EQ(1, controller.GetChunkSize());
-    EXPECT_FALSE(controller.UpdateTransferSize());
+    controller.UpdateTransferLength(1);
     EXPECT_EQ(3, controller.GetTotalLength());
     EXPECT_EQ(0, controller.GetRemainingLength());
     EXPECT_EQ(0, controller.GetChunkSize());

@@ -158,7 +158,11 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
     PbDeviceTypesInfo info;
     response.GetDeviceTypesInfo(info);
-    EXPECT_EQ(9, info.properties().size());
+#ifdef __linux__
+    EXPECT_EQ(10, info.properties().size());
+#else
+    EXPECT_EQ(2, info.properties().size());
+#endif
 }
 
 TEST(CommandResponseTest, GetServerInfo)

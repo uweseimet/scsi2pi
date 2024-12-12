@@ -131,7 +131,7 @@ protected:
         offset = 0;
     }
 
-    bool UpdateTransferSize();
+    void UpdateTransferLength(int);
     void UpdateOffsetAndLength();
 
     void LogTrace(const string &s) const

@@ -30,7 +30,7 @@ public:
 
     bool Eject(bool) override;
 
-    void WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     int ReadData(data_in_t) override;
 

@@ -218,10 +218,9 @@ void PrimaryDevice::RequestSense()
 
     int effective_lun = GetController()->GetEffectiveLun();
 
-    // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
-    // in CHECK CONDITION. Only the Sense Key and ASC are set in order to signal the non-existing LUN.
+    // According to the specification REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
+    // Only the Sense Key and ASC are set in order to signal the non-existing LUN.
     if (!GetController()->GetDeviceForLun(effective_lun)) {
-        // LUN 0 can be assumed to be present (required to call RequestSense() below)
         assert(GetController()->GetDeviceForLun(0));
 
         effective_lun = 0;
@@ -237,7 +236,7 @@ void PrimaryDevice::RequestSense()
         allocation_length = 4;
     }
 
-    const int length = min(static_cast<int>(buf.size()), allocation_length);
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
     GetController()->CopyToBuffer(buf.data(), length);
 
     ResetStatus();

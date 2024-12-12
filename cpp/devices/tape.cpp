@@ -210,7 +210,7 @@ int Tape::ReadData(data_in_t buf)
     return length;
 }
 
-void Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
+int Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 {
     CheckReady();
 
@@ -248,6 +248,8 @@ void Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
         // Ensure that there is always an end-of-data object
         WriteMetaData(object_type::end_of_data);
     }
+
+    return chunk_size;
 }
 
 void Tape::Open()

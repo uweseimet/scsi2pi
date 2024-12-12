@@ -27,7 +27,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    void WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {

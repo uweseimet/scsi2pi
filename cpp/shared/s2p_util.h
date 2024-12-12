@@ -76,8 +76,6 @@ int HexToDec(char);
 
 string Trim(const string&);
 
-uint32_t GetInt32(span<const byte>, int);
-
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",
@@ -97,7 +95,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
     "RESERVED"
 };
 
-// This map only contains mappings for ASCs used by s2p
+// This map only contains mappings for ASCs used by s2p or the Linux SG driver
 static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::no_additional_sense_information, "NO ADDITIONAL SENSE INFORMATION" },
     { asc::write_fault, "PERIPHERAL DEVICE WRITE FAULT" },
@@ -112,6 +110,7 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::write_protected, "WRITE PROTECTED" },
     { asc::not_ready_to_ready_change, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
     { asc::power_on_or_reset, "POWER ON, RESET, OR BUS DEVICE RESET OCCURRED" },
+    { asc::incompatible_medium_installed, "INCOMPATIBLE MEDIUM INSTALLED" },
     { asc::sequential_positioning_error, "SEQUENTIAL POSITIONING ERROR" },
     { asc::medium_not_present, "MEDIUM NOT PRESENT" },
     { asc::command_phase_error, "COMMAND PHASE ERROR" },

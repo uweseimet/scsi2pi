@@ -32,7 +32,7 @@ public:
 
     bool Eject(bool) override;
 
-    void WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     int ReadData(data_in_t) override;
 
@@ -77,40 +77,15 @@ private:
 
     void SynchronizeCache();
     void ReadDefectData10() const;
-    virtual void Read6()
-    {
-        Read(RW6);
-    }
-    void Read10()
-    {
-        Read(RW10);
-    }
-    void Read16()
-    {
-        Read(RW16);
-    }
-    virtual void Write6()
-    {
-        Write(RW6);
-    }
-    void Write10()
-    {
-        Write(RW10);
-    }
-    void Write16()
-    {
-        Write(RW16);
-    }
     void ReAssignBlocks();
-    void Seek10();
     void ReadCapacity10();
     void ReadCapacity16();
     void ReadFormatCapacities();
     void FormatUnit();
-    void Seek6();
     void Read(access_mode);
     void Write(access_mode);
     void Verify(access_mode);
+    void Seek(access_mode);
     void ReadLong10();
     void ReadLong16();
     void WriteLong10();

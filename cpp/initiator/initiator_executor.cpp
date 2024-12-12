@@ -12,6 +12,7 @@
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
+using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
@@ -57,22 +58,17 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     }
 
     // Wait for the command to finish
-    auto now = chrono::steady_clock::now();
-    while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < timeout) {
+    auto now = steady_clock::now();
+    while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
 
         if (bus.GetREQ()) {
             try {
                 if (Dispatch(cdb, buffer, length)) {
-                    now = chrono::steady_clock::now();
-                    continue;
+                    now = steady_clock::now();
                 }
-
-                if (static_cast<status_code>(status) != status_code::intermediate) {
-                    if (log) {
-                        LogStatus();
-                    }
-                    return status;
+                else if (static_cast<status_code>(status) != status_code::intermediate) {
+                    break;
                 }
             }
             catch (const phase_exception &e) {
@@ -83,7 +79,11 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         }
     }
 
-    return 0xff;
+    if (log) {
+        LogStatus();
+    }
+
+    return status;
 }
 
 bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &length)
@@ -203,12 +203,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     const auto cmd = static_cast<scsi_command>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
-        if (const string_view &command_name = CommandMetaData::Instance().GetCommandName(cmd); !command_name.empty()) {
-            initiator_logger.error("Command {} failed", command_name);
-        }
-        else {
-            initiator_logger.error("Command ${:02x} failed", static_cast<int>(cmd));
-        }
+        initiator_logger.error("Execution of {} failed", CommandMetaData::Instance().GetCommandName(cmd));
     }
 
     cdb_offset += sent_count;

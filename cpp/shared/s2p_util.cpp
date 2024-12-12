@@ -15,9 +15,11 @@
 #include <spdlog/spdlog.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
+#include "shared/memory_util.h"
 
 using namespace filesystem;
 using namespace spdlog;
+using namespace memory_util;
 
 string s2p_util::GetVersionString()
 {
@@ -367,13 +369,4 @@ string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
     }
     const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));
-}
-
-// TODO Move to memory_util?
-uint32_t s2p_util::GetInt32(span<const byte> buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
-        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
 }

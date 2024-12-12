@@ -45,15 +45,15 @@ bool Disk::SetUp()
         });
     AddCommand(scsi_command::read_6, [this]
         {
-            Read6();
+            Read(RW6);
         });
     AddCommand(scsi_command::write_6, [this]
         {
-            Write6();
+            Write(RW6);
         });
     AddCommand(scsi_command::seek_6, [this]
         {
-            Seek6();
+            Seek(SEEK6);
         });
     AddCommand(scsi_command::read_capacity_10, [this]
         {
@@ -61,11 +61,11 @@ bool Disk::SetUp()
         });
     AddCommand(scsi_command::read_10, [this]
         {
-            Read10();
+            Read(RW10);
         });
     AddCommand(scsi_command::write_10, [this]
         {
-            Write10();
+            Write(RW10);
         });
     AddCommand(scsi_command::read_long_10, [this]
         {
@@ -81,7 +81,7 @@ bool Disk::SetUp()
         });
     AddCommand(scsi_command::seek_10, [this]
         {
-            Seek10();
+            Seek(SEEK10);
         });
     AddCommand(scsi_command::verify_10, [this]
         {
@@ -101,11 +101,11 @@ bool Disk::SetUp()
         });
     AddCommand(scsi_command::read_16, [this]
         {
-            Read16();
+            Read(RW16);
         });
     AddCommand(scsi_command::write_16, [this]
         {
-            Write16();
+            Write(RW16);
         });
     AddCommand(scsi_command::verify_16, [this]
         {
@@ -419,7 +419,7 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
+int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
@@ -437,7 +437,7 @@ void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
 
         UpdateWriteCount(1);
 
-        return;
+        return l;
     }
 
     if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
@@ -448,6 +448,8 @@ void Disk::WriteData(cdb_t cdb, data_out_t buf, int, int)
     next_sector += sector_transfer_count;
 
     UpdateWriteCount(sector_transfer_count);
+
+    return l;
 }
 
 void Disk::ReAssignBlocks()
@@ -457,19 +459,9 @@ void Disk::ReAssignBlocks()
     StatusPhase();
 }
 
-void Disk::Seek6()
+void Disk::Seek(access_mode mode)
 {
-    const auto& [valid, _, __] = CheckAndGetStartAndCount(SEEK6);
-    if (valid) {
-        CheckReady();
-    }
-
-    StatusPhase();
-}
-
-void Disk::Seek10()
-{
-    const auto& [valid, _, __] = CheckAndGetStartAndCount(SEEK10);
+    const auto& [valid, _, __] = CheckAndGetStartAndCount(mode);
     if (valid) {
         CheckReady();
     }

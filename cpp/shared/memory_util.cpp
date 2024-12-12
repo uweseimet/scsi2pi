@@ -10,13 +10,6 @@
 
 // Note: Templates cannot be used with span<T>, affecting SetInt*
 
-int memory_util::GetInt24(span<const int> buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 2);
-
-    return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
-}
-
 void memory_util::SetInt16(span<byte> buf, int offset, int value)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);

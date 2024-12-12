@@ -71,15 +71,17 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
+##       SCSG Linux Generic SCSI (sg driver)
 ##       SCHS Host Services
 ##       SAHD SASI Hard Drive
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
 	ENABLE_SCMO = 1
 	ENABLE_SCCD = 1
 	ENABLE_SCTP = 1
 	ENABLE_SCDP = 1
 	ENABLE_SCLP = 1
+	ENABLE_SCSG = 1
 	ENABLE_SCHS = 1
 	ENABLE_SAHD = 1
 endif
@@ -101,6 +103,9 @@ ifdef DISABLE_SCDP
 endif
 ifdef DISABLE_SCLP
 	ENABLE_SCLP =
+endif
+ifdef DISABLE_SCSG
+	ENABLE_SCSG =
 endif
 ifdef DISABLE_SCHS
 	ENABLE_SCHS =
@@ -129,6 +134,9 @@ ifdef ENABLE_SCDP
 endif
 ifdef ENABLE_SCLP
 	CXXFLAGS += -DBUILD_SCLP
+endif
+ifdef ENABLE_SCSG
+	CXXFLAGS += -DBUILD_SCSG
 endif
 ifdef ENABLE_SCHS
 	CXXFLAGS += -DBUILD_SCHS
@@ -239,6 +247,11 @@ SRC_SCLP = \
 	$(DIR_DEVICES)/printer.cpp
 endif
 
+ifeq ($(ENABLE_SCSG),1)
+SRC_SCSG = \
+	$(DIR_DEVICES)/scsi_generic.cpp
+endif
+
 ifeq ($(ENABLE_SCHS),1)
 SRC_SCHS = \
 	$(DIR_DEVICES)/host_services.cpp \
@@ -294,6 +307,7 @@ OBJ_SCCD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCCD:%.cpp=%.o)))
 OBJ_SCTP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCTP:%.cpp=%.o)))
 OBJ_SCDP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCDP:%.cpp=%.o)))
 OBJ_SCLP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCLP:%.cpp=%.o)))
+OBJ_SCSG := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCSG:%.cpp=%.o)))
 OBJ_SCHS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHS:%.cpp=%.o)))
 OBJ_SAHD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SAHD:%.cpp=%.o)))
 OBJ_SHARED := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED:%.cpp=%.o)))
@@ -303,7 +317,7 @@ OBJ_SHARED_INITIATOR := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_INITIATOR:%
 OBJ_BASE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BASE:%.cpp=%.o)))
 OBJ_BUSES := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BUSES:%.cpp=%.o)))
 OBJ_CONTROLLERS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_CONTROLLERS:%.cpp=%.o)))
-OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
+OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
 OBJ_S2P_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_CORE:%.cpp=%.o)))
 OBJ_S2P := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P:%.cpp=%.o)))
 OBJ_S2PCTL_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL_CORE:%.cpp=%.o)))
@@ -390,10 +404,10 @@ $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(ABSEIL_LIBS) -lprotobuf
 
 $(BINDIR)/$(S2PDUMP): $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_SHARED) $(LIB_BUS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED)
 
 $(BINDIR)/$(S2PEXEC): $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED)
 
 $(BINDIR)/$(S2PPROTO): $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(OBJ_GENERATED) $(ABSEIL_LIBS) -lprotobuf

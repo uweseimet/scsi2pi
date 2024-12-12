@@ -444,12 +444,8 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
             }
         }
         else {
-            const string_view &command_name = CommandMetaData::Instance().GetCommandName(
-                static_cast<scsi_command>(cdb[0]));
-            throw execution_exception(
-                fmt::format("Can't execute command {}",
-                    !command_name.empty() ?
-                        fmt::format("{0} (${1:02x})", command_name, cdb[0]) : fmt::format("${:02x}", cdb[0])));
+            throw execution_exception(fmt::format("Can't execute command {}",
+                CommandMetaData::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]))));
         }
     }
 
@@ -506,7 +502,10 @@ string S2pExec::WriteData(span<const uint8_t> data)
     string hex = FormatBytes(data, static_cast<int>(data.size()), 0, hex_only);
 
     if (filename.empty()) {
-        cout << hex << '\n';
+        if (initiator_logger->level() <= level::debug)
+        {
+            cout << hex << '\n';
+        }
     }
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);

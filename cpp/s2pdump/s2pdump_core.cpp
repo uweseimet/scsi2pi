@@ -228,7 +228,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         return false;
     }
 
-    if (!SetLogLevel(*default_logger(), log_level)) {
+    if (!SetLogLevel(*initiator_logger, log_level)) {
         throw parser_exception("Invalid log level '" + log_level + "'");
     }
 

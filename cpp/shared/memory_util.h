@@ -24,7 +24,12 @@ int GetInt16(const auto &buf, int offset)
     return (static_cast<int>(buf[offset]) << 8) | static_cast<int>(buf[offset + 1]);
 }
 
-int GetInt24(span<const int>, int);
+int GetInt24(const auto &buf, int offset)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
+
+    return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
+}
 
 uint32_t GetInt32(const auto &buf, int offset)
 {

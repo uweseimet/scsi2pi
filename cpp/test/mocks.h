@@ -97,8 +97,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, Message);
-    FRIEND_TEST(AbstractControllerTest, TransferSize);
-    FRIEND_TEST(AbstractControllerTest, Length);
+    FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(ControllerTest, Selection);
@@ -271,11 +270,6 @@ public:
 
 class MockPrimaryDevice : public PrimaryDevice
 {
-    FRIEND_TEST(DeviceTest, GetDefaultParams);
-    FRIEND_TEST(DeviceTest, Properties);
-    FRIEND_TEST(DeviceTest, Start);
-    FRIEND_TEST(DeviceTest, Stop);
-    FRIEND_TEST(DeviceTest, Eject);
     FRIEND_TEST(PrimaryDeviceTest, Reset);
     FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
@@ -291,7 +285,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
@@ -327,7 +321,7 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
@@ -437,7 +431,8 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    explicit MockScsiHd(const set<uint32_t> &sector_sizes) : ScsiHd(0, false, false, false, sector_sizes)
+    explicit MockScsiHd(const set<uint32_t> &sector_sizes)
+    : ScsiHd(0, false, false, false, sector_sizes)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }

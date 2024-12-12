@@ -147,7 +147,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 
     ostringstream s;
     s << "+----+-----+------+-------------------------------------\n"
-        << "| ID | LUN | TYPE | IMAGE FILE\n"
+        << "| ID | LUN | Type | Image File/Device File/Description\n"
         << "+----+-----+------+-------------------------------------\n";
 
     vector<PbDevice> devices(pb_devices);
@@ -166,6 +166,10 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 
         case SCLP:
             filename = "SCSI Printer";
+            break;
+
+        case SCSG:
+            filename = GetParam(device, "device");
             break;
 
         default:

@@ -277,7 +277,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-void HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int)
+int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     if (static_cast<scsi_command>(cdb[0]) != scsi_command::execute_operation) {
         throw scsi_exception(sense_key::aborted_command);
@@ -286,7 +286,7 @@ void HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int)
     const auto length = GetCdbInt16(7);
     if (!length) {
         execution_results[GetController()->GetInitiatorId()].clear();
-        return;
+        return l;
     }
 
     PbCommand cmd;
@@ -328,6 +328,8 @@ void HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int)
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
+
+    return l;
 }
 
 HostServices::protobuf_format HostServices::ConvertFormat() const
