@@ -565,7 +565,6 @@ void Controller::ParseMessage()
                 break;
             }
 
-            extended = false;
             SetCurrentLength(1);
             SetTransferSize(1, 1);
             // MESSSAGE REJECT
