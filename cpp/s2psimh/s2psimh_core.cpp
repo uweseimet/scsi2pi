@@ -142,7 +142,11 @@ bool S2pSimh::ParseArguments(span<char*> args)
             return false;
         }
         f.close();
-        ::truncate(simh_filename.c_str(), 0);
+
+        if (::truncate(simh_filename.c_str(), 0) == -1) {
+            cerr << "Error: Can't truncate '" << simh_filename << "'" << endl;
+            return false;
+        }
     }
 
     return true;

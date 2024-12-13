@@ -152,9 +152,14 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
 
     s << "Supported device types and their properties:\n";
 
+    vector<PbDeviceTypeProperties> sorted_properties(device_types_info.properties().cbegin(),
+        device_types_info.properties().cend());
+    ranges::sort(sorted_properties,
+        [](const auto &a, const auto &b) {return PbDeviceType_Name(a.type()) < PbDeviceType_Name(b.type());});
+
     bool has_type = false;
     string indent;
-    for (const auto &device_type_info : device_types_info.properties()) {
+    for (const auto &device_type_info : sorted_properties) {
         if (has_type) {
             s << '\n';
         }

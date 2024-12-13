@@ -32,7 +32,7 @@
 #if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
 #endif
-#if defined BUILD_SCSG && defined __linux__
+#ifdef BUILD_SCSG
 #include "devices/scsi_generic.h"
 #endif
 #include "shared/s2p_util.h"
@@ -116,7 +116,7 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
         return make_shared<Printer>(lun);
 #endif
 
-#if defined BUILD_SCSG && defined __linux__
+#ifdef BUILD_SCSG
     case SCSG: {
         return make_shared<ScsiGeneric>(lun, filename);
     }

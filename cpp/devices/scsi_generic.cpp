@@ -8,11 +8,9 @@
 //
 //---------------------------------------------------------------------------
 
-#ifdef __linux__
-
 #include <fcntl.h>
-#include <sys/ioctl.h>
 #include <scsi/sg.h>
+#include <sys/ioctl.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "scsi_generic.h"
@@ -186,7 +184,11 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, length); // NOSONAR Cast required for SG driver API
+    const int status = ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, length); // NOSONAR Cast required for SG driver API
+
+    format_header.clear();
+
+    return status;
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
@@ -231,9 +233,6 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
-
-    format_header.clear();
-
     if (status == -1) {
         LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
@@ -384,5 +383,3 @@ void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
     buf[offset + 1] = static_cast<uint8_t>(value >> 8);
     buf[offset + 2] = static_cast<uint8_t>(value);
 }
-
-#endif

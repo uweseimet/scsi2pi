@@ -106,6 +106,8 @@ enum class scsi_command
     play_audio_track_index = 0x48,
     get_event_status_notification = 0x4a,
     pause_resume = 0x4b,
+    log_select = 0x4c,
+    log_sense = 0x4d,
     read_disc_information = 0x51,
     read_track_information = 0x52,
     mode_select_10 = 0x55,
@@ -124,7 +126,9 @@ enum class scsi_command
     blank = 0xa1,
     play_audio_12 = 0xa5,
     read_dvd_structure = 0xad,
+    read_defect_data_12 = 0xb7,
     read_cd_msf = 0xb9,
+    set_cd_speed = 0xbb,
     play_cd = 0xbc,
     read_cd = 0xbe,
     // SCSi2Pi-specific commands (host services)

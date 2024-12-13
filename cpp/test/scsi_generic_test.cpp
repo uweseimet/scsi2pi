@@ -6,7 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
-#ifdef __linux__
+#ifdef BUILD_SCSG
 
 #include <gtest/gtest.h>
 #include "test_shared.h"

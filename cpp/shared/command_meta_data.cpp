@@ -75,6 +75,8 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::play_audio_track_index, 10, "PLAY AUDIO TRACK/INDEX", { 0, 0, 0, 0, false });
     AddCommand(scsi_command::get_event_status_notification, 10, "GET EVENT/STATUS NOTIFICATION", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::pause_resume, 10, "PAUSE/RESUME", { 0, 0, 0, 0, false });
+    AddCommand(scsi_command::log_select, 10, "LOG SELECT", { 7, 2, 0, 0, true });
+    AddCommand(scsi_command::log_sense, 10, "LOG SENSE", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::read_disc_information, 10, "READ DISC INFORMATION", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::read_track_information, 10, "READ TRACk INFORMATION", { 7, 2, 0, 0, false });
     AddCommand(scsi_command::mode_select_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true });
@@ -95,7 +97,9 @@ CommandMetaData::CommandMetaData()
     AddCommand(scsi_command::blank, 12, "BLANK", { 0,0,0,0, false });
     AddCommand(scsi_command::play_audio_12, 12, "PLAY AUDIO(12)", { 6, 4, 2, 4, false });
     AddCommand(scsi_command::read_dvd_structure, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false });
+    AddCommand(scsi_command::read_defect_data_12, 12, "READ DEFECT DATA", { 6, 4, 0, 0, false });
     AddCommand(scsi_command::read_cd_msf, 12, "READ CD MSF", { 0, 0, 0, 0, false });
+    AddCommand(scsi_command::set_cd_speed, 12, "SET CD SPEED", { 0, 0, 0, 0, false });
     AddCommand(scsi_command::play_cd, 12, "PLAY CD", { 6, 4, 2, 4, false });
     AddCommand(scsi_command::read_cd, 12, "READ CD", { 6, 3, 2, 4, false });
     AddCommand(scsi_command::execute_operation, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0, true });
