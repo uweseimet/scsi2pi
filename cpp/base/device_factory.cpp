@@ -144,7 +144,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    return UNDEFINED;
+    return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
 }
 
 bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)
