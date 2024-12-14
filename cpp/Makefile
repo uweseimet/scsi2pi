@@ -18,7 +18,7 @@ ifeq ($(DEBUG), 1)
 	CXXFLAGS += -O0 -g -DDEBUG
 else
 # Release compiler flags
-	CXXFLAGS += -O3 -Wall -DNDEBUG
+	CXXFLAGS += -O3 -Wall -DNDEBUG -DNOLOG_TRACE -DNOLOG_DEBUG
 endif
 
 CXXFLAGS += -std=c++20 -iquote . -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra

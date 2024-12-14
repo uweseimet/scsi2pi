@@ -10,39 +10,53 @@
 
 using namespace spdlog;
 
-void DeviceLogger::Trace(const string &message) const
+#ifdef NOLOG_TRACE
+void DeviceLogger::Trace(const string &) const
 {
-    Log(level::trace, message);
+    // Do nothing
+}
+#else
+void DeviceLogger::Trace(const string &s) const
+{
+    Log(level::trace, s);
+}
+#endif
+
+#ifdef NOLOG_DEBUG
+void DeviceLogger::Debug(const string &) const
+{
+    // Do nothing
+}
+#else
+void DeviceLogger::Debug(const string &s) const
+{
+    Log(level::trace, s);
+}
+#endif
+
+void DeviceLogger::Info(const string &s) const
+{
+    Log(level::info, s);
 }
 
-void DeviceLogger::Debug(const string &message) const
+void DeviceLogger::Warn(const string &s) const
 {
-    Log(level::debug, message);
+    Log(level::warn, s);
 }
 
-void DeviceLogger::Info(const string &message) const
+void DeviceLogger::Error(const string &s) const
 {
-    Log(level::info, message);
+    Log(level::err, s);
 }
 
-void DeviceLogger::Warn(const string &message) const
-{
-    Log(level::warn, message);
-}
-
-void DeviceLogger::Error(const string &message) const
-{
-    Log(level::err, message);
-}
-
-void DeviceLogger::Log(level::level_enum level, const string &message) const
+void DeviceLogger::Log(level::level_enum level, const string &s) const
 {
     if ((log_device_id == -1 || log_device_id == id) && (lun == -1 || log_device_lun == -1 || log_device_lun == lun)) {
         if (lun == -1) {
-            log(level, "(ID {0}) - {1}", id, message);
+            log(level, "(ID {0}) - {1}", id, s);
         }
         else {
-            log(level, "(ID:LUN {0}:{1}) - {2}", id, lun, message);
+            log(level, "(ID:LUN {0}:{1}) - {2}", id, lun, s);
         }
     }
 }

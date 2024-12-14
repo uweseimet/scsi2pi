@@ -159,14 +159,28 @@ protected:
         return memory_util::GetInt64(controller->GetCdb(), index);
     }
 
+#ifdef NOLOG_TRACE
+    void LogTrace(const string &) const
+     {
+        // Do nothing
+     }
+#else
     void LogTrace(const string &s) const
     {
         device_logger.Trace(s);
     }
+#endif
+#ifdef NOLOG_DEBUG
+    void LogDebug(const string &) const
+     {
+        // Do nothing
+     }
+#else
     void LogDebug(const string &s) const
     {
         device_logger.Debug(s);
     }
+#endif
     void LogInfo(const string &s) const
     {
         device_logger.Info(s);
