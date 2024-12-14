@@ -82,7 +82,7 @@ TEST(SimhUtilTest, WriteFilemark)
     EXPECT_TRUE(WriteFilemark(file));
     file.flush();
 
-    EXPECT_EQ(4, file_size(filename));
+    EXPECT_EQ(4U, file_size(filename));
     array<uint8_t, 4> data;
     file.seekg(0);
     file.read((char*)data.data(), data.size());
@@ -99,7 +99,7 @@ TEST(SimhUtilTest, WriteGoodData)
     EXPECT_TRUE(WriteGoodData(file, data, 8));
     file.flush();
 
-    EXPECT_EQ(16, file_size(filename));
+    EXPECT_EQ(16U, file_size(filename));
     file.seekg(0);
     data.resize(4);
     file.read((char*)data.data(), data.size());

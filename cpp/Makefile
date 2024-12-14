@@ -206,7 +206,10 @@ SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED := $(shell ls -1 $(DIR_SHARED)/*.cpp)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_adapter.cpp)
+ifdef IS_LINUX
+SRC_SHARED += shared/sg_adapter.cpp
+endif
 SRC_SHARED_PROTOBUF := $(shell ls -1 $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(shell ls -1 $(DIR_SHARED_COMMAND)/*.cpp)
 SRC_SHARED_INITIATOR := $(shell ls -1 $(DIR_SHARED_INITIATOR)/*.cpp)
@@ -291,7 +294,10 @@ SRC_S2PSIMH := $(shell ls -1 s2psimh/*.cpp)
 
 SRC_S2PFORMAT := $(shell ls -1 s2pformat/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp)
+SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_adapter_test.cpp)
+ifdef IS_LINUX
+SRC_S2P_TEST += test/sg_adapter_test.cpp
+endif
 
 SRC_S2PTOOL = s2ptool/s2ptool.cpp
 SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)

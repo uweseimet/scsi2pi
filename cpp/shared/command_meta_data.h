@@ -40,7 +40,7 @@ public:
 
     CdbMetaData GetCdbMetaData(scsi_command) const;
 
-    int GetCommandBytesCount(scsi_command cmd) const
+    int GetByteCount(scsi_command cmd) const
     {
         return command_byte_counts[static_cast<int>(cmd)];
     }

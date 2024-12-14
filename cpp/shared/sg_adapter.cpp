@@ -14,7 +14,6 @@
 #include <sys/ioctl.h>
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 
@@ -45,21 +44,22 @@ void SgAdapter::CleanUp()
     }
 }
 
-SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout,
-    bool write) const
+SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout) const
 {
     sg_io_hdr io_hdr = { };
 
     io_hdr.interface_id = 'S';
 
-    if (length) {
-        io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
-    }
-    else {
+    if (buf.empty()) {
         io_hdr.dxfer_direction = SG_DXFER_NONE;
     }
+    else {
+        io_hdr.dxfer_direction =
+            CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])).has_data_out ?
+                SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
+    }
 
-    io_hdr.dxfer_len = length;
+    io_hdr.dxfer_len = static_cast<int>(buf.size());
     io_hdr.dxferp = io_hdr.dxfer_len ? buf.data() : nullptr;
 
     array<uint8_t, 18> sense_data = { };
@@ -73,5 +73,5 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
 
     const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
 
-    return {status, io_hdr.resid, static_cast<sense_key>(static_cast<int>(sense_data[2]) & 0x0f)};
+    return {status, static_cast<int>(buf.size()) - io_hdr.resid, static_cast<sense_key>(static_cast<int>(sense_data[2]) & 0x0f)};
 }

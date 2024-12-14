@@ -57,7 +57,7 @@ void ScsiGeneric::CleanUp()
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    count = CommandMetaData::Instance().GetCommandBytesCount(cmd);
+    count = CommandMetaData::Instance().GetByteCount(cmd);
     assert(count);
 
     local_cdb.clear();
@@ -158,7 +158,7 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf, false, GetController()->GetChunkSize());
+    return ReadWriteData(buf, GetController()->GetChunkSize());
 }
 
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
@@ -184,14 +184,14 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    const int status = ReadWriteData(span((uint8_t*)buf.data(), buf.size()), true, length); // NOSONAR Cast required for SG driver API
+    const int status = ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
 
     format_header.clear();
 
     return status;
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -200,6 +200,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     sg_io_hdr io_hdr = { };
 
     io_hdr.interface_id = 'S';
+
+    const bool write = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).has_data_out;
 
     if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
@@ -236,6 +238,10 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, bool write, int chunk_size)
     if (status == -1) {
         LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
+    }
+    // Do not treat CONDITION MET as an error
+    else if (status == 4) {
+        status = 0;
     }
 
     if (!status) {

@@ -67,7 +67,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = CommandMetaData::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+    const int command_byte_count = CommandMetaData::Instance().GetByteCount(static_cast<scsi_command>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 

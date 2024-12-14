@@ -19,7 +19,7 @@ using namespace memory_util;
     CheckPosition(*c, device, object_location);\
 })
 
-static void CheckPosition(AbstractController &controller, shared_ptr<PrimaryDevice> tape, uint32_t position)
+static void CheckPosition(const AbstractController &controller, shared_ptr<PrimaryDevice> tape, uint32_t position)
 {
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, scsi_command::read_position);
@@ -425,7 +425,7 @@ TEST(TapeTest, ReadBlockLimits)
 
     CreateImageFile(*tape);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_block_limits));
-    EXPECT_EQ(0x02fffffc, GetInt32(controller->GetBuffer(), 0));
+    EXPECT_EQ(0x02fffffcU, GetInt32(controller->GetBuffer(), 0));
     EXPECT_EQ(4, GetInt16(controller->GetBuffer(), 4));
 }
 
@@ -981,7 +981,7 @@ TEST(TapeTest, VerifyBlockSizeChange)
     MockTape tape;
     tape.SetBlockSize(512);
 
-    EXPECT_EQ(0, tape.VerifyBlockSizeChange(0, true));
+    EXPECT_EQ(0U, tape.VerifyBlockSizeChange(0, true));
 
     EXPECT_THAT([&] { tape.VerifyBlockSizeChange(0, false) ; }, Throws<scsi_exception>(AllOf(
         Property(&scsi_exception::get_sense_key, sense_key::illegal_request),

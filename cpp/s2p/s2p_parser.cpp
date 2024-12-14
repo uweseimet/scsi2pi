@@ -53,15 +53,15 @@ void S2pParser::Banner(bool usage) const
             << "  --help/-h                   Display this help.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
-            << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
-            << "    hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
-            << "    hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
-            << "    hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
-            << "    mos: SCSI MO image (SCSI-2 MO image)\n"
-            << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
-            << "    tar: SCSI Tape image (SCSI-2 tar-compatible image)\n"
-            << "    tap: SCSI Tape image (SCSI-2 simh-compatible image)\n";
+            << "    hd1: HD image (Non-removable SCSI-1-CCS HD image)\n"
+            << "    hds: HD image (Non-removable SCSI-2 HD image)\n"
+            << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
+            << "    hdr: HD image (Removable SCSI-2 HD image)\n"
+            << "    mos: MO image (SCSI-2 MO image)\n"
+            << "    iso: CD image (SCSI-2 ISO 9660 image)\n"
+            << "    is1: CD image (SCSI-1-CCS ISO 9660 image)\n"
+            << "    tar: Tape image (SCSI-2 tar-compatible image)\n"
+            << "    tap: Tape image (SCSI-2 SIMH-compatible image)\n";
     }
 }
 

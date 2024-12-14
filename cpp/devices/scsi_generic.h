@@ -38,7 +38,7 @@ public:
 
 private:
 
-    int ReadWriteData(span<uint8_t>, bool, int);
+    int ReadWriteData(span<uint8_t>, int);
 
     int GetAllocationLength() const;
     void UpdateStartBlock(int);

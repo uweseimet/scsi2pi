@@ -28,7 +28,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(24U, pages[48].size());
 }
 
-static void ValidateFormatPage(AbstractController &controller, int offset)
+static void ValidateFormatPage(const AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x08, buf[offset + 3]) << "Wrong number of tracks in one zone";
@@ -41,7 +41,7 @@ static void ValidateFormatPage(AbstractController &controller, int offset)
     EXPECT_TRUE(buf[offset + 20] & 0x40) << "Wrong hard-sectored flag";
 }
 
-static void ValidateDrivePage(AbstractController &controller, int offset)
+static void ValidateDrivePage(const AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x17, buf[offset + 2]);

@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 #include "shared/memory_util.h"
-#include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
 using namespace memory_util;
@@ -124,23 +123,17 @@ int S2pFormat::Run(span<char*> args)
 
 vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors() const
 {
-    vector<uint8_t> buf(252);
+    vector<uint8_t> buf(36);
     vector<uint8_t> cdb(6);
 
-    try {
-        if (ExecuteCommand(cdb, { }, 0, 3, false)) {
-            cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
-            return {};
-        }
-
-        cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
-        cdb[4] = 36;
-        if (ExecuteCommand(cdb, buf, 36, 3, false)) {
-            cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
-            return {};
-        }
+    if (ExecuteCommand(cdb, { }, 3)) {
+        cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
+        return {};
     }
-    catch (const scsi_exception&) {
+
+    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    cdb[4] = static_cast<uint8_t>(buf.size());
+    if (ExecuteCommand(cdb, buf, 3)) {
         cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
         return {};
     }
@@ -158,16 +151,12 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors() const
     cout << "Revision: '" << str.data() << "'\n";
 
     cdb.resize(10);
+    buf.resize(252);
     cdb[4] = 0;
     cdb[0] = static_cast<uint8_t>(scsi_command::read_format_capacities);
-    cdb[8] = 252;
+    cdb[8] = static_cast<uint8_t>(buf.size());
 
-    try {
-        if (ExecuteCommand(cdb, buf, 252, 5, false)) {
-            return {};
-        }
-    }
-    catch(const scsi_exception& ) {
+    if (ExecuteCommand(cdb, buf, 5)) {
         return {};
     }
 
@@ -188,13 +177,15 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors() const
 
 int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors) const
 {
-    cout << "Select the format to format the drive with, press Enter without input to quit:\n";
+    cout << "Formats supported by this drive:\n";
 
     int n = 1;
     for (const auto &descriptor : descriptors) {
         cout << "  " << n << ". " << descriptor.blocks << " sectors, " << descriptor.length << " bytes per sector\n";
         ++n;
     }
+
+    cout << "Select a format, press Enter without input to quit\n";
 
     string input;
     getline(cin, input);
@@ -237,29 +228,16 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
         SetInt32(parameters, 8, descriptors[n - 1].length);
     }
 
-    int status = 0;
-    try {
-        status = ExecuteCommand(cdb, parameters, static_cast<int>(parameters.size()), 3600, true);
-    }
-    catch (const scsi_exception&) {
-        status = -1;
-
-        // Fall through
-    }
+    const int status = ExecuteCommand(cdb, parameters, 3600);
 
     return status ? fmt::format("Can't format drive: {}", strerror(errno)) : "";
 }
 
-int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout, bool write) const
+int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout) const
 {
-    auto [status, _, sense_key] = sg_adapter.SendCommand(cdb, buf, length, timeout, write);
-
+    auto [status, _, sense_key] = sg_adapter.SendCommand(cdb, buf, timeout);
     if (status == -1) {
-        throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
-    }
-    // Do not treat CONDITION MET as en error
-    else if (status == 4) {
-        status = 0;
+        return status;
     }
 
     // If the command was successful, use the sense key as status

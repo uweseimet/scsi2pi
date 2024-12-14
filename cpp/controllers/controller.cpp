@@ -122,7 +122,7 @@ void Controller::Command()
             return;
         }
 
-        const int command_bytes_count = CommandMetaData::Instance().GetCommandBytesCount(
+        const int command_bytes_count = CommandMetaData::Instance().GetByteCount(
             static_cast<scsi_command>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 

@@ -591,7 +591,7 @@ TEST(DiskTest, Eject)
     EXPECT_TRUE(disk.Eject(true));
 }
 
-void ValidateCachingPage(AbstractController &controller, int offset)
+void ValidateCachingPage(const AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0xffff, GetInt16(buf, offset + 4)) << "Wrong pre-fetch transfer length";

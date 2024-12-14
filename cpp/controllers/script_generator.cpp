@@ -27,7 +27,7 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 
     file << dec << "-i " << id << COMPONENT_SEPARATOR << lun << " -c " << hex;
 
-    int count = CommandMetaData::Instance().GetCommandBytesCount(static_cast<scsi_command>(cdb[0]));
+    int count = CommandMetaData::Instance().GetByteCount(static_cast<scsi_command>(cdb[0]));
     // In case of an unknown command add all available CDB data
     if (!count) {
         count = static_cast<int>(cdb.size());
