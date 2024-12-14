@@ -9,7 +9,8 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--cdb/-c\fR \fICDB[:CDB:...]\fR]
 [\fB\--data/-d\fR \fIDATA\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--log-level/-L\fR \fILEVEL\fR]
+[\fB\--log-limit/-l\fR \fILIMIT\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
 {\fB\--binary-output-file/-F\fR \fIFILE\fR]
 {\fB\--hex-input-file/-t\fR \fIFILE\fR]
@@ -52,8 +53,11 @@ Data to send with the command in hexedecimal format. These data are sent in the 
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 Buffer size for received data, the default is 131072 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
-.BR --log-level/-L\fI " " \fILOG_LEVEL
+.BR --log-level/-L\fI " " \fILEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
+.TP
+.BR --log-limit/-l\fI " " \fILIMIT
+Limits the number of data bytes being logged, 0 means no limit. The default is 128.
 .TP
 .BR --binary-input-file/-f\fI " "\fIFILE
 Optional file with binary data to send in the DATA OUT phase.

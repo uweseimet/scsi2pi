@@ -8,7 +8,7 @@
 
 #include "base/primary_device.h"
 
-AbstractController::AbstractController(Bus &b, int id) : bus(b), target_id(id)
+AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
 {
     device_logger.SetIdAndLun(target_id, -1);
 }

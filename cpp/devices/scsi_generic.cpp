@@ -184,11 +184,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    const int status = ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
-
-    format_header.clear();
-
-    return status;
+    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
@@ -230,11 +226,14 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
     }
 
     if (write && get_level() == level::trace) {
-        LogTrace(
-            fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length, FormatBytes(buf, length, 128)));
+        LogTrace(fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length,
+            GetController()->FormatBytes(buf, length)));
     }
 
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+
+    format_header.clear();
+
     if (status == -1) {
         LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
@@ -266,7 +265,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 
     if (!write && get_level() == level::trace) {
         LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
-            FormatBytes(buf, transferred_length, 128)));
+            GetController()->FormatBytes(buf, transferred_length)));
     }
 
     UpdateInternalBlockSize(buf, length);

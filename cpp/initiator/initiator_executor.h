@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "buses/bus.h"
+#include "shared/s2p_formatter.h"
 
 using namespace std;
 using namespace spdlog;
@@ -46,6 +47,11 @@ public:
         return initiator_logger;
     }
 
+    string FormatBytes(span<const uint8_t> bytes, int count) const
+    {
+        return formatter.FormatBytes(bytes, count);
+    }
+
 private:
 
     bool Dispatch(span<uint8_t>, span<uint8_t>, int&);
@@ -70,6 +76,8 @@ private:
     }
 
     Bus &bus;
+
+    const S2pFormatter formatter;
 
     int initiator_id;
 

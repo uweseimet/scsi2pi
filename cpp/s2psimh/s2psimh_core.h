@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include "shared/s2p_formatter.h"
 #include "shared/simh_util.h"
 
 using namespace std;
@@ -41,6 +42,8 @@ private:
     bool ReadRecord(span<uint8_t>);
 
     vector<simh_util::SimhMetaData> ParseObject(const string&);
+
+    S2pFormatter formatter;
 
     string simh_filename;
 

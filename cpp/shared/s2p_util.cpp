@@ -298,56 +298,6 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     return bytes;
 }
 
-string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, int limit, bool hex_only)
-{
-    string str;
-
-    if (!limit || limit > count) {
-        limit = count;
-    }
-
-    int offset = 0;
-    while (offset < limit) {
-        string output_offset;
-        string output_hex;
-        string output_ascii;
-
-        if (!hex_only && !(offset % 16)) {
-            output_offset += fmt::format("{:08x}  ", offset);
-        }
-
-        int index = -1;
-        while (++index < 16 && offset < limit) {
-            if (index) {
-                output_hex += ":";
-            }
-            output_hex += fmt::format("{:02x}", bytes[offset]);
-
-            output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
-
-            ++offset;
-        }
-
-        str += output_offset;
-        str += fmt::format("{:47}", output_hex);
-        str += hex_only ? "" : fmt::format("  '{}'", output_ascii);
-
-        if (hex_only) {
-            str.erase(str.find_last_not_of(' ') + 1);
-        }
-
-        if (offset < limit) {
-            str += "\n";
-        }
-    }
-
-    if (count > limit) {
-        str += "\n...";
-    }
-
-    return str;
-}
-
 int s2p_util::HexToDec(char c)
 {
     if (c >= '0' && c <= '9') {

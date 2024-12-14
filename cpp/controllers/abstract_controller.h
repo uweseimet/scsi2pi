@@ -14,6 +14,7 @@
 #include "script_generator.h"
 #include "buses/bus.h"
 #include "base/device_logger.h"
+#include "shared/s2p_formatter.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_util.h"
 
@@ -24,7 +25,7 @@ class AbstractController : public PhaseHandler
 
 public:
 
-    AbstractController(Bus&, int);
+    AbstractController(Bus&, int, const S2pFormatter&);
     ~AbstractController() override = default;
 
     virtual void Error(sense_key, asc, status_code) = 0;
@@ -95,9 +96,9 @@ public:
         return cdb;
     }
 
-    string FormatBytes(span<const uint8_t> buf, int length) const
+    string FormatBytes(span<const uint8_t> buf, size_t count) const
     {
-        return s2p_util::FormatBytes(buf, length, 128);
+        return formatter.FormatBytes(buf, count);
     }
 
 protected:
@@ -176,6 +177,8 @@ private:
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;
 
     int target_id;
+
+    const S2pFormatter &formatter;
 
     static constexpr int UNKNOWN_INITIATOR_ID = -1;
 

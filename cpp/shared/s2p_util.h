@@ -71,7 +71,6 @@ string FormatSenseData(span<const byte>);
 string FormatSenseData(sense_key, asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-string FormatBytes(span<const uint8_t>, int, int, bool = false);
 int HexToDec(char);
 
 string Trim(const string&);

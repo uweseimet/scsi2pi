@@ -181,6 +181,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
+    const S2pFormatter formatter;
+
 public:
 
     MOCK_METHOD(bool, Process, (), (override));
@@ -195,14 +197,14 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0)
+    MockAbstractController() : AbstractController(*mock_bus, 0, formatter)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id)
+    MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id)
+    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
@@ -231,6 +233,8 @@ class MockController : public Controller
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(TapeTest, Write6);
 
+    const S2pFormatter formatter;
+
 public:
 
     MOCK_METHOD(void, Reset, (), (override));
@@ -238,10 +242,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, formatter)
     {
     }
     ~MockController() override = default;

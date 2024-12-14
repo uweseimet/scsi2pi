@@ -10,13 +10,13 @@
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus_factory.h"
+#include "shared/s2p_formatter.h"
 #include "s2pexec_executor.h"
 
 using namespace std;
 
 class S2pExec
 {
-
     class execution_exception : public runtime_error
     {
         using runtime_error::runtime_error;
@@ -47,6 +47,8 @@ private:
     unique_ptr<Bus> bus;
 
     unique_ptr<S2pExecExecutor> executor;
+
+    S2pFormatter formatter;
 
     bool version = false;
     bool help = false;

@@ -45,6 +45,8 @@ void S2pParser::Banner(bool usage) const
             << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
             << "                              critical|off), default is 'info'.\n"
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
+            << "  --log-limit LIMIT           The number of data bytes being logged,\n"
+            << "                              0 means no limit. Default is 128.\n"
             << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
@@ -68,7 +70,8 @@ void S2pParser::Banner(bool usage) const
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_IGNORE_CONF = 3;
+    const int OPT_LOG_LIMIT = 3;
+    const int OPT_IGNORE_CONF = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
@@ -80,6 +83,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-pattern", required_argument, nullptr, 'l' },
+        { "log-limit", required_argument, nullptr, OPT_LOG_LIMIT },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
@@ -169,12 +173,16 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             type = ToLower(optarg);
             continue;
 
-        case OPT_SCSI_LEVEL:
-            scsi_level = optarg;
-            continue;
-
         case OPT_IGNORE_CONF:
             ignore_conf = true;
+            continue;
+
+        case OPT_LOG_LIMIT:
+            properties[PropertyHandler::LOG_LIMIT] = optarg;
+            continue;
+
+        case OPT_SCSI_LEVEL:
+            scsi_level = optarg;
             continue;
 
         case 1:

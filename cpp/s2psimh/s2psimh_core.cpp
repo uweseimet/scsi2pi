@@ -77,12 +77,14 @@ bool S2pSimh::ParseArguments(span<char*> args)
             break;
 
         case 'l':
-            int l;
-            if (!GetAsUnsignedInt(string(optarg), l)) {
-                cerr << "Error: Invalid dump size limit " << optarg << endl;
+            if (int l; !GetAsUnsignedInt(string(optarg), l)) {
+                cerr << "Error: Invalid dump size limit '" << optarg << "'" << endl;
                 return false;
             }
-            limit = static_cast<uint32_t>(l);
+            else {
+                formatter.SetLimit(l);
+                limit = static_cast<uint32_t>(l);
+            }
             break;
 
         case 'h':
@@ -398,7 +400,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
             return false;
         }
 
-        cout << FormatBytes(record, static_cast<int>(record.size()), 0) << '\n';
+        cout << formatter.FormatBytes(record, record.size()) << '\n';
     }
 
     position += Pad(meta_data.value);

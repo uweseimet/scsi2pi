@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "base/s2p_defs.h"
+#include "shared/s2p_formatter.h"
 #include "script_generator.h"
 
 class Bus;
@@ -37,7 +38,14 @@ public:
 
     bool SetScriptFile(const string&);
 
+    void SetFormatLimit(int limit)
+    {
+        formatter.SetLimit(limit);
+    }
+
 private:
+
+    S2pFormatter formatter;
 
     // Controllers mapped to their target IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;

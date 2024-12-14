@@ -146,6 +146,17 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
+    controller_factory.SetFormatLimit(128);
+    if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
+        if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
+            cerr << "Error: Invalid log limit '" << log_limit << "'" << endl;
+            return EXIT_FAILURE;
+        }
+        else {
+            controller_factory.SetFormatLimit(limit);
+        }
+    }
+
     if (!InitBus(in_process, log_signals)) {
         cerr << "Error: Can't initialize bus" << endl;
         return EXIT_FAILURE;

@@ -27,6 +27,7 @@ public:
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
+    static constexpr const char *LOG_LIMIT = "log_limit";
     static constexpr const char *LOG_PATTERN = "log_pattern";
     static constexpr const char *MODE_PAGE = "mode_page";
     static constexpr const char *PORT = "port";

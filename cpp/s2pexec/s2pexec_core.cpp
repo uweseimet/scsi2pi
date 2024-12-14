@@ -53,8 +53,10 @@ void S2pExec::Banner(bool header, bool usage)
             << "                                format. @ denotes a filename, e.g. @data.txt.\n"
             << "  --buffer-size/-b SIZE         Buffer size for received data,\n"
             << "                                default is 131072 bytes.\n"
-            << "  --log-level/-L LOG_LEVEL      Log level (trace|debug|info|warning|error|\n"
+            << "  --log-level/-L LEVEL          Log level (trace|debug|info|warning|error|\n"
             << "                                critical|off), default is 'info'.\n"
+            << "  --log-limit/-l LIMIT          The number of data bytes being logged,\n"
+            << "                                0 means no limit. Default is 128.\n"
             << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
             << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
             << "  --hex-output-file/-T FILE     Hexadecimal text output file for data received.\n"
@@ -103,6 +105,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "request-sense", no_argument, nullptr, 'R' },
         { "log-level", required_argument, nullptr, 'L' },
+        { "log-limit/-l", required_argument, nullptr, 'l' },
         { "reset-bus", no_argument, nullptr, 'r' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
@@ -115,6 +118,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     string target;
     string buf;
     string tout = "3";
+    string log_limit = "128";
 
     // Resetting these is important for the interactive mode
     command.clear();
@@ -126,7 +130,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:T:HrRvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:l:T:HrRvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -169,6 +173,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'i':
             target = optarg;
+            break;
+
+        case 'l':
+            log_limit = optarg;
             break;
 
         case 'L':
@@ -217,6 +225,13 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (!SetLogLevel(*initiator_logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
+    }
+
+    if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
+        throw parser_exception("Invalid log limit: '" + log_limit + "'");
+    }
+    else {
+        formatter.SetLimit(limit);
     }
 
     if (!target.empty()) {
@@ -499,7 +514,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
     const bool text = binary_output_filename.empty();
 
-    string hex = FormatBytes(data, static_cast<int>(data.size()), 0, hex_only);
+    string hex = formatter.FormatBytes(data, data.size(), hex_only);
 
     if (filename.empty()) {
         if (initiator_logger->level() <= level::debug)

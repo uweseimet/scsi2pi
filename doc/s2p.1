@@ -16,8 +16,9 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--ignore-conf\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
-[\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
+[\fB\--log-level/-L\fR \fILEVEL[:ID:[LUN]]\fR]
+[\fB\--log-limit\fR \fLIMIT\fR]
+[\fB\--log-pattern/-l\fR \f_PATTERN\fR]
 [\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
@@ -100,11 +101,14 @@ Explicitly specified property files override the previously defined properties.
 .BR --ignore-conf\fI " " \fI
 Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
-.BR --log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
+.BR --log-level/-L\fI " " \fILEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
 .TP
-.BR --log-pattern/-l\fI " " \fILOG_PATTERN
+.BR --log-pattern/-l\fI " " \fIPATTERN
 The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
+.TP
+.BR --log-limit/\fI " " \fILIMIT
+Limits the number of data bytes being logged, 0 means no limit. The default is 128.
 .TP
 .BR --script-file/-s\fI " " \fISCRIPT_FILE
 Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
