@@ -3,8 +3,7 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\--scsi-id/-i n[:u]\fR \fISCSI_IMAGE_FILE\fR]
-[\fB\--sasi-id/-h n[:u]\fR \fISASI_IMAGE_FILE\fR]
+[\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--type/-t\fR \fITYPE\fR]
 [\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
@@ -24,25 +23,25 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--locale,-z\fR \fILOCALE\fR]
 [\fB\--version/-v\fR]
-[\fB\--help\fR]
+[\fB\--help/-h\fR]
 .SH DESCRIPTION
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
-In the arguments to s2p one or more SCSI (-i n[:u]) or SASI (-h n[:u]) devices can be specified. SCSI and SASI devices cannot be mixed on the same controller.
+In the arguments to s2p one or more SCSI/SASI (-i n[:u]) devices can be specified.
 The number (n) after the device identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
-The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
+The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supportes LUNs 0-1, but s2p supports LUNs 0-31 also for SASI.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
-    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1-CCS)
-    hds: SCSI Hard Disk image (generic, non-removable, SCSI-2)
-    hdr: SCSI Hard Disk image (generic, removable, SCSI-2)
-    hda: SCSI Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
-    mos: SCSI Magneto-Optical image (MO/MOD, SCSI-2)
-    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
+    hd1: Hard Disk image (generic, non-removable, SCSI-1-CCS)
+    hds: Hard Disk image (generic, non-removable, SCSI-2)
+    hdr: Hard Disk image (generic, removable, SCSI-2)
+    hda: Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
+    mos: Magneto-Optical image (MO/MOD, SCSI-2)
+    is1: CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
-    tar: SCSI Tape image (tar-compatible image, SCSI-2)
-    tap: SCSI Tape image (simh-compatible image, SCSI-2)
+    tar: Tape image (tar-compatible image, SCSI-2)
+    tap: Tape image (SIMH-compatible image, SCSI-2)
 
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
@@ -59,15 +58,10 @@ This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP
-.BR --scsi-id/-i \fI " "\fIn[:u] " " \fIFILE
-n is the SCSI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
+.BR --id/-i \fI " "\fIn[:u] " " \fIFILE
+n is the SCSI/SASI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
 .IP
-FILE is the name of the image file to use for the SCSI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60".
-.TP
-.BR --sasi-id/-h\fI " "\fIn[:u] " " \fIFILE
-n is the SASI ID (0-7). u (0-1) is the optional LUN (logical unit). The default LUN is 0.
-.IP
-FILE is the name of the image file to use for the SASI hard drive.
+FILE is the name of the image file to use for the SCSI/SASI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
 .BR --type/-t\fI " " \fITYPE
 The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
@@ -127,7 +121,7 @@ Overrides the default locale (language) for client-facing error messages. A clie
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
 .TP
-.BR --help\fI " " \fI
+.BR --help/-h\fI " " \fI
 Displays a help page.
 
 .SH EXAMPLES
@@ -141,7 +135,7 @@ Launch s2p with a removable SCSI drive image as ID 0 and the raw device file /de
    s2p -i 0 -t scrm /dev/hdb -i 6 daynaport
 
 Launch s2p with a SASI hard drive image as ID 1
-   s2p -h 1 /path/to/harddrive.hds
+   s2p -i 1 -t sahd /path/to/harddrive.hds
 
 To create an empty 100 MiB drive image, use the following command:
    dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800

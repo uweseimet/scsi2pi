@@ -25,9 +25,7 @@ void S2pParser::Banner(bool usage) const
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and LUN (0-7),\n"
-            << "                              default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
+            << "  --id/-i ID[:LUN]            SCSI/SASI target device ID (0-7) and LUN (0-7),\n"
             << "                              default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
             << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
@@ -52,7 +50,7 @@ void S2pParser::Banner(bool usage) const
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
             << "  --version/-v                Display the program version.\n"
-            << "  --help                      Display this help.\n"
+            << "  --help/-h                   Display this help.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
             << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -71,14 +69,13 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 {
     const int OPT_SCSI_LEVEL = 2;
     const int OPT_IGNORE_CONF = 3;
-    const int OPT_HELP = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
-        { "help", no_argument, nullptr, OPT_HELP },
+        { "help", no_argument, nullptr, 'h' },
         { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
@@ -88,9 +85,8 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         { "property", required_argument, nullptr, 'c' },
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", optional_argument, nullptr, 'r' },
-        { "sasi-id", required_argument, nullptr, 'h' },
         { "scan-depth", required_argument, nullptr, 'R' },
-        { "scsi-id", required_argument, nullptr, 'i' },
+        { "-id", required_argument, nullptr, 'i' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
         { "script-file", required_argument, nullptr, 's' },
@@ -126,7 +122,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:s:t:z:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -153,9 +149,9 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             continue;
 
         case 'h':
-            id_lun = optarg;
-            type = PbDeviceType_Name(SAHD);
-            continue;
+            Banner(true);
+            exit(EXIT_SUCCESS);
+            break;
 
         case 'i':
             id_lun = optarg;
@@ -180,11 +176,6 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
         case OPT_IGNORE_CONF:
             ignore_conf = true;
             continue;
-
-        case OPT_HELP:
-            Banner(true);
-            exit(EXIT_SUCCESS);
-            break;
 
         case 1:
             // Encountered a free parameter e.g. a filename
