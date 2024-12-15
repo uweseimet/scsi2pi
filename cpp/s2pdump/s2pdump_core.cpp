@@ -406,19 +406,19 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
     scsi_device_info = { };
     scsi_device_info.type = static_cast<byte>(buf[0]);
 
-    array<char, 17> str = { };
-    memcpy(str.data(), &buf[8], 8);
-    scsi_device_info.vendor = string(str.data());
+    array<char, 9> vendor = { };
+    memcpy(vendor.data(), &buf[8], 8);
+    scsi_device_info.vendor = string(vendor.data());
     cout << "Vendor:               '" << scsi_device_info.vendor << "'\n";
 
-    str.fill(0);
-    memcpy(str.data(), &buf[16], 16);
-    scsi_device_info.product = string(str.data());
+    array<char, 17> product = { };
+    memcpy(product.data(), &buf[16], 16);
+    scsi_device_info.product = string(product.data());
     cout << "Product:              '" << scsi_device_info.product << "'\n";
 
-    str.fill(0);
-    memcpy(str.data(), &buf[32], 4);
-    scsi_device_info.revision = string(str.data());
+    array<char, 5> revision = { };
+    memcpy(revision.data(), &buf[32], 4);
+    scsi_device_info.revision = string(revision.data());
     cout << "Revision:             '" << scsi_device_info.revision << "'\n";
 
     if (const auto &t = SCSI_DEVICE_TYPES.find(static_cast<byte>(type)); t != SCSI_DEVICE_TYPES.end()) {
@@ -429,7 +429,30 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
     }
 
     if (buf[2]) {
-        cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << "\n";
+        cout << "SCSI Level:           ";
+
+        switch (buf[2]) {
+        case 0:
+            cout << "SCSI-1";
+            break;
+
+        case 1:
+            cout << "SCSI-1-CCS";
+            break;
+
+        case 2:
+            cout << "SCSI-2";
+            break;
+
+        case 3:
+            cout << "SPC";
+            break;
+
+        default:
+            cout << "SPC-" << buf[2] - 2;
+            break;
+        }
+        cout << "\n";
     }
 
     cout << "Response Data Format: ";
@@ -446,12 +469,8 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         cout << "SCSI-2";
         break;
 
-    case 3:
-        cout << "SPC";
-        break;
-
     default:
-        cout << "SPC-" << buf[3] - 2;
+        cout << fmt::format("{:02x}", buf[3]);
         break;
     }
     cout << "\n";

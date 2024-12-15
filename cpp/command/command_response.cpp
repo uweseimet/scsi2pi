@@ -73,9 +73,10 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
-    pb_device.set_vendor(device->GetVendor());
-    pb_device.set_product(device->GetProduct());
-    pb_device.set_revision(device->GetRevision());
+    const auto &product_data = device->GetProductData();
+    pb_device.set_vendor(product_data.vendor);
+    pb_device.set_product(product_data.product);
+    pb_device.set_revision(product_data.revision);
     pb_device.set_type(device->GetType());
     pb_device.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
 

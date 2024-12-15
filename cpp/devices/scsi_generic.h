@@ -29,6 +29,8 @@ public:
         return device;
     }
 
+    string SetProductData(const ProductData&, bool force = true) override;
+
     void Dispatch(scsi_command) override;
 
     vector<uint8_t> InquiryInternal() const override;

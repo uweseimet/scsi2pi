@@ -22,6 +22,41 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
     return {controller, device};
 }
 
+TEST(PrimaryDeviceTest, ProductData)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_TRUE(device.SetProductData( { "", "", "" }).empty());
+    EXPECT_FALSE(device.SetProductData( { "123456789", "", "" }).empty());
+    EXPECT_TRUE(device.SetProductData( { "12345678", "", "" }).empty());
+    EXPECT_EQ("12345678", device.GetProductData().vendor);
+    EXPECT_TRUE(device.SetProductData( { " 12345678 ", "", "" }).empty());
+    EXPECT_EQ("12345678", device.GetProductData().vendor);
+
+    EXPECT_FALSE(device.SetProductData( { "", "12345678901234567", "" }).empty());
+    EXPECT_TRUE(device.SetProductData( { "", "1234567890123456", "" }).empty());
+    EXPECT_EQ("1234567890123456", device.GetProductData().product);
+    EXPECT_TRUE(device.SetProductData( { "", " 1234567890123456 ", "" }).empty());
+    EXPECT_EQ("1234567890123456", device.GetProductData().product);
+    EXPECT_TRUE(device.SetProductData( { "", "xyz", "" }, false).empty());
+    EXPECT_EQ("1234567890123456", device.GetProductData().product)
+    << "Changing vital product data is not SCSI compliant";
+
+    EXPECT_FALSE(device.SetProductData( { "", "", "12345" }).empty());
+    EXPECT_TRUE(device.SetProductData( { "", "", "1234" }).empty());
+    EXPECT_EQ("1234", device.GetProductData().revision);
+    EXPECT_TRUE(device.SetProductData( { "", "", " 1234 " }).empty());
+    EXPECT_EQ("1234", device.GetProductData().revision);
+}
+
+TEST(PrimaryDeviceTest, GetPaddedName)
+{
+    MockPrimaryDevice device(0);
+
+    device.SetProductData( { "V", "P", "R" });
+    EXPECT_EQ("V       P               R   ", device.GetProductData().GetPaddedName());
+}
+
 TEST(PrimaryDeviceTest, SetScsiLevel)
 {
     MockPrimaryDevice device(0);

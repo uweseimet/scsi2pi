@@ -103,9 +103,10 @@ TEST(TapeTest, Device_Defaults)
     EXPECT_FALSE(tape.IsStoppable());
     EXPECT_FALSE(tape.IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", tape.GetVendor());
-    EXPECT_EQ("SCSI TAPE", tape.GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), tape.GetRevision());
+    const auto& [vendor, product, revision] = tape.GetProductData();
+    EXPECT_EQ("SCSI2Pi", vendor);
+    EXPECT_EQ("SCSI TAPE", product);
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
 TEST(TapeTest, GetDefaultParams)

@@ -110,9 +110,10 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_TRUE(device->IsStoppable());
     EXPECT_FALSE(device->IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", device->GetVendor());
-    EXPECT_EQ(product, device->GetProduct());
-    EXPECT_EQ(GetVersion(), device->GetRevision());
+    const auto& [v, p, r] = device->GetProductData();
+    EXPECT_EQ("SCSI2Pi", v);
+    EXPECT_EQ(product, p);
+    EXPECT_EQ(GetVersion(), r);
 }
 
 void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command cmd, sense_key s, asc a,

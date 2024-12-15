@@ -46,7 +46,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 .B s2pctl
 sends commands to s2p in order to apply configuration changes at runtime or to check a device status.
 
-You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
+s2pctl also runs on non-Pi Linux/BSD platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
 
 When launched without arguments s2pctl enters interactive mode, where you can enter commands on the command line.
 In interactive mode the host and port settings are preserved between command invocations.
@@ -187,6 +187,7 @@ Specifies the device type. This type overrides the type derived from the file ex
 .TP 
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
 .TP 
 .BR --scsi-level\fI " " \fISCSI_LEVEL
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.

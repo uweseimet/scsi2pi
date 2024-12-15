@@ -28,9 +28,10 @@ TEST(ScsiGenericTest, Device_Defaults)
     EXPECT_FALSE(device.IsStoppable());
     EXPECT_FALSE(device.IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", device.GetVendor());
-    EXPECT_EQ("SG 3 DEVICE", device.GetProduct());
-    EXPECT_EQ(testing::TestShared::GetVersion(), device.GetRevision());
+    const auto& [vendor, product, revision] = device.GetProductData();
+    EXPECT_EQ("SCSI2Pi", vendor);
+    EXPECT_EQ("", product);
+    EXPECT_EQ(testing::TestShared::GetVersion(), revision);
 }
 
 TEST(ScsiGenericTest, GetDevice)
@@ -38,6 +39,16 @@ TEST(ScsiGenericTest, GetDevice)
     ScsiGeneric device(0, "device");
 
     EXPECT_EQ("device", device.GetDevice());
+}
+
+TEST(ScsiGenericTest, SetProductData)
+{
+    ScsiGeneric device(0, "");
+
+    EXPECT_TRUE(device.SetProductData( {"", "", ""} ).empty());
+    EXPECT_FALSE(device.SetProductData( {"1", "", ""} ).empty());
+    EXPECT_FALSE(device.SetProductData( {"", "2", ""} ).empty());
+    EXPECT_FALSE(device.SetProductData( {"", "", "3"} ).empty());
 }
 
 #endif

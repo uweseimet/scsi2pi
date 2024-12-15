@@ -31,9 +31,10 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_FALSE(services.IsStoppable());
     EXPECT_FALSE(services.IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", services.GetVendor());
-    EXPECT_EQ("Host Services", services.GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), services.GetRevision());
+    const auto& [vendor, product, revision] = services.GetProductData();
+    EXPECT_EQ("SCSI2Pi", vendor);
+    EXPECT_EQ("Host Services", product);
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
 TEST(HostServicesTest, TestUnitReady)

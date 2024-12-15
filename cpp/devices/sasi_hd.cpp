@@ -12,8 +12,8 @@
 SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false,
     sector_sizes)
 {
+    Disk::SetProductData( { "", "SASI HD", "" });
     SetScsiLevel(scsi_level::none);
-    SetProduct("SASI HD");
     SetProtectable(true);
 }
 

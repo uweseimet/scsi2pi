@@ -35,9 +35,7 @@ using namespace s2p_util;
 DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
-    SetVendor("Dayna");
-    SetProduct("SCSI/Link");
-    SetRevision("1.4a");
+    PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" });
     SupportsParams(true);
     SetReady(true);
 }

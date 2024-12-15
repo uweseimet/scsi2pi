@@ -26,9 +26,10 @@ TEST(DaynaportTest, Device_Defaults)
     EXPECT_FALSE(daynaport.IsStoppable());
     EXPECT_FALSE(daynaport.IsStopped());
 
-    EXPECT_EQ("Dayna", daynaport.GetVendor());
-    EXPECT_EQ("SCSI/Link", daynaport.GetProduct());
-    EXPECT_EQ("1.4a", daynaport.GetRevision());
+    const auto& [vendor, product, revision] = daynaport.GetProductData();
+    EXPECT_EQ("Dayna", vendor);
+    EXPECT_EQ("SCSI/Link", product);
+    EXPECT_EQ("1.4a", revision);
 }
 
 TEST(DaynaportTest, GetDefaultParams)

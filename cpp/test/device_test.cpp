@@ -110,49 +110,6 @@ TEST(DeviceTest, Properties)
     EXPECT_EQ(LUN, device.GetLun());
 }
 
-TEST(DeviceTest, Vendor)
-{
-    MockDevice device(0);
-
-    EXPECT_THROW(device.SetVendor(""), invalid_argument);
-    EXPECT_THROW(device.SetVendor("123456789"), invalid_argument);
-    device.SetVendor("12345678");
-    EXPECT_EQ("12345678", device.GetVendor());
-}
-
-TEST(DeviceTest, Product)
-{
-    MockDevice device(0);
-
-    EXPECT_THROW(device.SetProduct(""), invalid_argument);
-    EXPECT_THROW(device.SetProduct("12345678901234567"), invalid_argument);
-    device.SetProduct("1234567890123456");
-    EXPECT_EQ("1234567890123456", device.GetProduct());
-    device.SetProduct("xyz", false);
-    EXPECT_EQ("1234567890123456", device.GetProduct()) << "Changing vital product data is not SCSI compliant";
-}
-
-TEST(DeviceTest, Revision)
-{
-    MockDevice device(0);
-
-    EXPECT_THROW(device.SetRevision(""), invalid_argument);
-    EXPECT_THROW(device.SetRevision("12345"), invalid_argument);
-    device.SetRevision("1234");
-    EXPECT_EQ("1234", device.GetRevision());
-}
-
-TEST(DeviceTest, GetPaddedName)
-{
-    MockDevice device(0);
-
-    device.SetVendor("V");
-    device.SetProduct("P");
-    device.SetRevision("R");
-
-    EXPECT_EQ("V       P               R   ", device.GetPaddedName());
-}
-
 TEST(DeviceTest, Start)
 {
     MockDevice device(0);

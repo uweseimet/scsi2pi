@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
+#include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace s2p_interface;
@@ -90,23 +92,6 @@ public:
         return lun;
     }
 
-    const string& GetVendor() const
-    {
-        return vendor;
-    }
-    void SetVendor(const string&);
-    const string& GetProduct() const
-    {
-        return product;
-    }
-    void SetProduct(const string&, bool = true);
-    const string& GetRevision() const
-    {
-        return revision;
-    }
-    void SetRevision(const string&);
-    string GetPaddedName() const;
-
     virtual bool SupportsImageFile() const
     {
         return false;
@@ -135,7 +120,9 @@ public:
 
 protected:
 
-    Device(PbDeviceType, int);
+    Device(PbDeviceType type, int lun) : type(type), lun(lun)
+    {
+    }
 
     void SetReady(bool b)
     {
@@ -198,11 +185,6 @@ private:
     bool locked = false;
 
     bool supports_params = false;
-
-    // Default device identifier for INQUIRY
-    string vendor = "SCSI2Pi";
-    string product;
-    string revision;
 
     // The parameters the device was created with
     param_map params;

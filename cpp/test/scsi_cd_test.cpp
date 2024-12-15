@@ -37,9 +37,10 @@ TEST(ScsiCdTest, DeviceDefaults)
     EXPECT_TRUE(cd.IsStoppable());
     EXPECT_FALSE(cd.IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", cd.GetVendor());
-    EXPECT_EQ("SCSI CD-ROM", cd.GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), cd.GetRevision());
+    const auto& [vendor, product, revision] = cd.GetProductData();
+    EXPECT_EQ("SCSI2Pi", vendor);
+    EXPECT_EQ("SCSI CD-ROM", product);
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
 TEST(ScsiCdTest, Inquiry)

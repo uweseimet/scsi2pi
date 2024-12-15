@@ -50,30 +50,32 @@ static void ValidateDrivePage(const AbstractController &controller, int offset)
     EXPECT_EQ(7200, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
 }
 
+
+
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
+    auto hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
+    EXPECT_NE(nullptr, hd);
+    EXPECT_EQ(SCHD, hd->GetType());
+    EXPECT_TRUE(hd->SupportsImageFile());
+    EXPECT_FALSE(hd->SupportsParams());
+    EXPECT_TRUE(hd->IsProtectable());
+    EXPECT_FALSE(hd->IsProtected());
+    EXPECT_FALSE(hd->IsReadOnly());
+    EXPECT_FALSE(hd->IsRemovable());
+    EXPECT_FALSE(hd->IsRemoved());
+    EXPECT_FALSE(hd->IsLocked());
+    EXPECT_TRUE(hd->IsStoppable());
+    EXPECT_FALSE(hd->IsStopped());
 
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCHD, device->GetType());
-    EXPECT_TRUE(device->SupportsImageFile());
-    EXPECT_FALSE(device->SupportsParams());
-    EXPECT_TRUE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_FALSE(device->IsReadOnly());
-    EXPECT_FALSE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_TRUE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    const auto& [vendor, product, revision] = hd->GetProductData();
+    EXPECT_EQ("QUANTUM", vendor) << "Invalid default vendor for Apple drive";
+    EXPECT_EQ("FIREBALL", product) << "Invalid default vendor for Apple drive";
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 
-    EXPECT_EQ("QUANTUM", device->GetVendor()) << "Invalid default vendor for Apple drive";
-    EXPECT_EQ("FIREBALL", device->GetProduct()) << "Invalid default vendor for Apple drive";
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
-
-    device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCHD, device->GetType());
+    hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
+    EXPECT_NE(nullptr, hd);
+    EXPECT_EQ(SCHD, hd->GetType());
 }
 
 TEST(ScsiHdTest, SCRM_DeviceDefaults)
@@ -89,14 +91,6 @@ TEST(ScsiHdTest, Inquiry)
         false, "file.hd1");
 }
 
-TEST(ScsiHdTest, FinalizeSetup)
-{
-    MockScsiHd hd(0, false);
-
-    hd.SetBlockSize(1024);
-    EXPECT_THROW(hd.FinalizeSetup(), io_exception)<< "Device has 0 blocks";
-}
-
 TEST(ScsiHdTest, GetProductData)
 {
     MockScsiHd hd_kb(0, false);
@@ -108,22 +102,29 @@ TEST(ScsiHdTest, GetProductData)
     hd_kb.SetBlockSize(1024);
     hd_kb.SetBlockCount(1);
     hd_kb.FinalizeSetup();
-    string s = hd_kb.GetProduct();
+    string s = hd_kb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 KiB"));
 
     hd_mb.SetFilename(filename.string());
     hd_mb.SetBlockSize(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
     hd_mb.FinalizeSetup();
-    s = hd_mb.GetProduct();
+    s = hd_mb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 MiB"));
-
     hd_gb.SetFilename(filename.string());
     hd_gb.SetBlockSize(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
     hd_gb.FinalizeSetup();
-    s = hd_gb.GetProduct();
+    s = hd_gb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("10 GiB"));
+}
+
+TEST(ScsiHdTest, FinalizeSetup)
+{
+    MockScsiHd hd(0, false);
+
+    hd.SetBlockSize(1024);
+    EXPECT_THROW(hd.FinalizeSetup(), io_exception)<< "Device has 0 blocks";
 }
 
 TEST(ScsiHdTest, GetBlockSizes)

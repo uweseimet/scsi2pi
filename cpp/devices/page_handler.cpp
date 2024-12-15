@@ -54,7 +54,8 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     device.SetUpModePages(pages, page_code, changeable);
-    for (const auto& [p, data] : GetCustomModePages(device.GetVendor(), device.GetProduct())) {
+    const auto& [vendor, product, _] = device.GetProductData();
+    for (const auto& [p, data] : GetCustomModePages(vendor, product)) {
         if (data.empty()) {
             pages.erase(p);
         }

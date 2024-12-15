@@ -26,9 +26,10 @@ TEST(PrinterTest, Device_Defaults)
     EXPECT_FALSE(printer.IsStoppable());
     EXPECT_FALSE(printer.IsStopped());
 
-    EXPECT_EQ("SCSI2Pi", printer.GetVendor());
-    EXPECT_EQ("SCSI PRINTER", printer.GetProduct());
-    EXPECT_EQ(TestShared::GetVersion(), printer.GetRevision());
+    const auto& [vendor, product, revision] = printer.GetProductData();
+    EXPECT_EQ("SCSI2Pi", vendor);
+    EXPECT_EQ("SCSI PRINTER", product);
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
 TEST(PrinterTest, GetDefaultParams)

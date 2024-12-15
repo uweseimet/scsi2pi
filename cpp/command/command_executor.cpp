@@ -407,8 +407,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
-    PropertyHandler::Instance().AddProperty(identifier + "name",
-        device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+    const auto& [product, vendor, revision] = device->GetProductData();
+    PropertyHandler::Instance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
@@ -738,22 +738,8 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
 bool CommandExecutor::SetProductData(const CommandContext &context, const PbDeviceDefinition &pb_device,
     PrimaryDevice &device)
 {
-    try {
-        if (!pb_device.vendor().empty()) {
-            device.SetVendor(pb_device.vendor());
-        }
-        if (!pb_device.product().empty()) {
-            device.SetProduct(pb_device.product());
-        }
-        if (!pb_device.revision().empty()) {
-            device.SetRevision(pb_device.revision());
-        }
-    }
-    catch (const invalid_argument &e) {
-        return context.ReturnErrorStatus(e.what());
-    }
-
-    return true;
+    const string &error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() });
+    return error.empty() ? true : context.ReturnErrorStatus(error);
 }
 
 string CommandExecutor::GetTypeString(const Device &device)

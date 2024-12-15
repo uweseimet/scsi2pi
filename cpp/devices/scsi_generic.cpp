@@ -21,7 +21,6 @@ using namespace s2p_util;
 
 ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
-    SetProduct("SG 3 DEVICE");
     SupportsParams(true);
     SetReady(true);
 }
@@ -45,6 +44,37 @@ bool ScsiGeneric::SetUp()
         return false;
     }
 
+    byte_count = 36;
+    remaining_count = byte_count;
+
+    local_cdb.resize(6);
+    local_cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    local_cdb[4] = static_cast<uint8_t>(byte_count);
+
+    vector<uint8_t> buf(byte_count);
+
+    try {
+        if (!ReadWriteData(buf, byte_count)) {
+            LogError("Can't get product data");
+            return false;
+        }
+    }
+    catch (const scsi_exception&) {
+        LogError("Can't get product data");
+        return false;
+    }
+
+    array<char, 9> vendor = { };
+    memcpy(vendor.data(), &buf[8], 8);
+    array<char, 17> product = { };
+    memcpy(product.data(), &buf[16], 16);
+    array<char, 5> revision = { };
+    memcpy(revision.data(), &buf[32], 4);
+    PrimaryDevice::SetProductData( { vendor.data(), product.data(), revision.data() });
+
+    SetScsiLevel(static_cast<scsi_level>(buf[2]));
+    SetResponseDataFormat(static_cast<scsi_level>(buf[3]));
+
     return true;
 }
 
@@ -53,6 +83,13 @@ void ScsiGeneric::CleanUp()
     if (fd != -1) {
         close(fd);
     }
+}
+
+string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
+{
+    return
+        product_data.vendor.empty() && product_data.product.empty() && product_data.revision.empty() ?
+            "" : "The product data of SCSG can't be changed";
 }
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
@@ -99,7 +136,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     auto &buf = GetController()->GetBuffer();
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if (GetController()->GetEffectiveLun() && cmd != scsi_command::inquiry) {
+    if ((static_cast<int>(local_cdb[1]) & 0b11100000) && cmd != scsi_command::inquiry) {
         if (cmd != scsi_command::request_sense) {
             throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
         }
@@ -152,8 +189,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
 vector<uint8_t> ScsiGeneric::InquiryInternal() const
 {
-    assert(false);
-    return {};
+    return HandleInquiry(device_type::optical_memory, true);
 }
 
 int ScsiGeneric::ReadData(data_in_t buf)
@@ -246,8 +282,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
     if (!status) {
         status = static_cast<int>(sense_data[2]) & 0x0f;
 
-        if (static_cast<scsi_command>(GetController()->GetCdb()[0]) == scsi_command::inquiry
-            && GetController()->GetEffectiveLun()) {
+        if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::inquiry
+            && (static_cast<int>(local_cdb[1]) & 0xb11100000)) {
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
             buf[0] = 0x7f;
         }

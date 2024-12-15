@@ -38,7 +38,7 @@ using namespace memory_util;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
-    SetProduct("SCSI PRINTER");
+    PrimaryDevice::SetProductData( { "", "SCSI PRINTER", "" });
     SupportsParams(true);
     SetReady(true);
 }

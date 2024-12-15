@@ -120,6 +120,43 @@ int PrimaryDevice::GetId() const
     return GetController() ? GetController()->GetTargetId() : -1;
 }
 
+string PrimaryDevice::SetProductData(const ProductData &data, bool force)
+{
+    if (const string &vendor = Trim(data.vendor); !vendor.empty()) {
+        if (vendor.length() > 8) {
+            return "Vendor '" + vendor + "' must have between 1 and 8 characters";
+        }
+
+        product_data.vendor = vendor;
+    }
+
+    if (const string &product = Trim(data.product); !product.empty()) {
+        if (product.length() > 16) {
+            return "Product '" + product + "' must have between 1 and 16 characters";
+        }
+
+        // Changing existing vital product data is not SCSI compliant
+        if (product_data.product.empty() || force) {
+            product_data.product = product;
+        }
+    }
+
+    if (const string &revision = Trim(data.revision); !revision.empty()) {
+        if (revision.length() > 4) {
+            return "Revision '" + revision + "' must have between 1 and 4 characters";
+        }
+
+        product_data.revision = revision;
+    }
+
+    return "";
+}
+
+PrimaryDevice::ProductData PrimaryDevice::GetProductData() const
+{
+    return product_data;
+}
+
 bool PrimaryDevice::SetScsiLevel(scsi_level l)
 {
     if (l == scsi_level::none || l >= scsi_level::last) {
@@ -127,6 +164,17 @@ bool PrimaryDevice::SetScsiLevel(scsi_level l)
     }
 
     level = l;
+
+    return true;
+}
+
+bool PrimaryDevice::SetResponseDataFormat(scsi_level l)
+{
+    if (l == scsi_level::none || l > scsi_level::scsi_2) {
+        return false;
+    }
+
+    response_data_format = l;
 
     return true;
 }
@@ -164,8 +212,8 @@ void PrimaryDevice::TestUnitReady()
 
 void PrimaryDevice::Inquiry()
 {
-    // EVPD, CMDDT and page code check
-    if ((GetCdbByte(1) & 0x03) || GetCdbByte(2)) {
+    // Reserved bits, EVPD, CMDDT and page code check
+    if ((GetCdbByte(1) & 0x1f) || GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -288,7 +336,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
     buf[7] = 0x08;
 
     // Padded vendor, product, revision
-    memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);
+    memcpy(&buf.data()[8], GetProductData().GetPaddedName().c_str(), 28);
 
     return buf;
 }

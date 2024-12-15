@@ -25,6 +25,17 @@ class PrimaryDevice : public Device
 
 public:
 
+    using ProductData = struct _ProductData {
+        string vendor = "SCSI2Pi";
+        string product;
+        string revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);;
+
+        string GetPaddedName() const
+        {
+            return fmt::format("{0:8}{1:16}{2:4}", vendor, product, revision);
+        }
+    };
+
     bool Init();
     virtual bool SetUp() = 0;
     virtual void CleanUp()
@@ -39,11 +50,15 @@ public:
         return controller;
     }
 
+    ProductData GetProductData() const;
+    virtual string SetProductData(const ProductData&, bool force = true);
+
     scsi_level GetScsiLevel() const
     {
         return level;
     }
     bool SetScsiLevel(scsi_level);
+    bool SetResponseDataFormat(scsi_level);
 
     enum sense_key GetSenseKey() const
     {
@@ -207,7 +222,10 @@ private:
 
     DeviceLogger device_logger;
 
+    ProductData product_data;
+
     scsi_level level = scsi_level::scsi_2;
+    scsi_level response_data_format = scsi_level::scsi_2;
 
     enum sense_key sense_key = sense_key::no_sense;
     enum asc asc = asc::no_additional_sense_information;

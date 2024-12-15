@@ -74,6 +74,7 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 .TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
 .TP
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
 The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.

@@ -8,56 +8,12 @@
 
 #include "device.h"
 #include <stdexcept>
-#include <spdlog/spdlog.h>
-#include "shared/s2p_version.h"
-
-using namespace spdlog;
-
-Device::Device(PbDeviceType type, int lun) : type(type), lun(lun)
-{
-    revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);
-}
 
 void Device::SetProtected(bool b)
 {
     if (protectable && !read_only) {
         write_protected = b;
     }
-}
-
-void Device::SetVendor(const string &v)
-{
-    if (v.empty() || v.length() > 8) {
-        throw invalid_argument("Vendor '" + v + "' must have between 1 and 8 characters");
-    }
-
-    vendor = v;
-}
-
-void Device::SetProduct(const string &p, bool force)
-{
-    if (p.empty() || p.length() > 16) {
-        throw invalid_argument("Product '" + p + "' must have between 1 and 16 characters");
-    }
-
-    // Changing existing vital product data is not SCSI compliant
-    if (product.empty() || force) {
-        product = p;
-    }
-}
-
-void Device::SetRevision(const string &r)
-{
-    if (r.empty() || r.length() > 4) {
-        throw invalid_argument("Revision '" + r + "' must have between 1 and 4 characters");
-    }
-
-    revision = r;
-}
-
-string Device::GetPaddedName() const
-{
-    return fmt::format("{0:8}{1:16}{2:4}", vendor, product, revision);
 }
 
 string Device::GetParam(const string &key) const
@@ -81,7 +37,7 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
+            spdlog::warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
         }
     }
 }

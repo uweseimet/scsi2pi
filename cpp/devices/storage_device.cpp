@@ -156,7 +156,8 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
     // Set up the available pages in order to check for the right page size below
     map<int, vector<byte>> pages;
     SetUpModePages(pages, 0x3f, true);
-    for (const auto& [p, data] : page_handler->GetCustomModePages(GetVendor(), GetProduct())) {
+    const auto& [vendor, product, _] = GetProductData();
+    for (const auto& [p, data] : page_handler->GetCustomModePages(vendor, product)) {
         if (data.empty()) {
             pages.erase(p);
         }
