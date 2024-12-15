@@ -249,7 +249,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 
         if (components.size() > 1) {
             if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
-                warn("Error setting log level: " + error);
+                warn("Error setting log level: {}", error);
                 return false;
             }
         }
@@ -263,7 +263,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     }
 
     set_level(l);
-    DeviceLogger::SetLogIdAndLun(id, lun);
+    controller_factory.SetLogLevel(id, lun, l);
 
     if (id != -1) {
         if (lun == -1) {

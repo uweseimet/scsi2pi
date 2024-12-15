@@ -23,6 +23,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
 {
     const auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
     const auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
+    device->GetLogger();
     device->SetParams( { });
     device->Init();
 

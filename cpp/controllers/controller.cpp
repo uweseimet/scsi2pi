@@ -131,12 +131,10 @@ void Controller::Command()
         }
         AddCdbToScript();
 
-#ifndef NOLOG_DEBUG
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
             LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
-#endif
 
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",

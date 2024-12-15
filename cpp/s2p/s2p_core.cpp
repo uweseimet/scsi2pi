@@ -42,7 +42,7 @@ bool S2p::InitBus(bool in_process, bool log_signals)
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory);
 
-    dispatcher = make_shared<CommandDispatcher>(*executor);
+    dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory);
 
     return true;
 }
@@ -121,6 +121,11 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_SUCCESS;
     }
 
+    if (!InitBus(in_process, log_signals)) {
+        cerr << "Error: Can't initialize bus" << endl;
+        return EXIT_FAILURE;
+    }
+
     S2pParser parser;
 
     parser.Banner(false);
@@ -155,11 +160,6 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         else {
             controller_factory.SetFormatLimit(limit);
         }
-    }
-
-    if (!InitBus(in_process, log_signals)) {
-        cerr << "Error: Can't initialize bus" << endl;
-        return EXIT_FAILURE;
     }
 
     if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
@@ -239,13 +239,15 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
             ignore_conf);
 
-        if (const string &log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
-        !CommandDispatcher::SetLogLevel(log_level)) {
+        // This sets the global level only, there no attached devices yet
+        log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
+        if (!dispatcher->SetLogLevel(log_level)) {
             throw parser_exception("Invalid log level: '" + log_level + "'");
         }
 
         if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
-            set_pattern(log_pattern);
+            spdlog::set_pattern(log_pattern);
+            controller_factory.SetLogPattern(log_pattern);
         }
 
         // Log the properties (on trace level) *after* the log level has been set
@@ -405,6 +407,8 @@ void S2p::AttachInitialDevices(PbCommand &command)
         }
 #endif
     }
+
+    dispatcher->SetLogLevel(log_level);
 }
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)

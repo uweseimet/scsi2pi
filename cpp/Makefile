@@ -18,7 +18,7 @@ ifeq ($(DEBUG), 1)
 	CXXFLAGS += -O0 -g -DDEBUG
 else
 # Release compiler flags
-	CXXFLAGS += -O3 -Wall -DNDEBUG -DNOLOG_TRACE -DNOLOG_DEBUG
+	CXXFLAGS += -O3 -Wall -DNDEBUG
 endif
 
 CXXFLAGS += -std=c++20 -iquote . -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
@@ -294,9 +294,10 @@ SRC_S2PSIMH := $(shell ls -1 s2psimh/*.cpp)
 
 SRC_S2PFORMAT := $(shell ls -1 s2pformat/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_adapter_test.cpp)
+SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_adapter_test.cpp | grep -v scsi_generic_test.cpp)
 ifdef IS_LINUX
 SRC_S2P_TEST += test/sg_adapter_test.cpp
+SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 
 SRC_S2PTOOL = s2ptool/s2ptool.cpp

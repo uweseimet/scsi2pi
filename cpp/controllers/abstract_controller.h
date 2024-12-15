@@ -10,13 +10,15 @@
 
 #include <span>
 #include <unordered_set>
+#include <spdlog/spdlog.h>
 #include "phase_handler.h"
 #include "script_generator.h"
 #include "buses/bus.h"
-#include "base/device_logger.h"
 #include "shared/s2p_formatter.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_util.h"
+
+using namespace spdlog;
 
 class PrimaryDevice;
 
@@ -101,6 +103,11 @@ public:
         return formatter.FormatBytes(buf, count);
     }
 
+    logger& GetLogger() const
+    {
+        return *controller_logger;
+    }
+
 protected:
 
     void AddCdbToScript();
@@ -135,18 +142,9 @@ protected:
     void UpdateTransferLength(int);
     void UpdateOffsetAndLength();
 
-    void LogTrace(const string &s) const
-    {
-        device_logger.Trace(s);
-    }
-    void LogDebug(const string &s) const
-    {
-        device_logger.Debug(s);
-    }
-    void LogWarn(const string &s) const
-    {
-        device_logger.Warn(s);
-    }
+    void LogTrace(const string&) const;
+    void LogDebug(const string&) const;
+    void LogWarn(const string&) const;
 
 private:
 
@@ -169,7 +167,7 @@ private:
 
     Bus &bus;
 
-    DeviceLogger device_logger;
+    shared_ptr<logger> controller_logger;
 
     shared_ptr<ScriptGenerator> script_generator;
 

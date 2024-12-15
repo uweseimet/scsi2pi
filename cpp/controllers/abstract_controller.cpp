@@ -6,11 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 
 AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
 {
-    device_logger.SetIdAndLun(target_id, -1);
+    const string &name = fmt::format("(ID {})", id);
+
+    // Handling duplicate names is in particular required by the unit tests
+    controller_logger = spdlog::get(name);
+    if (!controller_logger) {
+        controller_logger = stdout_color_mt(name);
+    }
 }
 
 void AbstractController::CleanUp() const
@@ -172,4 +179,19 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
+}
+
+void AbstractController::LogTrace(const string &s) const
+{
+    controller_logger->log(level::level_enum::trace, s);
+}
+
+void AbstractController::LogDebug(const string &s) const
+{
+    controller_logger->log(level::level_enum::debug, s);
+}
+
+void AbstractController::LogWarn(const string &s) const
+{
+    controller_logger->log(level::level_enum::warn, s);
 }

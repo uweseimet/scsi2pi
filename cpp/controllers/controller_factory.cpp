@@ -15,16 +15,27 @@ using namespace std;
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
     if (const auto &it = controllers.find(id); it != controllers.end()) {
-        return it->second->AddDevice(device);
+        const bool status = it->second->AddDevice(device);
+
+        device->GetLogger().set_level(log_level);
+        device->GetLogger().set_pattern(log_pattern);
+
+        return status;
     }
 
     // If this is LUN 0 create a new controller
     if (!device->GetLun()) {
         if (auto controller = make_shared<Controller>(bus, id, formatter); controller->AddDevice(device)) {
+            controller->GetLogger().set_level(log_level);
+            controller->GetLogger().set_pattern(log_pattern);
+
             controller->Init();
             controller->SetScriptGenerator(script_generator);
 
             controllers[id] = controller;
+
+            device->GetLogger().set_level(log_level);
+            device->GetLogger().set_pattern(log_pattern);
 
             return true;
         }
@@ -98,4 +109,27 @@ shared_ptr<PrimaryDevice> ControllerFactory::GetDeviceForIdAndLun(int id, int lu
 {
     const auto &it = controllers.find(id);
     return it == controllers.end() ? nullptr : it->second->GetDeviceForLun(lun);
+}
+
+void ControllerFactory::SetLogLevel(int id, int lun, level::level_enum level)
+{
+    log_level = level;
+
+    for (const auto &device : GetAllDevices()) {
+        if (id == -1 || (device->GetId() == id && (lun == -1 || device->GetLun() == lun))) {
+            device->GetController()->GetLogger().set_level(log_level);
+            device->GetController()->GetLogger().set_pattern(log_pattern);
+            device->GetLogger().set_level(log_level);
+            device->GetLogger().set_pattern(log_pattern);
+        }
+        else {
+            device->GetController()->GetLogger().set_level(level::level_enum::off);
+            device->GetLogger().set_level(level::level_enum::off);
+        }
+    }
+}
+
+void ControllerFactory::SetLogPattern(string_view pattern)
+{
+    log_pattern = pattern;
 }

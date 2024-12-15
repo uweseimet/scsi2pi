@@ -295,6 +295,7 @@ public:
 
     explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
     {
+        GetLogger();
     }
     ~MockPrimaryDevice() override = default;
 
@@ -331,6 +332,7 @@ public:
 
     MockStorageDevice() : StorageDevice(UNDEFINED, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
+        GetLogger();
     }
     ~MockStorageDevice() override = default;
 
@@ -390,6 +392,7 @@ public:
 
     MockDisk() : Disk(SCHD, 0, false, false, { 512, 1024, 2048, 4096 })
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::LINUX);
         SetBlockSize(512);
     }
@@ -403,10 +406,12 @@ public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockSasiHd() override = default;
@@ -433,11 +438,13 @@ public:
 
     MockScsiHd(int lun, bool removable) : ScsiHd(lun, removable, false, false)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockScsiHd(const set<uint32_t> &sector_sizes)
     : ScsiHd(0, false, false, false, sector_sizes)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiHd() override = default;
@@ -453,6 +460,7 @@ public:
 
     explicit MockScsiCd(int lun) : ScsiCd(lun, false)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiCd() override = default;
@@ -469,6 +477,7 @@ public:
 
     explicit MockOpticalMemory(int lun) : OpticalMemory(lun)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
 
@@ -495,6 +504,7 @@ public:
 
     MockTape() : Tape(0)
     {
+        GetLogger();
     }
     ~MockTape() override = default;
 

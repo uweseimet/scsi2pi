@@ -110,6 +110,8 @@ public:
         return vector<PbStatistics>();
     }
 
+    logger& GetLogger();
+
 protected:
 
     PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
@@ -174,40 +176,11 @@ protected:
         return memory_util::GetInt64(controller->GetCdb(), index);
     }
 
-#ifdef NOLOG_TRACE
-    void LogTrace(const string &) const
-     {
-        // Do nothing
-     }
-#else
-    void LogTrace(const string &s) const
-    {
-        device_logger.Trace(s);
-    }
-#endif
-#ifdef NOLOG_DEBUG
-    void LogDebug(const string &) const
-     {
-        // Do nothing
-     }
-#else
-    void LogDebug(const string &s) const
-    {
-        device_logger.Debug(s);
-    }
-#endif
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
-    void LogWarn(const string &s) const
-    {
-        device_logger.Warn(s);
-    }
-    void LogError(const string &s) const
-    {
-        device_logger.Error(s);
-    }
+    void LogTrace(const string&) const;
+    void LogDebug(const string&) const;
+    void LogInfo(const string&) const;
+    void LogWarn(const string&) const;
+    void LogError(const string&) const;
 
 private:
 
@@ -219,8 +192,6 @@ private:
     void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;
-
-    DeviceLogger device_logger;
 
     ProductData product_data;
 
@@ -238,6 +209,8 @@ private:
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
+
+    shared_ptr<logger> device_logger;
 
     array<command, 256> commands = { };
 

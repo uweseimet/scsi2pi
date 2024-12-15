@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "primary_device.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "shared/command_meta_data.h"
 
 using namespace memory_util;
@@ -182,8 +183,6 @@ bool PrimaryDevice::SetResponseDataFormat(scsi_level l)
 void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
-
-    device_logger.SetIdAndLun(GetId(), GetLun());
 }
 
 void PrimaryDevice::StatusPhase() const
@@ -431,3 +430,42 @@ void PrimaryDevice::DiscardReservation()
 {
     reserving_initiator = NOT_RESERVED;
 }
+
+logger& PrimaryDevice::GetLogger()
+{
+    const string &name = fmt::format("(ID:LUN {0}:{1})", GetId(), GetLun());
+
+    // Handling duplicate names is in particular required by the unit tests
+    device_logger = spdlog::get(name);
+    if (!device_logger) {
+        device_logger = stdout_color_mt(name);
+    }
+
+    return *device_logger;
+}
+
+void PrimaryDevice::LogTrace(const string &s) const
+{
+    device_logger->log(level::level_enum::trace, s);
+}
+
+void PrimaryDevice::LogDebug(const string &s) const
+{
+    device_logger->log(level::level_enum::debug, s);
+}
+
+void PrimaryDevice::LogInfo(const string &s) const
+{
+    device_logger->log(level::level_enum::info, s);
+}
+
+void PrimaryDevice::LogWarn(const string &s) const
+{
+    device_logger->log(level::level_enum::warn, s);
+}
+
+void PrimaryDevice::LogError(const string &s) const
+{
+    device_logger->log(level::level_enum::err, s);
+}
+

@@ -6,8 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#ifdef BUILD_SCSG
-
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "devices/scsi_generic.h"
@@ -51,4 +49,24 @@ TEST(ScsiGenericTest, SetProductData)
     EXPECT_FALSE(device.SetProductData( {"", "", "3"} ).empty());
 }
 
-#endif
+TEST(ScsiGenericTest, SetUp)
+{
+    ScsiGeneric device1(0, "");
+    device1.GetLogger();
+    EXPECT_FALSE(device1.SetUp());
+
+    ScsiGeneric device2(0, "/dev/null");
+    device2.GetLogger();
+    EXPECT_FALSE(device2.SetUp());
+
+    ScsiGeneric device3(0, "/dev/sg0123456789");
+    device3.GetLogger();
+    EXPECT_FALSE(device3.SetUp());
+}
+
+TEST(ScsiGenericTest, Dispatch)
+{
+    ScsiGeneric device(0, "");
+
+    EXPECT_THROW(device.Dispatch(static_cast<scsi_command>(0x1f)), scsi_exception);
+}

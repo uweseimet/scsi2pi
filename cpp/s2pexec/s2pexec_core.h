@@ -77,7 +77,7 @@ private:
     string command;
     string data;
 
-    shared_ptr<logger> initiator_logger = stdout_color_mt("initiator");
+    shared_ptr<logger> initiator_logger = stdout_color_mt("s2pexec");
     string log_level;
 
     string last_input;

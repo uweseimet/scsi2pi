@@ -40,7 +40,7 @@ bool ScsiGeneric::SetUp()
 
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         CleanUp();
-        LogError(fmt::format("'{0}' does not appear to be an SG device: {1}", device, strerror(errno)));
+        LogError(fmt::format("'{0}' is not supported by the Linux SG 3 driver: {1}", device, strerror(errno)));
         return false;
     }
 
@@ -54,12 +54,13 @@ bool ScsiGeneric::SetUp()
     vector<uint8_t> buf(byte_count);
 
     try {
-        if (!ReadWriteData(buf, byte_count)) {
-            LogError("Can't get product data");
-            return false;
-        }
+        ReadWriteData(buf, byte_count);
     }
-    catch (const scsi_exception&) {
+    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
+        // Fall through
+    }
+
+    if (remaining_count) {
         LogError("Can't get product data");
         return false;
     }
@@ -95,7 +96,9 @@ string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
     count = CommandMetaData::Instance().GetByteCount(cmd);
-    assert(count);
+    if (!count) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+    }
 
     local_cdb.clear();
     for (int i = 0; i < count; i++) {

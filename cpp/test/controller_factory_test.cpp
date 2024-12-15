@@ -98,3 +98,30 @@ TEST(ControllerFactoryTest, ProcessOnController)
 
     EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(INVALID_ID));
 }
+
+TEST(ControllerFactoryTest, SetLogLevel)
+{
+    const int ID = 4;
+    const int LUN1 = 0;
+    const int LUN2 = 3;
+
+    MockBus bus;
+    ControllerFactory controller_factory;
+    const DeviceFactory &device_factory = DeviceFactory::Instance();
+
+    const auto device1 = device_factory.CreateDevice(SCHS, LUN1, "");
+    controller_factory.AttachToController(bus, ID, device1);
+    const auto device2 = device_factory.CreateDevice(SCHS, LUN2, "");
+    controller_factory.AttachToController(bus, ID, device2);
+
+    EXPECT_EQ(level::level_enum::off, device1->GetLogger().level());
+    EXPECT_EQ(level::level_enum::off, device2->GetLogger().level());
+
+    controller_factory.SetLogLevel(ID, LUN1, level::level_enum::critical);
+    EXPECT_EQ(level::level_enum::critical, device1->GetLogger().level());
+    EXPECT_EQ(level::level_enum::off, device2->GetLogger().level());
+
+    controller_factory.SetLogLevel(ID, LUN2, level::level_enum::err);
+    EXPECT_EQ(level::level_enum::off, device1->GetLogger().level());
+    EXPECT_EQ(level::level_enum::err, device2->GetLogger().level());
+}

@@ -114,7 +114,7 @@ private:
     void CheckForReadError();
     void CheckForWriteError();
 
-    static int32_t GetSignedInt24(span<const int>, int);
+    static int32_t GetSignedInt24(cdb_t, int);
 
     fstream file;
 
