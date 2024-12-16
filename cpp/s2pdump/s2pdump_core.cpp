@@ -668,6 +668,8 @@ void S2pDump::DumpTape(ostream &file)
             if (!WriteFilemark(file)) {
                 throw io_exception("Can't write SIMH tape mark");
             }
+
+            ++filemark_count;
         }
 
         s2pdump_logger->info("Byte count: {}", byte_count);
@@ -696,6 +698,8 @@ void S2pDump::RestoreTape(istream &file)
             if (tape_executor->WriteFilemark()) {
                 throw io_exception("Can't write filemark");
             }
+
+            ++filemark_count;
         }
         else if ((meta_data.cls == simh_class::tape_mark_good_data_record
             || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
