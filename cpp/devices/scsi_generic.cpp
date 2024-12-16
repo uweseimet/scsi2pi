@@ -450,26 +450,6 @@ void ScsiGeneric::GetBlockSize()
     catch (const scsi_exception&) { // NOSONAR The exception details do not matter
         // Fall through
     }
-
-    if (block_size != 0xffffffff) {
-        try {
-            byte_count = 12;
-            remaining_count = byte_count;
-
-            local_cdb.resize(16);
-            fill_n(local_cdb.begin(), local_cdb.size(), 0);
-            local_cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_16_read_long_16);
-            local_cdb[1] = 0x10;
-            local_cdb[13] = static_cast<uint8_t>(byte_count);
-
-            if (ReadWriteData(buf, byte_count, true) == byte_count) {
-                block_size = GetInt32(buf, 8);
-            }
-        }
-        catch (const scsi_exception&) { // NOSONAR The exception details do not matter
-            // Fall through
-        }
-    }
 }
 
 void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
