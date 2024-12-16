@@ -281,8 +281,7 @@ TEST(TapeTest, Read6)
     RequestSense(controller, tape);
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-    // TODO Verify
-    //EXPECT_EQ(768U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
+    EXPECT_EQ(768U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 
 
     // Leading length != trailing length

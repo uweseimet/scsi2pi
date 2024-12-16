@@ -196,7 +196,7 @@ int Tape::ReadData(data_in_t buf)
 
         if (const int trailing_length = FromLittleEndian(data).value; static_cast<int>(record_length)
             != trailing_length) {
-            RaiseReadError(current_meta_data);
+            RaiseReadError(FromLittleEndian(data));
         }
 
         // Skip trailing length
@@ -928,8 +928,8 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
 
 void Tape::CheckBlockLength(int length)
 {
-    // TODO Check this
-    // length = byte_count;
+    // TODO Check this, related to an issue with reading tar files in SIMH mode
+    length = byte_count;
 
     if (static_cast<int>(record_length) != length) {
         // In fixed mode an incorrect length always results in an error.
@@ -943,12 +943,12 @@ void Tape::CheckBlockLength(int length)
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
+
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        else if ((!(GetCdbByte(1) & 0x02) && record_length % GetBlockSize())
-            || length > static_cast<int>(record_length)) {
+        if (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length)) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
