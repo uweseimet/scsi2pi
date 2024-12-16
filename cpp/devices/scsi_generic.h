@@ -40,13 +40,16 @@ public:
 
 private:
 
-    int ReadWriteData(span<uint8_t>, int);
+    int ReadWriteData(span<uint8_t>, int, bool);
 
     int GetAllocationLength() const;
     void UpdateStartBlock(int);
     void SetBlockCount(int);
 
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
+
+    bool GetDeviceData();
+    void GetBlockSize();
 
     static void SetInt24(span<uint8_t>, int, int);
 

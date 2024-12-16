@@ -44,37 +44,12 @@ bool ScsiGeneric::SetUp()
         return false;
     }
 
-    byte_count = 36;
-    remaining_count = byte_count;
-
-    local_cdb.resize(6);
-    local_cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
-    local_cdb[4] = static_cast<uint8_t>(byte_count);
-
-    vector<uint8_t> buf(byte_count);
-
-    try {
-        ReadWriteData(buf, byte_count);
-    }
-    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
-        // Fall through
-    }
-
-    if (remaining_count) {
+    if (!GetDeviceData()) {
         LogError("Can't get product data");
         return false;
     }
 
-    array<char, 9> vendor = { };
-    memcpy(vendor.data(), &buf[8], 8);
-    array<char, 17> product = { };
-    memcpy(product.data(), &buf[16], 16);
-    array<char, 5> revision = { };
-    memcpy(revision.data(), &buf[32], 4);
-    PrimaryDevice::SetProductData( { vendor.data(), product.data(), revision.data() });
-
-    SetScsiLevel(static_cast<scsi_level>(buf[2]));
-    SetResponseDataFormat(static_cast<scsi_level>(buf[3]));
+    GetBlockSize();
 
     return true;
 }
@@ -100,9 +75,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
 
-    local_cdb.clear();
+    local_cdb.resize(count);
     for (int i = 0; i < count; i++) {
-        local_cdb.push_back(static_cast<uint8_t>(GetController()->GetCdb()[i]));
+        local_cdb[i] = static_cast<uint8_t>(GetController()->GetCdb()[i]);
     }
 
     // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
@@ -197,7 +172,7 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf, GetController()->GetChunkSize());
+    return ReadWriteData(buf, GetController()->GetChunkSize(), false);
 }
 
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
@@ -223,10 +198,10 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length, false); // NOSONAR Cast required for SG driver API
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -260,11 +235,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (get_level() <= level::debug) {
+    if (GetLogger().level() <= level::debug) {
         LogDebug(CommandMetaData::Instance().LogCdb(local_cdb));
     }
 
-    if (write && get_level() == level::trace) {
+    if (!internal && write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length,
             GetController()->FormatBytes(buf, length)));
     }
@@ -302,7 +277,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (!write && get_level() == level::trace) {
+    if (!internal && !write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
             GetController()->FormatBytes(buf, transferred_length)));
     }
@@ -415,6 +390,84 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
         assert(size);
         if (size) {
             block_size = size;
+        }
+    }
+}
+
+bool ScsiGeneric::GetDeviceData()
+{
+    vector<uint8_t> buf(36);
+
+    byte_count = static_cast<int>(buf.size());
+    remaining_count = byte_count;
+
+    local_cdb.resize(6);
+    fill_n(local_cdb.begin(), local_cdb.size(), 0);
+    local_cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    local_cdb[4] = static_cast<uint8_t>(byte_count);
+
+    try {
+        ReadWriteData(buf, byte_count, true);
+    }
+    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
+        // Fall through
+    }
+
+    if (remaining_count) {
+        return false;
+    }
+
+    array<char, 9> vendor = { };
+    memcpy(vendor.data(), &buf[8], 8);
+    array<char, 17> product = { };
+    memcpy(product.data(), &buf[16], 16);
+    array<char, 5> revision = { };
+    memcpy(revision.data(), &buf[32], 4);
+    PrimaryDevice::SetProductData( { vendor.data(), product.data(), revision.data() });
+
+    SetScsiLevel(static_cast<scsi_level>(buf[2]));
+    SetResponseDataFormat(static_cast<scsi_level>(buf[3]));
+
+    return true;
+}
+
+void ScsiGeneric::GetBlockSize()
+{
+    vector<uint8_t> buf(12);
+
+    byte_count = 8;
+    remaining_count = byte_count;
+
+    local_cdb.resize(10);
+    fill_n(local_cdb.begin(), local_cdb.size(), 0);
+    local_cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
+
+    try {
+        if (ReadWriteData(buf, byte_count, true) == byte_count) {
+            block_size = GetInt32(buf, 4);
+        }
+    }
+    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
+        // Fall through
+    }
+
+    if (block_size != 0xffffffff) {
+        try {
+            byte_count = 12;
+            remaining_count = byte_count;
+
+            local_cdb.resize(16);
+            fill_n(local_cdb.begin(), local_cdb.size(), 0);
+            local_cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_16_read_long_16);
+            local_cdb[1] = 0x10;
+            local_cdb[13] = static_cast<uint8_t>(byte_count);
+
+            if (ReadWriteData(buf, byte_count, true) == byte_count) {
+                block_size = GetInt32(buf, 8);
+            }
+        }
+        catch (const scsi_exception&) { // NOSONAR The exception details do not matter
+            // Fall through
         }
     }
 }

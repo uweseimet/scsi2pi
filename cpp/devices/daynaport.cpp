@@ -147,7 +147,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
         response->flags = read_data_flags_t::e_no_more_data;
         return DAYNAPORT_READ_HEADER_SZ;
     }
-    else if (get_level() == level::trace) {
+    else if (GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
             GetController()->FormatBytes(buf, rx_packet_size)));
     }
@@ -209,7 +209,7 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         LogWarn(fmt::format("Unknown data format: ${:02x}", data_format));
     }
 
-    if (buf.size() && get_level() == level::trace) {
+    if (buf.size() && GetLogger().level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf, back_inserter(data));
         LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length,

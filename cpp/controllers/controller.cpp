@@ -132,7 +132,7 @@ void Controller::Command()
         AddCdbToScript();
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
-        if (get_level() <= level::debug) {
+        if (GetLogger().level() <= level::debug) {
             LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count)));
         }
 
@@ -345,7 +345,7 @@ void Controller::Send()
     assert(GetBus().GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        if (get_level() == level::trace && IsDataIn()) {
+        if (GetLogger().level() == level::trace && IsDataIn()) {
             LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length, GetOffset(),
                 FormatBytes(GetBuffer(), length)));
         }
@@ -423,7 +423,7 @@ void Controller::Receive()
             return;
         }
 
-        if (get_level() == level::trace && IsDataOut()) {
+        if (GetLogger().level() == level::trace && IsDataOut()) {
             LogTrace(
                 fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length, FormatBytes(GetBuffer(), length)));
         }
