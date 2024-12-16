@@ -928,7 +928,7 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
 
 void Tape::CheckBlockLength(int length)
 {
-    // TODO Check this, related to an issue with reading tar files in SIMH mode
+    // TODO Check this
     length = byte_count;
 
     if (static_cast<int>(record_length) != length) {
