@@ -84,8 +84,6 @@ bool S2pDump::Init(bool in_process)
         return false;
     }
 
-    s2pdump_logger = spdlog::get("s2pexec");
-
     disk_executor = make_unique<DiskExecutor>(*bus, initiator_id, *s2pdump_logger);
     tape_executor = make_unique<TapeExecutor>(*bus, initiator_id, *s2pdump_logger);
 
@@ -302,6 +300,8 @@ int S2pDump::Run(span<char*> args, bool in_process)
         Banner(true);
         return EXIT_FAILURE;
     }
+
+    s2pdump_logger = CreateLogger("s2pdump");
 
     try {
         if (!ParseArguments(args)) {

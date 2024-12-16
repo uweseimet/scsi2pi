@@ -346,8 +346,9 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         if (GetLogger().level() == level::trace && IsDataIn()) {
-            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase:\n{2}", length, GetOffset(),
-                FormatBytes(GetBuffer(), length)));
+            const string &bytes = FormatBytes(GetBuffer(), length);
+            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase{2}{3}", length, GetOffset(),
+                bytes.empty() ? "" : ":\n", bytes));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -424,8 +425,9 @@ void Controller::Receive()
         }
 
         if (GetLogger().level() == level::trace && IsDataOut()) {
+            const string &bytes = FormatBytes(GetBuffer(), length);
             LogTrace(
-                fmt::format("Received {0} byte(s) in DATA OUT phase:\n{1}", length, FormatBytes(GetBuffer(), length)));
+                fmt::format("Received {0} byte(s) in DATA OUT phase{1}{2}", length, bytes.empty() ? "" : ":\n", bytes));
         }
 
         if (IsDataOut()) {
