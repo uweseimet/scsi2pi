@@ -662,6 +662,7 @@ void S2pDump::DumpTape(ostream &file)
                 throw io_exception("Can't write SIMH good data record");
             }
 
+            ++block_count;
             byte_count += length;
         }
         else {
@@ -718,6 +719,7 @@ void S2pDump::RestoreTape(istream &file)
 
             file.seekg(META_DATA_SIZE, ios::cur);
 
+            ++block_count;
             byte_count += buffer.size();
         }
 
