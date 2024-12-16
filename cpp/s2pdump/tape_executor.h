@@ -36,7 +36,8 @@ private:
 
     unique_ptr<S2pDumpExecutor> s2pdump_executor;
 
-    int default_length = 0xffffff;
+    // TODO Must be 0xffffff, requires TODO in tape.cpp to be fixed
+    int default_length = 0x000200;
 
     static const int SHORT_TIMEOUT = 3;
     static const int LONG_TIMEOUT = 300;

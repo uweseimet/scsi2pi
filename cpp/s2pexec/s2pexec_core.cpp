@@ -76,8 +76,6 @@ bool S2pExec::Init(bool in_process)
         return false;
     }
 
-    s2pexec_logger = spdlog::get("s2pexec");
-
     executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *s2pexec_logger);
 
     instance = this;
@@ -224,6 +222,8 @@ bool S2pExec::ParseArguments(span<char*> args)
         cout << GetVersionString() << '\n';
         return true;
     }
+
+    s2pexec_logger = CreateLogger("s2pexec");
 
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");

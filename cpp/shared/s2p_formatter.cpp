@@ -15,10 +15,14 @@ using namespace s2p_util;
 
 string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool hex_only) const
 {
+    if (!format_limit) {
+        return "";
+    }
+
     string str;
 
     size_t limit = format_limit;
-    if (!limit || limit > count) {
+    if (limit > count) {
         limit = count;
     }
 

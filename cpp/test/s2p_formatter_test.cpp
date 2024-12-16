@@ -47,13 +47,12 @@ TEST(S2pFormatterTest, FormatBytes)
     for (int i = 64; i < 79; i++) {
         bytes.emplace_back(i);
     }
-    EXPECT_EQ(str_partial, formatter.FormatBytes(bytes, bytes.size()));
 
     formatter.SetLimit(10000);
     EXPECT_EQ(str_partial, formatter.FormatBytes(bytes, bytes.size()));
 
     formatter.SetLimit(0);
-    EXPECT_EQ(str_hex_only, formatter.FormatBytes(bytes, bytes.size(), true));
+    EXPECT_EQ("", formatter.FormatBytes(bytes, bytes.size(), true));
 
     formatter.SetLimit(2);
     EXPECT_EQ("40:41\n...", formatter.FormatBytes(bytes, bytes.size(), true));

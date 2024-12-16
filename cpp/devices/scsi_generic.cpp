@@ -433,9 +433,9 @@ bool ScsiGeneric::GetDeviceData()
 
 void ScsiGeneric::GetBlockSize()
 {
-    vector<uint8_t> buf(12);
+    vector<uint8_t> buf(8);
 
-    byte_count = 8;
+    byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
     local_cdb.resize(10);

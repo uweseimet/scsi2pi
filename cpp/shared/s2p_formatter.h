@@ -28,5 +28,5 @@ public:
 
 private:
 
-    int format_limit = 0;
+    int format_limit = numeric_limits<int>::max();
 };

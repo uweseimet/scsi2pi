@@ -46,7 +46,7 @@ void S2pParser::Banner(bool usage) const
             << "                              critical|off), default is 'info'.\n"
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
             << "  --log-limit LIMIT           The number of data bytes being logged,\n"
-            << "                              0 means no limit. Default is 128.\n"
+            << "                              default is 128 bytes.\n"
             << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
