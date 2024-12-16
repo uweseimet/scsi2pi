@@ -79,13 +79,15 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pdump");
     if (!bus) {
         return false;
     }
 
-    disk_executor = make_unique<DiskExecutor>(*bus, initiator_id, *initiator_logger);
-    tape_executor = make_unique<TapeExecutor>(*bus, initiator_id, *initiator_logger);
+    s2pdump_logger = spdlog::get("s2pexec");
+
+    disk_executor = make_unique<DiskExecutor>(*bus, initiator_id, *s2pdump_logger);
+    tape_executor = make_unique<TapeExecutor>(*bus, initiator_id, *s2pdump_logger);
 
     instance = this;
     // Signal handler for cleaning up
@@ -228,7 +230,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         return false;
     }
 
-    if (!SetLogLevel(*initiator_logger, log_level)) {
+    if (!SetLogLevel(*s2pdump_logger, log_level)) {
         throw parser_exception("Invalid log level '" + log_level + "'");
     }
 
@@ -484,7 +486,7 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)
         && scsi_device_info.type != static_cast<byte>(device_type::sequential_access)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL access" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS" << endl;
         return false;
     }
 
@@ -565,11 +567,11 @@ string S2pDump::DumpRestoreDisk(fstream &file)
             sector_count = 256;
         }
 
-        initiator_logger->info("Remaining bytes: {}", remaining);
-        initiator_logger->info("Current sector: {}", sector_offset);
-        initiator_logger->info("Sector count: {}", sector_count);
-        initiator_logger->info("Data transfer size: {}", sector_count * sector_size);
-        initiator_logger->info("Image file chunk size: {}", byte_count);
+        s2pdump_logger->info("Remaining bytes: {}", remaining);
+        s2pdump_logger->info("Current sector: {}", sector_offset);
+        s2pdump_logger->info("Sector count: {}", sector_count);
+        s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
+        s2pdump_logger->info("Image file chunk size: {}", byte_count);
 
         if (const string &error = ReadWriteDisk(file, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
             return error;
@@ -668,9 +670,9 @@ void S2pDump::DumpTape(ostream &file)
             }
         }
 
-        initiator_logger->info("Byte count: {}", byte_count);
-        initiator_logger->info("Block count: {}", block_count);
-        initiator_logger->info("Filemark count: {}", filemark_count);
+        s2pdump_logger->info("Byte count: {}", byte_count);
+        s2pdump_logger->info("Block count: {}", block_count);
+        s2pdump_logger->info("Filemark count: {}", filemark_count);
     }
 }
 
@@ -689,7 +691,7 @@ void S2pDump::RestoreTape(istream &file)
 
         // Tape mark
         if (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value) {
-            initiator_logger->debug("Writing filemark");
+            s2pdump_logger->debug("Writing filemark");
 
             if (tape_executor->WriteFilemark()) {
                 throw io_exception("Can't write filemark");
@@ -697,7 +699,7 @@ void S2pDump::RestoreTape(istream &file)
         }
         else if ((meta_data.cls == simh_class::tape_mark_good_data_record
             || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
-            initiator_logger->debug("Writing {} byte(s) block", meta_data.value);
+            s2pdump_logger->debug("Writing {} byte(s) block", meta_data.value);
 
             buffer.resize(meta_data.value);
 
@@ -715,9 +717,9 @@ void S2pDump::RestoreTape(istream &file)
             byte_count += buffer.size();
         }
 
-        initiator_logger->info("Byte count: {}", byte_count);
-        initiator_logger->info("Block count: {}", block_count);
-        initiator_logger->info("Filemark count: {}", filemark_count);
+        s2pdump_logger->info("Byte count: {}", byte_count);
+        s2pdump_logger->info("Block count: {}", block_count);
+        s2pdump_logger->info("Filemark count: {}", filemark_count);
     }
 }
 

@@ -207,3 +207,10 @@ TEST(S2pUtilTest, Trim)
     EXPECT_EQ("x", Trim(" x "));
     EXPECT_EQ("x y", Trim("x y"));
 }
+
+TEST(S2pUtilTest, CreateLogger)
+{
+    const auto l = CreateLogger("test");
+    EXPECT_NE(nullptr, l);
+    EXPECT_EQ(l, CreateLogger("test"));
+}

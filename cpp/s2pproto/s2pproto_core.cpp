@@ -67,7 +67,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pproto");
     if (!bus) {
         return false;
     }
