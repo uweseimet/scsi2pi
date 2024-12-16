@@ -239,7 +239,7 @@ TEST(TapeTest, Read6)
 
     Rewind(tape);
 
-    // Non-fixed, 1 byte
+    // Non-fixed, 1 byte (less then block size)
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
     RequestSense(controller, tape);
@@ -249,7 +249,7 @@ TEST(TapeTest, Read6)
 
     Rewind(tape);
 
-    // Non-fixed, 1 byte
+    // Non-fixed, 1 byte (less then block size)
     controller->SetCdbByte(4, 1);
     // SILI
     controller->SetCdbByte(1, 0x02);
