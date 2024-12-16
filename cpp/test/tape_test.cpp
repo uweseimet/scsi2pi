@@ -242,6 +242,10 @@ TEST(TapeTest, Read6)
     // Non-fixed, 1 byte
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    RequestSense(controller, tape);
+    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xffffff01U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 
     Rewind(tape);
 
