@@ -932,10 +932,10 @@ void Tape::CheckBlockLength(int length)
     length = byte_count;
 
     if (static_cast<int>(record_length) != length) {
-        // In fixed mode an incorrect length always results in an error.
+        // In fixed mode an incorrect length results in an error if it is not a multiple of the block size.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
-        if (fixed) {
+        if (fixed && length % record_length) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
@@ -948,7 +948,7 @@ void Tape::CheckBlockLength(int length)
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        if (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length)) {
+        if (!fixed && (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length))) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
