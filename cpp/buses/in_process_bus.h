@@ -11,6 +11,7 @@
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "bus.h"
 
 class InProcessBus : public Bus
@@ -107,9 +108,7 @@ class DelegatingInProcessBus : public InProcessBus
 
 public:
 
-    DelegatingInProcessBus(InProcessBus &b, bool l) : bus(b), log_signals(l)
-    {
-    }
+    DelegatingInProcessBus(InProcessBus&, const string&, bool);
     ~DelegatingInProcessBus() override = default;
 
     void Reset() override;
@@ -143,14 +142,11 @@ public:
 
 private:
 
-    string GetMode() const
-    {
-        return IsTarget() ? "target" : "initiator";
-    }
-
     static string GetSignalName(int);
 
     InProcessBus &bus;
+
+    shared_ptr<spdlog::logger> in_process_logger;
 
     bool log_signals = true;
 

@@ -122,10 +122,10 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(scsi_command cmd) c
     return cdb_meta_data[static_cast<int>(cmd)];
 }
 
-string CommandMetaData::LogCdb(span<const uint8_t> cdb, const string &type) const
+string CommandMetaData::LogCdb(span<const uint8_t> cdb) const
 {
     const string &command_name = GetCommandName(static_cast<scsi_command>(cdb[0]));
-    string msg = fmt::format("{0} is executing {1}, CDB ", type, command_name, cdb[0]);
+    string msg = fmt::format("Executing {}, CDB ", command_name, cdb[0]);
 
     for (size_t i = 0; i < cdb.size(); i++) {
         if (i) {

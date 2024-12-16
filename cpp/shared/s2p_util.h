@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <span>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "scsi.h"
 
 using namespace std;
@@ -74,6 +75,8 @@ vector<byte> HexToBytes(const string&);
 int HexToDec(char);
 
 string Trim(const string&);
+
+shared_ptr<spdlog::logger> CreateLogger(const string&);
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

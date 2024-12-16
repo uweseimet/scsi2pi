@@ -24,7 +24,7 @@ public:
         return instance;
     }
 
-    unique_ptr<Bus> CreateBus(bool, bool, bool = false);
+    unique_ptr<Bus> CreateBus(bool, bool, const string&, bool = false);
 
 private:
 

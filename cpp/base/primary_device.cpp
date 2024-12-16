@@ -433,12 +433,8 @@ void PrimaryDevice::DiscardReservation()
 
 logger& PrimaryDevice::GetLogger()
 {
-    const string &name = fmt::format("(ID:LUN {0}:{1})", GetId(), GetLun());
-
-    // Handling duplicate names is in particular required by the unit tests
-    device_logger = spdlog::get(name);
     if (!device_logger) {
-        device_logger = stdout_color_mt(name);
+        device_logger = CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
     }
 
     return *device_logger;

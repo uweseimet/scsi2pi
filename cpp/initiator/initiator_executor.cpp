@@ -44,7 +44,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb, "Initiator"));
+    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb));
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
@@ -227,7 +227,7 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
         throw phase_exception("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Initiator is receiving up to {0} byte(s) in DATA IN phase", length);
+    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
     byte_count = bus.ReceiveHandShake(buf.data(), length);
 
@@ -240,8 +240,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
         throw phase_exception("No more data for DATA OUT phase");
     }
 
-    initiator_logger.debug(
-        fmt::format("Initiator is sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length)));
+    initiator_logger.debug(fmt::format("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length)));
 
     byte_count = bus.SendHandShake(buf.data(), length);
     if (byte_count != length) {

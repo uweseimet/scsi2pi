@@ -261,7 +261,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (get_level() <= level::debug) {
-        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb, "SG driver"));
+        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb));
     }
 
     if (write && get_level() == level::trace) {

@@ -71,12 +71,14 @@ void S2pExec::Banner(bool header, bool usage)
 
 bool S2pExec::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pexec");
     if (!bus) {
         return false;
     }
 
-    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *initiator_logger);
+    s2pexec_logger = spdlog::get("s2pexec");
+
+    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *s2pexec_logger);
 
     instance = this;
     // Signal handler for cleaning up
@@ -223,7 +225,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         return true;
     }
 
-    if (!SetLogLevel(*initiator_logger, log_level)) {
+    if (!SetLogLevel(*s2pexec_logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
 
@@ -466,7 +468,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         if (const int count = executor->GetByteCount(); count) {
-            initiator_logger->debug("Initiator received {} data byte(s)", count);
+            s2pexec_logger->debug("Received {} data byte(s)", count);
 
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);
@@ -517,7 +519,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     string hex = formatter.FormatBytes(data, data.size(), hex_only);
 
     if (filename.empty()) {
-        if (initiator_logger->level() <= level::debug)
+        if (s2pexec_logger->level() <= level::debug)
         {
             cout << hex << '\n';
         }

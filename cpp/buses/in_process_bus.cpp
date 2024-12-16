@@ -8,8 +8,10 @@
 
 #include "in_process_bus.h"
 #include <spdlog/spdlog.h>
+#include "shared/s2p_util.h"
 
 using namespace spdlog;
+using namespace s2p_util;
 
 bool InProcessBus::Init(bool target)
 {
@@ -68,9 +70,17 @@ bool InProcessBus::WaitForSelection()
     return true;
 }
 
+DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &bus, const string &name, bool log_signals) : bus(
+    bus), log_signals(log_signals)
+{
+    in_process_logger = CreateLogger(name);
+    // Log without timestamps
+    in_process_logger->set_pattern("[%^%l%$] [%n] %v");
+}
+
 void DelegatingInProcessBus::Reset()
 {
-    trace(GetMode() + ": Resetting bus");
+    in_process_logger->trace("Resetting bus");
 
     bus.Reset();
 }
@@ -80,7 +90,7 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
     const bool state = bus.GetSignal(pin);
 
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
-        trace(GetMode() + ": Getting " + GetSignalName(pin) + (state ? ": true" : ": false"));
+        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
     return state;
@@ -89,7 +99,7 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
-        trace(GetMode() + ": Setting " + GetSignalName(pin) + " to " + (state ? "true" : "false"));
+        in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
     bus.SetSignal(pin, state);

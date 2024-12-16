@@ -44,7 +44,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
 bool initiator_util::SetLogLevel(logger &logger, const string &log_level)
 {
     // Default spdlog format without the timestamp
-    logger.set_pattern("[%^%l%$] %v");
+    logger.set_pattern("[%^%l%$] [%n] %v");
 
     if (log_level.empty()) {
         return true;

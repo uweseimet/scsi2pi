@@ -14,18 +14,18 @@
 
 using namespace spdlog;
 
-unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, bool log_signals)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, const string &identifier, bool log_signals)
 {
     unique_ptr<Bus> bus;
 
     if (in_process) {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), log_signals);
+        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), identifier, log_signals);
     }
     else if (const auto pi_type = CheckForPi(); pi_type != RpiBus::PiType::unknown) {
         bus = make_unique<RpiBus>(pi_type);
     }
     else {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), false);
+        bus = make_unique<DelegatingInProcessBus>(InProcessBus::Instance(), identifier, false);
     }
 
     if (bus->Init(target)) {

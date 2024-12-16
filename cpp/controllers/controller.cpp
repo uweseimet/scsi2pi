@@ -133,7 +133,7 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (get_level() <= level::debug) {
-            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
+            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count)));
         }
 
         if (actual_count != command_bytes_count) {

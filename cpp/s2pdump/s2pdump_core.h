@@ -86,7 +86,7 @@ private:
 
     string filename;
 
-    shared_ptr<logger> initiator_logger = stdout_color_mt("s2pdump");
+    shared_ptr<logger> s2pdump_logger;
     string log_level = "warning";
 
     int start = 0;

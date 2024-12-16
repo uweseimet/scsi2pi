@@ -9,15 +9,11 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 
+using namespace s2p_util;
+
 AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
 {
-    const string &name = fmt::format("(ID {})", id);
-
-    // Handling duplicate names is in particular required by the unit tests
-    controller_logger = spdlog::get(name);
-    if (!controller_logger) {
-        controller_logger = stdout_color_mt(name);
-    }
+    controller_logger = CreateLogger(fmt::format("[s2p] (ID {})", id));
 }
 
 void AbstractController::CleanUp() const

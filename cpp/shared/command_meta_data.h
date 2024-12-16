@@ -50,7 +50,7 @@ public:
         return command_names[static_cast<int>(cmd)];
     }
 
-    string LogCdb(span<const uint8_t>, const string&) const;
+    string LogCdb(span<const uint8_t>) const;
 
 private:
 

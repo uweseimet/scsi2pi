@@ -12,7 +12,7 @@
 #include <iostream>
 #include <pwd.h>
 #include <unistd.h>
-#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
 #include "shared/memory_util.h"
@@ -319,4 +319,15 @@ string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
     }
     const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));
+}
+
+shared_ptr<logger> s2p_util::CreateLogger(const string &name)
+{
+    // Handling duplicate names is in particular required by the unit tests
+    auto l = spdlog::get(name);
+    if (!l) {
+        l = stdout_color_st(name);
+    }
+
+    return l;
 }
