@@ -233,9 +233,8 @@ TEST(TapeTest, Read6)
     Dispatch(tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
     CheckPositions(tape, 1064, 4);
 
-    const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
     file.seekp(0);
-    WriteSimhObject(file, block_size_mismatch, 256, block_size_mismatch);
+    WriteGoodData(file, 256);
     file.flush();
 
     Rewind(tape);
