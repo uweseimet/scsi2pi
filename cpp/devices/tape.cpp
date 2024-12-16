@@ -172,7 +172,7 @@ int Tape::ReadData(data_in_t buf)
 
         tape_position -= record_length + META_DATA_SIZE;
 
-        CheckBlockLength(length);
+        CheckBlockLength();
     }
 
     LogTrace(
@@ -926,20 +926,17 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
     return META_DATA_SIZE;
 }
 
-void Tape::CheckBlockLength(int length)
+void Tape::CheckBlockLength()
 {
-    // TODO Check this, related to an issue with reading tar files in SIMH mode
-    length = byte_count;
-
-    if (static_cast<int>(record_length) != length) {
-        // In fixed mode an incorrect length always results in an error.
+    if (record_length != byte_count) {
+        // In fixed mode an incorrect length results in an error if it is not a multiple of the block size.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
-        if (fixed) {
+        if (fixed && byte_count % record_length) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
-            SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
+            SetInformation((byte_count - remaining_count) / GetBlockSize() - blocks_read);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
@@ -948,11 +945,11 @@ void Tape::CheckBlockLength(int length)
         // SSC-5: "If the FIXED bit is zero, the INFORMATION field shall be set to the requested transfer length
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
-        if (!(GetCdbByte(1) & 0x02) || length > static_cast<int>(record_length)) {
+        if (!fixed && (!(GetCdbByte(1) & 0x02) || byte_count > record_length)) {
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
-            SetInformation(length - record_length);
+            SetInformation(byte_count - record_length);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }

@@ -233,43 +233,40 @@ TEST(TapeTest, Read6)
     Dispatch(tape, scsi_command::read_6, sense_key::medium_error, asc::read_error);
     CheckPositions(tape, 1064, 4);
 
-    const vector<uint8_t> &block_size_mismatch = { 0x00, 0x01, 0x00, 0x00 };
     file.seekp(0);
-    WriteSimhObject(file, block_size_mismatch, 256, block_size_mismatch);
+    WriteGoodData(file, 256);
     file.flush();
 
     Rewind(tape);
 
-    // Fixed, 1 block, block size mismatch
-    controller->SetCdbByte(1, 0x01);
-    controller->SetCdbByte(4, 1);
-    Dispatch(tape, scsi_command::read_6);
-    CheckPositions(tape, 264, 1);
-    RequestSense(controller, tape);
-    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-
-    Rewind(tape);
-
-    // Non-fixed, 1 byte
+    // Non-fixed, 1 byte (less then block size)
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    RequestSense(controller, tape);
+    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xffffff01U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 
     Rewind(tape);
 
-    // Non-fixed, 1 byte
+    // Non-fixed, 1 byte (less then block size)
     controller->SetCdbByte(4, 1);
     // SILI
     controller->SetCdbByte(1, 0x02);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    RequestSense(controller, tape);
+    EXPECT_FALSE(controller->GetBuffer()[0] & 0x80) << "VALID must not be set";
+    EXPECT_FALSE(controller->GetBuffer()[2] & 0x20) << "ILI must not be set";
 
     Rewind(tape);
 
     // Non-fixed, 1024 bytes (more than block size)
     controller->SetCdbByte(3, 0x04);
-    controller->SetCdbByte(4, 0x00);
-    controller->SetCdbByte(1, 0x00);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    RequestSense(controller, tape);
+    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(768U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
 
     Rewind(tape);
 
