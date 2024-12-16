@@ -939,7 +939,7 @@ void Tape::CheckBlockLength(int length)
             tape_position += record_length + META_DATA_SIZE;
 
             SetIli();
-            SetInformation((remaining_count - byte_count) / GetBlockSize() - blocks_read);
+            SetInformation((byte_count - remaining_count) / GetBlockSize() - blocks_read);
 
             throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
         }
