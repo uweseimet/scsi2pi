@@ -15,9 +15,11 @@
 #include <spdlog/spdlog.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
+#include "shared/memory_util.h"
 
 using namespace filesystem;
 using namespace spdlog;
+using namespace memory_util;
 
 string s2p_util::GetVersionString()
 {
@@ -235,16 +237,17 @@ string s2p_util::GetScsiLevel(int scsi_level)
 
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
-    const string &s = FormatSenseData(static_cast<sense_key>(static_cast<uint8_t>(sense_data[2]) & 0x0f), // NOSONAR Using byte type does not work with the bullseye compiler
-        static_cast<asc>(sense_data[12]), static_cast<int>(sense_data[13]));
+    const auto flags = static_cast<int>(sense_data[2]);
 
+    const string &s = FormatSenseData(static_cast<sense_key>(flags & 0x0f), static_cast<asc>(sense_data[12]),
+        static_cast<int>(sense_data[13]));
 
-    if (!(static_cast<uint8_t>(sense_data[0]) & 0x80)) { // NOSONAR Using byte type does not work with the bullseye compiler
+    if (!(static_cast<int>(sense_data[0]) & 0x80)) {
         return s;
     }
 
-    return s + fmt::format(", ILI: {0}, INFORMATION: {1}", static_cast<uint8_t>(sense_data[2]) & 0x20 ? "1" : "0", // NOSONAR Using byte type does not work with the bullseye compiler
-    GetInt32(sense_data, 3));
+    return s + fmt::format(", EOM: {0}, ILI: {1}, INFORMATION: {2}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
+            GetInt32(sense_data, 3));
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
@@ -280,69 +283,19 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
                 i++;
             }
 
-            const int b1 = HexToDec(line_lower[i]) << 4;
+            const int b1 = HexToDec(line_lower[i]);
             const int b2 = HexToDec(line_lower[i + 1]);
             if (b1 == -1 || b2 == -1) {
                 throw out_of_range("");
             }
 
-            bytes.push_back(static_cast<byte>(b1 + b2));
+            bytes.push_back(static_cast<byte>((b1 << 4) + b2));
 
             i += 2;
         }
     }
 
     return bytes;
-}
-
-string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, int limit, bool hex_only)
-{
-    string str;
-
-    if (!limit || limit > count) {
-        limit = count;
-    }
-
-    int offset = 0;
-    while (offset < limit) {
-        string output_offset;
-        string output_hex;
-        string output_ascii;
-
-        if (!hex_only && !(offset % 16)) {
-            output_offset += fmt::format("{:08x}  ", offset);
-        }
-
-        int index = -1;
-        while (++index < 16 && offset < limit) {
-            if (index) {
-                output_hex += ":";
-            }
-            output_hex += fmt::format("{:02x}", bytes[offset]);
-
-            output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
-
-            ++offset;
-        }
-
-        str += output_offset;
-        str += fmt::format("{:47}", output_hex);
-        str += hex_only ? "" : fmt::format("  '{}'", output_ascii);
-
-        if (hex_only) {
-            str.erase(str.find_last_not_of(' ') + 1);
-        }
-
-        if (offset < limit) {
-            str += "\n";
-        }
-    }
-
-    if (count > limit) {
-        str += "\n...";
-    }
-
-    return str;
 }
 
 int s2p_util::HexToDec(char c)
@@ -366,13 +319,4 @@ string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
     }
     const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));
-}
-
-// TODO Move to memory_util?
-uint32_t s2p_util::GetInt32(span<const byte> buf, int offset)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
-        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
 }

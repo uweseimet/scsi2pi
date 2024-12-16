@@ -9,13 +9,14 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--cdb/-c\fR \fICDB[:CDB:...]\fR]
 [\fB\--data/-d\fR \fIDATA\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--log-level/-L\fR \fILEVEL\fR]
+[\fB\--log-limit/-l\fR \fILIMIT\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
 {\fB\--binary-output-file/-F\fR \fIFILE\fR]
 {\fB\--hex-input-file/-t\fR \fIFILE\fR]
 {\fB\--hex-output-file/-T\fR \fIFILE\fR]
 {\fB\--timeout/-o\fR \fITIMEOUT\fR]
-[\fB\--no-request-sense/-n\fR]
+[\fB\--request-sense/-R\fR]
 [\fB\--reset-bus/-r\fR]
 [\fB\--hex-only/\fR]
 [\fB\--help/-H\fR]
@@ -52,8 +53,11 @@ Data to send with the command in hexedecimal format. These data are sent in the 
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 Buffer size for received data, the default is 131072 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
-.BR --log-level/-L\fI " " \fILOG_LEVEL
+.BR --log-level/-L\fI " " \fILEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
+.TP
+.BR --log-limit/-l\fI " " \fILIMIT
+Limits the number of data bytes being logged, 0 means no limit. The default is 128.
 .TP
 .BR --binary-input-file/-f\fI " "\fIFILE
 Optional file with binary data to send in the DATA OUT phase.
@@ -70,8 +74,8 @@ Optional file for data received in the DATA IN phase. The data in this file are 
 .BR --timeout/-o\fI " "\fITIMEOUT
 The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer.
 .TP
-.BR --no-request-sense/-n\fI
-Do not automatically send REQUEST SENSE after an error in order to get the sense data.
+.BR --request-sense/-R\fI
+Automatically send REQUEST SENSE after an error in order to get the sense data.
 .TP
 .BR --reset-bus/-r\fI
 Reset the bus.
@@ -103,6 +107,6 @@ s2pexec -i 5:1 -c 15:11:00:04:0c:00 -d 00:00:00:08:00:00:00:00:00:00:02:00
 Send a MODE SELECT command to the device with SCSI ID 5 and LUN 1, with explicit parameter data.
 
 .SH SEE ALSO
-s2p(1), s2pctl(1), s2pdump(1), s2pproto(1), s2psimh(1), s2ptool(1)
+s2p(1), s2pctl(1), s2pdump(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

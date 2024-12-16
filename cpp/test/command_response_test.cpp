@@ -34,6 +34,7 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 
     auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
     const param_map params;
+    d->GetLogger();
     d->Init();
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));
 
@@ -158,7 +159,11 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
     PbDeviceTypesInfo info;
     response.GetDeviceTypesInfo(info);
-    EXPECT_EQ(9, info.properties().size());
+#ifdef __linux__
+    EXPECT_EQ(10, info.properties().size());
+#else
+    EXPECT_EQ(2, info.properties().size());
+#endif
 }
 
 TEST(CommandResponseTest, GetServerInfo)

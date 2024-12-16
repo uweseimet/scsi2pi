@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include "shared/s2p_formatter.h"
 #include "shared/simh_util.h"
 
 using namespace std;
@@ -42,8 +43,12 @@ private:
 
     vector<simh_util::SimhMetaData> ParseObject(const string&);
 
+    S2pFormatter formatter;
+
     string simh_filename;
-    string data_filename;
+
+    string binary_data_filename;
+    string hex_data_filename;
 
     fstream simh_file;
     ifstream data_file;

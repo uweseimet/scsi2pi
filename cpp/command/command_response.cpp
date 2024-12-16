@@ -13,6 +13,7 @@
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
+#include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
@@ -32,7 +33,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     properties.set_removable(device->IsRemovable());
     // All emulated removable media devices are lockable
     properties.set_lockable(device->IsRemovable());
-    properties.set_supports_file(device->SupportsFile());
+    properties.set_supports_file(device->SupportsImageFile());
     properties.set_supports_params(device->SupportsParams());
 
     if (device->SupportsParams()) {
@@ -44,7 +45,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
             properties.add_block_sizes(block_size);
@@ -72,9 +73,10 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
-    pb_device.set_vendor(device->GetVendor());
-    pb_device.set_product(device->GetProduct());
-    pb_device.set_revision(device->GetRevision());
+    const auto &product_data = device->GetProductData();
+    pb_device.set_vendor(product_data.vendor);
+    pb_device.set_product(product_data.product);
+    pb_device.set_revision(product_data.revision);
     pb_device.set_type(device->GetType());
     pb_device.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
 
@@ -93,7 +95,7 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
@@ -103,6 +105,12 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
         pb_device.set_caching_mode(disk->GetCachingMode());
+    }
+#endif
+#ifdef BUILD_SCSG
+    if (const auto sg = dynamic_pointer_cast<const ScsiGeneric>(device); sg) {
+        pb_device.mutable_file()->set_name(sg->GetDevice());
+        pb_device.set_type(SCSG);
     }
 #endif
 }

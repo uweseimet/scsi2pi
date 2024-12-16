@@ -62,4 +62,6 @@ private:
 
     // Required for the termination handler
     static inline S2p *instance;
+
+    string log_level;
 };

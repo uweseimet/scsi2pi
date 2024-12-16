@@ -33,7 +33,7 @@ protected:
 
 private:
 
-    string GetProductData() const;
+    string GetProductDataString() const;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const;
     void AddDrivePage(map<int, vector<byte>>&, bool) const;

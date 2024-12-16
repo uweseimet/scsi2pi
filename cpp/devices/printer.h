@@ -11,18 +11,16 @@
 
 #include <fstream>
 #include <unordered_map>
-#include "base/interfaces/scsi_printer_commands.h"
 #include "base/primary_device.h"
 
 using namespace std;
 
-class Printer : public PrimaryDevice, public ScsiPrinterCommands
+class Printer : public PrimaryDevice
 {
 
 public:
 
     explicit Printer(int);
-    ~Printer() override = default;
 
     bool SetUp() override;
     void CleanUp() override;
@@ -31,7 +29,7 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-    void WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     void CheckForFileError();
 
@@ -39,7 +37,7 @@ public:
 
 private:
 
-    void Print() override;
+    void Print();
     void SynchronizeBuffer();
 
     string file_template;

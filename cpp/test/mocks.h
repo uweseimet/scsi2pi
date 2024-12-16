@@ -97,8 +97,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, Message);
-    FRIEND_TEST(AbstractControllerTest, TransferSize);
-    FRIEND_TEST(AbstractControllerTest, Length);
+    FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(ControllerTest, Selection);
@@ -167,8 +166,10 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, Rewind);
     FRIEND_TEST(TapeTest, Space6_simh);
     FRIEND_TEST(TapeTest, Space6_tar);
-    FRIEND_TEST(TapeTest, WriteFileMarks6_simh);
     FRIEND_TEST(TapeTest, WriteFileMarks6_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks6_simh);
+    FRIEND_TEST(TapeTest, WriteFileMarks16_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks16_simh);
     FRIEND_TEST(TapeTest, FormatMedium_simh);
     FRIEND_TEST(TapeTest, FormatMedium_tar);
     FRIEND_TEST(TapeTest, Locate10_simh);
@@ -179,6 +180,8 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(TapeTest, ModeSense6);
     FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
+
+    const S2pFormatter formatter;
 
 public:
 
@@ -194,14 +197,14 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0)
+    MockAbstractController() : AbstractController(*mock_bus, 0, formatter)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id)
+    MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id)
+    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
@@ -230,6 +233,8 @@ class MockController : public Controller
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(TapeTest, Write6);
 
+    const S2pFormatter formatter;
+
 public:
 
     MOCK_METHOD(void, Reset, (), (override));
@@ -237,10 +242,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, formatter)
     {
     }
     ~MockController() override = default;
@@ -269,11 +274,6 @@ public:
 
 class MockPrimaryDevice : public PrimaryDevice
 {
-    FRIEND_TEST(DeviceTest, GetDefaultParams);
-    FRIEND_TEST(DeviceTest, Properties);
-    FRIEND_TEST(DeviceTest, Start);
-    FRIEND_TEST(DeviceTest, Stop);
-    FRIEND_TEST(DeviceTest, Eject);
     FRIEND_TEST(PrimaryDeviceTest, Reset);
     FRIEND_TEST(PrimaryDeviceTest, StatusPhase);
     FRIEND_TEST(PrimaryDeviceTest, DataInPhase);
@@ -289,12 +289,13 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
-    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, scsi_level::scsi_2, lun)
+    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
     {
+        GetLogger();
     }
     ~MockPrimaryDevice() override = default;
 
@@ -325,12 +326,13 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(void, WriteData, (cdb_t, data_out_t,int, int), (override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 256, 512, 1024, 2048, 4096 })
+    MockStorageDevice() : StorageDevice(UNDEFINED, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
+        GetLogger();
     }
     ~MockStorageDevice() override = default;
 
@@ -388,8 +390,9 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, 0, false, false, { 512, 1024, 2048, 4096 })
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::LINUX);
         SetBlockSize(512);
     }
@@ -403,10 +406,12 @@ public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockSasiHd() override = default;
@@ -433,10 +438,13 @@ public:
 
     MockScsiHd(int lun, bool removable) : ScsiHd(lun, removable, false, false)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    explicit MockScsiHd(const set<uint32_t> &sector_sizes) : ScsiHd(0, false, false, false, sector_sizes)
+    explicit MockScsiHd(const set<uint32_t> &sector_sizes)
+    : ScsiHd(0, false, false, false, sector_sizes)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiHd() override = default;
@@ -452,6 +460,7 @@ public:
 
     explicit MockScsiCd(int lun) : ScsiCd(lun, false)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockScsiCd() override = default;
@@ -468,6 +477,7 @@ public:
 
     explicit MockOpticalMemory(int lun) : OpticalMemory(lun)
     {
+        GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
 
@@ -494,6 +504,7 @@ public:
 
     MockTape() : Tape(0)
     {
+        GetLogger();
     }
     ~MockTape() override = default;
 

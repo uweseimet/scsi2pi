@@ -12,7 +12,9 @@
 #include <fstream>
 #include <unordered_map>
 #include <unordered_set>
+#include <spdlog/spdlog.h>
 #include "base/s2p_defs.h"
+#include "shared/s2p_formatter.h"
 #include "script_generator.h"
 
 class Bus;
@@ -37,10 +39,23 @@ public:
 
     bool SetScriptFile(const string&);
 
+    void SetFormatLimit(int limit)
+    {
+        formatter.SetLimit(limit);
+    }
+
+    void SetLogLevel(int id, int lun, spdlog::level::level_enum);
+    void SetLogPattern(string_view);
+
 private:
+
+    S2pFormatter formatter;
 
     // Controllers mapped to their target IDs
     unordered_map<int, shared_ptr<AbstractController>> controllers;
 
     shared_ptr<ScriptGenerator> script_generator;
+
+    spdlog::level::level_enum log_level = spdlog::get_level();
+    string log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %n %v";
 };

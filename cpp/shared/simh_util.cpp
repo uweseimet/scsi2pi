@@ -25,7 +25,7 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 
         file.clear();
         meta_data.cls = simh_class::reserved_marker;
-        meta_data.value = static_cast<int>(simh_marker::end_of_medium);
+        meta_data.value = static_cast<uint32_t>(simh_marker::end_of_medium);
     }
 
     return true;
@@ -51,6 +51,24 @@ uint32_t simh_util::Pad(int length)
     assert(length >= 0);
 
     return length + (length % 2 ? 1 : 0);
+}
+
+bool simh_util::WriteFilemark(ostream &file)
+{
+    const array<uint8_t, 4> &filemark = { 0, 0, 0, 0 };
+    file.write((const char*)filemark.data(), filemark.size());
+    return file.good();
+}
+
+bool simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int length)
+{
+    const array<uint8_t, 4> good_data = { static_cast<uint8_t>(length & 0xff),
+        static_cast<uint8_t>((length >> 8) & 0xff), static_cast<uint8_t>((length >> 16) & 0xff),
+        static_cast<uint8_t>((length >> 24) & 0xff) };
+    file.write((const char*)good_data.data(), good_data.size());
+    file.write((const char*)data.data(), length);
+    file.write((const char*)good_data.data(), good_data.size());
+    return file.good();
 }
 
 simh_util::SimhMetaData simh_util::FromLittleEndian(span<const uint8_t> value)

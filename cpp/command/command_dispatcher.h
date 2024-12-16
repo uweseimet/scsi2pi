@@ -15,7 +15,7 @@ class CommandDispatcher
 
 public:
 
-    explicit CommandDispatcher(CommandExecutor &e) : executor(e)
+    explicit CommandDispatcher(CommandExecutor &e, ControllerFactory &f) : executor(e), controller_factory(f)
     {
     }
     ~CommandDispatcher() = default;
@@ -24,7 +24,7 @@ public:
 
     bool ShutDown(shutdown_mode) const;
 
-    static bool SetLogLevel(const string&);
+    bool SetLogLevel(const string&);
 
 private:
 
@@ -33,4 +33,6 @@ private:
     bool ShutDown(const CommandContext&) const;
 
     CommandExecutor &executor;
+
+    ControllerFactory &controller_factory;
 };

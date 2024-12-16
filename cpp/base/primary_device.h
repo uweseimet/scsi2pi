@@ -11,13 +11,12 @@
 #pragma once
 
 #include <functional>
-#include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 #include "s2p_defs.h"
 #include "device.h"
 
-class PrimaryDevice : public ScsiPrimaryCommands, public Device
+class PrimaryDevice : public Device
 {
     friend class AbstractController;
     friend class PageHandler;
@@ -26,7 +25,16 @@ class PrimaryDevice : public ScsiPrimaryCommands, public Device
 
 public:
 
-    ~PrimaryDevice() override = default;
+    using ProductData = struct _ProductData {
+        string vendor = "SCSI2Pi";
+        string product;
+        string revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);;
+
+        string GetPaddedName() const
+        {
+            return fmt::format("{0:8}{1:16}{2:4}", vendor, product, revision);
+        }
+    };
 
     bool Init();
     virtual bool SetUp() = 0;
@@ -42,11 +50,15 @@ public:
         return controller;
     }
 
+    ProductData GetProductData() const;
+    virtual string SetProductData(const ProductData&, bool force = true);
+
     scsi_level GetScsiLevel() const
     {
         return level;
     }
     bool SetScsiLevel(scsi_level);
+    bool SetResponseDataFormat(scsi_level);
 
     enum sense_key GetSenseKey() const
     {
@@ -79,7 +91,7 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual void WriteData(cdb_t, data_out_t, int, int) = 0;
+    virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
 
     virtual void ModeSelect(cdb_t, data_out_t, int, int)
     {
@@ -98,10 +110,12 @@ public:
         return vector<PbStatistics>();
     }
 
+    logger& GetLogger();
+
 protected:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = SEND_NO_DELAY)
-    : Device(type, lun), level(l), delay_after_bytes(delay)
+    PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
+    : Device(type, lun), delay_after_bytes(delay)
     {
     }
 
@@ -111,13 +125,11 @@ protected:
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
-    void Inquiry() override;
-    void RequestSense() override;
-
-
-    void SendDiagnostic() override;
-    void ReserveUnit() override;
-    void ReleaseUnit() override;
+    virtual void Inquiry();
+    virtual void RequestSense();
+    void SendDiagnostic() const;
+    void ReserveUnit();
+    void ReleaseUnit();
 
     virtual int ModeSense6(cdb_t, data_in_t) const
     {
@@ -137,7 +149,7 @@ protected:
     void SetFilemark();
     void SetEom(ascq);
     void SetIli();
-    void SetInformation(int64_t);
+    void SetInformation(int32_t);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
@@ -164,26 +176,11 @@ protected:
         return memory_util::GetInt64(controller->GetCdb(), index);
     }
 
-    void LogTrace(const string &s) const
-    {
-        device_logger.Trace(s);
-    }
-    void LogDebug(const string &s) const
-    {
-        device_logger.Debug(s);
-    }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
-    void LogWarn(const string &s) const
-    {
-        device_logger.Warn(s);
-    }
-    void LogError(const string &s) const
-    {
-        device_logger.Error(s);
-    }
+    void LogTrace(const string&) const;
+    void LogDebug(const string&) const;
+    void LogInfo(const string&) const;
+    void LogWarn(const string&) const;
+    void LogError(const string&) const;
 
 private:
 
@@ -191,14 +188,15 @@ private:
 
     void SetController(AbstractController*);
 
-    void TestUnitReady() override;
-    void ReportLuns() override;
+    void TestUnitReady();
+    void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;
 
-    DeviceLogger device_logger;
+    ProductData product_data;
 
-    scsi_level level = scsi_level::none;
+    scsi_level level = scsi_level::scsi_2;
+    scsi_level response_data_format = scsi_level::scsi_2;
 
     enum sense_key sense_key = sense_key::no_sense;
     enum asc asc = asc::no_additional_sense_information;
@@ -211,6 +209,8 @@ private:
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
+
+    shared_ptr<logger> device_logger;
 
     array<command, 256> commands = { };
 

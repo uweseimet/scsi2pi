@@ -26,12 +26,12 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()))) {
+    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()), 1, true)) {
         error("Can't execute REQUEST SENSE");
         return {sense_key {-1}, asc {-1}, -1};
     }
 
-    trace(FormatBytes(buf, executor.GetByteCount(), 0));
+    trace(executor.FormatBytes(buf, executor.GetByteCount()));
 
     if (executor.GetByteCount() < 14) {
         warn("Device did not return standard REQUEST SENSE data, sense data details are not available");
@@ -44,7 +44,7 @@ tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &execu
 bool initiator_util::SetLogLevel(logger &logger, const string &log_level)
 {
     // Default spdlog format without the timestamp
-    logger.set_pattern("[%^%l%$] %v");
+    logger.set_pattern("[%^%l%$] [%n] %v");
 
     if (log_level.empty()) {
         return true;

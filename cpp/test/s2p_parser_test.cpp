@@ -94,12 +94,6 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ("schd", properties["device.1:2.type"]);
     EXPECT_EQ("test.hds", properties["device.1:2.params"]);
 
-    SetUpArgs(args, "-h2", "test.hds");
-    properties = parser.ParseArguments(args, ignore_conf);
-    EXPECT_EQ(2UL, properties.size());
-    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.2.type"]);
-    EXPECT_EQ("test.hds", properties["device.2.params"]);
-
     SetUpArgs(args, "-ID1:0", "-n", "a:b:c", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(2UL, properties.size());
@@ -174,13 +168,6 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.5.type"]);
     EXPECT_EQ("512", properties["device.5.block_size"]);
     EXPECT_EQ("FD2.hds", properties["device.5.params"]);
-
-    SetUpArgs(args, "-h", "5", "-B", "HD2.hds");
-    properties = parser.ParseArguments(args, ignore_conf);
-    EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.5.type"]);
-    EXPECT_EQ("512", properties["device.5.block_size"]);
-    EXPECT_EQ("HD2.hds", properties["device.5.params"]);
 
     SetUpArgs(args, "-B", "CD13.iso");
     properties = parser.ParseArguments(args, ignore_conf);

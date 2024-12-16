@@ -4,7 +4,8 @@ s2psimh \- SCSI2Pi SIMH .tap File Tool
 .SH SYNOPSIS
 .B s2psimh
 [\fB\--add/-a\fR \fICLASS1:VALUE1,...\fR]
-[\fB\--dump\fR \fIDATA_FILE\fR]
+[\fB\--binary-data/-b\fR \fIDATA_FILE\fR]
+[\fB\--hex-data/-x\fR \fIDATA_FILE\fR]
 [\fB\--dump/-d\fR]
 [\fB\--limit/-l\fR \fILIMIT\fR]
 [\fB\--truncate/-t\fR]
@@ -18,15 +19,18 @@ analyses and manipulates SIMH .tap tape image files.
 .SH NOTES
 
 .B s2psimh
-displays SIMH file contents, checks that they have a proper format, and adds new SIMH objects.
+displays SIMH file contents, checks that they have a proper format, and adds new SIMH objects. s2psimh can be used on any system, not just on a Pi.
 
 .SH OPTIONS
 .TP
 .BR --add/-a\fI " " \fICLASS1:VALUE1,...
 Add objects.
 .TP
-.BR --data/\fI " " \fIDATA_FILE
-An optional file to read the record data from. If this file is not specified, the data record contents are undefined.
+.BR --binary-data/-b/\fI " " \fIDATA_FILE
+An optional binary file to read the record data from. If neither a binary nor a hexadecimal text file is specified, the data record contents are undefined.
+.TP
+.BR --hex-data/-x/\fI " " \fIDATA_FILE
+An optional file to read the record data from. If neither a hexadecimal text file or a binary file specified, the data record contents are undefined.
 .TP
 .BR --dump/-d\fI
 Dump data record contents.
@@ -47,6 +51,6 @@ Display the s2psimh version.
 0:  No error. -1: There was a general error and the file could not be accessed.
 
 .SH SEE ALSO
-s2p(1), s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1), s2ptool(1)
+s2p(1), s2pctl(1), s2pdump(1), s2pexec(1), s2pformat(1), s2pproto(1), s2ptool(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

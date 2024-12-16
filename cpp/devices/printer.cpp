@@ -36,9 +36,9 @@
 using namespace filesystem;
 using namespace memory_util;
 
-Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
+Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
-    SetProduct("SCSI PRINTER");
+    PrimaryDevice::SetProductData( { "", "SCSI PRINTER", "" });
     SupportsParams(true);
     SetReady(true);
 }
@@ -155,7 +155,7 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-void Printer::WriteData(cdb_t cdb, data_out_t buf, int, int)
+int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     const auto command = static_cast<scsi_command>(cdb[0]);
     assert(command == scsi_command::print);
@@ -192,6 +192,8 @@ void Printer::WriteData(cdb_t cdb, data_out_t buf, int, int)
 
     out.write((const char*)buf.data(), length);
     CheckForFileError();
+
+    return l;
 }
 
 void Printer::CheckForFileError()

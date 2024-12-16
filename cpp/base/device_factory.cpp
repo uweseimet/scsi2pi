@@ -32,6 +32,9 @@
 #if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
 #endif
+#ifdef BUILD_SCSG
+#include "devices/scsi_generic.h"
+#endif
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
@@ -113,6 +116,12 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
         return make_shared<Printer>(lun);
 #endif
 
+#ifdef BUILD_SCSG
+    case SCSG: {
+        return make_shared<ScsiGeneric>(lun, filename);
+    }
+#endif
+
 #ifdef BUILD_SAHD
     case SAHD:
         return make_shared<SasiHd>(lun);
@@ -135,7 +144,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    return UNDEFINED;
+    return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
 }
 
 bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)

@@ -10,12 +10,13 @@
 #include <sstream>
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
+#include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
+#include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
-#include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -213,7 +214,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
-    if (!device->SupportsFile()) {
+    if (!device->SupportsImageFile()) {
         // Legacy clients like scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
@@ -239,7 +240,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
@@ -282,7 +283,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (!device->IsRemoved() && device->SupportsFile()) {
+    if (!device->IsRemoved() && device->SupportsImageFile()) {
         static_pointer_cast<StorageDevice>(device)->ReserveFile();
     }
 #endif
@@ -299,7 +300,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, bool dryRun) const
 {
-    if (!device->SupportsFile()) {
+    if (!device->SupportsImageFile()) {
         return false;
     }
 
@@ -406,10 +407,10 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
     PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
-    PropertyHandler::Instance().AddProperty(identifier + "name",
-        device->GetVendor() + ":" + device->GetProduct() + ":" + device->GetRevision());
+    const auto& [product, vendor, revision] = device->GetProductData();
+    PropertyHandler::Instance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         if (storage_device->GetConfiguredBlockSize()) {
             PropertyHandler::Instance().AddProperty(identifier + "block_size",
@@ -624,7 +625,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
                 to_string(pb_device.unit()), filename);
         }
         else {
-        context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
+            context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
                 to_string(pb_device.unit()), PbDeviceType_Name(pb_device.type()));
         }
 
@@ -658,7 +659,7 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
-        if (device->SupportsFile()) {
+        if (device->SupportsImageFile()) {
             if (const auto storage_device = static_pointer_cast<StorageDevice>(device); !storage_device->SetConfiguredBlockSize(
                 block_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
@@ -737,22 +738,8 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
 bool CommandExecutor::SetProductData(const CommandContext &context, const PbDeviceDefinition &pb_device,
     PrimaryDevice &device)
 {
-    try {
-        if (!pb_device.vendor().empty()) {
-            device.SetVendor(pb_device.vendor());
-        }
-        if (!pb_device.product().empty()) {
-            device.SetProduct(pb_device.product());
-        }
-        if (!pb_device.revision().empty()) {
-            device.SetRevision(pb_device.revision());
-        }
-    }
-    catch (const invalid_argument &e) {
-        return context.ReturnErrorStatus(e.what());
-    }
-
-    return true;
+    const string &error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() });
+    return error.empty() ? true : context.ReturnErrorStatus(error);
 }
 
 string CommandExecutor::GetTypeString(const Device &device)

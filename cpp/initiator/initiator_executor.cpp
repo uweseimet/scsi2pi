@@ -12,16 +12,18 @@
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
+using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
+int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout,
+    bool log)
 {
     cdb[0] = static_cast<uint8_t>(cmd);
-    return Execute(cdb, buffer, length, timeout);
+    return Execute(cdb, buffer, length, timeout, log);
 }
 
-int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout)
+int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool log)
 {
     bus.Reset();
 
@@ -37,12 +39,12 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     }
 
     // Only report byte count mismatch for non-linked commands
-    if (const int count = CommandMetaData::Instance().GetCommandBytesCount(cmd); count
+    if (const int count = CommandMetaData::Instance().GetByteCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
         initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb, "Initiator"));
+    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb));
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
@@ -56,20 +58,17 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     }
 
     // Wait for the command to finish
-    auto now = chrono::steady_clock::now();
-    while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < timeout) {
+    auto now = steady_clock::now();
+    while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
 
         if (bus.GetREQ()) {
             try {
                 if (Dispatch(cdb, buffer, length)) {
-                    now = chrono::steady_clock::now();
-                    continue;
+                    now = steady_clock::now();
                 }
-
-                if (static_cast<status_code>(status) != status_code::intermediate) {
-                    LogStatus();
-                    return status;
+                else if (static_cast<status_code>(status) != status_code::intermediate) {
+                    break;
                 }
             }
             catch (const phase_exception &e) {
@@ -80,7 +79,11 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         }
     }
 
-    return 0xff;
+    if (log) {
+        LogStatus();
+    }
+
+    return status;
 }
 
 bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &length)
@@ -200,12 +203,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     const auto cmd = static_cast<scsi_command>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
-        if (const string_view &command_name = CommandMetaData::Instance().GetCommandName(cmd); !command_name.empty()) {
-            initiator_logger.error("Command {} failed", command_name);
-        }
-        else {
-            initiator_logger.error("Command ${:02x} failed", static_cast<int>(cmd));
-        }
+        initiator_logger.error("Execution of {} failed", CommandMetaData::Instance().GetCommandName(cmd));
     }
 
     cdb_offset += sent_count;
@@ -229,7 +227,7 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
         throw phase_exception("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Initiator is receiving up to {0} byte(s) in DATA IN phase", length);
+    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
     byte_count = bus.ReceiveHandShake(buf.data(), length);
 
@@ -242,7 +240,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
         throw phase_exception("No more data for DATA OUT phase");
     }
 
-    initiator_logger.debug(fmt::format("Initiator is sending {0} byte(s):\n{1}", length, FormatBytes(buf, length, 128)));
+    initiator_logger.debug(fmt::format("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length)));
 
     byte_count = bus.SendHandShake(buf.data(), length);
     if (byte_count != length) {

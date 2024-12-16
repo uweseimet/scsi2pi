@@ -14,14 +14,13 @@
 #pragma once
 
 #include <tuple>
-#include "base/interfaces/scsi_block_commands.h"
 #include "storage_device.h"
 
 using namespace std;
 
 class Cache;
 
-class Disk : public StorageDevice, public ScsiBlockCommands
+class Disk : public StorageDevice
 {
 
 public:
@@ -33,7 +32,7 @@ public:
 
     bool Eject(bool) override;
 
-    void WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     int ReadData(data_in_t) override;
 
@@ -51,7 +50,7 @@ public:
 
 protected:
 
-    Disk(PbDeviceType, scsi_level, int, bool, bool, const set<uint32_t>&);
+    Disk(PbDeviceType, int, bool, bool, const set<uint32_t>&);
 
     void ValidateFile() override;
 
@@ -78,40 +77,15 @@ private:
 
     void SynchronizeCache();
     void ReadDefectData10() const;
-    virtual void Read6()
-    {
-        Read(RW6);
-    }
-    void Read10() override
-    {
-        Read(RW10);
-    }
-    void Read16() override
-    {
-        Read(RW16);
-    }
-    virtual void Write6()
-    {
-        Write(RW6);
-    }
-    void Write10() override
-    {
-        Write(RW10);
-    }
-    void Write16() override
-    {
-        Write(RW16);
-    }
     void ReAssignBlocks();
-    void Seek10();
-    void ReadCapacity10() override;
-    void ReadCapacity16() override;
+    void ReadCapacity10();
+    void ReadCapacity16();
     void ReadFormatCapacities();
-    void FormatUnit() override;
-    void Seek6();
+    void FormatUnit();
     void Read(access_mode);
     void Write(access_mode);
     void Verify(access_mode);
+    void Seek(access_mode);
     void ReadLong10();
     void ReadLong16();
     void WriteLong10();

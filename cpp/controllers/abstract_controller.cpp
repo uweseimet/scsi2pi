@@ -6,11 +6,18 @@
 //
 //---------------------------------------------------------------------------
 
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 
-AbstractController::AbstractController(Bus &b, int id) : bus(b), target_id(id)
+AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
 {
-    device_logger.SetIdAndLun(target_id, -1);
+    const string &name = fmt::format("[s2p] (ID {})", id);
+
+    // Handling duplicate names is in particular required by the unit tests
+    controller_logger = spdlog::get(name);
+    if (!controller_logger) {
+        controller_logger = stdout_color_st(name);
+    }
 }
 
 void AbstractController::CleanUp() const
@@ -78,13 +85,18 @@ void AbstractController::SetTransferSize(int length, int size)
     chunk_size = length < size ? length : size;
 }
 
-bool AbstractController::UpdateTransferSize()
+void AbstractController::UpdateTransferLength(int length)
 {
-    remaining_length -= chunk_size;
+    remaining_length -= length;
+
+    assert(remaining_length >= 0);
+    if (remaining_length < 0) {
+        remaining_length = 0;
+    }
+
     if (remaining_length < chunk_size) {
         chunk_size = remaining_length;
     }
-    return remaining_length > 0;
 }
 
 void AbstractController::UpdateOffsetAndLength()
@@ -167,4 +179,19 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
+}
+
+void AbstractController::LogTrace(const string &s) const
+{
+    controller_logger->log(level::level_enum::trace, s);
+}
+
+void AbstractController::LogDebug(const string &s) const
+{
+    controller_logger->log(level::level_enum::debug, s);
+}
+
+void AbstractController::LogWarn(const string &s) const
+{
+    controller_logger->log(level::level_enum::warn, s);
 }

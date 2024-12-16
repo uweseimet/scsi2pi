@@ -16,8 +16,9 @@ TEST(ControllerTest, Reset)
     const int TARGET_ID = 5;
     const int INITIATOR_ID = 7;
 
+    const S2pFormatter formatter;
     auto bus = BusFactory::Instance().CreateBus(true, true);
-    auto controller = make_shared<Controller>(*bus, TARGET_ID);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID, formatter);
 
     controller->Init();
 
@@ -29,8 +30,9 @@ TEST(ControllerTest, Reset)
 
 TEST(ControllerTest, Process)
 {
+    const S2pFormatter formatter;
     auto bus = BusFactory::Instance().CreateBus(true, true);
-    auto controller = make_shared<Controller>(*bus, 2);
+    auto controller = make_shared<Controller>(*bus, 2, formatter);
 
     bus->SetRST(true);
     EXPECT_FALSE(controller->Process());
@@ -41,8 +43,9 @@ TEST(ControllerTest, GetInitiatorId)
     const int TARGET_ID = 0;
     const int INITIATOR_ID = 2;
 
+    const S2pFormatter formatter;
     auto bus = BusFactory::Instance().CreateBus(true, true);
-    auto controller = make_shared<Controller>(*bus, TARGET_ID);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID, formatter);
 
     controller->Init();
 
@@ -198,7 +201,7 @@ TEST(ControllerTest, RequestSense)
 
     device->SetReady(true);
     EXPECT_CALL(controller, Status);
-    EXPECT_NO_THROW(Dispatch(*device, scsi_command::request_sense));
+    EXPECT_NO_THROW(Dispatch(device, scsi_command::request_sense));
     EXPECT_EQ(status_code::good, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }
 

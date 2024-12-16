@@ -32,12 +32,10 @@ using namespace s2p_util;
 
 // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
 // It appears as if the real DaynaPort hardware indeed has this delay.
-DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, scsi_level::scsi_2, lun, DAYNAPORT_READ_HEADER_SZ)
+DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
-    SetVendor("Dayna");
-    SetProduct("SCSI/Link");
-    SetRevision("1.4a");
+    PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" });
     SupportsParams(true);
     SetReady(true);
 }
@@ -187,7 +185,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 //               XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-void DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int)
+int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     const auto command = static_cast<scsi_command>(cdb[0]);
     assert(command == scsi_command::send_message_6);
@@ -219,6 +217,8 @@ void DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int)
     }
 
     GetController()->SetTransferSize(0, 0);
+
+    return l;
 }
 
 //---------------------------------------------------------------------------

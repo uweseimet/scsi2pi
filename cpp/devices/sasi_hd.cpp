@@ -9,10 +9,11 @@
 #include "sasi_hd.h"
 #include "shared/s2p_exceptions.h"
 
-SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false, false,
+SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false,
     sector_sizes)
 {
-    SetProduct("SASI HD");
+    Disk::SetProductData( { "", "SASI HD", "" });
+    SetScsiLevel(scsi_level::none);
     SetProtectable(true);
 }
 

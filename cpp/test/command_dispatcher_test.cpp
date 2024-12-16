@@ -18,7 +18,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
     MockCommandExecutor executor(*bus, controller_factory);
-    CommandDispatcher dispatcher(executor);
+    CommandDispatcher dispatcher(executor, controller_factory);
     PbResult result;
 
     PbCommand command_invalid;

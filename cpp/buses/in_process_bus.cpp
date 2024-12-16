@@ -70,7 +70,7 @@ bool InProcessBus::WaitForSelection()
 
 void DelegatingInProcessBus::Reset()
 {
-    trace(GetMode() + ": Resetting bus");
+    trace(GetMode() + " Resetting bus");
 
     bus.Reset();
 }
@@ -80,7 +80,7 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
     const bool state = bus.GetSignal(pin);
 
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
-        trace(GetMode() + ": Getting " + GetSignalName(pin) + (state ? ": true" : ": false"));
+        trace(GetMode() + " Getting " + GetSignalName(pin) + (state ? ": true" : ": false"));
     }
 
     return state;
@@ -89,7 +89,7 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && get_level() == level::trace) {
-        trace(GetMode() + ": Setting " + GetSignalName(pin) + " to " + (state ? "true" : "false"));
+        trace(GetMode() + " Setting " + GetSignalName(pin) + " to " + (state ? "true" : "false"));
     }
 
     bus.SetSignal(pin, state);

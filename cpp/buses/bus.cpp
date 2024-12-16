@@ -67,7 +67,7 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
         }
     }
 
-    const int command_byte_count = CommandMetaData::Instance().GetCommandBytesCount(static_cast<scsi_command>(buf[0]));
+    const int command_byte_count = CommandMetaData::Instance().GetByteCount(static_cast<scsi_command>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 
@@ -296,7 +296,7 @@ bool Bus::WaitSignal(int pin, bool state)
             spdlog::warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
             return false;
         }
-    } while ((chrono::duration_cast < chrono::seconds > (chrono::steady_clock::now() - now).count()) < 3);
+    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
     spdlog::trace("Timeout while waiting for ACK/REQ to change to {}", state ? "true" : "false");
 

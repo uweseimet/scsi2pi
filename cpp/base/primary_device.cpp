@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "primary_device.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "shared/command_meta_data.h"
 
 using namespace memory_util;
@@ -109,15 +110,52 @@ void PrimaryDevice::SetIli()
     ili = true;
 }
 
-void PrimaryDevice::SetInformation(int64_t value)
+void PrimaryDevice::SetInformation(int32_t value)
 {
-    information = static_cast<int32_t>(value);
+    information = value;
     valid = true;
 }
 
 int PrimaryDevice::GetId() const
 {
     return GetController() ? GetController()->GetTargetId() : -1;
+}
+
+string PrimaryDevice::SetProductData(const ProductData &data, bool force)
+{
+    if (const string &vendor = Trim(data.vendor); !vendor.empty()) {
+        if (vendor.length() > 8) {
+            return "Vendor '" + vendor + "' must have between 1 and 8 characters";
+        }
+
+        product_data.vendor = vendor;
+    }
+
+    if (const string &product = Trim(data.product); !product.empty()) {
+        if (product.length() > 16) {
+            return "Product '" + product + "' must have between 1 and 16 characters";
+        }
+
+        // Changing existing vital product data is not SCSI compliant
+        if (product_data.product.empty() || force) {
+            product_data.product = product;
+        }
+    }
+
+    if (const string &revision = Trim(data.revision); !revision.empty()) {
+        if (revision.length() > 4) {
+            return "Revision '" + revision + "' must have between 1 and 4 characters";
+        }
+
+        product_data.revision = revision;
+    }
+
+    return "";
+}
+
+PrimaryDevice::ProductData PrimaryDevice::GetProductData() const
+{
+    return product_data;
 }
 
 bool PrimaryDevice::SetScsiLevel(scsi_level l)
@@ -131,11 +169,20 @@ bool PrimaryDevice::SetScsiLevel(scsi_level l)
     return true;
 }
 
+bool PrimaryDevice::SetResponseDataFormat(scsi_level l)
+{
+    if (l == scsi_level::none || l > scsi_level::scsi_2) {
+        return false;
+    }
+
+    response_data_format = l;
+
+    return true;
+}
+
 void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
-
-    device_logger.SetIdAndLun(GetId(), GetLun());
 }
 
 void PrimaryDevice::StatusPhase() const
@@ -164,8 +211,8 @@ void PrimaryDevice::TestUnitReady()
 
 void PrimaryDevice::Inquiry()
 {
-    // EVPD, CMDDT and page code check
-    if ((GetCdbByte(1) & 0x03) || GetCdbByte(2)) {
+    // Reserved bits, EVPD, CMDDT and page code check
+    if ((GetCdbByte(1) & 0x1f) || GetCdbByte(2)) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -184,7 +231,7 @@ void PrimaryDevice::Inquiry()
     DataInPhase(allocation_length);
 }
 
-void PrimaryDevice::ReportLuns()
+void PrimaryDevice::ReportLuns() const
 {
     // Only SELECT REPORT mode 0 is supported
     if (GetCdbByte(2)) {
@@ -218,10 +265,9 @@ void PrimaryDevice::RequestSense()
 
     int effective_lun = GetController()->GetEffectiveLun();
 
-    // According to the specification the LUN handling for REQUEST SENSE for non-existing LUNs does not result
-    // in CHECK CONDITION. Only the Sense Key and ASC are set in order to signal the non-existing LUN.
+    // According to the specification REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
+    // Only the Sense Key and ASC are set in order to signal the non-existing LUN.
     if (!GetController()->GetDeviceForLun(effective_lun)) {
-        // LUN 0 can be assumed to be present (required to call RequestSense() below)
         assert(GetController()->GetDeviceForLun(0));
 
         effective_lun = 0;
@@ -237,7 +283,7 @@ void PrimaryDevice::RequestSense()
         allocation_length = 4;
     }
 
-    const int length = min(static_cast<int>(buf.size()), allocation_length);
+    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
     GetController()->CopyToBuffer(buf.data(), length);
 
     ResetStatus();
@@ -245,7 +291,7 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic()
+void PrimaryDevice::SendDiagnostic() const
 {
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
@@ -289,7 +335,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
     buf[7] = 0x08;
 
     // Padded vendor, product, revision
-    memcpy(&buf.data()[8], GetPaddedName().c_str(), 28);
+    memcpy(&buf.data()[8], GetProductData().GetPaddedName().c_str(), 28);
 
     return buf;
 }
@@ -384,3 +430,42 @@ void PrimaryDevice::DiscardReservation()
 {
     reserving_initiator = NOT_RESERVED;
 }
+
+logger& PrimaryDevice::GetLogger()
+{
+    const string &name = fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun());
+
+    // Handling duplicate names is in particular required by the unit tests
+    device_logger = spdlog::get(name);
+    if (!device_logger) {
+        device_logger = stdout_color_st(name);
+    }
+
+    return *device_logger;
+}
+
+void PrimaryDevice::LogTrace(const string &s) const
+{
+    device_logger->log(level::level_enum::trace, s);
+}
+
+void PrimaryDevice::LogDebug(const string &s) const
+{
+    device_logger->log(level::level_enum::debug, s);
+}
+
+void PrimaryDevice::LogInfo(const string &s) const
+{
+    device_logger->log(level::level_enum::info, s);
+}
+
+void PrimaryDevice::LogWarn(const string &s) const
+{
+    device_logger->log(level::level_enum::warn, s);
+}
+
+void PrimaryDevice::LogError(const string &s) const
+{
+    device_logger->log(level::level_enum::err, s);
+}
+

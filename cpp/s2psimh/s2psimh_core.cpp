@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "shared/s2p_util.h"
 
+using namespace filesystem;
 using namespace s2p_util;
 using namespace simh_util;
 
@@ -25,23 +26,23 @@ void S2pSimh::Banner(bool help)
 
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
-            << "  --add/-a CLASS1:VALUE1,...  Add objects.\n"
-            << "  --data DATA_FILE            Optional file to read the record data from.\n"
-            << "  --dump/-d                   Dump data record contents.\n"
-            << "  --limit/-l LIMIT            Limit dump size to LIMIT bytes.\n"
-            << "  --truncate/-t               Truncate file before adding objects.\n"
-            << "  --version/-v                Display the program version.\n"
-            << "  --help/-h                   Display this help.\n";
+            << "  --add/-a CLASS1:VALUE1,...    Add objects.\n"
+            << "  --binary-data/-b DATA_FILE    Optional binary file to read the record data from.\n"
+            << "  --hex-data/-x DATA_FILE       Optional text file to read the record data from.\n"
+            << "  --dump/-d                     Dump data record contents.\n"
+            << "  --limit/-l LIMIT              Limit dump size to LIMIT bytes.\n"
+            << "  --truncate/-t                 Truncate file before adding objects.\n"
+            << "  --version/-v                  Display the program version.\n"
+            << "  --help/-h                     Display this help.\n";
     }
 }
 
 bool S2pSimh::ParseArguments(span<char*> args)
 {
-    const int OPT_DATA = 2;
-
     const vector<option> options = {
         { "add", required_argument, nullptr, 'a' },
-        { "data", required_argument, nullptr, OPT_DATA },
+        { "binary-data", required_argument, nullptr, 'b' },
+        { "hex-data", required_argument, nullptr, 'x' },
         { "dump", no_argument, nullptr, 'd' },
         { "limit", required_argument, nullptr, 'l' },
         { "truncate", no_argument, nullptr, 't' },
@@ -56,14 +57,19 @@ bool S2pSimh::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-a:dhl:tv", options.data(), nullptr)) != -1) {
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-a:b:dhl:tvx:", options.data(), nullptr))
+        != -1) {
         switch (opt) {
         case 'a': {
             meta_data = ParseObject(optarg);
             if (meta_data.empty()) {
                 return false;
             }
+            break;
         }
+
+        case 'b':
+            binary_data_filename = optarg;
             break;
 
         case 'd':
@@ -71,12 +77,14 @@ bool S2pSimh::ParseArguments(span<char*> args)
             break;
 
         case 'l':
-            int l;
-            if (!GetAsUnsignedInt(string(optarg), l)) {
-                cerr << "Error: Invalid dump size limit " << optarg << endl;
+            if (int l; !GetAsUnsignedInt(string(optarg), l)) {
+                cerr << "Error: Invalid dump size limit '" << optarg << "'" << endl;
                 return false;
             }
-            limit = static_cast<uint32_t>(l);
+            else {
+                formatter.SetLimit(l);
+                limit = static_cast<uint32_t>(l);
+            }
             break;
 
         case 'h':
@@ -95,8 +103,8 @@ bool S2pSimh::ParseArguments(span<char*> args)
             simh_filename = optarg;
             break;
 
-        case OPT_DATA:
-            data_filename = optarg;
+        case 'x':
+            hex_data_filename = optarg;
             break;
 
         default:
@@ -124,6 +132,11 @@ bool S2pSimh::ParseArguments(span<char*> args)
         return false;
     }
 
+    if (!binary_data_filename.empty() && !hex_data_filename.empty()) {
+        cerr << "Error: There can only be a single data file" << endl;
+        return false;
+    }
+
     if (truncate) {
         ofstream f(simh_filename);
         if (f.fail()) {
@@ -131,7 +144,11 @@ bool S2pSimh::ParseArguments(span<char*> args)
             return false;
         }
         f.close();
-        ::truncate(simh_filename.c_str(), 0);
+
+        if (::truncate(simh_filename.c_str(), 0) == -1) {
+            cerr << "Error: Can't truncate '" << simh_filename << "'" << endl;
+            return false;
+        }
     }
 
     return true;
@@ -143,7 +160,7 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    simh_file.open(simh_filename, ios::in | ios::out | ios::binary);
+    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
     if (simh_file.fail()) {
         cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << endl;
         return EXIT_FAILURE;
@@ -159,9 +176,9 @@ int S2pSimh::Run(span<char*> args)
 int S2pSimh::Analyze()
 {
     try {
-        simh_file_size = filesystem::file_size(simh_filename);
+        simh_file_size = file_size(simh_filename);
     }
-    catch (const filesystem::filesystem_error &e) {
+    catch (const filesystem_error &e) {
         cerr << "Error: Can't get size of '" << simh_filename << "': " << e.what() << endl;
         return EXIT_FAILURE;
     }
@@ -257,15 +274,62 @@ int S2pSimh::Analyze()
 
 int S2pSimh::Add()
 {
-    if (!data_filename.empty()) {
+    const bool has_data_file = !binary_data_filename.empty() || !hex_data_filename.empty();
+    const bool binary = !binary_data_filename.empty();
+    const string &data_filename = binary ? binary_data_filename : hex_data_filename;
+
+    vector<byte> input_data;
+
+    off_t filesize = 0;
+
+    if (has_data_file) {
+        try {
+            filesize = file_size(data_filename);
+        }
+        catch (const filesystem_error &e) {
+            cerr << "Error: Can't get size of '" << data_filename + "': " << e.what() << endl;
+            return EXIT_FAILURE;
+        }
+
         data_file.open(data_filename, ios::in);
         if (!data_file.is_open()) {
             cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << endl;
             return EXIT_FAILURE;
         }
+
+        if (binary) {
+            input_data.resize(filesize);
+            data_file.read((char*)input_data.data(), input_data.size());
+        }
+        else {
+            string line;
+            while (getline(data_file, line)) {
+                vector<byte> bytes;
+                try {
+                    bytes = HexToBytes(line);
+                }
+                catch (const out_of_range&)
+                {
+                    cerr << "Error: Invalid input data format: '" + line + "'" << endl;
+                }
+
+                copy(bytes.begin(), bytes.end(), back_inserter(input_data));
+            }
+
+            filesize = input_data.size();
+        }
+
+        if (data_file.bad()) {
+            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << endl;
+            return EXIT_FAILURE;
+        }
+
+        data_file.close();
     }
 
     simh_file.seekp(0, ios::end);
+
+    size_t data_index = 0;
 
     for (const auto &object : meta_data) {
         const auto &data = ToLittleEndian(object);
@@ -277,19 +341,13 @@ int S2pSimh::Add()
 
         if (IsRecord(object) && !(object.cls == simh_class::bad_data_record && !object.value)) {
             const uint32_t length = object.value & 0x0fffffff;
-
-            if (data_file.is_open()) {
-                vector<uint8_t> record_data(length);
-                data_file.read((char*)record_data.data(), record_data.size());
-                if (data_file.bad()) {
-                    cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << endl;
-                    return EXIT_FAILURE;
-                }
-                if (data_file.eof()) {
+            if (has_data_file) {
+                if (data_index >= input_data.size()) {
                     cerr << "Error: Not enough record data in '" << data_filename << "'" << endl;
                     return EXIT_FAILURE;
                 }
-                simh_file.write((const char*)record_data.data(), record_data.size());
+                simh_file.write((const char*)input_data.data() + data_index, length);
+                data_index += length;
             }
             else {
                 simh_file.seekp(Pad(length), ios::cur);
@@ -313,7 +371,7 @@ int S2pSimh::Add()
 
 void S2pSimh::PrintClass(const SimhMetaData &meta_data) const
 {
-    cout << "Offset " << old_position << hex << " ($" << old_position << "): Class " << uppercase
+    cout << "Offset " << old_position << hex << "/$" << old_position << ": Class " << uppercase
         << static_cast<int>(meta_data.cls) << nouppercase << dec;
 }
 
@@ -338,11 +396,11 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     if (dump && limit) {
         vector<uint8_t> record(limit < meta_data.value ? limit : meta_data.value);
         if (!ReadRecord(record)) {
-            cerr << "Error: Can't read record of " << meta_data.value << " byte(s): " << strerror(errno) << endl;
+            cerr << "Error: Can't read record of " << meta_data.value << " byte(s)" << endl;
             return false;
         }
 
-        cout << FormatBytes(record, static_cast<int>(record.size()), 0) << '\n';
+        cout << formatter.FormatBytes(record, record.size()) << '\n';
     }
 
     position += Pad(meta_data.value);

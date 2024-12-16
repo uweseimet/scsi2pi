@@ -12,21 +12,21 @@
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, true, sector_sizes)
+: Disk(removable ? SCRM : SCHD, lun, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
     if (apple) {
-        SetVendor("QUANTUM");
-        SetProduct("FIREBALL");
+        Disk::SetProductData( { "QUANTUM", "FIREBALL", "" });
     } else if (removable) {
-        SetProduct("SCSI HD (REM.)");
+        Disk::SetProductData( { "", "SCSI HD (REM.)", "" });
     }
+    SetScsiLevel(scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2);
     SetProtectable(true);
     SetRemovable(removable);
 }
 
-string ScsiHd::GetProductData() const
+string ScsiHd::GetProductDataString() const
 {
     uint64_t capacity = GetBlockCount() * GetBlockSize();
     string unit;
@@ -55,7 +55,7 @@ void ScsiHd::FinalizeSetup()
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {
-        SetProduct(GetProductData(), false);
+        SetProductData( { "", GetProductDataString(), "" }, false);
     }
 }
 

@@ -145,7 +145,7 @@ private:
 
     string GetMode() const
     {
-        return IsTarget() ? "target" : "initiator";
+        return IsTarget() ? "[target]" : "[initiator]";
     }
 
     static string GetSignalName(int);
