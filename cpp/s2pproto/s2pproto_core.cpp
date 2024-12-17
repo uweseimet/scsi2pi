@@ -22,6 +22,8 @@ using namespace google::protobuf::util;
 using namespace s2p_util;
 using namespace initiator_util;
 
+const string S2pProto::APP_NAME = "s2pproto";
+
 void S2pProto::CleanUp() const
 {
     if (bus) {
@@ -46,7 +48,7 @@ void S2pProto::Banner(bool header)
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
-    cout << "Usage: s2pproto [options]\n"
+    cout << "Usage: " + APP_NAME + " [options]\n"
         << "  --scsi-target/-i ID:[LUN] SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                            default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID    Board (initiator) ID (0-7), default is 7.\n"
@@ -67,7 +69,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pproto");
+    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
     if (!bus) {
         return false;
     }

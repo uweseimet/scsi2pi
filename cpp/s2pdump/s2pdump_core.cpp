@@ -26,6 +26,8 @@ using namespace s2p_util;
 using namespace initiator_util;
 using namespace simh_util;
 
+const string S2pDump::APP_NAME = "s2pdump";
+
 void S2pDump::CleanUp() const
 {
     if (bus) {
@@ -50,7 +52,7 @@ void S2pDump::Banner(bool header) const
             << "Copyright (C) 2023-2024 Uwe Seimet\n";
     }
 
-    cout << "Usage: s2pdump [options]\n"
+    cout << "Usage: " + APP_NAME + " [options]\n"
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
         << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
@@ -79,7 +81,7 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pdump");
+    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -301,7 +303,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    s2pdump_logger = CreateLogger("s2pdump");
+    s2pdump_logger = CreateLogger(APP_NAME);
 
     try {
         if (!ParseArguments(args)) {

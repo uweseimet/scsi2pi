@@ -145,4 +145,6 @@ private:
         { byte { 20 }, "Host Managed Zoned Block" },
         { byte { 30 }, "Well Known Logical Unit" }
     };
+
+    static const string APP_NAME;
 };

@@ -37,11 +37,19 @@ bool Tape::SetUp()
 {
     AddCommand(scsi_command::read_6, [this]
         {
-            Read6();
+            Read(false);
+        });
+    AddCommand(scsi_command::read_16, [this]
+        {
+            Read(true);
         });
     AddCommand(scsi_command::write_6, [this]
         {
-            Write6();
+            Write(false);
+        });
+    AddCommand(scsi_command::write_16, [this]
+        {
+            Write(true);
         });
     AddCommand(scsi_command::erase_6, [this]
         {
@@ -106,11 +114,16 @@ void Tape::ValidateFile()
     tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
 }
 
-void Tape::Read6()
+void Tape::Read(bool read_16)
 {
-    // FIXED and SILI must not both be set
-    if ((GetCdbByte(1) & 0x03) == 0x03) {
+    // FIXED and SILI must not both be set, only partition 0 is supported
+    if ((GetCdbByte(1) & 0x03) == 0x03 || (read_16 && GetCdbByte(3))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
+    expl = read_16;
+    if (expl) {
+        Locate(true);
     }
 
     byte_count = GetByteCount();
@@ -131,9 +144,14 @@ void Tape::Read6()
     }
 }
 
-void Tape::Write6()
+void Tape::Write(bool write_16)
 {
     CheckWritePreconditions();
+
+    expl = write_16;
+    if (expl) {
+        Locate(true);
+    }
 
     byte_count = GetByteCount();
     if (byte_count) {
@@ -801,8 +819,8 @@ uint32_t Tape::GetByteCount()
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
-    const int32_t count =
-        fixed ? GetInt24(GetController()->GetCdb(), 2) * GetBlockSize() : GetInt24(GetController()->GetCdb(), 2);
+    const int length = GetInt24(GetController()->GetCdb(), expl ? 12 : 2);
+    const int32_t count = fixed ? length * GetBlockSize() : length;
 
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", tape_position, count));
 
