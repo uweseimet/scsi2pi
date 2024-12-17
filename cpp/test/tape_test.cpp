@@ -406,6 +406,10 @@ TEST(TapeTest, Write16)
 {
     auto [controller, tape] = CreateTape();
 
+    // FCS/LCS
+    controller->SetCdbByte(1, 0b1100);
+    Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
     // Partition 1
     controller->SetCdbByte(3, 1);
     Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
