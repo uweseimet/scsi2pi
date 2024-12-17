@@ -64,4 +64,8 @@ private:
     inline static S2p *instance;
 
     string log_level;
+
+    shared_ptr<logger> s2p_logger;
+
+    inline static const string APP_NAME = "s2p";
 };

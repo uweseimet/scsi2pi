@@ -15,7 +15,8 @@ class CommandDispatcher
 
 public:
 
-    explicit CommandDispatcher(CommandExecutor &e, ControllerFactory &f) : executor(e), controller_factory(f)
+    explicit CommandDispatcher(CommandExecutor &e, ControllerFactory &f, logger &l) : executor(e), controller_factory(
+        f), s2p_logger(l)
     {
     }
     ~CommandDispatcher() = default;
@@ -35,4 +36,6 @@ private:
     CommandExecutor &executor;
 
     ControllerFactory &controller_factory;
+
+    logger &s2p_logger;
 };

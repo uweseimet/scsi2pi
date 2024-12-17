@@ -22,8 +22,6 @@ using namespace google::protobuf::util;
 using namespace s2p_util;
 using namespace initiator_util;
 
-const string S2pProto::APP_NAME = "s2pproto";
-
 void S2pProto::CleanUp() const
 {
     if (bus) {

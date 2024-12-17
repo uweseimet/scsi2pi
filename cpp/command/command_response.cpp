@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
+#include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
@@ -252,7 +253,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        trace("Requested operation(s): " + Join(operations, ","));
+        CreateLogger(CommandContext::LOGGER_NAME)->trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {
@@ -525,7 +526,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            warn("Image file symlink '{}' is broken", path.string());
+            CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file symlink '{}' is broken", path.string());
             return false;
         }
     }
@@ -535,7 +536,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        warn("Image file '{}' is invalid", p.string());
+        CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file '{}' is invalid", p.string());
         return false;
     }
 

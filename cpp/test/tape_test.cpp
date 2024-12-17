@@ -317,6 +317,29 @@ TEST(TapeTest, Read6)
     EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
 }
 
+TEST(TapeTest, Read16)
+{
+    auto [controller, tape] = CreateTape();
+
+    // Partition 1
+    controller->SetCdbByte(3, 1);
+    Dispatch(tape, scsi_command::read_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    const string &filename = CreateImageFile(*tape);
+    fstream file(filename);
+    WriteGoodData(file, 512);
+    WriteGoodData(file, 512);
+    WriteGoodData(file, 512);
+    file.flush();
+
+    // Fixed, block 2
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 2);
+    controller->SetCdbByte(14, 1);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_16));
+    CheckPositions(tape, 1560, 3);
+}
+
 TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
@@ -377,6 +400,36 @@ TEST(TapeTest, Write6)
     EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 520, 1);
+}
+
+TEST(TapeTest, Write16)
+{
+    auto [controller, tape] = CreateTape();
+
+    // FCS/LCS
+    controller->SetCdbByte(1, 0b1100);
+    Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    // Partition 1
+    controller->SetCdbByte(3, 1);
+    Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+
+    const string &filename = CreateImageFile(*tape);
+    fstream file(filename);
+    WriteGoodData(file, 512);
+    WriteGoodData(file, 512);
+    WriteGoodData(file, 512);
+    file.flush();
+
+    // Fixed, block 2
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 2);
+    controller->SetCdbByte(14, 1);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_16));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    file.seekg(1040);
+    CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
+    CheckPositions(tape, 1560, 3);
 }
 
 TEST(TapeTest, Erase6_simh)

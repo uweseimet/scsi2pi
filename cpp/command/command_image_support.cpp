@@ -84,7 +84,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
     default_folder = folder.string();
 
-    info("Default image folder set to '" + default_folder + "'");
+    CreateLogger(CommandContext::LOGGER_NAME)->info("Default image folder set to '" + default_folder + "'");
 
     return "";
 }
@@ -148,7 +148,8 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    CreateLogger(CommandContext::LOGGER_NAME)->info(
+        "Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -195,7 +196,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    info("Deleted image file '{}'", full_filename.string());
+    CreateLogger(CommandContext::LOGGER_NAME)->info("Deleted image file '{}'", full_filename.string());
 
     return context.ReturnSuccessStatus();
 }
@@ -215,7 +216,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    CreateLogger(CommandContext::LOGGER_NAME)->info("Renamed/Moved image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -240,7 +241,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        info("Copied image file symlink '{0}' to '{1}'", from, to);
+        CreateLogger(CommandContext::LOGGER_NAME)->info("Copied image file symlink '{0}' to '{1}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -258,7 +259,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    info("Copied image file '{0}' to '{1}'", from, to);
+    CreateLogger(CommandContext::LOGGER_NAME)->info("Copied image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -296,7 +297,8 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
             full_filename + "': " + e.what());
     }
 
-    info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    CreateLogger(CommandContext::LOGGER_NAME)->info(
+        (protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }

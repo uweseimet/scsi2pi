@@ -117,7 +117,7 @@ void Tape::ValidateFile()
 void Tape::Read(bool read_16)
 {
     // FIXED and SILI must not both be set, only partition 0 is supported
-    if ((GetCdbByte(1) & 0x03) == 0x03 || (read_16 && GetCdbByte(3))) {
+    if ((GetCdbByte(1) & 0b11) == 0b11 || (read_16 && GetCdbByte(3))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -146,6 +146,11 @@ void Tape::Read(bool read_16)
 
 void Tape::Write(bool write_16)
 {
+    // FCS and LCS are not supporte, only partition 0 is supported
+    if (write_16 && (GetCdbByte(1) & 0b1100 || GetCdbByte(3))) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     CheckWritePreconditions();
 
     expl = write_16;

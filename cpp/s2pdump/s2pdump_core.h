@@ -105,14 +105,14 @@ private:
     bool restore = false;
 
     // Required for the termination handler
-    static inline S2pDump *instance;
+    inline static S2pDump *instance;
 
     static constexpr int MINIMUM_BUFFER_SIZE = 1024 * 64;
     static constexpr int DEFAULT_BUFFER_SIZE = 1024 * 1024;
 
     static constexpr const char *DIVIDER = "----------------------------------------";
 
-    static inline const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
+    inline static const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
         { byte { 0 }, "SCHD" },
         { byte { 1 }, "SCTP" },
         { byte { 2 }, "SCLP" },
@@ -121,7 +121,7 @@ private:
         { byte { 7 }, "SCMO" }
     };
 
-    static inline const unordered_map<byte, const char*> SCSI_DEVICE_TYPES = {
+    inline static const unordered_map<byte, const char*> SCSI_DEVICE_TYPES = {
         { byte { 0 }, "Direct Access" },
         { byte { 1 }, "Sequential Access" },
         { byte { 2 }, "Printer" },
@@ -146,5 +146,5 @@ private:
         { byte { 30 }, "Well Known Logical Unit" }
     };
 
-    static const string APP_NAME;
+    inline static const string APP_NAME = "s2pdump";
 };

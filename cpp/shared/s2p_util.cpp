@@ -323,7 +323,6 @@ string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
 
 shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 {
-    // Handling duplicate names is in particular required by the unit tests
     auto l = spdlog::get(name);
     if (!l) {
         l = stdout_color_st(name);

@@ -8,6 +8,7 @@
 
 #include "device.h"
 #include <stdexcept>
+#include "shared/s2p_util.h"
 
 void Device::SetProtected(bool b)
 {
@@ -37,7 +38,9 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            spdlog::warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
+            // TODO Remove magic constant
+            s2p_util::CreateLogger("s2p")->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key,
+                value);
         }
     }
 }

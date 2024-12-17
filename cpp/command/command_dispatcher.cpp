@@ -27,13 +27,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
+        CreateLogger(CommandContext::LOGGER_NAME)->trace("Ignored unknown command with operation opcode {}",
+            static_cast<int>(operation));
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
             to_string(static_cast<int>(operation)));
     }
 
-    trace("Executing {} command", PbOperation_Name(operation));
+    CreateLogger(CommandContext::LOGGER_NAME)->trace("Executing {} command", PbOperation_Name(operation));
 
     CommandResponse response;
 
@@ -215,23 +216,23 @@ bool CommandDispatcher::ShutDown(shutdown_mode mode) const
 {
     switch (mode) {
     case shutdown_mode::stop_s2p:
-        info("s2p shutdown requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("s2p shutdown requested");
         return true;
 
     case shutdown_mode::stop_pi:
-        info("Pi shutdown requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi shutdown requested");
         (void)system("init 0");
-        error("Pi shutdown failed");
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi shutdown failed");
         break;
 
     case shutdown_mode::restart_pi:
-        info("Pi restart requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi restart requested");
         (void)system("init 6");
-        error("Pi restart failed");
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi restart failed");
         break;
 
     default:
-        error("Invalid shutdown mode {}", static_cast<int>(mode));
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 
@@ -249,7 +250,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 
         if (components.size() > 1) {
             if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
-                warn("Error setting log level: {}", error);
+                s2p_logger.warn("Error setting log level: {}", error);
                 return false;
             }
         }
@@ -258,23 +259,23 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     const level::level_enum l = level::from_str(level);
     // Compensate for spdlog using 'off' for unknown levels
     if (to_string_view(l) != level) {
-        warn("Invalid log level '{}'", level);
+        s2p_logger.warn("Invalid log level '{}'", level);
         return false;
     }
 
-    set_level(l);
+    s2p_logger.set_level(l);
     controller_factory.SetLogLevel(id, lun, l);
 
     if (id != -1) {
         if (lun == -1) {
-            info("Set log level for device {0} to '{1}'", id, level);
+            s2p_logger.info("Set log level for device {0} to '{1}'", id, level);
         }
         else {
-            info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
+            s2p_logger.info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
         }
     }
     else {
-        info("Set log level to '{}'", level);
+        s2p_logger.info("Set log level to '{}'", level);
     }
 
     return true;

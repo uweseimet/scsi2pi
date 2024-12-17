@@ -160,7 +160,9 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Read16);
     FRIEND_TEST(TapeTest, Write6);
+    FRIEND_TEST(TapeTest, Write16);
     FRIEND_TEST(TapeTest, Erase6_simh);
     FRIEND_TEST(TapeTest, Erase6_tar);
     FRIEND_TEST(TapeTest, Rewind);
@@ -463,7 +465,6 @@ public:
         GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    ~MockScsiCd() override = default;
 };
 
 class MockOpticalMemory : public OpticalMemory
@@ -480,8 +481,6 @@ public:
         GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);
     }
-
-    ~MockOpticalMemory() override = default;
 };
 
 class MockHostServices : public HostServices
@@ -506,7 +505,6 @@ public:
     {
         GetLogger();
     }
-    ~MockTape() override = default;
 
     void SetReady(bool b)
     {
@@ -522,5 +520,8 @@ public:
     MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));
     MOCK_METHOD(bool, Stop, (shared_ptr<PrimaryDevice>, bool), (const));
 
-    using CommandExecutor::CommandExecutor;
+    MockCommandExecutor(Bus &bus, ControllerFactory &controller_factory) : CommandExecutor(bus,
+        controller_factory, *default_logger())
+    {
+    }
 };

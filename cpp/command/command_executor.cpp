@@ -8,7 +8,6 @@
 
 #include "command_executor.h"
 #include <sstream>
-#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "command_context.h"
@@ -19,7 +18,6 @@
 #include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace spdlog;
 using namespace protobuf_util;
 using namespace s2p_util;
 
@@ -27,10 +25,10 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
 {
     const string &msg = PrintCommand(context.GetCommand(), pb_device);
     if (dryRun) {
-        trace("Validating: " + msg);
+        s2p_logger.trace("Validating: " + msg);
     }
     else {
-        info("Executing: " + msg);
+        s2p_logger.info("Executing: " + msg);
     }
 
     if (!ValidateDevice(context, pb_device)) {
@@ -98,7 +96,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     case CHECK_AUTHENTICATION:
     case NO_OPERATION:
         // Do nothing, just log
-        trace("Received {} command", PbOperation_Name(operation));
+        s2p_logger.trace("Received {} command", PbOperation_Name(operation));
         return context.ReturnSuccessStatus();
 
     default:
@@ -133,10 +131,10 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 
 bool CommandExecutor::Start(PrimaryDevice &device) const
 {
-    info("Start requested for {}", GetIdentifier(device));
+    s2p_logger.info("Start requested for {}", GetIdentifier(device));
 
     if (!device.Start()) {
-        warn("Starting {} failed", GetIdentifier(device));
+        s2p_logger.warn("Starting {} failed", GetIdentifier(device));
     }
 
     return true;
@@ -144,7 +142,7 @@ bool CommandExecutor::Start(PrimaryDevice &device) const
 
 bool CommandExecutor::Stop(PrimaryDevice &device) const
 {
-    info("Stop requested for {}", GetIdentifier(device));
+    s2p_logger.info("Stop requested for {}", GetIdentifier(device));
 
     device.Stop();
 
@@ -155,10 +153,10 @@ bool CommandExecutor::Stop(PrimaryDevice &device) const
 
 bool CommandExecutor::Eject(PrimaryDevice &device) const
 {
-    info("Eject requested for {}", GetIdentifier(device));
+    s2p_logger.info("Eject requested for {}", GetIdentifier(device));
 
     if (!device.Eject(true)) {
-        warn("Ejecting {} failed", GetIdentifier(device));
+        s2p_logger.warn("Ejecting {} failed", GetIdentifier(device));
         return true;
     }
 
@@ -172,7 +170,7 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
 
 bool CommandExecutor::Protect(PrimaryDevice &device) const
 {
-    info("Write protection requested for {}", GetIdentifier(device));
+    s2p_logger.info("Write protection requested for {}", GetIdentifier(device));
 
     device.SetProtected(true);
 
@@ -181,7 +179,7 @@ bool CommandExecutor::Protect(PrimaryDevice &device) const
 
 bool CommandExecutor::Unprotect(PrimaryDevice &device) const
 {
-    info("Write unprotection requested for {}", GetIdentifier(device));
+    s2p_logger.info("Write unprotection requested for {}", GetIdentifier(device));
 
     device.SetProtected(false);
 
@@ -330,7 +328,8 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    info("Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
+    s2p_logger.info(
+        "Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
         + GetIdentifier(*storage_device));
 
     if (!SetBlockSize(context, storage_device, pb_device.block_size())) {
@@ -388,7 +387,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
             PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
 
-        info("Detached " + identifier);
+        s2p_logger.info("Detached " + identifier);
     }
 
     return true;
@@ -399,7 +398,7 @@ void CommandExecutor::DetachAll() const
     if (controller_factory.DeleteAllControllers()) {
         PropertyHandler::Instance().RemoveProperties("device.");
 
-        info("Detached all devices");
+        s2p_logger.info("Detached all devices");
     }
 }
 
@@ -436,7 +435,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     }
 }
 
-void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device)
+void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
 {
     string msg = "Attached ";
     if (device.IsReadOnly()) {
@@ -446,7 +445,7 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device)
         msg += "protected ";
     }
     msg += GetIdentifier(device);
-    info(msg);
+    s2p_logger.info(msg);
 }
 
 string CommandExecutor::SetReservedIds(const string &ids)
@@ -470,10 +469,10 @@ string CommandExecutor::SetReservedIds(const string &ids)
     reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
 
     if (!ids_to_reserve.empty()) {
-        info("Reserved ID(s) set to {}", Join(ids_to_reserve));
+        s2p_logger.info("Reserved ID(s) set to {}", Join(ids_to_reserve));
     }
     else {
-        info("Cleared reserved ID(s)");
+        s2p_logger.info("Cleared reserved ID(s)");
     }
 
     return "";
@@ -510,7 +509,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         storage_device.Open();
     }
     catch (const io_exception &e) {
-        error(e.what());
+        s2p_logger.error(e.what());
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
     }
