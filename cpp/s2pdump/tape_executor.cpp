@@ -100,6 +100,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             return 0;
         }
 
+        // VALID and ILI?
         if (buf[0] & 0xc0) {
             default_length -= GetInt32(buf, 3);
 
