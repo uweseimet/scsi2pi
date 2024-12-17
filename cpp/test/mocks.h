@@ -160,7 +160,9 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Read16);
     FRIEND_TEST(TapeTest, Write6);
+    FRIEND_TEST(TapeTest, Write16);
     FRIEND_TEST(TapeTest, Erase6_simh);
     FRIEND_TEST(TapeTest, Erase6_tar);
     FRIEND_TEST(TapeTest, Rewind);

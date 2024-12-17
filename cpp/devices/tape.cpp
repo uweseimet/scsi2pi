@@ -146,6 +146,11 @@ void Tape::Read(bool read_16)
 
 void Tape::Write(bool write_16)
 {
+    // Only partition 0 is supported
+    if (write_16 && GetCdbByte(3)) {
+        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+    }
+
     CheckWritePreconditions();
 
     expl = write_16;
