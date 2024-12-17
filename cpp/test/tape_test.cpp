@@ -71,6 +71,12 @@ static void WriteGoodData(ostream &file, int length = 512)
     WriteGoodData(file, data, length);
 }
 
+static void WriteEndOfData(ostream &file)
+{
+    const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
+    WriteSimhObject(file, end_of_data);
+}
+
 static void Rewind(shared_ptr<Tape> tape)
 {
     Dispatch(tape, scsi_command::rewind);
@@ -185,14 +191,13 @@ TEST(TapeTest, Read6)
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
     const vector<uint8_t> &bad_data = { 0x00, 0x02, 0x00, 0x80 };
     const vector<uint8_t> &bad_data_not_recovered = { 0x00, 0x00, 0x00, 0x80 };
-    const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
     WriteSimhObject(file, good_data_non_fixed);
     file << "123456789012";
     WriteSimhObject(file, good_data_non_fixed);
     WriteGoodData(file);
     WriteSimhObject(file, bad_data, 512, bad_data);
     WriteSimhObject(file, bad_data_not_recovered);
-    WriteSimhObject(file, end_of_data);
+    WriteEndOfData(file);
     file.flush();
 
     Rewind(tape);
@@ -330,6 +335,7 @@ TEST(TapeTest, Read16)
     WriteGoodData(file, 512);
     WriteGoodData(file, 512);
     WriteGoodData(file, 512);
+    WriteEndOfData(file);
     file.flush();
 
     // Fixed, block 2
@@ -338,6 +344,15 @@ TEST(TapeTest, Read16)
     controller->SetCdbByte(14, 1);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_16));
     CheckPositions(tape, 1560, 3);
+
+    // Fixed, non-existing block 10
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 10);
+    controller->SetCdbByte(14, 1);
+    Dispatch(tape, scsi_command::read_16, sense_key::no_sense, asc::locate_operation_failure);
+    RequestSense(controller, tape);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Write6)
@@ -430,6 +445,15 @@ TEST(TapeTest, Write16)
     file.seekg(1040);
     CheckMetaData(file, { simh_class::tape_mark_good_data_record, 512 });
     CheckPositions(tape, 1560, 3);
+
+    // Fixed, non-existing block 10
+    controller->SetCdbByte(1, 0x01);
+    controller->SetCdbByte(11, 10);
+    controller->SetCdbByte(14, 1);
+    Dispatch(tape, scsi_command::write_16, sense_key::no_sense, asc::locate_operation_failure);
+    RequestSense(controller, tape);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
 }
 
 TEST(TapeTest, Erase6_simh)
@@ -511,14 +535,13 @@ TEST(TapeTest, Space6_simh)
 
     // Write 6 filemarks and 1 end-of-data
     ofstream file(filename);
-    const vector<uint8_t> &end_of_data = { 'P', '2', 'S', 0x73 };
     WriteFilemark(file);
     WriteFilemark(file);
     WriteFilemark(file);
     WriteFilemark(file);
     WriteFilemark(file);
     WriteFilemark(file);
-    WriteSimhObject(file, end_of_data);
+    WriteEndOfData(file);
     file.flush();
 
     Rewind(tape);
@@ -661,7 +684,7 @@ TEST(TapeTest, Space6_simh)
     WriteGoodData(file);
     WriteFilemark(file);
     WriteGoodData(file);
-    WriteSimhObject(file, end_of_data);
+    WriteEndOfData(file);
     file.flush();
 
     Rewind(tape);
