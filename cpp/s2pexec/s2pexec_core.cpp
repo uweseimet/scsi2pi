@@ -19,7 +19,7 @@ using namespace filesystem;
 using namespace s2p_util;
 using namespace initiator_util;
 
-const string S2pExec::APP_NAME = "s2pproto";
+const string S2pExec::APP_NAME = "s2pexec";
 
 void S2pExec::CleanUp() const
 {
@@ -521,10 +521,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     string hex = formatter.FormatBytes(data, data.size(), hex_only);
 
     if (filename.empty()) {
-        if (s2pexec_logger->level() <= level::debug)
-        {
-            cout << hex << '\n';
-        }
+        cout << hex << '\n';
     }
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
