@@ -27,14 +27,13 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        CreateLogger(CommandContext::LOGGER_NAME)->trace("Ignored unknown command with operation opcode {}",
-            static_cast<int>(operation));
+        s2p_logger.trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
             to_string(static_cast<int>(operation)));
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->trace("Executing {} command", PbOperation_Name(operation));
+    s2p_logger.trace("Executing {} command", PbOperation_Name(operation));
 
     CommandResponse response;
 
@@ -216,23 +215,23 @@ bool CommandDispatcher::ShutDown(shutdown_mode mode) const
 {
     switch (mode) {
     case shutdown_mode::stop_s2p:
-        CreateLogger(CommandContext::LOGGER_NAME)->info("s2p shutdown requested");
+        s2p_logger.info("s2p shutdown requested");
         return true;
 
     case shutdown_mode::stop_pi:
-        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi shutdown requested");
+        s2p_logger.info("Pi shutdown requested");
         (void)system("init 0");
-        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi shutdown failed");
+        s2p_logger.error("Pi shutdown failed");
         break;
 
     case shutdown_mode::restart_pi:
-        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi restart requested");
+        s2p_logger.info("Pi restart requested");
         (void)system("init 6");
-        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi restart failed");
+        s2p_logger.error("Pi restart failed");
         break;
 
     default:
-        CreateLogger(CommandContext::LOGGER_NAME)->error("Invalid shutdown mode {}", static_cast<int>(mode));
+        s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 
