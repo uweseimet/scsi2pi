@@ -249,7 +249,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 
         if (components.size() > 1) {
             if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
-                warn("Error setting log level: {}", error);
+                s2p_logger.warn("Error setting log level: {}", error);
                 return false;
             }
         }
@@ -258,23 +258,23 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     const level::level_enum l = level::from_str(level);
     // Compensate for spdlog using 'off' for unknown levels
     if (to_string_view(l) != level) {
-        warn("Invalid log level '{}'", level);
+        s2p_logger.warn("Invalid log level '{}'", level);
         return false;
     }
 
-    set_level(l);
+    s2p_logger.set_level(l);
     controller_factory.SetLogLevel(id, lun, l);
 
     if (id != -1) {
         if (lun == -1) {
-            info("Set log level for device {0} to '{1}'", id, level);
+            s2p_logger.info("Set log level for device {0} to '{1}'", id, level);
         }
         else {
-            info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
+            s2p_logger.info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
         }
     }
     else {
-        info("Set log level to '{}'", level);
+        s2p_logger.info("Set log level to '{}'", level);
     }
 
     return true;

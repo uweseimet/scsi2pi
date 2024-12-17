@@ -35,14 +35,16 @@ using namespace protobuf_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::Instance().CreateBus(true, in_process, "s2p", log_signals);
+    bus = BusFactory::Instance().CreateBus(true, in_process, APP_NAME, log_signals);
     if (!bus) {
         return false;
     }
 
-    executor = make_unique<CommandExecutor>(*bus, controller_factory);
+    s2p_logger = CreateLogger("[" + APP_NAME + "]");
 
-    dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory);
+    executor = make_unique<CommandExecutor>(*bus, controller_factory, *s2p_logger);
+
+    dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory, *s2p_logger);
 
     return true;
 }
@@ -99,7 +101,7 @@ void S2p::LogDevices(const string &devices) const
     string line;
 
     while (getline(ss, line)) {
-        info(line);
+        s2p_logger->info(line);
     }
 }
 
@@ -273,7 +275,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
             if (!controller_factory.SetScriptFile(script_file)) {
                 throw parser_exception("Can't create script file '" + script_file + "': " + strerror(errno));
             }
-            info("Generating SCSI command script file '" + script_file + "'");
+            s2p_logger->info("Generating SCSI command script file '" + script_file + "'");
         }
 
         if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p, port)
@@ -330,9 +332,9 @@ string S2p::MapExtensions() const
 
 void S2p::LogProperties() const
 {
-    trace("Effective startup properties:");
+    s2p_logger->trace("Effective startup properties:");
     for (const auto& [k, v] : property_handler.GetProperties()) {
-        trace("  {0}={1}", k, v);
+        s2p_logger->trace("  {0}={1}", k, v);
     }
 }
 

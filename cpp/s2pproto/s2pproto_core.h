@@ -54,5 +54,5 @@ private:
     // Required for the termination handler
     inline static S2pProto *instance;
 
-    static const string APP_NAME;
+    inline static const string APP_NAME = "s2pproto";
 };

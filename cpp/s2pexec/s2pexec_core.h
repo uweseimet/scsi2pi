@@ -83,9 +83,9 @@ private:
     string last_input;
 
     // Required for the termination handler
-    static inline S2pExec *instance;
+    inline static S2pExec *instance;
 
-    static constexpr int DEFAULT_BUFFER_SIZE = 131072;
+    static const int DEFAULT_BUFFER_SIZE = 131072;
 
-    static const string APP_NAME;
+    inline static const string APP_NAME = "s2pexec";
 };

@@ -19,8 +19,6 @@ using namespace filesystem;
 using namespace s2p_util;
 using namespace initiator_util;
 
-const string S2pExec::APP_NAME = "s2pexec";
-
 void S2pExec::CleanUp() const
 {
     if (bus) {

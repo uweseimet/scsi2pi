@@ -184,7 +184,7 @@ TEST(CommandExecutorTest, Attach)
 
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition definition;
     PbCommand command;
     CommandContext context(command);
@@ -260,7 +260,7 @@ TEST(CommandExecutorTest, Insert)
     const auto bus = make_shared<MockBus>();
     const auto [controller, device] = CreateDevice(SCHD);
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition definition;
     PbCommand command;
     CommandContext context(command);
@@ -315,7 +315,7 @@ TEST(CommandExecutorTest, Detach)
 
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     CommandContext context(command);
 
@@ -338,7 +338,7 @@ TEST(CommandExecutorTest, DetachAll)
 
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
 
     const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
@@ -353,7 +353,7 @@ TEST(CommandExecutorTest, SetReservedIds)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
 
     string error = executor->SetReservedIds("xyz");
     EXPECT_FALSE(error.empty());
@@ -391,7 +391,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     CommandContext context(command);
 
@@ -427,7 +427,7 @@ TEST(CommandExecutorTest, EnsureLun0)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     CommandContext context(command);
 
@@ -447,7 +447,7 @@ TEST(CommandExecutorTest, CreateDevice)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition device;
     PbCommand command;
     CommandContext context(command);
@@ -469,7 +469,7 @@ TEST(CommandExecutorTest, SetBlockSize)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     CommandContext context(command);
 
@@ -490,7 +490,7 @@ TEST(CommandExecutorTest, ValidateOperation)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command_attach;
     command_attach.set_operation(ATTACH);
     CommandContext context_attach(command_attach);
@@ -565,7 +565,7 @@ TEST(CommandExecutorTest, ValidateDevice)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     command.set_operation(ATTACH);
     CommandContext context_attach(command);
@@ -608,7 +608,7 @@ TEST(CommandExecutorTest, SetProductData)
 {
     const auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory);
+    const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     CommandContext context(command);
     PbDeviceDefinition definition;

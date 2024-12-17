@@ -9,8 +9,11 @@
 #pragma once
 
 #include <mutex>
+#include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "devices/storage_device.h"
+
+using namespace spdlog;
 
 class CommandContext;
 
@@ -19,8 +22,8 @@ class CommandExecutor
 
 public:
 
-    CommandExecutor(Bus &bus, ControllerFactory &controller_factory)
-    : bus(bus), controller_factory(controller_factory)
+    CommandExecutor(Bus &bus, ControllerFactory &controller_factory, logger &logger)
+    : bus(bus), controller_factory(controller_factory), s2p_logger(logger)
     {
     }
     ~CommandExecutor() = default;
@@ -74,13 +77,15 @@ private:
     static string GetTypeString(const Device&);
     static string GetIdentifier(const Device&);
 
-    static void DisplayDeviceInfo(const PrimaryDevice&);
+    void DisplayDeviceInfo(const PrimaryDevice&) const;
     static bool CheckForReservedFile(const CommandContext&, const string&);
     static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 
     Bus &bus;
 
     ControllerFactory &controller_factory;
+
+    logger &s2p_logger;
 
     mutex execution_locker;
 

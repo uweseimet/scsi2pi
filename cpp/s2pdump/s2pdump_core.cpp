@@ -26,8 +26,6 @@ using namespace s2p_util;
 using namespace initiator_util;
 using namespace simh_util;
 
-const string S2pDump::APP_NAME = "s2pdump";
-
 void S2pDump::CleanUp() const
 {
     if (bus) {
