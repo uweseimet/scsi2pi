@@ -39,8 +39,8 @@ void Device::SetParams(const param_map &set_params)
         }
         else {
             // TODO Remove magic constant
-            s2p_util::CreateLogger("s2p")->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key,
-                value);
+            s2p_util::CreateLogger("[s2p]")->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type),
+                key, value);
         }
     }
 }

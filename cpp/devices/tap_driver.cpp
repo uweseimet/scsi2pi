@@ -33,7 +33,7 @@ TapDriver::TapDriver()
 bool TapDriver::Init(const param_map &const_params)
 {
     // TODO Remove magic constant
-    s2p_logger = CreateLogger("s2p");
+    s2p_logger = CreateLogger("[s2p]");
 
     param_map params = const_params;
     stringstream s(params[INTERFACE]);
