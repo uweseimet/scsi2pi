@@ -100,17 +100,14 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             return 0;
         }
 
-        // ILI ?
-        if (buf[0] & 0x40) {
-            if (buf[0] & 0x80) {
-                default_length -= GetInt32(buf, 3);
-            }
-            else {
-                throw io_exception("INFORMATION field is not valid");
-            }
-        }
+        if (buf[0] & 0xc0) {
+            default_length -= GetInt32(buf, 3);
 
-        SpaceBack();
+            SpaceBack();
+        }
+        else {
+            return 0xff;
+        }
     }
 }
 
