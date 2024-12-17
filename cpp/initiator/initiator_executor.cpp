@@ -266,6 +266,7 @@ void InitiatorExecutor::MsgIn()
     case static_cast<int>(message_code::command_complete):
     case static_cast<int>(message_code::linked_command_complete):
     case static_cast<int>(message_code::linked_command_complete_with_flag):
+        initiator_logger.trace("Received COMMAND COMPLETE/LINKED COMMANDCOMPLETE/LINKED COMMAN COMPLETE WITH FLAG");
         break;
 
     default:
