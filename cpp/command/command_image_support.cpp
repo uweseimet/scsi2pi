@@ -8,7 +8,6 @@
 
 #include "command_image_support.h"
 #include <fstream>
-#include <spdlog/spdlog.h>
 #include "command_context.h"
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
@@ -57,7 +56,7 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -84,12 +83,12 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
     default_folder = folder.string();
 
-    info("Default image folder set to '" + default_folder + "'");
+    logger.info("Default image folder set to '" + default_folder + "'");
 
     return "";
 }
 
-bool CommandImageSupport::CreateImage(const CommandContext &context) const
+bool CommandImageSupport::CreateImage(const CommandContext &context, logger &logger)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -148,13 +147,13 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    logger.info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::DeleteImage(const CommandContext &context) const
+bool CommandImageSupport::DeleteImage(const CommandContext &context, logger &logger)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -195,12 +194,12 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    info("Deleted image file '{}'", full_filename.string());
+    logger.info("Deleted image file '{}'", full_filename.string());
 
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::RenameImage(const CommandContext &context) const
+bool CommandImageSupport::RenameImage(const CommandContext &context, logger &logger)
 {
     string from;
     string to;
@@ -215,12 +214,12 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    logger.info("Renamed/Moved image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::CopyImage(const CommandContext &context) const
+bool CommandImageSupport::CopyImage(const CommandContext &context, logger &logger)
 {
     string from;
     string to;
@@ -240,7 +239,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        info("Copied image file symlink '{0}' to '{1}'", from, to);
+        logger.info("Copied image file symlink '{0}' to '{1}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -258,12 +257,12 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    info("Copied image file '{0}' to '{1}'", from, to);
+    logger.info("Copied image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::SetImagePermissions(const CommandContext &context) const
+bool CommandImageSupport::SetImagePermissions(const CommandContext &context, logger &logger)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -296,7 +295,7 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
             full_filename + "': " + e.what());
     }
 
-    info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    logger.info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }
