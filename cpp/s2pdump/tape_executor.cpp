@@ -28,7 +28,7 @@ void TapeExecutor::SpaceBack()
     SetInt24(cdb, 2, -1);
 
     if (initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, LONG_TIMEOUT, false)) {
-        throw io_exception("Can't space one block back");
+        throw io_exception("Can't space back one block");
     }
 }
 
@@ -69,7 +69,10 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         cdb[4] = 14;
         const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
             false);
-        if (status && status != 0x02) {
+        if (status == 0xff) {
+            return status;
+        }
+        else if (status && status != 0x02) {
             throw io_exception(fmt::format("Unknown error status {}", status));
         }
 
@@ -87,28 +90,23 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             continue;
         }
 
-        if (status == static_cast<int>(status_code::check_condition)) {
-            if (sense_key == sense_key::blank_check) {
-                GetLogger().debug("No more data");
-                return NO_MORE_DATA;
-            }
+        if (sense_key == sense_key::blank_check) {
+            GetLogger().debug("No more data");
+            return NO_MORE_DATA;
+        }
 
-            if (buf[2] & 0x80) {
-                GetLogger().debug("Encountered filemark");
-                return 0;
-            }
+        if (buf[2] & 0x80) {
+            GetLogger().debug("Encountered filemark");
+            return 0;
+        }
 
-            // ILI ?
-            if (buf[0] & 0x40) {
-                if (buf[0] & 0x80) {
-                    default_length -= GetInt32(buf, 3);
-                }
-                else {
-                    throw io_exception("INFORMATION field is not valid");
-                }
+        // ILI ?
+        if (buf[0] & 0x40) {
+            if (buf[0] & 0x80) {
+                default_length -= GetInt32(buf, 3);
             }
             else {
-                throw io_exception("Unknown CHECK CONDITION status status");
+                throw io_exception("INFORMATION field is not valid");
             }
         }
 
