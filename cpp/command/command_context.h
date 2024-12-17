@@ -45,7 +45,8 @@ public:
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
-    inline static const string LOGGER_NAME = "s2p";
+    // TODO Merge with other locations of this constant
+    inline static const string LOGGER_NAME = "[s2p]";
 
 private:
 
