@@ -79,12 +79,12 @@ private:
     void WriteFilemarks(bool);
     void FormatMedium();
     void ReadPosition() const;
-    void Locate(bool);
+    bool Locate(bool);
 
     void WriteMetaData(Tape::object_type, uint32_t = 0);
     SimhMetaData FindNextObject(Tape::object_type, int32_t, bool);
     bool ReadNextMetaData(SimhMetaData&, bool);
-    void FindObject(uint32_t);
+    bool FindObject(uint32_t);
 
     [[noreturn]] void RaiseBeginningOfPartition(int32_t);
     [[noreturn]] void RaiseEndOfPartition(int32_t);

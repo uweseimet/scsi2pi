@@ -103,6 +103,7 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::write_fault, "PERIPHERAL DEVICE WRITE FAULT" },
     { asc::write_error, "WRITE ERROR" },
     { asc::read_error, "READ ERROR" },
+    { asc::locate_operation_failure, "LOCATE OPERATION FAILURE" },
     { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
     { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
     { asc::lba_out_of_range, "LBA OUT OF RANGE" },

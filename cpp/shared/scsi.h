@@ -188,6 +188,7 @@ enum class asc
     write_fault = 0x03,
     write_error = 0x0c,
     read_error = 0x11,
+    locate_operation_failure = 0x14,
     parameter_list_length_error = 0x1a,
     invalid_command_operation_code = 0x20,
     lba_out_of_range = 0x21,

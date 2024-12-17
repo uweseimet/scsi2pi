@@ -78,10 +78,12 @@ bool Tape::SetUp()
     AddCommand(scsi_command::locate_10, [this]
         {
             Locate(false);
+            StatusPhase();
         });
     AddCommand(scsi_command::locate_16, [this]
         {
             Locate(true);
+            StatusPhase();
         });
     AddCommand(scsi_command::read_position, [this]
         {
@@ -123,7 +125,10 @@ void Tape::Read(bool read_16)
 
     expl = read_16;
     if (expl) {
-        Locate(true);
+        if (!Locate(true)) {
+            SetInformation(GetCdbInt24(12));
+            throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
+        }
     }
 
     byte_count = GetByteCount();
@@ -155,7 +160,10 @@ void Tape::Write(bool write_16)
 
     expl = write_16;
     if (expl) {
-        Locate(true);
+        if (!Locate(true)) {
+            SetInformation(GetCdbInt24(12));
+            throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
+        }
     }
 
     byte_count = GetByteCount();
@@ -500,8 +508,8 @@ void Tape::WriteFilemarks(bool write_filemarks_16)
         return;
     }
 
-    // Since SSC-3 setmarks are not supported anymore
-    if (GetCdbByte(1) & 0x02) {
+    // Since SSC-3 setmarks are not supported anymore, FCS/LCS are not supported, only partition 0 is supported
+    if (GetCdbByte(1) & 0x02 || (write_filemarks_16 && (GetCdbByte(1) & 0b1100 || GetCdbByte(3)))) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
     }
 
@@ -511,7 +519,10 @@ void Tape::WriteFilemarks(bool write_filemarks_16)
     if (write_filemarks_16) {
         if (const auto identifier = static_cast<uint32_t>(GetCdbInt64(4)); identifier) {
             ResetPositions();
-            FindObject(identifier);
+            if (!FindObject(identifier)) {
+                SetInformation(GetCdbInt24(12));
+                throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
+            }
         }
 
         count = GetCdbInt24(12);
@@ -527,7 +538,7 @@ void Tape::WriteFilemarks(bool write_filemarks_16)
     StatusPhase();
 }
 
-void Tape::Locate(bool locate_16)
+bool Tape::Locate(bool locate_16)
 {
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
@@ -558,12 +569,12 @@ void Tape::Locate(bool locate_16)
         } else {
             ResetPositions();
             if (identifier) {
-                FindObject(identifier);
+                return FindObject(identifier);
             }
         }
     }
 
-    StatusPhase();
+    return true;
 }
 
 void Tape::ReadPosition() const
@@ -797,11 +808,15 @@ bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
     return true;
 }
 
-void Tape::FindObject(uint32_t identifier)
+bool Tape::FindObject(uint32_t identifier)
 {
     while (true) {
         SimhMetaData meta_data;
         ReadSimhMetaData(meta_data, 0, false);
+
+        if (meta_data.cls == simh_class::private_marker && (meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC) {
+            return false;
+        }
 
         if (IsRecord(meta_data) || (meta_data.cls == simh_class::bad_data_record && !meta_data.value)
             || (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value)) {
@@ -809,7 +824,7 @@ void Tape::FindObject(uint32_t identifier)
 
             --identifier;
             if (!identifier) {
-                break;
+                return true;
             }
         }
     }
