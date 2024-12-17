@@ -243,6 +243,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
             s2p_logger->set_pattern(log_pattern);
+            spdlog::set_pattern(log_pattern);
             controller_factory.SetLogPattern(log_pattern);
         }
 
