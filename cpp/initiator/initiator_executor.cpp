@@ -79,6 +79,10 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         }
     }
 
+    if ((duration_cast<seconds>(steady_clock::now() - now).count()) >= timeout) {
+        initiator_logger.error("Timeout");
+    }
+
     if (log) {
         LogStatus();
     }

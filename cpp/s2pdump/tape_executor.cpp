@@ -27,7 +27,7 @@ void TapeExecutor::SpaceBack()
     cdb[1] = 0b000;
     SetInt24(cdb, 2, -1);
 
-    if (initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, SHORT_TIMEOUT, false)) {
+    if (initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, LONG_TIMEOUT, false)) {
         throw io_exception("Can't space back");
     }
 }
@@ -37,7 +37,7 @@ int TapeExecutor::WriteFilemark()
     vector<uint8_t> cdb(6);
     SetInt24(cdb, 2, 1);
 
-    return initiator_executor->Execute(scsi_command::write_filemarks_6, cdb, { }, 0, SHORT_TIMEOUT, true);
+    return initiator_executor->Execute(scsi_command::write_filemarks_6, cdb, { }, 0, LONG_TIMEOUT, true);
 }
 
 int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
