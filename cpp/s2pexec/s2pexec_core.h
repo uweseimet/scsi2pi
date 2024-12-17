@@ -86,4 +86,6 @@ private:
     static inline S2pExec *instance;
 
     static constexpr int DEFAULT_BUFFER_SIZE = 131072;
+
+    static const string APP_NAME;
 };

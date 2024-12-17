@@ -52,5 +52,7 @@ private:
     string log_level = "info";
 
     // Required for the termination handler
-    static inline S2pProto *instance;
+    inline static S2pProto *instance;
+
+    static const string APP_NAME;
 };

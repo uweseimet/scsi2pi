@@ -70,8 +70,8 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void Read6();
-    void Write6();
+    void Read(bool);
+    void Write(bool);
     void Erase6();
     void ReadBlockLimits() const;
     void Rewind();
@@ -142,6 +142,8 @@ private:
     off_t max_file_size = 0;
 
     bool tar_file = false;
+
+    bool expl = false;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;

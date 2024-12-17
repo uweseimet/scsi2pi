@@ -61,7 +61,7 @@ private:
     PropertyHandler &property_handler = PropertyHandler::Instance();
 
     // Required for the termination handler
-    static inline S2p *instance;
+    inline static S2p *instance;
 
     string log_level;
 };

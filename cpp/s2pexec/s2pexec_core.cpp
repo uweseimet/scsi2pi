@@ -19,6 +19,8 @@ using namespace filesystem;
 using namespace s2p_util;
 using namespace initiator_util;
 
+const string S2pExec::APP_NAME = "s2pproto";
+
 void S2pExec::CleanUp() const
 {
     if (bus) {
@@ -42,7 +44,7 @@ void S2pExec::Banner(bool header, bool usage)
     }
 
     if (usage) {
-        cout << "Usage: s2pexec [options]\n"
+        cout << "Usage: " + APP_NAME + " [options]\n"
             << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
             << "                                default LUN is 0.\n"
             << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
@@ -71,7 +73,7 @@ void S2pExec::Banner(bool header, bool usage)
 
 bool S2pExec::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, "s2pexec");
+    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -223,8 +225,6 @@ bool S2pExec::ParseArguments(span<char*> args)
         return true;
     }
 
-    s2pexec_logger = CreateLogger("s2pexec");
-
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
         throw parser_exception("Invalid log level: '" + log_level + "'");
     }
@@ -357,6 +357,8 @@ bool S2pExec::RunInteractive(bool in_process)
 
 int S2pExec::Run(span<char*> args, bool in_process)
 {
+    s2pexec_logger = CreateLogger(APP_NAME);
+
     if (args.size() < 2 || in_process) {
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
     }
