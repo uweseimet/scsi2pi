@@ -53,7 +53,7 @@ public:
     void RetrieveStats() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
-    void EnableInterface() const;
+    void EnableInterface();
 
     vector<PbStatistics> GetStatistics() const override;
 

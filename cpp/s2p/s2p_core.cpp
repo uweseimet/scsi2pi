@@ -241,15 +241,15 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
             ignore_conf);
 
+        if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+            s2p_logger->set_pattern(log_pattern);
+            controller_factory.SetLogPattern(log_pattern);
+        }
+
         // This sets the global level only, there no attached devices yet
         log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
         if (!dispatcher->SetLogLevel(log_level)) {
             throw parser_exception("Invalid log level: '" + log_level + "'");
-        }
-
-        if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
-            s2p_logger->set_pattern(log_pattern);
-            controller_factory.SetLogPattern(log_pattern);
         }
 
         // Log the properties (on trace level) *after* the log level has been set

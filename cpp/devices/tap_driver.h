@@ -12,6 +12,7 @@
 #pragma once
 
 #include <span>
+#include <spdlog/spdlog.h>
 #include "base/device.h"
 
 #ifndef ETH_FRAME_LEN
@@ -19,6 +20,7 @@ static constexpr int ETH_FRAME_LEN = 1514;
 #endif
 
 using namespace std;
+using namespace spdlog;
 
 class TapDriver
 {
@@ -47,7 +49,7 @@ public:
     }
 
     // Enable/Disable the piscsi0 interface
-    static string IpLink(bool);
+    static string IpLink(bool, logger&);
 
 private:
 
@@ -69,6 +71,8 @@ private:
     string bridge_interface;
 
     bool bridge_created = false;
+
+    shared_ptr<logger> s2p_logger;
 
     inline static const string BRIDGE_INTERFACE_NAME = "piscsi0";
     inline static const string BRIDGE_NAME = "piscsi_bridge";
