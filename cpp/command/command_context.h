@@ -45,6 +45,8 @@ public:
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
+    inline static const string LOGGER_NAME = "s2p";
+
 private:
 
     bool ReturnStatus(bool, const string&, PbErrorCode, bool) const;

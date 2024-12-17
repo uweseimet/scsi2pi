@@ -27,13 +27,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
+        CreateLogger(CommandContext::LOGGER_NAME)->trace("Ignored unknown command with operation opcode {}",
+            static_cast<int>(operation));
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
             to_string(static_cast<int>(operation)));
     }
 
-    trace("Executing {} command", PbOperation_Name(operation));
+    CreateLogger(CommandContext::LOGGER_NAME)->trace("Executing {} command", PbOperation_Name(operation));
 
     CommandResponse response;
 
@@ -215,23 +216,23 @@ bool CommandDispatcher::ShutDown(shutdown_mode mode) const
 {
     switch (mode) {
     case shutdown_mode::stop_s2p:
-        info("s2p shutdown requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("s2p shutdown requested");
         return true;
 
     case shutdown_mode::stop_pi:
-        info("Pi shutdown requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi shutdown requested");
         (void)system("init 0");
-        error("Pi shutdown failed");
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi shutdown failed");
         break;
 
     case shutdown_mode::restart_pi:
-        info("Pi restart requested");
+        CreateLogger(CommandContext::LOGGER_NAME)->info("Pi restart requested");
         (void)system("init 6");
-        error("Pi restart failed");
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Pi restart failed");
         break;
 
     default:
-        error("Invalid shutdown mode {}", static_cast<int>(mode));
+        CreateLogger(CommandContext::LOGGER_NAME)->error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 
