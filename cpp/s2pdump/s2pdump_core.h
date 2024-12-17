@@ -104,6 +104,8 @@ private:
 
     bool restore = false;
 
+    inline static bool active = true;
+
     // Required for the termination handler
     inline static S2pDump *instance;
 

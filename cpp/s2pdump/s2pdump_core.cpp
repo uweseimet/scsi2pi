@@ -39,7 +39,7 @@ void S2pDump::TerminationHandler(int)
 
     instance->CleanUp();
 
-    // Process will terminate automatically
+    active = false;
 }
 
 void S2pDump::Banner(bool header) const
@@ -556,7 +556,7 @@ string S2pDump::DumpRestoreDisk(fstream &file)
 
     const auto start_time = high_resolution_clock::now();
 
-    while (remaining) {
+    while (remaining && active) {
         const auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
         auto sector_count = byte_count / sector_size;
         if (byte_count % sector_size) {
@@ -644,7 +644,7 @@ string S2pDump::ReadWriteDisk(fstream &file, int sector_offset, uint32_t sector_
 
 void S2pDump::DumpTape(ostream &file)
 {
-    while (true) {
+    while (active) {
         const int length = tape_executor->ReadWrite(buffer, 0);
         if (length == TapeExecutor::NO_MORE_DATA) {
             break;
