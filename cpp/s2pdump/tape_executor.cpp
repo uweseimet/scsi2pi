@@ -90,7 +90,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             continue;
         }
 
-        if (sense_key == sense_key::blank_check) {
+        if (buf[2] & 0x40 || sense_key == sense_key::blank_check) {
             GetLogger().debug("No more data");
             return NO_MORE_DATA;
         }
@@ -101,7 +101,7 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
         }
 
         // VALID and ILI?
-        if (buf[0] & 0xc0) {
+        if (buf[0] & 0x80 && buf[2] & 0x20) {
             default_length -= GetInt32(buf, 3);
 
             SpaceBack();
