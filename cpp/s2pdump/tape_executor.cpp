@@ -28,7 +28,7 @@ void TapeExecutor::SpaceBack()
     SetInt24(cdb, 2, -1);
 
     if (initiator_executor->Execute(scsi_command::space_6, cdb, { }, 0, LONG_TIMEOUT, false)) {
-        throw io_exception("Can't space back");
+        throw io_exception("Can't space one block back");
     }
 }
 
