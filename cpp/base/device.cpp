@@ -8,7 +8,6 @@
 
 #include "device.h"
 #include <stdexcept>
-#include "shared/s2p_util.h"
 
 void Device::SetProtected(bool b)
 {
