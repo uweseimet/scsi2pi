@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "command_response.h"
-#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "command_context.h"
@@ -19,7 +18,6 @@
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
@@ -245,7 +243,8 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
 }
 
 void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids) const
+    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
+    logger &logger) const
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -254,7 +253,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        CreateLogger(CommandContext::LOGGER_NAME)->trace("Requested operation(s): " + Join(operations, ","));
+        logger.trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {

@@ -67,7 +67,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case SERVER_INFO:
         response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
-            executor.GetReservedIds());
+            executor.GetReservedIds(), s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:

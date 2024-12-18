@@ -10,10 +10,12 @@
 
 #include <filesystem>
 #include <set>
+#include <spdlog/spdlog.h>
 #include "base/device.h"
 #include "base/s2p_defs.h"
 
 using namespace filesystem;
+using namespace spdlog;
 using namespace s2p_interface;
 
 class PrimaryDevice;
@@ -31,7 +33,7 @@ public:
     void GetDeviceTypesInfo(PbDeviceTypesInfo&) const;
     void GetVersionInfo(PbVersionInfo&) const;
     void GetServerInfo(PbServerInfo&, const PbCommand&, const unordered_set<shared_ptr<PrimaryDevice>>&,
-        const unordered_set<int>&) const;
+        const unordered_set<int>&, logger&) const;
     void GetNetworkInterfacesInfo(PbNetworkInterfacesInfo&) const;
     void GetMappingInfo(PbMappingInfo&) const;
     void GetLogLevelInfo(PbLogLevelInfo&) const;
