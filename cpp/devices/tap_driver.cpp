@@ -79,8 +79,8 @@ bool TapDriver::Init(const param_map &const_params, logger &logger)
         return false;
     }
 
-    const auto &cleanUp = [this, ip_fd](const string &msg, class logger &logger) {
-        logger.error(msg);
+    const auto &cleanUp = [this, ip_fd](const string &msg, class logger &l) {
+        l.error(msg);
         close(ip_fd);
         close(tap_fd);
         return false;
