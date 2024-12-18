@@ -8,12 +8,10 @@
 
 #include "command_context.h"
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -65,10 +63,10 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error
     // For the logfile always use English
     // Do not log unknown operations as an error for backward/forward compatibility with old/new clients
     if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
-        CreateLogger(LOGGER_NAME)->trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
+        s2p_logger.trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
     else {
-        CreateLogger(LOGGER_NAME)->error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
+        s2p_logger.error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
 
     return ReturnStatus(false, command_localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
@@ -78,7 +76,7 @@ bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode er
 {
     // Do not log twice if logging has already been done in the localized error handling above
     if (log && !status && !msg.empty()) {
-        CreateLogger(CommandContext::LOGGER_NAME)->error(msg);
+        s2p_logger.error(msg);
     }
 
     if (fd == -1) {

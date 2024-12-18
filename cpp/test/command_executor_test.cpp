@@ -27,7 +27,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     definition.set_id(8);
     definition.set_unit(32);
@@ -44,7 +44,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_FALSE(executor->ProcessDeviceCmd(context, definition, true)) << "Unknown operation must fail";
 
     command.set_operation(ATTACH);
-    CommandContext context_attach(command);
+    CommandContext context_attach(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_attach, definition, true))
     << "Operation for unknown device type must fail";
 
@@ -53,7 +53,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
 
     definition.set_type(SCHS);
     command.set_operation(INSERT);
-    CommandContext context_insert1(command);
+    CommandContext context_insert1(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_insert1, definition, true))
     << "Operation unsupported by device must fail";
     controller_factory.DeleteAllControllers();
@@ -68,53 +68,53 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_attach, definition, true)) << "ID and LUN already exist";
 
     command.set_operation(START);
-    CommandContext context_start(command);
+    CommandContext context_start(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_start, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_start, definition, false));
 
     command.set_operation(PROTECT);
-    CommandContext context_protect(command);
+    CommandContext context_protect(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_protect, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_protect, definition, false));
 
     command.set_operation(UNPROTECT);
-    CommandContext context_unprotect(command);
+    CommandContext context_unprotect(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_unprotect, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_unprotect, definition, false));
 
     command.set_operation(STOP);
-    CommandContext context_stop(command);
+    CommandContext context_stop(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_stop, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_stop, definition, false));
 
     command.set_operation(EJECT);
-    CommandContext context_eject(command);
+    CommandContext context_eject(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, false));
 
     command.set_operation(INSERT);
     SetParam(definition, "file", "filename");
-    CommandContext context_insert2(command);
+    CommandContext context_insert2(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_insert2, definition, true)) << "Non-existing file";
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_insert2, definition, false)) << "Non-existing file";
 
     command.set_operation(DETACH);
-    CommandContext context_detach(command);
+    CommandContext context_detach(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, false));
 
     command.set_operation(SERVER_INFO);
-    CommandContext context_server_info(command);
+    CommandContext context_server_info(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, true));
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, false));
 
     command.set_operation(NO_OPERATION);
-    CommandContext context_no_operation(command);
+    CommandContext context_no_operation(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
 
     command.set_operation(static_cast<PbOperation>(-1));
-    CommandContext context_invalid_command(command);
+    CommandContext context_invalid_command(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
 }
@@ -128,13 +128,13 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_detach_all;
     command_detach_all.set_operation(DETACH_ALL);
-    CommandContext context_detach_all(command_detach_all);
+    CommandContext context_detach_all(command_detach_all, *default_logger());
     EXPECT_TRUE(executor->ProcessCmd(context_detach_all));
 
     PbCommand command_reserve_ids1;
     command_reserve_ids1.set_operation(RESERVE_IDS);
     SetParam(command_reserve_ids1, "ids", "2,3");
-    CommandContext context_reserve_ids1(command_reserve_ids1);
+    CommandContext context_reserve_ids1(command_reserve_ids1, *default_logger());
     EXPECT_TRUE(executor->ProcessCmd(context_reserve_ids1));
     const unordered_set<int> ids = executor->GetReservedIds();
     EXPECT_EQ(2U, ids.size());
@@ -143,20 +143,20 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_reserve_ids2;
     command_reserve_ids2.set_operation(RESERVE_IDS);
-    CommandContext context_reserve_ids2(command_reserve_ids2);
+    CommandContext context_reserve_ids2(command_reserve_ids2, *default_logger());
     EXPECT_TRUE(executor->ProcessCmd(context_reserve_ids2));
     EXPECT_TRUE(executor->GetReservedIds().empty());
 
     PbCommand command_reserve_ids3;
     command_reserve_ids3.set_operation(RESERVE_IDS);
     SetParam(command_reserve_ids3, "ids", "-1");
-    CommandContext context_reserve_ids3(command_reserve_ids3);
+    CommandContext context_reserve_ids3(command_reserve_ids3, *default_logger());
     EXPECT_FALSE(executor->ProcessCmd(context_reserve_ids3));
     EXPECT_TRUE(executor->GetReservedIds().empty());
 
     PbCommand command_no_operation;
     command_no_operation.set_operation(NO_OPERATION);
-    CommandContext context_no_operation(command_no_operation);
+    CommandContext context_no_operation(command_no_operation, *default_logger());
     EXPECT_TRUE(executor->ProcessCmd(context_no_operation));
 
     PbCommand command_attach1;
@@ -164,7 +164,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     const auto device1 = command_attach1.add_devices();
     device1->set_type(SCHS);
     device1->set_id(-1);
-    CommandContext context_attach1(command_attach1);
+    CommandContext context_attach1(command_attach1, *default_logger());
     EXPECT_FALSE(executor->ProcessCmd(context_attach1)) << "Invalid device ID";
 
     PbCommand command_attach2;
@@ -173,7 +173,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     device2->set_type(SCHS);
     device2->set_id(0);
     device2->set_unit(1);
-    CommandContext context_attach2(command_attach2);
+    CommandContext context_attach2(command_attach2, *default_logger());
     EXPECT_FALSE(executor->ProcessCmd(context_attach2)) << "LUN 0 is missing";
 }
 
@@ -187,7 +187,7 @@ TEST(CommandExecutorTest, Attach)
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition definition;
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     definition.set_unit(32);
     EXPECT_FALSE(executor->Attach(context, definition, false));
@@ -263,7 +263,7 @@ TEST(CommandExecutorTest, Insert)
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition definition;
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     device->SetRemoved(false);
     EXPECT_FALSE(executor->Insert(context, definition, device, false)) << "Medium is not removed";
@@ -317,7 +317,7 @@ TEST(CommandExecutorTest, Detach)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     const auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
@@ -393,7 +393,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
@@ -429,7 +429,7 @@ TEST(CommandExecutorTest, EnsureLun0)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     const auto device1 = command.add_devices();
     device1->set_unit(0);
@@ -450,7 +450,7 @@ TEST(CommandExecutorTest, CreateDevice)
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbDeviceDefinition device;
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     device.set_type(UNDEFINED);
     EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
@@ -471,7 +471,7 @@ TEST(CommandExecutorTest, SetBlockSize)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
 
     set<uint32_t> sizes;
 
@@ -493,28 +493,28 @@ TEST(CommandExecutorTest, ValidateOperation)
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command_attach;
     command_attach.set_operation(ATTACH);
-    CommandContext context_attach(command_attach);
+    CommandContext context_attach(command_attach, *default_logger());
     PbCommand command_detach;
     command_detach.set_operation(DETACH);
-    CommandContext context_detach(command_detach);
+    CommandContext context_detach(command_detach, *default_logger());
     PbCommand command_start;
     command_start.set_operation(START);
-    CommandContext context_start(command_start);
+    CommandContext context_start(command_start, *default_logger());
     PbCommand command_stop;
     command_stop.set_operation(STOP);
-    CommandContext context_stop(command_stop);
+    CommandContext context_stop(command_stop, *default_logger());
     PbCommand command_insert;
     command_insert.set_operation(INSERT);
-    CommandContext context_insert(command_insert);
+    CommandContext context_insert(command_insert, *default_logger());
     PbCommand command_eject;
     command_eject.set_operation(EJECT);
-    CommandContext context_eject(command_eject);
+    CommandContext context_eject(command_eject, *default_logger());
     PbCommand command_protect;
     command_protect.set_operation(PROTECT);
-    CommandContext context_protect(command_protect);
+    CommandContext context_protect(command_protect, *default_logger());
     PbCommand command_unprotect;
     command_unprotect.set_operation(UNPROTECT);
-    CommandContext context_unprotect(command_unprotect);
+    CommandContext context_unprotect(command_unprotect, *default_logger());
 
     const auto device = make_shared<MockPrimaryDevice>(0);
 
@@ -568,7 +568,7 @@ TEST(CommandExecutorTest, ValidateDevice)
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
     command.set_operation(ATTACH);
-    CommandContext context_attach(command);
+    CommandContext context_attach(command, *default_logger());
     PbDeviceDefinition device;
 
     device.set_type(SCHD);
@@ -594,7 +594,7 @@ TEST(CommandExecutorTest, ValidateDevice)
     const auto d = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 1, d));
     command.set_operation(DETACH);
-    CommandContext context_detach(command);
+    CommandContext context_detach(command, *default_logger());
     device.set_id(1);
     device.set_unit(4);
     EXPECT_FALSE(executor->ValidateDevice(context_detach, device));
@@ -610,7 +610,7 @@ TEST(CommandExecutorTest, SetProductData)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
     PbCommand command;
-    CommandContext context(command);
+    CommandContext context(command, *default_logger());
     PbDeviceDefinition definition;
 
     const auto device = make_shared<MockPrimaryDevice>(0);

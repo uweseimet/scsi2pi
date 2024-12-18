@@ -320,7 +320,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     }
 
     PbResult result;
-    CommandContext context(cmd);
+    CommandContext context(cmd, GetLogger());
     context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");

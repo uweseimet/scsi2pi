@@ -178,7 +178,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     if (const string &error = service_thread.Init([this](CommandContext &context) {
         return ExecuteCommand(context);
-    }, port); !error.empty()) {
+    }, port, s2p_logger); !error.empty()) {
         cerr << "Error: " << error << endl;
         CleanUp();
         return EXIT_FAILURE;
@@ -395,7 +395,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
     if (command.devices_size()) {
         command.set_operation(ATTACH);
 
-        CommandContext context(command);
+        CommandContext context(command, *s2p_logger);
         context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
         if (!executor->ProcessCmd(context)) {
             throw parser_exception("Can't attach devices");

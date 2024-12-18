@@ -11,10 +11,12 @@
 #include <functional>
 #include <string>
 #include <thread>
+#include <spdlog/spdlog.h>
 
 class CommandContext;
 
 using namespace std;
+using namespace spdlog;
 
 class S2pThread
 {
@@ -22,7 +24,7 @@ class S2pThread
 
 public:
 
-    string Init(const callback&, int);
+    string Init(const callback&, int, shared_ptr<logger> logger);
     void Start();
     void Stop();
     bool IsRunning() const;
@@ -41,4 +43,6 @@ private:
 #endif
 
     int service_socket = -1;
+
+    shared_ptr<logger> s2p_logger;
 };
