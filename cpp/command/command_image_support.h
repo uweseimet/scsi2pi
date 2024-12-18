@@ -42,11 +42,11 @@ public:
     }
     string SetDefaultFolder(string_view, logger&);
 
-    bool CreateImage(const CommandContext&, logger&) const;
-    bool DeleteImage(const CommandContext&, logger&) const;
-    bool RenameImage(const CommandContext&, logger&) const;
-    bool CopyImage(const CommandContext&, logger&) const;
-    bool SetImagePermissions(const CommandContext&, logger&) const;
+    bool CreateImage(const CommandContext&) const;
+    bool DeleteImage(const CommandContext&) const;
+    bool RenameImage(const CommandContext&) const;
+    bool CopyImage(const CommandContext&) const;
+    bool SetImagePermissions(const CommandContext&) const;
 
 private:
 

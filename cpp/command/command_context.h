@@ -47,6 +47,11 @@ public:
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
+    logger& GetLogger() const
+    {
+        return s2p_logger;
+    }
+
 private:
 
     bool ReturnStatus(bool, const string&, PbErrorCode, bool) const;
