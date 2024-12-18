@@ -45,9 +45,6 @@ public:
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
-    // TODO Merge with other locations of this constant
-    inline static const string LOGGER_NAME = "[s2p]";
-
 private:
 
     bool ReturnStatus(bool, const string&, PbErrorCode, bool) const;
@@ -57,4 +54,7 @@ private:
     string locale;
 
     int fd = -1;
+
+    // TODO Merge with other locations of this constant
+    inline static const string LOGGER_NAME = "[s2p]";
 };
