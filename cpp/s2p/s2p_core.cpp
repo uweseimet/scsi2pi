@@ -257,7 +257,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
+            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
                 throw parser_exception(error);
             }
         }

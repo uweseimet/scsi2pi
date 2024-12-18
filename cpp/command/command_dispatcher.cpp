@@ -48,7 +48,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEFAULT_FOLDER:
-        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder"),
+            s2p_logger); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
@@ -128,20 +129,20 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return CommandImageSupport::Instance().CreateImage(context);
+        return CommandImageSupport::Instance().CreateImage(context, s2p_logger);
 
     case DELETE_IMAGE:
-        return CommandImageSupport::Instance().DeleteImage(context);
+        return CommandImageSupport::Instance().DeleteImage(context, s2p_logger);
 
     case RENAME_IMAGE:
-        return CommandImageSupport::Instance().RenameImage(context);
+        return CommandImageSupport::Instance().RenameImage(context, s2p_logger);
 
     case COPY_IMAGE:
-        return CommandImageSupport::Instance().CopyImage(context);
+        return CommandImageSupport::Instance().CopyImage(context, s2p_logger);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return CommandImageSupport::Instance().SetImagePermissions(context);
+        return CommandImageSupport::Instance().SetImagePermissions(context, s2p_logger);
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::Instance().Persist() ?

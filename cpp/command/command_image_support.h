@@ -9,9 +9,11 @@
 #pragma once
 
 #include <filesystem>
+#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace filesystem;
+using namespace spdlog;
 
 class CommandContext;
 
@@ -38,13 +40,13 @@ public:
     {
         return default_folder;
     }
-    string SetDefaultFolder(string_view);
+    string SetDefaultFolder(string_view, logger&);
 
-    bool CreateImage(const CommandContext&) const;
-    bool DeleteImage(const CommandContext&) const;
-    bool RenameImage(const CommandContext&) const;
-    bool CopyImage(const CommandContext&) const;
-    bool SetImagePermissions(const CommandContext&) const;
+    bool CreateImage(const CommandContext&, logger&) const;
+    bool DeleteImage(const CommandContext&, logger&) const;
+    bool RenameImage(const CommandContext&, logger&) const;
+    bool CopyImage(const CommandContext&, logger&) const;
+    bool SetImagePermissions(const CommandContext&, logger&) const;
 
 private:
 
