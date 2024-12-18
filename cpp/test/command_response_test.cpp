@@ -177,7 +177,7 @@ TEST(CommandResponseTest, GetServerInfo)
     PbServerInfo info1;
     CommandImageSupport::Instance().SetDepth(1234);
 
-    response.GetServerInfo(info1, command, devices, ids);
+    response.GetServerInfo(info1, command, devices, ids, *default_logger());
     EXPECT_TRUE(info1.has_version_info());
     EXPECT_TRUE(info1.has_log_level_info());
     EXPECT_TRUE(info1.has_device_types_info());
@@ -198,7 +198,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     SetParam(command, "operations", "log_level_info,mapping_info");
     PbServerInfo info2;
-    response.GetServerInfo(info2, command, devices, ids);
+    response.GetServerInfo(info2, command, devices, ids, *default_logger());
     EXPECT_FALSE(info2.has_version_info());
     EXPECT_TRUE(info2.has_log_level_info());
     EXPECT_FALSE(info2.has_device_types_info());

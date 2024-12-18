@@ -178,7 +178,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     if (const string &error = service_thread.Init([this](CommandContext &context) {
         return ExecuteCommand(context);
-    }, port); !error.empty()) {
+    }, port, s2p_logger); !error.empty()) {
         cerr << "Error: " << error << endl;
         CleanUp();
         return EXIT_FAILURE;
@@ -243,6 +243,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
             s2p_logger->set_pattern(log_pattern);
+            spdlog::set_pattern(log_pattern);
             controller_factory.SetLogPattern(log_pattern);
         }
 
@@ -256,7 +257,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder); !error.empty()) {
+            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
                 throw parser_exception(error);
             }
         }
@@ -394,7 +395,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
     if (command.devices_size()) {
         command.set_operation(ATTACH);
 
-        CommandContext context(command);
+        CommandContext context(command, *s2p_logger);
         context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
         if (!executor->ProcessCmd(context)) {
             throw parser_exception("Can't attach devices");

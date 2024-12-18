@@ -38,9 +38,7 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            // TODO Remove magic constant
-            s2p_util::CreateLogger("s2p")->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key,
-                value);
+            GetLogger().warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
         }
     }
 }
@@ -82,4 +80,38 @@ bool Device::Eject(bool force)
     stopped = true;
 
     return true;
+}
+
+logger& Device::GetLogger()
+{
+    if (!device_logger) {
+        device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
+    }
+
+    return *device_logger;
+}
+
+void Device::LogTrace(const string &s) const
+{
+    device_logger->log(level::level_enum::trace, s);
+}
+
+void Device::LogDebug(const string &s) const
+{
+    device_logger->log(level::level_enum::debug, s);
+}
+
+void Device::LogInfo(const string &s) const
+{
+    device_logger->log(level::level_enum::info, s);
+}
+
+void Device::LogWarn(const string &s) const
+{
+    device_logger->log(level::level_enum::warn, s);
+}
+
+void Device::LogError(const string &s) const
+{
+    device_logger->log(level::level_enum::err, s);
 }

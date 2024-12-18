@@ -43,10 +43,11 @@ TEST(S2pThreadTest, Init)
 {
     S2pThread service_thread;
 
-    EXPECT_FALSE(service_thread.Init(nullptr, 65536).empty()) << "Illegal port number";
-    EXPECT_FALSE(service_thread.Init(nullptr, 0).empty()) << "Illegal port number";
-    EXPECT_FALSE(service_thread.Init(nullptr, -1).empty()) << "Illegal port number";
-    EXPECT_TRUE(service_thread.Init(nullptr, 9999).empty()) << "Port 9999 is expected not to be in use for this test";
+    EXPECT_FALSE(service_thread.Init(nullptr, 65536, default_logger()).empty()) << "Illegal port number";
+    EXPECT_FALSE(service_thread.Init(nullptr, 0,default_logger()).empty()) << "Illegal port number";
+    EXPECT_FALSE(service_thread.Init(nullptr, -1, default_logger()).empty()) << "Illegal port number";
+    EXPECT_TRUE(service_thread.Init(nullptr, 9999, default_logger()).empty())
+        << "Port 9999 is expected not to be in use for this test";
     service_thread.Stop();
 }
 
@@ -54,7 +55,8 @@ TEST(S2pThreadTest, IsRunning)
 {
     S2pThread service_thread;
     EXPECT_FALSE(service_thread.IsRunning());
-    EXPECT_TRUE(service_thread.Init(nullptr, 9999).empty()) << "Port 9999 is expected not to be in use for this test";
+    EXPECT_TRUE(service_thread.Init(nullptr, 9999, default_logger()).empty())
+        << "Port 9999 is expected not to be in use for this test";
     EXPECT_FALSE(service_thread.IsRunning());
 
     service_thread.Start();
@@ -86,7 +88,7 @@ TEST(S2pThreadTest, Execute)
         PbResult result;
         result.set_status(true);
         return context.WriteResult(result);
-    }, 9999);
+    }, 9999, default_logger());
 
     service_thread.Start();
 

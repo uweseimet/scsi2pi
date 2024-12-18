@@ -124,11 +124,9 @@ void Tape::Read(bool read_16)
     }
 
     expl = read_16;
-    if (expl) {
-        if (!Locate(true)) {
-            SetInformation(GetCdbInt24(12));
-            throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
-        }
+    if (expl && !Locate(true)) {
+        SetInformation(GetCdbInt24(12));
+        throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
     }
 
     byte_count = GetByteCount();
@@ -159,11 +157,9 @@ void Tape::Write(bool write_16)
     CheckWritePreconditions();
 
     expl = write_16;
-    if (expl) {
-        if (!Locate(true)) {
-            SetInformation(GetCdbInt24(12));
-            throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
-        }
+    if (expl && !Locate(true)) {
+        SetInformation(GetCdbInt24(12));
+        throw scsi_exception(sense_key::no_sense, asc::locate_operation_failure);
     }
 
     byte_count = GetByteCount();

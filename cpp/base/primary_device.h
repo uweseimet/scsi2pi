@@ -110,8 +110,6 @@ public:
         return vector<PbStatistics>();
     }
 
-    logger& GetLogger();
-
 protected:
 
     PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
@@ -176,12 +174,6 @@ protected:
         return memory_util::GetInt64(controller->GetCdb(), index);
     }
 
-    void LogTrace(const string&) const;
-    void LogDebug(const string&) const;
-    void LogInfo(const string&) const;
-    void LogWarn(const string&) const;
-    void LogError(const string&) const;
-
 private:
 
     static constexpr int NOT_RESERVED = -2;
@@ -209,8 +201,6 @@ private:
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
-
-    shared_ptr<logger> device_logger;
 
     array<command, 256> commands = { };
 

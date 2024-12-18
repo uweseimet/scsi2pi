@@ -8,10 +8,12 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "command_localizer.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
+using namespace spdlog;
 using namespace s2p_interface;
 
 class CommandContext
@@ -19,10 +21,10 @@ class CommandContext
 
 public:
 
-    explicit CommandContext(const PbCommand &cmd) : command(cmd)
+    CommandContext(const PbCommand &cmd, logger &l) : command(cmd), s2p_logger(l)
     {
     }
-    explicit CommandContext(int f) : fd(f)
+    CommandContext(int f, logger &l) : fd(f), s2p_logger(l)
     {
     }
     ~CommandContext() = default;
@@ -45,7 +47,10 @@ public:
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
-    inline static const string LOGGER_NAME = "s2p";
+    logger& GetLogger() const
+    {
+        return s2p_logger;
+    }
 
 private:
 
@@ -56,4 +61,6 @@ private:
     string locale;
 
     int fd = -1;
+
+    logger &s2p_logger;
 };

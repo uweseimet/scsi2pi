@@ -12,14 +12,13 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <spdlog/spdlog.h>
 #include "command/command_context.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 
-string S2pThread::Init(const callback &cb, int port)
+string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)
 {
     assert(service_socket == -1);
 
@@ -51,6 +50,8 @@ string S2pThread::Init(const callback &cb, int port)
         Stop();
         return "Can't listen to service socket: " + string(strerror(errno));
     }
+
+    s2p_logger = logger;
 
     execute = cb;
 
@@ -97,7 +98,7 @@ void S2pThread::Execute() const
 
 void S2pThread::ExecuteCommand(int fd) const
 {
-    CommandContext context(fd);
+    CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
             execute(context);

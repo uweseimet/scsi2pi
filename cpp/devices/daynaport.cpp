@@ -67,7 +67,7 @@ bool DaynaPort::SetUp()
             EnableInterface();
         });
 
-    tap_enabled = tap.Init(GetParams());
+    tap_enabled = tap.Init(GetParams(), GetLogger());
 // Not terminating on a regular PC is helpful for testing
 #if !defined(__x86_64__) && !defined(__X86__)
     if (!tap_enabled) {
@@ -80,7 +80,7 @@ bool DaynaPort::SetUp()
 
 void DaynaPort::CleanUp()
 {
-    tap.CleanUp();
+    tap.CleanUp(GetLogger());
 }
 
 vector<uint8_t> DaynaPort::InquiryInternal() const
@@ -137,7 +137,7 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 
     // The first 2 bytes are reserved for the length of the packet
     // The next 4 bytes are reserved for a flag field
-    const int rx_packet_size = tap.Receive(&buf[DAYNAPORT_READ_HEADER_SZ]);
+    const int rx_packet_size = tap.Receive(&buf[DAYNAPORT_READ_HEADER_SZ], GetLogger());
 
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
@@ -370,7 +370,7 @@ void DaynaPort::EnableInterface()
             throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
         }
 
-        tap.Flush();
+        tap.Flush(GetLogger());
 
         LogDebug("The DaynaPort interface has been enabled");
     }

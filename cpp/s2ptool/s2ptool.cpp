@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 #ifndef __APPLE__
     auto s2p_thread = jthread([&target_args, log_signals]() {
 #else
-        auto s2p_thread = thread([&target_args]() {
+        auto s2p_thread = thread([&target_args, log_signals]() {
 #endif
         auto s2p = make_unique<S2p>();
         s2p->Run(target_args, true, log_signals);

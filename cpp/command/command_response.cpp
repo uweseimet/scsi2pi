@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "command_response.h"
-#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "command_context.h"
@@ -19,7 +18,6 @@
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
@@ -137,7 +135,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 }
 
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
@@ -165,7 +163,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (!ValidateImageFile(it->path())) {
+        if (const string &error = ValidateImageFile(it->path()); !error.empty()) {
+            logger.warn(error);
             continue;
         }
 
@@ -179,20 +178,20 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 }
 
 void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     image_files_info.set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
     image_files_info.set_depth(CommandImageSupport::Instance().GetDepth());
 
-    GetAvailableImages(image_files_info, folder_pattern, file_pattern);
+    GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
 
-    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern);
+    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids) const
@@ -244,7 +243,8 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
 }
 
 void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids) const
+    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
+    logger &logger) const
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -253,7 +253,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        CreateLogger(CommandContext::LOGGER_NAME)->trace("Requested operation(s): " + Join(operations, ","));
+        logger.trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {
@@ -269,7 +269,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::DEFAULT_IMAGE_FILES_INFO)) {
-        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"));
+        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"), logger);
     }
 
     if (HasOperation(operations, PbOperation::NETWORK_INTERFACES_INFO)) {
@@ -514,10 +514,10 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
     return id_sets;
 }
 
-bool CommandResponse::ValidateImageFile(const path &path)
+string CommandResponse::ValidateImageFile(const path &path)
 {
     if (path.filename().string().starts_with(".")) {
-        return false;
+        return fmt::format("Image file '{}' is invalid", path.string());
     }
 
     filesystem::path p(path);
@@ -526,21 +526,19 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file symlink '{}' is broken", path.string());
-            return false;
+            return fmt::format("Image file symlink '{}' is broken", path.string());
         }
     }
 
     if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
-        return false;
+        return fmt::format("Image file '{}' is invalid", p.string());
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file '{}' is invalid", p.string());
-        return false;
+        return fmt::format("Image file '{}' is invalid", p.string());
     }
 
-    return true;
+    return "";
 }
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)

@@ -293,7 +293,8 @@ bool Bus::WaitSignal(int pin, bool state)
         }
 
         if (GetRST()) {
-            spdlog::warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
+            spdlog::warn("{0} received RST signal during {1} phase, aborting", target_mode ? "Target" : "Initiator",
+                GetPhaseName(GetPhase()));
             return false;
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);

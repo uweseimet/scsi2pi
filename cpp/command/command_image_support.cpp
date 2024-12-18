@@ -8,14 +8,12 @@
 
 #include "command_image_support.h"
 #include <fstream>
-#include <spdlog/spdlog.h>
 #include "command_context.h"
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -57,7 +55,7 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -84,7 +82,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
     default_folder = folder.string();
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info("Default image folder set to '" + default_folder + "'");
+    logger.info("Default image folder set to '{}'", default_folder);
 
     return "";
 }
@@ -148,8 +146,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info(
-        "Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    context.GetLogger().info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -196,7 +193,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info("Deleted image file '{}'", full_filename.string());
+    context.GetLogger().info("Deleted image file '{}'", full_filename.string());
 
     return context.ReturnSuccessStatus();
 }
@@ -216,7 +213,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Renamed/Moved image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -241,7 +238,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        CreateLogger(CommandContext::LOGGER_NAME)->info("Copied image file symlink '{0}' to '{1}'", from, to);
+        context.GetLogger().info("Copied image file symlink '{0}' to '{1}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -259,7 +256,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info("Copied image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Copied image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -297,8 +294,7 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
             full_filename + "': " + e.what());
     }
 
-    CreateLogger(CommandContext::LOGGER_NAME)->info(
-        (protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    context.GetLogger().info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }

@@ -13,6 +13,7 @@
 #include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
 
+using namespace spdlog;
 using namespace s2p_interface;
 
 // The map used for storing/passing device parameters
@@ -118,6 +119,8 @@ public:
     void Stop();
     virtual bool Eject(bool);
 
+    logger& GetLogger();
+
 protected:
 
     Device(PbDeviceType type, int lun) : type(type), lun(lun)
@@ -160,6 +163,12 @@ protected:
 
     string GetParam(const string&) const;
 
+    void LogTrace(const string&) const;
+    void LogDebug(const string&) const;
+    void LogInfo(const string&) const;
+    void LogWarn(const string&) const;
+    void LogError(const string&) const;
+
 private:
 
     const PbDeviceType type;
@@ -188,4 +197,6 @@ private:
 
     // The parameters the device was created with
     param_map params;
+
+    shared_ptr<logger> device_logger;
 };

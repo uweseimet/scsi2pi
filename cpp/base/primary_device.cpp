@@ -430,38 +430,3 @@ void PrimaryDevice::DiscardReservation()
 {
     reserving_initiator = NOT_RESERVED;
 }
-
-logger& PrimaryDevice::GetLogger()
-{
-    if (!device_logger) {
-        device_logger = CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
-    }
-
-    return *device_logger;
-}
-
-void PrimaryDevice::LogTrace(const string &s) const
-{
-    device_logger->log(level::level_enum::trace, s);
-}
-
-void PrimaryDevice::LogDebug(const string &s) const
-{
-    device_logger->log(level::level_enum::debug, s);
-}
-
-void PrimaryDevice::LogInfo(const string &s) const
-{
-    device_logger->log(level::level_enum::info, s);
-}
-
-void PrimaryDevice::LogWarn(const string &s) const
-{
-    device_logger->log(level::level_enum::warn, s);
-}
-
-void PrimaryDevice::LogError(const string &s) const
-{
-    device_logger->log(level::level_enum::err, s);
-}
-

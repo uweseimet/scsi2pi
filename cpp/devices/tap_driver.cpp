@@ -30,11 +30,8 @@ TapDriver::TapDriver()
     available_interfaces = GetNetworkInterfaces();
 }
 
-bool TapDriver::Init(const param_map &const_params)
+bool TapDriver::Init(const param_map &const_params, logger &logger)
 {
-    // TODO Remove magic constant
-    s2p_logger = CreateLogger("s2p");
-
     param_map params = const_params;
     stringstream s(params[INTERFACE]);
     string interface;
@@ -46,12 +43,12 @@ bool TapDriver::Init(const param_map &const_params)
     }
 
     if (bridge_interface.empty()) {
-        s2p_logger->error("No valid network interfaces available");
+        logger.error("No valid network interfaces available");
         return false;
     }
 
     if ((tap_fd = open("/dev/net/tun", O_RDWR)) == -1) {
-        s2p_logger->error("Can't open /dev/net/tun: {}", strerror(errno));
+        logger.error("Can't open /dev/net/tun: {}", strerror(errno));
         return false;
     }
 
@@ -63,71 +60,71 @@ bool TapDriver::Init(const param_map &const_params)
 
     inet = params[INET];
 
-    s2p_logger->trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
+    logger.trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
 
     // IFF_NO_PI for no extra packet information
     ifreq ifr = { };
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
-        s2p_logger->error("Can't ioctl TUNSETIFF: {}", strerror(errno));
+        logger.error("Can't ioctl TUNSETIFF: {}", strerror(errno));
         close(tap_fd);
         return false;
     }
 
     const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
-        s2p_logger->error("Can't create IP socket: {}", strerror(errno));
+        logger.error("Can't create IP socket: {}", strerror(errno));
         close(tap_fd);
         return false;
     }
 
-    const auto &cleanUp = [this, ip_fd](const string &msg) {
-        s2p_logger->error(msg);
+    const auto &cleanUp = [this, ip_fd](const string &msg, class logger &l) {
+        l.error(msg);
         close(ip_fd);
         close(tap_fd);
         return false;
     };
 
-    if (const string &error = IpLink(true, *s2p_logger); !error.empty()) {
-        return cleanUp(error);
+    if (const string &error = IpLink(true, logger); !error.empty()) {
+        return cleanUp(error, logger);
     }
 
     // Only physical interfaces need a bridge or can be in promiscuous mode
     if (const bool is_physical = bridge_interface.starts_with("eth"); is_physical && create_bridge) {
         const int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
         if (fd == -1) {
-            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)));
+            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)), logger);
         }
 
-        if (const string &error = CreateBridge(fd, ip_fd); !error.empty()) {
+        if (const string &error = CreateBridge(fd, ip_fd, logger); !error.empty()) {
             close(fd);
-            return cleanUp(error);
+            return cleanUp(error, logger);
         }
 
-        s2p_logger->trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+        logger.trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
         const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, true);
         close(fd);
         if (!error.empty()) {
-            return cleanUp(error);
+            return cleanUp(error, logger);
         }
     }
     else {
-        s2p_logger->trace(">ip addr add {0} brd + dev {1}", inet, BRIDGE_INTERFACE_NAME);
-        if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME); !error.empty()) {
-            return cleanUp(error);
+        logger.trace(">ip addr add {0} brd + dev {1}", inet, BRIDGE_INTERFACE_NAME);
+        if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME, logger); !error.empty()) {
+            return cleanUp(error, logger);
         }
     }
 
     close(ip_fd);
 
-    s2p_logger->info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
+    logger.info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
 
     return true;
 #endif
 }
 
-void TapDriver::CleanUp() const
+void TapDriver::CleanUp(logger &logger) const
 {
     if (tap_fd == -1) {
         return;
@@ -135,21 +132,21 @@ void TapDriver::CleanUp() const
 
     if (bridge_created) {
         if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            s2p_logger->error("Can't create bridge socket: {}", strerror(errno));
+            logger.error("Can't create bridge socket: {}", strerror(errno));
         } else {
-            s2p_logger->trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+            logger.trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
             if (const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
-                s2p_logger->warn("Removing {0} from {1} failed: {2}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
-                s2p_logger->warn("You may need to manually remove the TAP device");
+                logger.warn("Removing {0} from {1} failed: {2}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
+                logger.warn("You may need to manually remove the TAP device");
             }
 
-            s2p_logger->trace(">ip link set dev " + BRIDGE_NAME + " down");
+            logger.trace(">ip link set dev " + BRIDGE_NAME + " down");
             if (const string &error = IpLink(fd, BRIDGE_NAME, false); !error.empty()) {
-                s2p_logger->warn(error);
+                logger.warn(error);
             }
 
-            if (const string &error = DeleteBridge(fd); !error.empty()) {
-                s2p_logger->warn(error);
+            if (const string &error = DeleteBridge(fd, logger); !error.empty()) {
+                logger.warn(error);
             }
 
             close(fd);
@@ -168,17 +165,17 @@ param_map TapDriver::GetDefaultParams() const
     };
 }
 
-string TapDriver::CreateBridge(int bridge_fd, int ip_fd)
+string TapDriver::CreateBridge(int bridge_fd, int ip_fd, logger &logger)
 {
     // Check if the bridge has already been created manually by checking whether there is a MAC address for it
     if (GetMacAddress(BRIDGE_NAME).empty()) {
-        s2p_logger->info("Creating {0} for interface {1}", BRIDGE_NAME, bridge_interface);
+        logger.info("Creating {0} for interface {1}", BRIDGE_NAME, bridge_interface);
 
-        if (const string &error = AddBridge(bridge_fd); !error.empty()) {
+        if (const string &error = AddBridge(bridge_fd, logger); !error.empty()) {
             return error;
         }
 
-        s2p_logger->trace(">ip link set dev " + BRIDGE_NAME + " up");
+        logger.trace(">ip link set dev " + BRIDGE_NAME + " up");
         if (const string &error = IpLink(ip_fd, BRIDGE_NAME, true); !error.empty()) {
             return error;
         }
@@ -189,9 +186,9 @@ string TapDriver::CreateBridge(int bridge_fd, int ip_fd)
     return "";
 }
 
-string TapDriver::SetAddressAndNetMask(int fd, const string &interface) const
+string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &logger) const
 {
-    const auto [address, netmask] = ExtractAddressAndMask();
+    const auto [address, netmask] = ExtractAddressAndMask(logger);
     if (address.empty() || netmask.empty()) {
         return "Error extracting inet address and netmask";
     }
@@ -221,7 +218,7 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface) const
     return "";
 }
 
-pair<string, string> TapDriver::ExtractAddressAndMask() const
+pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
 {
     string address = inet;
     string netmask = DEFAULT_NETMASK;
@@ -230,7 +227,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask() const
 
         int m;
         if (!GetAsUnsignedInt(components[1], m) || m < 8 || m > 32) {
-            s2p_logger->error("Invalid CIDR netmask notation '{}'", components[1]);
+            logger.error("Invalid CIDR netmask notation '{}'", components[1]);
             return {"", ""};
         }
 
@@ -243,15 +240,15 @@ pair<string, string> TapDriver::ExtractAddressAndMask() const
     return {address, netmask};
 }
 
-string TapDriver::AddBridge(int fd) const
+string TapDriver::AddBridge(int fd, logger &logger) const
 {
 #ifdef __linux__
-    s2p_logger->trace(">brctl addbr " + BRIDGE_NAME);
+    logger.trace(">brctl addbr " + BRIDGE_NAME);
     if (ioctl(fd, SIOCBRADDBR, BRIDGE_NAME.c_str()) == -1) {
         return "Can't ioctl SIOCBRADDBR";
     }
 
-    s2p_logger->trace(">brctl addif {0} {1}", BRIDGE_NAME, bridge_interface);
+    logger.trace(">brctl addif {0} {1}", BRIDGE_NAME, bridge_interface);
     if (const string &error = BrSetIf(fd, bridge_interface, true); !error.empty()) {
         return error;
     }
@@ -260,11 +257,11 @@ string TapDriver::AddBridge(int fd) const
     return "";
 }
 
-string TapDriver::DeleteBridge(int fd) const
+string TapDriver::DeleteBridge(int fd, logger &logger) const
 {
 #ifdef __linux__
     if (bridge_created) {
-        s2p_logger->trace(">brctl delbr " + BRIDGE_NAME);
+        logger.trace(">brctl delbr " + BRIDGE_NAME);
         if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
             return "Removing bridge " + BRIDGE_NAME + " failed: " + strerror(errno);
         }
@@ -327,11 +324,11 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
     return "";
 }
 
-void TapDriver::Flush() const
+void TapDriver::Flush(logger &logger) const
 {
     while (HasPendingPackets()) {
         array<uint8_t, ETH_FRAME_LEN> m_garbage_buffer;
-        (void)Receive(m_garbage_buffer.data());
+        (void)Receive(m_garbage_buffer.data(), logger);
     }
 }
 
@@ -360,7 +357,7 @@ uint32_t TapDriver::Crc32(span<const uint8_t> data)
     return ~crc;
 }
 
-int TapDriver::Receive(uint8_t *buf) const
+int TapDriver::Receive(uint8_t *buf, logger &logger) const
 {
     // Check if there is data that can be received
     if (!HasPendingPackets()) {
@@ -369,7 +366,7 @@ int TapDriver::Receive(uint8_t *buf) const
 
     auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf, ETH_FRAME_LEN));
     if (bytes_received == static_cast<uint32_t>(-1)) {
-        s2p_logger->warn("Error while receiving a network packet");
+        logger.warn("Error while receiving a network packet");
         return 0;
     }
 
