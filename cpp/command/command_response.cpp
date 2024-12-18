@@ -137,7 +137,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 }
 
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
@@ -165,7 +165,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (!ValidateImageFile(it->path())) {
+        if (const string error = ValidateImageFile(it->path()); !error.empty()) {
+            CreateLogger(CommandContext::LOGGER_NAME)->warn(error);
             continue;
         }
 
@@ -514,10 +515,10 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
     return id_sets;
 }
 
-bool CommandResponse::ValidateImageFile(const path &path)
+string CommandResponse::ValidateImageFile(const path &path)
 {
     if (path.filename().string().starts_with(".")) {
-        return false;
+        return fmt::format("Image file '{}' is invalid", path.string());
     }
 
     filesystem::path p(path);
@@ -526,21 +527,19 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file symlink '{}' is broken", path.string());
-            return false;
+            return fmt::format("Image file symlink '{}' is broken", path.string());
         }
     }
 
     if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
-        return false;
+        return fmt::format("Image file '{}' is invalid", p.string());
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        CreateLogger(CommandContext::LOGGER_NAME)->warn("Image file '{}' is invalid", p.string());
-        return false;
+        return fmt::format("Image file '{}' is invalid", p.string());
     }
 
-    return true;
+    return "";
 }
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)

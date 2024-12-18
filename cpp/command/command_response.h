@@ -50,7 +50,7 @@ private:
         const string& = "", bool = false, const vector<string>& = { }) const;
     set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&) const;
 
-    static bool ValidateImageFile(const path&);
+    static string ValidateImageFile(const path&);
 
     static bool FilterMatches(const string&, string_view);
 
