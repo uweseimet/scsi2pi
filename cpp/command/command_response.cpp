@@ -137,7 +137,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 }
 
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern, logger &logger) const
+    const string &file_pattern) const
 {
     const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
@@ -165,7 +165,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (const string error = ValidateImageFile(it->path()); !error.empty()) {
+        if (const string &error = ValidateImageFile(it->path()); !error.empty()) {
             CreateLogger(CommandContext::LOGGER_NAME)->warn(error);
             continue;
         }
