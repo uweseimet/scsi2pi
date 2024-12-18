@@ -30,16 +30,16 @@ public:
     TapDriver();
     ~TapDriver() = default;
 
-    bool Init(const param_map&);
-    void CleanUp() const;
+    bool Init(const param_map&, logger&);
+    void CleanUp(logger&) const;
 
     param_map GetDefaultParams() const;
 
-    int Receive(uint8_t*) const;
+    int Receive(uint8_t*, logger&) const;
     int Send(const uint8_t*, int) const;
     bool HasPendingPackets() const;
 
-    void Flush() const;
+    void Flush(logger&) const;
 
     static uint32_t Crc32(span<const uint8_t>);
 
@@ -53,14 +53,14 @@ public:
 
 private:
 
-    string AddBridge(int) const;
-    string DeleteBridge(int) const;
+    string AddBridge(int, logger&) const;
+    string DeleteBridge(int, logger&) const;
 
     static string IpLink(int, const string&, bool);
     static string BrSetIf(int fd, const string&, bool);
-    string CreateBridge(int, int);
-    pair<string, string> ExtractAddressAndMask() const;
-    string SetAddressAndNetMask(int, const string&) const;
+    string CreateBridge(int, int, logger&);
+    pair<string, string> ExtractAddressAndMask(logger&) const;
+    string SetAddressAndNetMask(int, const string&, logger&) const;
 
     int tap_fd = -1;
 
@@ -71,8 +71,6 @@ private:
     string bridge_interface;
 
     bool bridge_created = false;
-
-    shared_ptr<logger> s2p_logger;
 
     inline static const string BRIDGE_INTERFACE_NAME = "piscsi0";
     inline static const string BRIDGE_NAME = "piscsi_bridge";
