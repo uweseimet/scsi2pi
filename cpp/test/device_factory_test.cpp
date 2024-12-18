@@ -56,6 +56,10 @@ TEST(DeviceFactoryTest, GetTypeForFile)
     EXPECT_EQ(factory.GetTypeForFile("services"), SCHS);
     EXPECT_EQ(factory.GetTypeForFile("unknown"), UNDEFINED);
     EXPECT_EQ(factory.GetTypeForFile("test.iso.suffix"), UNDEFINED);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/sd0"), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/hd1"), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/sr1"), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/dvd0"), SCCD);
     EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
 }
 

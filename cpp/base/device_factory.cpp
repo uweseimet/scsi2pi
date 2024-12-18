@@ -143,6 +143,14 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
+    if (filename.starts_with("/dev/sd") || filename.starts_with("/dev/hd")) {
+        return SCHD;
+    }
+
+    if (filename.starts_with("/dev/sr") || filename.starts_with("/dev/dvd")) {
+        return SCCD;
+    }
+
     return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
 }
 
