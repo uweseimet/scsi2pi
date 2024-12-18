@@ -80,7 +80,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_IMAGE_FILES_INFO:
         response.GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
-            GetParam(command, "file_pattern"));
+            GetParam(command, "file_pattern"), s2p_logger);
         return context.WriteSuccessResult(result);
 
     case IMAGE_FILE_INFO:

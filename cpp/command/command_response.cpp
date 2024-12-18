@@ -135,7 +135,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 }
 
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
@@ -164,7 +164,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
         }
 
         if (const string &error = ValidateImageFile(it->path()); !error.empty()) {
-            CreateLogger(CommandContext::LOGGER_NAME)->warn(error);
+            logger.warn(error);
             continue;
         }
 
@@ -178,20 +178,20 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 }
 
 void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     image_files_info.set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
     image_files_info.set_depth(CommandImageSupport::Instance().GetDepth());
 
-    GetAvailableImages(image_files_info, folder_pattern, file_pattern);
+    GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
 
-    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern);
+    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids) const
@@ -269,7 +269,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::DEFAULT_IMAGE_FILES_INFO)) {
-        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"));
+        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"), logger);
     }
 
     if (HasOperation(operations, PbOperation::NETWORK_INTERFACES_INFO)) {

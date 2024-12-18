@@ -26,7 +26,7 @@ class CommandResponse
 public:
 
     bool GetImageFile(PbImageFile&, const string&) const;
-    void GetImageFilesInfo(PbImageFilesInfo&, const string&, const string&) const;
+    void GetImageFilesInfo(PbImageFilesInfo&, const string&, const string&, logger&) const;
     void GetReservedIds(PbReservedIdsInfo&, const unordered_set<int>&) const;
     void GetDevices(const unordered_set<shared_ptr<PrimaryDevice>>&, PbServerInfo&) const;
     void GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&) const;
@@ -45,8 +45,8 @@ private:
 
     void GetDeviceProperties(shared_ptr<PrimaryDevice>, PbDeviceProperties&) const;
     void GetDevice(shared_ptr<PrimaryDevice>, PbDevice&) const;
-    void GetAvailableImages(PbImageFilesInfo&, const string&, const string&) const;
-    void GetAvailableImages(PbServerInfo&, const string&, const string&) const;
+    void GetAvailableImages(PbImageFilesInfo&, const string&, const string&, logger&) const;
+    void GetAvailableImages(PbServerInfo&, const string&, const string&, logger&) const;
     PbOperationMetaData* CreateOperation(PbOperationInfo&, const PbOperation&, const string&) const;
     void AddOperationParameter(PbOperationMetaData&, const string&, const string&,
         const string& = "", bool = false, const vector<string>& = { }) const;
