@@ -370,7 +370,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         // Remember some device data before they become invalid on removal
         const int id = device.GetId();
         const int lun = device.GetLun();
-        const string &identifier = GetIdentifier(device);
+        const string &identifier = GetIdentifier(device) + ", " + device.GetIdentifier();
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
@@ -445,6 +445,7 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
         msg += "protected ";
     }
     msg += GetIdentifier(device) + ", " + device.GetIdentifier();
+
     s2p_logger.info(msg);
 }
 
