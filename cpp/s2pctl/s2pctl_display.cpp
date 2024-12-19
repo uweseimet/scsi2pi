@@ -19,7 +19,6 @@ using namespace protobuf_util;
 string S2pCtlDisplay::DisplayDevicesInfo(const PbDevicesInfo &devices_info) const
 {
     const vector<PbDevice> devices(devices_info.devices().cbegin(), devices_info.devices().cend());
-
     return ListDevices(devices);
 }
 
