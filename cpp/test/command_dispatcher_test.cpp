@@ -199,3 +199,14 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_reserve_ids(command_reserve_ids, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_reserve_ids, result));
 }
+
+TEST(CommandDispatcherTest, SetLogLevel)
+{
+    auto bus = make_shared<MockBus>();
+    ControllerFactory controller_factory;
+    MockCommandExecutor executor(*bus, controller_factory);
+    CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
+    EXPECT_FALSE(dispatcher.SetLogLevel("abc"));
+    EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));
+    EXPECT_FALSE(dispatcher.SetLogLevel("abc:0:0"));
+}
