@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "s2pctl_display.h"
-#include <iomanip>
 #include <map>
 #include <set>
 #include <spdlog/spdlog.h>
