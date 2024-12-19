@@ -45,7 +45,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         s += "  " + to_string(pb_device.block_size()) + " bytes per block";
 
         if (pb_device.block_count()) {
-                s += "  " + to_string(pb_device.block_size() * pb_device.block_count()) + " bytes capacity";
+            s += "  " + to_string(pb_device.block_size() * pb_device.block_count()) + " bytes capacity";
         }
     }
 
