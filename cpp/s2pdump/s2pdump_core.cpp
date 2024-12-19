@@ -301,7 +301,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    s2pdump_logger = CreateLogger(APP_NAME);
+    s2pdump_logger = CreateLogger("[" + APP_NAME + "]");
 
     try {
         if (!ParseArguments(args)) {
