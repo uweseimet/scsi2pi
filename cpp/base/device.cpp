@@ -100,11 +100,6 @@ void Device::LogDebug(const string &s) const
     device_logger->log(level::level_enum::debug, s);
 }
 
-void Device::LogInfo(const string &s) const
-{
-    device_logger->log(level::level_enum::info, s);
-}
-
 void Device::LogWarn(const string &s) const
 {
     device_logger->log(level::level_enum::warn, s);

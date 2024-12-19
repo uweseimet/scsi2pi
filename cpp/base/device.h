@@ -165,7 +165,6 @@ protected:
 
     void LogTrace(const string&) const;
     void LogDebug(const string&) const;
-    void LogInfo(const string&) const;
     void LogWarn(const string&) const;
     void LogError(const string&) const;
 
