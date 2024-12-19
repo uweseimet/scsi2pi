@@ -179,15 +179,15 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
 
 void AbstractController::LogTrace(const string &s) const
 {
-    controller_logger->log(level::level_enum::trace, s);
+    controller_logger->trace(s);
 }
 
 void AbstractController::LogDebug(const string &s) const
 {
-    controller_logger->log(level::level_enum::debug, s);
+    controller_logger->debug(s);
 }
 
 void AbstractController::LogWarn(const string &s) const
 {
-    controller_logger->log(level::level_enum::warn, s);
+    controller_logger->warn(s);
 }
