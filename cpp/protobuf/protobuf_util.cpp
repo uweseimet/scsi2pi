@@ -145,25 +145,21 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
         return LIST_EMPTY;
     }
 
-    ostringstream s;
-    s << LIST_HEADER;
-
     vector<PbDevice> devices(pb_devices);
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
+    string s = LIST_HEADER;
+
     for (const auto &device : devices) {
-        s << "|  " << setw(4) << to_string(device.id()) + ":" + to_string(device.unit()) << "  | "
-            << PbDeviceType_Name(device.type())
-            << " | " << (device.file().name().empty() ? "NO MEDIUM" : device.file().name())
-            << (
+        s += fmt::format("|  {0}:{1:<2}  | {2} | {3} {4}\n", device.id(), device.unit(),
+            PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
-                " (READ-ONLY)" : "")
-            << '\n';
+                " (READ-ONLY)" : "");
     }
 
-    s << LIST_FOOTER;
+    s += LIST_FOOTER;
 
-    return s.str();
+    return s;
 }
 
 string protobuf_util::ListDevices(const unordered_set<shared_ptr<PrimaryDevice>> &d)
@@ -172,24 +168,21 @@ string protobuf_util::ListDevices(const unordered_set<shared_ptr<PrimaryDevice>>
         return LIST_EMPTY;
     }
 
-    ostringstream s;
-    s << LIST_HEADER;
-
     vector<shared_ptr<PrimaryDevice>> devices(d.begin(), d.end());
     ranges::sort(devices,
         [](const auto &a, const auto &b) {return a->GetId() < b->GetId() || a->GetLun() < b->GetLun();});
 
+    string s = LIST_HEADER;
+
     for (const auto &device : devices) {
-        s << "|  " << setw(4) << to_string(device->GetId()) + ":" + to_string(device->GetLun()) << "  | "
-            << PbDeviceType_Name(device->GetType())
-            << " | " << device->GetIdentifier()
-            << (!device->IsRemoved() && (device->IsReadOnly() || device->IsProtected()) ? " (READ-ONLY)" : "")
-            << '\n';
+        s += fmt::format("|  {0}:{1:<2}  | {2} | {3} {4}\n", device->GetId(), device->GetLun(),
+            PbDeviceType_Name(device->GetType()), device->GetIdentifier(),
+            !device->IsRemoved() && (device->IsReadOnly() || device->IsProtected()) ? " (READ-ONLY)" : "");
     }
 
-    s << LIST_FOOTER;
+    s += LIST_FOOTER;
 
-    return s.str();
+    return s;
 }
 
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
