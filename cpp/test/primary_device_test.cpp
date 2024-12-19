@@ -72,6 +72,16 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
     EXPECT_EQ(scsi_level::spc_7, device.GetScsiLevel());
 }
 
+TEST(PrimaryDeviceTest, SetResponseDataFormat)
+{
+    MockPrimaryDevice device(0);
+
+    EXPECT_FALSE(device.SetResponseDataFormat(scsi_level::none));
+    EXPECT_TRUE(device.SetResponseDataFormat(scsi_level::scsi_1_ccs));
+    EXPECT_TRUE(device.SetResponseDataFormat(scsi_level::scsi_2));
+    EXPECT_FALSE(device.SetResponseDataFormat(scsi_level::spc));
+}
+
 TEST(PrimaryDeviceTest, Status)
 {
     MockPrimaryDevice device(0);
