@@ -166,9 +166,6 @@ TEST(ProtobufUtil, ListDevices)
     devices.emplace_back(device);
     const string device_list = ListDevices(devices);
     EXPECT_FALSE(device_list.empty());
-    EXPECT_NE(string::npos, device_list.find("DaynaPort SCSI/Link"));
-    EXPECT_NE(string::npos, device_list.find("Host Services"));
-    EXPECT_NE(string::npos, device_list.find("SCSI Printer"));
 }
 
 TEST(ProtobufUtil, SetProductData)

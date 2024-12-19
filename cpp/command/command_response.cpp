@@ -93,6 +93,8 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         }
     }
 
+    pb_device.mutable_file()->set_name(device->GetIdentifier());
+
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
@@ -105,12 +107,6 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
         pb_device.set_caching_mode(disk->GetCachingMode());
-    }
-#endif
-#ifdef BUILD_SCSG
-    if (const auto sg = dynamic_pointer_cast<const ScsiGeneric>(device); sg) {
-        pb_device.mutable_file()->set_name(sg->GetIdentifier());
-        pb_device.set_type(SCSG);
     }
 #endif
 }

@@ -154,28 +154,9 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
     for (const auto &device : devices) {
-        string filename;
-        switch (device.type()) {
-        case SCDP:
-            filename = "DaynaPort SCSI/Link";
-            break;
-
-        case SCHS:
-            filename = "Host Services";
-            break;
-
-        case SCLP:
-            filename = "SCSI Printer";
-            break;
-
-        default:
-            filename = device.file().name();
-            break;
-        }
-
         s << "|  " << device.id() << " | " << setw(3) << device.unit() << " | " << PbDeviceType_Name(device.type())
             << " | "
-            << (filename.empty() ? "NO MEDIUM" : filename)
+            << (device.file().name().empty() ? "NO MEDIUM" : device.file().name())
             << (
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
                 " (READ-ONLY)" : "")
