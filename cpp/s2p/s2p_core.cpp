@@ -208,7 +208,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     response.GetDevices(executor->GetAllDevices(), server_info);
     const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
         server_info.devices_info().devices().cend() };
-    const string device_list = ListDevices(devices);
+    const string device_list = ListDevices(controller_factory.GetAllDevices());
     LogDevices(device_list);
 
     // Show the device list only once

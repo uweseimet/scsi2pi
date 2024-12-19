@@ -10,6 +10,7 @@
 
 #include <span>
 #include <vector>
+#include "base/primary_device.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
@@ -42,6 +43,7 @@ string SetFromGenericParams(PbCommand&, const string&);
 void SetProductData(PbDeviceDefinition&, const string&);
 string SetIdAndLun(PbDeviceDefinition&, const string&);
 string ListDevices(const vector<PbDevice>&);
+string ListDevices(const unordered_set<shared_ptr<PrimaryDevice>>&);
 
 void SerializeMessage(int, const google::protobuf::Message&);
 void DeserializeMessage(int, google::protobuf::Message&);

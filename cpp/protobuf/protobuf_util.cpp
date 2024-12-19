@@ -187,6 +187,34 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
     return s.str();
 }
 
+string protobuf_util::ListDevices(const unordered_set<shared_ptr<PrimaryDevice>> &d)
+{
+    if (d.empty()) {
+        return "No devices currently attached\n";
+    }
+
+    ostringstream s;
+    s << "+----+-----+------+-------------------------------------\n"
+        << "| ID | LUN | Type | Image File/Device File/Description\n"
+        << "+----+-----+------+-------------------------------------\n";
+
+    vector<shared_ptr<PrimaryDevice>> devices(d.begin(), d.end());
+    ranges::sort(devices,
+        [](const auto &a, const auto &b) {return a->GetId() < b->GetId() || a->GetLun() < b->GetLun();});
+
+    for (const auto &device : devices) {
+        s << "|  " << device->GetId() << " | " << setw(3) << device->GetLun() << " | "
+            << PbDeviceType_Name(device->GetType())
+            << " | " << device->GetIdentifier()
+            << (!device->IsRemoved() && (device->IsReadOnly() || device->IsProtected()) ? " (READ-ONLY)" : "")
+            << '\n';
+    }
+
+    s << "+----+-----+------+-------------------------------------\n";
+
+    return s.str();
+}
+
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
 // A little endian platform is assumed.
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)

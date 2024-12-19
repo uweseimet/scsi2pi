@@ -73,6 +73,8 @@ public:
 
     int GetId() const override;
 
+    virtual string GetIdentifier() const = 0;
+
     int GetDelayAfterBytes() const
     {
         return delay_after_bytes;

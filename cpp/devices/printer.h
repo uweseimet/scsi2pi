@@ -25,6 +25,11 @@ public:
     bool SetUp() override;
     void CleanUp() override;
 
+    string GetIdentifier() const override
+    {
+        return "SCSI Printer";
+    }
+
     param_map GetDefaultParams() const override;
 
     vector<uint8_t> InquiryInternal() const override;
