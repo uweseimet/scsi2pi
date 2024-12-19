@@ -444,7 +444,7 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
     else if (device.IsProtectable() && device.IsProtected()) {
         msg += "protected ";
     }
-    msg += GetIdentifier(device);
+    msg += GetIdentifier(device) + ", " + device.GetIdentifier();
     s2p_logger.info(msg);
 }
 
