@@ -139,20 +139,20 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
     return "";
 }
 
-string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
+string protobuf_util::ListDevices(const vector<PbDevice> &devices)
 {
-    if (pb_devices.empty()) {
+    if (devices.empty()) {
         return "No devices currently attached\n";
     }
 
-    vector<PbDevice> devices(pb_devices);
-    ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
+    vector<PbDevice> sorted_devices(devices);
+    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
     string s = "+--------+------+-----------------------------------------\n"
         "| ID:LUN | Type | Image File/Device File/Description\n"
         "+--------+------+-----------------------------------------\n";
 
-    for (const auto &device : devices) {
+    for (const auto &device : sorted_devices) {
         s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
             PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
