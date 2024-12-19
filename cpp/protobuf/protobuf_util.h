@@ -43,18 +43,11 @@ string SetFromGenericParams(PbCommand&, const string&);
 void SetProductData(PbDeviceDefinition&, const string&);
 string SetIdAndLun(PbDeviceDefinition&, const string&);
 string ListDevices(const vector<PbDevice>&);
-string ListDevices(const unordered_set<shared_ptr<PrimaryDevice>>&);
 
 void SerializeMessage(int, const google::protobuf::Message&);
 void DeserializeMessage(int, google::protobuf::Message&);
 size_t ReadBytes(int, span<byte>);
 size_t WriteBytes(int, span<uint8_t>);
-
-static const char *LIST_EMPTY = "No devices currently attached\n";
-static const char *LIST_HEADER = "+--------+------+-----------------------------------------\n"
-    "| ID:LUN | Type | Image File/Device File/Description\n"
-    "+--------+------+-----------------------------------------\n";
-static const char *LIST_FOOTER = "+--------+------+-----------------------------------------\n";
 
 inline static const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
     { 'c', SCCD },

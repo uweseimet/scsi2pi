@@ -142,13 +142,15 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
 string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 {
     if (pb_devices.empty()) {
-        return LIST_EMPTY;
+        return "No devices currently attached\n";
     }
 
     vector<PbDevice> devices(pb_devices);
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
-    string s = LIST_HEADER;
+    string s = "+--------+------+-----------------------------------------\n"
+        "| ID:LUN | Type | Image File/Device File/Description\n"
+        "+--------+------+-----------------------------------------\n";
 
     for (const auto &device : devices) {
         s += fmt::format("|  {0}:{1:<2}  | {2} | {3} {4}\n", device.id(), device.unit(),
@@ -157,30 +159,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
                 " (READ-ONLY)" : "");
     }
 
-    s += LIST_FOOTER;
-
-    return s;
-}
-
-string protobuf_util::ListDevices(const unordered_set<shared_ptr<PrimaryDevice>> &d)
-{
-    if (d.empty()) {
-        return LIST_EMPTY;
-    }
-
-    vector<shared_ptr<PrimaryDevice>> devices(d.begin(), d.end());
-    ranges::sort(devices,
-        [](const auto &a, const auto &b) {return a->GetId() < b->GetId() || a->GetLun() < b->GetLun();});
-
-    string s = LIST_HEADER;
-
-    for (const auto &device : devices) {
-        s += fmt::format("|  {0}:{1:<2}  | {2} | {3} {4}\n", device->GetId(), device->GetLun(),
-            PbDeviceType_Name(device->GetType()), device->GetIdentifier(),
-            !device->IsRemoved() && (device->IsReadOnly() || device->IsProtected()) ? " (READ-ONLY)" : "");
-    }
-
-    s += LIST_FOOTER;
+    s += "+--------+------+-----------------------------------------\n";
 
     return s;
 }
