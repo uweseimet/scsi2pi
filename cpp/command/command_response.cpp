@@ -163,8 +163,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (const string &error = ValidateImageFile(it->path()); !error.empty()) {
-            logger.warn(error);
+        if (!ValidateImageFile(it->path(), logger)) {
             continue;
         }
 
@@ -514,10 +513,10 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
     return id_sets;
 }
 
-string CommandResponse::ValidateImageFile(const path &path)
+bool CommandResponse::ValidateImageFile(const path &path, logger &logger)
 {
     if (path.filename().string().starts_with(".")) {
-        return fmt::format("Image file '{}' is invalid", path.string());
+        return false;
     }
 
     filesystem::path p(path);
@@ -526,19 +525,21 @@ string CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            return fmt::format("Image file symlink '{}' is broken", path.string());
+            logger.warn(fmt::format("Image file symlink '{}' is broken", path.string()));
+            return false;
         }
     }
 
     if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
-        return fmt::format("Image file '{}' is invalid", p.string());
+        return false;
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        return fmt::format("Image file '{}' is invalid", p.string());
+        logger.warn("Image file '{}' is invalid", p.string());
+        return false;
     }
 
-    return "";
+    return true;
 }
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)
