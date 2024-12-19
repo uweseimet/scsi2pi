@@ -142,28 +142,26 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
 string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 {
     if (pb_devices.empty()) {
-        return "No devices currently attached\n";
+        return LIST_EMPTY;
     }
 
     ostringstream s;
-    s << "+----+-----+------+-------------------------------------\n"
-        << "| ID | LUN | Type | Image File/Device File/Description\n"
-        << "+----+-----+------+-------------------------------------\n";
+    s << LIST_HEADER;
 
     vector<PbDevice> devices(pb_devices);
     ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
     for (const auto &device : devices) {
-        s << "|  " << device.id() << " | " << setw(3) << device.unit() << " | " << PbDeviceType_Name(device.type())
-            << " | "
-            << (device.file().name().empty() ? "NO MEDIUM" : device.file().name())
+        s << "|  " << setw(4) << to_string(device.id()) + ":" + to_string(device.unit()) << "  | "
+            << PbDeviceType_Name(device.type())
+            << " | " << (device.file().name().empty() ? "NO MEDIUM" : device.file().name())
             << (
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
                 " (READ-ONLY)" : "")
             << '\n';
     }
 
-    s << "+----+-----+------+-------------------------------------\n";
+    s << LIST_FOOTER;
 
     return s.str();
 }
@@ -171,27 +169,25 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
 string protobuf_util::ListDevices(const unordered_set<shared_ptr<PrimaryDevice>> &d)
 {
     if (d.empty()) {
-        return "No devices currently attached\n";
+        return LIST_EMPTY;
     }
 
     ostringstream s;
-    s << "+----+-----+------+-------------------------------------\n"
-        << "| ID | LUN | Type | Image File/Device File/Description\n"
-        << "+----+-----+------+-------------------------------------\n";
+    s << LIST_HEADER;
 
     vector<shared_ptr<PrimaryDevice>> devices(d.begin(), d.end());
     ranges::sort(devices,
         [](const auto &a, const auto &b) {return a->GetId() < b->GetId() || a->GetLun() < b->GetLun();});
 
     for (const auto &device : devices) {
-        s << "|  " << device->GetId() << " | " << setw(3) << device->GetLun() << " | "
+        s << "|  " << setw(4) << to_string(device->GetId()) + ":" + to_string(device->GetLun()) << "  | "
             << PbDeviceType_Name(device->GetType())
             << " | " << device->GetIdentifier()
             << (!device->IsRemoved() && (device->IsReadOnly() || device->IsProtected()) ? " (READ-ONLY)" : "")
             << '\n';
     }
 
-    s << "+----+-----+------+-------------------------------------\n";
+    s << LIST_FOOTER;
 
     return s.str();
 }

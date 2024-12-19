@@ -26,7 +26,7 @@ public:
 
     string GetIdentifier() const override
     {
-        return device;
+        return device + " (" + GetProductData().GetPaddedName() + ")";
     }
 
     string GetDevice() const
