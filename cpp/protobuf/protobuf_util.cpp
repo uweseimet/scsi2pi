@@ -153,7 +153,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
         "+--------+------+-----------------------------------------\n";
 
     for (const auto &device : devices) {
-        s += fmt::format("|  {0}:{1:<2}  | {2} | {3} {4}\n", device.id(), device.unit(),
+        s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
             PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
                 " (READ-ONLY)" : "");
