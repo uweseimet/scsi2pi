@@ -429,32 +429,7 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         cout << "Device Type:          Unknown\n";
     }
 
-    if (buf[2]) {
-        cout << "SCSI Level:           ";
-
-        switch (buf[2]) {
-        case 0:
-            cout << "SCSI-1";
-            break;
-
-        case 1:
-            cout << "SCSI-1-CCS";
-            break;
-
-        case 2:
-            cout << "SCSI-2";
-            break;
-
-        case 3:
-            cout << "SPC";
-            break;
-
-        default:
-            cout << "SPC-" << buf[2] - 2;
-            break;
-        }
-        cout << "\n";
-    }
+    cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
     cout << "Response Data Format: ";
     switch (buf[3]) {
