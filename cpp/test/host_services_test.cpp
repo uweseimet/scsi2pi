@@ -112,7 +112,7 @@ TEST(HostServicesTest, ReceiveOperationResults)
 
     controller->SetCdbByte(1, 0b010);
     Dispatch(services, scsi_command::receive_operation_results, sense_key::aborted_command,
-        asc::host_services_receive_operation_results, "No matching initiator ID");
+        asc::internal_target_failure, "No matching initiator ID");
 }
 
 TEST(HostServicesTest, ModeSense6)

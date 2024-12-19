@@ -147,6 +147,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DaynaportTest, SetInterfaceMode);
     FRIEND_TEST(DaynaportTest, SetMcastAddr);
     FRIEND_TEST(DaynaportTest, EnableInterface);
+    FRIEND_TEST(DaynaportTest, DisableInterface);
     FRIEND_TEST(HostServicesTest, StartStopUnit);
     FRIEND_TEST(HostServicesTest, ExecuteOperation);
     FRIEND_TEST(HostServicesTest, ReceiveOperationResults);

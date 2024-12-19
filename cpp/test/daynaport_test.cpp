@@ -171,13 +171,16 @@ TEST(DaynaportTest, EnableInterface)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
-    // Enable
     controller->SetCdbByte(5, 0x80);
-    Dispatch(daynaport, scsi_command::enable_interface, sense_key::aborted_command, asc::daynaport_enable_interface);
+    Dispatch(daynaport, scsi_command::enable_interface, sense_key::aborted_command, asc::internal_target_failure);
+}
 
-    // Disable
+TEST(DaynaportTest, DisableInterface)
+{
+    auto [controller, daynaport] = CreateDevice(SCDP);
+
     controller->SetCdbByte(5, 0x00);
-    Dispatch(daynaport, scsi_command::enable_interface, sense_key::aborted_command, asc::daynaport_disable_interface);
+    Dispatch(daynaport, scsi_command::enable_interface, sense_key::aborted_command, asc::internal_target_failure);
 }
 
 TEST(DaynaportTest, GetDelayAfterBytes)

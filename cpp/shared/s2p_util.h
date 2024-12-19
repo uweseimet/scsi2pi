@@ -101,6 +101,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
 static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::no_additional_sense_information, "NO ADDITIONAL SENSE INFORMATION" },
     { asc::write_fault, "PERIPHERAL DEVICE WRITE FAULT" },
+    { asc::io_process_terminated, "I/O PROCESS TERMINATED" },
     { asc::write_error, "WRITE ERROR" },
     { asc::read_error, "READ ERROR" },
     { asc::locate_operation_failure, "LOCATE OPERATION FAILURE" },
@@ -116,6 +117,7 @@ static const unordered_map<asc, const char*> ASC_MAPPING = {
     { asc::incompatible_medium_installed, "INCOMPATIBLE MEDIUM INSTALLED" },
     { asc::sequential_positioning_error, "SEQUENTIAL POSITIONING ERROR" },
     { asc::medium_not_present, "MEDIUM NOT PRESENT" },
+    { asc::internal_target_failure, "INTERNAL TARGET FAILURE" },
     { asc::command_phase_error, "COMMAND PHASE ERROR" },
     { asc::data_phase_error, "DATA PHASE ERROR" },
     { asc::medium_load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
