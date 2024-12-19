@@ -98,7 +98,8 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
-        GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
+        GetImageFile(*pb_device.mutable_file(),
+            storage_device->IsReady() ? storage_device->GetFilename() : "NO MEDIUM");
     }
 #endif
 #ifdef BUILD_DISK
@@ -108,7 +109,7 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 #endif
 #ifdef BUILD_SCSG
     if (const auto sg = dynamic_pointer_cast<const ScsiGeneric>(device); sg) {
-        pb_device.mutable_file()->set_name(sg->GetDevice());
+        pb_device.mutable_file()->set_name(sg->GetIdentifier());
         pb_device.set_type(SCSG);
     }
 #endif
