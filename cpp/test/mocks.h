@@ -147,6 +147,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DaynaportTest, SetInterfaceMode);
     FRIEND_TEST(DaynaportTest, SetMcastAddr);
     FRIEND_TEST(DaynaportTest, EnableInterface);
+    FRIEND_TEST(DaynaportTest, DisableInterface);
     FRIEND_TEST(HostServicesTest, StartStopUnit);
     FRIEND_TEST(HostServicesTest, ExecuteOperation);
     FRIEND_TEST(HostServicesTest, ReceiveOperationResults);
@@ -291,6 +292,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
+    MOCK_METHOD(string, GetIdentifier, (), (const, override));
     MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));

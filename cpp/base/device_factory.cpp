@@ -35,7 +35,6 @@
 #ifdef BUILD_SCSG
 #include "devices/scsi_generic.h"
 #endif
-#include "shared/s2p_util.h"
 
 using namespace s2p_util;
 

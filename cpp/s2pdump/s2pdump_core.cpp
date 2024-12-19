@@ -10,7 +10,6 @@
 #include <chrono>
 #include <csignal>
 #include <filesystem>
-#include <iomanip>
 #include <iostream>
 #include <regex>
 #include <getopt.h>
@@ -301,7 +300,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    s2pdump_logger = CreateLogger(APP_NAME);
+    s2pdump_logger = CreateLogger("[" + APP_NAME + "]");
 
     try {
         if (!ParseArguments(args)) {
@@ -430,32 +429,7 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         cout << "Device Type:          Unknown\n";
     }
 
-    if (buf[2]) {
-        cout << "SCSI Level:           ";
-
-        switch (buf[2]) {
-        case 0:
-            cout << "SCSI-1";
-            break;
-
-        case 1:
-            cout << "SCSI-1-CCS";
-            break;
-
-        case 2:
-            cout << "SCSI-2";
-            break;
-
-        case 3:
-            cout << "SPC";
-            break;
-
-        default:
-            cout << "SPC-" << buf[2] - 2;
-            break;
-        }
-        cout << "\n";
-    }
+    cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
     cout << "Response Data Format: ";
     switch (buf[3]) {

@@ -25,6 +25,11 @@ public:
 
     bool SetUp() override;
 
+    string GetIdentifier() const override
+    {
+        return "Host Services";
+    }
+
     vector<uint8_t> InquiryInternal() const override;
 
     int WriteData(cdb_t, data_out_t, int, int) override;

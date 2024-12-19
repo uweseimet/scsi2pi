@@ -93,23 +93,20 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         }
     }
 
+    pb_device.mutable_file()->set_name(device->GetIdentifier());
+
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
-        GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
+        GetImageFile(*pb_device.mutable_file(),
+            storage_device->IsReady() ? storage_device->GetFilename() : "NO MEDIUM");
     }
 #endif
 #ifdef BUILD_DISK
     if (const auto disk = dynamic_pointer_cast<const Disk>(device); disk) {
         pb_device.set_caching_mode(disk->GetCachingMode());
-    }
-#endif
-#ifdef BUILD_SCSG
-    if (const auto sg = dynamic_pointer_cast<const ScsiGeneric>(device); sg) {
-        pb_device.mutable_file()->set_name(sg->GetDevice());
-        pb_device.set_type(SCSG);
     }
 #endif
 }
@@ -163,8 +160,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (const string &error = ValidateImageFile(it->path()); !error.empty()) {
-            logger.warn(error);
+        if (!ValidateImageFile(it->path(), logger)) {
             continue;
         }
 
@@ -514,10 +510,10 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
     return id_sets;
 }
 
-string CommandResponse::ValidateImageFile(const path &path)
+bool CommandResponse::ValidateImageFile(const path &path, logger &logger)
 {
     if (path.filename().string().starts_with(".")) {
-        return fmt::format("Image file '{}' is invalid", path.string());
+        return false;
     }
 
     filesystem::path p(path);
@@ -526,19 +522,21 @@ string CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            return fmt::format("Image file symlink '{}' is broken", path.string());
+            logger.warn(fmt::format("Image file symlink '{}' is broken", path.string()));
+            return false;
         }
     }
 
     if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
-        return fmt::format("Image file '{}' is invalid", p.string());
+        return false;
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        return fmt::format("Image file '{}' is invalid", p.string());
+        logger.warn("Image file '{}' is invalid", p.string());
+        return false;
     }
 
-    return "";
+    return true;
 }
 
 bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)

@@ -29,6 +29,11 @@ public:
 
     void Dispatch(scsi_command) override;
 
+    string GetIdentifier() const override
+    {
+        return filename.empty() ? "NO MEDIUM" : filename;
+    }
+
     bool SupportsImageFile() const override
     {
         return true;

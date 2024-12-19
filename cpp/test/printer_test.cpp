@@ -113,12 +113,12 @@ TEST(PrinterTest, SynchronizeBuffer)
     params["cmd"] = "false %f";
     printer->SetParams(params);
 
-    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_nothing_to_print);
+    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::io_process_terminated);
 
     controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
     controller->SetTransferSize(4, 4);
     EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
-    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::printer_printing_failed);
+    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::io_process_terminated);
 
     params["cmd"] = "true %f";
     printer->SetParams(params);

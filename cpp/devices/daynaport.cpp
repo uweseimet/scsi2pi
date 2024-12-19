@@ -367,7 +367,7 @@ void DaynaPort::EnableInterface()
     if (GetCdbByte(5) & 0x80) {
         if (const string &error = TapDriver::IpLink(true, GetLogger()); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
-            throw scsi_exception(sense_key::aborted_command, asc::daynaport_enable_interface);
+            throw scsi_exception(sense_key::aborted_command, asc::internal_target_failure);
         }
 
         tap.Flush(GetLogger());
@@ -377,7 +377,7 @@ void DaynaPort::EnableInterface()
     else {
         if (const string &error = TapDriver::IpLink(false, GetLogger()); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
-            throw scsi_exception(sense_key::aborted_command, asc::daynaport_disable_interface);
+            throw scsi_exception(sense_key::aborted_command, asc::internal_target_failure);
         }
 
         LogDebug("The DaynaPort interface has been disabled");

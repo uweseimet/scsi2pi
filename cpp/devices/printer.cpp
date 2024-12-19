@@ -124,7 +124,7 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw scsi_exception(sense_key::aborted_command, asc::printer_nothing_to_print);
+        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
     }
 
     out.close();
@@ -147,7 +147,7 @@ void Printer::SynchronizeBuffer()
 
         CleanUp();
 
-        throw scsi_exception(sense_key::aborted_command, asc::printer_printing_failed);
+        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
     }
 
     CleanUp();
@@ -176,7 +176,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         if (fd == -1) {
             LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
             ++print_error_count;
-            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
+            throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
         }
         close(fd);
 
@@ -201,7 +201,7 @@ void Printer::CheckForFileError()
     if (out.fail()) {
         out.clear();
         ++print_error_count;
-        throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
+        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
     }
 }
 

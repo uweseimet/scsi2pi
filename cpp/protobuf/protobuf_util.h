@@ -10,6 +10,7 @@
 
 #include <span>
 #include <vector>
+#include "base/primary_device.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

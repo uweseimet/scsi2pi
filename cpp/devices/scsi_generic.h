@@ -24,6 +24,11 @@ public:
     bool SetUp() override;
     void CleanUp() override;
 
+    string GetIdentifier() const override
+    {
+        return device + " (" + GetProductData().GetPaddedName() + ")";
+    }
+
     string GetDevice() const
     {
         return device;

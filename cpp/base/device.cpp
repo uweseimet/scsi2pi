@@ -8,7 +8,6 @@
 
 #include "device.h"
 #include <stdexcept>
-#include "shared/s2p_util.h"
 
 void Device::SetProtected(bool b)
 {
@@ -93,25 +92,20 @@ logger& Device::GetLogger()
 
 void Device::LogTrace(const string &s) const
 {
-    device_logger->log(level::level_enum::trace, s);
+    device_logger->trace(s);
 }
 
 void Device::LogDebug(const string &s) const
 {
-    device_logger->log(level::level_enum::debug, s);
-}
-
-void Device::LogInfo(const string &s) const
-{
-    device_logger->log(level::level_enum::info, s);
+    device_logger->debug(s);
 }
 
 void Device::LogWarn(const string &s) const
 {
-    device_logger->log(level::level_enum::warn, s);
+    device_logger->warn(s);
 }
 
 void Device::LogError(const string &s) const
 {
-    device_logger->log(level::level_enum::err, s);
+    device_logger->error(s);
 }

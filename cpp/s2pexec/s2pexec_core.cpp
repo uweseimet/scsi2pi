@@ -355,7 +355,7 @@ bool S2pExec::RunInteractive(bool in_process)
 
 int S2pExec::Run(span<char*> args, bool in_process)
 {
-    s2pexec_logger = CreateLogger(APP_NAME);
+    s2pexec_logger = CreateLogger("[" + APP_NAME + "]");
 
     if (args.size() < 2 || in_process) {
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;

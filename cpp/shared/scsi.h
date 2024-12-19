@@ -186,6 +186,7 @@ enum class asc
 {
     no_additional_sense_information = 0x00,
     write_fault = 0x03,
+    io_process_terminated = 0x06,
     write_error = 0x0c,
     read_error = 0x11,
     locate_operation_failure = 0x14,
@@ -201,18 +202,10 @@ enum class asc
     incompatible_medium_installed = 0x30,
     sequential_positioning_error = 0x38,
     medium_not_present = 0x3a,
+    internal_target_failure = 0x44,
     command_phase_error = 0x4a,
     data_phase_error = 0x4b,
     medium_load_or_eject_failed = 0x53,
-
-    // SCSI2Pi-specific
-    controller_process_phase = 0x80,
-    daynaport_enable_interface = 0xf0,
-    daynaport_disable_interface = 0xf1,
-    printer_nothing_to_print = 0xf4,
-    printer_printing_failed = 0xf5,
-    printer_write_failed = 0xf6,
-    host_services_receive_operation_results = 0xf8
 };
 
 enum class ascq

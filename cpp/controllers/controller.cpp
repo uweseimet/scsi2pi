@@ -44,7 +44,7 @@ bool Controller::Process()
 
     // TODO Catch scsi_exception here instead of everywhere else and call Error()?
     if (!ProcessPhase()) {
-        Error(sense_key::aborted_command, asc::controller_process_phase);
+        Error(sense_key::aborted_command, asc::internal_target_failure);
         return false;
     }
 

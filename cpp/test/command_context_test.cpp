@@ -73,6 +73,13 @@ TEST(CommandContext, GetCommand)
     EXPECT_EQ(PbOperation::SERVER_INFO, context.GetCommand().operation());
 }
 
+TEST(CommandContext, GetLogger)
+{
+    PbCommand command;
+    CommandContext context(command, *default_logger());
+    EXPECT_EQ(default_logger()->name(), context.GetLogger().name());
+}
+
 TEST(CommandContext, WriteResult)
 {
     const string filename = CreateTempFile(0);

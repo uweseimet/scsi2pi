@@ -40,6 +40,11 @@ public:
     bool SetUp() override;
     void CleanUp() override;
 
+    string GetIdentifier() const override
+    {
+        return "DaynaPort SCSI/Link";
+    }
+
     param_map GetDefaultParams() const override
     {
         return tap.GetDefaultParams();

@@ -167,7 +167,7 @@ void HostServices::ReceiveOperationResults()
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw scsi_exception(sense_key::aborted_command, asc::host_services_receive_operation_results);
+        throw scsi_exception(sense_key::aborted_command, asc::internal_target_failure);
     }
     const string &execution_result = it->second;
 
