@@ -179,13 +179,15 @@ TEST(TapeTest, Read6)
 
     const string &filename = CreateImageFile(*tape);
 
-    // Fixed, 1 block
+    // Fixed, 0 blocks
     controller->SetCdbByte(1, 0x01);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    CheckPositions(tape, 0, 0);
 
-    // Fixed and SILI
+    // Fixed and SILI, 0 blocks
     controller->SetCdbByte(1, 0x03);
     Dispatch(tape, scsi_command::read_6, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    CheckPositions(tape, 0, 0);
 
     fstream file(filename);
     const vector<uint8_t> &good_data_non_fixed = { 0x0c, 0x00, 0x00, 0x00 };
@@ -200,24 +202,26 @@ TEST(TapeTest, Read6)
     WriteEndOfData(file);
     file.flush();
 
+    const auto &buf = controller->GetBuffer();
+
     Rewind(tape);
 
     // Non-fixed, 12 bytes
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 12);
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
-    EXPECT_EQ('1', controller->GetBuffer()[0]);
-    EXPECT_EQ('2', controller->GetBuffer()[1]);
-    EXPECT_EQ('3', controller->GetBuffer()[2]);
-    EXPECT_EQ('4', controller->GetBuffer()[3]);
-    EXPECT_EQ('5', controller->GetBuffer()[4]);
-    EXPECT_EQ('6', controller->GetBuffer()[5]);
-    EXPECT_EQ('7', controller->GetBuffer()[6]);
-    EXPECT_EQ('8', controller->GetBuffer()[7]);
-    EXPECT_EQ('9', controller->GetBuffer()[8]);
-    EXPECT_EQ('0', controller->GetBuffer()[9]);
-    EXPECT_EQ('1', controller->GetBuffer()[10]);
-    EXPECT_EQ('2', controller->GetBuffer()[11]);
+    EXPECT_EQ('1', buf[0]);
+    EXPECT_EQ('2', buf[1]);
+    EXPECT_EQ('3', buf[2]);
+    EXPECT_EQ('4', buf[3]);
+    EXPECT_EQ('5', buf[4]);
+    EXPECT_EQ('6', buf[5]);
+    EXPECT_EQ('7', buf[6]);
+    EXPECT_EQ('8', buf[7]);
+    EXPECT_EQ('9', buf[8]);
+    EXPECT_EQ('0', buf[9]);
+    EXPECT_EQ('1', buf[10]);
+    EXPECT_EQ('2', buf[11]);
     CheckPositions(tape, 20, 1);
 
     // Fixed, 1 block
@@ -244,48 +248,6 @@ TEST(TapeTest, Read6)
 
     Rewind(tape);
 
-    // Non-fixed, 1 byte (less then block size)
-    controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
-    RequestSense(controller, tape);
-    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-    EXPECT_EQ(0xffffff01U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
-
-    Rewind(tape);
-
-    // Non-fixed, 1 byte (less then block size)
-    controller->SetCdbByte(4, 1);
-    // SILI
-    controller->SetCdbByte(1, 0x02);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
-    RequestSense(controller, tape);
-    EXPECT_FALSE(controller->GetBuffer()[0] & 0x80) << "VALID must not be set";
-    EXPECT_FALSE(controller->GetBuffer()[2] & 0x20) << "ILI must not be set";
-
-    Rewind(tape);
-
-    // Non-fixed, 1024 bytes (more than block size)
-    controller->SetCdbByte(3, 0x04);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
-    RequestSense(controller, tape);
-    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-    EXPECT_EQ(768U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
-
-    Rewind(tape);
-
-    // Non-fixed, 1024 bytes (more than block size)
-    controller->SetCdbByte(3, 0x04);
-    // SILI
-    controller->SetCdbByte(1, 0x02);
-    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
-    RequestSense(controller, tape);
-    EXPECT_TRUE(controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_TRUE(controller->GetBuffer()[2] & 0x20) << "ILI must be set";
-    EXPECT_EQ(768U, GetInt32(controller->GetBuffer(), 3)) << "Wrong block size mismatch difference";
-
-
     // Leading length != trailing length
     const vector<uint8_t> &bad_trailing = { 0x01, 0x00, 0x00, 0x00 };
     file.seekp(0);
@@ -308,8 +270,8 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 90);
     Dispatch(tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
     RequestSense(controller, tape);
-    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(90U, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0x80, buf[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(90U, GetInt32(buf, 3));
 
     Rewind(tape);
 
@@ -318,8 +280,69 @@ TEST(TapeTest, Read6)
     controller->SetCdbByte(4, 1);
     Dispatch(tape, scsi_command::read_6, sense_key::no_sense, asc::no_additional_sense_information);
     RequestSense(controller, tape);
-    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
-    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0x80, buf[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(0U, GetInt32(buf, 3));
+}
+
+TEST(TapeTest, Read6_BlockSizeMismatch)
+{
+    auto [controller, tape] = CreateTape();
+    const string &filename = CreateImageFile(*tape);
+
+    fstream file(filename);
+    WriteGoodData(file, 256);
+    file.flush();
+
+    const auto &buf = controller->GetBuffer();
+
+    // Non-fixed, 1 byte (less than block size)
+    controller->SetCdbByte(4, 1);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong actual length";
+    RequestSense(controller, tape);
+    EXPECT_TRUE(buf[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xffffff01U, GetInt32(buf, 3)) << "Wrong block size mismatch difference";
+    CheckPositions(tape, 264, 1);
+
+    Rewind(tape);
+
+    // Non-fixed, 1 byte (less than block size)
+    controller->SetCdbByte(4, 1);
+    // SILI
+    controller->SetCdbByte(1, 0x02);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong actual length";
+    RequestSense(controller, tape);
+    EXPECT_FALSE(buf[0] & 0x80) << "VALID must not be set";
+    EXPECT_FALSE(buf[2] & 0x20) << "ILI must not be set";
+    CheckPositions(tape, 264, 1);
+
+    Rewind(tape);
+
+    // Non-fixed, 1024 bytes (more than block size)
+    controller->SetCdbByte(3, 0x04);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    EXPECT_EQ(256, controller->GetCurrentLength()) << "Wrong actual length";
+    RequestSense(controller, tape);
+    EXPECT_TRUE(buf[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(768U, GetInt32(buf, 3)) << "Wrong block size mismatch difference";
+    CheckPositions(tape, 264, 1);
+
+    Rewind(tape);
+
+    // Non-fixed, 1024 bytes (more than block size)
+    controller->SetCdbByte(3, 0x04);
+    // SILI
+    controller->SetCdbByte(1, 0x02);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    EXPECT_EQ(256, controller->GetCurrentLength()) << "Wrong actual length";
+    RequestSense(controller, tape);
+    EXPECT_TRUE(buf[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(768U, GetInt32(buf, 3)) << "Wrong block size mismatch difference";
+    CheckPositions(tape, 264, 1);
 }
 
 TEST(TapeTest, Read16)
@@ -329,6 +352,7 @@ TEST(TapeTest, Read16)
     // Partition 1
     controller->SetCdbByte(3, 1);
     Dispatch(tape, scsi_command::read_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    CheckPositions(tape, 0, 0);
 
     const string &filename = CreateImageFile(*tape);
     fstream file(filename);
@@ -361,11 +385,13 @@ TEST(TapeTest, Write6)
 
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(tape, scsi_command::write_6));
+    CheckPositions(tape, 0, 0);
 
     // Fixed, 1 block
     controller->SetCdbByte(1, 0x01);
     Dispatch(tape, scsi_command::write_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
         "Drive is not in fixed mode, block size is 0");
+    CheckPositions(tape, 0, 0);
 
     const string &filename = CreateImageFile(*tape);
     ifstream file(filename);
@@ -424,10 +450,12 @@ TEST(TapeTest, Write16)
     // FCS/LCS
     controller->SetCdbByte(1, 0b1100);
     Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    CheckPositions(tape, 0, 0);
 
     // Partition 1
     controller->SetCdbByte(3, 1);
     Dispatch(tape, scsi_command::write_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    CheckPositions(tape, 0, 0);
 
     const string &filename = CreateImageFile(*tape);
     fstream file(filename);

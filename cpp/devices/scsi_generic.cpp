@@ -271,7 +271,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
         memcpy(deferred_sense_data.data(), sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = true;
 
-        // This is just to set the return status to CHECK CONDITION
+        // Set the return status to CHECK CONDITION
         throw scsi_exception(sense_key::no_sense);
     }
 

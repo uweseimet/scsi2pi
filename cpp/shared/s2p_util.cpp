@@ -247,7 +247,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
     }
 
     return s + fmt::format(", EOM: {0}, ILI: {1}, INFORMATION: {2}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
-            GetInt32(sense_data, 3));
+        static_cast<int>(GetInt32(sense_data, 3)));
 }
 
 string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)

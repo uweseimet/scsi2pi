@@ -424,23 +424,23 @@ TEST(DiskTest, ReadLong10)
     Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::lba_out_of_range,
         "READ LONG(10) must fail because the capacity is exceeded");
 
-    controller->SetCdbByte(7, 0xff);
-    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "READ LONG(10) must fail because it only supports a limited transfer length");
-
     disk->SetBlockCount(1);
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
-    // 4 Bytes
+    // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::read_long_10);
+    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    RequestSense(controller, disk);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
-    // 512 Bytes
+    // 512 bytes
     controller->SetCdbByte(7, 0x02);
     Dispatch(disk, scsi_command::read_long_10);
 
-    // 516 Bytes
+    // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
     Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -456,7 +456,6 @@ TEST(DiskTest, ReadLong16)
 
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
-
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_capacity_16_read_long_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
@@ -466,26 +465,25 @@ TEST(DiskTest, ReadLong16)
     Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::lba_out_of_range,
         "READ LONG(16) must fail because the capacity is exceeded");
 
-    controller->SetCdbByte(1, 0x11);
-    controller->SetCdbByte(12, 0xff);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "READ LONG(16) must fail because it only supports a limited transfer length");
-
     disk->SetBlockCount(1);
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
-    // 4 Bytes
+    // 4 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16);
+    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    RequestSense(controller, disk);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
-    // 512 Bytes
+    // 512 bytes
     controller->SetCdbByte(1, 0x11);
-    controller->SetCdbByte(13, 0x02);
+    controller->SetCdbByte(12, 0x02);
     Dispatch(disk, scsi_command::read_capacity_16_read_long_16);
 
-    // 516 Bytes
+    // 516 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
@@ -512,23 +510,23 @@ TEST(DiskTest, WriteLong10)
     Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::lba_out_of_range,
         "WRITE LONG(10) must fail because the capacity is exceeded");
 
-    controller->SetCdbByte(7, 0xff);
-    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "WRITE LONG(10) must fail because it only supports a limited transfer length");
-
     disk->SetBlockCount(1);
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
-    // 4 Bytes
+    // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::write_long_10);
+    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    RequestSense(controller, disk);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
-    // 512 Bytes
+    // 512 bytes
     controller->SetCdbByte(7, 0x02);
     Dispatch(disk, scsi_command::write_long_10);
 
-    // 516 Bytes
+    // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
     Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
@@ -550,23 +548,23 @@ TEST(DiskTest, WriteLong16)
     EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_long_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 
-    controller->SetCdbByte(12, 0xff);
-    Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb,
-        "WRITE LONG(16) must fail because it only supports a limited transfer length");
-
     disk->SetBlockCount(1);
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
-    // 4 Bytes
+    // 4 bytes
     controller->SetCdbByte(13, 0x04);
+    Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    RequestSense(controller, disk);
+    EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
+
+    // 512 bytes
+    controller->SetCdbByte(12, 0x02);
     Dispatch(disk, scsi_command::write_long_16);
 
-    // 512 Bytes
-    controller->SetCdbByte(13, 0x02);
-    Dispatch(disk, scsi_command::write_long_16);
-
-    // 516 Bytes
+    // 516 bytes
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
     Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);

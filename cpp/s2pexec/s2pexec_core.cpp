@@ -118,7 +118,6 @@ bool S2pExec::ParseArguments(span<char*> args)
     string target;
     string buf;
     string tout = "3";
-    string log_limit = "128";
 
     // Resetting these is important for the interactive mode
     command.clear();
@@ -355,7 +354,7 @@ bool S2pExec::RunInteractive(bool in_process)
 
 int S2pExec::Run(span<char*> args, bool in_process)
 {
-    s2pexec_logger = CreateLogger("[" + APP_NAME + "]");
+    s2pexec_logger = CreateLogger(APP_NAME);
 
     if (args.size() < 2 || in_process) {
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
@@ -464,6 +463,13 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
             throw execution_exception(fmt::format("Can't execute command {}",
                 CommandMetaData::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]))));
         }
+    }
+
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense)) {
+        vector<byte> sense_data;
+        transform(buffer.begin(), buffer.begin() + 14, back_inserter(sense_data),
+            [](const uint8_t d) {return static_cast<byte>(d);});
+        s2pexec_logger->debug(FormatSenseData(sense_data));
     }
 
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {

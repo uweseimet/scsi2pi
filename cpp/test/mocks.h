@@ -92,7 +92,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     friend shared_ptr<PrimaryDevice> CreateDevice(s2p_interface::PbDeviceType, AbstractController&, int);
 
     FRIEND_TEST(AbstractControllerTest, Reset);
-    FRIEND_TEST(AbstractControllerTest, Status);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
@@ -161,6 +160,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Read6_BlockSizeMismatch);
     FRIEND_TEST(TapeTest, Read16);
     FRIEND_TEST(TapeTest, Write6);
     FRIEND_TEST(TapeTest, Write16);
@@ -203,7 +203,7 @@ public:
     MockAbstractController() : AbstractController(*mock_bus, 0, formatter)
     {
     }
-    MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
+    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
@@ -236,9 +236,9 @@ class MockController : public Controller
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(TapeTest, Write6);
 
-    const S2pFormatter formatter;
-
 public:
+
+    const S2pFormatter formatter;
 
     MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, Status, (), (override));

@@ -275,7 +275,8 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         return;
     }
 
-    if (length > GetBlockSize()) {
+    // There are no other data but the sector contents
+    if (length != GetBlockSize()) {
         SetIli();
         SetInformation(length - GetBlockSize());
         throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);

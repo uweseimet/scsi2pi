@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <cassert>
+#include <sstream>
 #include <spdlog/spdlog.h>
 #include "command_meta_data.h"
 
@@ -124,15 +125,16 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(scsi_command cmd) c
 
 string CommandMetaData::LogCdb(span<const uint8_t> cdb) const
 {
-    const string &command_name = GetCommandName(static_cast<scsi_command>(cdb[0]));
-    string msg = fmt::format("Executing {}, CDB ", command_name, cdb[0]);
+    ostringstream msg;
+
+    msg << "Executing " << GetCommandName(static_cast<scsi_command>(cdb[0])) << ", CDB ";
 
     for (size_t i = 0; i < cdb.size(); i++) {
         if (i) {
-            msg += ":";
+            msg << ":";
         }
-        msg += fmt::format("{:02x}", cdb[i]);
+        msg << fmt::format("{:02x}", cdb[i]);
     }
 
-    return msg;
+    return msg.str();
 }

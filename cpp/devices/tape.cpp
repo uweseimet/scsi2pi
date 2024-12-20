@@ -183,7 +183,7 @@ int Tape::ReadData(data_in_t buf)
 {
     CheckReady();
 
-    const int length = GetController()->GetChunkSize();
+    int length = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
         file.seekg(tape_position);
@@ -199,7 +199,15 @@ int Tape::ReadData(data_in_t buf)
 
         tape_position -= record_length + META_DATA_SIZE;
 
-        CheckBlockLength();
+        const uint32_t actual_length = CheckBlockLength();
+        if (actual_length) {
+            byte_count = actual_length < byte_count ? actual_length : byte_count;
+            remaining_count = byte_count;
+            length = static_cast<int>(actual_length) < length ? static_cast<int>(actual_length) : length;
+
+            GetController()->SetTransferSize(byte_count, GetBlockSize());
+            GetController()->SetCurrentLength(GetBlockSize());
+        }
     }
 
     LogTrace(
@@ -960,19 +968,19 @@ int Tape::WriteSimhMetaData(simh_class cls, uint32_t value)
     return META_DATA_SIZE;
 }
 
-void Tape::CheckBlockLength()
+uint32_t Tape::CheckBlockLength()
 {
     if (record_length != byte_count) {
         // In fixed mode an incorrect length results in an error if it is not a multiple of the block size.
         // SSC-5: "If the FIXED bit is one, the INFORMATION field shall be set to the requested transfer length
         // minus the actual number of logical blocks read, not including the incorrect-length logical block."
         if (fixed && byte_count % record_length) {
-            tape_position += record_length + META_DATA_SIZE;
-
             SetIli();
             SetInformation((byte_count - remaining_count) / GetBlockSize() - blocks_read);
 
-            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
+            GetController()->SetStatus(status_code::check_condition);
+
+            return record_length < byte_count ? record_length : byte_count;
         }
 
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
@@ -980,14 +988,16 @@ void Tape::CheckBlockLength()
         // minus the actual logical block length."
         // If SILI is set report CHECK CONDITION for the overlength condition only.
         if (!fixed && (!(GetCdbByte(1) & 0x02) || byte_count > record_length)) {
-            tape_position += record_length + META_DATA_SIZE;
-
             SetIli();
             SetInformation(byte_count - record_length);
 
-            throw scsi_exception(sense_key::no_sense, asc::no_additional_sense_information);
+            GetController()->SetStatus(status_code::check_condition);
+
+            return record_length < byte_count ? record_length : byte_count;
         }
     }
+
+    return 0;
 }
 
 bool Tape::IsAtRecordBoundary()

@@ -57,10 +57,10 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("locale", properties[PropertyHandler::LOCALE]);
 
-    SetUpArgs(args, "-C", "property_file");
+    SetUpArgs(args, "-C", "property_files");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
-    EXPECT_EQ("property_file", properties[PropertyHandler::PROPERTY_FILES]);
+    EXPECT_EQ("property_files", properties[PropertyHandler::PROPERTY_FILES]);
 
     SetUpArgs(args, "-F", "image_folder");
     properties = parser.ParseArguments(args, ignore_conf);
@@ -72,6 +72,16 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("log_level", properties[PropertyHandler::LOG_LEVEL]);
 
+    SetUpArgs(args, "-l", "log_pattern");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("log_pattern", properties[PropertyHandler::LOG_PATTERN]);
+
+    SetUpArgs(args, "--log-limit", "log_limit");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("log_limit", properties[PropertyHandler::LOG_LIMIT]);
+
     SetUpArgs(args, "-P", "token_file");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
@@ -81,6 +91,11 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("scan_depth", properties[PropertyHandler::SCAN_DEPTH]);
+
+    SetUpArgs(args, "-s", "script_file");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("script_file", properties[PropertyHandler::SCRIPT_FILE]);
 
     SetUpArgs(args, "-i0", "-b", "4096", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);

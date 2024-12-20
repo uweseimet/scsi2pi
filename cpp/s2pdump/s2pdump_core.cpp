@@ -55,7 +55,7 @@ void S2pDump::Banner(bool header) const
         << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
         << "                                     default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
-        << "  --image-file/-f IMAGE_FILE         Image file path.\n"
+        << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
         << "                                     default is 1 MiB.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
@@ -300,7 +300,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
-    s2pdump_logger = CreateLogger("[" + APP_NAME + "]");
+    s2pdump_logger = CreateLogger(APP_NAME);
 
     try {
         if (!ParseArguments(args)) {

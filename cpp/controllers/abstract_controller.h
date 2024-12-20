@@ -75,6 +75,10 @@ public:
     {
         return status;
     }
+    void SetStatus(status_code s)
+    {
+        status = s;
+    }
     auto GetChunkSize() const
     {
         return chunk_size;
@@ -123,11 +127,6 @@ protected:
     void SetCdbByte(int index, int value)
     {
         cdb[index] = value;
-    }
-
-    void SetStatus(status_code s)
-    {
-        status = s;
     }
 
     auto GetOffset() const

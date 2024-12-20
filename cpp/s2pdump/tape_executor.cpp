@@ -65,10 +65,11 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             return default_length;
         }
 
+        vector<uint8_t> sense_data(14);
         fill_n(cdb.begin(), cdb.size(), 0);
-        cdb[4] = 14;
-        const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, buf, 14, SHORT_TIMEOUT,
-            false);
+        cdb[4] = static_cast<uint8_t>(sense_data.size());
+        const int status = initiator_executor->Execute(scsi_command::request_sense, cdb, sense_data, sense_data.size(),
+            SHORT_TIMEOUT, false);
         if (status == 0xff) {
             return status;
         }
@@ -76,7 +77,13 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             throw io_exception(fmt::format("Unknown error status {}", status));
         }
 
-        const sense_key sense_key = static_cast<enum sense_key>(buf[2] & 0x0f);
+        // EOM?
+        if (sense_data[2] & 0x40) {
+            GetLogger().debug("No more data");
+            return NO_MORE_DATA;
+        }
+
+        const sense_key sense_key = static_cast<enum sense_key>(sense_data[2] & 0x0f);
 
         if (sense_key == sense_key::medium_error) {
             if (has_error) {
@@ -90,19 +97,19 @@ int TapeExecutor::ReadWrite(span<uint8_t> buf, int length)
             continue;
         }
 
-        if (buf[2] & 0x40 || sense_key == sense_key::blank_check) {
-            GetLogger().debug("No more data");
-            return NO_MORE_DATA;
-        }
-
-        if (buf[2] & 0x80) {
+        if (sense_data[2] & 0x80) {
             GetLogger().debug("Encountered filemark");
             return 0;
         }
 
         // VALID and ILI?
-        if (buf[0] & 0x80 && buf[2] & 0x20) {
-            default_length -= GetInt32(buf, 3);
+        if (sense_data[0] & 0x80 && sense_data[2] & 0x20) {
+            default_length -= GetInt32(sense_data, 3);
+
+            // If all available data have been read there is no need to re-try
+            if (default_length < length) {
+                return default_length;
+            }
 
             SpaceBack();
         }

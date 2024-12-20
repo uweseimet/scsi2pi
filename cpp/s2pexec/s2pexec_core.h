@@ -59,6 +59,8 @@ private:
 
     int timeout = 3;
 
+    string log_limit = "128";
+
     bool request_sense = true;
 
     bool reset_bus = false;

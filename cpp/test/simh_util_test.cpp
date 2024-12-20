@@ -43,6 +43,10 @@ TEST(SimhUtilTest, ReadMetaData)
     EXPECT_TRUE(ReadMetaData(file, meta_data));
     EXPECT_EQ(simh_class::reserved_marker, meta_data.cls);
     EXPECT_EQ(0U, meta_data.value);
+
+    EXPECT_TRUE(ReadMetaData(file, meta_data));
+    EXPECT_EQ(simh_class::reserved_marker, meta_data.cls);
+    EXPECT_EQ(static_cast<uint32_t>(simh_marker::end_of_medium), meta_data.value);
 }
 
 TEST(SimhUtilTest, IsRecord)
