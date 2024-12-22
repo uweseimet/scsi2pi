@@ -235,7 +235,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
 int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout) const
 {
-    auto [status, _, sense_key] = sg_adapter.SendCommand(cdb, buf, timeout);
+    auto [status, _, sense_key] = sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
     if (status == -1) {
         return status;
     }

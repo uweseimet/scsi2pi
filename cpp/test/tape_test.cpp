@@ -302,7 +302,7 @@ TEST(TapeTest, Read6_BlockSizeMismatch)
     RequestSense(controller, tape);
     EXPECT_TRUE(buf[0] & 0x80) << "VALID must be set";
     EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
-    EXPECT_EQ(0xffffff01U, GetInt32(buf, 3)) << "Wrong block size mismatch difference";
+    EXPECT_EQ(-255, static_cast<int>(GetInt32(buf, 3))) << "Wrong block size mismatch difference";
     CheckPositions(tape, 264, 1);
 
     Rewind(tape);
@@ -343,6 +343,22 @@ TEST(TapeTest, Read6_BlockSizeMismatch)
     EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(768U, GetInt32(buf, 3)) << "Wrong block size mismatch difference";
     CheckPositions(tape, 264, 1);
+
+    file.seekp(0);
+    WriteGoodData(file, 1024);
+    file.flush();
+
+    Rewind(tape);
+
+    // Non-fixed, 90 bytes (less than block size)
+    controller->SetCdbByte(4, 90);
+    EXPECT_NO_THROW(Dispatch(tape, scsi_command::read_6));
+    EXPECT_EQ(90, controller->GetCurrentLength()) << "Wrong actual length";
+    RequestSense(controller, tape);
+    EXPECT_TRUE(buf[0] & 0x80) << "VALID must be set";
+    EXPECT_TRUE(buf[2] & 0x20) << "ILI must be set";
+    EXPECT_EQ(-934, static_cast<int>(GetInt32(buf, 3))) << "Wrong block size mismatch difference";
+    CheckPositions(tape, 1032, 1);
 }
 
 TEST(TapeTest, Read16)
@@ -637,7 +653,7 @@ TEST(TapeTest, Space6_simh)
     EXPECT_EQ(0x80, buf[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(ascq::beginning_of_partition_medium_detected, static_cast<ascq>(buf[13]))
         << "ASCQ must be beginning-of-medium";
-    EXPECT_EQ(0xffU, GetInt32(buf, 3));
+    EXPECT_EQ(255U, GetInt32(buf, 3));
 
 
     // Write 6 data records (bad and good) and different markers, 1 filemark

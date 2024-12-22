@@ -130,6 +130,7 @@ private:
 
     int blocks_read = 0;
 
+    uint64_t record_start = 0;
     uint32_t record_length = 0;
 
     uint64_t object_location = 0;

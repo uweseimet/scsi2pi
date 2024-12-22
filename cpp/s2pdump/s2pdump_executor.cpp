@@ -6,45 +6,49 @@
 //
 //---------------------------------------------------------------------------
 
-#include "s2pdump_executor.h"
 #include <spdlog/spdlog.h>
+#include "s2pdump_executor.h"
+#include "shared/s2p_exceptions.h"
 #include "shared/memory_util.h"
+#include "shared/scsi.h"
 
-using namespace spdlog;
 using namespace memory_util;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
     vector<uint8_t> cdb(6);
 
-    initiator_executor->Execute(scsi_command::test_unit_ready, cdb, { }, 0, 1, false);
+    TestUnitReady(cdb);
 }
 
 void S2pDumpExecutor::RequestSense() const
 {
     array<uint8_t, 14> buf;
-    array<uint8_t, 6> cdb = { };
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::request_sense);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()), 1, false);
+    RequestSense(cdb, buf);
 }
 
-bool S2pDumpExecutor::Inquiry(span<uint8_t> buf)
+bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buf, static_cast<int>(buf.size()), 1, false);
+    return Inquiry(cdb, buf);
 }
 
-bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf)
+bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::mode_sense_6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::mode_sense_6, cdb, buf, static_cast<int>(buf.size()), 3, false);
+    return ModeSense6(cdb, buf);
 }
 
 set<int> S2pDumpExecutor::ReportLuns()
@@ -53,26 +57,173 @@ set<int> S2pDumpExecutor::ReportLuns()
     vector<uint8_t> cdb(12);
     SetInt16(cdb, 8, buf.size());
 
-    // Assume 8 LUNs in case REPORT LUNS is not available
-    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buf, static_cast<int>(buf.size()), 1, false)) {
-        GetLogger().trace("Target does not support REPORT LUNS");
-        return {0, 1, 2, 3, 4, 5, 6, 7};
+    return ReportLuns(cdb, buf);
+}
+
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
+{
+    vector<uint8_t> buf(14);
+    vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
+
+    if (ReadCapacity10(cdb, buf)) {
+        return {0, 0};
     }
 
-    const auto lun_count = (static_cast<size_t>(buf[2]) << 8) | static_cast<size_t>(buf[3]) / 8;
-    GetLogger().trace("Target reported LUN count of " + to_string(lun_count));
+    uint64_t capacity = GetInt32(buf, 0);
 
-    set<int> luns;
-    int offset = 8;
-    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buf.size(); i++, offset += 8) {
-        const uint64_t lun = GetInt64(buf, offset);
-        if (lun < 32) {
-            luns.insert(static_cast<int>(lun));
+    int sector_size_offset = 4;
+
+    if (static_cast<int32_t>(capacity) == -1) {
+        cdb.resize(16);
+        cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_16_read_long_16);
+        // READ CAPACITY(16), not READ LONG(16)
+        cdb[1] = 0x10;
+
+        if (ReadCapacity16(cdb, buf)) {
+            return {0, 0};
+        }
+
+        capacity = GetInt64(buf, 0);
+
+        sector_size_offset = 8;
+    }
+
+    return {capacity + 1, GetInt32(buf, sector_size_offset)};
+}
+
+bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
+{
+    vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(is_write ? scsi_command::write_10 : scsi_command::read_10);
+    SetInt32(cdb, 2, bstart);
+    SetInt16(cdb, 7, blength);
+
+    return ReadWrite(cdb, buf, length);
+}
+
+void S2pDumpExecutor::SynchronizeCache() const
+{
+    vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(scsi_command::synchronize_cache_10);
+
+    SynchronizeCache(cdb);
+}
+
+void S2pDumpExecutor::SpaceBack() const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::space_6);
+    cdb[1] = 0b000;
+    SetInt24(cdb, 2, -1);
+
+    SpaceBack(cdb);
+}
+
+int S2pDumpExecutor::Rewind() const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::rewind);
+
+    return Rewind(cdb);
+}
+
+int S2pDumpExecutor::WriteFilemark() const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::write_filemarks_6);
+    SetInt24(cdb, 2, 1);
+
+    return WriteFilemark(cdb);
+}
+
+int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
+{
+    vector<uint8_t> cdb(6);
+
+    // Restore
+    if (length) {
+        SetInt24(cdb, 2, length);
+
+        if (Write(cdb, buf, length, LONG_TIMEOUT)) {
+            throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
+        }
+
+        return length;
+    }
+
+    // Dump
+    bool has_error = false;
+    while (true) {
+        SetInt24(cdb, 2, default_length);
+
+        if (!Read(cdb, buf, default_length, LONG_TIMEOUT)) {
+            GetLogger().debug("Read block with {} byte(s)", default_length);
+            return default_length;
+        }
+
+        vector<uint8_t> sense_data(14);
+        fill_n(cdb.begin(), cdb.size(), 0);
+        cdb[4] = static_cast<uint8_t>(sense_data.size());
+        const int status = RequestSense(cdb, sense_data);
+        if (status == 0xff) {
+            return status;
+        }
+        else if (status && status != 0x02) {
+            throw io_exception(fmt::format("Unknown error status {}", status));
+        }
+
+        const sense_key sense_key = static_cast<enum sense_key>(sense_data[2] & 0x0f);
+
+        // EOD or EOM?
+        if (sense_key == sense_key::blank_check || sense_data[2] & 0x40) {
+            GetLogger().debug("No more data");
+            return NO_MORE_DATA;
+        }
+
+        if (sense_key == sense_key::medium_error) {
+            if (has_error) {
+                return BAD_BLOCK;
+            }
+
+            has_error = true;
+
+            SpaceBack();
+
+            continue;
+        }
+
+        if (sense_data[2] & 0x80) {
+            GetLogger().debug("Encountered filemark");
+            return 0;
+        }
+
+        // VALID and ILI?
+        if (sense_data[0] & 0x80 && sense_data[2] & 0x20) {
+            length = default_length;
+
+            default_length -= GetInt32(sense_data, 3);
+
+            // If all available data have been read there is no need to re-try
+            if (default_length < length) {
+                GetLogger().debug("Read block with {} byte(s)", default_length);
+
+                return default_length;
+            }
+
+            SpaceBack();
         }
         else {
-            GetLogger().trace("Target reported invalid LUN " + to_string(lun));
+            return 0xff;
         }
     }
+}
 
-    return luns;
+void S2pDumpExecutor::SetInt24(span<uint8_t> buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
+
+    buf[offset] = static_cast<uint8_t>(value >> 16);
+    buf[offset + 1] = static_cast<uint8_t>(value >> 8);
+    buf[offset + 2] = static_cast<uint8_t>(value);
 }

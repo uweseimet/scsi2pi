@@ -18,10 +18,12 @@ s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 [\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
 [\fB\--all-luns/-a\fR]
 [\fB\--restore/-r\fR]
+[\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
 
 .SH DESCRIPTION
 .B s2pdump
 has two modes of operation: dump and restore. These can be used with storage devices like hard drives, magneto optical drives or tape drives. Dump mode can also be used with read-only media such as CD/DVD drives.
+When using devices managed by the Linux SG 3 driver, s2pdump can be used on any Linux system, not just on a Pi.
 
 When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
 When used with a tape drive, the data are dumped in a SIMH-compatible format.
@@ -83,6 +85,9 @@ If the target device supports the REPORT LUNS SCSI command s2pdump uses this com
 .TP
 .BR --restore/-r\fI
 Run in restore mode. The default is dump mode.
+.TP
+.BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
+Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 
 .SH EXAMPLES
 Dump Mode: [SCSI/SASI Drive] ---> [SCSI2Pi host]

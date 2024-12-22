@@ -376,7 +376,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[13] = static_cast<byte>(eom);
     }
 
-    LogTrace(fmt::format("{0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
+    LogTrace(fmt::format("Status {0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
 
     return buf;
 }

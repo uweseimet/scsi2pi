@@ -11,12 +11,14 @@
 #include <fstream>
 #include <unordered_map>
 #include <vector>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include "disk_executor.h"
-#include "tape_executor.h"
+#include <spdlog/spdlog.h>
+#include "buses/bus.h"
+#include "shared/sg_adapter.h"
+#include "s2pdump_executor.h"
 
 using namespace std;
 using namespace chrono;
+using namespace spdlog;
 
 class S2pDump
 {
@@ -44,7 +46,7 @@ private:
     bool Init(bool);
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
-    string ReadWriteDisk(fstream&, int, uint32_t, int, int);
+    string ReadWrite(fstream&, int, uint32_t, int, int);
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
@@ -68,8 +70,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    unique_ptr<DiskExecutor> disk_executor;
-    unique_ptr<TapeExecutor> tape_executor;
+    shared_ptr<S2pDumpExecutor> s2pdump_executor;
 
     scsi_device_info_t scsi_device_info = { };
 
@@ -96,6 +97,8 @@ private:
     uint32_t block_count = 0;
     uint32_t filemark_count = 0;
 
+    int log_count = 0;
+
     bool run_inquiry = false;
 
     bool run_bus_scan = false;
@@ -105,6 +108,10 @@ private:
     bool restore = false;
 
     inline static bool active = true;
+
+    string device_file;
+
+    SgAdapter sg_adapter;
 
     // Required for the termination handler
     inline static S2pDump *instance;

@@ -199,6 +199,8 @@ int Tape::ReadData(data_in_t buf)
 
         tape_position -= record_length + META_DATA_SIZE;
 
+        record_start = tape_position;
+
         const uint32_t actual_length = CheckBlockLength();
         if (actual_length) {
             byte_count = actual_length < byte_count ? actual_length : byte_count;
@@ -221,8 +223,7 @@ int Tape::ReadData(data_in_t buf)
     tape_position += length;
 
     if (IsAtRecordBoundary()) {
-        tape_position += record_length > GetBlockSize() ? 0 : Pad(record_length) - length;
-
+        tape_position = record_start + Pad(record_length);
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data;
         file.seekg(tape_position);
@@ -654,7 +655,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
 {
     const bool reverse = requested_count < 0;
 
-    LogTrace(fmt::format("{0}-spacing at position {1} for object type {2}, count {3}", reverse ? "Reverse" : "Forward",
+    LogTrace(fmt::format("Moving {0} at position {1} for object type {2}, count {3}", reverse ? "backward" : "forward",
         tape_position, static_cast<int>(type), requested_count));
 
     if (reverse) {
@@ -673,7 +674,7 @@ SimhMetaData Tape::FindNextObject(object_type type, int32_t requested_count, boo
         }
 
         LogTrace(
-            fmt::format("Found object type {0}, length {1}, spaced over {2} object(s)", static_cast<int>(scsi_type),
+            fmt::format("Found object type {0}, length {1}, moved over {2} object(s)", static_cast<int>(scsi_type),
                 length, actual_count));
 
         if (!reverse) {
