@@ -123,11 +123,11 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(scsi_command cmd) c
     return cdb_meta_data[static_cast<int>(cmd)];
 }
 
-string CommandMetaData::LogCdb(span<const uint8_t> cdb) const
+string CommandMetaData::LogCdb(span<const uint8_t> cdb, const string &type) const
 {
     ostringstream msg;
 
-    msg << "Executing " << GetCommandName(static_cast<scsi_command>(cdb[0])) << ", CDB ";
+    msg << type << " is executing " << GetCommandName(static_cast<scsi_command>(cdb[0])) << ", CDB ";
 
     for (size_t i = 0; i < cdb.size(); i++) {
         if (i) {

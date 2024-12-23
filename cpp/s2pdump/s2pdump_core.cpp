@@ -590,12 +590,6 @@ string S2pDump::DumpRestoreDisk(fstream &file)
             ++sector_count;
         }
 
-        // Some USB floppy disk drives do not support high sector counts
-        if (effective_size <= 1474560 && sector_count > 128) {
-            sector_count = 128;
-            byte_count = sector_count * sector_size;
-        }
-
         if (sasi && sector_count > 256) {
             sector_count = 256;
             byte_count = sector_count * sector_size;

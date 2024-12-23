@@ -133,7 +133,7 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (GetLogger().level() <= level::debug) {
-            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count)));
+            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
         if (actual_count != command_bytes_count) {
@@ -302,6 +302,10 @@ void Controller::DataOut()
     if (!GetCurrentLength()) {
         Status();
         return;
+    }
+    // Current length == -1 enforces a DATA OUT phase, in particular for FORMAT UNIT with the SG 3 driver
+    else if (GetCurrentLength() == -1) {
+        SetCurrentLength(0);
     }
 
     LogTrace("DATA OUT phase");

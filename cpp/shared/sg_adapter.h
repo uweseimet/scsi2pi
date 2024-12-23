@@ -38,11 +38,20 @@ public:
 
 private:
 
+    SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int);
+
+    void GetBlockSize();
+
     logger &sg_logger;
 
     int fd = -1;
 
+    uint32_t block_size = 512;
+
     array<uint8_t, 18> sense_data = { };
 
     bool sense_data_valid = false;
+
+    // Linux limits the number of bytes that can be transferred in a single SCSI request
+    static const int MAX_TRANSFER_LENGTH = 65536;
 };

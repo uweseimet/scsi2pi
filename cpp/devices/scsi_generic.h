@@ -48,19 +48,15 @@ private:
     int ReadWriteData(span<uint8_t>, int, bool);
 
     int GetAllocationLength() const;
-    void UpdateStartBlock(int);
-    void SetBlockCount(int);
 
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
 
     bool GetDeviceData();
     void GetBlockSize();
 
-    static void SetInt24(span<uint8_t>, int, int);
-
     string device;
 
-    // The block size is update when a READ CAPACITY command is detected
+    // The block size is updated when a READ CAPACITY command is detected
     uint32_t block_size = 512;
 
     int count = 0;

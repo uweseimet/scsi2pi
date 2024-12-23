@@ -13,11 +13,13 @@
 #include <sys/ioctl.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/sg_util.h"
 #include "scsi_generic.h"
 
 using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
+using namespace sg_util;
 
 ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
@@ -149,15 +151,14 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     deferred_sense_data_valid = false;
 
-    LogTrace(fmt::format("Preparing transfer of {} byte(s) with SG driver", byte_count));
-
     const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
 
     // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
     GetController()->SetTransferSize(byte_count, chunk_size);
 
+    // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
     if (meta_data.has_data_out) {
-        DataOutPhase(chunk_size);
+        DataOutPhase(chunk_size > 0 || cmd != scsi_command::format_unit ? chunk_size : -1);
     }
     else {
         GetController()->SetCurrentLength(byte_count);
@@ -205,7 +206,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
-    SetBlockCount(length / block_size);
+    SetBlockCount(local_cdb, length / block_size);
 
     sg_io_hdr io_hdr = { };
 
@@ -236,7 +237,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetLogger().level() <= level::debug) {
-        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb));
+        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb, "SG driver"));
     }
 
     if (!internal && write && GetLogger().level() == level::trace) {
@@ -261,7 +262,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
         status = static_cast<int>(sense_data[2]) & 0x0f;
 
         if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::inquiry
-            && (static_cast<int>(local_cdb[1]) & 0xb11100000)) {
+            && (static_cast<int>(local_cdb[1]) & 0b11100000)) {
+            spdlog::critical("a");
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
             buf[0] = 0x7f;
         }
@@ -284,7 +286,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
     UpdateInternalBlockSize(buf, length);
 
-    UpdateStartBlock(length / block_size);
+    UpdateStartBlock(local_cdb, length / block_size);
 
     // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
     if (CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
@@ -330,49 +332,6 @@ int ScsiGeneric::GetAllocationLength() const
     }
 
     return 0;
-}
-
-void ScsiGeneric::UpdateStartBlock(int length)
-{
-    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])); meta_data.block_size) {
-    case 3:
-        SetInt24(local_cdb, meta_data.block_offset, GetInt24(local_cdb, meta_data.block_offset) + length);
-        break;
-
-    case 4:
-        SetInt32(local_cdb, meta_data.block_offset, GetInt32(local_cdb, meta_data.block_offset) + length);
-        break;
-
-    case 8:
-        SetInt64(local_cdb, meta_data.block_offset, GetInt64(local_cdb, meta_data.block_offset) + length);
-        break;
-
-    default:
-        break;
-    }
-}
-
-void ScsiGeneric::SetBlockCount(int length)
-{
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0]));
-    if (meta_data.block_size) {
-        switch (meta_data.allocation_length_size) {
-        case 1:
-            local_cdb[meta_data.allocation_length_offset] = static_cast<uint8_t>(length);
-            break;
-
-        case 2:
-            SetInt16(local_cdb, meta_data.allocation_length_offset, length);
-            break;
-
-        case 4:
-            SetInt32(local_cdb, meta_data.allocation_length_offset, length);
-            break;
-
-        default:
-            break;
-        }
-    }
 }
 
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
@@ -450,13 +409,4 @@ void ScsiGeneric::GetBlockSize()
     catch (const scsi_exception&) { // NOSONAR The exception details do not matter
         // Fall through
     }
-}
-
-void ScsiGeneric::SetInt24(span<uint8_t> buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 3);
-
-    buf[offset] = static_cast<uint8_t>(value >> 16);
-    buf[offset + 1] = static_cast<uint8_t>(value >> 8);
-    buf[offset + 2] = static_cast<uint8_t>(value);
 }

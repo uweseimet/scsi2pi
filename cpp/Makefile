@@ -206,9 +206,10 @@ SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_adapter.cpp)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_*.cpp)
 ifdef IS_LINUX
 SRC_SHARED += shared/sg_adapter.cpp
+SRC_SHARED += shared/sg_util.cpp
 endif
 SRC_SHARED_PROTOBUF := $(shell ls -1 $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(shell ls -1 $(DIR_SHARED_COMMAND)/*.cpp)
