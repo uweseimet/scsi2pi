@@ -21,9 +21,8 @@ void S2pDumpExecutor::TestUnitReady() const
     TestUnitReady(cdb);
 }
 
-void S2pDumpExecutor::RequestSense() const
+void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 {
-    array<uint8_t, 14> buf;
     vector<uint8_t> cdb(6);
     cdb[0] = static_cast<uint8_t>(scsi_command::request_sense);
     cdb[4] = static_cast<uint8_t>(buf.size());

@@ -3,6 +3,7 @@
 s2pformat \- SCSI2Pi Format Tool
 .SH SYNOPSIS
 .B s2pformat
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 [\fB\--help/-h\fR]
 [\fB\--version/-v\fR]
 </dev/sg*>
@@ -16,6 +17,9 @@ formats media in USB drives, e.g. floppy disks in floppy disk drives.
 formats media in USB drives. These drives can be floppy disk drives or other drives connected to the USB port. s2pformat can be used on any Linux system, not just on a Pi.
 
 .SH OPTIONS
+.TP
+.BR --log-level/-L\fI " " \fILOG_LEVEL
+Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
 .TP
 .BR --help/-h\fI
 Display a help text.

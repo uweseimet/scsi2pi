@@ -34,12 +34,12 @@ private:
     void Banner(bool) const;
     bool ParseArguments(span<char*>);
 
-    vector<FormatDescriptor> GetFormatDescriptors() const;
-    int SelectFormat(span<const S2pFormat::FormatDescriptor>) const;
-    string Format(span<const S2pFormat::FormatDescriptor>, int) const;
-    int ExecuteCommand(span<uint8_t>, span<uint8_t>, int) const;
+    vector<FormatDescriptor> GetFormatDescriptors();
+    int SelectFormat(span<const S2pFormat::FormatDescriptor>);
+    string Format(span<const S2pFormat::FormatDescriptor>, int);
+    int ExecuteCommand(span<uint8_t>, span<uint8_t>, int);
 
-    SgAdapter sg_adapter;
+    unique_ptr<SgAdapter> sg_adapter;
 
     string device;
 };

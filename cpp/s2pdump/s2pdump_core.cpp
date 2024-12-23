@@ -258,7 +258,8 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!device_file.empty()) {
-        if (const string &error = sg_adapter.Init(device_file); !error.empty()) {
+        sg_adapter = make_shared<SgAdapter>(*s2pdump_logger);
+        if (const string &error = sg_adapter->Init(device_file); !error.empty()) {
             throw parser_exception(error);
         }
     }
@@ -358,7 +359,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         s2pdump_executor = make_shared<BoardExecutor>(*bus, initiator_id, *s2pdump_logger);
     }
     else {
-        s2pdump_executor = make_shared<SgExecutor>(sg_adapter, *s2pdump_logger);
+        s2pdump_executor = make_shared<SgExecutor>(*sg_adapter, *s2pdump_logger);
     }
 #else
     s2pdump_executor = make_shared<BoardExecutor>(*bus, initiator_id, *s2pdump_logger);
@@ -583,14 +584,21 @@ string S2pDump::DumpRestoreDisk(fstream &file)
     const auto start_time = high_resolution_clock::now();
 
     while (remaining && active) {
-        const auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
+        auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
         auto sector_count = byte_count / sector_size;
         if (byte_count % sector_size) {
             ++sector_count;
         }
 
+        // Some USB floppy disk drives do not support high sector counts
+        if (effective_size <= 1474560 && sector_count > 128) {
+            sector_count = 128;
+            byte_count = sector_count * sector_size;
+        }
+
         if (sasi && sector_count > 256) {
             sector_count = 256;
+            byte_count = sector_count * sector_size;
         }
 
         s2pdump_logger->info("Remaining bytes: {}", remaining);
@@ -648,20 +656,20 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
     if (restore) {
         file.read((char*)buffer.data(), byte_count);
         if (file.fail()) {
-            return "Error reading from file '" + filename + "'";
+            return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
         if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-            return "Error/interrupted while writing to device";
+            return "Can't write to device: " + string(strerror(errno));
         }
     } else {
         if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-            return "Error/interrupted while reading from device";
+            return "Can't read from device: " + string(strerror(errno));
         }
 
         file.write((const char*)buffer.data(), byte_count);
         if (file.fail()) {
-            return "Error writing to file '" + filename + "'";
+            return "Can't write to file '" + filename + "': " + strerror(errno);
         }
     }
 
@@ -829,7 +837,7 @@ bool S2pDump::GetDeviceInfo()
     }
 
     // Clear any pending error condition, e.g. a medium just having being inserted
-    s2pdump_executor->RequestSense();
+    s2pdump_executor->RequestSense( { });
 
     if (scsi_device_info.type == static_cast<byte>(device_type::sequential_access)) {
         return true;
@@ -870,7 +878,7 @@ bool S2pDump::GetDeviceInfo()
 void S2pDump::DisplayProperties(int id, int lun) const
 {
     // Clear any pending error condition, e.g. a medium just having being inserted
-    s2pdump_executor->RequestSense();
+    s2pdump_executor->RequestSense( { });
 
     cout << "\nDevice properties for s2p properties file:\n";
 
@@ -905,7 +913,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     vector<uint8_t> buf(255);
 
     if (!s2pdump_executor->ModeSense6(buf)) {
-        cout << "Warning: Can't get mode page data, medium may be missing or drive was not ready, try again\n" << flush;
+        cout << "Warning: No mode page data available, medium might be missing\n" << flush;
         return;
     }
 

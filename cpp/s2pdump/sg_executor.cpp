@@ -49,7 +49,7 @@ int SgExecutor::ReadCapacity16(vector<uint8_t> &cdb, span<uint8_t> buf) const
 
 bool SgExecutor::ReadWrite(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return !sg_adapter.SendCommand(cdb, buf, length, 10).status;
+    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
 }
 
 void SgExecutor::SynchronizeCache(vector<uint8_t> &cdb) const

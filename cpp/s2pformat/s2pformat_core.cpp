@@ -13,11 +13,13 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
+#include "initiator/initiator_util.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_util.h"
 
 using namespace memory_util;
 using namespace s2p_util;
+using namespace initiator_util;
 
 void S2pFormat::Banner(bool header) const
 {
@@ -28,14 +30,17 @@ void S2pFormat::Banner(bool header) const
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
-        << "  --version/-v              Display the program version.\n"
-        << "  --help/-H                 Display this help.\n";
+        << "  --log-level/-L LEVEL  Log level (trace|debug|info|warning|error|\n"
+        << "                        critical|off), default is 'info'.\n"
+        << "  --version/-v          Display the program version.\n"
+        << "  --help/-H             Display this help.\n";
 }
 
 bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
         { "help", no_argument, nullptr, 'H' },
+        { "log-level", required_argument, nullptr, 'L' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -45,11 +50,18 @@ bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexit
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-hv", options.data(),
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-hvL:", options.data(),
         nullptr)) != -1) {
         switch (opt) {
         case 'h':
             help = true;
+            break;
+
+        case 'L':
+            if (!SetLogLevel(*default_logger(), optarg)) {
+                cerr << "Invalid log level '" << optarg << "'" << endl;
+                return false;
+            }
             break;
 
         case 'v':
@@ -90,7 +102,9 @@ int S2pFormat::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    if (const string &error = sg_adapter.Init(device); !error.empty()) {
+    sg_adapter = make_unique<SgAdapter>(*default_logger());
+
+    if (const string &error = sg_adapter->Init(device); !error.empty()) {
         cerr << "Error: " << error << endl;
         return EXIT_FAILURE;
     }
@@ -99,7 +113,7 @@ int S2pFormat::Run(span<char*> args)
 
     const int n = SelectFormat(descriptors);
     if (!n) {
-        sg_adapter.CleanUp();
+        sg_adapter->CleanUp();
         return EXIT_SUCCESS;
     }
 
@@ -111,17 +125,17 @@ int S2pFormat::Run(span<char*> args)
     if (input == "y") {
         if (const string &error = Format(descriptors, n); !error.empty()) {
             cerr << "Error: " << error << endl;
-            sg_adapter.CleanUp();
+            sg_adapter->CleanUp();
             return EXIT_FAILURE;
         }
     }
 
-    sg_adapter.CleanUp();
+    sg_adapter->CleanUp();
 
     return EXIT_SUCCESS;
 }
 
-vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors() const
+vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
 {
     vector<uint8_t> buf(36);
     vector<uint8_t> cdb(6);
@@ -175,7 +189,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors() const
     return descriptors;
 }
 
-int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors) const
+int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
 {
     cout << "Formats supported by this drive:\n";
 
@@ -212,7 +226,7 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
     return input == "y" ? n : 0;
 }
 
-string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, int n) const
+string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, int n)
 {
     vector<uint8_t> cdb(6);
     vector<uint8_t> parameters;
@@ -233,22 +247,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
     return status ? fmt::format("Can't format drive: {}", strerror(errno)) : "";
 }
 
-int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout) const
+int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout)
 {
-    auto [status, _, sense_key] = sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
-    if (status == -1) {
-        return status;
-    }
-
-    // If the command was successful, use the sense key as status
-    if (!status) {
-        status = static_cast<int>(sense_key);
-
-        if (cdb[0] == static_cast<uint8_t>(scsi_command::inquiry) && (static_cast<int>(cdb[1]) & 0b11100000)) {
-            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-            buf[0] = 0x7f;
-        }
-    }
-
-    return status;
+    return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
 }

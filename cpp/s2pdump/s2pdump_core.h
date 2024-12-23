@@ -111,7 +111,7 @@ private:
 
     string device_file;
 
-    SgAdapter sg_adapter;
+    shared_ptr<SgAdapter> sg_adapter;
 
     // Required for the termination handler
     inline static S2pDump *instance;

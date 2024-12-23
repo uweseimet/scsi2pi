@@ -25,7 +25,7 @@ public:
     // Disk and tape support
     void TestUnitReady() const;
     virtual void TestUnitReady(vector<uint8_t>&) const = 0;
-    void RequestSense() const;
+    void RequestSense(span<uint8_t>) const;
     virtual int RequestSense(vector<uint8_t>&, span<uint8_t>) const = 0;
     bool Inquiry(span<uint8_t>) const;
     virtual bool Inquiry(vector<uint8_t>&, span<uint8_t>) const = 0;

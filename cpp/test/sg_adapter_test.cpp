@@ -11,16 +11,8 @@
 
 TEST(SgAdapterTest, Init)
 {
-    SgAdapter adapter;
+    SgAdapter adapter(*default_logger());
 
     EXPECT_NE("", adapter.Init("/dev/null"));
     EXPECT_NE("", adapter.Init("/dev/sg12345"));
-}
-
-TEST(SgAdapterTest, SgResult)
-{
-    SgAdapter::SgResult result(1, 2, sense_key::aborted_command);
-    EXPECT_EQ(1, result.status);
-    EXPECT_EQ(2, result.length);
-    EXPECT_EQ(sense_key::aborted_command, result.key);
 }

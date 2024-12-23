@@ -44,8 +44,17 @@ void SgAdapter::CleanUp()
     }
 }
 
-SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout) const
+SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout)
 {
+    // Return deferred sense data, if any
+    if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense) && sense_data_valid) {
+        const int l = min(length, static_cast<int>(sense_data.size()));
+        memcpy(buf.data(), sense_data.data(), l);
+        sense_data_valid = false;
+        return {0, length - l};
+    }
+    sense_data_valid = false;
+
     sg_io_hdr io_hdr = { };
 
     io_hdr.interface_id = 'S';
@@ -62,16 +71,36 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
     io_hdr.dxfer_len = length;
     io_hdr.dxferp = io_hdr.dxfer_len ? buf.data() : nullptr;
 
-    array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
-    io_hdr.mx_sb_len = sense_data.size();
+    io_hdr.mx_sb_len = static_cast<uint8_t>(sense_data.size());
 
     io_hdr.cmdp = cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(cdb.size());
 
     io_hdr.timeout = timeout * 1000;
 
-    const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    sg_logger.debug(CommandMetaData::Instance().LogCdb(cdb));
 
-    return {status, length - io_hdr.resid, static_cast<sense_key>(static_cast<int>(sense_data[2]) & 0x0f)};
+    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    if (status == -1) {
+        return {status, length};
+    }
+    // Do not treat CONDITION MET as an error
+    if (status == 4) {
+        status = 0;
+    }
+
+    // If the command was successful, use the sense key as status
+    if (!status) {
+        status = static_cast<int>(sense_data[2]) & 0x0f;
+
+        if (cdb[0] == static_cast<uint8_t>(scsi_command::inquiry) && (static_cast<int>(cdb[1]) & 0b11100000)) {
+            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+            buf[0] = 0x7f;
+        }
+    }
+
+    sense_data_valid = true;
+
+    return {status, length - io_hdr.resid};
 }
