@@ -10,6 +10,7 @@
 #pragma once
 
 #include "base/primary_device.h"
+#include "shared/command_meta_data.h"
 
 using namespace std;
 
@@ -47,12 +48,12 @@ private:
 
     int ReadWriteData(span<uint8_t>, int, bool);
 
-    int GetAllocationLength() const;
-
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
 
     bool GetDeviceData();
     void GetBlockSize();
+
+    CommandMetaData command_meta_data = CommandMetaData::Instance();
 
     string device;
 

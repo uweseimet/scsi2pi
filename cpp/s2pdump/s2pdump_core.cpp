@@ -254,7 +254,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
-        throw parser_exception("Invalid board ID '" + initiator + "' (0-7)");
+        throw parser_exception("Invalid initiator ID '" + initiator + "' (0-7)");
     }
 
     if (!device_file.empty()) {
@@ -300,7 +300,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
 
         if (target_id == initiator_id) {
-            throw parser_exception("Target ID and board ID must not be identical");
+            throw parser_exception("Target ID and initiator ID must not be identical");
         }
 
         if (filename.empty() && !run_bus_scan && !run_inquiry) {

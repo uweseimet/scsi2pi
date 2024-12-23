@@ -13,7 +13,6 @@
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
 #include <spdlog/spdlog.h>
-#include "shared/command_meta_data.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/sg_util.h"
@@ -24,18 +23,11 @@ using namespace sg_util;
 
 string SgAdapter::Init(const string &device)
 {
-    if (!device.starts_with("/dev/sg")) {
-        return fmt::format("Missing or invalid device file: '{}'", device);
+    try {
+        fd = OpenDevice(device);
     }
-
-    fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
-    if (fd == -1) {
-        return fmt::format("Can't open '{0}': {1}", device, strerror(errno));
-    }
-
-    if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
-        CleanUp();
-        return fmt::format("'{0}' is not supported by the Linux SG 3 driver: {1}", device, strerror(errno));
+    catch (const io_exception &e) {
+        return e.what();
     }
 
     GetBlockSize();
@@ -53,6 +45,11 @@ void SgAdapter::CleanUp()
 
 SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int total_length, int timeout)
 {
+    byte_count = 0;
+
+    const int allocation_length = GetAllocationLength(cdb);
+    total_length = allocation_length ? allocation_length : total_length;
+
     vector<uint8_t> local_cdb = { cdb.begin(), cdb.end() };
 
     int offset = 0;
@@ -61,8 +58,9 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
         SetBlockCount(local_cdb, length / block_size);
 
         if (const auto &result = SendCommandInternal(local_cdb, span(buf.data() + offset, buf.size() - offset), length,
-            timeout); result.status) {
-            return result;
+            timeout); result.status
+            || !command_meta_data.GetCdbMetaData(static_cast<scsi_command>(cdb[0])).block_size) {
+            return {result.status, byte_count};
         }
 
         offset += length;
@@ -71,7 +69,7 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
         UpdateStartBlock(local_cdb, length / block_size);
     } while (total_length);
 
-    return {0, total_length};
+    return {0, byte_count};
 }
 
 SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout)
@@ -80,8 +78,9 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
     if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense) && sense_data_valid) {
         const int l = min(length, static_cast<int>(sense_data.size()));
         memcpy(buf.data(), sense_data.data(), l);
+        byte_count = l;
         sense_data_valid = false;
-        return {0, length - l};
+        return {0, 0};
     }
     sense_data_valid = false;
 
@@ -94,7 +93,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
     }
     else {
         io_hdr.dxfer_direction =
-            CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])).has_data_out ?
+            command_meta_data.GetCdbMetaData(static_cast<scsi_command>(cdb[0])).has_data_out ?
                 SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
     }
 
@@ -109,7 +108,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
 
     io_hdr.timeout = timeout * 1000;
 
-    sg_logger.debug(CommandMetaData::Instance().LogCdb(cdb, "SG driver"));
+    sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
 
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
     if (status == -1) {
@@ -130,7 +129,11 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
         }
     }
 
-    sense_data_valid = true;
+    if (status) {
+        sense_data_valid = true;
+    }
+
+    byte_count += length - io_hdr.resid;
 
     return {status, length - io_hdr.resid};
 }

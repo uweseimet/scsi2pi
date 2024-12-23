@@ -9,6 +9,7 @@
 #pragma once
 
 #include "initiator/initiator_util.h"
+#include "shared/sg_adapter.h"
 
 using namespace std;
 
@@ -17,38 +18,31 @@ class S2pExecExecutor
 
 public:
 
-    enum class protobuf_format
-    {
-        binary = 0b001,
-        json = 0b010,
-        text = 0b100
-    };
-
-    S2pExecExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l))
+    S2pExecExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l)), sg_adapter(
+        make_unique<SgAdapter>(l))
     {
     }
     ~S2pExecExecutor() = default;
 
+    string Init(const string&);
+
     int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
 
-    tuple<sense_key, asc, int> GetSenseData() const
-    {
-        return initiator_util::GetSenseData(*initiator_executor);
-    }
+    tuple<sense_key, asc, int> GetSenseData() const;
 
-    void SetTarget(int id, int lun, bool sasi)
-    {
-        initiator_executor->SetTarget(id, lun, sasi);
-    }
+    int GetByteCount() const;
 
-    int GetByteCount() const
-    {
-        return initiator_executor->GetByteCount();
-    }
+    void SetTarget(int, int, bool);
 
 private:
 
     unique_ptr<InitiatorExecutor> initiator_executor;
+
+    unique_ptr<SgAdapter> sg_adapter;
+
+    bool use_sg = false;
+
+    int length = 0;
 
     // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;

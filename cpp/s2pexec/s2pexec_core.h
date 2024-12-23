@@ -22,6 +22,13 @@ class S2pExec
         using runtime_error::runtime_error;
     };
 
+    enum class protobuf_format
+    {
+        binary = 0b001,
+        json = 0b010,
+        text = 0b100
+    };
+
 public:
 
     int Run(span<char*>, bool);
@@ -83,6 +90,8 @@ private:
     string log_level;
 
     string last_input;
+
+    string device_file;
 
     // Required for the termination handler
     inline static S2pExec *instance;

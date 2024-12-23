@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <spdlog/spdlog.h>
+#include "shared/command_meta_data.h"
 #include "shared/scsi.h"
 
 using namespace std;
@@ -36,6 +37,11 @@ public:
 
     SgResult SendCommand(span<uint8_t>, span<uint8_t>, int, int);
 
+    int GetByteCount() const
+    {
+        return byte_count;
+    }
+
 private:
 
     SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int);
@@ -44,9 +50,13 @@ private:
 
     logger &sg_logger;
 
+    CommandMetaData command_meta_data = CommandMetaData::Instance();
+
     int fd = -1;
 
     uint32_t block_size = 512;
+
+    int byte_count = 0;
 
     array<uint8_t, 18> sense_data = { };
 

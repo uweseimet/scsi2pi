@@ -29,25 +29,17 @@ ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), d
 
 bool ScsiGeneric::SetUp()
 {
-    if (!device.starts_with("/dev/sg")) {
-        LogError(fmt::format("Missing or invalid device file: '{}'", device));
-        return false;
+    try {
+        fd = OpenDevice(device);
     }
-
-    fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
-    if (fd == -1) {
-        LogError(fmt::format("Can't open '{0}': {1}", device, strerror(errno)));
-        return false;
-    }
-
-    if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
-        CleanUp();
-        LogError(fmt::format("'{0}' is not supported by the Linux SG 3 driver: {1}", device, strerror(errno)));
+    catch (const io_exception &e) {
+        LogError(e.what());
         return false;
     }
 
     if (!GetDeviceData()) {
         LogError("Can't get product data");
+        CleanUp();
         return false;
     }
 
@@ -72,7 +64,7 @@ string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
 
 void ScsiGeneric::Dispatch(scsi_command cmd)
 {
-    count = CommandMetaData::Instance().GetByteCount(cmd);
+    count = command_meta_data.GetByteCount(cmd);
     if (!count) {
         throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
     }
@@ -96,14 +88,9 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         local_cdb[0] = cmd == scsi_command::write_6 ? 0x2a : 0x28;
     }
 
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(cmd);
-    if (meta_data.block_size)
-    {
-        byte_count = GetAllocationLength() * block_size;
-    }
-    else {
-        byte_count = GetAllocationLength();
-    }
+    const auto &meta_data = command_meta_data.GetCdbMetaData(cmd);
+
+    byte_count = meta_data.block_size ? GetAllocationLength(local_cdb) * block_size : GetAllocationLength(local_cdb);
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
     if (cmd == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)) {
@@ -129,7 +116,6 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
         const int length = min(18, byte_count);
         GetController()->SetTransferSize(length, length);
-
         DataInPhase(length);
 
         // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
@@ -151,14 +137,14 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     deferred_sense_data_valid = false;
 
+    // Split the transfer into chunks
     const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
 
-    // Split the transfer into chunks of MAX_TRANFER_LENGTH bytes
     GetController()->SetTransferSize(byte_count, chunk_size);
 
     // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
     if (meta_data.has_data_out) {
-        DataOutPhase(chunk_size > 0 || cmd != scsi_command::format_unit ? chunk_size : -1);
+        DataOutPhase(chunk_size || cmd != scsi_command::format_unit ? chunk_size : -1);
     }
     else {
         GetController()->SetCurrentLength(byte_count);
@@ -212,7 +198,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
     io_hdr.interface_id = 'S';
 
-    const bool write = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).has_data_out;
+    const bool write = command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).has_data_out;
 
     if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
@@ -237,7 +223,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetLogger().level() <= level::debug) {
-        LogDebug(CommandMetaData::Instance().LogCdb(local_cdb, "SG driver"));
+        LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
     if (!internal && write && GetLogger().level() == level::trace) {
@@ -263,7 +249,6 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
         if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::inquiry
             && (static_cast<int>(local_cdb[1]) & 0b11100000)) {
-            spdlog::critical("a");
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
             buf[0] = 0x7f;
         }
@@ -289,7 +274,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
     UpdateStartBlock(local_cdb, length / block_size);
 
     // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
-    if (CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
+    if (command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
         remaining_count -= transferred_length;
     }
     else {
@@ -299,39 +284,6 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
     LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
 
     return transferred_length;
-}
-
-int ScsiGeneric::GetAllocationLength() const
-{
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(local_cdb[0]));
-
-    // For commands without allocation length field the length is coded as a negative offset
-    if (meta_data.allocation_length_offset < 0) {
-        return -meta_data.allocation_length_offset;
-    }
-
-    switch (meta_data.allocation_length_size) {
-    case 0:
-        break;
-
-    case 1:
-        return local_cdb[meta_data.allocation_length_offset];
-
-    case 2:
-        return GetInt16(local_cdb, meta_data.allocation_length_offset);
-
-    case 3:
-        return GetInt24(local_cdb, meta_data.allocation_length_offset);
-
-    case 4:
-        return GetInt32(local_cdb, meta_data.allocation_length_offset);
-
-    default:
-        assert(false);
-        break;
-    }
-
-    return 0;
 }
 
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)

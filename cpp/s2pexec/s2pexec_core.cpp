@@ -43,50 +43,62 @@ void S2pExec::Banner(bool header, bool usage)
 
     if (usage) {
         cout << "Usage: " + APP_NAME + " [options]\n"
-            << "  --scsi-target/-i ID:[LUN]     SCSI target device ID (0-7) and LUN (0-31),\n"
-            << "                                default LUN is 0.\n"
-            << "  --sasi-target/-h ID:[LUN]     SASI target device ID (0-7) and LUN (0-1),\n"
-            << "                                default LUN is 0.\n"
-            << "  --board-id/-B BOARD_ID        Board (initiator) ID (0-7), default is 7.\n"
-            << "  --cdb/-c CDB[:CDB:...]        Command blocks to send in hexadecimal format.\n"
-            << "  --data/-d DATA                Data to send with the command in hexadecimal\n"
-            << "                                format. @ denotes a filename, e.g. @data.txt.\n"
-            << "  --buffer-size/-b SIZE         Buffer size for received data,\n"
-            << "                                default is 131072 bytes.\n"
-            << "  --log-level/-L LEVEL          Log level (trace|debug|info|warning|error|\n"
-            << "                                critical|off), default is 'info'.\n"
-            << "  --log-limit/-l LIMIT          The number of data bytes being logged,\n"
-            << "                                0 means no limit. Default is 128.\n"
-            << "  --binary-input-file/-f FILE   Binary input file with data to send.\n"
-            << "  --binary-output-file/-F FILE  Binary output file for data received.\n"
-            << "  --hex-output-file/-T FILE     Hexadecimal text output file for data received.\n"
-            << "  --timeout/-o TIMEOUT          The command timeout in seconds, default is 3 s.\n"
-            << "  --request-sense/-R            Automatically send REQUEST SENSE on error.\n"
-            << "  --reset-bus/-r                Reset the bus.\n"
-            << "  --hex-only/-x                 Do not display/save the offset and ASCII data.\n"
-            << "  --version/-v                  Display the program version.\n"
-            << "  --help/-H                     Display this help.\n";
+            << "  --scsi-target/-i ID:[LUN]      SCSI target device ID (0-7) and LUN (0-31),\n"
+            << "                                 default LUN is 0.\n"
+            << "  --sasi-target/-h ID:[LUN]      SASI target device ID (0-7) and LUN (0-1),\n"
+            << "                                 default LUN is 0.\n"
+            << "  --board-id/-B BOARD_ID         Board (initiator) ID (0-7), default is 7.\n"
+            << "  --cdb/-c CDB[:CDB:...]         Command blocks to send in hexadecimal format.\n"
+            << "  --data/-d DATA                 Data to send with the command in hexadecimal\n"
+            << "                                 format. @ denotes a filename, e.g. @data.txt.\n"
+            << "  --buffer-size/-b SIZE          Buffer size for received data,\n"
+            << "                                 default is 131072 bytes.\n"
+            << "  --log-level/-L LEVEL           Log level (trace|debug|info|warning|error|\n"
+            << "                                 critical|off), default is 'info'.\n"
+            << "  --log-limit/-l LIMIT           The number of data bytes being logged,\n"
+            << "                                 0 means no limit. Default is 128.\n"
+            << "  --binary-input-file/-f FILE    Binary input file with data to send.\n"
+            << "  --binary-output-file/-F FILE   Binary output file for data received.\n"
+            << "  --hex-output-file/-T FILE      Hexadecimal text output file for data received.\n"
+            << "  --timeout/-o TIMEOUT           The command timeout in seconds, default is 3 s.\n"
+            << "  --request-sense/-R             Automatically send REQUEST SENSE on error.\n"
+            << "  --reset-bus/-r                 Reset the bus.\n"
+            << "  --hex-only/-x                  Do not display/save the offset and ASCII data.\n"
+            << "  --scsi-generic/-g DEVICE_FILE  Use the Linux SG driver instead of a\n"
+            << "                                 RaSCSI/PiSCSI board.\n"
+            << "  --version/-v                   Display the program version.\n"
+            << "  --help/-H                      Display this help.\n";
     }
 }
 
 bool S2pExec::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
-    if (!bus) {
-        return false;
+    if (device_file.empty()) {
+        bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
+        if (!bus) {
+            return false;
+        }
     }
 
     executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *s2pexec_logger);
+    if (!device_file.empty()) {
+        if (const string &error = executor->Init(device_file); !error.empty()) {
+            cerr << "Error: " << error << endl;
+            return false;
+        }
+    }
 
-    instance = this;
-    // Signal handler for cleaning up
-    struct sigaction termination_handler;
-    termination_handler.sa_handler = TerminationHandler;
-    sigemptyset(&termination_handler.sa_mask);
-    termination_handler.sa_flags = 0;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
+    if (device_file.empty()) {
+        instance = this;
+        // Signal handler for cleaning up
+        struct sigaction termination_handler;
+        termination_handler.sa_handler = TerminationHandler;
+        sigemptyset(&termination_handler.sa_mask);
+        termination_handler.sa_flags = 0;
+        sigaction(SIGINT, &termination_handler, nullptr);
+        sigaction(SIGTERM, &termination_handler, nullptr);
+        signal(SIGPIPE, SIG_IGN);
+    }
 
     return true;
 }
@@ -107,6 +119,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         { "log-level", required_argument, nullptr, 'L' },
         { "log-limit/-l", required_argument, nullptr, 'l' },
         { "reset-bus", no_argument, nullptr, 'r' },
+        { "scsi-generic", required_argument, nullptr, 'g' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
         { "timeout", required_argument, nullptr, 'o' },
@@ -129,7 +142,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:h:i:o:L:l:T:HrRvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:g:h:i:o:L:l:T:HrRvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -159,6 +172,10 @@ bool S2pExec::ParseArguments(span<char*> args)
 
         case 'F':
             binary_output_filename = optarg;
+            break;
+
+        case 'g':
+            device_file = optarg;
             break;
 
         case 'h':
@@ -241,11 +258,15 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     // Most options only make sense when there is a command
     if (!command.empty()) {
+        if ((!initiator.empty() && !device_file.empty())) {
+            throw parser_exception("Either a RaSCSI/PiSCSI board or the Linux SG driver can be used");
+        }
+
         if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
             throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
         }
 
-        if (target_id == -1 && !reset_bus) {
+        if (device_file.empty() && target_id == -1 && !reset_bus) {
             throw parser_exception("Missing target ID");
         }
 
@@ -290,7 +311,7 @@ bool S2pExec::RunInteractive(bool in_process)
         return false;
     }
 
-    if (!in_process && !bus->IsRaspberryPi()) {
+    if (device_file.empty() && !in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return false;
     }
@@ -356,7 +377,9 @@ int S2pExec::Run(span<char*> args, bool in_process)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
-    if (args.size() < 2 || in_process) {
+    if (args.size() < 2 || in_process
+        || (args.size() == 3 && (string(args[1]) == "-g" || string(args[1]) == "--scsi-generic"))) {
+        device_file = args[2];
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
     }
 
@@ -383,7 +406,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (!in_process && !bus->IsRaspberryPi()) {
+    if (device_file.empty() && !in_process && !bus->IsRaspberryPi()) {
         cerr << "Error: No board hardware support" << endl;
         return -1;
     }
@@ -467,7 +490,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
 
     if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense)) {
         vector<byte> sense_data;
-        transform(buffer.begin(), buffer.begin() + 14, back_inserter(sense_data),
+        transform(buffer.begin(), buffer.begin() + 18, back_inserter(sense_data),
             [](const uint8_t d) {return static_cast<byte>(d);});
         s2pexec_logger->debug(FormatSenseData(sense_data));
     }
@@ -475,7 +498,6 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
     if (data.empty() && binary_input_filename.empty() && hex_input_filename.empty()) {
         if (const int count = executor->GetByteCount(); count) {
             s2pexec_logger->debug("Received {} data byte(s)", count);
-
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
                 throw execution_exception(error);
             }

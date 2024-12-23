@@ -10,11 +10,16 @@
 
 #include <cstdint>
 #include <span>
+#include <string>
 
 using namespace std;
 
 namespace sg_util
 {
+
+int OpenDevice(const string&);
+
+int GetAllocationLength(span<uint8_t>);
 
 void UpdateStartBlock(span<uint8_t>, int);
 void SetBlockCount(span<uint8_t>, int);

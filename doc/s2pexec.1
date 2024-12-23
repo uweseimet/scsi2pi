@@ -19,6 +19,7 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--request-sense/-R\fR]
 [\fB\--reset-bus/-r\fR]
 [\fB\--hex-only/\fR]
+[\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
 [\fB\--help/-H\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
@@ -27,6 +28,7 @@ sends SCSI or SASI commands to a device and displays the results.
 
 When launched without arguments s2pexec enters interactive mode, where you can enter commands on the command line. Like with the bash shell, "!!" repeats the last command.
 In interactive mode the target, initiator and log level settings are preserved between command invocations.
+When using devices managed by the Linux SG 3 driver, s2pdump can be used on any Linux system, not just on a Pi.
 
 .SH NOTES
 
@@ -82,6 +84,9 @@ Reset the bus.
 .TP
 .BR --hex-only\fI
 Do not display/save the offsets and the ASCII representantion of the received data.
+.TP
+.BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
+Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 .TP
 .BR --help/-H\fI
 Display a help text.
