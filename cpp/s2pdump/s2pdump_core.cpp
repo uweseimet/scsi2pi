@@ -552,7 +552,8 @@ string S2pDump::DumpRestore()
     }
 
     if (!restore) {
-        status(filename).permissions(perms::group_read | perms::others_read);
+        permissions(filename, perms::group_read | perms::group_write | perms::others_read | perms::others_write,
+            perm_options::add);
     }
 
     return
@@ -627,13 +628,14 @@ string S2pDump::DumpRestoreDisk(fstream &file)
 
 string S2pDump::DumpRestoreTape(fstream &file)
 {
-    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
-
-    const auto start_time = high_resolution_clock::now();
-
+    cout << "Rewinding tape\n";
     if (s2pdump_executor->Rewind()) {
         return "Can't rewind tape";
     }
+
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
+
+    const auto start_time = high_resolution_clock::now();
 
     try {
         restore ? RestoreTape(file) : DumpTape(file);
@@ -680,6 +682,8 @@ void S2pDump::DumpTape(ostream &file)
             break;
         }
 
+        spdlog::critical(length);
+
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
             file.write((const char*)bad_data.data(), bad_data.size());
@@ -709,8 +713,8 @@ void S2pDump::DumpTape(ostream &file)
         s2pdump_logger->info("Block count: {}", block_count);
         s2pdump_logger->info("Filemark count: {}", filemark_count);
 
-        if (log_count >= 65536) {
-            cout << "Dumped " << byte_count << " bytes\n" << flush;
+        if (log_count >= 131072) {
+            cout << "Dumped " << byte_count << " bytes (" << byte_count / 1048576 << " MB)\n" << flush;
             log_count = 0;
         }
     }
@@ -766,8 +770,8 @@ void S2pDump::RestoreTape(istream &file)
         s2pdump_logger->info("Block count: {}", block_count);
         s2pdump_logger->info("Filemark count: {}", filemark_count);
 
-        if (log_count >= 65536) {
-            cout << "Restored " << byte_count << " bytes\n" << flush;
+        if (log_count >= 131072) {
+            cout << "Restored " << byte_count << " bytes (" << byte_count / 1048576 << " MB)\n" << flush;
             log_count = 0;
         }
     }

@@ -76,10 +76,10 @@ int SgExecutor::WriteFilemark(vector<uint8_t> &cdb) const
 
 bool SgExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
+    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
 }
 
 bool SgExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
+    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
 }

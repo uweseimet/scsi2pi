@@ -119,7 +119,7 @@ void S2pDumpExecutor::SpaceBack() const
     SpaceBack(cdb);
 }
 
-int S2pDumpExecutor::Rewind() const
+int S2pDumpExecutor::Rewind()
 {
     vector<uint8_t> cdb(6);
     cdb[0] = static_cast<uint8_t>(scsi_command::rewind);
@@ -144,7 +144,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     if (length) {
         SetInt24(cdb, 2, length);
 
-        if (!Write(cdb, buf, length)) {
+        if (Write(cdb, buf, length)) {
             throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
         }
 

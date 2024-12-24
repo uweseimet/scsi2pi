@@ -98,10 +98,10 @@ int BoardExecutor::WriteFilemark(vector<uint8_t> &cdb) const
 
 bool BoardExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return !initiator_executor->Execute(scsi_command::read_6, cdb, buf, length, LONG_TIMEOUT, false);
+    return initiator_executor->Execute(scsi_command::read_6, cdb, buf, length, LONG_TIMEOUT, false);
 }
 
 bool BoardExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return !initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
+    return initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
 }

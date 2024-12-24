@@ -44,7 +44,7 @@ public:
     virtual void SynchronizeCache(vector<uint8_t>&) const = 0;
 
     // Tape support
-    int Rewind() const;
+    int Rewind();
     virtual int Rewind(vector<uint8_t>&) const = 0;
     int WriteFilemark() const;
     virtual int WriteFilemark(vector<uint8_t>&) const = 0;

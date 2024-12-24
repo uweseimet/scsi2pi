@@ -217,7 +217,7 @@ void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf = { };
 
-    if (bus.ReceiveHandShake(buf.data(), static_cast<int>(buf.size())) != static_cast<int>(buf.size())) {
+    if (bus.ReceiveHandShake(buf.data(), 1) != 1) {
         initiator_logger.error("STATUS phase failed");
     }
     else {
