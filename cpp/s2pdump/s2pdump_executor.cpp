@@ -144,7 +144,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     if (length) {
         SetInt24(cdb, 2, length);
 
-        if (Write(cdb, buf, length, LONG_TIMEOUT)) {
+        if (!Write(cdb, buf, length)) {
             throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
         }
 
@@ -156,7 +156,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     while (true) {
         SetInt24(cdb, 2, default_length);
 
-        if (!Read(cdb, buf, default_length, LONG_TIMEOUT)) {
+        if (!Read(cdb, buf, default_length)) {
             GetLogger().debug("Read block with {} byte(s)", default_length);
             return default_length;
         }

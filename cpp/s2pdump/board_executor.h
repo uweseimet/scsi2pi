@@ -44,8 +44,8 @@ public:
     // Tape support
     int Rewind(vector<uint8_t>&) const override;
     int WriteFilemark(vector<uint8_t>&) const override;
-    int Read(vector<uint8_t>&, span<uint8_t>, int, int) override;
-    int Write(vector<uint8_t>&, span<uint8_t>, int, int) override;
+    bool Read(vector<uint8_t>&, span<uint8_t>, int) override;
+    bool Write(vector<uint8_t>&, span<uint8_t>, int) override;
 
     void SetTarget(int id, int lun, bool sasi)
     {

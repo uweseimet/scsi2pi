@@ -49,8 +49,8 @@ public:
     int WriteFilemark() const;
     virtual int WriteFilemark(vector<uint8_t>&) const = 0;
     int ReadWrite(span<uint8_t>, int);
-    virtual int Read(vector<uint8_t>&, span<uint8_t>, int, int) = 0;
-    virtual int Write(vector<uint8_t>&, span<uint8_t>, int, int) = 0;
+    virtual bool Read(vector<uint8_t>&, span<uint8_t>, int) = 0;
+    virtual bool Write(vector<uint8_t>&, span<uint8_t>, int) = 0;
 
     logger &s2pdump_logger;
 

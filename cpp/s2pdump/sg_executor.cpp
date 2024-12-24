@@ -74,16 +74,12 @@ int SgExecutor::WriteFilemark(vector<uint8_t> &cdb) const
     return sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT).status;
 }
 
-int SgExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length, int timeout)
+bool SgExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return sg_adapter.SendCommand(cdb, buf, length, timeout).status;
+    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
 }
 
-int SgExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length, int timeout)
+bool SgExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    if (sg_adapter.SendCommand(cdb, buf, length, timeout).status) {
-        throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
-    }
-
-    return length;
+    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
 }

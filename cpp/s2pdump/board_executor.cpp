@@ -96,16 +96,12 @@ int BoardExecutor::WriteFilemark(vector<uint8_t> &cdb) const
     return initiator_executor->Execute(scsi_command::write_filemarks_6, cdb, { }, 0, LONG_TIMEOUT, true);
 }
 
-int BoardExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length, int timeout)
+bool BoardExecutor::Read(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    return initiator_executor->Execute(scsi_command::read_6, cdb, buf, length, timeout, false);
+    return !initiator_executor->Execute(scsi_command::read_6, cdb, buf, length, LONG_TIMEOUT, false);
 }
 
-int BoardExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length, int timeout)
+bool BoardExecutor::Write(vector<uint8_t> &cdb, span<uint8_t> buf, int length)
 {
-    if (initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, timeout, false)) {
-        throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
-    }
-
-    return length;
+    return !initiator_executor->Execute(scsi_command::write_6, cdb, buf, length, LONG_TIMEOUT, false);
 }
