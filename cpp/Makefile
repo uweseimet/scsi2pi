@@ -286,7 +286,7 @@ SRC_S2PCTL = s2pctl/s2pctl.cpp
 SRC_S2PDUMP = s2pdump/s2pdump.cpp
 SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
 ifdef IS_LINUX
-SRC_S2PDUMP += s2pdump/sg_executor.cpp
+SRC_S2PDUMP += $(shell ls -1 s2pdump/sg_*.cpp)
 endif
 
 SRC_S2PEXEC := $(shell ls -1 s2pexec/*.cpp)
@@ -307,6 +307,9 @@ SRC_S2PTOOL = s2ptool/s2ptool.cpp
 SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
+ifdef IS_LINUX
+SRC_S2PTOOL += $(shell ls -1 s2pdump/sg_*.cpp)
+endif
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
 	$(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
