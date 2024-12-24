@@ -682,8 +682,6 @@ void S2pDump::DumpTape(ostream &file)
             break;
         }
 
-        spdlog::critical(length);
-
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
             file.write((const char*)bad_data.data(), bad_data.size());
