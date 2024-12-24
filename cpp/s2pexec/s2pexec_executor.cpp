@@ -7,27 +7,108 @@
 //---------------------------------------------------------------------------
 
 #include "s2pexec_executor.h"
+#include "buses/bus_factory.h"
+#include "initiator/initiator_util.h"
 
 string S2pExecExecutor::Init(const string &device)
 {
-    use_sg = true;
+#ifdef __linux__
+    if (sg_adapter) {
+        sg_adapter->CleanUp();
+    }
+    else {
+        sg_adapter = make_unique<SgAdapter>(s2pexec_logger);
+    }
 
-    return sg_adapter->Init(device);
+    const string &error = sg_adapter->Init(device);
+
+    use_sg = error.empty();
+
+    return error;
+#else
+    return "";
+#endif
+}
+
+string S2pExecExecutor::Init(int id, const string &name, bool in_process)
+{
+    if (!bus) {
+        bus = BusFactory::Instance().CreateBus(false, in_process, name);
+        if (!bus) {
+            return "Can't initialize bus";
+        }
+
+        if (!in_process && !bus->IsRaspberryPi()) {
+            return "No RaSCSI/PiSCSI board found";
+        }
+
+        initiator_executor = make_unique<InitiatorExecutor>(*bus, id, s2pexec_logger);
+    }
+
+    use_sg = false;
+
+    return "";
+}
+
+void S2pExecExecutor::CleanUp()
+{
+    if (!use_sg && bus) {
+        bus->CleanUp();
+    }
+
+#ifdef __linux__
+    if (use_sg && sg_adapter) {
+        sg_adapter->CleanUp();
+    }
+#endif
+
+    use_sg = false;
+}
+
+void S2pExecExecutor::ResetBus()
+{
+    if (!use_sg && bus) {
+        initiator_util::ResetBus(*bus);
+    }
 }
 
 int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, int timeout, bool log)
 {
+#ifdef __linux__
     if (use_sg) {
-        const SgAdapter::SgResult &result = sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
-        length = result.length;
-        return result.status;
+        return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
     }
+#endif
 
-    return initiator_executor->Execute(cdb, buf, buf.size(), timeout, log);
+    return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, log);
+}
+
+string S2pExecExecutor::GetDeviceName() const
+{
+    array<uint8_t, 32> buf = { };
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    cdb[4] = static_cast<uint8_t>(buf.size());
+
+#ifdef __linux__
+    if (use_sg) {
+        sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), 1);
+    }
+    else {
+        initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), 1, false);
+    }
+#else
+    initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), 1, false);
+#endif
+
+    array<char, 17> str = { };
+    memcpy(str.data(), &buf[16], 16);
+    return str.data();
 }
 
 tuple<sense_key, asc, int> S2pExecExecutor::GetSenseData() const
 {
+#ifdef __linux__
     if (use_sg) {
         array<uint8_t, 14> sense_data;
         vector<uint8_t> cdb(6);
@@ -38,6 +119,7 @@ tuple<sense_key, asc, int> S2pExecExecutor::GetSenseData() const
 
         return {static_cast<sense_key>(static_cast<int>(sense_data[0]) & 0x0f), static_cast<asc>(sense_data[12]), sense_data[13]};
     }
+#endif
 
     return initiator_util::GetSenseData(*initiator_executor);
 }
@@ -49,5 +131,7 @@ int S2pExecExecutor::GetByteCount() const
 
 void S2pExecExecutor::SetTarget(int id, int lun, bool sasi)
 {
-    initiator_executor->SetTarget(id, lun, sasi);
+    if (initiator_executor) {
+        initiator_executor->SetTarget(id, lun, sasi);
+    }
 }

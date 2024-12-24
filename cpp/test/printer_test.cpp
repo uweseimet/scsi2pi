@@ -41,6 +41,13 @@ TEST(PrinterTest, GetDefaultParams)
     EXPECT_EQ("lp -oraw %f", params.at("cmd"));
 }
 
+TEST(PrinterTest, GetIdentifier)
+{
+    Printer printer(0);
+
+    EXPECT_EQ("SCSI Printer", printer.GetIdentifier());
+}
+
 TEST(PrinterTest, Init)
 {
     Printer printer(0);

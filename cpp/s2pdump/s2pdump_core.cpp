@@ -257,12 +257,14 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         throw parser_exception("Invalid initiator ID '" + initiator + "' (0-7)");
     }
 
+#ifdef __linux__
     if (!device_file.empty()) {
         sg_adapter = make_shared<SgAdapter>(*s2pdump_logger);
         if (const string &error = sg_adapter->Init(device_file); !error.empty()) {
             throw parser_exception(error);
         }
     }
+#endif
 
     if (!run_bus_scan) {
         if (device_file.empty()) {

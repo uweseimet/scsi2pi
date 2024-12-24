@@ -37,6 +37,13 @@ TEST(HostServicesTest, DeviceDefaults)
     EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
+TEST(HostServicesTest, GetIdentifier)
+{
+    HostServices services(0);
+
+    EXPECT_EQ("Host Services", services.GetIdentifier());
+}
+
 TEST(HostServicesTest, TestUnitReady)
 {
     auto [controller, services] = CreateDevice(SCHS);

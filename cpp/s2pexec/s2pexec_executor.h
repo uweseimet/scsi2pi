@@ -18,15 +18,24 @@ class S2pExecExecutor
 
 public:
 
-    S2pExecExecutor(Bus &bus, int id, logger &l) : initiator_executor(make_unique<InitiatorExecutor>(bus, id, l)), sg_adapter(
-        make_unique<SgAdapter>(l))
+    S2pExecExecutor(logger &logger) : s2pexec_logger(logger)
     {
     }
-    ~S2pExecExecutor() = default;
 
     string Init(const string&);
+    string Init(int, const string&, bool);
+    void CleanUp();
+
+    bool IsSg() const
+    {
+        return use_sg;
+    }
+
+    void ResetBus();
 
     int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
+
+    string GetDeviceName() const;
 
     tuple<sense_key, asc, int> GetSenseData() const;
 
@@ -36,13 +45,15 @@ public:
 
 private:
 
+    unique_ptr<Bus> bus;
+
     unique_ptr<InitiatorExecutor> initiator_executor;
 
     unique_ptr<SgAdapter> sg_adapter;
 
-    bool use_sg = false;
+    logger &s2pexec_logger;
 
-    int length = 0;
+    bool use_sg = false;
 
     // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;

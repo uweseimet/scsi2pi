@@ -43,6 +43,13 @@ TEST(DaynaportTest, GetDefaultParams)
     EXPECT_EQ("true", params.at("bridge"));
 }
 
+TEST(DaynaportTest, GetIdentifier)
+{
+    DaynaPort daynaport(0);
+
+    EXPECT_EQ("DaynaPort SCSI/Link", daynaport.GetIdentifier());
+}
+
 TEST(DaynaportTest, Inquiry)
 {
     TestShared::Inquiry(SCDP, device_type::processor, scsi_level::scsi_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);

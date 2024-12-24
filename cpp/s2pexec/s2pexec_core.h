@@ -38,7 +38,7 @@ private:
     static void Banner(bool, bool);
 
     bool Init(bool);
-    bool ParseArguments(span<char*>);
+    bool ParseArguments(span<char*>, bool);
     bool RunInteractive(bool);
     int Run();
 
@@ -50,8 +50,6 @@ private:
 
     void CleanUp() const;
     static void TerminationHandler(int);
-
-    unique_ptr<Bus> bus;
 
     unique_ptr<S2pExecExecutor> executor;
 
@@ -76,6 +74,8 @@ private:
 
     bool sasi = false;
 
+    bool use_sg = false;
+
     vector<uint8_t> buffer;
 
     string binary_input_filename;
@@ -92,6 +92,8 @@ private:
     string last_input;
 
     string device_file;
+
+    string prompt = APP_NAME;
 
     // Required for the termination handler
     inline static S2pExec *instance;

@@ -21,8 +21,8 @@ using namespace initiator_util;
 
 void S2pExec::CleanUp() const
 {
-    if (bus) {
-        bus->CleanUp();
+    if (executor) {
+        executor->CleanUp();
     }
 }
 
@@ -73,22 +73,16 @@ void S2pExec::Banner(bool header, bool usage)
 
 bool S2pExec::Init(bool in_process)
 {
-    if (device_file.empty()) {
-        bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME);
-        if (!bus) {
-            return false;
-        }
+    if (!executor) {
+        executor = make_unique<S2pExecExecutor>(*s2pexec_logger);
     }
 
-    executor = make_unique<S2pExecExecutor>(*bus, initiator_id, *s2pexec_logger);
-    if (!device_file.empty()) {
-        if (const string &error = executor->Init(device_file); !error.empty()) {
+    if (!use_sg) {
+        if (const string &error = executor->Init(initiator_id, APP_NAME, in_process); !error.empty()) {
             cerr << "Error: " << error << endl;
             return false;
         }
-    }
 
-    if (device_file.empty()) {
         instance = this;
         // Signal handler for cleaning up
         struct sigaction termination_handler;
@@ -99,11 +93,15 @@ bool S2pExec::Init(bool in_process)
         sigaction(SIGTERM, &termination_handler, nullptr);
         signal(SIGPIPE, SIG_IGN);
     }
+    else if (const string &error = executor->Init(device_file); !error.empty()) {
+        cerr << "Error: " << error << endl;
+        return false;
+    }
 
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args)
+bool S2pExec::ParseArguments(span<char*> args, bool in_process)
 {
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
@@ -175,7 +173,9 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         case 'g':
+            target = "";
             device_file = optarg;
+            use_sg = true;
             break;
 
         case 'h':
@@ -188,7 +188,9 @@ bool S2pExec::ParseArguments(span<char*> args)
             break;
 
         case 'i':
+            device_file = "";
             target = optarg;
+            use_sg = false;
             break;
 
         case 'l':
@@ -250,32 +252,43 @@ bool S2pExec::ParseArguments(span<char*> args)
         formatter.SetLimit(limit);
     }
 
+    if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
+        throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+    }
+
     if (!target.empty()) {
         if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
             throw parser_exception(error);
         }
     }
 
-    // Most options only make sense when there is a command
+    if (executor && executor->IsSg() != use_sg) {
+        executor->CleanUp();
+    }
+
+    if (!Init(in_process)) {
+        return false;
+    }
+
+    if (target_id == initiator_id) {
+        throw parser_exception("Target ID and initiator ID must not be identical");
+    }
+
+    if (target_lun == -1) {
+        target_lun = 0;
+    }
+
+    executor->SetTarget(target_id, target_lun, sasi);
+
+    prompt = Trim(executor->GetDeviceName());
+    if (prompt.empty()) {
+        prompt = APP_NAME;
+    }
+
+    // Some options only make sense when there is a command
     if (!command.empty()) {
-        if ((!initiator.empty() && !device_file.empty())) {
-            throw parser_exception("Either a RaSCSI/PiSCSI board or the Linux SG driver can be used");
-        }
-
-        if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
-            throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
-        }
-
-        if (device_file.empty() && target_id == -1 && !reset_bus) {
+        if (!use_sg && target_id == -1 && !reset_bus) {
             throw parser_exception("Missing target ID");
-        }
-
-        if (target_id == initiator_id) {
-            throw parser_exception("Target ID and initiator ID must not be identical");
-        }
-
-        if (target_lun == -1) {
-            target_lun = 0;
         }
 
         if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
@@ -306,18 +319,6 @@ bool S2pExec::ParseArguments(span<char*> args)
 
 bool S2pExec::RunInteractive(bool in_process)
 {
-    if (!Init(in_process)) {
-        cerr << "Error: Can't initialize bus" << endl;
-        return false;
-    }
-
-    if (device_file.empty() && !in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No board hardware support" << endl;
-        return false;
-    }
-
-    const string &prompt = "s2pexec";
-
     if (isatty(STDIN_FILENO)) {
         Banner(true, false);
 
@@ -345,7 +346,7 @@ bool S2pExec::RunInteractive(bool in_process)
         const auto &args = Split(input, ' ');
 
         vector<char*> interactive_args;
-        interactive_args.emplace_back(strdup(prompt.c_str()));
+        interactive_args.emplace_back(strdup(APP_NAME.c_str()));
         interactive_args.emplace_back(strdup(args[0].c_str()));
         for (size_t i = 1; i < args.size(); i++) {
             if (!args[i].empty()) {
@@ -354,7 +355,7 @@ bool S2pExec::RunInteractive(bool in_process)
         }
 
         try {
-            if (!ParseArguments(interactive_args)) {
+            if (!ParseArguments(interactive_args, in_process)) {
                 continue;
             }
         }
@@ -377,14 +378,12 @@ int S2pExec::Run(span<char*> args, bool in_process)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
-    if (args.size() < 2 || in_process
-        || (args.size() == 3 && (string(args[1]) == "-g" || string(args[1]) == "--scsi-generic"))) {
-        device_file = args[2];
+    if (args.size() < 2 || in_process) {
         return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
     }
 
     try {
-        if (!ParseArguments(args)) {
+        if (!ParseArguments(args, in_process)) {
             return -1;
         }
         else if (version || help) {
@@ -401,16 +400,6 @@ int S2pExec::Run(span<char*> args, bool in_process)
         return -1;
     }
 
-    if (!Init(in_process)) {
-        cerr << "Error: Can't initialize bus" << endl;
-        return -1;
-    }
-
-    if (device_file.empty() && !in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No board hardware support" << endl;
-        return -1;
-    }
-
     const int status = Run();
 
     CleanUp();
@@ -420,10 +409,8 @@ int S2pExec::Run(span<char*> args, bool in_process)
 
 int S2pExec::Run()
 {
-    executor->SetTarget(target_id, target_lun, sasi);
-
     if (reset_bus) {
-        ResetBus(*bus);
+        executor->ResetBus();
         return EXIT_SUCCESS;
     }
 

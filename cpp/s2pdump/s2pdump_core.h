@@ -111,7 +111,9 @@ private:
 
     string device_file;
 
+#ifdef __linux__
     shared_ptr<SgAdapter> sg_adapter;
+    #endif
 
     // Required for the termination handler
     inline static S2pDump *instance;

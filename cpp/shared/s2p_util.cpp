@@ -201,7 +201,7 @@ string s2p_util::Banner(string_view app)
 {
     stringstream s;
 
-    s << "SCSI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
+    s << "SCSI/SASI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2016-2020 GIMONS\n"
         << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"

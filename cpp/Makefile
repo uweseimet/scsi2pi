@@ -206,7 +206,7 @@ SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_*.cpp)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
 ifdef IS_LINUX
 SRC_SHARED += $(shell ls -1 $(DIR_SHARED)/sg_*.cpp)
 endif
@@ -284,7 +284,10 @@ SRC_S2PCTL_CORE = $(shell ls -1 s2pctl/*.cpp | grep -v s2pctl.cpp)
 SRC_S2PCTL = s2pctl/s2pctl.cpp
 
 SRC_S2PDUMP = s2pdump/s2pdump.cpp
-SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
+SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
+ifdef IS_LINUX
+SRC_S2PDUMP += s2pdump/sg_executor.cpp
+endif
 
 SRC_S2PEXEC := $(shell ls -1 s2pexec/*.cpp)
 
@@ -301,7 +304,7 @@ SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 
 SRC_S2PTOOL = s2ptool/s2ptool.cpp
-SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
+SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
 
