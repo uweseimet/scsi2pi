@@ -23,7 +23,7 @@ public:
     explicit HostServices(int);
     ~HostServices() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
 
     string GetIdentifier() const override
     {

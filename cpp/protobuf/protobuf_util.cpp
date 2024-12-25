@@ -146,9 +146,9 @@ string protobuf_util::ListDevices(const vector<PbDevice> &devices)
     vector<PbDevice> sorted_devices(devices);
     ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
-    string s = "+--------+------+-----------------------------------------\n"
+    string s = "+--------+------+-------------------------------------------\n"
         "| ID:LUN | Type | Image File/Device File/Description\n"
-        "+--------+------+-----------------------------------------\n";
+        "+--------+------+-------------------------------------------\n";
 
     for (const auto &device : sorted_devices) {
         s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
@@ -157,7 +157,7 @@ string protobuf_util::ListDevices(const vector<PbDevice> &devices)
                 " (READ-ONLY)" : "");
     }
 
-    s += "+--------+------+-----------------------------------------\n";
+    s += "+--------+------+-------------------------------------------\n";
 
     return s;
 }

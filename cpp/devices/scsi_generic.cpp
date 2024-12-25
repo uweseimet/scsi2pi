@@ -8,13 +8,12 @@
 //
 //---------------------------------------------------------------------------
 
+#include "scsi_generic.h"
 #include <fcntl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
 #include "shared/command_meta_data.h"
-#include "shared/s2p_exceptions.h"
 #include "shared/sg_util.h"
-#include "scsi_generic.h"
 
 using namespace spdlog;
 using namespace memory_util;
@@ -27,25 +26,23 @@ ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), d
     SetReady(true);
 }
 
-bool ScsiGeneric::SetUp()
+string ScsiGeneric::SetUp()
 {
     try {
         fd = OpenDevice(device);
     }
     catch (const io_exception &e) {
-        LogError(e.what());
-        return false;
+        return e.what();
     }
 
-    if (!GetDeviceData()) {
-        LogError("Can't get product data");
+    if (const string &error = GetDeviceData(); !error.empty()) {
         CleanUp();
-        return false;
+        return "Can't get product data: " + error;
     }
 
     GetBlockSize();
 
-    return true;
+    return "";
 }
 
 void ScsiGeneric::CleanUp()
@@ -159,7 +156,7 @@ vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf, GetController()->GetChunkSize(), false);
+    return ReadWriteData(buf, GetController()->GetChunkSize(), true);
 }
 
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
@@ -185,10 +182,10 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length, false); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length, true); // NOSONAR Cast required for SG driver API
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -222,11 +219,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (GetLogger().level() <= level::debug) {
+    if (log && GetLogger().level() <= level::debug) {
         LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
-    if (!internal && write && GetLogger().level() == level::trace) {
+    if (log && write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length,
             GetController()->FormatBytes(buf, length)));
     }
@@ -236,12 +233,15 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
     format_header.clear();
 
     if (status == -1) {
-        LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
+        if (log) {
+            LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
+        }
+
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
     }
-    // Do not treat CONDITION MET as an error
-    else if (status == 4) {
-        status = 0;
+    // Do not consider CONDITION MET an error
+    else if (status == static_cast<int>(status_code::condition_met)) {
+        status = static_cast<int>(status_code::good);
     }
 
     if (!status) {
@@ -264,7 +264,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (!internal && !write && GetLogger().level() == level::trace) {
+    if (log && !write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
             GetController()->FormatBytes(buf, transferred_length)));
     }
@@ -281,7 +281,9 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool internal)
         remaining_count = 0;
     }
 
-    LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
+    if (log) {
+        LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
+    }
 
     return transferred_length;
 }
@@ -305,7 +307,7 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
     }
 }
 
-bool ScsiGeneric::GetDeviceData()
+string ScsiGeneric::GetDeviceData()
 {
     vector<uint8_t> buf(36);
 
@@ -318,14 +320,10 @@ bool ScsiGeneric::GetDeviceData()
     local_cdb[4] = static_cast<uint8_t>(byte_count);
 
     try {
-        ReadWriteData(buf, byte_count, true);
+        ReadWriteData(buf, byte_count, false);
     }
-    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
-        // Fall through
-    }
-
-    if (remaining_count) {
-        return false;
+    catch (const scsi_exception &e) {
+        return e.what();
     }
 
     array<char, 9> vendor = { };
@@ -339,7 +337,7 @@ bool ScsiGeneric::GetDeviceData()
     SetScsiLevel(static_cast<scsi_level>(buf[2]));
     SetResponseDataFormat(static_cast<scsi_level>(buf[3]));
 
-    return true;
+    return "";
 }
 
 void ScsiGeneric::GetBlockSize()
@@ -354,11 +352,10 @@ void ScsiGeneric::GetBlockSize()
     local_cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
 
     try {
-        if (ReadWriteData(buf, byte_count, true) == byte_count) {
-            block_size = GetInt32(buf, 4);
-        }
+        // Trigger a block size update
+        ReadWriteData(buf, byte_count, false);
     }
-    catch (const scsi_exception&) { // NOSONAR The exception details do not matter
+    catch (const scsi_exception&) { // NOSONAR The exception details do not matter, this might not be a block device
         // Fall through
     }
 }

@@ -50,6 +50,7 @@ TEST(S2pFormatterTest, FormatBytes)
 
     formatter.SetLimit(10000);
     EXPECT_EQ(str_partial, formatter.FormatBytes(bytes, bytes.size()));
+    EXPECT_EQ(str_hex_only, formatter.FormatBytes(bytes, bytes.size(), true));
 
     formatter.SetLimit(0);
     EXPECT_EQ("", formatter.FormatBytes(bytes, bytes.size(), true));

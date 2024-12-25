@@ -37,7 +37,7 @@ public:
 
     explicit DaynaPort(int);
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     string GetIdentifier() const override
@@ -104,7 +104,7 @@ private:
         .frames_lost = 0,
     };
 
-    int GetMessage(vector<uint8_t>&);
+    int GetMessage(data_in_t);
 
     TapDriver tap;
 

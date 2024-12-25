@@ -143,7 +143,7 @@ TEST(S2pUtilTest, Banner)
 
 TEST(S2pUtilTest, GetScsiLevel)
 {
-    EXPECT_EQ("???", GetScsiLevel(0));
+    EXPECT_EQ("-", GetScsiLevel(0));
     EXPECT_EQ("SCSI-1-CCS", GetScsiLevel(1));
     EXPECT_EQ("SCSI-2", GetScsiLevel(2));
     EXPECT_EQ("SCSI-3 (SPC)", GetScsiLevel(3));

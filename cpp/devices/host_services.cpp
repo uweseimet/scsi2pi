@@ -88,7 +88,6 @@
 #include "command/command_dispatcher.h"
 #include "controllers/controller.h"
 #include "protobuf/protobuf_util.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
@@ -103,7 +102,7 @@ HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
     SetReady(true);
 }
 
-bool HostServices::SetUp()
+string HostServices::SetUp()
 {
     AddCommand(scsi_command::start_stop, [this]
         {
@@ -120,7 +119,7 @@ bool HostServices::SetUp()
 
     page_handler = make_unique<PageHandler>(*this, false, false);
 
-    return true;
+    return "";
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const

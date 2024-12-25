@@ -14,6 +14,7 @@
 #include <span>
 #include <spdlog/spdlog.h>
 #include "base/device.h"
+#include "base/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN
 static constexpr int ETH_FRAME_LEN = 1514;
@@ -30,20 +31,20 @@ public:
     TapDriver();
     ~TapDriver() = default;
 
-    bool Init(const param_map&, logger&);
+    string Init(const param_map&, logger&);
     void CleanUp(logger&) const;
 
     param_map GetDefaultParams() const;
 
-    int Receive(uint8_t*, logger&) const;
-    int Send(const uint8_t*, int) const;
+    int Receive(data_in_t, logger&) const;
+    int Send(data_out_t) const;
     bool HasPendingPackets() const;
 
     void Flush(logger&) const;
 
     static uint32_t Crc32(span<const uint8_t>);
 
-    static string GetBridgeName()
+    static const string& GetBridgeName()
     {
         return BRIDGE_NAME;
     }

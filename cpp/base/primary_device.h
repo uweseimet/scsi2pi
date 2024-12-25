@@ -36,8 +36,8 @@ public:
         }
     };
 
-    bool Init();
-    virtual bool SetUp() = 0;
+    string Init();
+    virtual string SetUp() = 0;
     virtual void CleanUp()
     {
         // Override if cleanup work is required for a derived device
@@ -128,8 +128,8 @@ protected:
     virtual void Inquiry();
     virtual void RequestSense();
     void SendDiagnostic() const;
-    void ReserveUnit();
-    void ReleaseUnit();
+    void Reserve();
+    void Release();
 
     virtual int ModeSense6(cdb_t, data_in_t) const
     {

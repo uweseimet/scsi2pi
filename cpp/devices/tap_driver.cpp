@@ -30,7 +30,7 @@ TapDriver::TapDriver()
     available_interfaces = GetNetworkInterfaces();
 }
 
-bool TapDriver::Init(const param_map &const_params, logger &logger)
+string TapDriver::Init(const param_map &const_params, logger &logger)
 {
     param_map params = const_params;
     stringstream s(params[INTERFACE]);
@@ -43,19 +43,17 @@ bool TapDriver::Init(const param_map &const_params, logger &logger)
     }
 
     if (bridge_interface.empty()) {
-        logger.error("No valid network interfaces available");
-        return false;
+        return "No valid network interfaces available";
     }
 
-    if ((tap_fd = open("/dev/net/tun", O_RDWR)) == -1) {
-        logger.error("Can't open /dev/net/tun: {}", strerror(errno));
-        return false;
+    tap_fd = open("/dev/net/tun", O_RDWR);
+    if (tap_fd == -1) {
+        return fmt::format("Can't open /dev/net/tun: {}", strerror(errno));
     }
 
 #ifndef __linux__
-    return false;
+    return "The TAP driver requires a Linux platform";
 #else
-
     const bool create_bridge = params[BRIDGE] == "true";
 
     inet = params[INET];
@@ -67,52 +65,49 @@ bool TapDriver::Init(const param_map &const_params, logger &logger)
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
-        logger.error("Can't ioctl TUNSETIFF: {}", strerror(errno));
         close(tap_fd);
-        return false;
+        return fmt::format("Can't ioctl TUNSETIFF: {}", strerror(errno));
     }
 
     const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
-        logger.error("Can't create IP socket: {}", strerror(errno));
         close(tap_fd);
-        return false;
+        return fmt::format("Can't create IP socket: {}", strerror(errno));
     }
 
-    const auto &cleanUp = [this, ip_fd](const string &msg, class logger &l) {
-        l.error(msg);
+    const auto &cleanUp = [this, ip_fd](const string &msg) {
         close(ip_fd);
         close(tap_fd);
-        return false;
+        return msg;
     };
 
     if (const string &error = IpLink(true, logger); !error.empty()) {
-        return cleanUp(error, logger);
+        return cleanUp(error);
     }
 
     // Only physical interfaces need a bridge or can be in promiscuous mode
     if (const bool is_physical = bridge_interface.starts_with("eth"); is_physical && create_bridge) {
         const int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
         if (fd == -1) {
-            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)), logger);
+            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)));
         }
 
         if (const string &error = CreateBridge(fd, ip_fd, logger); !error.empty()) {
             close(fd);
-            return cleanUp(error, logger);
+            return cleanUp(error);
         }
 
         logger.trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
         const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, true);
         close(fd);
         if (!error.empty()) {
-            return cleanUp(error, logger);
+            return cleanUp(error);
         }
     }
     else {
         logger.trace(">ip addr add {0} brd + dev {1}", inet, BRIDGE_INTERFACE_NAME);
         if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME, logger); !error.empty()) {
-            return cleanUp(error, logger);
+            return cleanUp(error);
         }
     }
 
@@ -120,7 +115,7 @@ bool TapDriver::Init(const param_map &const_params, logger &logger)
 
     logger.info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
 
-    return true;
+    return "";
 #endif
 }
 
@@ -328,7 +323,7 @@ void TapDriver::Flush(logger &logger) const
 {
     while (HasPendingPackets()) {
         array<uint8_t, ETH_FRAME_LEN> m_garbage_buffer;
-        (void)Receive(m_garbage_buffer.data(), logger);
+        (void)Receive(m_garbage_buffer, logger);
     }
 }
 
@@ -357,14 +352,14 @@ uint32_t TapDriver::Crc32(span<const uint8_t> data)
     return ~crc;
 }
 
-int TapDriver::Receive(uint8_t *buf, logger &logger) const
+int TapDriver::Receive(data_in_t buf, logger &logger) const
 {
     // Check if there is data that can be received
     if (!HasPendingPackets()) {
         return 0;
     }
 
-    auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf, ETH_FRAME_LEN));
+    auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf.data(), ETH_FRAME_LEN));
     if (bytes_received == static_cast<uint32_t>(-1)) {
         logger.warn("Error while receiving a network packet");
         return 0;
@@ -373,7 +368,7 @@ int TapDriver::Receive(uint8_t *buf, logger &logger) const
     if (bytes_received > 0) {
         // We need to add the Frame Check Status (FCS) CRC back onto the end of the packet.
         // The Linux network subsystem removes it, since most software apps shouldn't ever need it.
-        const int crc = Crc32(span(buf, bytes_received));
+        const int crc = Crc32(span(buf.data(), bytes_received));
 
         buf[bytes_received + 0] = static_cast<uint8_t>((crc >> 0) & 0xff);
         buf[bytes_received + 1] = static_cast<uint8_t>((crc >> 8) & 0xff);
@@ -385,7 +380,7 @@ int TapDriver::Receive(uint8_t *buf, logger &logger) const
     return bytes_received;
 }
 
-int TapDriver::Send(const uint8_t *buf, int len) const
+int TapDriver::Send(data_out_t buf) const
 {
-    return static_cast<int>(write(tap_fd, buf, len));
+    return static_cast<int>(write(tap_fd, buf.data(), buf.size()));
 }

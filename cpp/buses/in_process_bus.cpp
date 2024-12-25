@@ -71,9 +71,8 @@ bool InProcessBus::WaitForSelection()
 }
 
 DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &bus, const string &name, bool log_signals) : bus(
-    bus), log_signals(log_signals)
+    bus), in_process_logger(CreateLogger(name)), log_signals(log_signals)
 {
-    in_process_logger = CreateLogger(name);
     // Log without timestamps
     in_process_logger->set_pattern("[%^%l%$] [%n] %v");
 }

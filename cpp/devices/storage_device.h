@@ -24,7 +24,7 @@ public:
 
     ~StorageDevice() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     void Dispatch(scsi_command) override;

@@ -22,7 +22,7 @@ public:
 
     explicit Printer(int);
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     string GetIdentifier() const override

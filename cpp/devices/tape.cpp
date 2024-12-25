@@ -18,7 +18,6 @@
 
 #include "tape.h"
 #include "base/property_handler.h"
-#include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;
@@ -33,7 +32,7 @@ Tape::Tape(int lun) : StorageDevice(SCTP, lun, true, false, { 512, 1024, 2048, 4
     SetRemovable(true);
 }
 
-bool Tape::SetUp()
+string Tape::SetUp()
 {
     AddCommand(scsi_command::read_6, [this]
         {

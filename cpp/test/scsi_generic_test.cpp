@@ -53,15 +53,15 @@ TEST(ScsiGenericTest, SetUp)
 {
     ScsiGeneric device1(0, "");
     device1.GetLogger();
-    EXPECT_FALSE(device1.SetUp());
+    EXPECT_NE("", device1.SetUp());
 
     ScsiGeneric device2(0, "/dev/null");
     device2.GetLogger();
-    EXPECT_FALSE(device2.SetUp());
+    EXPECT_NE("", device2.SetUp());
 
     ScsiGeneric device3(0, "/dev/sg0123456789");
     device3.GetLogger();
-    EXPECT_FALSE(device3.SetUp());
+    EXPECT_NE("", device3.SetUp());
 }
 
 TEST(ScsiGenericTest, Dispatch)

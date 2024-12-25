@@ -44,7 +44,7 @@ public:
 
 private:
 
-    SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int);
+    SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
 
     void GetBlockSize();
 

@@ -39,7 +39,7 @@ private:
 
     bool Init(bool);
     bool ParseArguments(span<char*>, bool);
-    bool RunInteractive(bool);
+    void RunInteractive(bool);
     int Run();
 
     tuple<sense_key, asc, int> ExecuteCommand();
@@ -76,6 +76,8 @@ private:
 
     bool use_sg = false;
 
+    bool is_initialized = false;
+
     vector<uint8_t> buffer;
 
     string binary_input_filename;
@@ -92,8 +94,6 @@ private:
     string last_input;
 
     string device_file;
-
-    string prompt = APP_NAME;
 
     // Required for the termination handler
     inline static S2pExec *instance;

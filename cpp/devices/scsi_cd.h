@@ -18,7 +18,7 @@ public:
     explicit ScsiCd(int, bool = false);
     ~ScsiCd() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
 
     void Open() override;
 

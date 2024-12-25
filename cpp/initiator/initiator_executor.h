@@ -42,7 +42,7 @@ public:
         return byte_count;
     }
 
-    logger& GetLogger()
+    logger& GetLogger() const
     {
         return initiator_logger;
     }
@@ -50,6 +50,11 @@ public:
     string FormatBytes(span<const uint8_t> bytes, int count) const
     {
         return formatter.FormatBytes(bytes, count);
+    }
+
+    void SetLimit(int limit)
+    {
+        formatter.SetLimit(limit);
     }
 
 private:
@@ -77,7 +82,7 @@ private:
 
     Bus &bus;
 
-    const S2pFormatter formatter;
+    S2pFormatter formatter;
 
     int initiator_id;
 

@@ -271,7 +271,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    if (!device->Init()) {
+    if (const string &error = device->Init(); !error.empty()) {
+        s2p_logger.error(error);
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
             fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
     }

@@ -23,7 +23,7 @@ public:
     explicit Tape(int);
     ~Tape() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     param_map GetDefaultParams() const override;

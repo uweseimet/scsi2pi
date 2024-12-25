@@ -55,7 +55,7 @@ TEST(PrinterTest, Init)
     param_map params;
     params["cmd"] = "%f";
     printer.SetParams(params);
-    EXPECT_TRUE(printer.Init());
+    EXPECT_EQ("", printer.Init());
 }
 
 TEST(PrinterTest, TestUnitReady)
@@ -77,7 +77,7 @@ TEST(PrinterTest, ReserveUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status).Times(1);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::reserve_6));
+    EXPECT_NO_THROW(Dispatch(printer, scsi_command::reserve_reserve_element_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 
@@ -86,7 +86,7 @@ TEST(PrinterTest, ReleaseUnit)
     auto [controller, printer] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status).Times(1);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::release_6));
+    EXPECT_NO_THROW(Dispatch(printer, scsi_command::release_release_element_6));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 

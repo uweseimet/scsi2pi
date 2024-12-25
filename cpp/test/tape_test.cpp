@@ -48,7 +48,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
     auto tape = make_shared<MockTape>();
     tape->SetParams( { });
-    EXPECT_TRUE(tape->Init());
+    EXPECT_EQ("", tape->Init());
     EXPECT_TRUE(controller->AddDevice(tape));
 
     return {controller, tape};

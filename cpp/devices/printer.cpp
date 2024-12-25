@@ -31,7 +31,6 @@
 
 #include "printer.h"
 #include <filesystem>
-#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;
@@ -43,11 +42,10 @@ Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
     SetReady(true);
 }
 
-bool Printer::SetUp()
+string Printer::SetUp()
 {
     if (GetParam(CMD).find("%f") == string::npos) {
-        LogError("Missing filename specifier '%f'");
-        return false;
+        return "Missing filename specifier '%f'";
     }
 
     AddCommand(scsi_command::print, [this]
@@ -67,7 +65,7 @@ bool Printer::SetUp()
     file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here
     file_template += PRINTER_FILE_PATTERN;
 
-    return true;
+    return "";
 }
 
 void Printer::CleanUp()

@@ -71,7 +71,7 @@ protected:
 
     static void SetInt24(span<uint8_t>, int, int);
 
-    logger& GetLogger()
+    logger& GetLogger() const
     {
         return s2pdump_logger;
     }

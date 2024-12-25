@@ -18,7 +18,7 @@ class S2pExecExecutor
 
 public:
 
-    S2pExecExecutor(logger &logger) : s2pexec_logger(logger)
+    explicit S2pExecExecutor(logger &logger) : s2pexec_logger(logger)
     {
     }
 
@@ -35,13 +35,18 @@ public:
 
     int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
 
-    string GetDeviceName() const;
-
     tuple<sense_key, asc, int> GetSenseData() const;
 
     int GetByteCount() const;
 
     void SetTarget(int, int, bool);
+
+    void SetLimit(int limit)
+    {
+        if (initiator_executor) {
+            initiator_executor->SetLimit(limit);
+        }
+    }
 
 private:
 

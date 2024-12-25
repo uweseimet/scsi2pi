@@ -303,9 +303,9 @@ public:
     }
     ~MockPrimaryDevice() override = default;
 
-    bool SetUp() override
+    string SetUp() override
     {
-        return true;
+        return "";
     }
 };
 

@@ -8,12 +8,11 @@
 
 #include "storage_device.h"
 #include <unistd.h>
-#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;
 
-bool StorageDevice::SetUp()
+string StorageDevice::SetUp()
 {
     AddCommand(scsi_command::start_stop, [this]
         {
@@ -26,7 +25,7 @@ bool StorageDevice::SetUp()
 
     page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters);
 
-    return true;
+    return "";
 }
 
 void StorageDevice::CleanUp()

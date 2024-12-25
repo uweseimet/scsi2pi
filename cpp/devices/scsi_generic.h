@@ -22,7 +22,7 @@ public:
     ScsiGeneric(int, const string&);
     ~ScsiGeneric() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     string GetIdentifier() const override
@@ -50,7 +50,7 @@ private:
 
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
 
-    bool GetDeviceData();
+    string GetDeviceData();
     void GetBlockSize();
 
     CommandMetaData command_meta_data = CommandMetaData::Instance();

@@ -188,29 +188,29 @@ int S2pSimh::Analyze()
 
         simh_file.seekg(position);
 
-        SimhMetaData meta_data;
-        if (!ReadMetaData(simh_file, meta_data)) {
+        SimhMetaData meta;
+        if (!ReadMetaData(simh_file, meta)) {
             cerr << "Error: Can't read from '" << simh_filename << "': " << strerror(errno) << endl;
             return EXIT_FAILURE;
         }
 
         position += META_DATA_SIZE;
 
-        switch (meta_data.cls) {
+        switch (meta.cls) {
         case simh_class::tape_mark_good_data_record:
-            PrintClass(meta_data);
-            if (!meta_data.value) {
+            PrintClass(meta);
+            if (!meta.value) {
                 cout << ", tape mark\n";
             }
-            else if (!PrintRecord("good data record", meta_data)) {
+            else if (!PrintRecord("good data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::bad_data_record:
-            PrintClass(meta_data);
-            if (!PrintRecord(meta_data.value ? "bad data record" : "bad data record (no data recovered)",
-                meta_data)) {
+            PrintClass(meta);
+            if (!PrintRecord(meta.value ? "bad data record" : "bad data record (no data recovered)",
+                meta)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -221,15 +221,15 @@ int S2pSimh::Analyze()
         case simh_class::private_data_record_4:
         case simh_class::private_data_record_5:
         case simh_class::private_data_record_6:
-            PrintClass(meta_data);
-            if (!PrintRecord("private data record", meta_data)) {
+            PrintClass(meta);
+            if (!PrintRecord("private data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::tape_description_data_record:
-            PrintClass(meta_data);
-            if (!PrintRecord("tape description data record", meta_data)) {
+            PrintClass(meta);
+            if (!PrintRecord("tape description data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
@@ -239,26 +239,26 @@ int S2pSimh::Analyze()
         case simh_class::reserved_data_record_3:
         case simh_class::reserved_data_record_4:
         case simh_class::reserved_data_record_5:
-            PrintClass(meta_data);
-            if (!PrintRecord("reserved data record", meta_data)) {
+            PrintClass(meta);
+            if (!PrintRecord("reserved data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
         case simh_class::private_marker:
-            PrintClass(meta_data);
+            PrintClass(meta);
             cout << ", private marker";
-            if ((meta_data.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC && ((meta_data.value >> 24) & 0x0f) == 0b011) {
+            if ((meta.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC && ((meta.value >> 24) & 0x0f) == 0b011) {
                 cout << " (SCSI2Pi end-of-data object)\n";
                 return EXIT_SUCCESS;
             }
             cout << ", marker value";
-            PrintValue(meta_data);
+            PrintValue(meta);
             break;
 
         case simh_class::reserved_marker:
-            PrintClass(meta_data);
-            if (!PrintReservedMarker(meta_data)) {
+            PrintClass(meta);
+            if (!PrintReservedMarker(meta)) {
                 return EXIT_SUCCESS;
             }
             break;

@@ -58,7 +58,7 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
         SetBlockCount(local_cdb, length / block_size);
 
         if (const auto &result = SendCommandInternal(local_cdb, span(buf.data() + offset, buf.size() - offset), length,
-            timeout); result.status
+            timeout, true); result.status
             || !command_meta_data.GetCdbMetaData(static_cast<scsi_command>(cdb[0])).block_size) {
             return {result.status, byte_count};
         }
@@ -72,7 +72,8 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
     return {0, byte_count};
 }
 
-SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout)
+SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout,
+    bool log)
 {
     // Return deferred sense data, if any
     if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense) && sense_data_valid) {
@@ -108,15 +109,17 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
 
     io_hdr.timeout = timeout * 1000;
 
-    sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
+    if (log && sg_logger.level() <= level::debug) {
+        sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
+    }
 
     int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
     if (status == -1) {
         return {status, length};
     }
-    // Do not treat CONDITION MET as an error
-    if (status == 4) {
-        status = 0;
+    // Do not consider CONDITION MET an error
+    else if (status == static_cast<int>(status_code::condition_met)) {
+        status = static_cast<int>(status_code::good);
     }
 
     // If the command was successful, use the sense key as status
@@ -145,7 +148,7 @@ void SgAdapter::GetBlockSize()
     cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
 
     try {
-        if (!SendCommandInternal(cdb, buf, static_cast<int>(buf.size()), 1).status) {
+        if (!SendCommandInternal(cdb, buf, static_cast<int>(buf.size()), 1, false).status) {
             block_size = GetInt32(buf, 4);
             assert(block_size);
         }

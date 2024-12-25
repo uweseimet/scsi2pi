@@ -127,7 +127,7 @@ string s2p_util::GetLine(const string &prompt)
         line = Trim(line);
 
         if (const auto comment = line.find_first_of('#'); comment != string::npos) {
-            line = line.substr(0, comment);
+            line.resize(comment);
         }
 
         if (cin.fail() || line == "exit" || line == "quit") {
@@ -214,7 +214,7 @@ string s2p_util::GetScsiLevel(int scsi_level)
 {
     switch (scsi_level) {
     case 0:
-        return "???";
+        return "-";
         break;
 
     case 1:

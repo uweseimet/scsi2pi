@@ -10,7 +10,6 @@
 //---------------------------------------------------------------------------
 
 #include "optical_memory.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 

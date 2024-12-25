@@ -16,7 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<NiceMock<MockDisk>>> CreateD
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
     auto disk = make_shared<NiceMock<MockDisk>>();
-    EXPECT_TRUE(disk->Init());
+    EXPECT_EQ("", disk->Init());
     EXPECT_TRUE(controller->AddDevice(disk));
 
     return {controller, disk};
@@ -677,7 +677,7 @@ TEST(DiskTest, SynchronizeCache)
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::synchronize_cache_16));
+    EXPECT_NO_THROW(Dispatch(disk, scsi_command::synchronize_cache_space_16));
     EXPECT_EQ(status_code::good, controller->GetStatus());
 }
 

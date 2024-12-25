@@ -50,8 +50,6 @@ static void ValidateDrivePage(const AbstractController &controller, int offset)
     EXPECT_EQ(7200, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
 }
 
-
-
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
     auto hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
@@ -190,7 +188,7 @@ TEST(ScsiHdTest, ModeSense6)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init());
+    EXPECT_EQ("", hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data
@@ -223,7 +221,7 @@ TEST(ScsiHdTest, ModeSense10)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init());
+    EXPECT_EQ("", hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data

@@ -83,29 +83,6 @@ int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, 
     return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, log);
 }
 
-string S2pExecExecutor::GetDeviceName() const
-{
-    array<uint8_t, 32> buf = { };
-    vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
-    cdb[4] = static_cast<uint8_t>(buf.size());
-
-#ifdef __linux__
-    if (use_sg) {
-        sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), 1);
-    }
-    else {
-        initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), 1, false);
-    }
-#else
-    initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), 1, false);
-#endif
-
-    array<char, 17> str = { };
-    memcpy(str.data(), &buf[16], 16);
-    return str.data();
-}
-
 tuple<sense_key, asc, int> S2pExecExecutor::GetSenseData() const
 {
 #ifdef __linux__

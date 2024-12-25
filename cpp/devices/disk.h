@@ -27,7 +27,7 @@ public:
 
     ~Disk() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     bool Eject(bool) override;

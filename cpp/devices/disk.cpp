@@ -28,7 +28,7 @@ Disk::Disk(PbDeviceType type, int lun, bool supports_mode_select, bool supports_
     SetStoppable(true);
 }
 
-bool Disk::SetUp()
+string Disk::SetUp()
 {
     // REZERO implementation is identical with Seek
     AddCommand(scsi_command::rezero, [this]
@@ -91,7 +91,7 @@ bool Disk::SetUp()
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::synchronize_cache_16, [this]
+    AddCommand(scsi_command::synchronize_cache_space_16, [this]
         {
             SynchronizeCache();
         });

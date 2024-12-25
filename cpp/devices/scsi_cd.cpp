@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 
 #include "scsi_cd.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -21,7 +20,7 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, lun, true, false, { 512, 2048 }
     SetRemovable(true);
 }
 
-bool ScsiCd::SetUp()
+string ScsiCd::SetUp()
 {
     AddCommand(scsi_command::read_toc, [this]
         {

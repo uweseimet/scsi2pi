@@ -217,7 +217,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cout << "Note: No board hardware support, only client interface calls are supported\n" << flush;
+        cout << "No RaSCSI/PiSCSI board support available, functionality is limited\n" << flush;
     }
 
     SetUpEnvironment();

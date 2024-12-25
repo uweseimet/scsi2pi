@@ -23,7 +23,6 @@
 
 #include "daynaport.h"
 #include "shared/network_util.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;
@@ -40,7 +39,7 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_S
     SetReady(true);
 }
 
-bool DaynaPort::SetUp()
+string DaynaPort::SetUp()
 {
     AddCommand(scsi_command::get_message_6, [this]
         {
@@ -67,15 +66,18 @@ bool DaynaPort::SetUp()
             EnableInterface();
         });
 
-    tap_enabled = tap.Init(GetParams(), GetLogger());
+    const string &error = tap.Init(GetParams(), GetLogger());
+    tap_enabled = error.empty();
 // Not terminating on a regular PC is helpful for testing
 #if !defined(__x86_64__) && !defined(__X86__)
     if (!tap_enabled) {
-		return false;
+		return error;
     }
 #endif
 
-    return true;
+    spdlog::error(error);
+
+    return "";
 }
 
 void DaynaPort::CleanUp()
@@ -128,7 +130,7 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 //    - The SCSI/Link apparently has about 6KB buffer space for packets.
 //
 //---------------------------------------------------------------------------
-int DaynaPort::GetMessage(vector<uint8_t> &buf)
+int DaynaPort::GetMessage(data_in_t buf)
 {
     // At startup a driver may send a READ(6) command with a sector count of 1 to read the root sector.
     if (GetCdbByte(4) == 1) {
@@ -137,7 +139,8 @@ int DaynaPort::GetMessage(vector<uint8_t> &buf)
 
     // The first 2 bytes are reserved for the length of the packet
     // The next 4 bytes are reserved for a flag field
-    const int rx_packet_size = tap.Receive(&buf[DAYNAPORT_READ_HEADER_SZ], GetLogger());
+    const int rx_packet_size = tap.Receive(
+        span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ), GetLogger());
 
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
@@ -196,13 +199,13 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     int data_length = 0;
     if (const int data_format = GetCdbByte(5); data_format == 0x00) {
         data_length = GetCdbInt16(3);
-        tap.Send(buf.data(), data_length);
+        tap.Send(buf);
         byte_write_count += data_length;
     }
     else if (data_format == 0x80) {
         // The data length is specified in the first 2 bytes of the payload
         data_length = buf[1] + ((static_cast<int>(buf[0]) & 0xff) << 8);
-        tap.Send(&(buf.data()[4]), data_length);
+        tap.Send(span(buf.data() + 4, data_length));
         byte_write_count += data_length;
     }
     else {

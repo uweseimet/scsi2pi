@@ -13,7 +13,7 @@
 using namespace memory_util;
 using namespace s2p_util;
 
-bool PrimaryDevice::Init()
+string PrimaryDevice::Init()
 {
     // Mandatory SCSI primary commands
     AddCommand(scsi_command::test_unit_ready, [this]
@@ -34,13 +34,13 @@ bool PrimaryDevice::Init()
         {
             RequestSense();
         });
-    AddCommand(scsi_command::reserve_6, [this]
+    AddCommand(scsi_command::reserve_reserve_element_6, [this]
         {
-            ReserveUnit();
+            Reserve();
         });
-    AddCommand(scsi_command::release_6, [this]
+    AddCommand(scsi_command::release_release_element_6, [this]
         {
-            ReleaseUnit();
+            Release();
         });
     AddCommand(scsi_command::send_diagnostic, [this]
         {
@@ -381,14 +381,14 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
     return buf;
 }
 
-void PrimaryDevice::ReserveUnit()
+void PrimaryDevice::Reserve()
 {
     reserving_initiator = GetController()->GetInitiatorId();
 
     StatusPhase();
 }
 
-void PrimaryDevice::ReleaseUnit()
+void PrimaryDevice::Release()
 {
     DiscardReservation();
 
@@ -404,7 +404,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
     if (cmd == scsi_command::inquiry || cmd == scsi_command::request_sense
-        || cmd == scsi_command::release_6) {
+        || cmd == scsi_command::release_release_element_6) {
         return true;
     }
 

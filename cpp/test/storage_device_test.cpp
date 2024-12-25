@@ -16,7 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockStorageDevice>> CreateSt
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(0);
     auto device = make_shared<MockStorageDevice>();
-    EXPECT_TRUE(device->Init());
+    EXPECT_EQ("", device->Init());
     EXPECT_TRUE(controller->AddDevice(device));
 
     return {controller, device};

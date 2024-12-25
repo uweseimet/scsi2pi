@@ -587,29 +587,29 @@ string S2pDump::DumpRestoreDisk(fstream &file)
     const auto start_time = high_resolution_clock::now();
 
     while (remaining && active) {
-        auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
-        auto sector_count = byte_count / sector_size;
-        if (byte_count % sector_size) {
+        auto current_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
+        auto sector_count = current_count / sector_size;
+        if (current_count % sector_size) {
             ++sector_count;
         }
 
         if (sasi && sector_count > 256) {
             sector_count = 256;
-            byte_count = sector_count * sector_size;
+            current_count = sector_count * sector_size;
         }
 
         s2pdump_logger->info("Remaining bytes: {}", remaining);
         s2pdump_logger->info("Current sector: {}", sector_offset);
         s2pdump_logger->info("Sector count: {}", sector_count);
         s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
-        s2pdump_logger->info("Image file chunk size: {}", byte_count);
+        s2pdump_logger->info("Image file chunk size: {}", current_count);
 
-        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
             return error;
         }
 
         sector_offset += sector_count;
-        remaining -= byte_count;
+        remaining -= current_count;
 
         cout << setw(3) << (effective_size - remaining) * 100 / effective_size << "% ("
             << effective_size - remaining

@@ -173,9 +173,12 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
             break;
 
         case 'g':
-            target = "";
-            device_file = optarg;
-            use_sg = true;
+            if (device_file != optarg) {
+                target = "";
+                device_file = optarg;
+                use_sg = true;
+                is_initialized = false;
+            }
             break;
 
         case 'h':
@@ -188,9 +191,12 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
             break;
 
         case 'i':
-            device_file = "";
-            target = optarg;
-            use_sg = false;
+            if (target != optarg) {
+                device_file = "";
+                target = optarg;
+                use_sg = false;
+                is_initialized = false;
+            }
             break;
 
         case 'l':
@@ -242,14 +248,9 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
-        throw parser_exception("Invalid log level: '" + log_level + "'");
-    }
-
-    if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
-        throw parser_exception("Invalid log limit: '" + log_limit + "'");
-    }
-    else {
-        formatter.SetLimit(limit);
+        const string l = log_level;
+        log_level.clear();
+        throw parser_exception("Invalid log level: '" + l + "'");
     }
 
     if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
@@ -266,8 +267,25 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         executor->CleanUp();
     }
 
-    if (!Init(in_process)) {
-        return false;
+    if (!is_initialized && (!device_file.empty() || !target.empty())) {
+        is_initialized = Init(in_process);
+        if (!is_initialized) {
+            return false;
+        }
+    }
+
+    if (!log_limit.empty()) {
+        if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
+            const string l = log_limit;
+            log_limit.clear();
+            throw parser_exception("Invalid log limit: '" + l + "'");
+        }
+        else {
+            formatter.SetLimit(limit);
+            if (executor) {
+                executor->SetLimit(limit);
+            }
+        }
     }
 
     if (target_id == initiator_id) {
@@ -278,11 +296,8 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         target_lun = 0;
     }
 
-    executor->SetTarget(target_id, target_lun, sasi);
-
-    prompt = Trim(executor->GetDeviceName());
-    if (prompt.empty()) {
-        prompt = APP_NAME;
+    if (executor) {
+        executor->SetTarget(target_id, target_lun, sasi);
     }
 
     // Some options only make sense when there is a command
@@ -317,7 +332,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     return true;
 }
 
-bool S2pExec::RunInteractive(bool in_process)
+void S2pExec::RunInteractive(bool in_process)
 {
     if (isatty(STDIN_FILENO)) {
         Banner(true, false);
@@ -326,7 +341,7 @@ bool S2pExec::RunInteractive(bool in_process)
     }
 
     while (true) {
-        string input = GetLine(prompt);
+        string input = GetLine(APP_NAME);
         if (input.empty()) {
             break;
         }
@@ -364,14 +379,12 @@ bool S2pExec::RunInteractive(bool in_process)
             continue;
         }
 
-        if (!command.empty() || reset_bus) {
+        if (!command.empty() || (executor && reset_bus)) {
             Run();
         }
     }
 
     CleanUp();
-
-    return true;
 }
 
 int S2pExec::Run(span<char*> args, bool in_process)
@@ -379,7 +392,8 @@ int S2pExec::Run(span<char*> args, bool in_process)
     s2pexec_logger = CreateLogger(APP_NAME);
 
     if (args.size() < 2 || in_process) {
-        return RunInteractive(in_process) ? EXIT_SUCCESS : -1;
+        RunInteractive(in_process);
+        return EXIT_SUCCESS;
     }
 
     try {
@@ -409,7 +423,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
 
 int S2pExec::Run()
 {
-    if (reset_bus) {
+    if (reset_bus && executor) {
         executor->ResetBus();
         return EXIT_SUCCESS;
     }
