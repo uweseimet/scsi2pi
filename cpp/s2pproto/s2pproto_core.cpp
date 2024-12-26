@@ -224,17 +224,17 @@ int S2pProto::Run(span<char*> args, bool in_process)
         }
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 
     if (!Init(in_process)) {
-        cerr << "Error: Can't initialize bus" << endl;
+        cerr << "Error: Can't initialize bus\n";
         return EXIT_FAILURE;
     }
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No board hardware support" << endl;
+        cerr << "Error: No board hardware support\n";
         return EXIT_FAILURE;
     }
 
@@ -251,7 +251,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 {
     PbResult result;
     if (const string &error = executor->Execute(input_filename, input_format, result); !error.empty()) {
-        cerr << "Error: " << error << endl;
+        cerr << "Error: " << error << '\n';
         return EXIT_FAILURE;
     }
 
@@ -264,7 +264,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     ofstream out(output_filename, output_format == S2pProtoExecutor::protobuf_format::binary ? ios::binary : ios::out);
     if (out.fail()) {
-        cerr << "Error: Can't open protobuf data output file '" << output_filename << "'" << endl;
+        cerr << "Error: Can't open protobuf data output file '" << output_filename << "'\n";
         return EXIT_FAILURE;
     }
 
@@ -296,7 +296,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     }
 
     if (out.fail()) {
-        cerr << "Error: Can't write protobuf data to output file '" << output_filename << "'" << endl;
+        cerr << "Error: Can't write protobuf data to output file '" << output_filename << "'\n";
         return EXIT_FAILURE;
     }
 

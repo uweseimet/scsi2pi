@@ -79,7 +79,7 @@ bool S2pExec::Init(bool in_process)
 
     if (!use_sg) {
         if (const string &error = executor->Init(initiator_id, APP_NAME, in_process); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             return false;
         }
 
@@ -94,7 +94,7 @@ bool S2pExec::Init(bool in_process)
         signal(SIGPIPE, SIG_IGN);
     }
     else if (const string &error = executor->Init(device_file); !error.empty()) {
-        cerr << "Error: " << error << endl;
+        cerr << "Error: " << error << '\n';
         return false;
     }
 
@@ -352,7 +352,7 @@ void S2pExec::RunInteractive(bool in_process)
             cout << input << '\n';
         }
         else if (!input.starts_with('-')) {
-            cerr << "Error: Missing command" << endl;
+            cerr << "Error: Missing command\n";
             continue;
         } else {
             last_input = input;
@@ -375,7 +375,7 @@ void S2pExec::RunInteractive(bool in_process)
             }
         }
         catch (const parser_exception &e) {
-            cerr << "Error: " << e.what() << endl;
+            cerr << "Error: " << e.what() << '\n';
             continue;
         }
 
@@ -405,12 +405,12 @@ int S2pExec::Run(span<char*> args, bool in_process)
         }
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return -1;
     }
 
     if (command.empty() && !reset_bus) {
-        cerr << "Error: Missing command" << endl;
+        cerr << "Error: Missing command\n";
         return -1;
     }
 
@@ -433,7 +433,7 @@ int S2pExec::Run()
         const auto [sense_key, asc, ascq] = ExecuteCommand();
         if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information || ascq) {
             if (static_cast<int>(sense_key) != -1) {
-                cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << endl;
+                cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
 
                 result = static_cast<int>(asc);
             }
@@ -443,7 +443,7 @@ int S2pExec::Run()
         }
     }
     catch (const execution_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         result = -1;
     }
 

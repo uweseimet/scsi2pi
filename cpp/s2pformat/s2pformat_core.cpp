@@ -58,7 +58,7 @@ bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexit
 
         case 'L':
             if (!SetLogLevel(*default_logger(), optarg)) {
-                cerr << "Invalid log level '" << optarg << "'" << endl;
+                cerr << "Invalid log level '" << optarg << "'\n";
                 return false;
             }
             break;
@@ -104,7 +104,7 @@ int S2pFormat::Run(span<char*> args)
     sg_adapter = make_unique<SgAdapter>(*default_logger());
 
     if (const string &error = sg_adapter->Init(device); !error.empty()) {
-        cerr << "Error: " << error << endl;
+        cerr << "Error: " << error << '\n';
         return EXIT_FAILURE;
     }
 
@@ -123,7 +123,7 @@ int S2pFormat::Run(span<char*> args)
 
     if (input == "y") {
         if (const string &error = Format(descriptors, n); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             sg_adapter->CleanUp();
             return EXIT_FAILURE;
         }
@@ -140,14 +140,14 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     vector<uint8_t> cdb(6);
 
     if (ExecuteCommand(cdb, { }, 3)) {
-        cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
+        cerr << "Error: Can't get drive data: " << strerror(errno) << '\n';
         return {};
     }
 
     cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
     cdb[4] = static_cast<uint8_t>(buf.size());
     if (ExecuteCommand(cdb, buf, 3)) {
-        cerr << "Error: Can't get drive data: " << strerror(errno) << endl;
+        cerr << "Error: Can't get drive data: " << strerror(errno) << '\n';
         return {};
     }
 

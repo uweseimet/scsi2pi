@@ -357,7 +357,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
-    auto controller = device.GetController();
+    auto *controller = device.GetController();
     if (!controller) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
     }

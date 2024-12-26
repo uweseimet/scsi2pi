@@ -150,7 +150,7 @@ bool S2pCtlCommands::SendCommand()
     }
 
     if (!result.msg().empty()) {
-        cout << result.msg() << endl;
+        cout << result.msg() << '\n';
     }
 
     return true;
@@ -182,7 +182,7 @@ bool S2pCtlCommands::CommandReserveIds(string_view reserved_ids)
 bool S2pCtlCommands::CommandCreateImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "file", "size")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is NAME:SIZE" << endl;
+        cerr << "Error: Invalid file descriptor '" << image_params << "', format is NAME:SIZE\n";
 
         return false;
     }
@@ -202,7 +202,7 @@ bool S2pCtlCommands::CommandDeleteImage(string_view filename)
 bool S2pCtlCommands::CommandRenameCopyImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "from", "to")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;
+        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME\n";
 
         return false;
     }

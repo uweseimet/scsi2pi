@@ -44,7 +44,7 @@ public:
 
     virtual void Dispatch(scsi_command);
 
-    auto GetController() const
+    auto* GetController() const
     {
         return controller;
     }

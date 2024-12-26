@@ -81,7 +81,7 @@ bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode er
 
     if (fd == -1) {
         if (!msg.empty()) {
-            cerr << "Error: " << msg << endl;
+            cerr << "Error: " << msg << '\n';
         }
         return status;
     }

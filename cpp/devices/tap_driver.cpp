@@ -192,7 +192,7 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &
     ifreq ifr_a;
     ifr_a.ifr_addr.sa_family = AF_INET;
     strncpy(ifr_a.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (auto addr = (sockaddr_in*)&ifr_a.ifr_addr;
+    if (auto *addr = (sockaddr_in*)&ifr_a.ifr_addr;
     inet_pton(AF_INET, address.c_str(), &addr->sin_addr) != 1) {
         return "Can't convert '" + address + "' into a network address";
     }
@@ -200,7 +200,7 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &
     ifreq ifr_n;
     ifr_n.ifr_addr.sa_family = AF_INET;
     strncpy(ifr_n.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (auto mask = (sockaddr_in*)&ifr_n.ifr_addr;
+    if (auto *mask = (sockaddr_in*)&ifr_n.ifr_addr;
     inet_pton(AF_INET, netmask.c_str(), &mask->sin_addr) != 1) {
         return "Can't convert '" + netmask + "' into a netmask";
     }

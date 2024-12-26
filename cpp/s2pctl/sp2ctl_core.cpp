@@ -213,18 +213,19 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'b':
-            int block_size;
-            if (!GetAsUnsignedInt(optarg, block_size)) {
-                cerr << "Error: Invalid block size " << optarg << endl;
+            if (int block_size; !GetAsUnsignedInt(optarg, block_size)) {
+                cerr << "Error: Invalid block size " << optarg << '\n';
                 return EXIT_FAILURE;
             }
-            device->set_block_size(block_size);
+            else {
+                device->set_block_size(block_size);
+            }
             break;
 
         case 'c':
             command.set_operation(ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
-                cerr << "Error: Unknown operation '" << optarg << "'" << endl;
+                cerr << "Error: Unknown operation '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -241,7 +242,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'E':
             filename = optarg;
             if (filename.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             command.set_operation(IMAGE_FILE_INFO);
@@ -271,7 +272,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'H':
             hostname = optarg;
             if (hostname.empty()) {
-                cerr << "Error: Missing hostname" << endl;
+                cerr << "Error: Missing hostname\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -279,7 +280,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_BINARY_PROTOBUF:
             filename_binary = optarg;
             if (filename_binary.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -287,7 +288,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_JSON_PROTOBUF:
             filename_json = optarg;
             if (filename_json.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -295,7 +296,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_TEXT_PROTOBUF:
             filename_text = optarg;
             if (filename_text.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -340,7 +341,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 't':
             device->set_type(ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
-                cerr << "Error: Invalid device type '" << optarg << "'" << endl;
+                cerr << "Error: Invalid device type '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -360,7 +361,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
                 device->set_caching_mode(ParseCachingMode(optarg));
             }
             catch (const parser_exception &e) {
-                cerr << "Error: " << e.what() << endl;
+                cerr << "Error: " << e.what() << '\n';
                 return EXIT_FAILURE;
             }
             break;
@@ -371,7 +372,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case 'p':
             if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
-                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535" << endl;
+                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -379,7 +380,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 's':
             command.set_operation(SERVER_INFO);
             if (const string &error = SetCommandParams(command, optarg ? optarg : ""); !error.empty()) {
-                cerr << "Error: " << error << endl;
+                cerr << "Error: " << error << '\n';
                 return EXIT_FAILURE;
             }
             break;
@@ -417,7 +418,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
         case OPT_SCSI_LEVEL:
             if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
-                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
+                cerr << "Error: Invalid SCSI level '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             else {
@@ -442,7 +443,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
     if (!id_and_lun.empty()) {
         if (const string &error = SetIdAndLun(*device, id_and_lun); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             return EXIT_FAILURE;
         }
     }
@@ -467,7 +468,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         }
     }
     catch (const io_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 

@@ -124,7 +124,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (!InitBus(in_process, log_signals)) {
-        cerr << "Error: Can't initialize bus" << endl;
+        cerr << "Error: Can't initialize bus\n";
         return EXIT_FAILURE;
     }
 
@@ -139,7 +139,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         properties = parser.ParseArguments(args, ignore_conf);
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 
@@ -149,14 +149,14 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (const string &error = MapExtensions(); !error.empty()) {
-        cerr << "Error: " << error << endl;
+        cerr << "Error: " << error << '\n';
         return EXIT_FAILURE;
     }
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
         if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
-            cerr << "Error: Invalid log limit '" << log_limit << "'" << endl;
+            cerr << "Error: Invalid log limit '" << log_limit << "'\n";
             return EXIT_FAILURE;
         }
         else {
@@ -166,7 +166,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             CleanUp();
             return EXIT_FAILURE;
         }
@@ -179,7 +179,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     if (const string &error = service_thread.Init([this](CommandContext &context) {
         return ExecuteCommand(context);
     }, port, s2p_logger); !error.empty()) {
-        cerr << "Error: " << error << endl;
+        cerr << "Error: " << error << '\n';
         CleanUp();
         return EXIT_FAILURE;
     }
@@ -188,7 +188,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         CreateDevices();
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         CleanUp();
         return EXIT_FAILURE;
     }
@@ -196,7 +196,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
         if (!key.starts_with("device.")) {
             cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
-                << PropertyHandler::CONFIGURATION << endl;
+                << PropertyHandler::CONFIGURATION << '\n';
             CleanUp();
             return EXIT_FAILURE;
         }
@@ -285,7 +285,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         }
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return false;
     }
 

@@ -94,13 +94,13 @@ int main(int argc, char *argv[])
 
     if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
         cerr << "Invalid in-process test tool client: '" << client
-            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto" << endl;
+            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto\n";
         exit(EXIT_FAILURE);
     }
 
     // s2pctl and s2pexec do not require arguments because they support an interactive mode
     if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
-        cerr << "Test client '" << client << "' requires arguments" << endl;
+        cerr << "Test client '" << client << "' requires arguments\n";
         exit(EXIT_FAILURE);
     }
 

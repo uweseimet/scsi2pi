@@ -352,7 +352,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         }
     }
     catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 
@@ -379,7 +379,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
     }
     else {
         if (const string &error = DumpRestore(); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             CleanUp();
             return EXIT_FAILURE;
         }
@@ -508,7 +508,7 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
         && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)
         && scsi_device_info.type != static_cast<byte>(device_type::sequential_access)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS\n";
         return false;
     }
 
@@ -526,7 +526,7 @@ bool S2pDump::DisplaySasiInquiry(span<const uint8_t> buf, bool check_type) const
     }
 
     if (check_type && type) {
-        cerr << "Error: Invalid device type for SASI dump/restore, only hard drives are supported" << endl;
+        cerr << "Error: Invalid device type for SASI dump/restore, only hard drives are supported\n";
         return false;
     }
 
@@ -772,7 +772,7 @@ long S2pDump::CalculateEffectiveSize()
 {
     const auto capacity = sasi ? sasi_capacity : scsi_device_info.capacity;
     if (capacity <= static_cast<uint64_t>(start)) {
-        cerr << "Start sector " << start << " is out of range (" << capacity - 1 << ")" << endl;
+        cerr << "Start sector " << start << " is out of range (" << capacity - 1 << ")\n";
         return -1;
     }
 
@@ -781,7 +781,7 @@ long S2pDump::CalculateEffectiveSize()
     }
 
     if (capacity < static_cast<uint64_t>(start + count)) {
-        cerr << "Sector count " << count << " is out of range (" << capacity - start << ")" << endl;
+        cerr << "Sector count " << count << " is out of range (" << capacity - start << ")\n";
         return -1;
     }
 
@@ -794,7 +794,7 @@ long S2pDump::CalculateEffectiveSize()
             image_file_size = file_size(path(filename));
         }
         catch (const filesystem_error &e) {
-            cerr << "Can't determine image file size: " << e.what() << endl;
+            cerr << "Can't determine image file size: " << e.what() << '\n';
             return -1;
         }
 

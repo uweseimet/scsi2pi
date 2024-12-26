@@ -59,7 +59,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
     while (PbDeviceType_IsValid(ordinal)) {
         // Only report device types supported by the factory
         if (const auto device = DeviceFactory::Instance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
-            auto type_properties = device_types_info.add_properties();
+            auto *type_properties = device_types_info.add_properties();
             type_properties->set_type(device->GetType());
             GetDeviceProperties(device, *type_properties->mutable_properties());
         }
@@ -81,7 +81,7 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 
     GetDeviceProperties(device, *pb_device.mutable_properties());
 
-    auto status = pb_device.mutable_status();
+    auto *status = pb_device.mutable_status();
     status->set_protected_(device->IsProtected());
     status->set_stopped(device->IsStopped());
     status->set_removed(device->IsRemoved());
@@ -334,7 +334,7 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
 {
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
-            auto s = statistics_info.add_statistics();
+            auto *s = statistics_info.add_statistics();
             s->set_id(statistics.id());
             s->set_unit(statistics.unit());
             s->set_category(statistics.category());
@@ -353,7 +353,7 @@ void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
 
 void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
 {
-    auto operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
+    auto *operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
     AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
     AddOperationParameter(*operation, "interface", "Comma-separated prioritized network interface list");
     AddOperationParameter(*operation, "inet", "IP address and netmask of the network bridge");
@@ -474,7 +474,7 @@ void CommandResponse::AddOperationParameter(PbOperationMetaData &meta_data, cons
     const string &description, const string &default_value, bool is_mandatory,
     const vector<string> &permitted_values) const
 {
-    auto parameter = meta_data.add_parameters();
+    auto *parameter = meta_data.add_parameters();
     parameter->set_name(name);
     parameter->set_description(description);
     parameter->set_default_value(default_value);
