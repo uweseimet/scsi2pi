@@ -56,5 +56,5 @@ TEST(S2pFormatterTest, FormatBytes)
     EXPECT_EQ("", formatter.FormatBytes(bytes, bytes.size(), true));
 
     formatter.SetLimit(2);
-    EXPECT_EQ("40:41\n...", formatter.FormatBytes(bytes, bytes.size(), true));
+    EXPECT_EQ("40:41\n... (13 more)", formatter.FormatBytes(bytes, bytes.size(), true));
 }

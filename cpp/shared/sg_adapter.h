@@ -8,14 +8,9 @@
 
 #pragma once
 
-#include <cstdint>
-#include <span>
-#include <string>
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
-#include "shared/scsi.h"
 
-using namespace std;
 using namespace spdlog;
 
 class SgAdapter

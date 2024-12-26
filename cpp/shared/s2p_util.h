@@ -66,6 +66,8 @@ bool GetAsUnsignedInt(const string&, int&);
 string ProcessId(const string&, int&, int&);
 string Banner(string_view);
 
+tuple<string, string, string> GetInquiryProductData(span<const uint8_t>);
+
 string GetScsiLevel(int);
 
 string FormatSenseData(span<const byte>);

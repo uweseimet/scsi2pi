@@ -8,7 +8,6 @@
 
 #include "s2pexec_executor.h"
 #include "buses/bus_factory.h"
-#include "initiator/initiator_util.h"
 
 string S2pExecExecutor::Init(const string &device)
 {

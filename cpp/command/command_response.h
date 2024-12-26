@@ -10,13 +10,10 @@
 
 #include <filesystem>
 #include <set>
-#include <spdlog/spdlog.h>
 #include "base/device.h"
 #include "base/s2p_defs.h"
 
 using namespace filesystem;
-using namespace spdlog;
-using namespace s2p_interface;
 
 class PrimaryDevice;
 

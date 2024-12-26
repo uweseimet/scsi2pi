@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <span>
-#include <string>
 #include <vector>
 #include "shared/sg_adapter.h"
 

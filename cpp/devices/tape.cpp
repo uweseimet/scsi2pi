@@ -18,7 +18,6 @@
 
 #include "tape.h"
 #include "base/property_handler.h"
-#include "shared/s2p_util.h"
 
 using namespace spdlog;
 using namespace memory_util;

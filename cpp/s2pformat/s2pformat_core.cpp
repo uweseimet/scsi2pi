@@ -9,7 +9,6 @@
 #include "s2pformat_core.h"
 #include <cstring>
 #include <iostream>
-#include <vector>
 #include <fcntl.h>
 #include <getopt.h>
 #include <spdlog/spdlog.h>
@@ -152,17 +151,10 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
         return {};
     }
 
-    array<char, 17> str = { };
-    memcpy(str.data(), &buf[8], 8);
-    cout << "Vendor:   '" << str.data() << "'\n";
-
-    str.fill(0);
-    memcpy(str.data(), &buf[16], 16);
-    cout << "Product:  '" << str.data() << "'\n";
-
-    str.fill(0);
-    memcpy(str.data(), &buf[32], 4);
-    cout << "Revision: '" << str.data() << "'\n";
+    const auto& [vendor, product, revision] = GetInquiryProductData(buf);
+    cout << "Vendor:   '" << vendor << "'\n";
+    cout << "Product:  '" << product << "'\n";
+    cout << "Revision: '" << revision << "'\n";
 
     cdb.resize(10);
     buf.resize(252);

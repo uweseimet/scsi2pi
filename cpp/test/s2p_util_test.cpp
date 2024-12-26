@@ -141,6 +141,18 @@ TEST(S2pUtilTest, Banner)
     EXPECT_FALSE(Banner("Test").empty());
 }
 
+TEST(S2pUtilTest, GetInquiryProductData)
+{
+    vector<uint8_t> data(36);
+    memcpy(data.data() + 8, "12345678", 8);
+    memcpy(data.data() + 16, "1234567890123456", 16);
+    memcpy(data.data() + 32, "1234", 4);
+    const auto& [vendor, product, revision] = GetInquiryProductData(data);
+    EXPECT_EQ("12345678", vendor);
+    EXPECT_EQ("1234567890123456", product);
+    EXPECT_EQ("1234", revision);
+}
+
 TEST(S2pUtilTest, GetScsiLevel)
 {
     EXPECT_EQ("-", GetScsiLevel(0));

@@ -462,19 +462,12 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
     scsi_device_info = { };
     scsi_device_info.type = static_cast<byte>(buf[0]);
 
-    array<char, 9> vendor = { };
-    memcpy(vendor.data(), &buf[8], 8);
-    scsi_device_info.vendor = string(vendor.data());
+    const auto& [vendor, product, revision] = GetInquiryProductData(buf);
+    scsi_device_info.vendor = vendor;
+    scsi_device_info.product = product;
+    scsi_device_info.revision = revision;
     cout << "Vendor:               '" << scsi_device_info.vendor << "'\n";
-
-    array<char, 17> product = { };
-    memcpy(product.data(), &buf[16], 16);
-    scsi_device_info.product = string(product.data());
     cout << "Product:              '" << scsi_device_info.product << "'\n";
-
-    array<char, 5> revision = { };
-    memcpy(revision.data(), &buf[32], 4);
-    scsi_device_info.revision = string(revision.data());
     cout << "Revision:             '" << scsi_device_info.revision << "'\n";
 
     if (const auto &t = SCSI_DEVICE_TYPES.find(static_cast<byte>(type)); t != SCSI_DEVICE_TYPES.end()) {

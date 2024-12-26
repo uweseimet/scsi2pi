@@ -62,7 +62,7 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
     }
 
     if (count > limit) {
-        str += "\n...";
+        str += fmt::format("\n... ({} more)", count - limit);
     }
 
     return str;

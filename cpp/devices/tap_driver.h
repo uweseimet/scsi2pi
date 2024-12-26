@@ -12,7 +12,6 @@
 #pragma once
 
 #include <span>
-#include <spdlog/spdlog.h>
 #include "base/device.h"
 #include "base/s2p_defs.h"
 

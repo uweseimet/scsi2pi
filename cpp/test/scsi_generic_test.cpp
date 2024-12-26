@@ -32,6 +32,13 @@ TEST(ScsiGenericTest, Device_Defaults)
     EXPECT_EQ(testing::TestShared::GetVersion(), revision);
 }
 
+TEST(ScsiGenericTest, GetIdentifier)
+{
+    ScsiGeneric device(0, "");
+
+    EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
+}
+
 TEST(ScsiGenericTest, GetDevice)
 {
     ScsiGeneric device(0, "device");

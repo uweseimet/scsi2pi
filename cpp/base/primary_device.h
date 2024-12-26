@@ -13,7 +13,6 @@
 #include <functional>
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
-#include "s2p_defs.h"
 #include "device.h"
 
 class PrimaryDevice : public Device

@@ -22,7 +22,7 @@
 
 using namespace testing;
 
-class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
+class MockBus : public Bus
 {
 
 public:

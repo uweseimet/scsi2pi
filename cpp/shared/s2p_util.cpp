@@ -210,6 +210,18 @@ string s2p_util::Banner(string_view app)
     return s.str();
 }
 
+tuple<string, string, string> s2p_util::GetInquiryProductData(span<const uint8_t> data)
+{
+    array<char, 9> vendor = { };
+    memcpy(vendor.data(), &data[8], 8);
+    array<char, 17> product = { };
+    memcpy(product.data(), &data[16], 16);
+    array<char, 5> revision = { };
+    memcpy(revision.data(), &data[32], 4);
+
+    return {vendor.data(),product.data(), revision.data()};
+}
+
 string s2p_util::GetScsiLevel(int scsi_level)
 {
     switch (scsi_level) {

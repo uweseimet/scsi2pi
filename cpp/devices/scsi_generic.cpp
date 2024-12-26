@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
-#include "shared/command_meta_data.h"
 #include "shared/sg_util.h"
 
 using namespace spdlog;
@@ -228,13 +227,43 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
             GetController()->FormatBytes(buf, length)));
     }
 
-    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
 
     format_header.clear();
 
+    EvaluateStatus(status, span(buf.data(), length), sense_data, write, log);
+
+    const int transferred_length = length - io_hdr.resid;
+
+    if (log && !write && GetLogger().level() == level::trace) {
+        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
+            GetController()->FormatBytes(buf, transferred_length)));
+    }
+
+    UpdateInternalBlockSize(buf, length);
+
+    UpdateStartBlock(local_cdb, length / block_size);
+
+    // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
+    if (command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
+        remaining_count -= transferred_length;
+    }
+    else {
+        remaining_count = 0;
+    }
+
+    if (log) {
+        LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
+    }
+
+    return transferred_length;
+}
+
+void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write, bool log)
+{
     if (status == -1) {
         if (log) {
-            LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", length, strerror(errno)));
+            LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", buf.size(), strerror(errno)));
         }
 
         throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
@@ -261,31 +290,6 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
         // Set the return status to CHECK CONDITION
         throw scsi_exception(sense_key::no_sense);
     }
-
-    const int transferred_length = length - io_hdr.resid;
-
-    if (log && !write && GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
-            GetController()->FormatBytes(buf, transferred_length)));
-    }
-
-    UpdateInternalBlockSize(buf, length);
-
-    UpdateStartBlock(local_cdb, length / block_size);
-
-    // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
-    if (command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
-        remaining_count -= transferred_length;
-    }
-    else {
-        remaining_count = 0;
-    }
-
-    if (log) {
-        LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
-    }
-
-    return transferred_length;
 }
 
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
@@ -326,13 +330,8 @@ string ScsiGeneric::GetDeviceData()
         return e.what();
     }
 
-    array<char, 9> vendor = { };
-    memcpy(vendor.data(), &buf[8], 8);
-    array<char, 17> product = { };
-    memcpy(product.data(), &buf[16], 16);
-    array<char, 5> revision = { };
-    memcpy(revision.data(), &buf[32], 4);
-    PrimaryDevice::SetProductData( { vendor.data(), product.data(), revision.data() });
+    const auto& [vendor, product, revision] = GetInquiryProductData(buf);
+    PrimaryDevice::SetProductData( { vendor, product, revision });
 
     SetScsiLevel(static_cast<scsi_level>(buf[2]));
     SetResponseDataFormat(static_cast<scsi_level>(buf[3]));

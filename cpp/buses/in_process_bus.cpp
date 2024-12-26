@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "in_process_bus.h"
-#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 
 using namespace spdlog;

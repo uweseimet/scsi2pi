@@ -7,17 +7,14 @@
 //---------------------------------------------------------------------------
 
 #include "sg_adapter.h"
-#include <array>
 #include <iostream>
 #include <fcntl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
-#include <spdlog/spdlog.h>
 #include "shared/memory_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/sg_util.h"
 
-using namespace spdlog;
 using namespace memory_util;
 using namespace sg_util;
 

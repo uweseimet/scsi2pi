@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
