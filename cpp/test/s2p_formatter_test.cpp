@@ -38,13 +38,13 @@ TEST(S2pFormatterTest, FormatBytes)
     S2pFormatter formatter;
 
     vector<uint8_t> bytes;
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; ++i) {
         bytes.emplace_back(i);
     }
     EXPECT_EQ(str_all, formatter.FormatBytes(bytes, bytes.size()));
 
     bytes.clear();
-    for (int i = 64; i < 79; i++) {
+    for (int i = 64; i < 79; ++i) {
         bytes.emplace_back(i);
     }
 

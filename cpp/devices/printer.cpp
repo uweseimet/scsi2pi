@@ -48,15 +48,15 @@ string Printer::SetUp()
         return "Missing filename specifier '%f'";
     }
 
-    AddCommand(scsi_command::print, [this]
+    AddCommand(ScsiCommand::PRINT, [this]
         {
             Print();
         });
-    AddCommand(scsi_command::synchronize_buffer, [this]
+    AddCommand(ScsiCommand::SYNCHRONIZE_BUFFER, [this]
         {
             SynchronizeBuffer();
         });
-    AddCommand(scsi_command::stop_print, [this]
+    AddCommand(ScsiCommand::STOP_PRINT, [this]
         {
             StatusPhase();
         });
@@ -91,7 +91,7 @@ param_map Printer::GetDefaultParams() const
 
 vector<uint8_t> Printer::InquiryInternal() const
 {
-    return HandleInquiry(device_type::printer, false);
+    return HandleInquiry(DeviceType::PRINTER, false);
 }
 
 void Printer::Print()
@@ -107,7 +107,7 @@ void Printer::Print()
 
         ++print_error_count;
 
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -122,7 +122,7 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 
     out.close();
@@ -145,7 +145,7 @@ void Printer::SynchronizeBuffer()
 
         CleanUp();
 
-        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 
     CleanUp();
@@ -155,10 +155,10 @@ void Printer::SynchronizeBuffer()
 
 int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
-    const auto command = static_cast<scsi_command>(cdb[0]);
-    assert(command == scsi_command::print);
-    if (command != scsi_command::print) {
-        throw scsi_exception(sense_key::aborted_command);
+    const auto command = static_cast<ScsiCommand>(cdb[0]);
+    assert(command == ScsiCommand::PRINT);
+    if (command != ScsiCommand::PRINT) {
+        throw ScsiException(SenseKey::ABORTED_COMMAND);
     }
 
     const auto length = GetCdbInt24(2);
@@ -174,7 +174,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         if (fd == -1) {
             LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
             ++print_error_count;
-            throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
         close(fd);
 
@@ -199,7 +199,7 @@ void Printer::CheckForFileError()
     if (out.fail()) {
         out.clear();
         ++print_error_count;
-        throw scsi_exception(sense_key::aborted_command, asc::io_process_terminated);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 }
 

@@ -191,9 +191,9 @@ public:
         SetSignal(PIN_CD, state);
     }
 
-    bus_phase GetPhase();
+    BusPhase GetPhase();
 
-    static string GetPhaseName(bus_phase phase)
+    static string GetPhaseName(BusPhase phase)
     {
         return phase_names[static_cast<int>(phase)];
     }
@@ -214,7 +214,7 @@ protected:
 
 private:
 
-    static const array<bus_phase, 8> phases;
+    static const array<BusPhase, 8> phases;
 
     static const array<string, 11> phase_names;
 
@@ -223,5 +223,5 @@ private:
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    static constexpr int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
+    static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
 };

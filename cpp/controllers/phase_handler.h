@@ -36,56 +36,56 @@ protected:
 
     PhaseHandler() = default;
 
-    bus_phase GetPhase() const
+    BusPhase GetPhase() const
     {
         return phase;
     }
-    void SetPhase(bus_phase p)
+    void SetPhase(BusPhase p)
     {
         phase = p;
     }
     bool IsSelection() const
     {
-        return phase == bus_phase::selection;
+        return phase == BusPhase::SELECTION;
     }
     bool IsBusFree() const
     {
-        return phase == bus_phase::busfree;
+        return phase == BusPhase::BUS_FREE;
     }
     bool IsCommand() const
     {
-        return phase == bus_phase::command;
+        return phase == BusPhase::COMMAND;
     }
     bool IsStatus() const
     {
-        return phase == bus_phase::status;
+        return phase == BusPhase::STATUS;
     }
     bool IsDataIn() const
     {
-        return phase == bus_phase::datain;
+        return phase == BusPhase::DATA_IN;
     }
     bool IsDataOut() const
     {
-        return phase == bus_phase::dataout;
+        return phase == BusPhase::DATA_OUT;
     }
     bool IsMsgIn() const
     {
-        return phase == bus_phase::msgin;
+        return phase == BusPhase::MSG_IN;
     }
     bool IsMsgOut() const
     {
-        return phase == bus_phase::msgout;
+        return phase == BusPhase::MSG_OUT;
     }
 
     bool ProcessPhase() const
     {
-        assert(phase <= bus_phase::reserved);
+        assert(phase <= BusPhase::RESERVED);
         return phase_executors[static_cast<int>(phase)]();
     }
 
 private:
 
-    bus_phase phase = bus_phase::busfree;
+    BusPhase phase = BusPhase::BUS_FREE;
 
-    array<function<bool()>, static_cast<int>(bus_phase::reserved) + 1> phase_executors;
+    array<function<bool()>, static_cast<int>(BusPhase::RESERVED) + 1> phase_executors;
 };

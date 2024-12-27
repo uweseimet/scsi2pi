@@ -35,7 +35,7 @@ public:
 
     int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
 
-    tuple<sense_key, asc, int> GetSenseData() const;
+    tuple<SenseKey, Asc, int> GetSenseData() const;
 
     int GetByteCount() const;
 

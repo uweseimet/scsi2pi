@@ -44,13 +44,6 @@ protected:
 
 private:
 
-    enum class protobuf_format
-    {
-        binary = 0b001,
-        json = 0b010,
-        text = 0b100
-    };
-
     using mode_page_datetime = struct __attribute__((packed)) {
         // Major and minor version of this data structure (e.g. 1.0)
         uint8_t major_version;
@@ -73,7 +66,7 @@ private:
 
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
 
-    protobuf_format ConvertFormat() const;
+    ProtobufFormat ConvertFormat() const;
 
     unique_ptr<PageHandler> page_handler;
 
@@ -82,7 +75,7 @@ private:
 
     shared_ptr<CommandDispatcher> dispatcher;
 
-    protobuf_format input_format = protobuf_format::binary;
+    ProtobufFormat input_format = ProtobufFormat::BINARY;
 
     static constexpr int EXECUTE_BUFFER_SIZE = 65535;
 };

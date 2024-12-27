@@ -65,7 +65,7 @@ void S2pThread::Start()
 #ifndef __APPLE__
     service_thread = jthread([this]() {Execute();});
 #else
-	service_thread = thread([this] () { Execute(); } );
+    service_thread = thread([this] () { Execute(); } );
 #endif
 }
 
@@ -104,7 +104,7 @@ void S2pThread::ExecuteCommand(int fd) const
             execute(context);
         }
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         warn(e.what());
 
         // Try to return an error message (this may fail if the exception was caused when returning the actual result)
@@ -113,7 +113,7 @@ void S2pThread::ExecuteCommand(int fd) const
         try {
             context.WriteResult(result);
         }
-        catch (const io_exception&) { // NOSONAR Ignored because not relevant when writing the result
+        catch (const IoException&) { // NOSONAR Ignored because not relevant when writing the result
             // Ignore
         }
     }

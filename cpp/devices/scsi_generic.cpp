@@ -30,7 +30,7 @@ string ScsiGeneric::SetUp()
     try {
         fd = OpenDevice(device);
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         return e.what();
     }
 
@@ -58,20 +58,20 @@ string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
             "" : "The product data of SCSG can't be changed";
 }
 
-void ScsiGeneric::Dispatch(scsi_command cmd)
+void ScsiGeneric::Dispatch(ScsiCommand cmd)
 {
     count = command_meta_data.GetByteCount(cmd);
     if (!count) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
     }
 
     local_cdb.resize(count);
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; ++i) {
         local_cdb[i] = static_cast<uint8_t>(GetController()->GetCdb()[i]);
     }
 
     // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
-    if (cmd == scsi_command::read_6 || cmd == scsi_command::write_6) {
+    if (cmd == ScsiCommand::READ_6 || cmd == ScsiCommand::WRITE_6) {
         local_cdb.push_back(0);
         // Sector count
         local_cdb.push_back(0);
@@ -81,7 +81,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         // Sector number
         SetInt32(local_cdb, 2, GetInt24(local_cdb, 1));
         local_cdb[1] = 0;
-        local_cdb[0] = cmd == scsi_command::write_6 ? 0x2a : 0x28;
+        local_cdb[0] = cmd == ScsiCommand::WRITE_6 ? 0x2a : 0x28;
     }
 
     const auto &meta_data = command_meta_data.GetCdbMetaData(cmd);
@@ -89,7 +89,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     byte_count = meta_data.block_size ? GetAllocationLength(local_cdb) * block_size : GetAllocationLength(local_cdb);
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cmd == scsi_command::format_unit && (static_cast<int>(local_cdb[1]) & 0x10)) {
+    if (cmd == ScsiCommand::FORMAT_UNIT && (static_cast<int>(local_cdb[1]) & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
@@ -99,16 +99,16 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
     auto &buf = GetController()->GetBuffer();
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if ((static_cast<int>(local_cdb[1]) & 0b11100000) && cmd != scsi_command::inquiry) {
-        if (cmd != scsi_command::request_sense) {
-            throw scsi_exception(sense_key::illegal_request, asc::logical_unit_not_supported);
+    if ((static_cast<int>(local_cdb[1]) & 0b11100000) && cmd != ScsiCommand::INQUIRY) {
+        if (cmd != ScsiCommand::REQUEST_SENSE) {
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
         }
 
         fill_n(buf.begin(), 18, 0);
         buf[0] = 0x70;
-        buf[2] = static_cast<uint8_t>(sense_key::illegal_request);
+        buf[2] = static_cast<uint8_t>(SenseKey::ILLEGAL_REQUEST);
         buf[7] = 10;
-        buf[12] = static_cast<uint8_t>(asc::logical_unit_not_supported);
+        buf[12] = static_cast<uint8_t>(Asc::LOGICAL_UNIT_NOT_SUPPORTED);
 
         const int length = min(18, byte_count);
         GetController()->SetTransferSize(length, length);
@@ -118,7 +118,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
         return;
     }
 
-    if (cmd == scsi_command::request_sense && deferred_sense_data_valid) {
+    if (cmd == ScsiCommand::REQUEST_SENSE && deferred_sense_data_valid) {
         memcpy(buf.data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
@@ -140,7 +140,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
     // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
     if (meta_data.has_data_out) {
-        DataOutPhase(chunk_size || cmd != scsi_command::format_unit ? chunk_size : -1);
+        DataOutPhase(chunk_size || cmd != ScsiCommand::FORMAT_UNIT ? chunk_size : -1);
     }
     else {
         GetController()->SetCurrentLength(byte_count);
@@ -150,7 +150,7 @@ void ScsiGeneric::Dispatch(scsi_command cmd)
 
 vector<uint8_t> ScsiGeneric::InquiryInternal() const
 {
-    return HandleInquiry(device_type::optical_memory, true);
+    return HandleInquiry(DeviceType::OPTICAL_MEMORY, true);
 }
 
 int ScsiGeneric::ReadData(data_in_t buf)
@@ -161,7 +161,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, send the command when all paramaeters are available
-    if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::format_unit
+    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
             format_header.push_back(buf[0]);
@@ -173,7 +173,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
             return 0;
         }
         else {
-            for (int i = 4; i < length; i++) {
+            for (int i = 4; i < length; ++i) {
                 format_header.push_back(buf[i - 4]);
             }
             buf = format_header;
@@ -194,7 +194,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
 
     io_hdr.interface_id = 'S';
 
-    const bool write = command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).has_data_out;
+    const bool write = command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(local_cdb[0])).has_data_out;
 
     if (length) {
         io_hdr.dxfer_direction = write ? SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
@@ -214,7 +214,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
     io_hdr.timeout = (
-        local_cdb[0] == static_cast<uint8_t>(scsi_command::format_unit) ?
+        local_cdb[0] == static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT) ?
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
@@ -245,7 +245,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
     UpdateStartBlock(local_cdb, length / block_size);
 
     // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
-    if (command_meta_data.GetCdbMetaData(static_cast<scsi_command>(local_cdb[0])).block_size) {
+    if (command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(local_cdb[0])).block_size) {
         remaining_count -= transferred_length;
     }
     else {
@@ -266,17 +266,17 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> se
             LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", buf.size(), strerror(errno)));
         }
 
-        throw scsi_exception(sense_key::aborted_command, write ? asc::write_error : asc::read_error);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);
     }
     // Do not consider CONDITION MET an error
-    else if (status == static_cast<int>(status_code::condition_met)) {
-        status = static_cast<int>(status_code::good);
+    else if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
+        status = static_cast<int>(StatusCode::GOOD);
     }
 
     if (!status) {
         status = static_cast<int>(sense_data[2]) & 0x0f;
 
-        if (static_cast<scsi_command>(local_cdb[0]) == scsi_command::inquiry
+        if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY
             && (static_cast<int>(local_cdb[1]) & 0b11100000)) {
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
             buf[0] = 0x7f;
@@ -288,17 +288,17 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> se
         deferred_sense_data_valid = true;
 
         // Set the return status to CHECK CONDITION
-        throw scsi_exception(sense_key::no_sense);
+        throw ScsiException(SenseKey::NO_SENSE);
     }
 }
 
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 {
     uint32_t size = block_size;
-    if (const auto cmd = static_cast<scsi_command>(local_cdb[0]); cmd == scsi_command::read_capacity_10 && length >= 8) {
+    if (const auto cmd = static_cast<ScsiCommand>(local_cdb[0]); cmd == ScsiCommand::READ_CAPACITY_10 && length >= 8) {
         size = GetInt32(buf, 4);
     }
-    else if (cmd == scsi_command::read_capacity_16_read_long_16 && (static_cast<int>(local_cdb[1]) & 0x10) && length >= 12) {
+    else if (cmd == ScsiCommand::READ_CAPACITY_READ_LONG_16 && (static_cast<int>(local_cdb[1]) & 0x10) && length >= 12) {
         size = GetInt32(buf, 8);
     }
 
@@ -320,21 +320,21 @@ string ScsiGeneric::GetDeviceData()
 
     local_cdb.resize(6);
     fill_n(local_cdb.begin(), local_cdb.size(), 0);
-    local_cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    local_cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     local_cdb[4] = static_cast<uint8_t>(byte_count);
 
     try {
         ReadWriteData(buf, byte_count, false);
     }
-    catch (const scsi_exception &e) {
+    catch (const ScsiException &e) {
         return e.what();
     }
 
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
     PrimaryDevice::SetProductData( { vendor, product, revision });
 
-    SetScsiLevel(static_cast<scsi_level>(buf[2]));
-    SetResponseDataFormat(static_cast<scsi_level>(buf[3]));
+    SetScsiLevel(static_cast<ScsiLevel>(buf[2]));
+    SetResponseDataFormat(static_cast<ScsiLevel>(buf[3]));
 
     return "";
 }
@@ -348,13 +348,13 @@ void ScsiGeneric::GetBlockSize()
 
     local_cdb.resize(10);
     fill_n(local_cdb.begin(), local_cdb.size(), 0);
-    local_cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
+    local_cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
 
     try {
         // Trigger a block size update
         ReadWriteData(buf, byte_count, false);
     }
-    catch (const scsi_exception&) { // NOSONAR The exception details do not matter, this might not be a block device
+    catch (const ScsiException&) { // NOSONAR The exception details do not matter, this might not be a block device
         // Fall through
     }
 }

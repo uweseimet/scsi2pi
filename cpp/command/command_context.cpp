@@ -21,7 +21,7 @@ bool CommandContext::ReadCommand()
     array<byte, 6> magic;
     if (const auto bytes_read = ReadBytes(fd, magic); bytes_read) {
         if (bytes_read != magic.size() || memcmp(magic.data(), "RASCSI", magic.size())) {
-            throw io_exception("Invalid magic");
+            throw IoException("Invalid magic");
         }
 
         // Fetch the command

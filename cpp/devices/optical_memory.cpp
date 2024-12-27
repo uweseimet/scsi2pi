@@ -37,7 +37,7 @@ void OpticalMemory::Open()
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
         // Sector size (default 512 bytes) and number of sectors
         if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-            throw io_exception("Invalid sector size");
+            throw IoException("Invalid sector size");
         }
         SetBlockCount(size / GetBlockSize());
     }
@@ -51,7 +51,7 @@ void OpticalMemory::Open()
 
 vector<uint8_t> OpticalMemory::InquiryInternal() const
 {
-    return HandleInquiry(device_type::optical_memory, true);
+    return HandleInquiry(DeviceType::OPTICAL_MEMORY, true);
 }
 
 void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const

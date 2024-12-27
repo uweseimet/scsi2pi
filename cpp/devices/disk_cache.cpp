@@ -96,7 +96,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     }
 
     // Next, check for empty
-    for (size_t i = 0; i < cache.size(); i++) {
+    for (size_t i = 0; i < cache.size(); ++i) {
         if (!cache[i].disktrk) {
             // Try loading
             if (Load(static_cast<int>(i), track, nullptr)) {
@@ -117,7 +117,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     size_t c = 0;
 
     // Compare candidate with serial and update to smaller one
-    for (size_t i = 0; i < cache.size(); i++) {
+    for (size_t i = 0; i < cache.size(); ++i) {
         assert(cache[i].disktrk);
 
         // Compare and update the existing serial
@@ -181,7 +181,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
 void DiskCache::UpdateSerialNumber()
 {
     // Update and do nothing except 0
-    serial++;
+    ++serial;
     if (serial != 0) {
         return;
     }

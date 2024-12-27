@@ -140,7 +140,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 
             // Consectutive sector length
             int j;
-            for (j = i; j < dt.sectors; j++) {
+            for (j = i; j < dt.sectors; ++j) {
                 // end when interrupted
                 if (!dt.changemap[j]) {
                     break;
@@ -160,7 +160,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
             i = j;
         } else {
             // Next Sector
-            i++;
+            ++i;
         }
     }
 

@@ -75,16 +75,16 @@ public:
 
 private:
 
-    enum class read_data_flags_t : uint32_t
+    enum class ReadDataFlagsType : uint32_t
     {
-        e_no_more_data = 0x00000000,
-        e_more_data_available = 0x00000001,
-        e_dropped_packets = 0xFFFFFFFF,
+        NO_MORE_DATA = 0x00000000,
+        MORE_DATA_AVAILABLE = 0x00000001,
+        DROPPED_PACKETS = 0xFFFFFFFF,
     };
 
     using scsi_resp_read_t = struct __attribute__((packed)) {
         uint32_t length;
-        read_data_flags_t flags;
+        ReadDataFlagsType flags;
         byte pad;
         array<byte, ETH_FRAME_LEN + sizeof(uint32_t)> data; // Frame length + 4 byte CRC
     };

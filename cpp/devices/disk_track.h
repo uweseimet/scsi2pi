@@ -23,14 +23,22 @@ class DiskTrack
 {
     struct
     {
-        int track; // Track Number
-        int size; // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
-        int sectors; // Number of sectors(<0x100)
-        uint32_t length; // Data buffer length
-        uint8_t *buffer; // Data buffer
-        bool init; // Is it initilized?
-        bool changed; // Changed flag
-        vector<bool> changemap; // Changed map
+        // Track Number
+        int track;
+        // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
+        int size;
+        // Number of sectors(<0x100)
+        int sectors;
+        // Data buffer length
+        uint32_t length;
+        // Data buffer
+        uint8_t *buffer;
+        // Is it initilized?
+        bool init;
+        // Changed flag
+        bool changed;
+        // Changed map
+        vector<bool> changemap;
     } dt = { };
 
 public:

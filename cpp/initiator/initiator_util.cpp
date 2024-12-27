@@ -20,25 +20,25 @@ void initiator_util::ResetBus(Bus &bus)
     bus.Reset();
 }
 
-tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
+tuple<SenseKey, Asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
     array<uint8_t, 255> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()), 1, true)) {
+    if (executor.Execute(ScsiCommand::REQUEST_SENSE, cdb, buf, static_cast<int>(buf.size()), 1, true)) {
         error("Can't execute REQUEST SENSE");
-        return {sense_key {-1}, asc {-1}, -1};
+        return {SenseKey {-1}, Asc {-1}, -1};
     }
 
     trace(executor.FormatBytes(buf, executor.GetByteCount()));
 
     if (executor.GetByteCount() < 14) {
         warn("Device did not return standard REQUEST SENSE data, sense data details are not available");
-        return {sense_key {-1}, asc {-1}, -1};
+        return {SenseKey {-1}, Asc {-1}, -1};
     }
 
-    return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
+    return {static_cast<SenseKey>(buf[2] & 0x0f), static_cast<Asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
 }
 
 bool initiator_util::SetLogLevel(logger &logger, const string &log_level)

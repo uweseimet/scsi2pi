@@ -58,30 +58,30 @@ TEST(ControllerTest, BusFree)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(bus_phase::busfree);
+    controller.SetPhase(BusPhase::BUS_FREE);
     controller.BusFree();
-    EXPECT_EQ(bus_phase::busfree, controller.GetPhase());
+    EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
 
-    controller.SetStatus(status_code::check_condition);
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetStatus(StatusCode::CHECK_CONDITION);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.BusFree();
-    EXPECT_EQ(bus_phase::busfree, controller.GetPhase());
-    EXPECT_EQ(status_code::good, controller.GetStatus());
+    EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
+    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
 
-    controller.ScheduleShutdown(shutdown_mode::none);
-    controller.SetPhase(bus_phase::reserved);
-    controller.BusFree();
-
-    controller.ScheduleShutdown(shutdown_mode::stop_pi);
-    controller.SetPhase(bus_phase::reserved);
+    controller.ScheduleShutdown(ShutdownMode::NONE);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.BusFree();
 
-    controller.ScheduleShutdown(shutdown_mode::restart_pi);
-    controller.SetPhase(bus_phase::reserved);
+    controller.ScheduleShutdown(ShutdownMode::STOP_PI);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.BusFree();
 
-    controller.ScheduleShutdown(shutdown_mode::stop_s2p);
-    controller.SetPhase(bus_phase::reserved);
+    controller.ScheduleShutdown(ShutdownMode::RESTART_PI);
+    controller.SetPhase(BusPhase::RESERVED);
+    controller.BusFree();
+
+    controller.ScheduleShutdown(ShutdownMode::STOP_S2P);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.BusFree();
 }
 
@@ -93,16 +93,16 @@ TEST(ControllerTest, Selection)
 
     controller->AddDevice(device);
 
-    controller->SetPhase(bus_phase::selection);
+    controller->SetPhase(BusPhase::SELECTION);
     controller->Selection();
-    EXPECT_EQ(bus_phase::selection, controller->GetPhase());
+    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 
     controller->Selection();
-    EXPECT_EQ(bus_phase::selection, controller->GetPhase());
+    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 
     ON_CALL(*bus, GetDAT).WillByDefault(Return(1));
     controller->Selection();
-    EXPECT_EQ(bus_phase::selection, controller->GetPhase());
+    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 }
 
 TEST(ControllerTest, Command)
@@ -113,18 +113,18 @@ TEST(ControllerTest, Command)
 
     controller.AddDevice(device);
 
-    controller.SetPhase(bus_phase::command);
+    controller.SetPhase(BusPhase::COMMAND);
     EXPECT_CALL(controller, Status).Times(2);
     controller.Command();
-    EXPECT_EQ(bus_phase::command, controller.GetPhase());
+    EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.Command();
-    EXPECT_EQ(bus_phase::command, controller.GetPhase());
+    EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.Command();
-    EXPECT_EQ(bus_phase::command, controller.GetPhase());
+    EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 }
 
 TEST(ControllerTest, MsgIn)
@@ -132,9 +132,9 @@ TEST(ControllerTest, MsgIn)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.MsgIn();
-    EXPECT_EQ(bus_phase::msgin, controller.GetPhase());
+    EXPECT_EQ(BusPhase::MSG_IN, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
     EXPECT_EQ(0, controller.GetCurrentLength());
 }
@@ -144,9 +144,9 @@ TEST(ControllerTest, MsgOut)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.MsgOut();
-    EXPECT_EQ(bus_phase::msgout, controller.GetPhase());
+    EXPECT_EQ(BusPhase::MSG_OUT, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
     EXPECT_EQ(1, controller.GetCurrentLength());
 }
@@ -156,15 +156,15 @@ TEST(ControllerTest, DataIn)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataIn();
-    EXPECT_EQ(bus_phase::reserved, controller.GetPhase());
+    EXPECT_EQ(BusPhase::RESERVED, controller.GetPhase());
 
     controller.SetCurrentLength(1);
     controller.DataIn();
-    EXPECT_EQ(bus_phase::datain, controller.GetPhase());
+    EXPECT_EQ(BusPhase::DATA_IN, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
 }
 
@@ -173,15 +173,15 @@ TEST(ControllerTest, DataOut)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(bus_phase::reserved);
+    controller.SetPhase(BusPhase::RESERVED);
     controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataOut();
-    EXPECT_EQ(bus_phase::reserved, controller.GetPhase());
+    EXPECT_EQ(BusPhase::RESERVED, controller.GetPhase());
 
     controller.SetCurrentLength(1);
     controller.DataOut();
-    EXPECT_EQ(bus_phase::dataout, controller.GetPhase());
+    EXPECT_EQ(BusPhase::DATA_OUT, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
 }
 
@@ -201,8 +201,8 @@ TEST(ControllerTest, RequestSense)
 
     device->SetReady(true);
     EXPECT_CALL(controller, Status);
-    EXPECT_NO_THROW(Dispatch(device, scsi_command::request_sense));
-    EXPECT_EQ(status_code::good, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
+    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }
 
 TEST(ControllerTest, GetLunMax)

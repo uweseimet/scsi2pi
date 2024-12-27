@@ -118,26 +118,26 @@ bool S2pCtlCommands::SendCommand()
 
     sockaddr_in server_addr = { };
     if (!ResolveHostName(hostname, &server_addr)) {
-        throw io_exception("Can't resolve hostname '" + hostname + "'");
+        throw IoException("Can't resolve hostname '" + hostname + "'");
     }
 
     const int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
-        throw io_exception("Can't create socket: " + string(strerror(errno)));
+        throw IoException("Can't create socket: " + string(strerror(errno)));
     }
 
     server_addr.sin_port = htons(uint16_t(port));
     if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         close(fd);
 
-        throw io_exception("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
+        throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
             + ": " + strerror(errno));
     }
 
     if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
         close(fd);
 
-        throw io_exception("Can't write magic");
+        throw IoException("Can't write magic");
     }
 
     SerializeMessage(fd, command);
@@ -146,7 +146,7 @@ bool S2pCtlCommands::SendCommand()
     close(fd);
 
     if (!result.status()) {
-        throw io_exception(result.msg());
+        throw IoException(result.msg());
     }
 
     if (!result.msg().empty()) {
@@ -414,7 +414,7 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
     ofstream out(filename, ios::binary);
     out.write((const char*)data.data(), data.size());
     if (out.fail()) {
-        throw io_exception("Error: Can't create protobuf binary file '" + filename + "'");
+        throw IoException("Error: Can't create protobuf binary file '" + filename + "'");
     }
 }
 
@@ -426,7 +426,7 @@ void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) 
     ofstream out(filename);
     out << json;
     if (out.fail()) {
-        throw io_exception("Can't create protobuf JSON file '" + filename + "'");
+        throw IoException("Can't create protobuf JSON file '" + filename + "'");
     }
 }
 
@@ -438,6 +438,6 @@ void S2pCtlCommands::ExportAsText(const PbCommand &cmd, const string &filename) 
     ofstream out(filename);
     out << text;
     if (out.fail()) {
-        throw io_exception("Can't create protobuf text format file '" + filename + "'");
+        throw IoException("Can't create protobuf text format file '" + filename + "'");
     }
 }

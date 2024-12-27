@@ -77,7 +77,7 @@ bool S2pSimh::ParseArguments(span<char*> args)
             break;
 
         case 'l':
-            if (int l; !GetAsUnsignedInt(string(optarg), l)) {
+            if (const int l = ParseAsUnsignedInt(string(optarg)); l == -1) {
                 cerr << "Error: Invalid dump size limit '" << optarg << "'\n";
                 return false;
             }
@@ -197,7 +197,7 @@ int S2pSimh::Analyze()
         position += META_DATA_SIZE;
 
         switch (meta.cls) {
-        case simh_class::tape_mark_good_data_record:
+        case SimhClass::TAPE_MARK_GOOD_DATA_RECORD:
             PrintClass(meta);
             if (!meta.value) {
                 cout << ", tape mark\n";
@@ -207,7 +207,7 @@ int S2pSimh::Analyze()
             }
             break;
 
-        case simh_class::bad_data_record:
+        case SimhClass::BAD_DATA_RECORD:
             PrintClass(meta);
             if (!PrintRecord(meta.value ? "bad data record" : "bad data record (no data recovered)",
                 meta)) {
@@ -215,37 +215,37 @@ int S2pSimh::Analyze()
             }
             break;
 
-        case simh_class::private_data_record_1:
-        case simh_class::private_data_record_2:
-        case simh_class::private_data_record_3:
-        case simh_class::private_data_record_4:
-        case simh_class::private_data_record_5:
-        case simh_class::private_data_record_6:
+        case SimhClass::PRIVATE_DATA_RECORD_1:
+        case SimhClass::PRIVATE_DATA_RECORD_2:
+        case SimhClass::PRIVATE_DATA_RECORD_3:
+        case SimhClass::PRIVATE_DATA_RECORD_4:
+        case SimhClass::PRIVATE_DATA_RECORD_5:
+        case SimhClass::PRIVATE_DATA_RECORD_6:
             PrintClass(meta);
             if (!PrintRecord("private data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
-        case simh_class::tape_description_data_record:
+        case SimhClass::TAPE_DESCRIPTION_DATA_RECORD:
             PrintClass(meta);
             if (!PrintRecord("tape description data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
-        case simh_class::reserved_data_record_1:
-        case simh_class::reserved_data_record_2:
-        case simh_class::reserved_data_record_3:
-        case simh_class::reserved_data_record_4:
-        case simh_class::reserved_data_record_5:
+        case SimhClass::RESERVED_DATA_RECORD_1:
+        case SimhClass::RESERVED_DATA_RECORD_2:
+        case SimhClass::RESERVED_DATA_RECORD_3:
+        case SimhClass::RESERVED_DATA_RECORD_4:
+        case SimhClass::RESERVED_DATA_RECORD_5:
             PrintClass(meta);
             if (!PrintRecord("reserved data record", meta)) {
                 return EXIT_FAILURE;
             }
             break;
 
-        case simh_class::private_marker:
+        case SimhClass::PRIVATE_MARKER:
             PrintClass(meta);
             cout << ", private marker";
             if ((meta.value & 0x00ffffff) == PRIVATE_MARKER_MAGIC && ((meta.value >> 24) & 0x0f) == 0b011) {
@@ -256,7 +256,7 @@ int S2pSimh::Analyze()
             PrintValue(meta);
             break;
 
-        case simh_class::reserved_marker:
+        case SimhClass::RESERVERD_MARKER:
             PrintClass(meta);
             if (!PrintReservedMarker(meta)) {
                 return EXIT_SUCCESS;
@@ -339,7 +339,7 @@ int S2pSimh::Add()
             return EXIT_FAILURE;
         }
 
-        if (IsRecord(object) && !(object.cls == simh_class::bad_data_record && !object.value)) {
+        if (IsRecord(object) && !(object.cls == SimhClass::BAD_DATA_RECORD && !object.value)) {
             const uint32_t length = object.value & 0x0fffffff;
             if (has_data_file) {
                 if (data_index >= input_data.size()) {
@@ -384,7 +384,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
 {
     cout << ", " << identifier;
 
-    if (meta_data.cls == simh_class::bad_data_record && !meta_data.value) {
+    if (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value) {
         cout << '\n';
         return true;
     }
@@ -476,13 +476,13 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
         }
 
         const string &value = components[1];
-        int v;
-        if (!GetAsUnsignedInt(value, v)) {
+        if (const int v = ParseAsUnsignedInt(value); v == -1) {
             cerr << "Error: Invalid value '" << value << "'\n";
             return {};
         }
-
-        objects.push_back(SimhMetaData(static_cast<simh_class>(c), static_cast<uint32_t>(v)));
+        else {
+            objects.push_back(SimhMetaData(static_cast<SimhClass>(c), static_cast<uint32_t>(v)));
+        }
     }
 
     return objects;

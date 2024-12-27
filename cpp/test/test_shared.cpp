@@ -32,7 +32,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     return {controller, device};
 }
 
-vector<int> testing::CreateCdb(scsi_command cmd, const string &hex)
+vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
@@ -67,10 +67,10 @@ void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> contro
 {
     // Allocation length
     controller->SetCdbByte(4, 255);
-    Dispatch(device, scsi_command::request_sense);
+    Dispatch(device, ScsiCommand::REQUEST_SENSE);
 }
 
-void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l, const string &ident,
+void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
     const auto [controller, device] = CreateDevice(type, 0, extension);
@@ -78,12 +78,12 @@ void testing::TestShared::Inquiry(PbDeviceType type, device_type t, scsi_level l
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    device->Dispatch(scsi_command::inquiry);
+    device->Dispatch(ScsiCommand::INQUIRY);
     const span<uint8_t> &buffer = controller->GetBuffer();
-    EXPECT_EQ(t, static_cast<device_type>(buffer[0]));
+    EXPECT_EQ(t, static_cast<DeviceType>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
-    EXPECT_EQ(l, static_cast<scsi_level>(buffer[2]));
-    EXPECT_EQ(l > scsi_level::scsi_2 ? scsi_level::scsi_2 : l, static_cast<scsi_level>(buffer[3]));
+    EXPECT_EQ(l, static_cast<ScsiLevel>(buffer[2]));
+    EXPECT_EQ(l > ScsiLevel::SCSI_2 ? ScsiLevel::SCSI_2 : l, static_cast<ScsiLevel>(buffer[3]));
     EXPECT_EQ(additional_length, buffer[4]);
     string product_data;
     if (ident.size() == 24) {
@@ -117,24 +117,24 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_EQ(GetVersion(), r);
 }
 
-void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command cmd, sense_key s, asc a,
+void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
     const string &msg)
 {
     try {
         device->Dispatch(cmd);
-        if (s != sense_key::no_sense || a != asc::no_additional_sense_information) {
+        if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
             FAIL() << msg;
         }
     }
-    catch (const scsi_exception &e) {
-        if (e.get_sense_key() != s || e.get_asc() != a) {
-            spdlog::critical("Expected: " + FormatSenseData(s, a));
+    catch (const ScsiException &e) {
+        if (e.get_sense_key() != sense_key || e.get_asc() != asc) {
+            spdlog::critical("Expected: " + FormatSenseData(sense_key, asc));
             spdlog::critical("Actual: " + FormatSenseData(e.get_sense_key(), e.get_asc()));
             FAIL() << msg;
         }
     }
 
-    auto controller = static_cast<MockAbstractController*>(device->GetController());
+    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
     if (controller) {
         controller->ResetCdb();
     }
@@ -215,7 +215,7 @@ void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared
     TestShared::RequestSense(controller, device);
 }
 
-void testing::Dispatch(shared_ptr<PrimaryDevice> device, scsi_command command, sense_key s, asc a, const string &msg)
+void testing::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand command, SenseKey s, Asc a, const string &msg)
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }

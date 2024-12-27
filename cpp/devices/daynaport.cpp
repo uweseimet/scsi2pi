@@ -41,27 +41,27 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_S
 
 string DaynaPort::SetUp()
 {
-    AddCommand(scsi_command::get_message_6, [this]
+    AddCommand(ScsiCommand::GET_MESSAGE_6, [this]
         {
             GetMessage6();
         });
-    AddCommand(scsi_command::send_message_6, [this]
+    AddCommand(ScsiCommand::SEND_MESSAGE_6, [this]
         {
             SendMessage6();
         });
-    AddCommand(scsi_command::retrieve_stats, [this]
+    AddCommand(ScsiCommand::RETRIEVE_STATS, [this]
         {
             RetrieveStats();
         });
-    AddCommand(scsi_command::set_iface_mode, [this]
+    AddCommand(ScsiCommand::SET_IFACE_MODE, [this]
         {
             SetInterfaceMode();
         });
-    AddCommand(scsi_command::set_mcast_addr, [this]
+    AddCommand(ScsiCommand::SET_MCAST_ADDR, [this]
         {
             SetMcastAddr();
         });
-    AddCommand(scsi_command::enable_interface, [this]
+    AddCommand(ScsiCommand::ENABLE_INTERFACE, [this]
         {
             EnableInterface();
         });
@@ -71,7 +71,7 @@ string DaynaPort::SetUp()
 // Not terminating on a regular PC is helpful for testing
 #if !defined(__x86_64__) && !defined(__X86__)
     if (!tap_enabled) {
-		return error;
+        return error;
     }
 #endif
 
@@ -87,12 +87,12 @@ void DaynaPort::CleanUp()
 
 vector<uint8_t> DaynaPort::InquiryInternal() const
 {
-    vector<uint8_t> buf = HandleInquiry(device_type::processor, false);
+    vector<uint8_t> buf = HandleInquiry(DeviceType::PROCESSOR, false);
 
     if (GetCdbByte(4) == 37) {
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
         // add a vendor-specific byte in order to satisfy this driver.
-        buf[4]++;
+        ++buf[4];
         buf.push_back(0);
     }
 
@@ -101,33 +101,33 @@ vector<uint8_t> DaynaPort::InquiryInternal() const
 
 //---------------------------------------------------------------------------
 //
-//	GetMessage(6)
+// GetMessage(6)
 //
-//   Command:  08 00 00 LL LL XX (LLLL is data length, XX = c0 or 80)
-//   Function: Read a packet at a time from the device (standard SCSI Read)
-//   Type:     Input; the following data is returned:
-//             LL LL NN NN NN NN XX XX XX ... CC CC CC CC
-//   where:
-//             LLLL      is normally the length of the packet (a 2-byte
-//                       big-endian hex value), including 4 trailing bytes
-//                       of CRC, but excluding itself and the flag field.
-//                       See below for special values
-//             NNNNNNNN  is a 4-byte flag field with the following meanings:
-//                       FFFFFFFF  a packet has been dropped (?); in this case
-//                                 the length field appears to be always 4000
-//                       00000010  there are more packets currently available
-//                                 in SCSI/Link memory
-//                       00000000  this is the last packet
-//             XX XX ... is the actual packet
-//             CCCCCCCC  is the CRC
+// Command:  08 00 00 LL LL XX (LLLL is data length, XX = c0 or 80)
+// Function: Read a packet at a time from the device (standard SCSI Read)
+// Type:     Input; the following data is returned:
+//           LL LL NN NN NN NN XX XX XX ... CC CC CC CC
+// where:
+//           LLLL      is normally the length of the packet (a 2-byte
+//                     big-endian hex value), including 4 trailing bytes
+//                     of CRC, but excluding itself and the flag field.
+//                     See below for special values
+//           NNNNNNNN  is a 4-byte flag field with the following meanings:
+//                     FFFFFFFF  a packet has been dropped (?); in this case
+//                               the length field appears to be always 4000
+//                     00000010  there are more packets currently available
+//                               in SCSI/Link memory
+//                     00000000  this is the last packet
+//           XX XX ... is the actual packet
+//           CCCCCCCC  is the CRC
 //
-//   Notes:
-//    - When all packets have been retrieved successfully, a length field
-//      of 0000 is returned; however, if a packet has been dropped, the
-//      SCSI/Link will instead return a non-zero length field with a flag
-//      of FFFFFFFF when there are no more packets available.  This behaviour
-//      seems to continue until a disable/enable sequence has been issued.
-//    - The SCSI/Link apparently has about 6KB buffer space for packets.
+// Notes:
+//  - When all packets have been retrieved successfully, a length field
+//    of 0000 is returned; however, if a packet has been dropped, the
+//    SCSI/Link will instead return a non-zero length field with a flag
+//    of FFFFFFFF when there are no more packets available.  This behaviour
+//    seems to continue until a disable/enable sequence has been issued.
+//  - The SCSI/Link apparently has about 6KB buffer space for packets.
 //
 //---------------------------------------------------------------------------
 int DaynaPort::GetMessage(data_in_t buf)
@@ -147,7 +147,7 @@ int DaynaPort::GetMessage(data_in_t buf)
         LogTrace("No network packet received");
         auto *response = (scsi_resp_read_t*)buf.data();
         response->length = 0;
-        response->flags = read_data_flags_t::e_no_more_data;
+        response->flags = ReadDataFlagsType::NO_MORE_DATA;
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (GetLogger().level() == level::trace) {
@@ -172,28 +172,28 @@ int DaynaPort::GetMessage(data_in_t buf)
 
 //---------------------------------------------------------------------------
 //
-//  SendMessage(6)
+// SendMessage(6)
 //
-//   Command:  0a 00 00 LL LL XX (LLLL is data length, XX = 80 or 00)
-//   Function: Write a packet at a time to the device (standard SCSI Write)
-//   Type:     Output; the format of the data to be sent depends on the value
-//             of XX, as follows:
-//              - if XX = 00, LLLL is the packet length, and the data to be sent
-//                must be an image of the data packet
-//              - if XX = 80, LLLL is the packet length + 8, and the data to be
-//                sent is:
-//                  PP PP 00 00 XX XX XX ... 00 00 00 00
-//                where:
-//                  PPPP      is the actual (2-byte big-endian) packet length
-//               XX XX ... is the actual packet
+// Command:  0a 00 00 LL LL XX (LLLL is data length, XX = 80 or 00)
+// Function: Write a packet at a time to the device (standard SCSI Write)
+// Type:     Output; the format of the data to be sent depends on the value
+//           of XX, as follows:
+//            - if XX = 00, LLLL is the packet length, and the data to be sent
+//              must be an image of the data packet
+//            - if XX = 80, LLLL is the packet length + 8, and the data to be
+//              sent is:
+//                PP PP 00 00 XX XX XX ... 00 00 00 00
+//              where:
+//                PPPP      is the actual (2-byte big-endian) packet length
+//             XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
 int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
-    const auto command = static_cast<scsi_command>(cdb[0]);
-    assert(command == scsi_command::send_message_6);
-    if (command != scsi_command::send_message_6) {
-        throw scsi_exception(sense_key::aborted_command);
+    const auto command = static_cast<ScsiCommand>(cdb[0]);
+    assert(command == ScsiCommand::SEND_MESSAGE_6);
+    if (command != ScsiCommand::SEND_MESSAGE_6) {
+        throw ScsiException(SenseKey::ABORTED_COMMAND);
     }
 
     int data_length = 0;
@@ -226,18 +226,18 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
 //---------------------------------------------------------------------------
 //
-//	RetrieveStats
+// RetrieveStats
 //
-//   Command:  09 00 00 00 12 00
-//   Function: Retrieve MAC address and device statistics
-//   Type:     Input; returns 18 (decimal) bytes of data as follows:
-//              - bytes 0-5:  the current hardware ethernet (MAC) address
-//              - bytes 6-17: three long word (4-byte) counters (little-endian).
-//   Notes:    The contents of the three longs are typically zero, and their
-//             usage is unclear; they are suspected to be:
-//              - long #1: frame alignment errors
-//              - long #2: CRC errors
-//              - long #3: frames lost
+// Command:  09 00 00 00 12 00
+// Function: Retrieve MAC address and device statistics
+// Type:     Input; returns 18 (decimal) bytes of data as follows:
+//            - bytes 0-5:  the current hardware ethernet (MAC) address
+//            - bytes 6-17: three long word (4-byte) counters (little-endian).
+// Notes:    The contents of the three longs are typically zero, and their
+//           usage is unclear; they are suspected to be:
+//            - long #1: frame alignment errors
+//            - long #2: CRC errors
+//            - long #3: frames lost
 //
 //---------------------------------------------------------------------------
 void DaynaPort::RetrieveStats() const
@@ -266,7 +266,7 @@ void DaynaPort::RetrieveStats() const
 void DaynaPort::GetMessage6()
 {
     if (GetCdbByte(5) != 0xc0 && GetCdbByte(5) != 0x80) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const auto length = GetMessage(GetController()->GetBuffer());
@@ -288,7 +288,7 @@ void DaynaPort::SendMessage6() const
     }
 
     if (!length) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -298,28 +298,28 @@ void DaynaPort::SendMessage6() const
 
 //---------------------------------------------------------------------------
 //
-//	Set interface mode/Set MAC address
+// Set interface mode/Set MAC address
 //
-//   Set Interface Mode (0c)
-//   -----------------------
-//   Command:  0c 00 00 00 FF 80 (FF = 08 or 04)
-//   Function: Allow interface to receive broadcast messages (FF = 04); the
-//             function of (FF = 08) is currently unknown.
-//   Type:     No data transferred
-//   Notes:    This command is accepted by firmware 1.4a & 2.0f, but has no
-//             effect on 2.0f, which is always capable of receiving broadcast
-//             messages.  In 1.4a, once broadcast mode is set, it remains set
-//             until the interface is disabled.
+// Set Interface Mode (0c)
+// -----------------------
+// Command:  0c 00 00 00 FF 80 (FF = 08 or 04)
+// Function: Allow interface to receive broadcast messages (FF = 04); the
+//            function of (FF = 08) is currently unknown.
+// Type:     No data transferred
+// Notes:    This command is accepted by firmware 1.4a & 2.0f, but has no
+//           effect on 2.0f, which is always capable of receiving broadcast
+//           messages.  In 1.4a, once broadcast mode is set, it remains set
+//           until the interface is disabled.
 //
-//   Set MAC Address (0c)
-//   --------------------
-//   Command:  0c 00 00 00 FF 40 (FF = 08 or 04)
-//   Function: Set MAC address
-//   Type:     Output; overrides built-in MAC address with user-specified
-//             6-byte value
-//   Notes:    This command is intended primarily for debugging/test purposes.
-//             Disabling the interface resets the MAC address to the built-in
-//             value.
+// Set MAC Address (0c)
+// --------------------
+// Command:  0c 00 00 00 FF 40 (FF = 08 or 04)
+// Function: Set MAC address
+// Type:     Output; overrides built-in MAC address with user-specified
+//           6-byte value
+// Notes:    This command is intended primarily for debugging/test purposes.
+//           Disabling the interface resets the MAC address to the built-in
+//           value.
 //
 //---------------------------------------------------------------------------
 void DaynaPort::SetInterfaceMode() const
@@ -337,7 +337,7 @@ void DaynaPort::SetInterfaceMode() const
 
     default:
         LogWarn(fmt::format("Unknown SetInterfaceMode mode: ${:02x}", GetCdbByte(5)));
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
         break;
     }
 }
@@ -346,7 +346,7 @@ void DaynaPort::SetMcastAddr() const
 {
     const int length = GetCdbByte(4);
     if (!length) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     // Currently the multicast address passed is ignored
@@ -355,14 +355,14 @@ void DaynaPort::SetMcastAddr() const
 
 //---------------------------------------------------------------------------
 //
-//	Enable or Disable the interface
+// Enable or Disable the interface
 //
-//  Command:  0e 00 00 00 00 XX (XX = 80 or 00)
-//  Function: Enable (80) / disable (00) Ethernet interface
-//  Type:     No data transferred
-//  Notes:    After issuing an Enable, the initiator should avoid sending
-//            any subsequent commands to the device for approximately 0.5
-//            seconds
+// Command:  0e 00 00 00 00 XX (XX = 80 or 00)
+// Function: Enable (80) / disable (00) Ethernet interface
+// Type:     No data transferred
+// Notes:    After issuing an Enable, the initiator should avoid sending
+//           any subsequent commands to the device for approximately 0.5
+//           seconds
 //
 //---------------------------------------------------------------------------
 void DaynaPort::EnableInterface()
@@ -370,7 +370,7 @@ void DaynaPort::EnableInterface()
     if (GetCdbByte(5) & 0x80) {
         if (const string &error = TapDriver::IpLink(true, GetLogger()); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
-            throw scsi_exception(sense_key::aborted_command, asc::internal_target_failure);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
         tap.Flush(GetLogger());
@@ -380,7 +380,7 @@ void DaynaPort::EnableInterface()
     else {
         if (const string &error = TapDriver::IpLink(false, GetLogger()); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
-            throw scsi_exception(sense_key::aborted_command, asc::internal_target_failure);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
         LogDebug("The DaynaPort interface has been disabled");

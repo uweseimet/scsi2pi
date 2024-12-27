@@ -238,11 +238,11 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!SetLogLevel(*s2pdump_logger, log_level)) {
-        throw parser_exception("Invalid log level '" + log_level + "'");
+        throw ParserException("Invalid log level '" + log_level + "'");
     }
 
     if (scsi && sasi) {
-        throw parser_exception("SCSI and SASI functionality cannot be mixed");
+        throw ParserException("SCSI and SASI functionality cannot be mixed");
     }
 
     if (initiator.empty() && device_file.empty()) {
@@ -250,63 +250,71 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if ((!initiator.empty() && !device_file.empty()) || (!device_file.empty() && !id_and_lun.empty())) {
-        throw parser_exception("Either a RaSCSI/PiSCSI board or the Linux SG driver can be used");
+        throw ParserException("Either a RaSCSI/PiSCSI board or the Linux SG driver can be used");
     }
 
-    if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
-        throw parser_exception("Invalid initiator ID '" + initiator + "' (0-7)");
+    if (!initiator.empty()) {
+        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+            throw ParserException("Invalid initiator ID '" + initiator + "' (0-7)");
+        }
     }
 
 #ifdef __linux__
     if (!device_file.empty()) {
         sg_adapter = make_shared<SgAdapter>(*s2pdump_logger);
         if (const string &error = sg_adapter->Init(device_file); !error.empty()) {
-            throw parser_exception(error);
+            throw ParserException(error);
         }
     }
 #endif
 
     if (!run_bus_scan) {
         if (device_file.empty()) {
-            if (const string &error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
-                throw parser_exception(error);
+            if (const string &error = ParseIdAndLun(id_and_lun, target_id, target_lun); !error.empty()) {
+                throw ParserException(error);
             }
         }
 
-        if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || buffer_size < MINIMUM_BUFFER_SIZE)) {
-            throw parser_exception(
-                "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
+        if (!buf.empty()) {
+            if (buffer_size = ParseAsUnsignedInt(buf); buffer_size < MINIMUM_BUFFER_SIZE) {
+                throw ParserException(
+                    "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
+            }
         }
 
-        if (!sector_count.empty() && (!GetAsUnsignedInt(sector_count, count) || !count)) {
-            throw parser_exception("Invalid sector count: '" + sector_count + "'");
+        if (!sector_count.empty()) {
+            if (count = ParseAsUnsignedInt(sector_count); count == -1 || !count) {
+                throw ParserException("Invalid sector count: '" + sector_count + "'");
+            }
         }
 
-        if (!start_sector.empty() && !!GetAsUnsignedInt(start_sector, start)) {
-            throw parser_exception("Invalid start sector: " + string(optarg));
+        if (!start_sector.empty()) {
+            if (start = ParseAsUnsignedInt(start_sector); start == -1) {
+                throw ParserException("Invalid start sector: " + string(optarg));
+            }
         }
 
         if (sasi) {
-            if (!GetAsUnsignedInt(capacity, sasi_capacity) || !sasi_capacity) {
-                throw parser_exception("Invalid SASI hard drive capacity: '" + capacity + "'");
+            if (sasi_capacity = ParseAsUnsignedInt(capacity); sasi_capacity <= 0) {
+                throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
-            if (!GetAsUnsignedInt(sector_size, sasi_sector_size)
-                || (sasi_sector_size != 256 && sasi_sector_size != 512 && sasi_sector_size != 1024)) {
-                throw parser_exception("Invalid SASI hard drive sector size: '" + sector_size + "'");
+            if (sasi_sector_size = ParseAsUnsignedInt(sector_size); sasi_sector_size != 256 && sasi_sector_size != 512
+                && sasi_sector_size != 1024) {
+                throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
             }
         }
 
         if (device_file.empty() && target_id == -1) {
-            throw parser_exception("Missing target ID");
+            throw ParserException("Missing target ID");
         }
 
         if (target_id == initiator_id) {
-            throw parser_exception("Target ID and initiator ID must not be identical");
+            throw ParserException("Target ID and initiator ID must not be identical");
         }
 
         if (filename.empty() && !run_bus_scan && !run_inquiry) {
-            throw parser_exception("Missing filename");
+            throw ParserException("Missing filename");
         }
 
         // Avoid -1 as target ID
@@ -343,15 +351,15 @@ int S2pDump::Run(span<char*> args, bool in_process)
 
         if (device_file.empty()) {
             if (!Init(in_process)) {
-                throw parser_exception("Can't initialize bus");
+                throw ParserException("Can't initialize bus");
             }
 
             if (!in_process && !bus->IsRaspberryPi()) {
-                throw parser_exception("There is no board hardware support");
+                throw ParserException("There is no board hardware support");
             }
         }
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
@@ -503,10 +511,10 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
     cout << "Removable:            " << (scsi_device_info.removable ? "Yes" : "No")
         << "\n";
 
-    if (check_type && scsi_device_info.type != static_cast<byte>(device_type::direct_access) &&
-        scsi_device_info.type != static_cast<byte>(device_type::cd_rom)
-        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)
-        && scsi_device_info.type != static_cast<byte>(device_type::sequential_access)) {
+    if (check_type && scsi_device_info.type != static_cast<byte>(DeviceType::DIRECT_ACCESS) &&
+        scsi_device_info.type != static_cast<byte>(DeviceType::CD_DVD)
+        && scsi_device_info.type != static_cast<byte>(DeviceType::OPTICAL_MEMORY)
+        && scsi_device_info.type != static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
             << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS\n";
         return false;
@@ -550,7 +558,7 @@ string S2pDump::DumpRestore()
     }
 
     return
-        scsi_device_info.type == static_cast<byte>(device_type::sequential_access) ?
+        scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS) ?
             DumpRestoreTape(file) : DumpRestoreDisk(file);
 }
 
@@ -633,7 +641,7 @@ string S2pDump::DumpRestoreTape(fstream &file)
     try {
         restore ? RestoreTape(file) : DumpTape(file);
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         return e.what();
     }
 
@@ -679,12 +687,12 @@ void S2pDump::DumpTape(ostream &file)
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
             file.write((const char*)bad_data.data(), bad_data.size());
             if (file.bad()) {
-                throw io_exception("Can't write SIMH bad data record");
+                throw IoException("Can't write SIMH bad data record");
             }
         }
         else if (length) {
             if (!WriteGoodData(file, buffer, length)) {
-                throw io_exception("Can't write SIMH good data record");
+                throw IoException("Can't write SIMH good data record");
             }
 
             ++block_count;
@@ -694,7 +702,7 @@ void S2pDump::DumpTape(ostream &file)
         }
         else {
             if (!WriteFilemark(file)) {
-                throw io_exception("Can't write SIMH tape mark");
+                throw IoException("Can't write SIMH tape mark");
             }
 
             ++filemark_count;
@@ -719,34 +727,34 @@ void S2pDump::RestoreTape(istream &file)
             break;
         }
 
-        if (meta_data.cls == simh_class::reserved_marker
-            && meta_data.value == static_cast<uint32_t>(simh_marker::end_of_medium)) {
+        if (meta_data.cls == SimhClass::RESERVERD_MARKER
+            && meta_data.value == static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM)) {
             break;
         }
 
         // Tape mark
-        if (meta_data.cls == simh_class::tape_mark_good_data_record && !meta_data.value) {
+        if (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD && !meta_data.value) {
             s2pdump_logger->debug("Writing filemark");
 
             if (s2pdump_executor->WriteFilemark()) {
-                throw io_exception("Can't write filemark");
+                throw IoException("Can't write filemark");
             }
 
             ++filemark_count;
         }
-        else if ((meta_data.cls == simh_class::tape_mark_good_data_record
-            || meta_data.cls == simh_class::bad_data_record) && meta_data.value) {
+        else if ((meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD
+            || meta_data.cls == SimhClass::BAD_DATA_RECORD) && meta_data.value) {
             s2pdump_logger->debug("Writing {} byte(s) block", meta_data.value);
 
             buffer.resize(meta_data.value);
 
             file.read((char*)buffer.data(), buffer.size());
             if (file.bad()) {
-                throw io_exception("Can't read SIMH data record");
+                throw IoException("Can't read SIMH data record");
             }
 
             if (s2pdump_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
-                throw io_exception("Can't write block");
+                throw IoException("Can't write block");
             }
 
             file.seekg(META_DATA_SIZE, ios::cur);
@@ -830,7 +838,7 @@ bool S2pDump::GetDeviceInfo()
     // Clear any pending error condition, e.g. a medium just having being inserted
     s2pdump_executor->RequestSense( { });
 
-    if (scsi_device_info.type == static_cast<byte>(device_type::sequential_access)) {
+    if (scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         return true;
     }
 

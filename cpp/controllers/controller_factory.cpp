@@ -77,15 +77,15 @@ bool ControllerFactory::SetScriptFile(const string &filename)
     return true;
 }
 
-shutdown_mode ControllerFactory::ProcessOnController(int ids) const
+ShutdownMode ControllerFactory::ProcessOnController(int ids) const
 {
-    if (const auto &it = ranges::find_if(controllers, [&](const auto &c) {
+    if (const auto &it = ranges::find_if(controllers, [&ids](const auto &c) {
         return (ids & (1 << c.first));
     }); it != controllers.end()) {
         return (*it).second->ProcessOnController(ids);
     }
 
-    return shutdown_mode::none;
+    return ShutdownMode::NONE;
 }
 
 bool ControllerFactory::HasController(int target_id) const

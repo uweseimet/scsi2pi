@@ -29,20 +29,20 @@ bool RpiBus::Init(bool target)
     uint32_t gpio_offset = GPIO_OFFSET;
     uint32_t pads_offset = PADS_OFFSET;
     switch (pi_type) {
-    case RpiBus::PiType::pi_1:
+    case RpiBus::PiType::PI_1:
         base_addr = 0x20000000;
         break;
 
-    case RpiBus::PiType::pi_2:
-    case RpiBus::PiType::pi_3:
+    case RpiBus::PiType::PI_2:
+    case RpiBus::PiType::PI_3:
         base_addr = 0x3f000000;
         break;
 
-    case RpiBus::PiType::pi_4:
+    case RpiBus::PiType::PI_4:
         base_addr = 0xfe000000;
         break;
 
-    case RpiBus::PiType::pi_5:
+    case RpiBus::PiType::PI_5:
         base_addr = 0x1f00000000;
         gpio_offset = GPIO_OFFSET_RP1;
         pads_offset = PADS_OFFSET_RP1;
@@ -104,7 +104,7 @@ bool RpiBus::Init(bool target)
     qa7_regs = map + QA7_OFFSET / sizeof(uint32_t);
 
     // Map GIC interrupt priority mask register
-    if (pi_type == PiType::pi_4) {
+    if (pi_type == PiType::PI_4) {
         gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR));
         if (gicc_mpr == MAP_FAILED) {
             critical("Can't map GIC: {}", strerror(errno));
@@ -335,15 +335,15 @@ inline void RpiBus::SetDAT(uint8_t dat)
     gpio[GPIO_FSEL_1] = fsel;
 }
 
-void RpiBus::CreateWorkTable(void)
+void RpiBus::CreateWorkTable()
 {
     array<bool, 256> tblParity;
 
     // Create parity table
-    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
         uint32_t bits = i;
         uint32_t parity = 0;
-        for (int j = 0; j < 8; j++) {
+        for (int j = 0; j < 8; ++j) {
             parity ^= bits & 1;
             bits >>= 1;
         }
@@ -356,7 +356,7 @@ void RpiBus::CreateWorkTable(void)
         tbl.fill(-1);
     }
 
-    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); i++) {
+        for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -449,20 +449,20 @@ void RpiBus::DisableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_1:
+    case PiType::PI_1:
         // Stop system timer interrupt with interrupt controller
         irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
         irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
         break;
-    case PiType::pi_2:
-    case PiType::pi_3:
+    case PiType::PI_2:
+    case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
         tint_core = sched_getcpu() + QA7_CORE0_TINTC;
         tint_ctl = qa7_regs[tint_core];
         qa7_regs[tint_core] = 0;
         break;
 
-    case PiType::pi_4:
+    case PiType::PI_4:
         // RPI4 disables interrupts via the GIC
         gicc_pmr_saved = *gicc_mpr;
         *gicc_mpr = 0;
@@ -479,18 +479,18 @@ void RpiBus::EnableIRQ()
 {
 #ifdef __linux__
     switch (pi_type) {
-    case PiType::pi_1:
+    case PiType::PI_1:
         // Restart the system timer interrupt with the interrupt controller
         irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
         break;
 
-    case PiType::pi_2:
-    case PiType::pi_3:
+    case PiType::PI_2:
+    case PiType::PI_3:
         // RPI2,3 re-enable core timer IRQ
         qa7_regs[tint_core] = tint_ctl;
         break;
 
-    case PiType::pi_4:
+    case PiType::PI_4:
         // RPI4 enables interrupts via the GIC
         *gicc_mpr = gicc_pmr_saved;
         break;
@@ -532,7 +532,7 @@ void RpiBus::PullConfig(int pin, int mode)
     }
 #endif
 
-    if (pi_type >= PiType::pi_4) {
+    if (pi_type >= PiType::PI_4) {
         uint32_t pull;
         switch (mode) {
         case GPIO_PULLNONE:

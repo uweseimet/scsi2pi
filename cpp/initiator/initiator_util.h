@@ -17,6 +17,6 @@ using namespace spdlog;
 namespace initiator_util
 {
 void ResetBus(Bus&);
-tuple<sense_key, asc, int> GetSenseData(InitiatorExecutor&);
+tuple<SenseKey, Asc, int> GetSenseData(InitiatorExecutor&);
 bool SetLogLevel(logger&, const string&);
 }

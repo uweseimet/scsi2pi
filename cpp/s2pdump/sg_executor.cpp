@@ -65,7 +65,7 @@ int SgExecutor::Rewind(vector<uint8_t> &cdb) const
 void SgExecutor::SpaceBack(vector<uint8_t> &cdb) const
 {
     if (sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT).status) {
-        throw io_exception("Can't space back one block");
+        throw IoException("Can't space back one block");
     }
 }
 

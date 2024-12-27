@@ -51,8 +51,8 @@ TEST(ProtobufUtil, ParseCachingMode)
     EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux_optimized"));
     EXPECT_EQ(LINUX_OPTIMIZED, ParseCachingMode("linux-optimized"));
 
-    EXPECT_THROW(ParseCachingMode(""), parser_exception);
-    EXPECT_THROW(ParseCachingMode("xyz"), parser_exception);
+    EXPECT_THROW(ParseCachingMode(""), ParserException);
+    EXPECT_THROW(ParseCachingMode("xyz"), ParserException);
 }
 
 TEST(ProtobufUtil, GetSetParam)
@@ -213,7 +213,7 @@ TEST(ProtobufUtil, SerializeMessage)
     ASSERT_NE(-1, fd);
     SerializeMessage(fd, result);
     close(fd);
-    EXPECT_THROW(SerializeMessage(-1, result), io_exception)<< "Writing a message must fail";
+    EXPECT_THROW(SerializeMessage(-1, result), IoException)<< "Writing a message must fail";
 }
 
 TEST(ProtobufUtil, DeserializeMessage)
@@ -223,7 +223,7 @@ TEST(ProtobufUtil, DeserializeMessage)
 
     int fd = open("/dev/null", O_RDONLY);
     ASSERT_NE(-1, fd);
-    EXPECT_THROW(DeserializeMessage(fd, result), io_exception)<< "Reading the message header must fail";
+    EXPECT_THROW(DeserializeMessage(fd, result), IoException)<< "Reading the message header must fail";
     close(fd);
 
     auto [fd1, filename1] = OpenTempFile();
@@ -233,7 +233,7 @@ TEST(ProtobufUtil, DeserializeMessage)
     close(fd1);
     fd1 = open(filename1.c_str(), O_RDONLY);
     ASSERT_NE(-1, fd1);
-    EXPECT_THROW(DeserializeMessage(fd1, result), io_exception)<< "Invalid header was not rejected";
+    EXPECT_THROW(DeserializeMessage(fd1, result), IoException)<< "Invalid header was not rejected";
 
     auto [fd2, filename2] = OpenTempFile();
     // Data size 2
@@ -242,7 +242,7 @@ TEST(ProtobufUtil, DeserializeMessage)
     close(fd2);
     fd2 = open(filename2.c_str(), O_RDONLY);
     EXPECT_NE(-1, fd2);
-    EXPECT_THROW(DeserializeMessage(fd2, result), io_exception)<< "Invalid data were not rejected";
+    EXPECT_THROW(DeserializeMessage(fd2, result), IoException)<< "Invalid data were not rejected";
 }
 
 TEST(ProtobufUtil, SerializeDeserializeMessage)

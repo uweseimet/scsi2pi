@@ -13,12 +13,19 @@
 
 using namespace std;
 
-enum class shutdown_mode
+enum class ShutdownMode
 {
-    none,
-    stop_s2p,
-    stop_pi,
-    restart_pi
+    NONE,
+    STOP_S2P,
+    STOP_PI,
+    RESTART_PI
+};
+
+enum class ProtobufFormat
+{
+    BINARY = 0b001,
+    JSON = 0b010,
+    TEXT = 0b100
 };
 
 // Command Descriptor Block

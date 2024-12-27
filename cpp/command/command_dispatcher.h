@@ -23,7 +23,7 @@ public:
 
     bool DispatchCommand(const CommandContext&, PbResult&);
 
-    bool ShutDown(shutdown_mode) const;
+    bool ShutDown(ShutdownMode) const;
 
     bool SetLogLevel(const string&);
 

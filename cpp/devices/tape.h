@@ -61,11 +61,11 @@ protected:
 
 private:
 
-    enum class object_type
+    enum class ObjectType
     {
-        block = 0b000,
-        filemark = 0b001,
-        end_of_data = 0b011,
+        BLOCK = 0b000,
+        FILEMARK = 0b001,
+        END_OF_DATA = 0b011,
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
@@ -81,20 +81,19 @@ private:
     void ReadPosition() const;
     bool Locate(bool);
 
-    void WriteMetaData(Tape::object_type, uint32_t = 0);
-    SimhMetaData FindNextObject(Tape::object_type, int32_t, bool);
+    void WriteMetaData(Tape::ObjectType, uint32_t = 0);
+    SimhMetaData FindNextObject(Tape::ObjectType, int32_t, bool);
     bool ReadNextMetaData(SimhMetaData&, bool);
     bool FindObject(uint32_t);
 
     [[noreturn]] void RaiseBeginningOfPartition(int32_t);
     [[noreturn]] void RaiseEndOfPartition(int32_t);
-    [[noreturn]] void RaiseEndOfData(Tape::object_type, int32_t);
+    [[noreturn]] void RaiseEndOfData(Tape::ObjectType, int32_t);
     [[noreturn]] void RaiseFilemark(int32_t, bool);
     [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
     uint32_t GetByteCount();
 
-    void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDataCompressionPage(map<int, vector<byte>>&) const;
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
@@ -103,8 +102,8 @@ private:
 
     void ResetPositions();
 
-    pair<Tape::object_type, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
-    int WriteSimhMetaData(simh_class, uint32_t);
+    pair<Tape::ObjectType, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
+    int WriteSimhMetaData(SimhClass, uint32_t);
 
     uint32_t CheckBlockLength();
 

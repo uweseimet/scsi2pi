@@ -146,19 +146,19 @@ bool S2pProto::ParseArguments(span<char*> args)
             break;
 
         case OPT_BINARY_INPUT:
-            input_format = S2pProtoExecutor::protobuf_format::binary;
+            input_format = ProtobufFormat::BINARY;
             break;
 
         case OPT_BINARY_OUTPUT:
-            output_format = S2pProtoExecutor::protobuf_format::binary;
+            output_format = ProtobufFormat::BINARY;
             break;
 
         case OPT_TEXT_INPUT:
-            input_format = S2pProtoExecutor::protobuf_format::text;
+            input_format = ProtobufFormat::TEXT;
             break;
 
         case OPT_TEXT_OUTPUT:
-            output_format = S2pProtoExecutor::protobuf_format::text;
+            output_format = ProtobufFormat::TEXT;
             break;
 
         default:
@@ -178,23 +178,23 @@ bool S2pProto::ParseArguments(span<char*> args)
     }
 
     if (!SetLogLevel(*default_logger(), log_level)) {
-        throw parser_exception("Invalid log level: '" + log_level + "'");
+        throw ParserException("Invalid log level: '" + log_level + "'");
     }
 
-    if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-        throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+    if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+        throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
-    if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
-        throw parser_exception(error);
+    if (const string &error = ParseIdAndLun(target, target_id, target_lun); !error.empty()) {
+        throw ParserException(error);
     }
 
     if (target_id == -1) {
-        throw parser_exception("Missing target ID");
+        throw ParserException("Missing target ID");
     }
 
     if (target_id == initiator_id) {
-        throw parser_exception("Target ID and initiator ID must not be identical");
+        throw ParserException("Target ID and initiator ID must not be identical");
     }
 
     if (target_lun == -1) {
@@ -202,7 +202,7 @@ bool S2pProto::ParseArguments(span<char*> args)
     }
 
     if (protobuf_input_filename.empty()) {
-        throw parser_exception("Missing input filename");
+        throw ParserException("Missing input filename");
     }
 
     return true;
@@ -223,7 +223,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
             return EXIT_SUCCESS;
         }
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
@@ -262,28 +262,28 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
         return EXIT_SUCCESS;
     }
 
-    ofstream out(output_filename, output_format == S2pProtoExecutor::protobuf_format::binary ? ios::binary : ios::out);
+    ofstream out(output_filename, output_format == ProtobufFormat::BINARY ? ios::binary : ios::out);
     if (out.fail()) {
         cerr << "Error: Can't open protobuf data output file '" << output_filename << "'\n";
         return EXIT_FAILURE;
     }
 
     switch (output_format) {
-    case S2pProtoExecutor::protobuf_format::binary: {
+    case ProtobufFormat::BINARY: {
         vector<uint8_t> data(result.ByteSizeLong());
         result.SerializeToArray(data.data(), data.size());
         out.write((const char*)data.data(), data.size());
         break;
     }
 
-    case S2pProtoExecutor::protobuf_format::json: {
+    case ProtobufFormat::JSON: {
         string json;
         (void)MessageToJsonString(result, &json);
         out << json << '\n';
         break;
     }
 
-    case S2pProtoExecutor::protobuf_format::text: {
+    case ProtobufFormat::TEXT: {
         string text;
         TextFormat::PrintToString(result, &text);
         out << text << '\n';

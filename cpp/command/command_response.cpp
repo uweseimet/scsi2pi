@@ -145,7 +145,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
     const string file_pattern_lower = ToLower(file_pattern);
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
-        it != recursive_directory_iterator(); it++) {
+        it != recursive_directory_iterator(); ++it) {
         if (it.depth() > CommandImageSupport::Instance().GetDepth()) {
             it.disable_recursion_pending();
             continue;

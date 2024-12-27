@@ -134,7 +134,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     auto &devices2 = result2.devices_info().devices();
     EXPECT_EQ(2, devices2.size()) << "Device count mismatch";
 
-    auto requested_device = command.add_devices();
+    auto *requested_device = command.add_devices();
     requested_device->set_id(ID);
     requested_device->set_unit(LUN1);
     PbResult result3;

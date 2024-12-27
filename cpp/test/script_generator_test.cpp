@@ -21,19 +21,19 @@ TEST(ScriptGeneratorTest, AddCdb)
     const string &filename = CreateTempFile();
     EXPECT_TRUE(generator.CreateFile(filename));
 
-    auto cdb = CreateCdb(scsi_command::test_unit_ready, "01:02:03:04:05");
+    auto cdb = CreateCdb(ScsiCommand::TEST_UNIT_READY, "01:02:03:04:05");
     generator.AddCdb(1, 2, cdb);
     vector<uint8_t> data = { 0xff, 0xfe, 0xfd, 0xfc };
     generator.AddData(data);
     generator.WriteEol();
-    cdb = CreateCdb(static_cast<scsi_command>(0x1f), "01:02:03");
+    cdb = CreateCdb(static_cast<ScsiCommand>(0x1f), "01:02:03");
     assert(!cdb.empty());
     generator.AddCdb(3, 31, cdb);
     generator.WriteEol();
 
     generator.AddCdb(3, 31, cdb);
     data.clear();
-    for (uint8_t i = 0; i < 34; i++) {
+    for (uint8_t i = 0; i < 34; ++i) {
         data.push_back(i);
     }
     generator.AddData(data);

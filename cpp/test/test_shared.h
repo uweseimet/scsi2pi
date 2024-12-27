@@ -26,7 +26,7 @@ namespace testing
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
-vector<int> CreateCdb(scsi_command, const string& = "");
+vector<int> CreateCdb(ScsiCommand, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
 string CreateImageFile(StorageDevice&, size_t = 4096, const string& = "");
@@ -39,8 +39,8 @@ string ReadTempFileToString(const string&);
 
 void SetUpProperties(string_view, string_view = "", const property_map& = { });
 
-void Dispatch(shared_ptr<PrimaryDevice>, scsi_command, sense_key = sense_key::no_sense, asc =
-    asc::no_additional_sense_information, const string& = "");
+void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = SenseKey::NO_SENSE, Asc =
+    Asc::NO_ADDITIONAL_SENSE_INFORMATION, const string& = "");
 
 void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
 
@@ -51,10 +51,10 @@ public:
 
     static string GetVersion();
     static void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
-    static void Inquiry(PbDeviceType, device_type, scsi_level, const string&, int, bool, const string& = "");
+    static void Inquiry(PbDeviceType, DeviceType, ScsiLevel, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
-    static void Dispatch(shared_ptr<PrimaryDevice>, scsi_command, sense_key = sense_key::no_sense, asc =
-        asc::no_additional_sense_information, const string& = "");
+    static void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = SenseKey::NO_SENSE, Asc =
+        Asc::NO_ADDITIONAL_SENSE_INFORMATION, const string& = "");
 
     static void CleanUp()
     {

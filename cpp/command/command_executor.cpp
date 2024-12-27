@@ -106,7 +106,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 
     // Remember the list of reserved files during the dry run
     const auto &reserved_files = StorageDevice::GetReservedFiles();
-    const bool isDryRunError = ranges::find_if_not(command.devices(), [&](const auto &device)
+    const bool isDryRunError = ranges::find_if_not(command.devices(), [this, &context](const auto &device)
         {   return ProcessDeviceCmd(context, device, true);}) != command.devices().end();
     StorageDevice::SetReservedFiles(reserved_files);
 
@@ -118,7 +118,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return false;
     }
 
-    if (ranges::find_if_not(command.devices(), [&](const auto &device)
+    if (ranges::find_if_not(command.devices(), [this, &context](const auto &device)
         {   return ProcessDeviceCmd(context, device, false);}) != command.devices().end()) {
         return false;
     }
@@ -146,7 +146,7 @@ bool CommandExecutor::Stop(PrimaryDevice &device) const
 
     device.Stop();
 
-    device.SetStatus(sense_key::no_sense, asc::no_additional_sense_information);
+    device.SetStatus(SenseKey::NO_SENSE, Asc::NO_ADDITIONAL_SENSE_INFORMATION);
 
     return true;
 }
@@ -456,8 +456,8 @@ string CommandExecutor::SetReservedIds(const string &ids)
     stringstream ss(ids);
     string id;
     while (getline(ss, id, ',')) {
-        int res_id;
-        if (!GetAsUnsignedInt(id, res_id) || res_id > 7) {
+        const int res_id = ParseAsUnsignedInt(id);
+        if (res_id == -1 || res_id > 7) {
             return "Invalid ID " + id;
         }
 
@@ -510,7 +510,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     try {
         storage_device.Open();
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         s2p_logger.error(e.what());
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
@@ -648,7 +648,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
 
 bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<PrimaryDevice> device, int level) const
 {
-    if (level && !device->SetScsiLevel(static_cast<scsi_level>(level))) {
+    if (level && !device->SetScsiLevel(static_cast<ScsiLevel>(level))) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, to_string(level));
     }
 

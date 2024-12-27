@@ -113,7 +113,7 @@ int S2pCtl::RunInteractive()
         interactive_args.emplace_back(strdup(prompt.c_str()));
         interactive_args.emplace_back(strdup(args[0].c_str())
         );
-        for (size_t i = 1; i < args.size(); i++) {
+        for (size_t i = 1; i < args.size(); ++i) {
             if (!args[i].empty()) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
             }
@@ -213,7 +213,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'b':
-            if (int block_size; !GetAsUnsignedInt(optarg, block_size)) {
+            if (const int block_size = ParseAsUnsignedInt(optarg); block_size <= 0) {
                 cerr << "Error: Invalid block size " << optarg << '\n';
                 return EXIT_FAILURE;
             }
@@ -360,7 +360,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             try {
                 device->set_caching_mode(ParseCachingMode(optarg));
             }
-            catch (const parser_exception &e) {
+            catch (const ParserException &e) {
                 cerr << "Error: " << e.what() << '\n';
                 return EXIT_FAILURE;
             }
@@ -371,7 +371,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'p':
-            if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
+            port = ParseAsUnsignedInt(optarg);
+            if (port <= 0 || port > 65535) {
                 cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535\n";
                 return EXIT_FAILURE;
             }
@@ -417,12 +418,13 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case OPT_SCSI_LEVEL:
-            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
+            if (const int level = ParseAsUnsignedInt(optarg); level == -1 || !level
+                || level >= static_cast<int>(ScsiLevel::LAST)) {
                 cerr << "Error: Invalid SCSI level '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             else {
-                device->set_scsi_level(scsi_level);
+                device->set_scsi_level(level);
             }
             break;
 
@@ -467,7 +469,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             status = s2pctl_commands.Execute(log_level, default_folder, reserved_ids, image_params, filename);
         }
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }

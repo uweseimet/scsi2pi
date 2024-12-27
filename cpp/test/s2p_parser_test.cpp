@@ -17,7 +17,7 @@ using namespace s2p_interface;
 void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
     nullptr)
 {
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
     args.clear();
@@ -139,12 +139,12 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ("", properties["key"]);
 
     SetUpArgs(args, "-c", "xyz");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-c", "=xyz");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
 }
@@ -261,15 +261,15 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ("TP73.tap", properties["device.7:3.params"]);
 
     SetUpArgs(args, "-B", "H1.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-B", "XX2.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-B", "HD.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
 }

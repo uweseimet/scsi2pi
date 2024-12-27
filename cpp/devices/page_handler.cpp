@@ -18,23 +18,23 @@ using namespace s2p_util;
 PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
     p)
 {
-    device.AddCommand(scsi_command::mode_sense_6, [this]
+    device.AddCommand(ScsiCommand::MODE_SENSE_6, [this]
         {
             device.DataInPhase(
                 device.ModeSense6(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
-    device.AddCommand(scsi_command::mode_sense_10, [this]
+    device.AddCommand(ScsiCommand::MODE_SENSE_10, [this]
         {
             device.DataInPhase(
                 device.ModeSense10(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
 
     // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
-    device.AddCommand(scsi_command::mode_select_6, [this]
+    device.AddCommand(ScsiCommand::MODE_SELECT_6, [this]
         {
             ModeSelect(device.GetCdbByte(4));
         });
-    device.AddCommand(scsi_command::mode_select_10, [this]
+    device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
         {
             ModeSelect(device.GetCdbInt24(7));
         });
@@ -65,7 +65,7 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
     }
 
     if (pages.empty()) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     // Holds all mode page data
@@ -92,7 +92,7 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
     }
 
     if (static_cast<int>(result.size()) > max_size) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const int size = min(max_length, static_cast<int>(result.size()));
@@ -113,8 +113,8 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
             continue;
         }
 
-        int page_code;
-        if (!GetAsUnsignedInt(key_components[1], page_code) || page_code > 0x3e) {
+        const int page_code = ParseAsUnsignedInt(key_components[1]);
+        if (page_code == -1 || page_code > 0x3e) {
             warn("Ignored invalid page code in mode page property '{}'", key);
             continue;
         }
@@ -160,7 +160,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 void PageHandler::ModeSelect(int length) const
 {
     if (!supports_mode_select || (!supports_save_parameters && (device.GetCdbByte(1) & 0x01))) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     device.DataOutPhase(length);

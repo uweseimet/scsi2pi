@@ -75,5 +75,5 @@ TEST(ScsiGenericTest, Dispatch)
 {
     ScsiGeneric device(0, "");
 
-    EXPECT_THROW(device.Dispatch(static_cast<scsi_command>(0x1f)), scsi_exception);
+    EXPECT_THROW(device.Dispatch(static_cast<ScsiCommand>(0x1f)), ScsiException);
 }

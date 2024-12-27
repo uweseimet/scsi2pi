@@ -33,7 +33,7 @@ PbCachingMode protobuf_util::ParseCachingMode(const string &value)
         return mode;
     }
 
-    throw parser_exception("Invalid caching mode '" + value + "'");
+    throw ParserException("Invalid caching mode '" + value + "'");
 }
 
 void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &params)
@@ -127,7 +127,7 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
 {
     int id;
     int lun;
-    if (const string &error = ProcessId(value, id, lun); !error.empty()) {
+    if (const string &error = ParseIdAndLun(value, id, lun); !error.empty()) {
         return error;
     }
 
@@ -173,12 +173,12 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &me
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
         static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
     WriteBytes(fd, header) != header.size()) {
-        throw io_exception("Can't write message size: " + string(strerror(errno)));
+        throw IoException("Can't write message size: " + string(strerror(errno)));
     }
 
     // Write the actual protobuf data
     if (WriteBytes(fd, data) != data.size()) {
-        throw io_exception("Can't write message data: " + string(strerror(errno)));
+        throw IoException("Can't write message data: " + string(strerror(errno)));
     }
 }
 
@@ -187,19 +187,19 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
     if (ReadBytes(fd, header) != header.size()) {
-        throw io_exception("Can't read message size: " + string(strerror(errno)));
+        throw IoException("Can't read message size: " + string(strerror(errno)));
     }
 
     const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
         + (static_cast<int>(header[1]) << 8) + static_cast<int>(header[0]);
     if (size < 0) {
-        throw io_exception("Invalid message size: " + string(strerror(errno)));
+        throw IoException("Invalid message size: " + string(strerror(errno)));
     }
 
     // Read the binary protobuf data
     vector<byte> data_buf(size);
     if (ReadBytes(fd, data_buf) != data_buf.size()) {
-        throw io_exception("Invalid message data: " + string(strerror(errno)));
+        throw IoException("Invalid message data: " + string(strerror(errno)));
     }
 
     message.ParseFromArray(data_buf.data(), size);

@@ -45,9 +45,9 @@ TEST(ScsiCdTest, DeviceDefaults)
 
 TEST(ScsiCdTest, Inquiry)
 {
-    TestShared::Inquiry(SCCD, device_type::cd_rom, scsi_level::scsi_2, "SCSI2Pi SCSI CD-ROM     ", 0x1f, true);
+    TestShared::Inquiry(SCCD, DeviceType::CD_DVD, ScsiLevel::SCSI_2, "SCSI2Pi SCSI CD-ROM     ", 0x1f, true);
 
-    TestShared::Inquiry(SCCD, device_type::cd_rom, scsi_level::scsi_1_ccs, "SCSI2Pi SCSI CD-ROM     ", 0x1f, true,
+    TestShared::Inquiry(SCCD, DeviceType::CD_DVD, ScsiLevel::SCSI_1_CCS, "SCSI2Pi SCSI CD-ROM     ", 0x1f, true,
         "file.is1");
 }
 
@@ -81,11 +81,11 @@ TEST(ScsiCdTest, Open)
 {
     MockScsiCd cd(0);
 
-    EXPECT_THROW(cd.Open(), io_exception)<< "Missing filename";
+    EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 
     path filename = CreateTempFile(2047);
     cd.SetFilename(filename.string());
-    EXPECT_THROW(cd.Open(), io_exception)<< "ISO CD-ROM image file size is too small";
+    EXPECT_THROW(cd.Open(), IoException)<< "ISO CD-ROM image file size is too small";
 
     filename = CreateTempFile(2 * 2048);
     cd.SetFilename(filename.string());
@@ -101,26 +101,26 @@ TEST(ScsiCdTest, ReadToc)
 
     controller.AddDevice(cd);
 
-    Dispatch(cd, scsi_command::read_toc, sense_key::not_ready, asc::medium_not_present, "Drive is not ready");
+    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT, "Drive is not ready");
 
     cd->SetReady(true);
 
     controller.SetCdbByte(6, 2);
-    Dispatch(cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid track number");
 
     controller.SetCdbByte(6, 1);
-    Dispatch(cd, scsi_command::read_toc, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid track number");
 
     controller.SetCdbByte(6, 0);
     EXPECT_CALL(controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(cd, scsi_command::read_toc));
+    EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
 }
 
 TEST(ScsiCdTest, ReadData)
 {
     ScsiCd cd(0);
 
-    EXPECT_THROW(cd.ReadData( {}), scsi_exception)<< "Drive is not ready";
+    EXPECT_THROW(cd.ReadData( {}), ScsiException)<< "Drive is not ready";
 }

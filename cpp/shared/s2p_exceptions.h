@@ -11,34 +11,34 @@
 #include <stdexcept>
 #include "s2p_util.h"
 
-class parser_exception : public runtime_error
+class ParserException : public runtime_error
 {
     using runtime_error::runtime_error;
 };
 
-class io_exception : public runtime_error
+class IoException : public runtime_error
 {
     using runtime_error::runtime_error;
 };
 
-class scsi_exception : public runtime_error
+class ScsiException : public runtime_error
 {
-    enum sense_key sense_key;
-    enum asc asc;
+    SenseKey sense_key;
+    Asc asc;
 
 public:
 
-    explicit scsi_exception(enum sense_key sense_key, enum asc asc = asc::no_additional_sense_information)
-    : runtime_error(s2p_util::FormatSenseData(sense_key, asc)), sense_key(sense_key), asc(asc)
+    explicit ScsiException(SenseKey s, Asc a = Asc::NO_ADDITIONAL_SENSE_INFORMATION)
+    : runtime_error(s2p_util::FormatSenseData(s, a)), sense_key(s), asc(a)
     {
     }
-    ~scsi_exception() override = default;
+    ~ScsiException() override = default;
 
-    enum sense_key get_sense_key() const
+    SenseKey get_sense_key() const
     {
         return sense_key;
     }
-    enum asc get_asc() const
+    Asc get_asc() const
     {
         return asc;
     }

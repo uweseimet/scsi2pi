@@ -28,11 +28,6 @@ public:
         string vendor = "SCSI2Pi";
         string product;
         string revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);;
-
-        string GetPaddedName() const
-        {
-            return fmt::format("{0:8}{1:16}{2:4}", vendor, product, revision);
-        }
     };
 
     string Init();
@@ -42,7 +37,7 @@ public:
         // Override if cleanup work is required for a derived device
     }
 
-    virtual void Dispatch(scsi_command);
+    virtual void Dispatch(ScsiCommand);
 
     auto* GetController() const
     {
@@ -52,22 +47,27 @@ public:
     ProductData GetProductData() const;
     virtual string SetProductData(const ProductData&, bool force = true);
 
-    scsi_level GetScsiLevel() const
+    string GetPaddedName() const
+    {
+        return fmt::format("{0:8}{1:16}{2:4}", product_data.vendor, product_data.product, product_data.revision);
+    }
+
+    ScsiLevel GetScsiLevel() const
     {
         return level;
     }
-    bool SetScsiLevel(scsi_level);
-    bool SetResponseDataFormat(scsi_level);
+    bool SetScsiLevel(ScsiLevel);
+    bool SetResponseDataFormat(ScsiLevel);
 
-    enum sense_key GetSenseKey() const
+    enum SenseKey GetSenseKey() const
     {
         return sense_key;
     }
-    enum asc GetAsc() const
+    enum Asc GetAsc() const
     {
         return asc;
     }
-    void SetStatus(sense_key, asc);
+    void SetStatus(SenseKey, Asc);
     void ResetStatus();
 
     int GetId() const override;
@@ -97,7 +97,7 @@ public:
     virtual void ModeSelect(cdb_t, data_out_t, int, int)
     {
         // There is no default implementation of MODE SELECT
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     virtual void FlushCache()
@@ -118,9 +118,9 @@ protected:
     {
     }
 
-    void AddCommand(scsi_command, const command&);
+    void AddCommand(ScsiCommand, const command&);
 
-    vector<uint8_t> HandleInquiry(device_type, bool) const;
+    vector<uint8_t> HandleInquiry(DeviceType, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
@@ -146,7 +146,7 @@ protected:
     }
 
     void SetFilemark();
-    void SetEom(ascq);
+    void SetEom(Ascq);
     void SetIli();
     void SetInformation(int32_t);
 
@@ -188,15 +188,15 @@ private:
 
     ProductData product_data;
 
-    scsi_level level = scsi_level::scsi_2;
-    scsi_level response_data_format = scsi_level::scsi_2;
+    ScsiLevel level = ScsiLevel::SCSI_2;
+    ScsiLevel response_data_format = ScsiLevel::SCSI_2;
 
-    enum sense_key sense_key = sense_key::no_sense;
-    enum asc asc = asc::no_additional_sense_information;
+    enum SenseKey sense_key = SenseKey::NO_SENSE;
+    enum Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
     bool valid = false;
     bool filemark = false;
-    ascq eom = ascq::none;
+    Ascq eom = Ascq::NONE;
     bool ili = false;
     int32_t information = 0;
 

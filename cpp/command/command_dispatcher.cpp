@@ -181,23 +181,23 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
 // Shutdown on a remote interface command
 bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
-    shutdown_mode mode = shutdown_mode::none;
+    ShutdownMode mode = ShutdownMode::NONE;
 
     if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
-        mode = shutdown_mode::stop_s2p;
+        mode = ShutdownMode::STOP_S2P;
     }
     else if (m == "system") {
-        mode = shutdown_mode::stop_pi;
+        mode = ShutdownMode::STOP_PI;
     }
     else if (m == "reboot") {
-        mode = shutdown_mode::restart_pi;
+        mode = ShutdownMode::RESTART_PI;
     }
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != shutdown_mode::stop_s2p && getuid()) {
+    if (mode != ShutdownMode::STOP_S2P && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -209,20 +209,20 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
 }
 
 // Shutdown on a SCSI command
-bool CommandDispatcher::ShutDown(shutdown_mode mode) const
+bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 {
     switch (mode) {
-    case shutdown_mode::stop_s2p:
+    case ShutdownMode::STOP_S2P:
         s2p_logger.info("s2p shutdown requested");
         return true;
 
-    case shutdown_mode::stop_pi:
+    case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
         (void)system("init 0");
         s2p_logger.error("Pi shutdown failed");
         break;
 
-    case shutdown_mode::restart_pi:
+    case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
         (void)system("init 6");
         s2p_logger.error("Pi restart failed");
@@ -246,7 +246,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         level = components[0];
 
         if (components.size() > 1) {
-            if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
+            if (const string &error = ParseIdAndLun(components[1], id, lun); !error.empty()) {
                 s2p_logger.warn("Error setting log level: {}", error);
                 return false;
             }

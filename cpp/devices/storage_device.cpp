@@ -14,11 +14,11 @@ using namespace memory_util;
 
 string StorageDevice::SetUp()
 {
-    AddCommand(scsi_command::start_stop, [this]
+    AddCommand(ScsiCommand::START_STOP, [this]
         {
             StartStopUnit();
         });
-    AddCommand(scsi_command::prevent_allow_medium_removal, [this]
+    AddCommand(ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, [this]
         {
             PreventAllowMediumRemoval();
         });
@@ -35,15 +35,15 @@ void StorageDevice::CleanUp()
     PrimaryDevice::CleanUp();
 }
 
-void StorageDevice::Dispatch(scsi_command cmd)
+void StorageDevice::Dispatch(ScsiCommand cmd)
 {
     // Media changes must be reported on the next access, i.e. not only for TEST UNIT READY
-    if (cmd != scsi_command::inquiry && cmd != scsi_command::request_sense && IsMediumChanged()) {
+    if (cmd != ScsiCommand::INQUIRY && cmd != ScsiCommand::REQUEST_SENSE && IsMediumChanged()) {
         assert(IsRemovable());
 
         SetMediumChanged(false);
 
-        throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
     }
 
     PrimaryDevice::Dispatch(cmd);
@@ -52,7 +52,7 @@ void StorageDevice::Dispatch(scsi_command cmd)
 void StorageDevice::CheckWritePreconditions() const
 {
     if (IsProtected()) {
-        throw scsi_exception(sense_key::data_protect, asc::write_protected);
+        throw ScsiException(SenseKey::DATA_PROTECT, Asc::WRITE_PROTECTED);
     }
 }
 
@@ -75,12 +75,12 @@ void StorageDevice::StartStopUnit()
         if (load) {
             if (IsLocked()) {
                 // Cannot be ejected because it is locked
-                throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
             }
 
             // Eject
             if (!Eject(false)) {
-                throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
             }
         }
         else {
@@ -90,7 +90,7 @@ void StorageDevice::StartStopUnit()
     else if (load && !last_filename.empty()) {
         SetFilename(last_filename);
         if (!ReserveFile()) {
-            throw scsi_exception(sense_key::illegal_request, asc::medium_load_or_eject_failed);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
         }
 
         SetMediumChanged(true);
@@ -137,7 +137,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
         return;
     }
 
-    auto [offset, size] = EvaluateBlockDescriptors(static_cast<scsi_command>(cdb[0]), span(buf.data(), length),
+    auto [offset, size] = EvaluateBlockDescriptors(static_cast<ScsiCommand>(cdb[0]), span(buf.data(), length),
         block_size);
     if (size) {
         block_size = size;
@@ -171,7 +171,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
 
         const auto &it = pages.find(page_code);
         if (it == pages.end()) {
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_PARAMETER_LIST);
         }
 
         // Page 0 can contain anything and can have any length
@@ -180,7 +180,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
         }
 
         if (length < 2) {
-            throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
         }
 
         // The page size field does not count itself and the page code field
@@ -189,7 +189,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
         // The page size in the parameters must match the actual page size, otherwise report
         // INVALID FIELD IN PARAMETER LIST (SCSI-2 8.2.8).
         if (static_cast<int>(it->second.size()) != page_size || page_size > length) {
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_PARAMETER_LIST);
         }
 
         switch (page_code) {
@@ -209,7 +209,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
             break;
 
         default:
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_PARAMETER_LIST);
         }
 
         length -= page_size;
@@ -219,18 +219,18 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
     ChangeBlockSize(size);
 }
 
-pair<int, int> StorageDevice::EvaluateBlockDescriptors(scsi_command cmd, data_out_t buf, int size)
+pair<int, int> StorageDevice::EvaluateBlockDescriptors(ScsiCommand cmd, data_out_t buf, int size)
 {
-    assert(cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10);
+    assert(cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10);
 
-    const size_t required_length = cmd == scsi_command::mode_select_10 ? 8 : 4;
+    const size_t required_length = cmd == ScsiCommand::MODE_SELECT_10 ? 8 : 4;
     if (buf.size() < required_length) {
-        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
     }
 
-    const size_t descriptor_length = cmd == scsi_command::mode_select_10 ? GetInt16(buf, 6) : buf[3];
+    const size_t descriptor_length = cmd == ScsiCommand::MODE_SELECT_10 ? GetInt16(buf, 6) : buf[3];
     if (buf.size() < descriptor_length + required_length) {
-        throw scsi_exception(sense_key::illegal_request, asc::parameter_list_length_error);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
     }
 
     // Check for temporary block size change in first block descriptor
@@ -260,13 +260,13 @@ uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temp
         }
     }
 
-    throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+    throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_PARAMETER_LIST);
 }
 
 void StorageDevice::ChangeBlockSize(uint32_t new_size)
 {
     if (!new_size || (!GetSupportedBlockSizes().contains(new_size) && new_size % 4)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_parameter_list);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_PARAMETER_LIST);
     }
 
     const auto current_size = block_size;
@@ -308,7 +308,7 @@ bool StorageDevice::ValidateBlockSize(uint32_t size) const
 void StorageDevice::ValidateFile()
 {
     if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
-        throw io_exception("Image files > 2 TiB are not supported");
+        throw IoException("Image files > 2 TiB are not supported");
     }
 
     // TODO Check for duplicate handling of these properties (-> CommandExecutor)
@@ -372,7 +372,7 @@ off_t StorageDevice::GetFileSize(bool ignore_error) const
             return 0;
         }
 
-        throw io_exception("Can't get size of '" + filename.string() + "': " + e.what());
+        throw IoException("Can't get size of '" + filename.string() + "': " + e.what());
     }
 }
 
@@ -380,7 +380,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
 {
     // Subpages are not supported
     if (cdb[3]) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const int length = min(static_cast<int>(buf.size()), cdb[4]);
@@ -423,7 +423,7 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
 {
     // Subpages are not supported
     if (cdb[3]) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));

@@ -22,12 +22,12 @@ public:
 
     enum class PiType
     {
-        unknown = 0,
-        pi_1 = 1,
-        pi_2 = 2,
-        pi_3 = 3,
-        pi_4 = 4,
-        pi_5 = 5
+        UNKNOWN = 0,
+        PI_1 = 1,
+        PI_2 = 2,
+        PI_3 = 3,
+        PI_4 = 4,
+        PI_5 = 5
     };
 
     explicit RpiBus(PiType t) : pi_type(t)

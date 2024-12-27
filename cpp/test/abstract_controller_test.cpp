@@ -15,16 +15,16 @@ TEST(AbstractControllerTest, ShutdownMode)
     MockAbstractController controller;
 
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(shutdown_mode::none, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(shutdown_mode::stop_s2p);
+    EXPECT_EQ(ShutdownMode::NONE, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(ShutdownMode::STOP_S2P);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(shutdown_mode::stop_s2p, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(shutdown_mode::stop_pi);
+    EXPECT_EQ(ShutdownMode::STOP_S2P, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(ShutdownMode::STOP_PI);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(shutdown_mode::stop_pi, controller.ProcessOnController(0));
-    controller.ScheduleShutdown(shutdown_mode::restart_pi);
+    EXPECT_EQ(ShutdownMode::STOP_PI, controller.ProcessOnController(0));
+    controller.ScheduleShutdown(ShutdownMode::RESTART_PI);
     EXPECT_CALL(controller, Process);
-    EXPECT_EQ(shutdown_mode::restart_pi, controller.ProcessOnController(0));
+    EXPECT_EQ(ShutdownMode::RESTART_PI, controller.ProcessOnController(0));
 }
 
 TEST(AbstractControllerTest, SetCurrentLength)
@@ -45,12 +45,12 @@ TEST(AbstractControllerTest, Reset)
 
     controller.AddDevice(make_shared<MockPrimaryDevice>(0));
 
-    controller.SetPhase(bus_phase::status);
-    EXPECT_EQ(bus_phase::status, controller.GetPhase());
+    controller.SetPhase(BusPhase::STATUS);
+    EXPECT_EQ(BusPhase::STATUS, controller.GetPhase());
     EXPECT_CALL(*bus, Reset);
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
-    EXPECT_EQ(status_code::good, controller.GetStatus());
+    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
     EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
@@ -58,8 +58,8 @@ TEST(AbstractControllerTest, Status)
 {
     MockAbstractController controller;
 
-    controller.SetStatus(status_code::reservation_conflict);
-    EXPECT_EQ(status_code::reservation_conflict, controller.GetStatus());
+    controller.SetStatus(StatusCode::RESERVATION_CONFLICT);
+    EXPECT_EQ(StatusCode::RESERVATION_CONFLICT, controller.GetStatus());
 }
 
 TEST(AbstractControllerTest, DeviceLunLifeCycle)

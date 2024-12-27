@@ -28,28 +28,28 @@ TEST(CommandContext, ReadCommand)
     vector data = { byte { '1' }, byte { '2' }, byte { '3' } };
     fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context2(fd, *default_logger());
-    EXPECT_THROW(context2.ReadCommand(), io_exception);
+    EXPECT_THROW(context2.ReadCommand(), IoException);
     close(fd);
 
     // Invalid magic with right length
     data = { byte { '1' }, byte { '2' }, byte { '3' }, byte { '4' }, byte { '5' }, byte { '6' } };
     fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context3(fd, *default_logger());
-    EXPECT_THROW(context3.ReadCommand(), io_exception);
+    EXPECT_THROW(context3.ReadCommand(), IoException);
     close(fd);
 
     data = { byte { 'R' }, byte { 'A' }, byte { 'S' }, byte { 'C' }, byte { 'S' }, byte { 'I' }, byte { '1' } };
     // Valid magic but invalid command
     fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context4(fd, *default_logger());
-    EXPECT_THROW(context4.ReadCommand(), io_exception);
+    EXPECT_THROW(context4.ReadCommand(), IoException);
     close(fd);
 
     data = { byte { 'R' }, byte { 'A' }, byte { 'S' }, byte { 'C' }, byte { 'S' }, byte { 'I' } };
     // Valid magic but missing command
     fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context5(fd, *default_logger());
-    EXPECT_THROW(context5.ReadCommand(), io_exception);
+    EXPECT_THROW(context5.ReadCommand(), IoException);
     close(fd);
 
     const string &filename = CreateTempFileWithData(data);

@@ -29,7 +29,7 @@ device.3.params=params3
 )";
 
     PropertyHandler::Instance().Init("", { }, true);
-    EXPECT_THROW(PropertyHandler::Instance().Init("non_existing_file", { }, true), parser_exception);
+    EXPECT_THROW(PropertyHandler::Instance().Init("non_existing_file", { }, true), ParserException);
 
     property_map cmd_properties;
     cmd_properties["key1"] = "value2";
@@ -43,7 +43,7 @@ device.3.params=params3
     EXPECT_EQ("params2", PropertyHandler::Instance().RemoveProperty("device.2:1.params"));
     EXPECT_EQ("params3", PropertyHandler::Instance().RemoveProperty("device.3:0.params"));
 
-    EXPECT_THROW(SetUpProperties(properties3), parser_exception);
+    EXPECT_THROW(SetUpProperties(properties3), ParserException);
 }
 
 TEST(PropertyHandlerTest, GetProperties)

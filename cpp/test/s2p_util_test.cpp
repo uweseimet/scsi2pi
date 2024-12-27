@@ -64,76 +64,71 @@ TEST(S2pUtilTest, GetExtensionLowerCase)
     EXPECT_EQ("ext", GetExtensionLowerCase("test.1.EXT"));
 }
 
-TEST(S2pUtilTest, ProcessId)
+TEST(S2pUtilTest, ParseIdAndLun)
 {
     int id = -1;
     int lun = -1;
 
-    string error = ProcessId("", id, lun);
+    string error = ParseIdAndLun("", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("8", id, lun);
+    error = ParseIdAndLun("8", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("0:32", id, lun);
+    error = ParseIdAndLun("0:32", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("-1:", id, lun);
+    error = ParseIdAndLun("-1:", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("0:-1", id, lun);
+    error = ParseIdAndLun("0:-1", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("a", id, lun);
+    error = ParseIdAndLun("a", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("a:0", id, lun);
+    error = ParseIdAndLun("a:0", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("0:a", id, lun);
+    error = ParseIdAndLun("0:a", id, lun);
     EXPECT_FALSE(error.empty());
     EXPECT_EQ(-1, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("0", id, lun);
+    error = ParseIdAndLun("0", id, lun);
     EXPECT_TRUE(error.empty());
     EXPECT_EQ(0, id);
     EXPECT_EQ(-1, lun);
 
-    error = ProcessId("7:31", id, lun);
+    error = ParseIdAndLun("7:31", id, lun);
     EXPECT_TRUE(error.empty());
     EXPECT_EQ(7, id);
     EXPECT_EQ(31, lun);
 }
 
-TEST(S2pUtilTest, GetAsUnsignedInt)
+TEST(S2pUtilTest, ParseAsUnsignedInt)
 {
-    int result;
-
-    EXPECT_FALSE(GetAsUnsignedInt("", result));
-    EXPECT_FALSE(GetAsUnsignedInt("xyz", result));
-    EXPECT_FALSE(GetAsUnsignedInt("-1", result));
-    EXPECT_FALSE(GetAsUnsignedInt("1234567898765432112345678987654321", result)) << "Value is out of range";
-    EXPECT_TRUE(GetAsUnsignedInt("0", result));
-    EXPECT_EQ(0, result);
-    EXPECT_TRUE(GetAsUnsignedInt("1234", result));
-    EXPECT_EQ(1234, result);
-    EXPECT_TRUE(GetAsUnsignedInt(" 1234 ", result));
-    EXPECT_EQ(1234, result);
+    EXPECT_EQ(-1, ParseAsUnsignedInt(""));
+    EXPECT_EQ(-1, ParseAsUnsignedInt("xyz"));
+    EXPECT_EQ(-1, ParseAsUnsignedInt("-2"));
+    EXPECT_EQ(-1, ParseAsUnsignedInt("1234567898765432112345678987654321")) << "Value is out of range";
+    EXPECT_EQ(0, ParseAsUnsignedInt("0"));
+    EXPECT_EQ(1234, ParseAsUnsignedInt("1234"));
+    EXPECT_EQ(1234, ParseAsUnsignedInt(" 1234 "));
 }
 
 TEST(S2pUtilTest, Banner)

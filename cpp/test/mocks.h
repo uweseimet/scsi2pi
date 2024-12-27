@@ -89,8 +89,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 {
     friend class testing::TestShared;
 
-    friend shared_ptr<PrimaryDevice> CreateDevice(s2p_interface::PbDeviceType, AbstractController&, int);
-
     FRIEND_TEST(AbstractControllerTest, Reset);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
@@ -190,7 +188,7 @@ public:
 
     MOCK_METHOD(bool, Process, (), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
-    MOCK_METHOD(void, Error, (sense_key, asc, status_code), (override));
+    MOCK_METHOD(void, Error, (SenseKey, Asc, StatusCode), (override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, DataIn, (), (override));
     MOCK_METHOD(void, DataOut, (), (override));
@@ -215,7 +213,7 @@ public:
 
     void ResetCdb()
     {
-        for (size_t i = 0; i < GetCdb().size(); i++) {
+        for (size_t i = 0; i < GetCdb().size(); ++i) {
             SetCdbByte(static_cast<int>(i), 0);
         }
     }
@@ -267,9 +265,6 @@ public:
     MOCK_METHOD(int, GetId, (), (const, override));
 
     explicit MockDevice(int lun) : Device(UNDEFINED, lun)
-    {
-    }
-    explicit MockDevice(PbDeviceType type) : Device(type, 0)
     {
     }
     ~MockDevice() override = default;
@@ -409,11 +404,6 @@ class MockSasiHd : public SasiHd
 public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)
-    {
-        GetLogger();
-        SetCachingMode(PbCachingMode::PISCSI);
-    }
-    explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
     {
         GetLogger();
         SetCachingMode(PbCachingMode::PISCSI);

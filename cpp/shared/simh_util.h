@@ -17,36 +17,36 @@ using namespace std;
 namespace simh_util
 {
 
-enum class simh_class
+enum class SimhClass
 {
-    tape_mark_good_data_record = 0,
-    private_data_record_1 = 1,
-    private_data_record_2 = 2,
-    private_data_record_3 = 3,
-    private_data_record_4 = 4,
-    private_data_record_5 = 5,
-    private_data_record_6 = 6,
-    private_marker = 7,
-    bad_data_record = 8,
-    reserved_data_record_1 = 9,
-    reserved_data_record_2 = 10,
-    reserved_data_record_3 = 11,
-    reserved_data_record_4 = 12,
-    reserved_data_record_5 = 13,
-    tape_description_data_record = 14,
-    reserved_marker = 15,
+    TAPE_MARK_GOOD_DATA_RECORD = 0,
+    PRIVATE_DATA_RECORD_1 = 1,
+    PRIVATE_DATA_RECORD_2 = 2,
+    PRIVATE_DATA_RECORD_3 = 3,
+    PRIVATE_DATA_RECORD_4 = 4,
+    PRIVATE_DATA_RECORD_5 = 5,
+    PRIVATE_DATA_RECORD_6 = 6,
+    PRIVATE_MARKER = 7,
+    BAD_DATA_RECORD = 8,
+    RESERVED_DATA_RECORD_1 = 9,
+    RESERVED_DATA_RECORD_2 = 10,
+    RESERVED_DATA_RECORD_3 = 11,
+    RESERVED_DATA_RECORD_4 = 12,
+    RESERVED_DATA_RECORD_5 = 13,
+    TAPE_DESCRIPTION_DATA_RECORD = 14,
+    RESERVERD_MARKER = 15,
 };
 
-enum class simh_marker
+enum class SimhMarker
 {
-    erase_gap = 0xffffffe,
-    end_of_medium = 0xfffffff
+    ERASE_GAP = 0xffffffe,
+    END_OF_MEDIUM = 0xfffffff
 };
 
 using SimhMetaData = struct _SimhMetaData {
-    _SimhMetaData(simh_class c =simh_class::bad_data_record, uint32_t v = 0) : cls(c), value(v) {}
+    _SimhMetaData(SimhClass c =SimhClass::BAD_DATA_RECORD, uint32_t v = 0) : cls(c), value(v) {}
 
-    simh_class cls;
+    SimhClass cls;
     uint32_t value;
 };
 

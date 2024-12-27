@@ -89,14 +89,14 @@ TEST(ControllerFactoryTest, ProcessOnController)
     NiceMock<MockBus> bus;
     ControllerFactory controller_factory;
 
-    EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(VALID_ID));
+    EXPECT_EQ(ShutdownMode::NONE, controller_factory.ProcessOnController(VALID_ID));
 
     const auto device = make_shared<MockPrimaryDevice>(0);
     EXPECT_TRUE(controller_factory.AttachToController(bus, VALID_ID, device));
 
-    EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(VALID_ID));
+    EXPECT_EQ(ShutdownMode::NONE, controller_factory.ProcessOnController(VALID_ID));
 
-    EXPECT_EQ(shutdown_mode::none, controller_factory.ProcessOnController(INVALID_ID));
+    EXPECT_EQ(ShutdownMode::NONE, controller_factory.ProcessOnController(INVALID_ID));
 }
 
 TEST(ControllerFactoryTest, SetLogLevel)

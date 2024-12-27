@@ -82,7 +82,7 @@ TEST(S2pThreadTest, Execute)
     S2pThread service_thread;
     service_thread.Init([](const CommandContext &context) {
         if (context.GetCommand().operation() != PbOperation::NO_OPERATION) {
-            throw io_exception("error");
+            throw IoException("error");
         }
 
         PbResult result;

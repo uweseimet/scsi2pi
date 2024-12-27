@@ -12,21 +12,21 @@
 
 TEST(PrinterTest, Device_Defaults)
 {
-    Printer printer(0);
+    Printer PRINTER(0);
 
-    EXPECT_EQ(SCLP, printer.GetType());
-    EXPECT_FALSE(printer.SupportsImageFile());
-    EXPECT_TRUE(printer.SupportsParams());
-    EXPECT_FALSE(printer.IsProtectable());
-    EXPECT_FALSE(printer.IsProtected());
-    EXPECT_FALSE(printer.IsReadOnly());
-    EXPECT_FALSE(printer.IsRemovable());
-    EXPECT_FALSE(printer.IsRemoved());
-    EXPECT_FALSE(printer.IsLocked());
-    EXPECT_FALSE(printer.IsStoppable());
-    EXPECT_FALSE(printer.IsStopped());
+    EXPECT_EQ(SCLP, PRINTER.GetType());
+    EXPECT_FALSE(PRINTER.SupportsImageFile());
+    EXPECT_TRUE(PRINTER.SupportsParams());
+    EXPECT_FALSE(PRINTER.IsProtectable());
+    EXPECT_FALSE(PRINTER.IsProtected());
+    EXPECT_FALSE(PRINTER.IsReadOnly());
+    EXPECT_FALSE(PRINTER.IsRemovable());
+    EXPECT_FALSE(PRINTER.IsRemoved());
+    EXPECT_FALSE(PRINTER.IsLocked());
+    EXPECT_FALSE(PRINTER.IsStoppable());
+    EXPECT_FALSE(PRINTER.IsStopped());
 
-    const auto& [vendor, product, revision] = printer.GetProductData();
+    const auto& [vendor, product, revision] = PRINTER.GetProductData();
     EXPECT_EQ("SCSI2Pi", vendor);
     EXPECT_EQ("SCSI PRINTER", product);
     EXPECT_EQ(TestShared::GetVersion(), revision);
@@ -34,121 +34,121 @@ TEST(PrinterTest, Device_Defaults)
 
 TEST(PrinterTest, GetDefaultParams)
 {
-    Printer printer(0);
+    Printer PRINTER(0);
 
-    const auto &params = printer.GetDefaultParams();
+    const auto &params = PRINTER.GetDefaultParams();
     EXPECT_EQ(1U, params.size());
     EXPECT_EQ("lp -oraw %f", params.at("cmd"));
 }
 
 TEST(PrinterTest, GetIdentifier)
 {
-    Printer printer(0);
+    Printer PRINTER(0);
 
-    EXPECT_EQ("SCSI Printer", printer.GetIdentifier());
+    EXPECT_EQ("SCSI Printer", PRINTER.GetIdentifier());
 }
 
 TEST(PrinterTest, Init)
 {
-    Printer printer(0);
+    Printer PRINTER(0);
 
     param_map params;
     params["cmd"] = "%f";
-    printer.SetParams(params);
-    EXPECT_EQ("", printer.Init());
+    PRINTER.SetParams(params);
+    EXPECT_EQ("", PRINTER.Init());
 }
 
 TEST(PrinterTest, TestUnitReady)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::test_unit_ready));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::TEST_UNIT_READY));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(PrinterTest, Inquiry)
 {
-    TestShared::Inquiry(SCLP, device_type::printer, scsi_level::scsi_2, "SCSI2Pi SCSI PRINTER    ", 0x1f, false);
+    TestShared::Inquiry(SCLP, DeviceType::PRINTER, ScsiLevel::SCSI_2, "SCSI2Pi SCSI PRINTER    ", 0x1f, false);
 }
 
 TEST(PrinterTest, ReserveUnit)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status).Times(1);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::reserve_reserve_element_6));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::RESERVE_RESERVE_ELEMENT_6));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(PrinterTest, ReleaseUnit)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status).Times(1);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::release_release_element_6));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(PrinterTest, Print)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::print));
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::PRINT));
 
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    Dispatch(printer, scsi_command::print, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(PRINTER, ScsiCommand::PRINT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Buffer overflow was not reported");
 }
 
 TEST(PrinterTest, StopPrint)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::stop_print));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::STOP_PRINT));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(PrinterTest, SynchronizeBuffer)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
     param_map params;
     params["cmd"] = "false %f";
-    printer->SetParams(params);
+    PRINTER->SetParams(params);
 
-    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::io_process_terminated);
+    Dispatch(PRINTER, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
 
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
-    Dispatch(printer, scsi_command::synchronize_buffer, sense_key::aborted_command, asc::io_process_terminated);
+    EXPECT_NO_THROW(PRINTER->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
+    Dispatch(PRINTER, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
 
     params["cmd"] = "true %f";
-    printer->SetParams(params);
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
+    PRINTER->SetParams(params);
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
-    EXPECT_NO_THROW(Dispatch(printer, scsi_command::synchronize_buffer));
+    EXPECT_NO_THROW(PRINTER->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
+    EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::SYNCHRONIZE_BUFFER));
 }
 
 TEST(PrinterTest, WriteData)
 {
-    auto [controller, printer] = CreateDevice(SCLP);
+    auto [controller, PRINTER] = CreateDevice(SCLP);
 
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::print));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
+    EXPECT_NO_THROW(PRINTER->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 4));
 }
 
 TEST(PrinterTest, GetStatistics)
 {
-    Printer printer(0);
+    Printer PRINTER(0);
 
-    const auto &statistics = printer.GetStatistics();
+    const auto &statistics = PRINTER.GetStatistics();
     EXPECT_EQ(4U, statistics.size());
     EXPECT_EQ("file_print_count", statistics[0].key());
     EXPECT_EQ(0U, statistics[0].value());

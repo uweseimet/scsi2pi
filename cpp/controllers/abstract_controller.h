@@ -30,7 +30,7 @@ public:
     AbstractController(Bus&, int, const S2pFormatter&);
     ~AbstractController() override = default;
 
-    virtual void Error(sense_key, asc, status_code) = 0;
+    virtual void Error(SenseKey, Asc, StatusCode) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
@@ -45,7 +45,7 @@ public:
         return initiator_id;
     }
 
-    void ScheduleShutdown(shutdown_mode mode)
+    void ScheduleShutdown(ShutdownMode mode)
     {
         sh_mode = mode;
     }
@@ -64,7 +64,7 @@ public:
     shared_ptr<PrimaryDevice> GetDeviceForLun(int) const;
     bool AddDevice(shared_ptr<PrimaryDevice>);
     bool RemoveDevice(PrimaryDevice&);
-    shutdown_mode ProcessOnController(int);
+    ShutdownMode ProcessOnController(int);
 
     void CopyToBuffer(const void*, size_t);
     auto& GetBuffer() const
@@ -75,7 +75,7 @@ public:
     {
         return status;
     }
-    void SetStatus(status_code s)
+    void SetStatus(StatusCode s)
     {
         status = s;
     }
@@ -162,7 +162,7 @@ private:
     // The number of bytes to be transferred with the current handshake cycle
     int chunk_size = 0;
 
-    status_code status = status_code::good;
+    StatusCode status = StatusCode::GOOD;
 
     Bus &bus;
 
@@ -182,5 +182,5 @@ private:
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;
 
-    shutdown_mode sh_mode = shutdown_mode::none;
+    ShutdownMode sh_mode = ShutdownMode::NONE;
 };

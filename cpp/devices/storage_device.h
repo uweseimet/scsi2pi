@@ -25,7 +25,7 @@ public:
     string SetUp() override;
     void CleanUp() override;
 
-    void Dispatch(scsi_command) override;
+    void Dispatch(ScsiCommand) override;
 
     string GetIdentifier() const override
     {
@@ -127,9 +127,8 @@ protected:
     }
 
     void ModeSelect(cdb_t, data_out_t, int, int) override;
-    pair<int, int> EvaluateBlockDescriptors(scsi_command, data_out_t, int);
+    pair<int, int> EvaluateBlockDescriptors(ScsiCommand, data_out_t, int);
     virtual uint32_t VerifyBlockSizeChange(uint32_t, bool);
-    unordered_set<uint32_t> GetBlockSizes() const;
     bool SetBlockSize(uint32_t);
 
     virtual void ChangeBlockSize(uint32_t);

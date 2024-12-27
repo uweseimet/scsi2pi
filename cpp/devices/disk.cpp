@@ -31,91 +31,91 @@ Disk::Disk(PbDeviceType type, int lun, bool supports_mode_select, bool supports_
 string Disk::SetUp()
 {
     // REZERO implementation is identical with Seek
-    AddCommand(scsi_command::rezero, [this]
+    AddCommand(ScsiCommand::REZERO, [this]
         {
             ReAssignBlocks();
         });
-    AddCommand(scsi_command::format_unit, [this]
+    AddCommand(ScsiCommand::FORMAT_UNIT, [this]
         {
             FormatUnit();
         });
-    AddCommand(scsi_command::reassign_blocks, [this]
+    AddCommand(ScsiCommand::REASSIGN_BLOCKS, [this]
         {
             ReAssignBlocks();
         });
-    AddCommand(scsi_command::read_6, [this]
+    AddCommand(ScsiCommand::READ_6, [this]
         {
             Read(RW6);
         });
-    AddCommand(scsi_command::write_6, [this]
+    AddCommand(ScsiCommand::WRITE_6, [this]
         {
             Write(RW6);
         });
-    AddCommand(scsi_command::seek_6, [this]
+    AddCommand(ScsiCommand::SEEK_6, [this]
         {
             Seek(SEEK6);
         });
-    AddCommand(scsi_command::read_capacity_10, [this]
+    AddCommand(ScsiCommand::READ_CAPACITY_10, [this]
         {
             ReadCapacity10();
         });
-    AddCommand(scsi_command::read_10, [this]
+    AddCommand(ScsiCommand::READ_10, [this]
         {
             Read(RW10);
         });
-    AddCommand(scsi_command::write_10, [this]
+    AddCommand(ScsiCommand::WRITE_10, [this]
         {
             Write(RW10);
         });
-    AddCommand(scsi_command::read_long_10, [this]
+    AddCommand(ScsiCommand::READ_LONG_10, [this]
         {
             ReadLong10();
         });
-    AddCommand(scsi_command::write_long_10, [this]
+    AddCommand(ScsiCommand::WRITE_LONG_10, [this]
         {
             WriteLong10();
         });
-    AddCommand(scsi_command::write_long_16, [this]
+    AddCommand(ScsiCommand::WRITE_LONG_16, [this]
         {
             WriteLong16();
         });
-    AddCommand(scsi_command::seek_10, [this]
+    AddCommand(ScsiCommand::SEEK_10, [this]
         {
             Seek(SEEK10);
         });
-    AddCommand(scsi_command::verify_10, [this]
+    AddCommand(ScsiCommand::VERIFY_10, [this]
         {
             Verify(RW10);
         });
-    AddCommand(scsi_command::synchronize_cache_10, [this]
+    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::synchronize_cache_space_16, [this]
+    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, [this]
         {
             SynchronizeCache();
         });
-    AddCommand(scsi_command::read_defect_data_10, [this]
+    AddCommand(ScsiCommand::READ_DEFECT_DATA_10, [this]
         {
             ReadDefectData10();
         });
-    AddCommand(scsi_command::read_16, [this]
+    AddCommand(ScsiCommand::READ_16, [this]
         {
             Read(RW16);
         });
-    AddCommand(scsi_command::write_16, [this]
+    AddCommand(ScsiCommand::WRITE_16, [this]
         {
             Write(RW16);
         });
-    AddCommand(scsi_command::verify_16, [this]
+    AddCommand(ScsiCommand::VERIFY_16, [this]
         {
             Verify(RW16);
         });
-    AddCommand(scsi_command::read_capacity_16_read_long_16, [this]
+    AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, [this]
         {
             ReadCapacity16_ReadLong16();
         });
-    AddCommand(scsi_command::read_format_capacities, [this]
+    AddCommand(ScsiCommand::READ_FORMAT_CAPACITIES, [this]
         {
             ReadFormatCapacities();
         });
@@ -133,13 +133,13 @@ void Disk::CleanUp()
 void Disk::ValidateFile()
 {
     if (!GetBlockCount()) {
-        throw io_exception("Device has 0 sectors");
+        throw IoException("Device has 0 sectors");
     }
 
     StorageDevice::ValidateFile();
 
     if (!SetUpCache()) {
-        throw io_exception("Can't initialize cache");
+        throw IoException("Can't initialize cache");
     }
 }
 
@@ -185,13 +185,13 @@ void Disk::FormatUnit()
 
     // FMTDATA is not supported
     if (GetCdbByte(1) & 0x10) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
 }
 
-void Disk::Read(access_mode mode)
+void Disk::Read(AccessMode mode)
 {
     const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
     if (valid) {
@@ -209,7 +209,7 @@ void Disk::Read(access_mode mode)
     }
 }
 
-void Disk::Write(access_mode mode)
+void Disk::Write(AccessMode mode)
 {
     CheckWritePreconditions();
 
@@ -217,7 +217,7 @@ void Disk::Write(access_mode mode)
     WriteVerify(start, count, valid);
 }
 
-void Disk::Verify(access_mode mode)
+void Disk::Verify(AccessMode mode)
 {
     // A transfer length of 0 is legal
     const auto& [_, start, count] = CheckAndGetStartAndCount(mode);
@@ -279,7 +279,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
     if (length != GetBlockSize()) {
         SetIli();
         SetInformation(length - GetBlockSize());
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
@@ -410,7 +410,7 @@ int Disk::ReadData(data_in_t buf)
     CheckReady();
 
     if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
-        throw scsi_exception(sense_key::medium_error, asc::read_error);
+        throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
     }
 
     next_sector += sector_transfer_count;
@@ -426,14 +426,14 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
     CheckReady();
 
-    const auto command = static_cast<scsi_command>(cdb[0]);
+    const auto command = static_cast<ScsiCommand>(cdb[0]);
 
-    if (command == scsi_command::write_long_10 || command == scsi_command::write_long_16) {
+    if (command == ScsiCommand::WRITE_LONG_10 || command == ScsiCommand::WRITE_LONG_16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         assert(linux_cache);
 
         if (!linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize())) {
-            throw scsi_exception(sense_key::medium_error, asc::write_fault);
+            throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_FAULT);
         }
 
         UpdateWriteCount(1);
@@ -441,9 +441,9 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         return l;
     }
 
-    if ((command != scsi_command::verify_10 && command != scsi_command::verify_16)
+    if ((command != ScsiCommand::VERIFY_10 && command != ScsiCommand::VERIFY_16)
         && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
-        throw scsi_exception(sense_key::medium_error, asc::write_fault);
+        throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_FAULT);
     }
 
     next_sector += sector_transfer_count;
@@ -460,7 +460,7 @@ void Disk::ReAssignBlocks()
     StatusPhase();
 }
 
-void Disk::Seek(access_mode mode)
+void Disk::Seek(AccessMode mode)
 {
     const auto& [valid, _, __] = CheckAndGetStartAndCount(mode);
     if (valid) {
@@ -475,7 +475,7 @@ void Disk::ReadCapacity10()
     CheckReady();
 
     if (!GetBlockCount()) {
-        throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT);
     }
 
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
@@ -492,7 +492,7 @@ void Disk::ReadCapacity16()
     CheckReady();
 
     if (!GetBlockCount()) {
-        throw scsi_exception(sense_key::illegal_request, asc::medium_not_present);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT);
     }
 
     fill_n(GetController()->GetBuffer().begin(), 32, 0);
@@ -540,16 +540,16 @@ void Disk::ReadCapacity16_ReadLong16()
         break;
 
     default:
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
         break;
     }
 }
 
-uint64_t Disk::ValidateBlockAddress(access_mode mode) const
+uint64_t Disk::ValidateBlockAddress(AccessMode mode) const
 {
     // RelAdr is not supported
     if (mode == RW10 && GetCdbByte(1) & 0x01) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const uint64_t sector = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
@@ -557,7 +557,7 @@ uint64_t Disk::ValidateBlockAddress(access_mode mode) const
     if (sector > GetBlockCount()) {
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}", GetBlockCount(), sector));
-        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
     return sector;
@@ -575,7 +575,7 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode) const
+tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode) const
 {
     uint64_t start;
     uint32_t count;
@@ -609,7 +609,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(access_mode mode)
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
                 start, count));
-        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
     // Do not process 0 blocks

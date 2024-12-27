@@ -145,7 +145,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
-                throw parser_exception("Invalid property '" + string(optarg) + "'");
+                throw ParserException("Invalid property '" + string(optarg) + "'");
             }
             else {
                 properties[key_value[0]] = key_value[1];
@@ -248,7 +248,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
 
     const string &type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
-        throw parser_exception(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
+        throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
     }
 
     // An explicit ID/LUN on the command line overrides the BlueSCSI ID/LUN
@@ -266,7 +266,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     const string &type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
-        throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
+        throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
     properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
@@ -298,7 +298,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     vector<char*> args;
     for (const string arg : initial_args) {
         int start_of_ids = -1;
-        for (int i = 0; i < static_cast<int>(arg.length()); i++) {
+        for (int i = 0; i < static_cast<int>(arg.length()); ++i) {
             if (isdigit(arg[i])) {
                 start_of_ids = i;
                 break;

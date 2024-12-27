@@ -16,7 +16,7 @@ using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(scsi_command cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout,
+int InitiatorExecutor::Execute(ScsiCommand cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout,
     bool log)
 {
     cdb[0] = static_cast<uint8_t>(cmd);
@@ -31,7 +31,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     byte_count = 0;
     cdb_offset = 0;
 
-    const auto cmd = static_cast<scsi_command>(cdb[0]);
+    const auto cmd = static_cast<ScsiCommand>(cdb[0]);
 
     auto command_name = string(CommandMetaData::Instance().GetCommandName(cmd));
     if (command_name.empty()) {
@@ -67,11 +67,11 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
                 if (Dispatch(cdb, buffer, length)) {
                     now = steady_clock::now();
                 }
-                else if (static_cast<status_code>(status) != status_code::intermediate) {
+                else if (static_cast<StatusCode>(status) != StatusCode::INTERMEDIATE) {
                     break;
                 }
             }
-            catch (const phase_exception &e) {
+            catch (const PhaseException &e) {
                 initiator_logger.error(e.what());
                 ResetBus(bus);
                 return 0xff;
@@ -92,36 +92,36 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
 bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &length)
 {
-    const bus_phase phase = bus.GetPhase();
+    const BusPhase phase = bus.GetPhase();
 
     initiator_logger.trace("Current phase is {}", Bus::GetPhaseName(phase));
 
     switch (phase) {
-    case bus_phase::command:
+    case BusPhase::COMMAND:
         Command(cdb);
         break;
 
-    case bus_phase::status:
+    case BusPhase::STATUS:
         Status();
         break;
 
-    case bus_phase::datain:
+    case BusPhase::DATA_IN:
         DataIn(buffer, length);
         break;
 
-    case bus_phase::dataout:
+    case BusPhase::DATA_OUT:
         DataOut(buffer, length);
         break;
 
-    case bus_phase::msgin:
+    case BusPhase::MSG_IN:
         MsgIn();
-        if (next_message == message_code::identify) {
+        if (next_message == MessageCode::IDENTIFY) {
             // Done with this command cycle unless there is a pending MESSAGE REJECT
             return false;
         }
         break;
 
-    case bus_phase::msgout:
+    case BusPhase::MSG_OUT:
         MsgOut();
         break;
 
@@ -204,7 +204,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
         cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
     }
 
-    const auto cmd = static_cast<scsi_command>(cdb[cdb_offset]);
+    const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
         initiator_logger.error("Execution of {} failed", CommandMetaData::Instance().GetCommandName(cmd));
@@ -228,7 +228,7 @@ void InitiatorExecutor::Status()
 void InitiatorExecutor::DataIn(data_in_t buf, int &length)
 {
     if (!length) {
-        throw phase_exception("Buffer full in DATA IN phase");
+        throw PhaseException("Buffer full in DATA IN phase");
     }
 
     initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
@@ -241,7 +241,7 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
 void InitiatorExecutor::DataOut(data_out_t buf, int &length)
 {
     if (!length) {
-        throw phase_exception("No more data for DATA OUT phase");
+        throw PhaseException("No more data for DATA OUT phase");
     }
 
     initiator_logger.debug(fmt::format("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length)));
@@ -249,7 +249,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
     byte_count = bus.SendHandShake(buf.data(), length);
     if (byte_count != length) {
         initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
-        throw phase_exception("DATA OUT phase failed");
+        throw PhaseException("DATA OUT phase failed");
     }
 
     length -= byte_count;
@@ -263,21 +263,21 @@ void InitiatorExecutor::MsgIn()
         initiator_logger.error("MESSAGE IN phase failed");
         break;
 
-    case static_cast<int>(message_code::command_complete):
+    case static_cast<int>(MessageCode::COMMAND_COMPLETE):
         initiator_logger.trace("Received COMMAND COMPLETE");
         break;
 
-    case static_cast<int>(message_code::linked_command_complete):
+    case static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE):
         initiator_logger.trace("Received LINKED COMMAND COMPLETE");
         break;
 
-    case static_cast<int>(message_code::linked_command_complete_with_flag):
+    case static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG):
         initiator_logger.trace("Received LINKED COMMAND COMPLETE WITH FLAG");
         break;
 
     default:
         initiator_logger.trace("Device did not report command completion, rejecting unsupported message ${:02x}", msg);
-        next_message = message_code::message_reject;
+        next_message = MessageCode::MESSAGE_REJECT;
         break;
     }
 }
@@ -291,11 +291,11 @@ void InitiatorExecutor::MsgOut()
 
     if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
-            next_message == message_code::identify ? "IDENTIFY" : "MESSAGE REJECT");
+            next_message == MessageCode::IDENTIFY ? "IDENTIFY" : "MESSAGE REJECT");
     }
 
     // Reset default message for MESSAGE OUT to IDENTIFY
-    next_message = message_code::identify;
+    next_message = MessageCode::IDENTIFY;
 }
 
 bool InitiatorExecutor::WaitForFree() const
@@ -340,7 +340,7 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 void InitiatorExecutor::LogStatus() const
 {
     if (status) {
-        if (const auto &it = STATUS_MAPPING.find(static_cast<status_code>(status)); it != STATUS_MAPPING.end()) {
+        if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status)); it != STATUS_MAPPING.end()) {
             initiator_logger.warn("Device reported {0} (status code ${1:02x})", it->second, status);
         }
         else if (status != 0xff) {

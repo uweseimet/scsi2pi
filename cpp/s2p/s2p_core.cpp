@@ -67,31 +67,31 @@ void S2p::CleanUp()
 void S2p::ReadAccessToken(const path &filename)
 {
     if (error_code error; !is_regular_file(filename, error)) {
-        throw parser_exception("Access token file '" + filename.string() + "' must be a regular file");
+        throw ParserException("Access token file '" + filename.string() + "' must be a regular file");
     }
 
     if (struct stat st; stat(filename.c_str(), &st) || st.st_uid || st.st_gid) {
-        throw parser_exception("Access token file '" + filename.string() + "' must be owned by root");
+        throw ParserException("Access token file '" + filename.string() + "' must be owned by root");
     }
 
     if (const auto perms = filesystem::status(filename).permissions();
     (perms & perms::group_read) != perms::none || (perms & perms::others_read) != perms::none ||
         (perms & perms::group_write) != perms::none || (perms & perms::others_write) != perms::none) {
-        throw parser_exception("Access token file '" + filename.string() + "' must be readable by root only");
+        throw ParserException("Access token file '" + filename.string() + "' must be readable by root only");
     }
 
     ifstream token_file(filename);
     if (token_file.fail()) {
-        throw parser_exception("Can't open access token file '" + filename.string() + "'");
+        throw ParserException("Can't open access token file '" + filename.string() + "'");
     }
 
     getline(token_file, access_token);
     if (token_file.fail()) {
-        throw parser_exception("Can't read access token file '" + filename.string() + "'");
+        throw ParserException("Can't read access token file '" + filename.string() + "'");
     }
 
     if (access_token.empty()) {
-        throw parser_exception("Access token file '" + filename.string() + "' must not be empty");
+        throw ParserException("Access token file '" + filename.string() + "' must not be empty");
     }
 }
 
@@ -138,7 +138,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     try {
         properties = parser.ParseArguments(args, ignore_conf);
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
@@ -155,7 +155,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
-        if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
+        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
             cerr << "Error: Invalid log limit '" << log_limit << "'\n";
             return EXIT_FAILURE;
         }
@@ -187,7 +187,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     try {
         CreateDevices();
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         CleanUp();
         return EXIT_FAILURE;
@@ -250,7 +250,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         // This sets the global level only, there no attached devices yet
         log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
         if (!dispatcher->SetLogLevel(log_level)) {
-            throw parser_exception("Invalid log level: '" + log_level + "'");
+            throw ParserException("Invalid log level: '" + log_level + "'");
         }
 
         // Log the properties (on trace level) *after* the log level has been set
@@ -258,13 +258,13 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
             if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
-                throw parser_exception(error);
+                throw ParserException(error);
             }
         }
 
         if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
-            if (int depth; !GetAsUnsignedInt(scan_depth, depth)) {
-                throw parser_exception("Invalid image file scan depth "
+            if (const int depth = ParseAsUnsignedInt(scan_depth); depth == -1) {
+                throw ParserException("Invalid image file scan depth "
                     + property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH));
             }
             else {
@@ -274,17 +274,18 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
             if (!controller_factory.SetScriptFile(script_file)) {
-                throw parser_exception("Can't create script file '" + script_file + "': " + strerror(errno));
+                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
             }
             s2p_logger->info("Generating SCSI command script file '" + script_file + "'");
         }
 
-        if (const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868"); !GetAsUnsignedInt(p, port)
-            || port <= 0 || port > 65535) {
-            throw parser_exception("Invalid port: '" + p + "', port must be between 1 and 65535");
+        const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
+        port = ParseAsUnsignedInt(p);
+        if (port <= 0 || port > 65535) {
+            throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
         }
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return false;
     }
@@ -356,13 +357,13 @@ void S2p::CreateDevices()
 
         const auto &key_components = Split(key, '.', 3);
         if (key_components.size() < 3) {
-            throw parser_exception(fmt::format("Invalid device definition '{}'", key));
+            throw ParserException(fmt::format("Invalid device definition '{}'", key));
         }
 
         const auto &id_and_lun = key_components[1];
         if (const string& error = SetIdAndLun(device_definition, id_and_lun);
             !error.empty()) {
-            throw parser_exception(error);
+            throw ParserException(error);
         }
 
         // Check whether the device is active at the start of a new device block
@@ -398,7 +399,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
         CommandContext context(command, *s2p_logger);
         context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
         if (!executor->ProcessCmd(context)) {
-            throw parser_exception("Can't attach devices");
+            throw ParserException("Can't attach devices");
         }
 
 #ifdef BUILD_SCHS
@@ -419,7 +420,7 @@ bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
     if (const auto &it = properties.find("device." + id_and_lun + ".active"); it != properties.end()) {
         const string &active = it->second;
         if (active != "true" && active != "false") {
-            throw parser_exception(fmt::format("Invalid boolean: '{}'", active));
+            throw ParserException(fmt::format("Invalid boolean: '{}'", active));
         }
         return active == "true";
     }
@@ -436,16 +437,17 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         device.set_type(ParseDeviceType(value));
     }
     else if (key == PropertyHandler::SCSI_LEVEL) {
-        if (int scsi_level; !GetAsUnsignedInt(value, scsi_level) || !scsi_level) {
-            throw parser_exception(fmt::format("Invalid SCSI level: '{}'", value));
+        if (const int level = ParseAsUnsignedInt(value); level == -1 || !level
+            || level >= static_cast<int>(ScsiLevel::LAST)) {
+            throw ParserException(fmt::format("Invalid SCSI level: '{}'", value));
         }
         else {
-            device.set_scsi_level(scsi_level);
+            device.set_scsi_level(level);
         }
     }
     else if (key == PropertyHandler::BLOCK_SIZE) {
-        if (int block_size; !GetAsUnsignedInt(value, block_size)) {
-            throw parser_exception(fmt::format("Invalid block size: '{}'", value));
+        if (const int block_size = ParseAsUnsignedInt(value); block_size == -1) {
+            throw ParserException(fmt::format("Invalid block size: '{}'", value));
         }
         else {
             device.set_block_size(block_size);
@@ -474,7 +476,7 @@ void S2p::ProcessScsiCommands()
 
             // Process command on the responsible controller based on the current initiator and target ID
             if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT()); shutdown_mode
-                != shutdown_mode::none) {
+                != ShutdownMode::NONE) {
                 // When the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);
             }

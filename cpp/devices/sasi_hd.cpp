@@ -12,7 +12,7 @@ SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, fal
     sector_sizes)
 {
     Disk::SetProductData( { "", "SASI HD", "" });
-    SetScsiLevel(scsi_level::none);
+    SetScsiLevel(ScsiLevel::NONE);
     SetProtectable(true);
 }
 
@@ -22,7 +22,7 @@ void SasiHd::Open()
 
     // Sector size (default 256 bytes) and number of sectors
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256)) {
-        throw io_exception("Invalid sector size");
+        throw IoException("Invalid sector size");
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 

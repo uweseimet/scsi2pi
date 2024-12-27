@@ -19,8 +19,8 @@ public:
 
     bool Process() override;
 
-    void Error(sense_key, asc asc = asc::no_additional_sense_information, status_code status =
-        status_code::check_condition) override;
+    void Error(SenseKey, Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode status =
+        StatusCode::CHECK_CONDITION) override;
     void Reset() override;
 
     void BusFree() override;
@@ -54,7 +54,7 @@ private:
     void ProcessMessage();
     void ProcessEndOfMessage();
 
-    void RaiseDeferredError(sense_key, asc);
+    void RaiseDeferredError(SenseKey, Asc);
     void ProvideSenseData();
 
     // The LUN from the IDENTIFY message
@@ -68,8 +68,8 @@ private:
 
     // For the last error reported by the controller, the controller and not the device has to provide the sense data.
     // This is required for SCSG because REQUEST SENSE is passed through to the actual device.
-    sense_key deferred_sense_key = sense_key::no_sense;
-    asc deferred_asc = asc::no_additional_sense_information;
+    SenseKey deferred_sense_key = SenseKey::NO_SENSE;
+    Asc deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
     vector<uint8_t> msg_bytes;
 };

@@ -16,33 +16,33 @@ using namespace s2p_util;
 string PrimaryDevice::Init()
 {
     // Mandatory SCSI primary commands
-    AddCommand(scsi_command::test_unit_ready, [this]
+    AddCommand(ScsiCommand::TEST_UNIT_READY, [this]
         {
             TestUnitReady();
         });
-    AddCommand(scsi_command::inquiry, [this]
+    AddCommand(ScsiCommand::INQUIRY, [this]
         {
             Inquiry();
         });
-    AddCommand(scsi_command::report_luns, [this]
+    AddCommand(ScsiCommand::REPORT_LUNS, [this]
         {
             ReportLuns();
         });
 
     // Optional commands supported by all device types
-    AddCommand(scsi_command::request_sense, [this]
+    AddCommand(ScsiCommand::REQUEST_SENSE, [this]
         {
             RequestSense();
         });
-    AddCommand(scsi_command::reserve_reserve_element_6, [this]
+    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, [this]
         {
             Reserve();
         });
-    AddCommand(scsi_command::release_release_element_6, [this]
+    AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, [this]
         {
             Release();
         });
-    AddCommand(scsi_command::send_diagnostic, [this]
+    AddCommand(ScsiCommand::SEND_DIAGNOSTIC, [this]
         {
             SendDiagnostic();
         });
@@ -50,13 +50,13 @@ string PrimaryDevice::Init()
     return SetUp();
 }
 
-void PrimaryDevice::AddCommand(scsi_command cmd, const command &c)
+void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 {
     assert(!commands[static_cast<int>(cmd)]);
     commands[static_cast<int>(cmd)] = c;
 }
 
-void PrimaryDevice::Dispatch(scsi_command cmd)
+void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
         LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::Instance().GetCommandName(cmd),
@@ -65,7 +65,7 @@ void PrimaryDevice::Dispatch(scsi_command cmd)
     }
     else {
         LogTrace(fmt::format("Device received unsupported command: ${:02x}", static_cast<int>(cmd)));
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_command_operation_code);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
     }
 }
 
@@ -78,7 +78,7 @@ void PrimaryDevice::Reset()
     SetLocked(false);
 }
 
-void PrimaryDevice::SetStatus(enum sense_key s, enum asc a)
+void PrimaryDevice::SetStatus(enum SenseKey s, enum Asc a)
 {
     sense_key = s;
     asc = a;
@@ -86,13 +86,13 @@ void PrimaryDevice::SetStatus(enum sense_key s, enum asc a)
 
 void PrimaryDevice::ResetStatus()
 {
-    sense_key = sense_key::no_sense;
-    asc = asc::no_additional_sense_information;
+    sense_key = SenseKey::NO_SENSE;
+    asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
     valid = false;
     filemark = false;
     ili = false;
     information = 0;
-    eom = ascq::none;
+    eom = Ascq::NONE;
 }
 
 void PrimaryDevice::SetFilemark()
@@ -100,7 +100,7 @@ void PrimaryDevice::SetFilemark()
     filemark = true;
 }
 
-void PrimaryDevice::SetEom(ascq e)
+void PrimaryDevice::SetEom(Ascq e)
 {
     eom = e;
 }
@@ -158,9 +158,9 @@ PrimaryDevice::ProductData PrimaryDevice::GetProductData() const
     return product_data;
 }
 
-bool PrimaryDevice::SetScsiLevel(scsi_level l)
+bool PrimaryDevice::SetScsiLevel(ScsiLevel l)
 {
-    if (l == scsi_level::none || l >= scsi_level::last) {
+    if (l == ScsiLevel::NONE || l >= ScsiLevel::LAST) {
         return false;
     }
 
@@ -169,9 +169,9 @@ bool PrimaryDevice::SetScsiLevel(scsi_level l)
     return true;
 }
 
-bool PrimaryDevice::SetResponseDataFormat(scsi_level l)
+bool PrimaryDevice::SetResponseDataFormat(ScsiLevel l)
 {
-    if (l == scsi_level::none || l > scsi_level::scsi_2) {
+    if (l == ScsiLevel::NONE || l > ScsiLevel::SCSI_2) {
         return false;
     }
 
@@ -213,7 +213,7 @@ void PrimaryDevice::Inquiry()
 {
     // Reserved bits, EVPD, CMDDT and page code check
     if ((GetCdbByte(1) & 0x1f) || GetCdbByte(2)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const auto &buf = InquiryInternal();
@@ -235,7 +235,7 @@ void PrimaryDevice::ReportLuns() const
 {
     // Only SELECT REPORT mode 0 is supported
     if (GetCdbByte(2)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     const uint32_t allocation_length = GetCdbInt32(6);
@@ -244,7 +244,7 @@ void PrimaryDevice::ReportLuns() const
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;
-    for (int lun = 0; lun < 32; lun++) {
+    for (int lun = 0; lun < 32; ++lun) {
         if (GetController()->GetDeviceForLun(lun)) {
             size += 8;
             buf[size + 7] = static_cast<uint8_t>(lun);
@@ -260,7 +260,7 @@ void PrimaryDevice::RequestSense()
 {
     // The descriptor format is not supported
     if (GetController()->GetCdb()[1] & 0x01) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     int effective_lun = GetController()->GetEffectiveLun();
@@ -273,13 +273,13 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(sense_key::illegal_request, asc::logical_unit_not_supported, status_code::good);
+        GetController()->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
     }
 
     const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
     int allocation_length = GetCdbByte(4);
-    if (!allocation_length && level == scsi_level::scsi_1_ccs) {
+    if (!allocation_length && level == ScsiLevel::SCSI_1_CCS) {
         allocation_length = 4;
     }
 
@@ -295,7 +295,7 @@ void PrimaryDevice::SendDiagnostic() const
 {
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
@@ -306,36 +306,35 @@ void PrimaryDevice::CheckReady()
     // Not ready if reset
     if (IsReset()) {
         SetReset(false);
-        throw scsi_exception(sense_key::unit_attention, asc::power_on_or_reset);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::POWER_ON_OR_RESET);
     }
 
     // Not ready if it needs attention
     if (IsAttn()) {
         SetAttn(false);
-        throw scsi_exception(sense_key::unit_attention, asc::not_ready_to_ready_change);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
     }
 
     // Return status if not ready
     if (!IsReady()) {
-        throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
+        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable) const
+vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType type, bool is_removable) const
 {
     vector<uint8_t> buf(0x1f + 5);
 
     buf[0] = static_cast<uint8_t>(type);
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
-    buf[3] = level >= scsi_level::scsi_2 ?
-            static_cast<uint8_t>(scsi_level::scsi_2) : static_cast<uint8_t>(scsi_level::scsi_1_ccs);
+    buf[3] = level >= ScsiLevel::SCSI_2 ?
+            static_cast<uint8_t>(ScsiLevel::SCSI_2) : static_cast<uint8_t>(ScsiLevel::SCSI_1_CCS);
     buf[4] = 0x1f;
     // Signal support of linked commands
     buf[7] = 0x08;
 
-    // Padded vendor, product, revision
-    memcpy(&buf.data()[8], GetProductData().GetPaddedName().c_str(), 28);
+    memcpy(buf.data() + 8, GetPaddedName().c_str(), 28);
 
     return buf;
 }
@@ -343,14 +342,14 @@ vector<uint8_t> PrimaryDevice::HandleInquiry(device_type type, bool is_removable
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
     // Return not ready only if there are no errors
-    if (sense_key == sense_key::no_sense && !IsReady()) {
-        throw scsi_exception(sense_key::not_ready, asc::medium_not_present);
+    if (sense_key == SenseKey::NO_SENSE && !IsReady()) {
+        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
     }
 
     vector<byte> buf(18);
 
     // In SCSI-1 mode only return the extended format if more than 4 bytes have been requested
-    const bool extended = level >= scsi_level::scsi_2 || GetCdbByte(4) > 4;
+    const bool extended = level >= ScsiLevel::SCSI_2 || GetCdbByte(4) > 4;
 
     if (extended) {
         // Current error
@@ -368,10 +367,10 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
     if (filemark) {
         buf[2] |= byte { 0x80 };
-        buf[13] = static_cast<byte>(ascq::filemark_detected);
+        buf[13] = static_cast<byte>(Ascq::FILEMARK_DETECTED);
     }
 
-    if (eom != ascq::none) {
+    if (eom != Ascq::NONE) {
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }
@@ -402,14 +401,14 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     // A reservation is valid for all commands except those excluded below
-    const auto cmd = static_cast<scsi_command>(GetCdbByte(0));
-    if (cmd == scsi_command::inquiry || cmd == scsi_command::request_sense
-        || cmd == scsi_command::release_release_element_6) {
+    const auto cmd = static_cast<ScsiCommand>(GetCdbByte(0));
+    if (cmd == ScsiCommand::INQUIRY || cmd == ScsiCommand::REQUEST_SENSE
+        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6) {
         return true;
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == scsi_command::prevent_allow_medium_removal && !(GetCdbByte(4) & 0x01)) {
+    if (cmd == ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL && !(GetCdbByte(4) & 0x01)) {
         return true;
     }
 
@@ -420,8 +419,8 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
         LogTrace("Unknown initiator tries to access reserved device");
     }
 
-    GetController()->Error(sense_key::aborted_command, asc::no_additional_sense_information,
-        status_code::reservation_conflict);
+    GetController()->Error(SenseKey::ABORTED_COMMAND, Asc::NO_ADDITIONAL_SENSE_INFORMATION,
+        StatusCode::RESERVATION_CONFLICT);
 
     return false;
 }

@@ -25,14 +25,14 @@ void AbstractController::CleanUp() const
 
 void AbstractController::Reset()
 {
-    SetPhase(bus_phase::busfree);
+    SetPhase(BusPhase::BUS_FREE);
 
     offset = 0;
     remaining_length = 0;
     current_length = 0;
     chunk_size = 0;
 
-    status = status_code::good;
+    status = StatusCode::GOOD;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 
@@ -124,7 +124,7 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-shutdown_mode AbstractController::ProcessOnController(int ids)
+ShutdownMode AbstractController::ProcessOnController(int ids)
 {
     if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
         initiator_id = 0;

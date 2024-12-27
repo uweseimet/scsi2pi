@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <ctime>
 #include <memory>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
@@ -20,7 +19,7 @@ using namespace spdlog;
 
 class InitiatorExecutor
 {
-    class phase_exception : public runtime_error
+    class PhaseException : public runtime_error
     {
         using runtime_error::runtime_error;
     };
@@ -34,7 +33,7 @@ public:
 
     void SetTarget(int, int, bool);
 
-    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int, bool);
+    int Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool);
     int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
 
     int GetByteCount() const
@@ -99,7 +98,7 @@ private:
 
     bool sasi = false;
 
-    message_code next_message = message_code::identify;
+    MessageCode next_message = MessageCode::IDENTIFY;
 
     static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = 400 };
     static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = 800 };

@@ -250,16 +250,18 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
         const string l = log_level;
         log_level.clear();
-        throw parser_exception("Invalid log level: '" + l + "'");
+        throw ParserException("Invalid log level: '" + l + "'");
     }
 
-    if (!initiator.empty() && (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7)) {
-        throw parser_exception("Invalid initiator ID: '" + initiator + "' (0-7)");
+    if (!initiator.empty()) {
+        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+            throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
+        }
     }
 
     if (!target.empty()) {
-        if (const string &error = ProcessId(target, target_id, target_lun); !error.empty()) {
-            throw parser_exception(error);
+        if (const string &error = ParseIdAndLun(target, target_id, target_lun); !error.empty()) {
+            throw ParserException(error);
         }
     }
 
@@ -275,10 +277,10 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (!log_limit.empty()) {
-        if (int limit; !GetAsUnsignedInt(log_limit, limit) || limit < 0) {
+        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
             const string l = log_limit;
             log_limit.clear();
-            throw parser_exception("Invalid log limit: '" + l + "'");
+            throw ParserException("Invalid log limit: '" + l + "'");
         }
         else {
             formatter.SetLimit(limit);
@@ -289,7 +291,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (target_id == initiator_id) {
-        throw parser_exception("Target ID and initiator ID must not be identical");
+        throw ParserException("Target ID and initiator ID must not be identical");
     }
 
     if (target_lun == -1) {
@@ -303,31 +305,35 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     // Some options only make sense when there is a command
     if (!command.empty()) {
         if (!use_sg && target_id == -1 && !reset_bus) {
-            throw parser_exception("Missing target ID");
+            throw ParserException("Missing target ID");
         }
 
         if (!data.empty() && (!binary_input_filename.empty() || !hex_input_filename.empty())) {
-            throw parser_exception("An input file is not permitted when providing explicit data");
+            throw ParserException("An input file is not permitted when providing explicit data");
         }
 
         if (!binary_input_filename.empty() && !hex_input_filename.empty()) {
-            throw parser_exception("There can only be a single input file");
+            throw ParserException("There can only be a single input file");
         }
 
         if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
-            throw parser_exception("There can only be a single output file");
+            throw ParserException("There can only be a single output file");
         }
 
-        if ((!GetAsUnsignedInt(tout, timeout) || !timeout)) {
-            throw parser_exception("Invalid command timeout value: '" + tout + "'");
+        if (timeout = ParseAsUnsignedInt(tout); timeout <= 0) {
+            throw ParserException("Invalid command timeout value: '" + tout + "'");
         }
     }
 
     int buffer_size = DEFAULT_BUFFER_SIZE;
-    if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || !buffer_size)) {
-        throw parser_exception("Invalid receive buffer size: '" + buf + "'");
+    if (!buf.empty()) {
+        if (buffer_size = ParseAsUnsignedInt(buf); buffer_size <= 0) {
+            throw ParserException("Invalid receive buffer size: '" + buf + "'");
+        }
+        else {
+            buffer.resize(buffer_size);
+        }
     }
-    buffer.resize(buffer_size);
 
     return true;
 }
@@ -374,7 +380,7 @@ void S2pExec::RunInteractive(bool in_process)
                 continue;
             }
         }
-        catch (const parser_exception &e) {
+        catch (const ParserException &e) {
             cerr << "Error: " << e.what() << '\n';
             continue;
         }
@@ -404,7 +410,7 @@ int S2pExec::Run(span<char*> args, bool in_process)
             return EXIT_SUCCESS;
         }
     }
-    catch (const parser_exception &e) {
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return -1;
     }
@@ -431,7 +437,7 @@ int S2pExec::Run()
     int result = EXIT_SUCCESS;
     try {
         const auto [sense_key, asc, ascq] = ExecuteCommand();
-        if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information || ascq) {
+        if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
             if (static_cast<int>(sense_key) != -1) {
                 cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
 
@@ -450,7 +456,7 @@ int S2pExec::Run()
     return result;
 }
 
-tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
+tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
 {
     vector<byte> cmd_bytes;
 
@@ -485,11 +491,11 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         }
         else {
             throw execution_exception(fmt::format("Can't execute command {}",
-                CommandMetaData::Instance().GetCommandName(static_cast<scsi_command>(cdb[0]))));
+                CommandMetaData::Instance().GetCommandName(static_cast<ScsiCommand>(cdb[0]))));
         }
     }
 
-    if (cdb[0] == static_cast<uint8_t>(scsi_command::request_sense)) {
+    if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE)) {
         vector<byte> sense_data;
         transform(buffer.begin(), buffer.begin() + 18, back_inserter(sense_data),
             [](const uint8_t d) {return static_cast<byte>(d);});
@@ -509,7 +515,7 @@ tuple<sense_key, asc, int> S2pExec::ExecuteCommand()
         hex_input_filename.clear();
     }
 
-    return {sense_key {0}, asc {0}, 0};
+    return {SenseKey {0}, Asc {0}, 0};
 }
 
 string S2pExec::ReadData()

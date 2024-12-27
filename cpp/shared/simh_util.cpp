@@ -24,8 +24,8 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
         }
 
         file.clear();
-        meta_data.cls = simh_class::reserved_marker;
-        meta_data.value = static_cast<uint32_t>(simh_marker::end_of_medium);
+        meta_data.cls = SimhClass::RESERVERD_MARKER;
+        meta_data.value = static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM);
     }
 
     return true;
@@ -34,16 +34,16 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 bool simh_util::IsRecord(const SimhMetaData &meta_data)
 {
     // Tape mark
-    if (meta_data.cls == simh_class::tape_mark_good_data_record) {
+    if (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD) {
         return meta_data.value;
     }
 
     // Bad data record, not recovered
-    if (meta_data.cls == simh_class::bad_data_record && !meta_data.value) {
+    if (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value) {
         return false;
     }
 
-    return meta_data.cls != simh_class::private_marker && meta_data.cls != simh_class::reserved_marker;
+    return meta_data.cls != SimhClass::PRIVATE_MARKER && meta_data.cls != SimhClass::RESERVERD_MARKER;
 }
 
 uint32_t simh_util::Pad(int length)
@@ -78,7 +78,7 @@ simh_util::SimhMetaData simh_util::FromLittleEndian(span<const uint8_t> value)
     const uint32_t data = (static_cast<uint32_t>(value[3]) << 24) | (static_cast<uint32_t>(value[2]) << 16)
         | (static_cast<uint32_t>(value[1]) << 8) | value[0];
 
-    return {static_cast<simh_class>(data >> 28), data & 0x0fffffff};
+    return {static_cast<SimhClass>(data >> 28), data & 0x0fffffff};
 }
 
 array<uint8_t, 4> simh_util::ToLittleEndian(const SimhMetaData &meta_data)

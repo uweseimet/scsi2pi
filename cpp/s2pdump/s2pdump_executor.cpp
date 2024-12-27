@@ -24,7 +24,7 @@ void S2pDumpExecutor::TestUnitReady() const
 void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::request_sense);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     RequestSense(cdb, buf);
@@ -33,7 +33,7 @@ void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     return Inquiry(cdb, buf);
@@ -42,7 +42,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::mode_sense_6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::MODE_SENSE_6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buf.size());
@@ -63,7 +63,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
 {
     vector<uint8_t> buf(14);
     vector<uint8_t> cdb(10);
-    cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_10);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
 
     if (ReadCapacity10(cdb, buf)) {
         return {0, 0};
@@ -75,7 +75,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
 
     if (static_cast<int32_t>(capacity) == -1) {
         cdb.resize(16);
-        cdb[0] = static_cast<uint8_t>(scsi_command::read_capacity_16_read_long_16);
+        cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_READ_LONG_16);
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
@@ -94,7 +94,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
 bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
     vector<uint8_t> cdb(10);
-    cdb[0] = static_cast<uint8_t>(is_write ? scsi_command::write_10 : scsi_command::read_10);
+    cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
     SetInt32(cdb, 2, bstart);
     SetInt16(cdb, 7, blength);
 
@@ -104,7 +104,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
 void S2pDumpExecutor::SynchronizeCache() const
 {
     vector<uint8_t> cdb(10);
-    cdb[0] = static_cast<uint8_t>(scsi_command::synchronize_cache_10);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::SYNCHRONIZE_CACHE_10);
 
     SynchronizeCache(cdb);
 }
@@ -112,7 +112,7 @@ void S2pDumpExecutor::SynchronizeCache() const
 void S2pDumpExecutor::SpaceBack() const
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::space_6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::SPACE_6);
     cdb[1] = 0b000;
     SetInt24(cdb, 2, -1);
 
@@ -122,7 +122,7 @@ void S2pDumpExecutor::SpaceBack() const
 int S2pDumpExecutor::Rewind()
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::rewind);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REWIND);
 
     return Rewind(cdb);
 }
@@ -130,7 +130,7 @@ int S2pDumpExecutor::Rewind()
 int S2pDumpExecutor::WriteFilemark() const
 {
     vector<uint8_t> cdb(6);
-    cdb[0] = static_cast<uint8_t>(scsi_command::write_filemarks_6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_FILEMARKS_6);
     SetInt24(cdb, 2, 1);
 
     return WriteFilemark(cdb);
@@ -145,7 +145,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
         SetInt24(cdb, 2, length);
 
         if (Write(cdb, buf, length)) {
-            throw io_exception(fmt::format("Can't write block with {} byte(s)", length));
+            throw IoException(fmt::format("Can't write block with {} byte(s)", length));
         }
 
         return length;
@@ -169,18 +169,18 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             return status;
         }
         else if (status && status != 0x02) {
-            throw io_exception(fmt::format("Unknown error status {}", status));
+            throw IoException(fmt::format("Unknown error status {}", status));
         }
 
-        const sense_key sense_key = static_cast<enum sense_key>(sense_data[2] & 0x0f);
+        const SenseKey sense_key = static_cast<SenseKey>(sense_data[2] & 0x0f);
 
         // EOD or EOM?
-        if (sense_key == sense_key::blank_check || sense_data[2] & 0x40) {
+        if (sense_key == SenseKey::BLANK_CHECK || sense_data[2] & 0x40) {
             GetLogger().debug("No more data");
             return NO_MORE_DATA;
         }
 
-        if (sense_key == sense_key::medium_error) {
+        if (sense_key == SenseKey::MEDIUM_ERROR) {
             if (has_error) {
                 return BAD_BLOCK;
             }

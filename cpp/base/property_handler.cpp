@@ -57,19 +57,19 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     ifstream property_file(filename);
     if (property_file.fail() && !default_file) {
         // Only report an error if an explicitly specified file is missing
-        throw parser_exception(fmt::format("No property file '{}'", filename));
+        throw ParserException(fmt::format("No property file '{}'", filename));
     }
 
     string property;
     while (getline(property_file, property)) {
         if (property_file.fail()) {
-            throw parser_exception(fmt::format("Error reading from property file '{}'", filename));
+            throw ParserException(fmt::format("Error reading from property file '{}'", filename));
         }
 
         if (!property.empty() && !property.starts_with("#")) {
             const vector<string> kv = Split(property, '=', 2);
             if (kv.size() < 2) {
-                throw parser_exception(fmt::format("Invalid property '{}'", property));
+                throw ParserException(fmt::format("Invalid property '{}'", property));
             }
 
             properties[kv[0]] = kv[1];

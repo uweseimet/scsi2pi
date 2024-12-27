@@ -220,8 +220,8 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
     if (const auto &components = Split(inet, '/', 2); components.size() == 2) {
         address = components[0];
 
-        int m;
-        if (!GetAsUnsignedInt(components[1], m) || m < 8 || m > 32) {
+        const int m = ParseAsUnsignedInt(components[1]);
+        if (m == -1 || m < 8 || m > 32) {
             logger.error("Invalid CIDR netmask notation '{}'", components[1]);
             return {"", ""};
         }
@@ -344,7 +344,7 @@ uint32_t TapDriver::Crc32(span<const uint8_t> data)
     uint32_t crc = 0xffffffff;
     for (const auto d : data) {
         crc ^= d;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; ++i) {
             const uint32_t mask = -(static_cast<int>(crc) & 1);
             crc = (crc >> 1) ^ (0xEDB88320 & mask);
         }

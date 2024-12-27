@@ -82,18 +82,18 @@ int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, 
     return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, log);
 }
 
-tuple<sense_key, asc, int> S2pExecExecutor::GetSenseData() const
+tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 {
 #ifdef __linux__
     if (use_sg) {
         array<uint8_t, 14> sense_data;
         vector<uint8_t> cdb(6);
-        cdb[0] = static_cast<uint8_t>(scsi_command::request_sense);
+        cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
         cdb[4] = static_cast<uint8_t>(sense_data.size());
 
         sg_adapter->SendCommand(cdb, sense_data, static_cast<int>(sense_data.size()), 1);
 
-        return {static_cast<sense_key>(static_cast<int>(sense_data[0]) & 0x0f), static_cast<asc>(sense_data[12]), sense_data[13]};
+        return {static_cast<SenseKey>(static_cast<int>(sense_data[0]) & 0x0f), static_cast<Asc>(sense_data[12]), sense_data[13]};
     }
 #endif
 

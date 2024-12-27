@@ -10,15 +10,15 @@
 
 void PhaseHandler::Init()
 {
-    phase_executors[static_cast<int>(bus_phase::busfree)] = [this]() {BusFree(); return true;};
-    phase_executors[static_cast<int>(bus_phase::arbitration)] = []() {return false;};
-    phase_executors[static_cast<int>(bus_phase::selection)] = [this]() {Selection(); return true;};
-    phase_executors[static_cast<int>(bus_phase::reselection)] = []() {return false;};
-    phase_executors[static_cast<int>(bus_phase::command)] = [this]() {Command(); return true;};
-    phase_executors[static_cast<int>(bus_phase::datain)] = [this]() {DataIn(); return true;};
-    phase_executors[static_cast<int>(bus_phase::dataout)] = [this]() {DataOut(); return true;};
-    phase_executors[static_cast<int>(bus_phase::status)] = [this]() {Status(); return true;};
-    phase_executors[static_cast<int>(bus_phase::msgin)] = [this]() {MsgIn(); return true;};
-    phase_executors[static_cast<int>(bus_phase::msgout)] = [this]() {MsgOut(); return true;};
-    phase_executors[static_cast<int>(bus_phase::reserved)] = []() {return false;};
+    phase_executors[static_cast<int>(BusPhase::BUS_FREE)] = [this]() {BusFree(); return true;};
+    phase_executors[static_cast<int>(BusPhase::ARBITRATION)] = []() {return false;};
+    phase_executors[static_cast<int>(BusPhase::SELECTION)] = [this]() {Selection(); return true;};
+    phase_executors[static_cast<int>(BusPhase::RESELECTION)] = []() {return false;};
+    phase_executors[static_cast<int>(BusPhase::COMMAND)] = [this]() {Command(); return true;};
+    phase_executors[static_cast<int>(BusPhase::DATA_IN)] = [this]() {DataIn(); return true;};
+    phase_executors[static_cast<int>(BusPhase::DATA_OUT)] = [this]() {DataOut(); return true;};
+    phase_executors[static_cast<int>(BusPhase::STATUS)] = [this]() {Status(); return true;};
+    phase_executors[static_cast<int>(BusPhase::MSG_IN)] = [this]() {MsgIn(); return true;};
+    phase_executors[static_cast<int>(BusPhase::MSG_OUT)] = [this]() {MsgOut(); return true;};
+    phase_executors[static_cast<int>(BusPhase::RESERVED)] = []() {return false;};
 }

@@ -149,26 +149,24 @@ string s2p_util::GetLine(const string &prompt)
     }
 }
 
-bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
+int s2p_util::ParseAsUnsignedInt(const string &value)
 {
     if (value.find_first_not_of(" 0123456789 ") != string::npos) {
-        return false;
+        return -1;
     }
 
     try {
-        result = static_cast<int>(stoul(value));
+        return static_cast<int>(stoul(value));
     }
     catch (const invalid_argument&) {
-        return false;
+        return -1;
     }
     catch (const out_of_range&) {
-        return false;
+        return -1;
     }
-
-    return true;
 }
 
-string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
+string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -178,19 +176,21 @@ string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
     }
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
-        if (components.size() == 1) {
-            if (!GetAsUnsignedInt(components[0], id) || id > 7) {
+        if (components.size() >= 1) {
+            id = ParseAsUnsignedInt(components[0]);
+            if (id == -1 || id > 7) {
                 id = -1;
                 return "Invalid device ID: '" + components[0] + "' (0-7)";
             }
-
-            return "";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= 32) {
-            id = -1;
-            lun = -1;
-            return "Invalid LUN (0-31)";
+        if (components.size() >= 2) {
+            lun = ParseAsUnsignedInt(components[1]);
+            if (lun == -1 || lun >= 32) {
+                id = -1;
+                lun = -1;
+                return "Invalid LUN (0-31)";
+            }
         }
     }
 
@@ -251,7 +251,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
     const auto flags = static_cast<int>(sense_data[2]);
 
-    const string &s = FormatSenseData(static_cast<sense_key>(flags & 0x0f), static_cast<asc>(sense_data[12]),
+    const string &s = FormatSenseData(static_cast<SenseKey>(flags & 0x0f), static_cast<Asc>(sense_data[12]),
         static_cast<int>(sense_data[13]));
 
     if (!(static_cast<int>(sense_data[0]) & 0x80)) {
@@ -262,7 +262,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
         static_cast<int>(GetInt32(sense_data, 3)));
 }
 
-string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
+string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, int ascq)
 {
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
@@ -292,7 +292,7 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
         size_t i = 0;
         while (i < line_lower.length()) {
             if (line_lower[i] == ':' && i + 2 < line_lower.length()) {
-                i++;
+                ++i;
             }
 
             const int b1 = HexToDec(line_lower[i]);

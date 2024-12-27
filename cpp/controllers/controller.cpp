@@ -42,9 +42,9 @@ bool Controller::Process()
         return false;
     }
 
-    // TODO Catch scsi_exception here instead of everywhere else and call Error()?
+    // TODO Catch ScsiException here instead of everywhere else and call Error()?
     if (!ProcessPhase()) {
-        Error(sense_key::aborted_command, asc::internal_target_failure);
+        Error(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         return false;
     }
 
@@ -55,7 +55,7 @@ void Controller::BusFree()
 {
     if (!IsBusFree()) {
         LogTrace("BUS FREE phase");
-        SetPhase(bus_phase::busfree);
+        SetPhase(BusPhase::BUS_FREE);
 
         GetBus().SetREQ(false);
         GetBus().SetMSG(false);
@@ -63,7 +63,7 @@ void Controller::BusFree()
         GetBus().SetIO(false);
         GetBus().SetBSY(false);
 
-        SetStatus(status_code::good);
+        SetStatus(StatusCode::GOOD);
 
         identified_lun = -1;
 
@@ -81,7 +81,7 @@ void Controller::Selection()
 {
     if (!IsSelection()) {
         LogTrace("SELECTION phase");
-        SetPhase(bus_phase::selection);
+        SetPhase(BusPhase::SELECTION);
 
         GetBus().SetBSY(true);
         return;
@@ -101,7 +101,7 @@ void Controller::Command()
 {
     if (!IsCommand()) {
         LogTrace("COMMAND phase");
-        SetPhase(bus_phase::command);
+        SetPhase(BusPhase::COMMAND);
 
         GetBus().SetMSG(false);
         GetBus().SetCD(true);
@@ -113,20 +113,20 @@ void Controller::Command()
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
-                RaiseDeferredError(sense_key::illegal_request, asc::invalid_command_operation_code);
+                RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
                 GetBus().SetRST(true);
-                RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
+                RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             }
             return;
         }
 
         const int command_bytes_count = CommandMetaData::Instance().GetByteCount(
-            static_cast<scsi_command>(buf[0]));
+            static_cast<ScsiCommand>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
-        for (int i = 0; i < command_bytes_count; i++) {
+        for (int i = 0; i < command_bytes_count; ++i) {
             SetCdbByte(i, buf[i]);
         }
         AddCdbToScript();
@@ -140,7 +140,7 @@ void Controller::Command()
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_bytes_count, GetCdb()[0], actual_count));
             GetBus().SetRST(true);
-            RaiseDeferredError(sense_key::aborted_command, asc::command_phase_error);
+            RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             return;
         }
 
@@ -149,18 +149,18 @@ void Controller::Command()
         flag = control & 0x02;
 
         if (flag && !linked) {
-            RaiseDeferredError(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
             return;
         }
 
         // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_sense_key != sense_key::no_sense
-            && static_cast<scsi_command>(GetCdb()[0]) == scsi_command::request_sense) {
+        if (deferred_sense_key != SenseKey::NO_SENSE
+            && static_cast<ScsiCommand>(GetCdb()[0]) == ScsiCommand::REQUEST_SENSE) {
             ProvideSenseData();
             return;
         }
-        deferred_sense_key = sense_key::no_sense;
-        deferred_asc = asc::no_additional_sense_information;
+        deferred_sense_key = SenseKey::NO_SENSE;
+        deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
         Execute();
     }
@@ -172,12 +172,12 @@ void Controller::Execute()
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = static_cast<scsi_command>(GetCdb()[0]);
+    const auto opcode = static_cast<ScsiCommand>(GetCdb()[0]);
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (opcode != scsi_command::inquiry && opcode != scsi_command::request_sense) {
-            Error(sense_key::illegal_request, asc::logical_unit_not_supported);
+        if (opcode != ScsiCommand::INQUIRY && opcode != ScsiCommand::REQUEST_SENSE) {
+            Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
             return;
         }
 
@@ -186,8 +186,8 @@ void Controller::Execute()
     }
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (opcode != scsi_command::request_sense) {
-        SetStatus(status_code::good);
+    if (opcode != ScsiCommand::REQUEST_SENSE) {
+        SetStatus(StatusCode::GOOD);
         device->ResetStatus();
     }
 
@@ -195,7 +195,7 @@ void Controller::Execute()
         try {
             device->Dispatch(opcode);
         }
-        catch (const scsi_exception &e) {
+        catch (const ScsiException &e) {
             Error(e.get_sense_key(), e.get_asc());
         }
     }
@@ -211,7 +211,7 @@ void Controller::Status()
     LogTrace(fmt::format("STATUS phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
         static_cast<int>(GetStatus())));
 
-    SetPhase(bus_phase::status);
+    SetPhase(BusPhase::STATUS);
 
     GetBus().SetMSG(false);
     GetBus().SetCD(true);
@@ -223,8 +223,8 @@ void Controller::Status()
 
     // If this is a successfully terminated linked command convert the status code
     GetBuffer()[0] =
-        linked && GetStatus() == status_code::good ?
-            static_cast<uint8_t>(status_code::intermediate) : static_cast<uint8_t>(GetStatus());
+        linked && GetStatus() == StatusCode::GOOD ?
+            static_cast<uint8_t>(StatusCode::INTERMEDIATE) : static_cast<uint8_t>(GetStatus());
 }
 
 void Controller::MsgIn()
@@ -235,7 +235,7 @@ void Controller::MsgIn()
     }
 
     LogTrace("MESSAGE IN phase");
-    SetPhase(bus_phase::msgin);
+    SetPhase(BusPhase::MSG_IN);
 
     GetBus().SetMSG(true);
     GetBus().SetCD(true);
@@ -259,7 +259,7 @@ void Controller::MsgOut()
         msg_bytes.clear();
     }
 
-    SetPhase(bus_phase::msgout);
+    SetPhase(BusPhase::MSG_OUT);
 
     GetBus().SetMSG(true);
     GetBus().SetCD(true);
@@ -283,7 +283,7 @@ void Controller::DataIn()
     }
 
     LogTrace("DATA IN phase");
-    SetPhase(bus_phase::datain);
+    SetPhase(BusPhase::DATA_IN);
 
     GetBus().SetMSG(false);
     GetBus().SetCD(false);
@@ -309,7 +309,7 @@ void Controller::DataOut()
     }
 
     LogTrace("DATA OUT phase");
-    SetPhase(bus_phase::dataout);
+    SetPhase(BusPhase::DATA_OUT);
 
     GetBus().SetMSG(false);
     GetBus().SetCD(false);
@@ -318,7 +318,7 @@ void Controller::DataOut()
     ResetOffset();
 }
 
-void Controller::Error(sense_key sense_key, asc asc, status_code status)
+void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status)
 {
     GetBus().Acquire();
     if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
@@ -327,11 +327,11 @@ void Controller::Error(sense_key sense_key, asc asc, status_code status)
     }
 
     int lun = GetEffectiveLun();
-    if (asc == asc::logical_unit_not_supported || !GetDeviceForLun(lun)) {
+    if (asc == Asc::LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
         lun = 0;
     }
 
-    if (sense_key != sense_key::no_sense || asc != asc::no_additional_sense_information) {
+    if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
         LogDebug(FormatSenseData(sense_key, asc));
 
         // Set Sense Key and ASC in the device for a subsequent REQUEST SENSE
@@ -362,7 +362,7 @@ void Controller::Send()
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             LogWarn(fmt::format("Sent {0} byte(s), {1} required", l, length));
             GetBus().SetRST(true);
-            Error(sense_key::aborted_command, asc::data_phase_error);
+            Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
 
@@ -383,24 +383,24 @@ void Controller::Send()
     // All data have been transferred
 
     switch (GetPhase()) {
-    case bus_phase::msgin:
+    case BusPhase::MSG_IN:
         ProcessEndOfMessage();
         break;
 
-    case bus_phase::datain:
+    case BusPhase::DATA_IN:
         Status();
         break;
 
-    case bus_phase::status:
+    case BusPhase::STATUS:
         SetCurrentLength(1);
         SetTransferSize(1, 1);
         // Message byte
         if (linked) {
             GetBuffer()[0] = static_cast<uint8_t>(
-                flag ? message_code::linked_command_complete_with_flag : message_code::linked_command_complete);
+                flag ? MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG : MessageCode::LINKED_COMMAND_COMPLETE);
         }
         else {
-            GetBuffer()[0] = static_cast<uint8_t>(message_code::command_complete);
+            GetBuffer()[0] = static_cast<uint8_t>(MessageCode::COMMAND_COMPLETE);
         }
         MsgIn();
         break;
@@ -424,7 +424,7 @@ void Controller::Receive()
         if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
             GetBus().SetRST(true);
-            Error(sense_key::aborted_command, asc::data_phase_error);
+            Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
 
@@ -446,13 +446,13 @@ void Controller::Receive()
 
     // Processing after receiving data
     switch (GetPhase()) {
-    case bus_phase::dataout:
+    case BusPhase::DATA_OUT:
         if (!TransferFromHost(length)) {
             return;
         }
         break;
 
-    case bus_phase::msgout:
+    case BusPhase::MSG_OUT:
         UpdateTransferLength(length);
         XferMsg();
         break;
@@ -469,12 +469,12 @@ void Controller::Receive()
     }
 
     switch (GetPhase()) {
-    case bus_phase::dataout:
+    case BusPhase::DATA_OUT:
         // All data have been transferred
         Status();
         break;
 
-    case bus_phase::msgout:
+    case BusPhase::MSG_OUT:
         ProcessMessage();
         break;
 
@@ -486,7 +486,7 @@ void Controller::Receive()
 
 void Controller::TransferToHost()
 {
-    assert(!CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
+    assert(!CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
 
     try {
         GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer());
@@ -495,21 +495,21 @@ void Controller::TransferToHost()
             ResetOffset();
         }
     }
-    catch (const scsi_exception &e) {
+    catch (const ScsiException &e) {
         Error(e.get_sense_key(), e.get_asc());
     }
 }
 
 bool Controller::TransferFromHost(int length)
 {
-    const auto cmd = static_cast<scsi_command>(GetCdb()[0]);
-    assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(GetCdb()[0])).has_data_out);
+    const auto cmd = static_cast<ScsiCommand>(GetCdb()[0]);
+    assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
 
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
         // TODO Try to remove this special case
-        if (cmd == scsi_command::mode_select_6 || cmd == scsi_command::mode_select_10) {
+        if (cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), 0);
         }
@@ -517,7 +517,7 @@ bool Controller::TransferFromHost(int length)
             transferred_length = device->WriteData(GetCdb(), GetBuffer(), GetOffset(), length);
         }
     }
-    catch (const scsi_exception &e) {
+    catch (const ScsiException &e) {
         Error(e.get_sense_key(), e.get_asc());
         return false;
     }
@@ -585,13 +585,13 @@ void Controller::ParseMessage()
             break;
         }
 
-        case static_cast<uint8_t>(message_code::abort): {
+        case static_cast<uint8_t>(MessageCode::ABORT): {
             LogTrace("Received ABORT message");
             BusFree();
             return;
         }
 
-        case static_cast<uint8_t>(message_code::bus_device_reset): {
+        case static_cast<uint8_t>(MessageCode::BUS_DEVICE_RESET): {
             LogTrace("Received BUS DEVICE RESET message");
             if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->SetReset(true);
@@ -640,7 +640,7 @@ void Controller::ProcessEndOfMessage()
     }
 }
 
-void Controller::RaiseDeferredError(sense_key s, asc a)
+void Controller::RaiseDeferredError(SenseKey s, Asc a)
 {
     deferred_sense_key = s;
     deferred_asc = a;
@@ -658,8 +658,8 @@ void Controller::ProvideSenseData()
     buf[7] = 10;
     buf[12] = static_cast<uint8_t>(deferred_asc);
 
-    deferred_sense_key = sense_key::no_sense;
-    deferred_asc = asc::no_additional_sense_information;
+    deferred_sense_key = SenseKey::NO_SENSE;
+    deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
     DataIn();
 }

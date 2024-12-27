@@ -68,7 +68,7 @@ protected:
 
 private:
 
-    enum access_mode
+    enum AccessMode
     {
         RW6, RW10, RW16, SEEK6, SEEK10
     };
@@ -82,10 +82,10 @@ private:
     void ReadCapacity16();
     void ReadFormatCapacities();
     void FormatUnit();
-    void Read(access_mode);
-    void Write(access_mode);
-    void Verify(access_mode);
-    void Seek(access_mode);
+    void Read(AccessMode);
+    void Write(AccessMode);
+    void Verify(AccessMode);
+    void Seek(AccessMode);
     void ReadLong10();
     void ReadLong16();
     void WriteLong10();
@@ -99,8 +99,8 @@ private:
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
-    uint64_t ValidateBlockAddress(access_mode) const;
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
+    uint64_t ValidateBlockAddress(AccessMode) const;
+    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode) const;
 
     shared_ptr<Cache> cache;
 

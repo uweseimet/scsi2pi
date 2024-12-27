@@ -22,13 +22,6 @@ class S2pExec
         using runtime_error::runtime_error;
     };
 
-    enum class protobuf_format
-    {
-        binary = 0b001,
-        json = 0b010,
-        text = 0b100
-    };
-
 public:
 
     int Run(span<char*>, bool);
@@ -42,7 +35,7 @@ private:
     void RunInteractive(bool);
     int Run();
 
-    tuple<sense_key, asc, int> ExecuteCommand();
+    tuple<SenseKey, Asc, int> ExecuteCommand();
 
     string ReadData();
     string WriteData(span<const uint8_t>);

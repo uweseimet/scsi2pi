@@ -27,7 +27,7 @@ public:
 
     string GetIdentifier() const override
     {
-        return device + " (" + GetProductData().GetPaddedName() + ")";
+        return device + " (" + GetPaddedName() + ")";
     }
 
     string GetDevice() const
@@ -37,7 +37,7 @@ public:
 
     string SetProductData(const ProductData&, bool force = true) override;
 
-    void Dispatch(scsi_command) override;
+    void Dispatch(ScsiCommand) override;
 
     vector<uint8_t> InquiryInternal() const override;
 

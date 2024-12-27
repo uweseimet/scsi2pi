@@ -30,11 +30,11 @@ TEST(DiskTest, Dispatch)
     disk->SetMediumChanged(false);
     disk->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::test_unit_ready));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::TEST_UNIT_READY));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    Dispatch(disk, scsi_command::test_unit_ready, sense_key::unit_attention, asc::not_ready_to_ready_change);
+    Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
@@ -42,7 +42,7 @@ TEST(DiskTest, ValidateFile)
 {
     NiceMock<MockDisk> disk;
 
-    EXPECT_THROW(disk.ValidateFile(), io_exception)<< "Device has 0 blocks";
+    EXPECT_THROW(disk.ValidateFile(), IoException)<< "Device has 0 blocks";
 
     disk.SetBlockCount(1);
     disk.SetFilename(CreateImageFile(disk, 512));
@@ -53,59 +53,59 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::rezero, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::REZERO, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::rezero));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::REZERO));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::format_unit, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::FORMAT_UNIT, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::format_unit));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::FORMAT_UNIT));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, scsi_command::format_unit, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::FORMAT_UNIT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
 TEST(DiskTest, ReassignBlocks)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::reassign_blocks, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::REASSIGN_BLOCKS, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "REASSIGN must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::reassign_blocks));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::REASSIGN_BLOCKS));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, Seek6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::seek_6, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "SEEK(6) must fail for a medium with 0 sectors");
 
     disk->SetBlockCount(1);
     // Sector count
     controller->SetCdbByte(4, 1);
-    Dispatch(disk, scsi_command::seek_6, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "SEEK(6) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -113,50 +113,50 @@ TEST(DiskTest, Seek6)
     // Sector count
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::seek_6));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SEEK_6));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, Seek10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::seek_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::SEEK_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "SEEK(10) must fail for a medium with 0 sectors");
 
     disk->SetBlockCount(1);
     // Sector count
     controller->SetCdbByte(5, 1);
-    Dispatch(disk, scsi_command::seek_10, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::SEEK_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "SEEK(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::seek_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SEEK_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadCapacity10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_capacity_10, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "READ CAPACITY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, scsi_command::read_capacity_10, sense_key::illegal_request, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_10, SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT,
         "READ CAPACITY(10) must fail because the medium has no capacity");
 
     disk->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_capacity_10));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_CAPACITY_10));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234, GetInt16(buf, 0));
     EXPECT_EQ(0x5677, GetInt16(buf, 2));
 
     disk->SetBlockCount(0x1234567887654321);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_capacity_10));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_CAPACITY_10));
     buf = controller->GetBuffer();
     EXPECT_EQ(0xffff, GetInt16(buf, 0));
     EXPECT_EQ(0xffff, GetInt16(buf, 2));
@@ -166,25 +166,25 @@ TEST(DiskTest, ReadCapacity16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Neither READ CAPACITY(16) nor READ LONG(16)");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "READ CAPACITY(16) must fail because drive is not ready");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
     disk->SetReady(true);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT,
         "READ CAPACITY(16) must fail because the medium has no capacity");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
     disk->SetBlockCount(0x1234567887654321);
     disk->SetBlockSize(1024);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_capacity_16_read_long_16));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16));
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234, GetInt16(buf, 0));
     EXPECT_EQ(0x5678, GetInt16(buf, 2));
@@ -198,7 +198,7 @@ TEST(DiskTest, ReadFormatCapacities)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_format_capacities, sense_key::not_ready, asc::medium_not_present,
+    Dispatch(disk, ScsiCommand::READ_FORMAT_CAPACITIES, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "READ FORMAT CAPACITIES must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -206,7 +206,7 @@ TEST(DiskTest, ReadFormatCapacities)
     disk->SetBlockSize(512);
     // Allocation length
     controller->SetCdbByte(8, 255);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_format_capacities));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_FORMAT_CAPACITIES));
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(40U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
@@ -223,7 +223,7 @@ TEST(DiskTest, ReadFormatCapacities)
     disk->SetReadOnly(true);
     // Allocation length
     controller->SetCdbByte(8, 255);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_format_capacities));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_FORMAT_CAPACITIES));
     buf = controller->GetBuffer();
     EXPECT_EQ(8U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
@@ -234,7 +234,7 @@ TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_6, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::READ_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "READ(6) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -244,17 +244,17 @@ TEST(DiskTest, Read6)
     disk->ValidateFile();
 
     controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_6));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_6));
 
     controller->SetCdbByte(4, 2);
-    Dispatch(disk, scsi_command::read_6, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::READ_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Read10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::READ_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "READ(10) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -264,17 +264,17 @@ TEST(DiskTest, Read10)
     disk->ValidateFile();
 
     controller->SetCdbByte(8, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_10));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_10));
 
     controller->SetCdbByte(8, 2);
-    Dispatch(disk, scsi_command::read_10, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::READ_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Read16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::read_16, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::READ_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "READ(16) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -284,24 +284,24 @@ TEST(DiskTest, Read16)
     disk->ValidateFile();
 
     controller->SetCdbByte(13, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_16));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_16));
 
     controller->SetCdbByte(13, 2);
-    Dispatch(disk, scsi_command::read_16, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::READ_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::write_6, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "WRITE(6) must fail for a medium with 0 blocks");
 
     disk->SetBlockCount(1);
     disk->SetReady(true);
     disk->SetProtectable(true);
     disk->SetProtected(true);
-    Dispatch(disk, scsi_command::write_6, sense_key::data_protect, asc::write_protected,
+    Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::DATA_PROTECT, Asc::WRITE_PROTECTED,
         "WRITE(6) must fail because drive is write-protected");
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -310,27 +310,27 @@ TEST(DiskTest, Write6)
     disk->ValidateFile();
 
     disk->SetProtected(false);
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_6));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::WRITE_6));
     controller->SetCdbByte(4, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_6));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_6));
     EXPECT_EQ(512, controller->GetRemainingLength());
     EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
 
     controller->SetCdbByte(4, 2);
-    Dispatch(disk, scsi_command::write_6, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::write_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "WRITE(10) must fail for a medium with 0 blocks");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -338,27 +338,27 @@ TEST(DiskTest, Write10)
     disk->ValidateFile();
 
     disk->SetProtected(false);
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_10));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::WRITE_10));
     controller->SetCdbByte(8, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_10));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_10));
     EXPECT_EQ(512, controller->GetRemainingLength());
     EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
 
     controller->SetCdbByte(8, 2);
-    Dispatch(disk, scsi_command::write_10, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::write_16, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "WRITE(16) must fail for a medium with 0 blocks");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_16));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -366,21 +366,21 @@ TEST(DiskTest, Write16)
     disk->ValidateFile();
 
     disk->SetProtected(false);
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::write_16));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::WRITE_16));
     controller->SetCdbByte(13, 1);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_16));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_16));
     EXPECT_EQ(512, controller->GetRemainingLength());
     EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
 
     controller->SetCdbByte(13, 2);
-    Dispatch(disk, scsi_command::write_16, sense_key::illegal_request, asc::lba_out_of_range);
+    Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Verify10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::verify_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::VERIFY_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "VERIFY(10) must fail for a medium with 0 blocks");
 
     disk->SetReady(true);
@@ -388,15 +388,15 @@ TEST(DiskTest, Verify10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::verify_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::VERIFY_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, Verify16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, scsi_command::verify_16, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::VERIFY_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "VERIFY(16) must fail for a medium with 0 blocks");
 
     disk->SetReady(true);
@@ -404,8 +404,8 @@ TEST(DiskTest, Verify16)
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::verify_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::VERIFY_16));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadLong10)
@@ -413,15 +413,15 @@ TEST(DiskTest, ReadLong10)
     auto [controller, disk] = CreateDisk();
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_long_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_LONG_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
-    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "READ LONG(10) must fail because the RelAdr bit is set");
 
     controller->SetCdbByte(2, 1);
-    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "READ LONG(10) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
@@ -430,7 +430,7 @@ TEST(DiskTest, ReadLong10)
 
     // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -438,12 +438,12 @@ TEST(DiskTest, ReadLong10)
 
     // 512 bytes
     controller->SetCdbByte(7, 0x02);
-    Dispatch(disk, scsi_command::read_long_10);
+    Dispatch(disk, ScsiCommand::READ_LONG_10);
 
     // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::read_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -457,12 +457,12 @@ TEST(DiskTest, ReadLong16)
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_capacity_16_read_long_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(2, 1);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "READ LONG(16) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
@@ -472,7 +472,7 @@ TEST(DiskTest, ReadLong16)
     // 4 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -481,13 +481,13 @@ TEST(DiskTest, ReadLong16)
     // 512 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(12, 0x02);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16);
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16);
 
     // 516 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, scsi_command::read_capacity_16_read_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -499,15 +499,15 @@ TEST(DiskTest, WriteLong10)
     auto [controller, disk] = CreateDisk();
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_long_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_LONG_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
-    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "WRITE LONG(10) must fail because the RelAdr bit is set");
 
     controller->SetCdbByte(2, 1);
-    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "WRITE LONG(10) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
@@ -516,7 +516,7 @@ TEST(DiskTest, WriteLong10)
 
     // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -524,12 +524,12 @@ TEST(DiskTest, WriteLong10)
 
     // 512 bytes
     controller->SetCdbByte(7, 0x02);
-    Dispatch(disk, scsi_command::write_long_10);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10);
 
     // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, scsi_command::write_long_10, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -541,12 +541,12 @@ TEST(DiskTest, WriteLong16)
     auto [controller, disk] = CreateDisk();
 
     controller->SetCdbByte(2, 1);
-    Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::lba_out_of_range,
+    Dispatch(disk, ScsiCommand::WRITE_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
         "WRITE LONG(16) must fail because the capacity is exceeded");
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::write_long_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_LONG_16));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     disk->SetBlockCount(1);
     disk->SetFilename(CreateImageFile(*disk, 512));
@@ -554,7 +554,7 @@ TEST(DiskTest, WriteLong16)
 
     // 4 bytes
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -562,12 +562,12 @@ TEST(DiskTest, WriteLong16)
 
     // 512 bytes
     controller->SetCdbByte(12, 0x02);
-    Dispatch(disk, scsi_command::write_long_16);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_16);
 
     // 516 bytes
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, scsi_command::write_long_16, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(disk, ScsiCommand::WRITE_LONG_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     RequestSense(controller, disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
@@ -627,7 +627,7 @@ TEST(DiskTest, ModeSense6)
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::MODE_SENSE_6));
     ValidateCachingPage(*controller, 12);
 }
 
@@ -644,7 +644,7 @@ TEST(DiskTest, ModeSense10)
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::MODE_SENSE_10));
     ValidateCachingPage(*controller, 16);
 }
 
@@ -652,18 +652,18 @@ TEST(DiskTest, ReadData)
 {
     MockDisk disk;
 
-    EXPECT_THAT([&] {disk.ReadData( {});}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
-                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
+    EXPECT_THAT([&] {disk.ReadData( {});}, Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
+                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, WriteData)
 {
     MockDisk disk;
 
-    EXPECT_THAT([&] {disk.WriteData( vector {static_cast<int>(scsi_command::write_6)}, {}, 0, 0);}, Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::not_ready),
-                Property(&scsi_exception::get_asc, asc::medium_not_present)))) << "Disk is not ready";
+    EXPECT_THAT([&] {disk.WriteData( vector {static_cast<int>(ScsiCommand::WRITE_6)}, {}, 0, 0);}, Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
+                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache)
@@ -672,13 +672,13 @@ TEST(DiskTest, SynchronizeCache)
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::synchronize_cache_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::synchronize_cache_space_16));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadDefectData)
@@ -686,8 +686,8 @@ TEST(DiskTest, ReadDefectData)
     auto [controller, disk] = CreateDisk();
 
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(disk, scsi_command::read_defect_data_10));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_DEFECT_DATA_10));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ChangeBlockSize)

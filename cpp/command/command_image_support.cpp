@@ -312,7 +312,7 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
 
     return true;
 #else
-	return false;
+    return false;
 #endif
 }
 #pragma GCC diagnostic pop

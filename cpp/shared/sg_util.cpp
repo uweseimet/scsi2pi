@@ -20,17 +20,17 @@ using namespace memory_util;
 int sg_util::OpenDevice(const string &device)
 {
     if (!device.starts_with("/dev/sg")) {
-        throw io_exception(fmt::format("Missing or invalid device file: '{}'", device));
+        throw IoException(fmt::format("Missing or invalid device file: '{}'", device));
     }
 
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
-        throw io_exception(fmt::format("Can't open '{0}': {1}", device, strerror(errno)));
+        throw IoException(fmt::format("Can't open '{0}': {1}", device, strerror(errno)));
     }
 
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
-        throw io_exception(
+        throw IoException(
             fmt::format("'{0}' is not supported by the Linux SG 3 driver: {1}", device, strerror(errno)));
     }
 
@@ -39,7 +39,7 @@ int sg_util::OpenDevice(const string &device)
 
 int sg_util::GetAllocationLength(span<uint8_t> cdb)
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
 
     // For commands without allocation length field the length is coded as a negative offset
     if (meta_data.allocation_length_offset < 0) {
@@ -72,7 +72,7 @@ int sg_util::GetAllocationLength(span<uint8_t> cdb)
 
 void sg_util::UpdateStartBlock(span<uint8_t> cdb, int length)
 {
-    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0])); meta_data.block_size) {
+    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])); meta_data.block_size) {
     case 3:
         SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
         break;
@@ -92,7 +92,7 @@ void sg_util::UpdateStartBlock(span<uint8_t> cdb, int length)
 
 void sg_util::SetBlockCount(span<uint8_t> cdb, int length)
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<scsi_command>(cdb[0]));
+    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
     if (meta_data.block_size) {
         switch (meta_data.allocation_length_size) {
         case 1:

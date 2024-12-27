@@ -161,7 +161,7 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_attach1;
     command_attach1.set_operation(ATTACH);
-    const auto device1 = command_attach1.add_devices();
+    auto *device1 = command_attach1.add_devices();
     device1->set_type(SCHS);
     device1->set_id(-1);
     CommandContext context_attach1(command_attach1, *default_logger());
@@ -169,7 +169,7 @@ TEST(CommandExecutorTest, ProcessCmd)
 
     PbCommand command_attach2;
     command_attach2.set_operation(ATTACH);
-    const auto device2 = command_attach2.add_devices();
+    auto *device2 = command_attach2.add_devices();
     device2->set_type(SCHS);
     device2->set_id(0);
     device2->set_unit(1);
@@ -431,7 +431,7 @@ TEST(CommandExecutorTest, EnsureLun0)
     PbCommand command;
     CommandContext context(command, *default_logger());
 
-    const auto device1 = command.add_devices();
+    auto *device1 = command.add_devices();
     device1->set_unit(0);
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 

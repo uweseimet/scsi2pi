@@ -27,13 +27,13 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 
     file << dec << "-i " << id << COMPONENT_SEPARATOR << lun << " -c " << hex;
 
-    int count = CommandMetaData::Instance().GetByteCount(static_cast<scsi_command>(cdb[0]));
+    int count = CommandMetaData::Instance().GetByteCount(static_cast<ScsiCommand>(cdb[0]));
     // In case of an unknown command add all available CDB data
     if (!count) {
         count = static_cast<int>(cdb.size());
     }
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; ++i) {
         if (i) {
             file << ':';
         }
@@ -49,7 +49,7 @@ void ScriptGenerator::AddData(span<const uint8_t> data)
 
     file << " -d " << hex;
 
-    for (size_t i = 0; i < data.size(); i++) {
+    for (size_t i = 0; i < data.size(); ++i) {
         if (i) {
             if (!(i % 16)) {
                 file << "\\\n";

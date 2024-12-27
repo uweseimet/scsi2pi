@@ -144,7 +144,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
         return {};
     }
 
-    cdb[0] = static_cast<uint8_t>(scsi_command::inquiry);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
     if (ExecuteCommand(cdb, buf, 3)) {
         cerr << "Error: Can't get drive data: " << strerror(errno) << '\n';
@@ -159,7 +159,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     cdb.resize(10);
     buf.resize(252);
     cdb[4] = 0;
-    cdb[0] = static_cast<uint8_t>(scsi_command::read_format_capacities);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_FORMAT_CAPACITIES);
     cdb[8] = static_cast<uint8_t>(buf.size());
 
     if (ExecuteCommand(cdb, buf, 5)) {
@@ -223,7 +223,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
     vector<uint8_t> cdb(6);
     vector<uint8_t> parameters;
 
-    cdb[0] = static_cast<uint8_t>(scsi_command::format_unit);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
     if (n) {
         // FmdData
         cdb[1] = 0x17;

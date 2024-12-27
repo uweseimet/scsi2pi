@@ -49,13 +49,13 @@ TEST(HostServicesTest, TestUnitReady)
     auto [controller, services] = CreateDevice(SCHS);
 
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::test_unit_ready));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST(HostServicesTest, Inquiry)
 {
-    TestShared::Inquiry(SCHS, device_type::processor, scsi_level::spc_3, "SCSI2Pi Host Services   ", 0x1f, false);
+    TestShared::Inquiry(SCHS, DeviceType::PROCESSOR, ScsiLevel::SPC_3, "SCSI2Pi Host Services   ", 0x1f, false);
 }
 
 TEST(HostServicesTest, StartStopUnit)
@@ -64,24 +64,24 @@ TEST(HostServicesTest, StartStopUnit)
 
     // STOP
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::start_stop));
-    EXPECT_EQ(status_code::good, controller->GetStatus());
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
-    Dispatch(services, scsi_command::start_stop, sense_key::illegal_request, asc::invalid_field_in_cdb);
+    Dispatch(services, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
 TEST(HostServicesTest, ExecuteOperation)
@@ -89,20 +89,20 @@ TEST(HostServicesTest, ExecuteOperation)
     auto [controller, services] = CreateDevice(SCHS);
 
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, scsi_command::execute_operation, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, scsi_command::execute_operation, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b001);
-    Dispatch(services, scsi_command::execute_operation, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal length");
 
     controller->SetCdbByte(8, 1);
     controller->SetCdbByte(1, 0b001);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::execute_operation));
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::EXECUTE_OPERATION));
 }
 
 TEST(HostServicesTest, ReceiveOperationResults)
@@ -110,27 +110,27 @@ TEST(HostServicesTest, ReceiveOperationResults)
     auto [controller, services] = CreateDevice(SCHS);
 
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, scsi_command::receive_operation_results, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, scsi_command::receive_operation_results, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b010);
-    Dispatch(services, scsi_command::receive_operation_results, sense_key::aborted_command,
-        asc::internal_target_failure, "No matching initiator ID");
+    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ABORTED_COMMAND,
+        Asc::INTERNAL_TARGET_FAILURE, "No matching initiator ID");
 }
 
 TEST(HostServicesTest, ModeSense6)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    Dispatch(services, scsi_command::mode_sense_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, scsi_command::mode_sense_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -138,7 +138,7 @@ TEST(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_6));
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -154,14 +154,14 @@ TEST(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::mode_sense_6));
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_6));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, scsi_command::mode_sense_6, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
@@ -169,11 +169,11 @@ TEST(HostServicesTest, ModeSense10)
 {
     auto [controller, services] = CreateDevice(SCHS);
 
-    Dispatch(services, scsi_command::mode_sense_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, scsi_command::mode_sense_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -181,7 +181,7 @@ TEST(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_10));
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -197,14 +197,14 @@ TEST(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, scsi_command::mode_sense_10));
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_10));
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, scsi_command::mode_sense_10, sense_key::illegal_request, asc::invalid_field_in_cdb,
+    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
@@ -228,13 +228,13 @@ TEST(HostServicesTest, WriteData)
     auto [controller, services] = CreateDevice(SCHS);
     array<uint8_t, 1> buf = { };
 
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::test_unit_ready));
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf,0, 0), scsi_exception)<< "Illegal command";
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::TEST_UNIT_READY));
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf,0, 0), ScsiException)<< "Illegal command";
 
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::execute_operation));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0, 0));
 
-    controller->SetCdbByte(0, static_cast<int>(scsi_command::execute_operation));
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0,0), scsi_exception)<< "protobuf data are invalid";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0,0), ScsiException)<< "protobuf data are invalid";
 }
