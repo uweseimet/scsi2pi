@@ -42,7 +42,7 @@ set<int> BoardExecutor::ReportLuns(vector<uint8_t> &cdb, span<uint8_t> buf)
     }
 
     const auto lun_count = (static_cast<size_t>(buf[2]) << 8) | static_cast<size_t>(buf[3]) / 8;
-    GetLogger().trace("Target reported LUN count of " + to_string(lun_count));
+    GetLogger().trace(fmt::format("Target reported LUN count of {}", lun_count));
 
     set<int> luns;
     int offset = 8;
@@ -52,7 +52,7 @@ set<int> BoardExecutor::ReportLuns(vector<uint8_t> &cdb, span<uint8_t> buf)
             luns.insert(static_cast<int>(lun));
         }
         else {
-            GetLogger().trace("Target reported invalid LUN " + to_string(lun));
+            GetLogger().trace(fmt::format("Target reported invalid LUN {}", lun));
         }
     }
 

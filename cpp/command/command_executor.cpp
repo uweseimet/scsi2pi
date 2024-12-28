@@ -750,5 +750,5 @@ string CommandExecutor::GetTypeString(const Device &device)
 
 string CommandExecutor::GetIdentifier(const Device &device)
 {
-    return GetTypeString(device) + " " + to_string(device.GetId()) + ":" + to_string(device.GetLun());
+    return fmt::format("{0} {1}:{2}", GetTypeString(device), device.GetId(), device.GetLun());
 }

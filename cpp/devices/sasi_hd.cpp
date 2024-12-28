@@ -8,8 +8,7 @@
 
 #include "sasi_hd.h"
 
-SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false,
-    sector_sizes)
+SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false, sector_sizes)
 {
     Disk::SetProductData( { "", "SASI HD", "" });
     SetScsiLevel(ScsiLevel::NONE);

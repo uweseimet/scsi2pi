@@ -292,7 +292,7 @@ void Tape::Open()
 
     // Block size and number of blocks
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw IoException("Invalid block size: " + to_string(GetConfiguredBlockSize()));
+        throw IoException(fmt::format("Invalid block size: {}", GetConfiguredBlockSize()));
     }
 
     if (const int append = ParseAsUnsignedInt(GetParam(APPEND)); append == -1) {
@@ -303,8 +303,8 @@ void Tape::Open()
     }
 
     if (max_file_size && max_file_size < GetBlockSize()) {
-        throw IoException("Maximum file size " + to_string(max_file_size) + " is smaller than block size "
-        + to_string(GetBlockSize()));
+        throw IoException(
+            fmt::format("Maximum file size {0} is smaller than block size {1}", max_file_size, GetBlockSize()));
     }
 
     block_size_for_descriptor = GetBlockSize();
@@ -319,7 +319,7 @@ void Tape::Open()
         file.flush();
         if (file.bad()) {
             file.close();
-            throw IoException("Can't write to '" + GetFilename() + "'");
+            throw IoException(fmt::format("Can't write to '{}'", GetFilename()));
         }
         file.close();
     }
@@ -651,11 +651,10 @@ void Tape::WriteMetaData(Tape::ObjectType type, uint32_t size)
 
 SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool read)
 {
+    LogTrace(fmt::format("Searching for object type {0} with count {0} at position {1}", static_cast<int>(type),
+        requested_count, tape_position));
+
     const bool reverse = requested_count < 0;
-
-    LogTrace(fmt::format("Moving {0} at position {1} for object type {2}, count {3}", reverse ? "backward" : "forward",
-        tape_position, static_cast<int>(type), requested_count));
-
     if (reverse) {
         requested_count = -requested_count;
     }
@@ -675,8 +674,8 @@ SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool
             fmt::format("Found object type {0}, length {1}, moved over {2} object(s)", static_cast<int>(scsi_type),
                 length, actual_count));
 
-        if (!reverse) {
-            tape_position += IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
+        if (!reverse && IsRecord(meta_data)) {
+            tape_position += Pad(meta_data.value) + META_DATA_SIZE;
         }
 
         if (scsi_type == ObjectType::END_OF_DATA) {
@@ -905,16 +904,8 @@ vector<PbStatistics> Tape::GetStatistics() const
 
 pair<Tape::ObjectType, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int32_t count, bool reverse)
 {
-    while (true) {
-        if (!ReadNextMetaData(meta_data, reverse)) {
-            RaiseBeginningOfPartition(count);
-        }
-
-        // Update object location for data records and tape marks
-        if (IsRecord(meta_data) || (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value)
-            || (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD && !meta_data.value)) {
-            object_location += reverse ? -1 : 1;
-        }
+    while (ReadNextMetaData(meta_data, reverse)) {
+        UpdateObjectLocation(meta_data, reverse);
 
         switch (meta_data.cls) {
         case SimhClass::TAPE_MARK_GOOD_DATA_RECORD:
@@ -950,6 +941,16 @@ pair<Tape::ObjectType, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int3
             }
             break;
         }
+    }
+
+    RaiseBeginningOfPartition(count);
+}
+
+void Tape::UpdateObjectLocation(const SimhMetaData &meta_data, bool reverse)
+{
+    if (IsRecord(meta_data) || (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value)
+        || (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD && !meta_data.value)) {
+        object_location += reverse ? -1 : 1;
     }
 }
 

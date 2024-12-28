@@ -100,7 +100,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
 
     const string &full_filename = GetFullName(filename);
     if (!IsValidDstFilename(full_filename)) {
-        return context.ReturnErrorStatus("Can't create image file: '" + full_filename + "': File already exists");
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': File already exists");
     }
 
     const string &size = GetParam(context.GetCommand(), "size");
@@ -113,13 +113,13 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         len = stoull(size);
     }
     catch (const invalid_argument&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size " + size);
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
     catch (const out_of_range&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size " + size);
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
     if (len < 512 || (len & 0x1ff)) {
-        return context.ReturnErrorStatus("Invalid image file size " + to_string(len) + " (not a multiple of 512)");
+        return context.ReturnErrorStatus(fmt::format("Invalid image file size: {} (not a multiple of 512)", len));
     }
 
     if (!CreateImageFolder(context, full_filename)) {
@@ -306,8 +306,8 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
 #ifdef BUILD_STORAGE_DEVICE
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
     if (id != -1) {
-        return context.ReturnErrorStatus("Can't " + op + " image file '" + file +
-            "', it is currently being used by device " + to_string(id) + ":" + to_string(lun));
+        return context.ReturnErrorStatus(
+            fmt::format("Can't {0} image file '{1}', it is currently being used by device {2}:{3}", op, file, id, lun));
     }
 
     return true;

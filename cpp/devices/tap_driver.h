@@ -13,7 +13,7 @@
 
 #include <span>
 #include "base/device.h"
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN
 static constexpr int ETH_FRAME_LEN = 1514;

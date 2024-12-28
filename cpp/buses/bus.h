@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "shared/scsi.h"
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 #include "board.h"
 
 //---------------------------------------------------------------------------

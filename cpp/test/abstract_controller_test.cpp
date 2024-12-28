@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 #include "shared/s2p_exceptions.h"
 
 TEST(AbstractControllerTest, ShutdownMode)

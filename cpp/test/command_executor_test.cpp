@@ -196,7 +196,7 @@ TEST(CommandExecutorTest, Attach)
     definition.set_id(ID);
     definition.set_unit(LUN);
 
-    executor->SetReservedIds(to_string(ID));
+    executor->SetReservedIds("3");
     EXPECT_FALSE(executor->Attach(context, definition, false)) << "Reserved ID not rejected";
 
     executor->SetReservedIds("");

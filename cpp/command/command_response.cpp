@@ -501,7 +501,7 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
             id_sets.clear();
 
             result.set_status(false);
-            result.set_msg("No device for " + to_string(device.id()) + ":" + to_string(device.unit()));
+            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
 
             break;
         }

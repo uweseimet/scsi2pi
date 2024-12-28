@@ -160,7 +160,7 @@ PrimaryDevice::ProductData PrimaryDevice::GetProductData() const
 
 bool PrimaryDevice::SetScsiLevel(ScsiLevel l)
 {
-    if (l == ScsiLevel::NONE || l >= ScsiLevel::LAST) {
+    if (l >= ScsiLevel::LAST) {
         return false;
     }
 

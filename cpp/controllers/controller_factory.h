@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
 #include "script_generator.h"
 

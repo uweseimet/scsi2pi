@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

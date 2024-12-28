@@ -11,7 +11,7 @@
 #include <filesystem>
 #include <set>
 #include "base/device.h"
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 
 using namespace filesystem;
 

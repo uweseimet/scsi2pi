@@ -23,17 +23,17 @@ string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)
     assert(service_socket == -1);
 
     if (port <= 0 || port > 65535) {
-        return "Invalid port number: " + to_string(port);
+        return fmt::format("Invalid port number: {}", port);
     }
 
     service_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (service_socket == -1) {
-        return "Unable to create s2p service socket: " + string(strerror(errno));
+        return fmt::format("Can't create s2p service socket: {}", strerror(errno));
     }
 
     if (const int enable = 1; setsockopt(service_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         Stop();
-        return "Can't reuse socket: " + string(strerror(errno));
+        return fmt::format("Can't reuse socket: {}", strerror(errno));
     }
 
     sockaddr_in server = { };
@@ -43,7 +43,7 @@ string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)
     if (bind(service_socket, reinterpret_cast<const sockaddr*>(&server), // NOSONAR bit_cast is not supported by the bullseye compiler
         static_cast<socklen_t>(sizeof(sockaddr_in))) < 0) {
         Stop();
-        return "Port " + to_string(port) + " is in use, s2p may already be running";
+        return fmt::format("Port {} is in use, s2p may already be running", port);
     }
 
     if (listen(service_socket, 2) == -1) {

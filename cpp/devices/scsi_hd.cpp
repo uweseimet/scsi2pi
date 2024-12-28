@@ -45,7 +45,7 @@ string ScsiHd::GetProductDataString() const
         unit = "KiB";
     }
 
-    return DEFAULT_PRODUCT + " " + to_string(capacity) + " " + unit;
+    return fmt::format("{0} {1} {2}", DEFAULT_PRODUCT, capacity, unit);
 }
 
 void ScsiHd::FinalizeSetup()

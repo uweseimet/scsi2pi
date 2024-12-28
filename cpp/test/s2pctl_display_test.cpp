@@ -46,7 +46,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
     device.set_block_count(4321);
     s = display.DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find(to_string(1234 * 4321)));
+    EXPECT_NE(string::npos, s.find("5332114"));
 
     device.mutable_properties()->set_supports_file(true);
     auto *file = device.mutable_file();

@@ -105,6 +105,8 @@ private:
     pair<Tape::ObjectType, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
     int WriteSimhMetaData(SimhClass, uint32_t);
 
+    void UpdateObjectLocation(const SimhMetaData&, bool);
+
     uint32_t CheckBlockLength();
 
     bool IsAtRecordBoundary();
