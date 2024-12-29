@@ -355,9 +355,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     Dispatch(device, ScsiCommand::REQUEST_SENSE, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     device->SetReady(true);
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -366,9 +364,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetFilemark();
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x80, data[2]);
@@ -378,9 +374,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(Ascq::END_OF_PARTITION_MEDIUM_DETECTED);
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
@@ -390,9 +384,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(Ascq::BEGINNING_OF_PARTITION_MEDIUM_DETECTED);
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
@@ -402,9 +394,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetIli();
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x20, data[2]) << "ILI must be set";
@@ -412,9 +402,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetInformation(0x12345678);
-    // ALLOCATION LENGTH
-    controller->SetCdbByte(4, 255);
-    EXPECT_NO_THROW(Dispatch(device, ScsiCommand::REQUEST_SENSE));
+    RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
     EXPECT_EQ(0xf0, data[0]);
     EXPECT_EQ(0x00, data[2]);

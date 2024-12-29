@@ -15,9 +15,9 @@ using namespace protobuf_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(*bus, controller_factory);
+    MockCommandExecutor executor(bus, controller_factory);
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     PbResult result;
 
@@ -202,9 +202,9 @@ TEST(CommandDispatcherTest, DispatchCommand)
 
 TEST(CommandDispatcherTest, SetLogLevel)
 {
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(*bus, controller_factory);
+    MockCommandExecutor executor(bus, controller_factory);
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     EXPECT_FALSE(dispatcher.SetLogLevel("abc"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));

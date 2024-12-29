@@ -74,7 +74,6 @@ private:
     void Write(bool);
     void Erase6();
     void ReadBlockLimits() const;
-    void Rewind();
     void Space6();
     void WriteFilemarks(bool);
     void FormatMedium();

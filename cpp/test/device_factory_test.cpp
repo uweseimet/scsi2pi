@@ -54,9 +54,11 @@ TEST(DeviceFactoryTest, GetTypeForFile)
     EXPECT_EQ(factory.GetTypeForFile("daynaport"), SCDP);
     EXPECT_EQ(factory.GetTypeForFile("printer"), SCLP);
     EXPECT_EQ(factory.GetTypeForFile("services"), SCHS);
+#ifdef BUILD_SCSG
+    EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
+#endif
     EXPECT_EQ(factory.GetTypeForFile("unknown"), UNDEFINED);
     EXPECT_EQ(factory.GetTypeForFile("test.iso.suffix"), UNDEFINED);
-    EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
 }
 
 TEST(DeviceFactoryTest, GetExtensionMapping)

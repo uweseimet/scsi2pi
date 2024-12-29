@@ -59,7 +59,8 @@ string Tape::SetUp()
         });
     AddCommand(ScsiCommand::REWIND, [this]
         {
-            Rewind();
+            ResetPositions();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::SPACE_6, [this]
         {
@@ -147,7 +148,7 @@ void Tape::Read(bool read_16)
 
 void Tape::Write(bool write_16)
 {
-    // FCS and LCS are not supporte, only partition 0 is supported
+    // FCS and LCS are not supported, only partition 0 is supported
     if (write_16 && (GetCdbByte(1) & 0b1100 || GetCdbByte(3))) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
@@ -464,13 +465,6 @@ void Tape::ReadBlockLimits() const
     DataInPhase(6);
 }
 
-void Tape::Rewind()
-{
-    ResetPositions();
-
-    StatusPhase();
-}
-
 void Tape::Space6()
 {
     if (tar_file) {
@@ -480,11 +474,6 @@ void Tape::Space6()
 
     switch (const auto code = static_cast<ObjectType>(GetCdbByte(1) & 0x07); code) {
     case ObjectType::BLOCK:
-        if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count, false);
-        }
-        break;
-
     case ObjectType::FILEMARK:
         if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
             FindNextObject(code, count, false);
@@ -506,7 +495,7 @@ void Tape::Space6()
 void Tape::WriteFilemarks(bool write_filemarks_16)
 {
     if (tar_file) {
-        LogTrace("Writing filemarks in tar-compatibility mode is not supported, WRITE FILEMARKS command is ignored");
+        LogTrace("In tar-compatibility mode writing filemarks is ignored");
         StatusPhase();
         return;
     }
@@ -711,7 +700,7 @@ SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool
 
 void Tape::RaiseBeginningOfPartition(int32_t info)
 {
-    LogTrace("Encountered beginning-of-partition while reverse-spacing");
+    LogTrace("Encountered beginning-of-partition");
 
     ResetPositions();
     SetInformation(info);
@@ -722,7 +711,7 @@ void Tape::RaiseBeginningOfPartition(int32_t info)
 
 void Tape::RaiseEndOfPartition(int32_t info)
 {
-    LogTrace(fmt::format("Encountered end-of-partition at position {} while spacing", tape_position));
+    LogTrace(fmt::format("Encountered end-of-partition at position {}", tape_position));
 
     SetInformation(info);
     SetEom(Ascq::END_OF_PARTITION_MEDIUM_DETECTED);

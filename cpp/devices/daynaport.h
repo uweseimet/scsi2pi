@@ -23,7 +23,6 @@
 #pragma once
 
 #include <array>
-#include <unordered_map>
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif

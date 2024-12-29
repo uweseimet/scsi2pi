@@ -57,8 +57,7 @@ TEST(CommandContext, ReadCommand)
     PbCommand command;
     command.set_operation(PbOperation::SERVER_INFO);
     SerializeMessage(fd, command);
-    close(fd);
-    fd = open(filename.c_str(), O_RDONLY);
+    lseek(fd, 0, SEEK_SET);
     CommandContext context6(fd, *default_logger());
     EXPECT_TRUE(context6.ReadCommand());
     close(fd);
@@ -82,16 +81,14 @@ TEST(CommandContext, GetLogger)
 
 TEST(CommandContext, WriteResult)
 {
-    const string filename = CreateTempFile(0);
-    int fd = open(filename.c_str(), O_RDWR | O_APPEND);
+    const string &filename = CreateTempFile(0);
+    const int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
     result.set_error_code(PbErrorCode::UNAUTHORIZED);
     CommandContext context(fd, *default_logger());
     EXPECT_FALSE(context.WriteResult(result));
-    close(fd);
     EXPECT_FALSE(result.status());
-
-    fd = open(filename.c_str(), O_RDONLY);
+    lseek(fd, 0, SEEK_SET);
     result.set_status(true);
     DeserializeMessage(fd, result);
     close(fd);

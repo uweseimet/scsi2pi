@@ -47,7 +47,7 @@ public:
 
     void ScheduleShutdown(ShutdownMode mode)
     {
-        sh_mode = mode;
+        shutdown_mode = mode;
     }
 
     int GetTargetId() const
@@ -83,10 +83,6 @@ public:
     {
         return chunk_size;
     }
-    auto GetTotalLength() const
-    {
-        return total_length;
-    }
     auto GetRemainingLength() const
     {
         return remaining_length;
@@ -115,7 +111,7 @@ public:
 protected:
 
     void AddCdbToScript();
-    void AddDataToScript(span<uint8_t>) const;
+    void AddDataToScript(span<const uint8_t>) const;
 
     virtual bool Process() = 0;
 
@@ -153,8 +149,6 @@ private:
     inline static auto buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;
-    // Total bytes to transfer
-    int total_length = 0;
     // Total remaining bytes to be transferred, updated during the transfer
     int remaining_length = 0;
     // Remaining bytes to be transferred in a single handshake cycle
@@ -182,5 +176,5 @@ private:
     // The initiator ID may be unavailable, e.g. with Atari ACSI and old host adapters
     int initiator_id = UNKNOWN_INITIATOR_ID;
 
-    ShutdownMode sh_mode = ShutdownMode::NONE;
+    ShutdownMode shutdown_mode = ShutdownMode::NONE;
 };

@@ -29,6 +29,8 @@ TEST(ProtobufUtil, ParseDeviceType)
     EXPECT_EQ(SCMO, ParseDeviceType("scmo"));
     EXPECT_EQ(SCRM, ParseDeviceType("scrm"));
     EXPECT_EQ(SCHS, ParseDeviceType("schs"));
+    EXPECT_EQ(SCTP, ParseDeviceType("sctp"));
+    EXPECT_EQ(SCSG, ParseDeviceType("scsg"));
 
     EXPECT_EQ(SCCD, ParseDeviceType("c"));
     EXPECT_EQ(SCDP, ParseDeviceType("d"));
@@ -37,6 +39,7 @@ TEST(ProtobufUtil, ParseDeviceType)
     EXPECT_EQ(SCMO, ParseDeviceType("m"));
     EXPECT_EQ(SCRM, ParseDeviceType("r"));
     EXPECT_EQ(SCHS, ParseDeviceType("s"));
+    EXPECT_EQ(SCTP, ParseDeviceType("t"));
 
     EXPECT_EQ(UNDEFINED, ParseDeviceType(""));
     EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));

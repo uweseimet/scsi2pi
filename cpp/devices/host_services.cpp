@@ -86,7 +86,6 @@
 #include <google/protobuf/util/json_util.h>
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
-#include "controllers/controller.h"
 #include "protobuf/protobuf_util.h"
 
 using namespace std::chrono;

@@ -16,9 +16,9 @@ TEST(ControllerTest, Reset)
     const int TARGET_ID = 5;
     const int INITIATOR_ID = 7;
 
+    MockBus bus;
     const S2pFormatter formatter;
-    auto bus = BusFactory::Instance().CreateBus(true, true, "");
-    auto controller = make_shared<Controller>(*bus, TARGET_ID, formatter);
+    auto controller = make_shared<Controller>(bus, TARGET_ID, formatter);
 
     controller->Init();
 
@@ -43,9 +43,9 @@ TEST(ControllerTest, GetInitiatorId)
     const int TARGET_ID = 0;
     const int INITIATOR_ID = 2;
 
+    MockBus bus;
     const S2pFormatter formatter;
-    auto bus = BusFactory::Instance().CreateBus(true, true, "");
-    auto controller = make_shared<Controller>(*bus, TARGET_ID, formatter);
+    auto controller = make_shared<Controller>(bus, TARGET_ID, formatter);
 
     controller->Init();
 

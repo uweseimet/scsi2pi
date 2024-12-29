@@ -95,7 +95,7 @@ TEST(ScsiHdTest, GetProductData)
     MockScsiHd hd_mb(0, false);
     MockScsiHd hd_gb(0, false);
 
-    const path filename = CreateTempFile(1);
+    const path &filename = CreateTempFile(1);
     hd_kb.SetFilename(filename.string());
     hd_kb.SetBlockSize(1024);
     hd_kb.SetBlockCount(1);

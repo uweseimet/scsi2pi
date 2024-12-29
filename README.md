@@ -3,7 +3,7 @@
 SCSI2Pi is the advanced and more performant alternative to the <a href="https://github.com/PiSCSI/piscsi">PiSCSI software</a> for the PiSCSI/RaSCSI board. SCSI2Pi provides an improved device emulation, higher transfer rates, new SCSI initiator mode tools and <a href="https://www.scsi2pi.net/en/piscsi_comparison.html">numerous new features</a>. SCSI2Pi is compatible with the PiSCSI web UI and the <a href="https://www.scsi2pi.net/en/app.html">SCSI Control app</a> for Android. With SCSI2Pi the app offers an extended set of features.<br />
 SCSI2Pi emulates several SCSI or SASI devices like hard drives, CD-ROM drives, streamers, printers or network adapters at the same time. SCSI2Pi also offers a SCSI-to-USB bridge, making it the presumably most versatile SCSI emulation. You can easily add a range of devices to computers like 68k Macs, Atari ST/TT/Falcon030, Amiga, Unix workstations, samplers or other computers with SCSI port.<br />
 You can run SCSI2Pi stand-alone or switch from PiSCSI to SCSI2Pi in seconds, simply by installing a <a href="https://www.scsi2pi.net/en/downloads.html">package with highly optimized SCSI2Pi binaries</a>. No time-consuming compilation is required.<br />
-The <a href="https://www.scsi2pi.net">SCSI2Pi website</a> addresses regular users and developers, whereas the information on GitHub is rather developer-centric.
+The <a href="https://www.scsi2pi.net">SCSI2Pi website</a> addresses users and developers, whereas the information on GitHub is rather developer-centric.
 
 # Who am I?
 

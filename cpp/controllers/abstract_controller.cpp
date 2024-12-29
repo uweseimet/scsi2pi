@@ -55,7 +55,7 @@ void AbstractController::AddCdbToScript()
     }
 }
 
-void AbstractController::AddDataToScript(span<uint8_t> data) const
+void AbstractController::AddDataToScript(span<const uint8_t> data) const
 {
     if (script_generator) {
         script_generator->AddData(data);
@@ -74,7 +74,6 @@ void AbstractController::SetCurrentLength(int length)
 void AbstractController::SetTransferSize(int length, int size)
 {
     // The total number of bytes to transfer for the current command
-    total_length = length;
     remaining_length = length;
 
     // The number of bytes to transfer in a single chunk
@@ -146,7 +145,7 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
         script_generator->WriteEol();
     }
 
-    return sh_mode;
+    return shutdown_mode;
 }
 
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
@@ -159,7 +158,7 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
     for (const auto& [_, d] : luns) {
         if ((device->GetType() == SAHD && d->GetType() != SAHD)
             || (device->GetType() != SAHD && d->GetType() == SAHD)) {
-            LogTrace("SCSI and SASI devices cannot share a controller");
+            controller_logger->error("SCSI and SASI devices cannot share a controller");
             return false;
         }
     }

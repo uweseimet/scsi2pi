@@ -28,7 +28,7 @@ TEST(CommandResponseTest, Operation_Count)
 
 void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
     CommandResponse response;
 
@@ -36,7 +36,7 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
     const param_map params;
     d->GetLogger();
     d->Init();
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, 0, d));
 
     PbServerInfo info;
     response.GetDevices(controller_factory.GetAllDevices(), info);
@@ -104,7 +104,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     const int LUN2 = 5;
     const int LUN3 = 6;
 
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
     CommandResponse response;
     PbCommand command;
@@ -115,7 +115,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
     auto device1 = make_shared<MockHostServices>(LUN1);
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
 
     response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
@@ -126,7 +126,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_EQ(LUN1, devices1[0].unit());
 
     auto device2 = make_shared<MockScsiHd>(LUN2, false);
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device2));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device2));
 
     PbResult result2;
     response.GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
@@ -168,7 +168,6 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
 TEST(CommandResponseTest, GetServerInfo)
 {
-    auto bus = make_shared<MockBus>();
     CommandResponse response;
     const unordered_set<shared_ptr<PrimaryDevice>> devices;
     const unordered_set<int> ids = { 1, 3 };

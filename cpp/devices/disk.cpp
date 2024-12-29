@@ -30,10 +30,10 @@ Disk::Disk(PbDeviceType type, int lun, bool supports_mode_select, bool supports_
 
 string Disk::SetUp()
 {
-    // REZERO implementation is identical with Seek
     AddCommand(ScsiCommand::REZERO, [this]
         {
-            ReAssignBlocks();
+            CheckReady();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::FORMAT_UNIT, [this]
         {
@@ -41,7 +41,8 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::REASSIGN_BLOCKS, [this]
         {
-            ReAssignBlocks();
+            CheckReady();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::READ_6, [this]
         {
@@ -69,15 +70,15 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::READ_LONG_10, [this]
         {
-            ReadLong10();
+            ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), false);
         });
     AddCommand(ScsiCommand::WRITE_LONG_10, [this]
         {
-            WriteLong10();
+            ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), true);
         });
     AddCommand(ScsiCommand::WRITE_LONG_16, [this]
         {
-            WriteLong16();
+            ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), true);
         });
     AddCommand(ScsiCommand::SEEK_10, [this]
         {
@@ -89,11 +90,13 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
         {
-            SynchronizeCache();
+            FlushCache();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, [this]
         {
-            SynchronizeCache();
+            FlushCache();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_10, [this]
         {
@@ -244,26 +247,6 @@ void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
     }
 }
 
-void Disk::ReadLong10()
-{
-    ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), false);
-}
-
-void Disk::WriteLong10()
-{
-    ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), true);
-}
-
-void Disk::ReadLong16()
-{
-    ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), false);
-}
-
-void Disk::WriteLong16()
-{
-    ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), true);
-}
-
 void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 {
     if (write) {
@@ -307,13 +290,6 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         GetController()->SetCurrentLength(length);
         DataInPhase(linux_cache->ReadLong(GetController()->GetBuffer(), sector, length));
     }
-}
-
-void Disk::SynchronizeCache()
-{
-    FlushCache();
-
-    StatusPhase();
 }
 
 void Disk::ReadDefectData10() const
@@ -453,13 +429,6 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     return l;
 }
 
-void Disk::ReAssignBlocks()
-{
-    CheckReady();
-
-    StatusPhase();
-}
-
 void Disk::Seek(AccessMode mode)
 {
     const auto& [valid, _, __] = CheckAndGetStartAndCount(mode);
@@ -536,12 +505,11 @@ void Disk::ReadCapacity16_ReadLong16()
         break;
 
     case 0x11:
-        ReadLong16();
+        ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), false);
         break;
 
     default:
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-        break;
     }
 }
 

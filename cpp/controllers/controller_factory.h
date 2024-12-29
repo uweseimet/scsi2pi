@@ -9,7 +9,6 @@
 #pragma once
 
 #include <memory>
-#include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <spdlog/spdlog.h>

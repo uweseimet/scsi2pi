@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <span>
 #include "base/device.h"
 #include "shared/s2p_defs.h"
 

@@ -173,7 +173,7 @@ path testing::CreateTempFile(size_t size, const string &extension)
     return path(CreateTempFileWithData(vector<byte>(size), extension));
 }
 
-string testing::CreateTempFileWithData(const span<const byte> data, const string &extension)
+string testing::CreateTempFileWithData(span<const byte> data, const string &extension)
 {
     const auto& [fd, filename] = OpenTempFile(extension);
 

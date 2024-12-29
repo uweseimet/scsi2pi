@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <thread>
 #include <getopt.h>
 #include "s2p/s2p_core.h"
 #include "s2pctl/s2pctl_core.h"

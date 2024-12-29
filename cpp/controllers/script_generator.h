@@ -8,9 +8,7 @@
 
 #pragma once
 
-#include <cstdint>
 #include <fstream>
-#include <span>
 #include "shared/s2p_defs.h"
 
 using namespace std;

@@ -10,8 +10,6 @@
 #include "base/primary_device.h"
 #include "controller.h"
 
-using namespace std;
-
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
     if (const auto &it = controllers.find(id); it != controllers.end()) {

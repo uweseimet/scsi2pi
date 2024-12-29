@@ -127,8 +127,6 @@ protected:
     virtual void Inquiry();
     virtual void RequestSense();
     void SendDiagnostic() const;
-    void Reserve();
-    void Release();
 
     virtual int ModeSense6(cdb_t, data_in_t) const
     {
@@ -181,7 +179,6 @@ private:
 
     void SetController(AbstractController*);
 
-    void TestUnitReady();
     void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;

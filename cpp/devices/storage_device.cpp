@@ -103,11 +103,7 @@ void StorageDevice::PreventAllowMediumRemoval()
 {
     CheckReady();
 
-    const bool lock = GetCdbByte(4) & 0x01;
-
-    LogTrace(lock ? "Locking medium" : "Unlocking medium");
-
-    SetLocked(lock);
+    SetLocked(GetCdbByte(4) & 0x01);
 
     StatusPhase();
 }

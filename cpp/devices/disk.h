@@ -75,9 +75,7 @@ private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void SynchronizeCache();
     void ReadDefectData10() const;
-    void ReAssignBlocks();
     void ReadCapacity10();
     void ReadCapacity16();
     void ReadFormatCapacities();
@@ -86,10 +84,6 @@ private:
     void Write(AccessMode);
     void Verify(AccessMode);
     void Seek(AccessMode);
-    void ReadLong10();
-    void ReadLong16();
-    void WriteLong10();
-    void WriteLong16();
     void ReadCapacity16_ReadLong16();
 
     void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;

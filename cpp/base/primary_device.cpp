@@ -18,7 +18,8 @@ string PrimaryDevice::Init()
     // Mandatory SCSI primary commands
     AddCommand(ScsiCommand::TEST_UNIT_READY, [this]
         {
-            TestUnitReady();
+            CheckReady();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::INQUIRY, [this]
         {
@@ -36,11 +37,13 @@ string PrimaryDevice::Init()
         });
     AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, [this]
         {
-            Reserve();
+            reserving_initiator = controller->GetInitiatorId();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, [this]
         {
-            Release();
+            DiscardReservation();
+            StatusPhase();
         });
     AddCommand(ScsiCommand::SEND_DIAGNOSTIC, [this]
         {
@@ -118,7 +121,7 @@ void PrimaryDevice::SetInformation(int32_t value)
 
 int PrimaryDevice::GetId() const
 {
-    return GetController() ? GetController()->GetTargetId() : -1;
+    return controller ? controller->GetTargetId() : -1;
 }
 
 string PrimaryDevice::SetProductData(const ProductData &data, bool force)
@@ -202,13 +205,6 @@ void PrimaryDevice::DataOutPhase(int length) const
     controller->DataOut();
 }
 
-void PrimaryDevice::TestUnitReady()
-{
-    CheckReady();
-
-    StatusPhase();
-}
-
 void PrimaryDevice::Inquiry()
 {
     // Reserved bits, EVPD, CMDDT and page code check
@@ -220,12 +216,12 @@ void PrimaryDevice::Inquiry()
 
     const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
 
-    GetController()->CopyToBuffer(buf.data(), allocation_length);
+    controller->CopyToBuffer(buf.data(), allocation_length);
 
     // Report if the device does not support the requested LUN
-    if (!GetController()->GetDeviceForLun(GetController()->GetEffectiveLun())) {
+    if (!controller->GetDeviceForLun(controller->GetEffectiveLun())) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-        GetController()->GetBuffer().data()[0] = 0x7f;
+        controller->GetBuffer().data()[0] = 0x7f;
     }
 
     DataInPhase(allocation_length);
@@ -240,12 +236,12 @@ void PrimaryDevice::ReportLuns() const
 
     const uint32_t allocation_length = GetCdbInt32(6);
 
-    auto &buf = GetController()->GetBuffer();
+    auto &buf = controller->GetBuffer();
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;
     for (int lun = 0; lun < 32; ++lun) {
-        if (GetController()->GetDeviceForLun(lun)) {
+        if (controller->GetDeviceForLun(lun)) {
             size += 8;
             buf[size + 7] = static_cast<uint8_t>(lun);
         }
@@ -259,24 +255,24 @@ void PrimaryDevice::ReportLuns() const
 void PrimaryDevice::RequestSense()
 {
     // The descriptor format is not supported
-    if (GetController()->GetCdb()[1] & 0x01) {
+    if (controller->GetCdb()[1] & 0x01) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    int effective_lun = GetController()->GetEffectiveLun();
+    int effective_lun = controller->GetEffectiveLun();
 
     // According to the specification REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
     // Only the Sense Key and ASC are set in order to signal the non-existing LUN.
-    if (!GetController()->GetDeviceForLun(effective_lun)) {
-        assert(GetController()->GetDeviceForLun(0));
+    if (!controller->GetDeviceForLun(effective_lun)) {
+        assert(controller->GetDeviceForLun(0));
 
         effective_lun = 0;
 
         // When signalling an invalid LUN the status must be GOOD
-        GetController()->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
+        controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
     }
 
-    const vector<byte> &buf = GetController()->GetDeviceForLun(effective_lun)->HandleRequestSense();
+    const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
 
     int allocation_length = GetCdbByte(4);
     if (!allocation_length && level == ScsiLevel::SCSI_1_CCS) {
@@ -284,7 +280,7 @@ void PrimaryDevice::RequestSense()
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
-    GetController()->CopyToBuffer(buf.data(), length);
+    controller->CopyToBuffer(buf.data(), length);
 
     ResetStatus();
 
@@ -375,23 +371,9 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[13] = static_cast<byte>(eom);
     }
 
-    LogTrace(fmt::format("Status {0}: {1}", STATUS_MAPPING.at(GetController()->GetStatus()), FormatSenseData(buf)));
+    LogTrace(fmt::format("Status {0}: {1}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
 
     return buf;
-}
-
-void PrimaryDevice::Reserve()
-{
-    reserving_initiator = GetController()->GetInitiatorId();
-
-    StatusPhase();
-}
-
-void PrimaryDevice::Release()
-{
-    DiscardReservation();
-
-    StatusPhase();
 }
 
 bool PrimaryDevice::CheckReservation(int initiator_id) const
@@ -419,7 +401,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
         LogTrace("Unknown initiator tries to access reserved device");
     }
 
-    GetController()->Error(SenseKey::ABORTED_COMMAND, Asc::NO_ADDITIONAL_SENSE_INFORMATION,
+    controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION,
         StatusCode::RESERVATION_CONFLICT);
 
     return false;
