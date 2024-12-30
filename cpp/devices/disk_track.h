@@ -21,25 +21,6 @@ using namespace std;
 
 class DiskTrack
 {
-    struct
-    {
-        // Track Number
-        int track;
-        // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
-        int size;
-        // Number of sectors(<0x100)
-        int sectors;
-        // Data buffer length
-        uint32_t length;
-        // Data buffer
-        uint8_t *buffer;
-        // Is it initilized?
-        bool init;
-        // Changed flag
-        bool changed;
-        // Changed map
-        vector<bool> changemap;
-    } dt = { };
 
 public:
 
@@ -61,6 +42,25 @@ private:
 
     int GetTrack() const
     {
-        return dt.track;
+        return track_number;
     }
+
+    int track_number = 0;
+
+    // 8 = 256, 9 = 512, 10 = 1024, 11 = 2048, 12 = 4096
+    int shift_count = 0;
+
+    // < 256
+    int sector_count = 0;
+
+    uint8_t *buffer = nullptr;
+
+    uint32_t buffer_size = 0;
+
+    bool is_initialized = false;
+
+    bool is_modified = false;
+
+    // Do not use bool here in order to avoid special rules for vector<bool>
+    vector<uint8_t> modified_flags;
 };
