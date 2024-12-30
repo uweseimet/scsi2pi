@@ -44,7 +44,7 @@ protected:
 
 private:
 
-    using mode_page_datetime = struct __attribute__((packed)) {
+    using ModePageDateTime = struct __attribute__((packed)) {
         // Major and minor version of this data structure (e.g. 1.0)
         uint8_t major_version;
         uint8_t minor_version;

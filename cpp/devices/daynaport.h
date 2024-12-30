@@ -81,21 +81,21 @@ private:
         DROPPED_PACKETS = 0xFFFFFFFF,
     };
 
-    using scsi_resp_read_t = struct __attribute__((packed)) {
+    using ScsiRespRead = struct __attribute__((packed)) {
         uint32_t length;
         ReadDataFlagsType flags;
         byte pad;
         array<byte, ETH_FRAME_LEN + sizeof(uint32_t)> data; // Frame length + 4 byte CRC
     };
 
-    using scsi_resp_link_stats_t = struct __attribute__((packed)) {
+    using ScsiRespLinkStats = struct __attribute__((packed)) {
         array<byte, 6> mac_address;
         uint32_t frame_alignment_errors;
         uint32_t crc_errors;
         uint32_t frames_lost;
     };
 
-    static constexpr scsi_resp_link_stats_t SCSI_LINK_STATS = {
+    static constexpr ScsiRespLinkStats SCSI_LINK_STATS = {
         // The last 3 bytes of this MAC address are replaced by those of the bridge interface
         .mac_address = { byte { 0x00 }, byte { 0x80 }, byte { 0x19 }, byte { 0x10 }, byte { 0x98 }, byte { 0xe3 } },
         .frame_alignment_errors = 0,

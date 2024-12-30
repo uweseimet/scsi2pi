@@ -17,13 +17,13 @@ using namespace s2p_util;
 using namespace initiator_util;
 
 int InitiatorExecutor::Execute(ScsiCommand cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout,
-    bool log)
+    bool enable_log)
 {
     cdb[0] = static_cast<uint8_t>(cmd);
-    return Execute(cdb, buffer, length, timeout, log);
+    return Execute(cdb, buffer, length, timeout, enable_log);
 }
 
-int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool log)
+int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
     bus.Reset();
 
@@ -83,7 +83,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         initiator_logger.error("Timeout");
     }
 
-    if (log) {
+    if (enable_log) {
         LogStatus();
     }
 

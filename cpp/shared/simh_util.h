@@ -43,9 +43,8 @@ enum class SimhMarker
     END_OF_MEDIUM = 0xfffffff
 };
 
-using SimhMetaData = struct _SimhMetaData {
-    _SimhMetaData(SimhClass c =SimhClass::BAD_DATA_RECORD, uint32_t v = 0) : cls(c), value(v) {}
-
+struct SimhMetaData
+{
     SimhClass cls;
     uint32_t value;
 };

@@ -27,8 +27,7 @@ public:
 
     int Run(span<char*>, bool);
 
-    struct scsi_device_info
-    {
+    using ScsiDeviceInfo = struct {
         bool removable;
         byte type;
         byte scsi_level;
@@ -38,7 +37,6 @@ public:
         uint32_t sector_size;
         uint64_t capacity;
     };
-    using scsi_device_info_t = struct scsi_device_info;
 
 private:
 
@@ -72,7 +70,7 @@ private:
 
     shared_ptr<S2pDumpExecutor> s2pdump_executor;
 
-    scsi_device_info_t scsi_device_info = { };
+    ScsiDeviceInfo scsi_device_info = { };
 
     int sasi_capacity = 0;
     int sasi_sector_size = 0;

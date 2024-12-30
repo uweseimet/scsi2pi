@@ -145,7 +145,7 @@ int DaynaPort::GetMessage(data_in_t buf)
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
         LogTrace("No network packet received");
-        auto *response = (scsi_resp_read_t*)buf.data();
+        auto *response = (ScsiRespRead*)buf.data();
         response->length = 0;
         response->flags = ReadDataFlagsType::NO_MORE_DATA;
         return DAYNAPORT_READ_HEADER_SZ;

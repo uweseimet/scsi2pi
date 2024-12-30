@@ -22,9 +22,9 @@ public:
     {
     }
 
-    using SgResult = struct _SgResult {
-        int status = 0;
-        int length = 0;
+    using SgResult = struct {
+        int status;
+        int length;
     };
 
     string Init(const string&);

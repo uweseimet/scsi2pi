@@ -184,7 +184,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
     return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length, true); // NOSONAR Cast required for SG driver API
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool enable_log)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -218,11 +218,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (log && GetLogger().level() <= level::debug) {
+    if (enable_log && GetLogger().level() <= level::debug) {
         LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
-    if (log && write && GetLogger().level() == level::trace) {
+    if (enable_log && write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length,
             GetController()->FormatBytes(buf, length)));
     }
@@ -231,11 +231,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
 
     format_header.clear();
 
-    EvaluateStatus(status, span(buf.data(), length), sense_data, write, log);
+    EvaluateStatus(status, span(buf.data(), length), sense_data, write, enable_log);
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (log && !write && GetLogger().level() == level::trace) {
+    if (enable_log && !write && GetLogger().level() == level::trace) {
         LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
             GetController()->FormatBytes(buf, transferred_length)));
     }
@@ -252,17 +252,17 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool log)
         remaining_count = 0;
     }
 
-    if (log) {
+    if (enable_log) {
         LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
     }
 
     return transferred_length;
 }
 
-void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write, bool log)
+void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write, bool enable_log)
 {
     if (status == -1) {
-        if (log) {
+        if (enable_log) {
             LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", buf.size(), strerror(errno)));
         }
 

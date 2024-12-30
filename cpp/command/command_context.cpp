@@ -72,10 +72,10 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error
     return ReturnStatus(false, command_localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
 }
 
-bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool log) const
+bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool enable_log) const
 {
     // Do not log twice if logging has already been done in the localized error handling above
-    if (log && !status && !msg.empty()) {
+    if (enable_log && !status && !msg.empty()) {
         s2p_logger.error(msg);
     }
 

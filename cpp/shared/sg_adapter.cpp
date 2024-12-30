@@ -70,7 +70,7 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf,
 }
 
 SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout,
-    bool log)
+    bool enable_log)
 {
     // Return deferred sense data, if any
     if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE) && sense_data_valid) {
@@ -106,7 +106,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
 
     io_hdr.timeout = timeout * 1000;
 
-    if (log && sg_logger.level() <= level::debug) {
+    if (enable_log && sg_logger.level() <= level::debug) {
         sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
     }
 

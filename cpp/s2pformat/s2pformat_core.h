@@ -22,9 +22,7 @@ public:
 
 private:
 
-    using FormatDescriptor = struct _FormatDescriptor {
-        _FormatDescriptor(uint32_t b, uint32_t l) : blocks(b), length(l) {}
-
+    using FormatDescriptor = struct {
         uint32_t blocks;
         uint32_t length;
     };

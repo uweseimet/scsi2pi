@@ -24,10 +24,10 @@ class PrimaryDevice : public Device
 
 public:
 
-    using ProductData = struct _ProductData {
-        string vendor = "SCSI2Pi";
+    using ProductData = struct {
+        string vendor;
         string product;
-        string revision = fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision);;
+        string revision;
     };
 
     string Init();
@@ -183,7 +183,8 @@ private:
 
     vector<byte> HandleRequestSense() const;
 
-    ProductData product_data;
+    ProductData product_data = ProductData(
+        { "SCSI2Pi", "", fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
     ScsiLevel level = ScsiLevel::SCSI_2;
     ScsiLevel response_data_format = ScsiLevel::SCSI_2;

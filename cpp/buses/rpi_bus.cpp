@@ -207,8 +207,8 @@ void RpiBus::Reset()
     SetControl(PIN_ACT, false);
 
     // Set all signals to off
-    for (const int signal : SIGNAL_TABLE) {
-        SetSignal(signal, false);
+    for (const int s : SIGNAL_TABLE) {
+        SetSignal(s, false);
     }
 
     // Set target signal to input for all modes
@@ -232,15 +232,6 @@ void RpiBus::Reset()
 
     // Initialize all signals
     signals = 0;
-}
-
-void RpiBus::InitializeSignals(int pull_mode)
-{
-    for (const int signal : SIGNAL_TABLE) {
-        PinSetSignal(signal, false);
-        PinConfig(signal, GPIO_INPUT);
-        PullConfig(signal, pull_mode);
-    }
 }
 
 bool RpiBus::WaitForSelection()
@@ -333,6 +324,15 @@ inline void RpiBus::SetDAT(uint8_t dat)
     fsel |= tblDatSet[1][dat];
     gpfsel[1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
+}
+
+void RpiBus::InitializeSignals(int pull_mode)
+{
+    for (const int s : SIGNAL_TABLE) {
+        PinSetSignal(s, false);
+        PinConfig(s, GPIO_INPUT);
+        PullConfig(s, pull_mode);
+    }
 }
 
 void RpiBus::CreateWorkTable()

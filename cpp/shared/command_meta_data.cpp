@@ -98,7 +98,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::WRITE_16, 16, "WRITE(16)", { 10, 4, 2, 8, true });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_16, 16, "WRITE AND VERIFY(16)", { 10, 4, 2, 8, true });
     AddCommand(ScsiCommand::VERIFY_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true });
-    AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { 7, 2, 0, 0 });
+    AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 0, 0, 0, 0, false });

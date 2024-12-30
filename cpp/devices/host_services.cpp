@@ -253,23 +253,23 @@ void HostServices::SetUpModePages(map<int, vector<byte>> &pages, int page, bool 
 
 void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    pages[32] = vector<byte>(sizeof(mode_page_datetime) + 2);
+    pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
     if (!changeable) {
         const time_t &t = system_clock::to_time_t(system_clock::now());
-        tm localtime;
-        localtime_r(&t, &localtime);
+        tm local_time;
+        localtime_r(&t, &local_time);
 
-        mode_page_datetime datetime;
+        ModePageDateTime datetime;
         datetime.major_version = 0x01;
         datetime.minor_version = 0x00;
-        datetime.year = static_cast<uint8_t>(localtime.tm_year);
-        datetime.month = static_cast<uint8_t>(localtime.tm_mon);
-        datetime.day = static_cast<uint8_t>(localtime.tm_mday);
-        datetime.hour = static_cast<uint8_t>(localtime.tm_hour);
-        datetime.minute = static_cast<uint8_t>(localtime.tm_min);
+        datetime.year = static_cast<uint8_t>(local_time.tm_year);
+        datetime.month = static_cast<uint8_t>(local_time.tm_mon);
+        datetime.day = static_cast<uint8_t>(local_time.tm_mday);
+        datetime.hour = static_cast<uint8_t>(local_time.tm_hour);
+        datetime.minute = static_cast<uint8_t>(local_time.tm_min);
         // Ignore leap second for simplicity
-        datetime.second = static_cast<uint8_t>(localtime.tm_sec < 60 ? localtime.tm_sec : 59);
+        datetime.second = static_cast<uint8_t>(local_time.tm_sec < 60 ? local_time.tm_sec : 59);
 
         memcpy(&pages[32][2], &datetime, sizeof(datetime));
     }

@@ -481,7 +481,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
             return {};
         }
         else {
-            objects.push_back(SimhMetaData(static_cast<SimhClass>(c), static_cast<uint32_t>(v)));
+            objects.push_back(SimhMetaData( { static_cast<SimhClass>(c), static_cast<uint32_t>(v) }));
         }
     }
 
