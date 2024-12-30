@@ -537,7 +537,7 @@ bool Tape::Locate(bool locate_16)
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    auto identifier = static_cast<uint32_t>(locate_16 ? GetCdbInt64(4) : GetCdbInt32(3));
+    auto identifier = locate_16 ? GetCdbInt64(4) : GetCdbInt32(3);
     const bool bt = GetCdbByte(1) & 0x04;
 
     if (tar_file) {
@@ -561,7 +561,7 @@ bool Tape::Locate(bool locate_16)
         } else {
             ResetPositions();
             if (identifier) {
-                return FindObject(identifier);
+                return FindObject(static_cast<int>(identifier));
             }
         }
     }

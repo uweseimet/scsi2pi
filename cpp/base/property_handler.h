@@ -55,7 +55,7 @@ public:
     void Init(const string&, const property_map&, bool);
 
     property_map GetProperties(const string& = "") const;
-    property_map GetUnknownProperties() const;
+    const property_map& GetUnknownProperties() const;
     const string& RemoveProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
     void RemoveProperties(const string&);

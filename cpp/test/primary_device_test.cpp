@@ -474,10 +474,8 @@ TEST(PrimaryDeviceTest, ReportLuns)
 
 TEST(PrimaryDeviceTest, Dispatch)
 {
-    auto [__, device] = CreatePrimaryDevice();
-
-    Dispatch(device, static_cast<ScsiCommand>(0x1f), SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE,
-        "Unsupported SCSI command");
+    Dispatch(make_shared<MockPrimaryDevice>(0), static_cast<ScsiCommand>(0x1f), SenseKey::ILLEGAL_REQUEST,
+        Asc::INVALID_COMMAND_OPERATION_CODE, "Unsupported SCSI command");
 }
 
 TEST(PrimaryDeviceTest, Init)

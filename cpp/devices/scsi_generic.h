@@ -30,7 +30,7 @@ public:
         return device + " (" + GetPaddedName() + ")";
     }
 
-    string GetDevice() const
+    const string& GetDevice() const
     {
         return device;
     }

@@ -33,7 +33,7 @@ public:
     shared_ptr<PrimaryDevice> CreateDevice(PbDeviceType, int, const string&) const;
     PbDeviceType GetTypeForFile(const string&) const;
 
-    auto GetExtensionMapping() const
+    const auto& GetExtensionMapping() const
     {
         return mapping;
     }

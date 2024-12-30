@@ -36,7 +36,7 @@ public:
     {
         return depth;
     }
-    string GetDefaultFolder() const
+    const string& GetDefaultFolder() const
     {
         return default_folder;
     }

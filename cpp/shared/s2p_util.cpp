@@ -176,12 +176,10 @@ string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
     }
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
-        if (components.size() >= 1) {
-            id = ParseAsUnsignedInt(components[0]);
-            if (id == -1 || id > 7) {
-                id = -1;
-                return "Invalid device ID: '" + components[0] + "' (0-7)";
-            }
+        id = ParseAsUnsignedInt(components[0]);
+        if (id == -1 || id > 7) {
+            id = -1;
+            return "Invalid device ID: '" + components[0] + "' (0-7)";
         }
 
         if (components.size() >= 2) {

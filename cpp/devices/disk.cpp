@@ -223,7 +223,7 @@ void Disk::Write(AccessMode mode)
 void Disk::Verify(AccessMode mode)
 {
     // A transfer length of 0 is legal
-    const auto& [_, start, count] = CheckAndGetStartAndCount(mode);
+    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
 
     // Flush the cache according to the specification
     FlushCache();
@@ -431,7 +431,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
 void Disk::Seek(AccessMode mode)
 {
-    const auto& [valid, _, __] = CheckAndGetStartAndCount(mode);
+    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
     if (valid) {
         CheckReady();
     }

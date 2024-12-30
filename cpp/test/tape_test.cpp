@@ -530,7 +530,7 @@ TEST(TapeTest, Erase6_simh)
 
 TEST(TapeTest, Erase6_tar)
 {
-    auto [__, tape] = CreateTape();
+    auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
     Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::ILLEGAL_REQUEST,
@@ -765,7 +765,7 @@ TEST(TapeTest, Space6_simh)
 
 TEST(TapeTest, Space6_tar)
 {
-    auto [___, tape] = CreateTape();
+    auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
     Dispatch(tape, ScsiCommand::SPACE_6, SenseKey::ILLEGAL_REQUEST,

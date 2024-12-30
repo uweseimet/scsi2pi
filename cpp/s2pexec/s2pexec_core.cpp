@@ -330,9 +330,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         if (buffer_size = ParseAsUnsignedInt(buf); buffer_size <= 0) {
             throw ParserException("Invalid receive buffer size: '" + buf + "'");
         }
-        else {
-            buffer.resize(buffer_size);
-        }
+        buffer.resize(buffer_size);
     }
 
     return true;

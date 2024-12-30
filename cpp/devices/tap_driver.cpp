@@ -221,7 +221,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
         address = components[0];
 
         const int m = ParseAsUnsignedInt(components[1]);
-        if (m == -1 || m < 8 || m > 32) {
+        if (m < 8 || m > 32) {
             logger.error("Invalid CIDR netmask notation '{}'", components[1]);
             return {"", ""};
         }

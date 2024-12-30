@@ -49,7 +49,7 @@ public:
     {
         filename = filesystem::path(file);
     }
-    string GetLastFilename() const
+    const string& GetLastFilename() const
     {
         return last_filename;
     }
@@ -93,7 +93,7 @@ public:
         medium_changed = b;
     }
 
-    static auto GetReservedFiles()
+    static const auto& GetReservedFiles()
     {
         return reserved_files;
     }

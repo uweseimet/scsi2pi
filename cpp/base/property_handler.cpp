@@ -93,7 +93,7 @@ property_map PropertyHandler::GetProperties(const string &filter) const
     return filtered_properties;
 }
 
-property_map PropertyHandler::GetUnknownProperties() const
+const property_map& PropertyHandler::GetUnknownProperties() const
 {
     return unknown_properties;
 }
