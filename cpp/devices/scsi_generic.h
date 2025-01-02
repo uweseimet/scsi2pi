@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -77,7 +77,7 @@ private:
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
 
-    // Linux limits the number of bytes that can be transferred in a single SCSI request
+    // Linux limits the number of bytes that can be transferred in a single SG 3 SCSI request
     static const int MAX_TRANSFER_LENGTH = 65536;
 
     static const int TIMEOUT_DEFAULT_SECONDS = 5;

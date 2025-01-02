@@ -193,8 +193,11 @@ private:
 
     bool supports_params = false;
 
+    bool logger_initialized = false;
+
     // The parameters the device was created with
     param_map params;
 
-    shared_ptr<logger> device_logger;
+    // Use the default logger until the device-specific logger has been initialized
+    shared_ptr<logger> device_logger = default_logger();
 };

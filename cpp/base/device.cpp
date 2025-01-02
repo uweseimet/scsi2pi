@@ -83,8 +83,9 @@ bool Device::Eject(bool force)
 
 logger& Device::GetLogger()
 {
-    if (!device_logger) {
+    if (!logger_initialized) {
         device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
+        logger_initialized = true;
     }
 
     return *device_logger;
