@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -191,7 +191,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const PbDeviceType type = pb_device.type();
     const int lun = pb_device.unit();
 
-    if (const int lun_max = Controller::GetLunMax(type == SAHD); lun >= lun_max) {
+    if (const int lun_max = GetLunMax(type == SAHD); lun >= lun_max) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 
@@ -716,7 +716,7 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
     }
 
     const int lun = device.unit();
-    if (const int lun_max = Controller::GetLunMax(device.type() == SAHD); lun < 0 || lun >= lun_max) {
+    if (const int lun_max = GetLunMax(device.type() == SAHD); lun < 0 || lun >= lun_max) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 
@@ -739,7 +739,8 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
 bool CommandExecutor::SetProductData(const CommandContext &context, const PbDeviceDefinition &pb_device,
     PrimaryDevice &device)
 {
-    const string &error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() });
+    const string &error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() },
+        true);
     return error.empty() ? true : context.ReturnErrorStatus(error);
 }
 

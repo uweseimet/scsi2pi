@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,8 +15,6 @@
 #include "script_generator.h"
 #include "buses/bus.h"
 #include "shared/s2p_formatter.h"
-#include "shared/memory_util.h"
-#include "shared/s2p_util.h"
 
 using namespace spdlog;
 

@@ -91,7 +91,7 @@ public:
 
     virtual ~Bus() = default;
 
-    virtual bool Init(bool = true);
+    virtual bool Init(bool);
     virtual void Reset() = 0;
     virtual void CleanUp() = 0;
 

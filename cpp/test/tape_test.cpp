@@ -2,22 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
 
 using namespace memory_util;
-
-#define CheckPositions(device, position, object_location) ({\
-    auto c = static_cast<MockAbstractController*>(device->GetController());\
-    c->ResetCdb();\
-    c->SetCdbByte(1, 0x01);\
-    CheckPosition(*c, device, position);\
-    c->SetCdbByte(1, 0);\
-    CheckPosition(*c, device, object_location);\
-})
 
 static void CheckPosition(const AbstractController &controller, shared_ptr<PrimaryDevice> tape, uint32_t position)
 {
@@ -27,6 +18,16 @@ static void CheckPosition(const AbstractController &controller, shared_ptr<Prima
     if (position != GetInt32(controller.GetBuffer(), 4) || position != GetInt32(controller.GetBuffer(), 8)) {
         EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4));
     }
+}
+
+static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
+{
+    const auto c = static_cast<MockAbstractController*>(tape->GetController());
+    c->ResetCdb();
+    c->SetCdbByte(1, 0x01);
+    CheckPosition(*c, tape, position);
+    c->SetCdbByte(1, 0x00);
+    CheckPosition(*c, tape, object_location);
 }
 
 static void CheckMetaData(istream &file, const SimhMetaData &expected)

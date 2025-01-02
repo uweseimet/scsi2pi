@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -12,6 +12,7 @@
 
 #include <functional>
 #include "controllers/abstract_controller.h"
+#include "shared/memory_util.h"
 #include "shared/s2p_exceptions.h"
 #include "device.h"
 
@@ -45,7 +46,7 @@ public:
     }
 
     ProductData GetProductData() const;
-    virtual string SetProductData(const ProductData&, bool force = true);
+    virtual string SetProductData(const ProductData&, bool);
 
     string GetPaddedName() const
     {
@@ -108,7 +109,7 @@ public:
     // Devices providing statistics have to override this method
     virtual vector<PbStatistics> GetStatistics() const
     {
-        return vector<PbStatistics>();
+        return {};
     }
 
 protected:
@@ -189,12 +190,12 @@ private:
     ScsiLevel level = ScsiLevel::SCSI_2;
     ScsiLevel response_data_format = ScsiLevel::SCSI_2;
 
-    enum SenseKey sense_key = SenseKey::NO_SENSE;
-    enum Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+    SenseKey sense_key = SenseKey::NO_SENSE;
+    Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+    Ascq eom = Ascq::NONE;
 
     bool valid = false;
     bool filemark = false;
-    Ascq eom = Ascq::NONE;
     bool ili = false;
     int32_t information = 0;
 

@@ -13,9 +13,9 @@
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 
-bool Bus::Init(bool mode)
+bool Bus::Init(bool target)
 {
-    target_mode = mode;
+    target_mode = target;
 
     return true;
 }

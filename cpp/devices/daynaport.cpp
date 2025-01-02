@@ -5,7 +5,7 @@
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2020 akuker
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -34,7 +34,7 @@ using namespace s2p_util;
 DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
-    PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" });
+    PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" }, true);
     SupportsParams(true);
     SetReady(true);
 }

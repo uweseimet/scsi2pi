@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ bool Device::Eject(bool force)
 
 void Device::CreateLogger()
 {
-    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
+    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), lun));
 }
 
 logger& Device::GetLogger() const

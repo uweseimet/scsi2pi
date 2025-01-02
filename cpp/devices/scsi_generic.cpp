@@ -67,7 +67,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     local_cdb.resize(count);
     for (int i = 0; i < count; ++i) {
-        local_cdb[i] = static_cast<uint8_t>(GetController()->GetCdb()[i]);
+        local_cdb[i] = static_cast<uint8_t>(GetCdbByte(1));
     }
 
     // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
@@ -316,7 +316,7 @@ string ScsiGeneric::GetDeviceData()
     }
 
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
-    PrimaryDevice::SetProductData( { vendor, product, revision });
+    PrimaryDevice::SetProductData( { vendor, product, revision }, true);
 
     SetScsiLevel(static_cast<ScsiLevel>(buf[2]));
     SetResponseDataFormat(static_cast<ScsiLevel>(buf[3]));

@@ -14,7 +14,7 @@ using namespace memory_util;
 
 ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, lun, true, false, { 512, 2048 })
 {
-    Disk::SetProductData( { "", "SCSI CD-ROM", "" });
+    Disk::SetProductData( { "", "SCSI CD-ROM", "" }, true);
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetReadOnly(true);
     SetRemovable(true);

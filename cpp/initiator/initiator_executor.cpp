@@ -52,7 +52,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         return 0xff;
     }
 
-    if (!Selection(cdb[1] & 0b11100000)) {
+    if (!Selection(static_cast<int>(cdb[1]) & 0b11100000)) {
         bus.Reset();
         return 0xff;
     }

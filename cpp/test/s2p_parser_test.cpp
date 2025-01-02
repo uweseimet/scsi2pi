@@ -14,21 +14,21 @@
 
 using namespace s2p_interface;
 
-void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
-    nullptr)
+void SetUpArgs(vector<char*> &args, const string &arg1, const string &arg2, const string &arg3 = "",
+    const string &arg4 = "")
 {
     for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
     args.clear();
     args.emplace_back(strdup("s2p"));
-    args.emplace_back(strdup(arg1));
-    args.emplace_back(strdup(arg2));
-    if (arg3) {
-        args.emplace_back(strdup(arg3));
+    args.emplace_back(strdup(arg1.c_str()));
+    args.emplace_back(strdup(arg2.c_str()));
+    if (!arg3.empty()) {
+        args.emplace_back(strdup(arg3.c_str()));
     }
-    if (arg4) {
-        args.emplace_back(strdup(arg4));
+    if (!arg4.empty()) {
+        args.emplace_back(strdup(arg4.c_str()));
     }
 }
 

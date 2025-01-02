@@ -24,7 +24,7 @@ using namespace protobuf_util;
 
 void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
 {
-    properties.set_luns(Controller::GetLunMax(device->GetType() == SAHD));
+    properties.set_luns(GetLunMax(device->GetType() == SAHD));
     properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());

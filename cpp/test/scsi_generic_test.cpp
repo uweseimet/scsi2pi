@@ -50,10 +50,10 @@ TEST(ScsiGenericTest, SetProductData)
 {
     ScsiGeneric device(0, "");
 
-    EXPECT_TRUE(device.SetProductData( {"", "", ""} ).empty());
-    EXPECT_FALSE(device.SetProductData( {"1", "", ""} ).empty());
-    EXPECT_FALSE(device.SetProductData( {"", "2", ""} ).empty());
-    EXPECT_FALSE(device.SetProductData( {"", "", "3"} ).empty());
+    EXPECT_TRUE(device.SetProductData( { "", "", "" }, true).empty());
+    EXPECT_FALSE(device.SetProductData( { "1", "", "" }, true).empty());
+    EXPECT_FALSE(device.SetProductData( { "", "2", "" }, true).empty());
+    EXPECT_FALSE(device.SetProductData( { "", "", "3" }, true).empty());
 }
 
 TEST(ScsiGenericTest, SetUp)

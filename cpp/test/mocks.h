@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -217,6 +217,11 @@ public:
             SetCdbByte(static_cast<int>(i), 0);
         }
     }
+
+    void SetCdbByte(int index, int value) // NONSONAR Having the same name as the inherited method is intentional
+    {
+        AbstractController::SetCdbByte(index, value);
+    }
 };
 
 class MockController : public Controller
@@ -333,15 +338,15 @@ public:
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b)
+    void SetReady(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b)
+    void SetRemovable(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b)
+    void SetLocked(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }

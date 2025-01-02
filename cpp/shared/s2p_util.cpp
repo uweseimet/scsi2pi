@@ -245,6 +245,11 @@ string s2p_util::GetScsiLevel(int scsi_level)
     }
 }
 
+int s2p_util::GetLunMax(bool sasi)
+{
+    return sasi ? 2 : 32;
+}
+
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
     const auto flags = static_cast<int>(sense_data[2]);

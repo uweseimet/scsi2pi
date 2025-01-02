@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -33,11 +33,6 @@ public:
     void DataOut() override;
 
     int GetEffectiveLun() const override;
-
-    static int GetLunMax(bool sasi)
-    {
-        return sasi ? 2 : 32;
-    }
 
 private:
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -257,7 +257,7 @@ void PrimaryDevice::ReportLuns() const
 void PrimaryDevice::RequestSense()
 {
     // The descriptor format is not supported
-    if (controller->GetCdb()[1] & 0x01) {
+    if (GetCdbByte(1) & 0x01) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 

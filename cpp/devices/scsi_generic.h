@@ -35,7 +35,7 @@ public:
         return device;
     }
 
-    string SetProductData(const ProductData&, bool force = true) override;
+    string SetProductData(const ProductData&, bool) override;
 
     void Dispatch(ScsiCommand) override;
 

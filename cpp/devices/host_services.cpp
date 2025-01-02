@@ -96,7 +96,7 @@ using namespace protobuf_util;
 
 HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
 {
-    PrimaryDevice::SetProductData( { "", "Host Services", "" });
+    PrimaryDevice::SetProductData( { "", "Host Services", "" }, true);
     SetScsiLevel(ScsiLevel::SPC_3);
     SetReady(true);
 }

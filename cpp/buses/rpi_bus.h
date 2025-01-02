@@ -35,7 +35,7 @@ public:
     }
     ~RpiBus() override = default;
 
-    bool Init(bool = true) override;
+    bool Init(bool) override;
 
     void Reset() override;
     void CleanUp() override;
