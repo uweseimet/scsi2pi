@@ -37,7 +37,7 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            GetLogger().warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
+            device_logger->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
         }
     }
 }
@@ -81,13 +81,13 @@ bool Device::Eject(bool force)
     return true;
 }
 
-logger& Device::GetLogger()
+void Device::CreateLogger()
 {
-    if (!logger_initialized) {
-        device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
-        logger_initialized = true;
-    }
+    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), GetLun()));
+}
 
+logger& Device::GetLogger() const
+{
     return *device_logger;
 }
 

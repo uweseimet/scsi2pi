@@ -508,8 +508,8 @@ bool Controller::TransferFromHost(int length)
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
-        // TODO Try to remove this special case
-        if (cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) {
+        // TODO Try to remove these special cases (MODE SELECT case and SCSG case)
+        if ((cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), 0);
         }

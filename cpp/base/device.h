@@ -118,7 +118,7 @@ public:
     void Stop();
     virtual bool Eject(bool);
 
-    logger& GetLogger();
+    logger& GetLogger() const;
 
 protected:
 
@@ -162,6 +162,7 @@ protected:
 
     string GetParam(const string&) const;
 
+    void CreateLogger();
     void LogTrace(const string&) const;
     void LogDebug(const string&) const;
     void LogWarn(const string&) const;
@@ -193,11 +194,9 @@ private:
 
     bool supports_params = false;
 
-    bool logger_initialized = false;
-
     // The parameters the device was created with
     param_map params;
 
-    // Use the default logger until the device-specific logger has been initialized
+    // Use the default logger until the device-specific logger has been created
     shared_ptr<logger> device_logger = default_logger();
 };

@@ -52,7 +52,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         return 0xff;
     }
 
-    if (!Selection()) {
+    if (!Selection(cdb[1] & 0b11100000)) {
         bus.Reset();
         return 0xff;
     }
@@ -163,7 +163,7 @@ bool InitiatorExecutor::Arbitration() const
     return true;
 }
 
-bool InitiatorExecutor::Selection() const
+bool InitiatorExecutor::Selection(bool explicit_lun) const
 {
     initiator_logger.trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
 
@@ -172,17 +172,17 @@ bool InitiatorExecutor::Selection() const
 
     bus.SetSEL(true);
 
-    if (!sasi) {
+    if (!sasi && !explicit_lun) {
         // Request MESSAGE OUT for IDENTIFY
         bus.SetATN(true);
 
         Sleep(DESKEW_DELAY);
         Sleep(DESKEW_DELAY);
-
-        bus.SetBSY(false);
-
-        Sleep(BUS_SETTLE_DELAY);
     }
+
+    bus.SetBSY(false);
+
+    Sleep(BUS_SETTLE_DELAY);
 
     if (!WaitForBusy()) {
         initiator_logger.trace("Selection failed");

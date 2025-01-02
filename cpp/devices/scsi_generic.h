@@ -46,9 +46,9 @@ public:
 
 private:
 
-    int ReadWriteData(span<uint8_t>, int, bool);
+    int ReadWriteData(span<uint8_t>, int);
 
-    void EvaluateStatus(int, span<uint8_t>, span<uint8_t>, bool, bool);
+    void EvaluateStatus(int, span<uint8_t>, span<uint8_t>, bool);
 
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
 

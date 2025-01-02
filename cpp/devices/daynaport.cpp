@@ -365,7 +365,7 @@ void DaynaPort::SetMcastAddr() const
 //           seconds
 //
 //---------------------------------------------------------------------------
-void DaynaPort::EnableInterface()
+void DaynaPort::EnableInterface() const
 {
     if (GetCdbByte(5) & 0x80) {
         if (const string &error = TapDriver::IpLink(true, GetLogger()); !error.empty()) {

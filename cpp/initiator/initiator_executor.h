@@ -61,7 +61,7 @@ private:
     bool Dispatch(span<uint8_t>, span<uint8_t>, int&);
 
     bool Arbitration() const;
-    bool Selection() const;
+    bool Selection(bool) const;
     void Command(span<uint8_t>);
     void Status();
     void DataIn(data_in_t, int&);

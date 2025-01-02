@@ -96,27 +96,12 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     remaining_count = byte_count;
 
-    auto &buf = GetController()->GetBuffer();
-
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if ((static_cast<int>(local_cdb[1]) & 0b11100000) && cmd != ScsiCommand::INQUIRY) {
-        if (cmd != ScsiCommand::REQUEST_SENSE) {
-            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
-        }
-
-        fill_n(buf.begin(), 18, 0);
-        buf[0] = 0x70;
-        buf[2] = static_cast<uint8_t>(SenseKey::ILLEGAL_REQUEST);
-        buf[7] = 10;
-        buf[12] = static_cast<uint8_t>(Asc::LOGICAL_UNIT_NOT_SUPPORTED);
-
-        const int length = min(18, byte_count);
-        GetController()->SetTransferSize(length, length);
-        DataInPhase(length);
-
-        // When signalling an invalid LUN, for REQUEST SENSE the status must be GOOD
-        return;
+    if (GetController()->GetEffectiveLun() && cmd != ScsiCommand::INQUIRY) {
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
     }
+
+    auto &buf = GetController()->GetBuffer();
 
     if (cmd == ScsiCommand::REQUEST_SENSE && deferred_sense_data_valid) {
         memcpy(buf.data(), deferred_sense_data.data(), deferred_sense_data.size());
@@ -150,12 +135,13 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
 vector<uint8_t> ScsiGeneric::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::OPTICAL_MEMORY, true);
+    assert(false);
+    return {};
 }
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf, GetController()->GetChunkSize(), true);
+    return ReadWriteData(buf, GetController()->GetChunkSize());
 }
 
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
@@ -181,10 +167,10 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length, true); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool enable_log)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 {
     int length = remaining_count < chunk_size ? remaining_count : chunk_size;
     length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
@@ -218,26 +204,26 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool enable_lo
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (enable_log && GetLogger().level() <= level::debug) {
+    if (GetController() && GetLogger().level() <= level::debug) {
         LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
-    if (enable_log && write && GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Transferring {0} byte(s) to SG driver:\n{1}", length,
-            GetController()->FormatBytes(buf, length)));
+    if (write && GetController() && GetLogger().level() == level::trace) {
+        LogTrace(fmt::format("Transferring {0} byte(s) to SG driver{1}", length,
+            length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : ""));
     }
 
     const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
 
     format_header.clear();
 
-    EvaluateStatus(status, span(buf.data(), length), sense_data, write, enable_log);
+    EvaluateStatus(status, span(buf.data(), length), sense_data, write);
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (enable_log && !write && GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver:\n{1}", transferred_length,
-            GetController()->FormatBytes(buf, transferred_length)));
+    if (!write && GetController() && GetLogger().level() == level::trace) {
+        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver{1}", transferred_length,
+            transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : ""));
     }
 
     UpdateInternalBlockSize(buf, length);
@@ -252,17 +238,17 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size, bool enable_lo
         remaining_count = 0;
     }
 
-    if (enable_log) {
+    if (GetController()) {
         LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
     }
 
     return transferred_length;
 }
 
-void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write, bool enable_log)
+void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write)
 {
     if (status == -1) {
-        if (enable_log) {
+        if (GetController()) {
             LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", buf.size(), strerror(errno)));
         }
 
@@ -276,8 +262,8 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> se
     if (!status) {
         status = static_cast<int>(sense_data[2]) & 0x0f;
 
-        if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY
-            && (static_cast<int>(local_cdb[1]) & 0b11100000)) {
+        if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY && GetController()
+            && GetController()->GetEffectiveLun()) {
             // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
             buf[0] = 0x7f;
         }
@@ -304,7 +290,6 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 
     if (block_size != size) {
         LogTrace(fmt::format("Updating internal block size to {} bytes", size));
-        assert(size);
         if (size) {
             block_size = size;
         }
@@ -324,7 +309,7 @@ string ScsiGeneric::GetDeviceData()
     local_cdb[4] = static_cast<uint8_t>(byte_count);
 
     try {
-        ReadWriteData(buf, byte_count, false);
+        ReadWriteData(buf, byte_count);
     }
     catch (const ScsiException &e) {
         return e.what();
@@ -352,7 +337,7 @@ void ScsiGeneric::GetBlockSize()
 
     try {
         // Trigger a block size update
-        ReadWriteData(buf, byte_count, false);
+        ReadWriteData(buf, byte_count);
     }
     catch (const ScsiException&) { // NOSONAR The exception details do not matter, this might not be a block device
         // Fall through

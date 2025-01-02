@@ -186,6 +186,8 @@ bool PrimaryDevice::SetResponseDataFormat(ScsiLevel l)
 void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
+
+    CreateLogger();
 }
 
 void PrimaryDevice::StatusPhase() const

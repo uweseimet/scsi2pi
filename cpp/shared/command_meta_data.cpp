@@ -68,6 +68,8 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false });
+    AddCommand(ScsiCommand::WRITE_BUFFER, 10, "READ BUFFER", { 6, 3, 0, 0, true });
+    AddCommand(ScsiCommand::READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false });
     AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 0, 0, true });
     AddCommand(ScsiCommand::WRITE_SAME_10, 10, "WRITE SAME(10)", { 7, 2, 0, 0, true });
@@ -90,6 +92,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_MASTER_CUE, 10, "READ MASTER CUE", { 6, 3, 0, 0, false });
     AddCommand(ScsiCommand::MODE_SENSE_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::CLOSE_TRACK_SESSION, 10, "CLOSE TRACK/SESSION", { 0, 0, 0, 0, false });
+    AddCommand(ScsiCommand::READ_BUFFER_CAPACITY, 10, "READ BUFFER CAPACITY", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::PERSISTENT_RESERVE_IN, 10, "PERSISTENT RESERVE IN", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::PERSISTENT_RESERVE_OUT, 10, "PERSISTENT RESERVE OUT", { 7, 2, 0, 0, true });
     AddCommand(ScsiCommand::WRITE_FILEMARKS_16, 16, "WRITE FILEMARKS(16)", { 0, 0, 0, 0, false });
@@ -101,6 +104,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false });
+    AddCommand(ScsiCommand::READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false });
     AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, 16, "READ CAPACITY(16)/READ LONG(16)",
         { 12, 2, 0, 0, false });
