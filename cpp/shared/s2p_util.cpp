@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -203,7 +203,7 @@ string s2p_util::Banner(string_view app)
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2016-2020 GIMONS\n"
         << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
-        << "Copyright (C) 2021-2024 Uwe Seimet\n";
+        << "Copyright (C) 2021-2025 Uwe Seimet\n";
 
     return s.str();
 }

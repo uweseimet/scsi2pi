@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -522,7 +522,7 @@ bool CommandResponse::ValidateImageFile(const path &path, logger &logger)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            logger.warn(fmt::format("Image file symlink '{}' is broken", path.string()));
+            logger.warn("Image file symlink '{}' is broken", path.string());
             return false;
         }
     }

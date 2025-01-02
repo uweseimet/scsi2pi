@@ -117,9 +117,13 @@ TEST(HostServicesTest, ReceiveOperationResults)
     Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
 
+    controller->SetCdbByte(1, 0b11000);
+    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+        "Illegal format");
+
     controller->SetCdbByte(1, 0b010);
-    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ABORTED_COMMAND,
-        Asc::INTERNAL_TARGET_FAILURE, "No matching initiator ID");
+    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST,
+        Asc::DATA_CURRENTLY_UNAVAILABLE, "No matching initiator ID");
 }
 
 TEST(HostServicesTest, ModeSense6)

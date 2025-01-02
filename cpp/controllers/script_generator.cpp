@@ -37,7 +37,7 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
         if (i) {
             file << ':';
         }
-        file << setfill('0') << setw(2) << cdb[i];
+        file << setfill('0') << setw(2) << (cdb[i] & 0xff);
     }
 
     file << flush;

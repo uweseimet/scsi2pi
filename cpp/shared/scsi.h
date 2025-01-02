@@ -221,6 +221,7 @@ enum class Asc
     COMMAND_PHASE_ERROR = 0x4a,
     DATA_PHASE_ERROR = 0x4b,
     MEDIUM_LOAD_OR_EJECT_FAILED = 0x53,
+    DATA_CURRENTLY_UNAVAILABLE = 0x55
 };
 
 enum class Ascq

@@ -101,9 +101,8 @@ void Printer::Print()
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError(
-            fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
-                GetController()->GetBuffer().size(), length));
+        LogError(fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
+            GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
 
@@ -134,9 +133,8 @@ void Printer::SynchronizeBuffer()
     cmd.replace(file_position, 2, filename);
 
     error_code error;
-    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s)", filename, file_size(path(filename), error)));
-
-    LogDebug(fmt::format("Executing print command '{}'", cmd));
+    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s) using print command '{2}'", filename,
+        file_size(path(filename), error), cmd));
 
     if (system(cmd.c_str())) {
         LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
@@ -155,10 +153,9 @@ void Printer::SynchronizeBuffer()
 
 int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
-    const auto command = static_cast<ScsiCommand>(cdb[0]);
-    assert(command == ScsiCommand::PRINT);
-    if (command != ScsiCommand::PRINT) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
+    if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
+        assert(false);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt24(2);

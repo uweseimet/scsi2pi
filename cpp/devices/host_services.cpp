@@ -165,7 +165,7 @@ void HostServices::ReceiveOperationResults()
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::DATA_CURRENTLY_UNAVAILABLE);
     }
     const string &execution_result = it->second;
 
@@ -196,16 +196,10 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const int allocation_length = GetCdbInt16(7);
-    const int length = min(allocation_length, static_cast<int>(data.size()));
-    if (!length) {
-        StatusPhase();
-    }
-    else {
-        GetController()->CopyToBuffer(data.data(), length);
+    const int length = min(GetCdbInt16(7), static_cast<int>(data.size()));
+    GetController()->CopyToBuffer(data.data(), length);
 
-        DataInPhase(length);
-    }
+    DataInPhase(length);
 }
 
 int HostServices::ModeSense6(cdb_t cdb, data_in_t buf) const
@@ -278,7 +272,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
     if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt16(7);
@@ -291,30 +285,27 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     switch (input_format) {
     case ProtobufFormat::BINARY:
         if (!cmd.ParseFromArray(buf.data(), length)) {
-            LogTrace("Failed to deserialize protobuf binary data");
-            throw ScsiException(SenseKey::ABORTED_COMMAND);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
 
     case ProtobufFormat::JSON: {
         if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
-            LogTrace("Failed to deserialize protobuf JSON data");
-            throw ScsiException(SenseKey::ABORTED_COMMAND);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
     }
 
     case ProtobufFormat::TEXT: {
         if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
-            LogTrace("Failed to deserialize protobuf text format data");
-            throw ScsiException(SenseKey::ABORTED_COMMAND);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
     }
 
     default:
         assert(false);
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     PbResult result;
@@ -322,7 +313,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
@@ -332,18 +323,15 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
 ProtobufFormat HostServices::ConvertFormat() const
 {
-    switch (GetCdbByte(1) & 0b00000111) {
+    switch (GetCdbByte(1) & 0b00011111) {
     case 0x001:
         return ProtobufFormat::BINARY;
-        break;
 
     case 0b010:
         return ProtobufFormat::JSON;
-        break;
 
     case 0b100:
         return ProtobufFormat::TEXT;
-        break;
 
     default:
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
