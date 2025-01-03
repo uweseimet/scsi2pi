@@ -54,7 +54,8 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::SEEK_6, [this]
         {
-            Seek(SEEK6);
+            CheckAndGetStartAndCount(SEEK6);
+            StatusPhase();
         });
     AddCommand(ScsiCommand::READ_CAPACITY_10, [this]
         {
@@ -82,7 +83,8 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::SEEK_10, [this]
         {
-            Seek(SEEK10);
+            CheckAndGetStartAndCount(SEEK10);
+            StatusPhase();
         });
     AddCommand(ScsiCommand::VERIFY_10, [this]
         {
@@ -429,16 +431,6 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     return l;
 }
 
-void Disk::Seek(AccessMode mode)
-{
-    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
-    if (valid) {
-        CheckReady();
-    }
-
-    StatusPhase();
-}
-
 void Disk::ReadCapacity10()
 {
     CheckReady();
@@ -513,8 +505,10 @@ void Disk::ReadCapacity16_ReadLong16()
     }
 }
 
-uint64_t Disk::ValidateBlockAddress(AccessMode mode) const
+uint64_t Disk::ValidateBlockAddress(AccessMode mode)
 {
+    CheckReady();
+
     // RelAdr is not supported
     if (mode == RW10 && GetCdbByte(1) & 0x01) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -522,7 +516,7 @@ uint64_t Disk::ValidateBlockAddress(AccessMode mode) const
 
     const uint64_t sector = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
 
-    if (sector > GetBlockCount()) {
+    if (sector >= GetBlockCount()) {
         LogTrace(
             fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}", GetBlockCount(), sector));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -543,8 +537,11 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode) const
+tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
 {
+    spdlog::critical(IsReady());
+    CheckReady();
+
     uint64_t start;
     uint32_t count;
 

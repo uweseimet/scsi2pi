@@ -117,6 +117,8 @@ void Tape::ValidateFile()
 
 void Tape::Read(bool read_16)
 {
+    CheckReady();
+
     // FIXED and SILI must not both be set, only partition 0 is supported
     if ((GetCdbByte(1) & 0b11) == 0b11 || (read_16 && GetCdbByte(3))) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -148,6 +150,8 @@ void Tape::Read(bool read_16)
 
 void Tape::Write(bool write_16)
 {
+    CheckReady();
+
     // FCS and LCS are not supported, only partition 0 is supported
     if (write_16 && (GetCdbByte(1) & 0b1100 || GetCdbByte(3))) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -180,8 +184,6 @@ void Tape::Write(bool write_16)
 
 int Tape::ReadData(data_in_t buf)
 {
-    CheckReady();
-
     int length = GetController()->GetChunkSize();
 
     if (IsAtRecordBoundary()) {
@@ -247,8 +249,6 @@ int Tape::ReadData(data_in_t buf)
 
 int Tape::WriteData(cdb_t, data_out_t buf, int, int chunk_size)
 {
-    CheckReady();
-
     if (IsAtRecordBoundary()) {
         WriteMetaData(ObjectType::BLOCK, record_length);
     }
@@ -435,6 +435,8 @@ void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeabl
 
 void Tape::Erase6()
 {
+    CheckReady();
+
     if (tar_file) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
     }
@@ -467,6 +469,8 @@ void Tape::ReadBlockLimits() const
 
 void Tape::Space6()
 {
+    CheckReady();
+
     if (tar_file) {
         LogError("In tar-compatibility mode spacing is not supported");
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
@@ -494,6 +498,8 @@ void Tape::Space6()
 
 void Tape::WriteFilemarks(bool write_filemarks_16)
 {
+    CheckReady();
+
     if (tar_file) {
         LogTrace("In tar-compatibility mode writing filemarks is ignored");
         StatusPhase();
@@ -532,6 +538,8 @@ void Tape::WriteFilemarks(bool write_filemarks_16)
 
 bool Tape::Locate(bool locate_16)
 {
+    CheckReady();
+
     // CP is not supported
     if (GetCdbByte(1) & 0x02) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -569,8 +577,10 @@ bool Tape::Locate(bool locate_16)
     return true;
 }
 
-void Tape::ReadPosition() const
+void Tape::ReadPosition()
 {
+    CheckReady();
+
     auto &buf = GetController()->GetBuffer();
     fill_n(buf.begin(), 20, 0);
 
@@ -596,6 +606,8 @@ void Tape::ReadPosition() const
 
 void Tape::FormatMedium()
 {
+    CheckReady();
+
     if (tar_file) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
     }

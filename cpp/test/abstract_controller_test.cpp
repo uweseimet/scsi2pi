@@ -89,7 +89,9 @@ TEST(AbstractControllerTest, AddDevice)
     MockAbstractController controller;
 
     EXPECT_TRUE(controller.AddDevice(make_shared<MockPrimaryDevice>(0)));
-    EXPECT_TRUE(controller.AddDevice(make_shared<MockScsiHd>(1, false)));
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockScsiHd>(3, false)));
+    EXPECT_FALSE(controller.AddDevice(make_shared<MockScsiHd>(32, false)));
+    EXPECT_TRUE(controller.AddDevice(make_shared<MockSasiHd>(1)));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockSasiHd>(2)));
 }
 

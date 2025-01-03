@@ -77,7 +77,7 @@ private:
     void Space6();
     void WriteFilemarks(bool);
     void FormatMedium();
-    void ReadPosition() const;
+    void ReadPosition();
     bool Locate(bool);
 
     void WriteMetaData(Tape::ObjectType, uint32_t = 0);

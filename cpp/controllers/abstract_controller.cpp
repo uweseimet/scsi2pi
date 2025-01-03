@@ -151,19 +151,12 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-    if (lun < 0 || lun >= 32 || GetDeviceForLun(lun) || device->GetController()) {
+    if (lun < 0 || lun >= (device->GetType() == SAHD ? 2 : 32) || luns.contains(lun) || device->GetController()) {
         return false;
     }
 
-    for (const auto& [_, d] : luns) {
-        if ((device->GetType() == SAHD && d->GetType() != SAHD)
-            || (device->GetType() != SAHD && d->GetType() == SAHD)) {
-            controller_logger->error("SCSI and SASI devices cannot share a controller");
-            return false;
-        }
-    }
-
     luns[lun] = device;
+
     device->SetController(this);
 
     return true;

@@ -42,7 +42,7 @@ public:
         return command_byte_counts[static_cast<int>(cmd)];
     }
 
-    auto GetCommandName(ScsiCommand cmd) const
+    const string& GetCommandName(ScsiCommand cmd) const
     {
         return command_names[static_cast<int>(cmd)];
     }

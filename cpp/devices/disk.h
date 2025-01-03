@@ -83,7 +83,6 @@ private:
     void Read(AccessMode);
     void Write(AccessMode);
     void Verify(AccessMode);
-    void Seek(AccessMode);
     void ReadCapacity16_ReadLong16();
 
     void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
@@ -93,8 +92,8 @@ private:
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
-    uint64_t ValidateBlockAddress(AccessMode) const;
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode) const;
+    uint64_t ValidateBlockAddress(AccessMode);
+    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
 
     shared_ptr<Cache> cache;
 

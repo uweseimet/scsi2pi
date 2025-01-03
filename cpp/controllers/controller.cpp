@@ -534,9 +534,13 @@ void Controller::XferMsg()
     assert(IsMsgOut());
 
     if (atn_msg) {
-        msg_bytes.emplace_back(GetBuffer()[0]);
+        const auto msg = GetBuffer()[0];
+        msg_bytes.emplace_back(msg);
 
-        LogTrace(fmt::format("Received message byte ${:02x}", GetBuffer()[0]));
+        // Do not log IDENTIFY message twice
+        if (msg < 0x80) {
+            LogTrace(fmt::format("Received message byte ${:02x}", msg));
+        }
     }
 }
 

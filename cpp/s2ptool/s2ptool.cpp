@@ -106,13 +106,13 @@ int main(int argc, char *argv[])
     vector<char*> client_args;
     add_arg(client_args, client);
     for (const auto &arg : Split(c_args, ' ')) {
-        add_arg(client_args, arg);
+        add_arg(client_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
     vector<char*> target_args;
     add_arg(target_args, "s2p");
     for (const auto &arg : Split(t_args, ' ')) {
-        add_arg(target_args, arg);
+        add_arg(target_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
 #ifndef __APPLE__
