@@ -25,7 +25,7 @@ void S2pFormat::Banner(bool header) const
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Format Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2024 Uwe Seimet\n";
+            << "Copyright (C) 2024-2025 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
@@ -239,7 +239,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
     return status ? fmt::format("Can't format drive: {}", strerror(errno)) : "";
 }
 
-int S2pFormat::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout)
+int S2pFormat::ExecuteCommand(span<const uint8_t> cdb, span<uint8_t> buf, int timeout)
 {
     return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
 }

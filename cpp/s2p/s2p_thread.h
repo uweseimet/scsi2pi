@@ -34,7 +34,7 @@ private:
     void Execute() const;
     void ExecuteCommand(int) const;
 
-    callback execute;
+    callback exec;
 
 #ifndef __APPLE__
     jthread service_thread;

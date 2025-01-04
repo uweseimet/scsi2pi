@@ -2,13 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "controller_factory.h"
 #include "base/primary_device.h"
 #include "controller.h"
+#include "script_generator.h"
 
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {

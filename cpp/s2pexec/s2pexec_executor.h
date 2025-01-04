@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ public:
 
     bool IsSg() const
     {
-        return use_sg;
+        return is_sg;
     }
 
     void ResetBus();
@@ -58,7 +58,7 @@ private:
 
     logger &s2pexec_logger;
 
-    bool use_sg = false;
+    bool is_sg = false;
 
     // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;

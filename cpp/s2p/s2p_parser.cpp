@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ void S2pParser::Banner(bool usage) const
             << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
+            << "  --ignore-conf               Ignore /etc/s2p.conf configuration file.\n"
             << "  --version/-v                Display the program version.\n"
             << "  --help/-h                   Display this help.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"

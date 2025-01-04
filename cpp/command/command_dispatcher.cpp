@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
+        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -64,7 +64,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
-        response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
+        response.GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
             executor.GetReservedIds(), s2p_logger);
         return context.WriteSuccessResult(result);
 
@@ -107,7 +107,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case STATISTICS_INFO:
-        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.GetAllDevices());
+        response.GetStatisticsInfo(*result.mutable_statistics_info(), controller_factory.GetAllDevices());
         return context.WriteSuccessResult(result);
 
     case PROPERTIES_INFO:
@@ -171,7 +171,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
         PbCommand command;
         PbResult result;
         CommandResponse response;
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
+        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteResult(result);
     }
 

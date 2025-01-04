@@ -40,7 +40,7 @@ void SgAdapter::CleanUp()
     }
 }
 
-SgAdapter::SgResult SgAdapter::SendCommand(span<uint8_t> cdb, span<uint8_t> buf, int total_length, int timeout)
+SgAdapter::SgResult SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t> buf, int total_length, int timeout)
 {
     byte_count = 0;
 

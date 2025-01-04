@@ -245,7 +245,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
     return transferred_length;
 }
 
-void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> sense_data, bool write)
+void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8_t> sense_data, bool write)
 {
     if (status == -1) {
         if (GetController()) {

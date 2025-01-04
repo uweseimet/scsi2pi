@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -65,9 +65,5 @@ static const int64_t META_DATA_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 
 // "S2P", private marker magic value for tape object types, the SCSI2Pi type is coded in the low nibble of the LSB
 static const uint32_t PRIVATE_MARKER_MAGIC = 0x00533250;
-
-static const int OVERFLOW_ERROR = -1;
-static const int READ_ERROR = -2;
-static const int WRITE_ERROR = -3;
 
 }

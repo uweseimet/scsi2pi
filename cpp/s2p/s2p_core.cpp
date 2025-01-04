@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,7 +15,6 @@
 #include <iostream>
 #include <sstream>
 #include <netinet/in.h>
-#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
@@ -29,7 +28,6 @@
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -205,13 +203,13 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     // Display and log the device list
     PbServerInfo server_info;
     CommandResponse response;
-    response.GetDevices(executor->GetAllDevices(), server_info);
+    response.GetDevices(controller_factory.GetAllDevices(), server_info);
     const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
     LogDevices(device_list);
 
-    // Show the device list only once
+    // Show the device list only once, either the console or the log
     if (get_level() > level::info) {
         cout << device_list << flush;
     }
@@ -247,7 +245,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
             controller_factory.SetLogPattern(log_pattern);
         }
 
-        // This sets the global level only, there no attached devices yet
+        // This sets the global level only, there are no attached devices yet
         log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
         if (!dispatcher->SetLogLevel(log_level)) {
             throw ParserException("Invalid log level: '" + log_level + "'");
@@ -264,8 +262,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
             if (const int depth = ParseAsUnsignedInt(scan_depth); depth == -1) {
-                throw ParserException("Invalid image file scan depth "
-                    + property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH));
+                throw ParserException("Invalid image file scan depth: " + scan_depth);
             }
             else {
                 CommandImageSupport::Instance().SetDepth(depth);
@@ -274,9 +271,9 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
             if (!controller_factory.SetScriptFile(script_file)) {
-                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
+                throw ParserException("Can't create s2pexec script file '" + script_file + "': " + strerror(errno));
             }
-            s2p_logger->info("Generating SCSI command script file '" + script_file + "'");
+            s2p_logger->info("Generating s2pexec script file '" + script_file + "'");
         }
 
         const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
@@ -405,8 +402,8 @@ void S2p::AttachInitialDevices(PbCommand &command)
 #ifdef BUILD_SCHS
         // Ensure that all host services have a dispatcher
         for (auto device : controller_factory.GetAllDevices()) {
-            if (device->GetType() == SCHS) {
-                static_pointer_cast<HostServices>(device)->SetDispatcher(dispatcher);
+            if (auto services = dynamic_pointer_cast<HostServices>(device); services) {
+                services->SetDispatcher(dispatcher);
             }
         }
 #endif

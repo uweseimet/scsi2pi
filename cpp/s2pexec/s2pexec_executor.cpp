@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ string S2pExecExecutor::Init(const string &device)
 
     const string &error = sg_adapter->Init(device);
 
-    use_sg = error.empty();
+    is_sg = error.empty();
 
     return error;
 #else
@@ -32,7 +32,7 @@ string S2pExecExecutor::Init(const string &device)
 string S2pExecExecutor::Init(int id, const string &name, bool in_process)
 {
     if (!bus) {
-        bus = BusFactory::Instance().CreateBus(false, in_process, name);
+        bus = BusFactory::Instance().CreateBus(false, in_process, name, false);
         if (!bus) {
             return "Can't initialize bus";
         }
@@ -44,29 +44,29 @@ string S2pExecExecutor::Init(int id, const string &name, bool in_process)
         initiator_executor = make_unique<InitiatorExecutor>(*bus, id, s2pexec_logger);
     }
 
-    use_sg = false;
+    is_sg = false;
 
     return "";
 }
 
 void S2pExecExecutor::CleanUp()
 {
-    if (!use_sg && bus) {
+    if (!is_sg && bus) {
         bus->CleanUp();
     }
 
 #ifdef __linux__
-    if (use_sg && sg_adapter) {
+    if (is_sg && sg_adapter) {
         sg_adapter->CleanUp();
     }
 #endif
 
-    use_sg = false;
+    is_sg = false;
 }
 
 void S2pExecExecutor::ResetBus()
 {
-    if (!use_sg && bus) {
+    if (!is_sg && bus) {
         initiator_util::ResetBus(*bus);
     }
 }
@@ -74,7 +74,7 @@ void S2pExecExecutor::ResetBus()
 int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, int timeout, bool log)
 {
 #ifdef __linux__
-    if (use_sg) {
+    if (is_sg) {
         return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
     }
 #endif
@@ -85,7 +85,7 @@ int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 {
 #ifdef __linux__
-    if (use_sg) {
+    if (is_sg) {
         array<uint8_t, 14> sense_data;
         vector<uint8_t> cdb(6);
         cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
@@ -102,7 +102,7 @@ tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 
 int S2pExecExecutor::GetByteCount() const
 {
-    return use_sg ? sg_adapter->GetByteCount() : initiator_executor->GetByteCount();
+    return is_sg ? sg_adapter->GetByteCount() : initiator_executor->GetByteCount();
 }
 
 void S2pExecExecutor::SetTarget(int id, int lun, bool sasi)

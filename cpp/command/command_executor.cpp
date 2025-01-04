@@ -191,7 +191,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const PbDeviceType type = pb_device.type();
     const int lun = pb_device.unit();
 
-    if (const int lun_max = GetLunMax(type == SAHD); lun >= lun_max) {
+    if (const int lun_max = GetLunMax(type); lun >= lun_max) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 
@@ -470,22 +470,22 @@ string CommandExecutor::SetReservedIds(const string &ids)
 
     reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
 
-    if (!ids_to_reserve.empty()) {
-        s2p_logger.info("Reserved ID(s) set to {}", Join(ids_to_reserve));
+    if (ids_to_reserve.empty()) {
+        s2p_logger.info("Cleared reserved ID(s)");
     }
     else {
-        s2p_logger.info("Cleared reserved ID(s)");
+        s2p_logger.info("Reserved ID(s) set to {}", Join(ids_to_reserve));
     }
 
     return "";
 }
 
+#ifdef BUILD_STORAGE_DEVICE
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &storage_device,
+bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &device,
     const string &filename) const
 {
-#ifdef BUILD_STORAGE_DEVICE
     if (filename.empty()) {
         return true;
     }
@@ -505,21 +505,21 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         }
     }
 
-    storage_device.SetFilename(effective_filename);
+    device.SetFilename(effective_filename);
 
     try {
-        storage_device.Open();
+        device.Open();
     }
     catch (const IoException &e) {
         s2p_logger.error(e.what());
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, storage_device.GetFilename());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, device.GetFilename());
     }
-#endif
 
     return true;
 }
 #pragma GCC diagnostic pop
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -528,7 +528,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
-            to_string(id) + ":" + to_string(lun));
+            fmt::format("{0}:{1}", id, lun));
     }
 #endif
 
@@ -606,7 +606,7 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand 
     }
 
     // Collect LUN bit vectors of existing devices
-    for (const auto &device : GetAllDevices()) {
+    for (const auto &device : controller_factory.GetAllDevices()) {
         luns[device->GetId()] |= 1 << device->GetLun();
     }
 
@@ -635,7 +635,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
 
     // Some device types must be unique
     if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
-        for (const auto &d : GetAllDevices()) {
+        for (const auto &d : controller_factory.GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
                 context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));
                 return nullptr;
@@ -716,7 +716,7 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
     }
 
     const int lun = device.unit();
-    if (const int lun_max = GetLunMax(device.type() == SAHD); lun < 0 || lun >= lun_max) {
+    if (const int lun_max = GetLunMax(device.type()); lun < 0 || lun >= lun_max) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
     }
 

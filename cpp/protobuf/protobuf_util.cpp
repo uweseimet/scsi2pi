@@ -137,6 +137,11 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
     return "";
 }
 
+int protobuf_util::GetLunMax(PbDeviceType type)
+{
+    return type == SAHD ? 2 : 32;
+}
+
 string protobuf_util::ListDevices(const vector<PbDevice> &devices)
 {
     if (devices.empty()) {

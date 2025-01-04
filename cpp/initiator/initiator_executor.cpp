@@ -27,7 +27,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 {
     bus.Reset();
 
-    status = 0xff;
+    status_code = 0xff;
     byte_count = 0;
     cdb_offset = 0;
 
@@ -67,7 +67,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
                 if (Dispatch(cdb, buffer, length)) {
                     now = steady_clock::now();
                 }
-                else if (static_cast<StatusCode>(status) != StatusCode::INTERMEDIATE) {
+                else if (static_cast<StatusCode>(status_code) != StatusCode::INTERMEDIATE) {
                     break;
                 }
             }
@@ -87,7 +87,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         LogStatus();
     }
 
-    return status;
+    return status_code;
 }
 
 bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &length)
@@ -221,7 +221,7 @@ void InitiatorExecutor::Status()
         initiator_logger.error("STATUS phase failed");
     }
     else {
-        status = buf[0];
+        status_code = buf[0];
     }
 }
 
@@ -339,12 +339,12 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
 
 void InitiatorExecutor::LogStatus() const
 {
-    if (status) {
-        if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status)); it != STATUS_MAPPING.end()) {
-            initiator_logger.warn("Device reported {0} (status code ${1:02x})", it->second, status);
+    if (status_code) {
+        if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
+            initiator_logger.warn("Device reported {0} (status code ${1:02x})", it->second, status_code);
         }
-        else if (status != 0xff) {
-            initiator_logger.warn("Device reported an unknown status (status code ${:02x})", status);
+        else if (status_code != 0xff) {
+            initiator_logger.warn("Device reported an unknown status (status code ${:02x})", status_code);
         }
         else {
             initiator_logger.warn("Device did not respond");

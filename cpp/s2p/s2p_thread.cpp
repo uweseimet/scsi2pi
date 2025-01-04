@@ -53,7 +53,7 @@ string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)
 
     s2p_logger = logger;
 
-    execute = cb;
+    exec = cb;
 
     return "";
 }
@@ -101,7 +101,7 @@ void S2pThread::ExecuteCommand(int fd) const
     CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
-            execute(context);
+            exec(context);
         }
     }
     catch (const IoException &e) {

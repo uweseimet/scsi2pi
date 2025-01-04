@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ void S2pExec::Banner(bool header, bool usage)
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2024 Uwe Seimet\n";
+            << "Copyright (C) 2023-2025 Uwe Seimet\n";
     }
 
     if (usage) {
@@ -60,7 +60,7 @@ void S2pExec::Banner(bool header, bool usage)
             << "  --binary-input-file/-f FILE    Binary input file with data to send.\n"
             << "  --binary-output-file/-F FILE   Binary output file for data received.\n"
             << "  --hex-output-file/-T FILE      Hexadecimal text output file for data received.\n"
-            << "  --timeout/-o TIMEOUT           The command timeout in seconds, default is 3 s.\n"
+            << "  --timeout/-t TIMEOUT           The command timeout in seconds, default is 3 s.\n"
             << "  --request-sense/-R             Automatically send REQUEST SENSE on error.\n"
             << "  --reset-bus/-r                 Reset the bus.\n"
             << "  --hex-only/-x                  Do not display/save the offset and ASCII data.\n"
@@ -128,7 +128,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     string initiator;
     string target;
     string buf;
-    string tout = "3";
+    string tout;
 
     // Resetting these is important for the interactive mode
     command.clear();
@@ -140,7 +140,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:g:h:i:o:L:l:T:HrRvx",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "b:B:c:d:f:F:g:h:i:L:l:t:T:HrRvx",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'b':
@@ -207,16 +207,16 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
             log_level = optarg;
             break;
 
-        case 'o':
-            tout = optarg;
-            break;
-
         case 'r':
             reset_bus = true;
             break;
 
         case 'R':
             request_sense = true;
+            break;
+
+        case 't':
+            tout = optarg;
             break;
 
         case 'T':
@@ -302,6 +302,15 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         executor->SetTarget(target_id, target_lun, sasi);
     }
 
+    if (!tout.empty()) {
+        if (const int t = ParseAsUnsignedInt(tout); t <= 0) {
+            throw ParserException("Invalid command timeout value: '" + tout + "'");
+        }
+        else {
+            timeout = t;
+        }
+    }
+
     // Some options only make sense when there is a command
     if (!command.empty()) {
         if (!use_sg && target_id == -1 && !reset_bus) {
@@ -318,10 +327,6 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
 
         if (!binary_output_filename.empty() && !hex_output_filename.empty()) {
             throw ParserException("There can only be a single output file");
-        }
-
-        if (timeout = ParseAsUnsignedInt(tout); timeout <= 0) {
-            throw ParserException("Invalid command timeout value: '" + tout + "'");
         }
     }
 

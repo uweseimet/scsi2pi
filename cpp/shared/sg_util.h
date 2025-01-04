@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ namespace sg_util
 
 int OpenDevice(const string&);
 
-int GetAllocationLength(span<uint8_t>);
+int GetAllocationLength(span<const uint8_t>);
 
 void UpdateStartBlock(span<uint8_t>, int);
 void SetBlockCount(span<uint8_t>, int);

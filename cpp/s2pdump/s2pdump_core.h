@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ private:
 
 #ifdef __linux__
     shared_ptr<SgAdapter> sg_adapter;
-    #endif
+#endif
 
     // Required for the termination handler
     inline static S2pDump *instance;

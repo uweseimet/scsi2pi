@@ -39,12 +39,12 @@ public:
 
     // Device-specific property keys
     static constexpr const char *ACTIVE = "active";
-    static constexpr const char *TYPE = "type";
-    static constexpr const char *SCSI_LEVEL = "scsi_level";
     static constexpr const char *BLOCK_SIZE = "block_size";
     static constexpr const char *CACHING_MODE = "caching_mode";
     static constexpr const char *NAME = "name";
     static constexpr const char *PARAMS = "params";
+    static constexpr const char *SCSI_LEVEL = "scsi_level";
+    static constexpr const char *TYPE = "type";
 
     static PropertyHandler& Instance()
     {

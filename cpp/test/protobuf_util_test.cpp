@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -150,6 +150,12 @@ TEST(ProtobufUtil, SetFromGenericParams)
 
     PbCommand command3;
     EXPECT_FALSE(SetFromGenericParams(command3, "=").empty());
+}
+
+TEST(ProtobufUtil, GetLunMax)
+{
+    EXPECT_EQ(32, GetLunMax(SCHD));
+    EXPECT_EQ(2, GetLunMax(SAHD));
 }
 
 TEST(ProtobufUtil, ListDevices)

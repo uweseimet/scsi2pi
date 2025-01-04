@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ class ScsiCd : public Disk
 
 public:
 
-    explicit ScsiCd(int, bool = false);
+    ScsiCd(int, bool);
     ~ScsiCd() override = default;
 
     string SetUp() override;
@@ -38,7 +38,7 @@ private:
 
     void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
 
-    static void LBAtoMSF(uint32_t, uint8_t*);
+    static void LBAtoMSF(uint32_t, span<uint8_t>);
 
     uint32_t first_lba = 0;
     uint32_t last_lba = 0;

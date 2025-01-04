@@ -652,7 +652,7 @@ void Tape::WriteMetaData(Tape::ObjectType type, uint32_t size)
 
 SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool read)
 {
-    LogTrace(fmt::format("Searching for object type {0} with count {0} at position {1}", static_cast<int>(type),
+    LogTrace(fmt::format("Searching for object type {0} with count {1} at position {2}", static_cast<int>(type),
         requested_count, tape_position));
 
     const bool reverse = requested_count < 0;
@@ -745,7 +745,8 @@ void Tape::RaiseEndOfData(ObjectType type, int32_t info)
 
 void Tape::RaiseFilemark(int32_t info, bool read)
 {
-    LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position));
+    LogTrace(
+        fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position - META_DATA_SIZE));
 
     if (read && !fixed) {
         SetInformation(GetByteCount());

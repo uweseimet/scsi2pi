@@ -539,7 +539,6 @@ void Disk::ChangeBlockSize(uint32_t new_size)
 
 tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
 {
-    spdlog::critical(IsReady());
     CheckReady();
 
     uint64_t start;

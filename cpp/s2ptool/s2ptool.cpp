@@ -19,7 +19,7 @@ void usage()
 {
     cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Tool)\n"
         << "Version " << GetVersionString() << "\n"
-        << "Copyright (C) 2023-2024 Uwe Seimet\n";
+        << "Copyright (C) 2023-2025 Uwe Seimet\n";
 
     cout << "Usage: s2ptool [options]\n"
         << "  --client/-c CLIENT  The client tool to run against s2p (s2pctl|s2pdump|\n"

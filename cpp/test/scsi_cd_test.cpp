@@ -23,7 +23,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
 
 TEST(ScsiCdTest, DeviceDefaults)
 {
-    ScsiCd cd(0);
+    ScsiCd cd(0, false);
 
     EXPECT_EQ(SCCD, cd.GetType());
     EXPECT_TRUE(cd.SupportsImageFile());
@@ -53,7 +53,7 @@ TEST(ScsiCdTest, Inquiry)
 
 TEST(ScsiCdTest, GetBlockSizes)
 {
-    ScsiCd cd(0);
+    ScsiCd cd(0, false);
 
     const auto &sizes = cd.GetSupportedBlockSizes();
     EXPECT_EQ(2U, sizes.size());
@@ -120,7 +120,7 @@ TEST(ScsiCdTest, ReadToc)
 
 TEST(ScsiCdTest, ReadData)
 {
-    ScsiCd cd(0);
+    ScsiCd cd(0, false);
 
     EXPECT_THROW(cd.ReadData( {}), ScsiException)<< "Drive is not ready";
 }

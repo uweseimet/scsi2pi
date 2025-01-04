@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -97,9 +97,9 @@ void ScsiCd::ReadToc()
     buf[5] = 0x14;
     buf[6] = track_number;
 
-    // Track address in the requested format (MSF)
+    // Track address in the requested format
     if (GetCdbByte(1) & 0x02) {
-        LBAtoMSF(track_address, &buf[8]);
+        LBAtoMSF(track_address, span(buf.data() + 8, buf.size() - 8));
     } else {
         SetInt16(buf, 10, track_address);
     }
@@ -165,7 +165,7 @@ int ScsiCd::ReadData(data_in_t buf)
     return Disk::ReadData(buf);
 }
 
-void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf)
+void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)
 {
     // 75 and 75*60 get the remainder
     uint32_t m = lba / (75 * 60);

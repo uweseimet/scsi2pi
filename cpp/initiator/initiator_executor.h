@@ -90,7 +90,7 @@ private:
     int target_id = -1;
     int target_lun = -1;
 
-    int status = 0xff;
+    int status_code = 0xff;
 
     int byte_count = 0;
 

@@ -3,7 +3,7 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -225,8 +225,8 @@ void RpiBus::Reset()
     // Set data bus signal directions
     SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
 
-    for (int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
-        PIN_DT7, PIN_DP }) {
+    for (const int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5,
+        PIN_DT6, PIN_DT7, PIN_DP }) {
         SetMode(pin, IsTarget() ? IN : OUT);
     }
 
@@ -289,7 +289,7 @@ bool RpiBus::GetIO()
         // Change the data input/output direction by IO signal
         SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
 
-        for (int pin : DATA_PINS) {
+        for (const int pin : DATA_PINS) {
             SetMode(pin, state ? IN : OUT);
         }
     }
@@ -519,7 +519,7 @@ void RpiBus::PinConfig(int pin, int mode)
 #endif
 
     const int index = pin / 10;
-    uint32_t mask = ~(7 << ((pin % 10) * 3));
+    const uint32_t mask = ~(7 << ((pin % 10) * 3));
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 

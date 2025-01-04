@@ -70,8 +70,6 @@ tuple<string, string, string> GetInquiryProductData(span<const uint8_t>);
 
 string GetScsiLevel(int);
 
-int GetLunMax(bool);
-
 string FormatSenseData(span<const byte>);
 string FormatSenseData(SenseKey, Asc, int = 0);
 

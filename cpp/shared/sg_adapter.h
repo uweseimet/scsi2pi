@@ -30,7 +30,7 @@ public:
     string Init(const string&);
     void CleanUp();
 
-    SgResult SendCommand(span<uint8_t>, span<uint8_t>, int, int);
+    SgResult SendCommand(span<const uint8_t>, span<uint8_t>, int, int);
 
     int GetByteCount() const
     {

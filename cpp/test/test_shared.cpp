@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
     device->Dispatch(ScsiCommand::INQUIRY);
-    const span<uint8_t> &buffer = controller->GetBuffer();
+    const auto &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<DeviceType>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
     EXPECT_EQ(l, static_cast<ScsiLevel>(buffer[2]));
@@ -90,7 +90,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     } else {
         product_data = ident;
     }
-    EXPECT_EQ(product_data, string((const char* )(&buffer[8]), 28));
+    EXPECT_EQ(product_data, string((const char* )buffer.data() + 8, 28));
 }
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)

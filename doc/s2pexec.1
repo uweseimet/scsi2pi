@@ -13,9 +13,8 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--log-limit/-l\fR \fILIMIT\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
 {\fB\--binary-output-file/-F\fR \fIFILE\fR]
-{\fB\--hex-input-file/-t\fR \fIFILE\fR]
 {\fB\--hex-output-file/-T\fR \fIFILE\fR]
-{\fB\--timeout/-o\fR \fITIMEOUT\fR]
+{\fB\--timeout/-t\fR \fITIMEOUT\fR]
 [\fB\--request-sense/-R\fR]
 [\fB\--reset-bus/-r\fR]
 [\fB\--hex-only/\fR]
@@ -73,8 +72,8 @@ Optional file with data in hexadecimal (human-readable) format to send in the DA
 .BR \--hex-output-file/-T\fI " "\fIFILE
 Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
 .TP
-.BR --timeout/-o\fI " "\fITIMEOUT
-The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer.
+.BR --timeout/-t\fI " "\fITIMEOUT
+The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer. s2pexec remembers the last timeout setting.
 .TP
 .BR --request-sense/-R\fI
 Automatically send REQUEST SENSE after an error in order to get the sense data.

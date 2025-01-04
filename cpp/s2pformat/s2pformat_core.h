@@ -33,7 +33,7 @@ private:
     vector<FormatDescriptor> GetFormatDescriptors();
     int SelectFormat(span<const S2pFormat::FormatDescriptor>);
     string Format(span<const S2pFormat::FormatDescriptor>, int);
-    int ExecuteCommand(span<uint8_t>, span<uint8_t>, int);
+    int ExecuteCommand(span<const uint8_t>, span<uint8_t>, int);
 
     unique_ptr<SgAdapter> sg_adapter;
 

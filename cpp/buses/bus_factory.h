@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,8 +10,6 @@
 
 #include <memory>
 #include "rpi_bus.h"
-
-using namespace std;
 
 class BusFactory
 {
@@ -24,7 +22,7 @@ public:
         return instance;
     }
 
-    unique_ptr<Bus> CreateBus(bool, bool, const string&, bool = false);
+    unique_ptr<Bus> CreateBus(bool, bool, const string&, bool);
 
 private:
 

@@ -148,12 +148,6 @@ TEST(S2pUtilTest, GetInquiryProductData)
     EXPECT_EQ("1234", revision);
 }
 
-TEST(S2pUtilTest, GetLunMax)
-{
-    EXPECT_EQ(32, GetLunMax(false));
-    EXPECT_EQ(2, GetLunMax(true));
-}
-
 TEST(S2pUtilTest, GetScsiLevel)
 {
     EXPECT_EQ("-", GetScsiLevel(0));

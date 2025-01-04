@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,9 +11,9 @@
 
 TEST(BusFactoryTest, CreateBus)
 {
-    auto bus = BusFactory::Instance().CreateBus(true, true, "");
+    auto bus = BusFactory::Instance().CreateBus(true, true, "", false);
     EXPECT_NE(nullptr, bus);
     // Avoid a delay by signalling the initiator that the target is ready
     bus->CleanUp();
-    EXPECT_NE(nullptr, BusFactory::Instance().CreateBus(false, true, ""));
+    EXPECT_NE(nullptr, BusFactory::Instance().CreateBus(false, true, "", false));
 }

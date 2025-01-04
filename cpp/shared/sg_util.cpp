@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ int sg_util::OpenDevice(const string &device)
     return fd;
 }
 
-int sg_util::GetAllocationLength(span<uint8_t> cdb)
+int sg_util::GetAllocationLength(span<const uint8_t> cdb)
 {
     const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
 
