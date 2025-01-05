@@ -461,7 +461,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         if (command.operation() == DEVICES_INFO) {
             command.clear_devices();
 
-            status = s2pctl_commands.CommandDevicesInfo();
+            status = s2pctl_commands.HandleDevicesInfo();
         }
         else {
             ParseParameters(*device, params);

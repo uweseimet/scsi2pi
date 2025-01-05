@@ -137,7 +137,7 @@ int Bus::MsgInHandShake()
     return msg;
 }
 
-// Handshake for DATA IN and target MESSAGE IN
+// Handshake for DATA OUT and target MESSAGE OUT
 int Bus::ReceiveHandShake(uint8_t *buf, int count)
 {
     int bytes_received;
@@ -199,7 +199,7 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
     return bytes_received;
 }
 
-// Handshake for DATA OUT and MESSAGE OUT
+// Handshake for DATA IN and MESSAGE IN
 #ifdef BUILD_SCDP
 int Bus::SendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes)
 #else

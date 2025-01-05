@@ -729,6 +729,9 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 6);
     Dispatch(tape, ScsiCommand::SPACE_6);
     CheckPositions(tape, 2630, 8);
+    RequestSense(controller, tape);
+    EXPECT_EQ(0x80, buf[0] & 0x80) << "VALID must be set";
+    EXPECT_EQ(2U, GetInt32(buf, 3));
 
     // Reverse-space over 1 filemark
     controller->SetCdbByte(1, 0b001);
@@ -778,6 +781,24 @@ TEST(TapeTest, Space6_simh)
     EXPECT_TRUE(controller->GetBuffer()[0] & 0x80);
     EXPECT_EQ(1U, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 1044, 3);
+
+    // Reverse-space over 1 block
+    controller->SetCdbByte(2, 0xff);
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0xff);
+    EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::SPACE_6));
+    RequestSense(controller, tape);
+    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 3));
+    CheckPositions(tape, 524, 2);
+
+    // Reverse-space over 6 blocks, which will immediately hit the filemark
+    controller->SetCdbByte(2, 0xff);
+    controller->SetCdbByte(3, 0xff);
+    controller->SetCdbByte(4, 0xfa);
+    EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::SPACE_6));
+    RequestSense(controller, tape);
+    EXPECT_EQ(-6, GetInt32(controller->GetBuffer(), 3));
+    CheckPositions(tape, 520, 1);
 
     Rewind(tape);
 

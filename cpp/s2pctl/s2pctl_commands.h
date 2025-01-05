@@ -28,29 +28,29 @@ public:
 
     bool Execute(string_view, string_view, string_view, string_view, string_view);
 
-    bool CommandDevicesInfo();
+    bool HandleDevicesInfo();
 
 private:
 
-    bool CommandLogLevel(string_view);
-    bool CommandReserveIds(string_view);
-    bool CommandCreateImage(string_view);
-    bool CommandDeleteImage(string_view);
-    bool CommandRenameCopyImage(string_view);
-    bool CommandDefaultImageFolder(string_view);
-    bool CommandDeviceInfo();
-    bool CommandDeviceTypesInfo();
-    bool CommandVersionInfo();
-    bool CommandServerInfo();
-    bool CommandDefaultImageFilesInfo();
-    bool CommandImageFileInfo(string_view);
-    bool CommandNetworkInterfacesInfo();
-    bool CommandLogLevelInfo();
-    bool CommandReservedIdsInfo();
-    bool CommandMappingInfo();
-    bool CommandStatisticsInfo();
-    bool CommandOperationInfo();
-    bool CommandPropertiesInfo();
+    bool HandleLogLevel(string_view);
+    bool HandleReserveIds(string_view);
+    bool HandleCreateImage(string_view);
+    bool HandleDeleteImage(string_view);
+    bool HandleRenameCopyImage(string_view);
+    bool HandleDefaultImageFolder(string_view);
+    bool HandleDeviceInfo();
+    bool HandleDeviceTypesInfo();
+    bool HandleVersionInfo();
+    bool HandleServerInfo();
+    bool HandleDefaultImageFilesInfo();
+    bool HandleImageFileInfo(string_view);
+    bool HandleNetworkInterfacesInfo();
+    bool HandleLogLevelInfo();
+    bool HandleReservedIdsInfo();
+    bool HandleMappingInfo();
+    bool HandleStatisticsInfo();
+    bool HandleOperationInfo();
+    bool HandlePropertiesInfo();
     bool SendCommand();
     bool EvaluateParams(string_view, const string&, const string&);
 

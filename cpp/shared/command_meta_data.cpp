@@ -64,10 +64,13 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_10, 10, "READ(10)", { 7, 2, 2, 4, false });
     AddCommand(ScsiCommand::WRITE_10, 10, "WRITE(10)", { 7, 2, 2, 4, true });
     AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 0, 0, false });
+    AddCommand(ScsiCommand::ERASE_10, 10, "ERASE(10)", { 7, 2, 2, 4, false });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true });
     AddCommand(ScsiCommand::VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true });
+    AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { -20, 0, 0, 0, false });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false });
+    AddCommand(ScsiCommand::MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true });
     AddCommand(ScsiCommand::WRITE_BUFFER, 10, "READ BUFFER", { 6, 3, 0, 0, true });
     AddCommand(ScsiCommand::READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false });
     AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 0, 0, false });
@@ -101,11 +104,10 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::WRITE_16, 16, "WRITE(16)", { 10, 4, 2, 8, true });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_16, 16, "WRITE AND VERIFY(16)", { 10, 4, 2, 8, true });
     AddCommand(ScsiCommand::VERIFY_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true });
-    AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false });
-    AddCommand(ScsiCommand::READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false });
     AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 0, 0, 0, 0, false });
+    AddCommand(ScsiCommand::READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false });
     AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, 16, "READ CAPACITY(16)/READ LONG(16)",
         { 12, 2, 0, 0, false });
     AddCommand(ScsiCommand::WRITE_LONG_16, 16, "WRITE LONG(16)", { 12, 2, 0, 0, true });
@@ -114,9 +116,11 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::PLAY_AUDIO_12, 12, "PLAY AUDIO(12)", { 6, 4, 2, 4, false });
     AddCommand(ScsiCommand::READ_12, 12, "READ(12)", { 6, 4, 2, 4, false });
     AddCommand(ScsiCommand::WRITE_12, 12, "WRITE(12)", { 6, 4, 2, 4, true });
+    AddCommand(ScsiCommand::ERASE_12, 12, "ERASE(12)", { 6, 4, 2, 4, false });
+    AddCommand(ScsiCommand::READ_DVD_STRUCTURE, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true });
     AddCommand(ScsiCommand::VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true });
-    AddCommand(ScsiCommand::READ_DVD_STRUCTURE, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false });
+    AddCommand(ScsiCommand::SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA", { 6, 4, 0, 0, false });
     AddCommand(ScsiCommand::READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false });

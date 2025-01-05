@@ -102,15 +102,15 @@ TEST(S2pCtlCommandsTest, Execute)
     EXPECT_FALSE(commands.Execute("", "", "", "", ""));
 }
 
-TEST(S2pCtlCommandsTest, CommandDevicesInfo)
+TEST(S2pCtlCommandsTest, HandleDevicesInfo)
 {
     PbCommand command;
 
     S2pCtlCommands commands1(command, "/invalid_host_name", 0, "", "", "");
-    EXPECT_THROW(commands1.CommandDevicesInfo(), IoException);
+    EXPECT_THROW(commands1.HandleDevicesInfo(), IoException);
 
     S2pCtlCommands commands2(command, "localhost", 0, "", "", "");
-    EXPECT_THROW(commands2.CommandDevicesInfo(), IoException);
+    EXPECT_THROW(commands2.HandleDevicesInfo(), IoException);
 }
 
 TEST(S2pCtlCommandsTest, Export)

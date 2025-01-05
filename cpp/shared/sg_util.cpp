@@ -103,6 +103,10 @@ void sg_util::SetBlockCount(span<uint8_t> cdb, int length)
             SetInt16(cdb, meta_data.allocation_length_offset, length);
             break;
 
+        case 3:
+            SetInt24(cdb, meta_data.allocation_length_offset, length);
+            break;
+
         case 4:
             SetInt32(cdb, meta_data.allocation_length_offset, length);
             break;

@@ -88,7 +88,7 @@ private:
     [[noreturn]] void RaiseBeginningOfPartition(int32_t);
     [[noreturn]] void RaiseEndOfPartition(int32_t);
     [[noreturn]] void RaiseEndOfData(Tape::ObjectType, int32_t);
-    [[noreturn]] void RaiseFilemark(int32_t, bool);
+    [[noreturn]] void RaiseFilemark(int32_t, bool, bool);
     [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
     uint32_t GetByteCount();

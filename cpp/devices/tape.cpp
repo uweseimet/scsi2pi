@@ -650,9 +650,9 @@ void Tape::WriteMetaData(Tape::ObjectType type, uint32_t size)
     CheckForWriteError();
 }
 
-SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool read)
+SimhMetaData Tape::FindNextObject(ObjectType type_to_find, int32_t requested_count, bool read)
 {
-    LogTrace(fmt::format("Searching for object type {0} with count {1} at position {2}", static_cast<int>(type),
+    LogTrace(fmt::format("Searching for object type {0} with count {1} at position {2}", static_cast<int>(type_to_find),
         requested_count, tape_position));
 
     const bool reverse = requested_count < 0;
@@ -664,57 +664,51 @@ SimhMetaData Tape::FindNextObject(ObjectType type, int32_t requested_count, bool
 
     while (true) {
         SimhMetaData meta_data;
-        const auto [scsi_type, length] = ReadSimhMetaData(meta_data, requested_count, reverse);
+        const auto [type_found, length] = ReadSimhMetaData(meta_data, requested_count, reverse);
 
         // Bad data (not recovered) during READ(6)
-        if (read && scsi_type == ObjectType::BLOCK && !length) {
+        if (read && type_found == ObjectType::BLOCK && !length) {
             return meta_data;
         }
 
         LogTrace(
-            fmt::format("Found object type {0}, length {1}, moved over {2} object(s)", static_cast<int>(scsi_type),
+            fmt::format("Found object type {0}, length {1}, moved over {2} object(s)", static_cast<int>(type_found),
                 length, actual_count));
 
         if (!reverse && IsRecord(meta_data)) {
             tape_position += Pad(meta_data.value) + META_DATA_SIZE;
         }
 
-        if (scsi_type == ObjectType::END_OF_DATA) {
-            if (type == ObjectType::END_OF_DATA) {
+        if (type_found == ObjectType::END_OF_DATA) {
+            if (type_to_find == ObjectType::END_OF_DATA) {
                 return meta_data;
             }
             else {
                 // End-of-data while spacing over something else
-                RaiseEndOfData(type, requested_count);
+                RaiseEndOfData(type_to_find, requested_count);
             }
+        }
+        else if (type_found == ObjectType::FILEMARK && type_to_find == ObjectType::BLOCK) {
+            // Terminate while spacing over blocks and a filemark is found
+            RaiseFilemark(requested_count, reverse, read);
         }
 
         // For end-of-data the count is ignored
-        if (type == ObjectType::END_OF_DATA) {
-            continue;
-        }
-
-        if (scsi_type == ObjectType::FILEMARK && type == ObjectType::BLOCK) {
-            // Terminate while spacing over blocks and a filemark is found
-            RaiseFilemark(requested_count, read);
-        }
-
-        if (scsi_type == type) {
+        if (type_to_find != ObjectType::END_OF_DATA && type_found == type_to_find) {
             --requested_count;
-            ++actual_count;
-        }
+            if (requested_count <= 0) {
+                return meta_data;
+            }
 
-        if (requested_count <= 0) {
-            return meta_data;
+            ++actual_count;
         }
     }
 }
 
 void Tape::RaiseBeginningOfPartition(int32_t info)
 {
-    LogTrace("Encountered beginning-of-partition");
-
     ResetPositions();
+
     SetInformation(info);
     SetEom(Ascq::BEGINNING_OF_PARTITION_MEDIUM_DETECTED);
 
@@ -723,8 +717,6 @@ void Tape::RaiseBeginningOfPartition(int32_t info)
 
 void Tape::RaiseEndOfPartition(int32_t info)
 {
-    LogTrace(fmt::format("Encountered end-of-partition at position {}", tape_position));
-
     SetInformation(info);
     SetEom(Ascq::END_OF_PARTITION_MEDIUM_DETECTED);
 
@@ -743,16 +735,16 @@ void Tape::RaiseEndOfData(ObjectType type, int32_t info)
     throw ScsiException(SenseKey::BLANK_CHECK, Asc::NO_ADDITIONAL_SENSE_INFORMATION);
 }
 
-void Tape::RaiseFilemark(int32_t info, bool read)
+void Tape::RaiseFilemark(int32_t info, bool reverse, bool read)
 {
-    LogTrace(
-        fmt::format("Encountered filemark at position {} while spacing over blocks", tape_position - META_DATA_SIZE));
+    LogTrace(fmt::format("Encountered filemark at position {} while spacing over blocks",
+        reverse ? tape_position : tape_position - META_DATA_SIZE));
 
     if (read && !fixed) {
         SetInformation(GetByteCount());
     }
     else {
-        SetInformation(info);
+        SetInformation(reverse ? -info : info);
     }
     SetFilemark();
 
