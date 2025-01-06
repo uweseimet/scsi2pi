@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ bool Bus::Init(bool target)
     return true;
 }
 
-int Bus::CommandHandShake(vector<uint8_t> &buf)
+int Bus::CommandHandShake(span<uint8_t> buf)
 {
     DisableIRQ();
 
@@ -47,7 +47,6 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
     // Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.
     // UltraSatan or GigaFile) that can directly be connected to the Atari's ACSI port also support ICD
     // semantics. In fact, these semantics have become a standard in the Atari world.
-    // SCSi2Pi becomes ICD compatible by ignoring the prepended $1F byte before processing the CDB.
     if (buf[0] == 0x1f) {
         SetREQ(true);
 
@@ -75,19 +74,15 @@ int Bus::CommandHandShake(vector<uint8_t> &buf)
         return 0;
     }
 
-    int offset = 0;
-
     int bytes_received;
     for (bytes_received = 1; bytes_received < command_byte_count; ++bytes_received) {
-        ++offset;
-
         SetREQ(true);
 
         ack = WaitSignal(PIN_ACK, true);
 
         WaitBusSettle();
 
-        buf[offset] = GetDAT();
+        buf[bytes_received] = GetDAT();
 
         SetREQ(false);
 

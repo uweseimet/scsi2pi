@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -69,6 +69,8 @@ string Banner(string_view);
 tuple<string, string, string> GetInquiryProductData(span<const uint8_t>);
 
 string GetScsiLevel(int);
+
+string GetStatusString(int);
 
 string FormatSenseData(span<const byte>);
 string FormatSenseData(SenseKey, Asc, int = 0);

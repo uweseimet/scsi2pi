@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -116,7 +116,7 @@ public:
 
     virtual bool WaitSignal(int, bool);
 
-    int CommandHandShake(vector<uint8_t>&);
+    int CommandHandShake(span<uint8_t>);
     int MsgInHandShake();
     int ReceiveHandShake(uint8_t*, int);
     int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);

@@ -84,7 +84,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     }
 
     if (enable_log) {
-        LogStatus();
+        initiator_logger.warn(GetStatusString(status_code));
     }
 
     return status_code;
@@ -335,20 +335,5 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
     target_id = id;
     target_lun = lun;
     sasi = s;
-}
-
-void InitiatorExecutor::LogStatus() const
-{
-    if (status_code) {
-        if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
-            initiator_logger.warn("Device reported {0} (status code ${1:02x})", it->second, status_code);
-        }
-        else if (status_code != 0xff) {
-            initiator_logger.warn("Device reported an unknown status (status code ${:02x})", status_code);
-        }
-        else {
-            initiator_logger.warn("Device did not respond");
-        }
-    }
 }
 

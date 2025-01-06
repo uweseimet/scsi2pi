@@ -245,6 +245,19 @@ string s2p_util::GetScsiLevel(int scsi_level)
     }
 }
 
+string s2p_util::GetStatusString(int status_code)
+{
+    if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
+        return fmt::format("Device reported {0} (status code ${1:02x})", it->second, status_code);
+    }
+    else if (status_code != 0xff) {
+        return fmt::format("Device reported an unknown status (status code ${:02x})", status_code);
+    }
+    else {
+        return "Device did not respond";
+    }
+}
+
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
     const auto flags = static_cast<int>(sense_data[2]);

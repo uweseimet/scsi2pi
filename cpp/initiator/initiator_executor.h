@@ -72,8 +72,6 @@ private:
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
-    void LogStatus() const;
-
     void Sleep(const timespec &ns) const
     {
         nanosleep(&ns, nullptr);

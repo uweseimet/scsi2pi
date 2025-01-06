@@ -485,16 +485,18 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
         }
     }
 
-    const int status = executor->ExecuteCommand(cdb, buffer, timeout, true);
-    if (status) {
-        if (status != 0xff) {
+    const int status_code = executor->ExecuteCommand(cdb, buffer, timeout, true);
+    if (status_code) {
+        if (status_code != 0xff) {
             if (request_sense) {
                 return executor->GetSenseData();
             }
+
+            throw execution_exception(GetStatusString(status_code));
         }
         else {
-            throw execution_exception(fmt::format("Can't execute command {}",
-                CommandMetaData::Instance().GetCommandName(static_cast<ScsiCommand>(cdb[0]))));
+            throw execution_exception(fmt::format("Can't execute command {0} (${1:2x})",
+                CommandMetaData::Instance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
         }
     }
 
