@@ -187,8 +187,8 @@ private:
     ProductData product_data = ProductData(
         { "SCSI2Pi", "", fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
-    ScsiLevel level = ScsiLevel::SCSI_2;
-    ScsiLevel response_data_format = ScsiLevel::SCSI_2;
+    ScsiLevel level = ScsiLevel::NONE;
+    ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;
 
     SenseKey sense_key = SenseKey::NO_SENSE;
     Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;

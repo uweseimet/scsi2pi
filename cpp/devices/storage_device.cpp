@@ -496,7 +496,7 @@ void StorageDevice::AddReadWriteErrorRecoveryPage(map<int, vector<byte>> &pages)
 {
     vector<byte> buf(12);
 
-    // TB, PER, DTE (required for OpenVMS/VAX compatibility, see PiSCSI issue #1117)
+    // TB, PER, DTE (required for OpenVMS/VAX < 7.2 compatibility, see PiSCSI issue #1117)
     buf[2] = byte { 0x26 };
 
     // Read/write retry count and recovery time limit are those of an IBM DORS-39130 drive

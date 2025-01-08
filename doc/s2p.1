@@ -69,8 +69,8 @@ The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, S
 .TP
 .BR --scsi-level\fI " " \fITYPE
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
-Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
-In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might required older SCSI levels.
 .TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.

@@ -35,6 +35,7 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_S
 {
     // These data are required by the DaynaPort drivers
     PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" }, true);
+    SetScsiLevel(ScsiLevel::SCSI_2);
     SupportsParams(true);
     SetReady(true);
 }
