@@ -116,7 +116,7 @@ int S2pFormat::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    cout << "Are you sure? Formatting will erase all data and may take long (N/y)\n";
+    cout << "Are you sure? Formatting will erase all data and may take long. (N/y)\n";
 
     string input;
     getline(cin, input);
