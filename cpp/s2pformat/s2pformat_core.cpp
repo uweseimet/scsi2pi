@@ -210,7 +210,7 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
 
     const auto &descriptor = descriptors[n - 1];
 
-    cout << "Format the drive with " << descriptor.blocks << " sectors, " << descriptor.length
+    cout << "Format with " << descriptor.blocks << " sectors, " << descriptor.length
         << " bytes per sector? (N/y)\n";
 
     getline(cin, input);
