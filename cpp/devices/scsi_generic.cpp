@@ -230,6 +230,12 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
 
     UpdateStartBlock(local_cdb, length / block_size);
 
+    // Replace SCSI level if an explicit level has been configured
+    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY
+        && PrimaryDevice::GetScsiLevel() != ScsiLevel::NONE) {
+        buf[2] = static_cast<uint8_t>(GetScsiLevel());
+    }
+
     // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
     if (command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(local_cdb[0])).block_size) {
         remaining_count -= transferred_length;
@@ -259,14 +265,10 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
         status = static_cast<int>(StatusCode::GOOD);
     }
 
-    if (!status) {
-        status = static_cast<int>(sense_data[2]) & 0x0f;
-
-        if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY && GetController()
-            && GetController()->GetEffectiveLun()) {
-            // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-            buf[0] = 0x7f;
-        }
+    if (!status && static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY && GetController()
+        && GetController()->GetEffectiveLun()) {
+        // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
+        buf[0] = 0x7f;
     }
 
     if (status) {

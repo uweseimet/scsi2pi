@@ -61,7 +61,7 @@ TEST(PrimaryDeviceTest, SetScsiLevel)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_EQ(ScsiLevel::SCSI_2, device.GetScsiLevel());
+    EXPECT_EQ(ScsiLevel::NONE, device.GetScsiLevel());
 
     EXPECT_TRUE(device.SetScsiLevel(ScsiLevel::NONE));
     EXPECT_FALSE(device.SetScsiLevel(static_cast<ScsiLevel>(10)));

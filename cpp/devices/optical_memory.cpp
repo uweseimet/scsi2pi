@@ -24,6 +24,7 @@ OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, true, { 512, 1024,
     geometries[2048 * 310352] = { 2048, 310352 };
 
     Disk::SetProductData( { "", "SCSI MO", "" }, true);
+    SetScsiLevel(ScsiLevel::SCSI_2);
     SetProtectable(true);
     SetRemovable(true);
 }

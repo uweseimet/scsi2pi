@@ -31,9 +31,12 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << type
         << "  " << pb_device.vendor() << ":" << pb_device.product() << ":" << pb_device.revision();
 
-    // Check for existence because PiSCSI does not support this setting
+    // Note: PiSCSI does not support this setting
     if (pb_device.scsi_level()) {
         s << "  " << GetScsiLevel(pb_device.scsi_level());
+    }
+    else {
+        s << "  -";
     }
 
     // There is no need to display "default"
