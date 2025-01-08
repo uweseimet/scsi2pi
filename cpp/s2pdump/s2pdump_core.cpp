@@ -439,7 +439,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
             << target_lun << "\n" << flush;
     }
     else {
-        cout << "Checking device corresponding to Linux SG 3 driver device file '" << device_file << "'\n" << flush;
+        cout << "Checking device corresponding to Linux SG driver device file '" << device_file << "'\n" << flush;
     }
 
     if (auto board_executor = dynamic_pointer_cast<BoardExecutor>(s2pdump_executor); board_executor) {
