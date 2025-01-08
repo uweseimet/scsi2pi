@@ -31,7 +31,7 @@ int sg_util::OpenDevice(const string &device)
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
         throw IoException(
-            fmt::format("'{0}' is not supported by the Linux SG 3 driver: {1}", device, strerror(errno)));
+            fmt::format("'{0}' is not supported by the Linux SG driver: {1}", device, strerror(errno)));
     }
 
     return fd;
