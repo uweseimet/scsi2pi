@@ -8,13 +8,15 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "initiator_executor.h"
 
 using namespace std;
+using namespace spdlog;
 
 namespace initiator_util
 {
 void ResetBus(Bus&);
-tuple<sense_key, asc, int> GetSenseData(InitiatorExecutor&);
-bool SetLogLevel(const string&);
+tuple<SenseKey, Asc, int> GetSenseData(InitiatorExecutor&);
+bool SetLogLevel(logger&, const string&);
 }

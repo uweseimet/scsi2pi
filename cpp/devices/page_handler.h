@@ -19,7 +19,7 @@ public:
 
     PageHandler(PrimaryDevice&, bool, bool);
 
-    int AddModePages(cdb_t, vector<uint8_t>&, int, int, int) const;
+    int AddModePages(cdb_t, data_in_t, int, int, int) const;
 
     map<int, vector<byte>> GetCustomModePages(const string&, const string&) const;
 

@@ -9,12 +9,13 @@
 #pragma once
 
 #include <fstream>
-#include "base/interfaces/scsi_stream_commands.h"
+#include "shared/simh_util.h"
 #include "storage_device.h"
 
 using namespace std;
+using namespace simh_util;
 
-class Tape : public StorageDevice, public ScsiStreamCommands
+class Tape : public StorageDevice
 {
 
 public:
@@ -22,18 +23,31 @@ public:
     explicit Tape(int);
     ~Tape() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
+
+    param_map GetDefaultParams() const override;
 
     bool Eject(bool) override;
 
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
-    int ReadData(span<uint8_t>) override;
+    int ReadData(data_in_t) override;
 
     void Open() override;
 
     vector<uint8_t> InquiryInternal() const override;
+
+    bool ValidateBlockSize(uint32_t) const override;
+
+    uint32_t GetBlockSizeForDescriptor(bool changeable) const override
+    {
+        return changeable ? 0x00ffffff : block_size_for_descriptor;
+    }
+    uint64_t GetBlockCountForDescriptor() const override
+    {
+        return 0;
+    }
 
     vector<PbStatistics> GetStatistics() const override;
 
@@ -43,76 +57,99 @@ protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
+    uint32_t VerifyBlockSizeChange(uint32_t, bool) override;
+
 private:
 
-    static constexpr const char *MAGIC = "SCTP";
-
-    enum object_type : uint8_t
+    enum class ObjectType
     {
-        block = 0b000,
-        filemark = 0b001,
-        end_of_data = 0b011
-    };
-
-    // The meta data for each object, with the object type and the previous and next object position
-    using meta_data_t = struct _meta_data_t
-    {
-        array<uint8_t, 4> magic;
-        Tape::object_type type;
-        uint8_t reserved;
-        // Big-endian 64-bit integer with the previous object position, -1 if none
-        array<uint8_t, 8> prev_position;
-        // Big-endian 64-bit integer with the next object position
-        array<uint8_t, 8> next_position;
+        BLOCK = 0b000,
+        FILEMARK = 0b001,
+        END_OF_DATA = 0b011,
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void Read6() override;
-    void Write6() override;
-    void Erase6() override;
-    void ReadBlockLimits() override;
-    void Rewind() override;
-    void Space6() override;
-    void WriteFilemarks6() override;
-    void ReadPosition() const;
-    void Locate(bool);
+    void Read(bool);
+    void Write(bool);
+    void Erase6();
+    void ReadBlockLimits() const;
+    void Space6();
+    void WriteFilemarks(bool);
+    void FormatMedium();
+    void ReadPosition();
+    bool Locate(bool);
 
-    void WriteMetaData(Tape::object_type, uint32_t = 0);
-    uint32_t FindNextObject(Tape::object_type, int64_t);
+    void WriteMetaData(Tape::ObjectType, uint32_t = 0);
+    SimhMetaData FindNextObject(Tape::ObjectType, int32_t, bool);
+    bool ReadNextMetaData(SimhMetaData&, bool);
+    bool FindObject(uint32_t);
 
-    void SpaceTarMode(int, int32_t);
-    void SpaceTapMode(int, int32_t);
+    [[noreturn]] void RaiseBeginningOfPartition(int32_t);
+    [[noreturn]] void RaiseEndOfPartition(int32_t);
+    [[noreturn]] void RaiseEndOfData(Tape::ObjectType, int32_t);
+    [[noreturn]] void RaiseFilemark(int32_t, bool, bool);
+    [[noreturn]] void RaiseReadError(const SimhMetaData&);
 
-    int GetVariableBlockSize();
+    uint32_t GetByteCount();
 
-    uint32_t GetByteCount() const;
-
-    int VerifyBlockSizeChange(int, bool) const override;
-
-    void AddModeBlockDescriptor(map<int, vector<byte>>&) const;
     void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
     void AddDataCompressionPage(map<int, vector<byte>>&) const;
     void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
 
     void Erase();
 
+    void ResetPositions();
+
+    pair<Tape::ObjectType, int> ReadSimhMetaData(SimhMetaData&, int32_t, bool);
+    int WriteSimhMetaData(SimhClass, uint32_t);
+
+    void UpdateObjectLocation(const SimhMetaData&, bool);
+
+    uint32_t CheckBlockLength();
+
+    bool IsAtRecordBoundary();
+
+    void CheckForOverflow(int64_t);
+    void CheckForReadError();
+    void CheckForWriteError();
+
+    static int32_t GetSignedInt24(cdb_t, int);
+
     fstream file;
 
-    uint64_t position = 0;
+    SimhMetaData current_meta_data = { };
+
+    int64_t tape_position = 0;
+
+    bool initial = false;
+
+    bool fixed = false;
+
+    uint32_t block_size_for_descriptor = 0;
 
     int blocks_read = 0;
 
-    uint64_t block_location = 0;
+    uint64_t record_start = 0;
+    uint32_t record_length = 0;
+
+    uint64_t object_location = 0;
 
     uint32_t byte_count = 0;
+    uint32_t remaining_count = 0;
 
-    off_t filesize = 0;
+    off_t file_size = 0;
 
-    bool tar_mode = false;
+    off_t max_file_size = 0;
+
+    bool tar_file = false;
+
+    bool expl = false;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;
+
+    static constexpr const char *APPEND = "append";
 
     static constexpr const char *READ_ERROR_COUNT = "read_error_count";
     static constexpr const char *WRITE_ERROR_COUNT = "write_error_count";

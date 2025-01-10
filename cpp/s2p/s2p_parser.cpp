@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -25,22 +25,19 @@ void S2pParser::Banner(bool usage) const
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --scsi-id/-i ID[:LUN]       SCSI target device ID (0-7) and LUN (0-7),\n"
-            << "                              default LUN is 0.\n"
-            << "  --sasi-id/-h ID[:LUN]       SASI target device ID (0-7) and LUN (0-1),\n"
+            << "  --id/-i ID[:LUN]            SCSI/SASI target device ID (0-7) and LUN (0-7),\n"
             << "                              default LUN is 0.\n"
             << "  --type/-t TYPE              Device type.\n"
             << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
             << "                              default is device-specific and usually SCSI-2.\n"
             << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
             << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional block size, 4-4096 bytes\n"
-            << "                              in multiples of 4.\n"
+            << "  --block-size/-b BLOCK_SIZE  Optional default block size, a multiple of 4.\n"
             << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
             << "                              |linux-optimized), default currently is PiSCSI\n"
             << "                              compatible caching.\n"
             << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
-            << "  --reserved-ids/-r IDS       List of IDs to reserve.\n"
+            << "  --reserved-ids/-r [IDS]     List of IDs to reserve.\n"
             << "  --image-folder/-F FOLDER    Default folder with image files.\n"
             << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
             << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
@@ -48,50 +45,55 @@ void S2pParser::Banner(bool usage) const
             << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
             << "                              critical|off), default is 'info'.\n"
             << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
+            << "  --log-limit LIMIT           The number of data bytes being logged,\n"
+            << "                              default is 128 bytes.\n"
+            << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --ignore-conf               Ignore /etc/s2p.conf and ~/.config/s2p.conf.\n"
+            << "  --ignore-conf               Ignore /etc/s2p.conf configuration file.\n"
             << "  --version/-v                Display the program version.\n"
-            << "  --help                      Display this help.\n"
+            << "  --help/-h                   Display this help.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
-            << "    hd1: SCSI HD image (Non-removable SCSI-1-CCS HD image)\n"
-            << "    hds: SCSI HD image (Non-removable SCSI-2 HD image)\n"
-            << "    hda: SCSI HD image (Apple compatible non-removable SCSI-2 HD image)\n"
-            << "    hdr: SCSI HD image (Removable SCSI-2 HD image)\n"
-            << "    mos: SCSI MO image (SCSI-2 MO image)\n"
-            << "    iso: SCSI CD image (SCSI-2 ISO 9660 image)\n"
-            << "    is1: SCSI CD image (SCSI-1-CCS ISO 9660 image)\n"
-            << "    tar: SCSI Tape image (SCSI-2 tar-compatible image)\n";
+            << "    hd1: HD image (Non-removable SCSI-1-CCS HD image)\n"
+            << "    hds: HD image (Non-removable SCSI-2 HD image)\n"
+            << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
+            << "    hdr: HD image (Removable SCSI-2 HD image)\n"
+            << "    mos: MO image (SCSI-2 MO image)\n"
+            << "    iso: CD image (SCSI-2 ISO 9660 image)\n"
+            << "    is1: CD image (SCSI-1-CCS ISO 9660 image)\n"
+            << "    tar: Tape image (SCSI-2 tar-compatible image)\n"
+            << "    tap: Tape image (SCSI-2 SIMH-compatible image)\n";
     }
 }
 
 property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
-    const int OPT_IGNORE_CONF = 3;
-    const int OPT_HELP = 4;
+    const int OPT_LOG_LIMIT = 3;
+    const int OPT_IGNORE_CONF = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
-        { "help", no_argument, nullptr, OPT_HELP },
+        { "help", no_argument, nullptr, 'h' },
         { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-pattern", required_argument, nullptr, 'l' },
+        { "log-limit", required_argument, nullptr, OPT_LOG_LIMIT },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", optional_argument, nullptr, 'r' },
-        { "sasi-id", required_argument, nullptr, 'h' },
         { "scan-depth", required_argument, nullptr, 'R' },
-        { "scsi-id", required_argument, nullptr, 'i' },
+        { "-id", required_argument, nullptr, 'i' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
+        { "script-file", required_argument, nullptr, 's' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
@@ -100,6 +102,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
+        { 's', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
@@ -123,7 +126,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-h:-i:b:c:l:m:n:p:r:t:z:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -142,7 +145,7 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
 
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
-                throw parser_exception("Invalid property '" + string(optarg) + "'");
+                throw ParserException("Invalid property '" + string(optarg) + "'");
             }
             else {
                 properties[key_value[0]] = key_value[1];
@@ -150,9 +153,9 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             continue;
 
         case 'h':
-            id_lun = optarg;
-            type = PbDeviceType_Name(SAHD);
-            continue;
+            Banner(true);
+            exit(EXIT_SUCCESS);
+            break;
 
         case 'i':
             id_lun = optarg;
@@ -170,18 +173,17 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             type = ToLower(optarg);
             continue;
 
-        case OPT_SCSI_LEVEL:
-            scsi_level = optarg;
-            continue;
-
         case OPT_IGNORE_CONF:
             ignore_conf = true;
             continue;
 
-        case OPT_HELP:
-            Banner(true);
-            exit(EXIT_SUCCESS);
-            break;
+        case OPT_LOG_LIMIT:
+            properties[PropertyHandler::LOG_LIMIT] = optarg;
+            continue;
+
+        case OPT_SCSI_LEVEL:
+            scsi_level = optarg;
+            continue;
 
         case 1:
             // Encountered a free parameter e.g. a filename
@@ -246,7 +248,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
 
     const string &type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
-        throw parser_exception(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
+        throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
     }
 
     // An explicit ID/LUN on the command line overrides the BlueSCSI ID/LUN
@@ -264,7 +266,7 @@ string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &
     const string &type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
-        throw parser_exception(fmt::format("Invalid BlueSCSI device type: '{}'", type));
+        throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
     }
     properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
@@ -296,7 +298,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     vector<char*> args;
     for (const string arg : initial_args) {
         int start_of_ids = -1;
-        for (int i = 0; i < static_cast<int>(arg.length()); i++) {
+        for (int i = 0; i < static_cast<int>(arg.length()); ++i) {
             if (isdigit(arg[i])) {
                 start_of_ids = i;
                 break;

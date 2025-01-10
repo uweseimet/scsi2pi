@@ -18,31 +18,31 @@ bool LinuxCache::Init()
     return file.good();
 }
 
-int LinuxCache::ReadSectors(span<uint8_t> buf, uint64_t start, uint32_t count)
+int LinuxCache::ReadSectors(data_in_t buf, uint64_t start, uint32_t count)
 {
     return sectors < start + count ? 0 : Read(buf, start, sector_size * count);
 }
 
-int LinuxCache::WriteSectors(span<const uint8_t> buf, uint64_t start, uint32_t count)
+int LinuxCache::WriteSectors(data_out_t buf, uint64_t start, uint32_t count)
 {
     return sectors < start + count ? 0 : Write(buf, start, sector_size * count);
 }
 
-int LinuxCache::ReadLong(span<uint8_t> buf, uint64_t start, int length)
+int LinuxCache::ReadLong(data_in_t buf, uint64_t start, int length)
 {
     return sectors <= start ? 0 : Read(buf, start, length);
 }
 
-int LinuxCache::WriteLong(span<const uint8_t> buf, uint64_t start, int length)
+int LinuxCache::WriteLong(data_out_t buf, uint64_t start, int length)
 {
     return sectors <= start ? 0 : Write(buf, start, length);
 }
 
-int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)
+int LinuxCache::Read(data_in_t buf, uint64_t start, int length)
 {
     assert(length);
 
-    file.seekg(sector_size * start, ios::beg);
+    file.seekg(sector_size * start);
     file.read((char*)buf.data(), length);
     if (file.fail()) {
         file.clear();
@@ -53,11 +53,11 @@ int LinuxCache::Read(span<uint8_t> buf, uint64_t start, int length)
     return length;
 }
 
-int LinuxCache::Write(span<const uint8_t> buf, uint64_t start, int length)
+int LinuxCache::Write(data_out_t buf, uint64_t start, int length)
 {
     assert(length);
 
-    file.seekp(sector_size * start, ios::beg);
+    file.seekp(sector_size * start);
     file.write((const char*)buf.data(), length);
     if (file.fail()) {
         file.clear();

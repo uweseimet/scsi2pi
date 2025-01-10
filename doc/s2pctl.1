@@ -36,7 +36,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--host/-H\fR \fIHOST\fR] |
 [\fB\--name/-n\fR \fINAME\fR \fIVENDOR:NAME_REVISION\fR] |
 [\fB\--port/-p\fR \fIPORT\fR] |
-[\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR] |
+[\fB\--reserved-ids/-r\fR \fIIDS\fR] |
 [\fB\--list-settings/-s\fR \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]\fR] |
 [\fB\--type/-t\fR \fITYPE\fR] |
 [\fB\--copy/-x\fR \fICURRENT_NAME:NEW_NAME\fR] |
@@ -46,7 +46,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 .B s2pctl
 sends commands to s2p in order to apply configuration changes at runtime or to check a device status.
 
-You do not need root privileges to use s2pctl. s2pctl also runs on non-Pi Linux platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
+s2pctl also runs on non-Pi Linux/BSD platforms. In this case use the -H option to select the s2p host s2pctl shall connect to.
 
 When launched without arguments s2pctl enters interactive mode, where you can enter commands on the command line.
 In interactive mode the host and port settings are preserved between command invocations.
@@ -107,7 +107,7 @@ The s2p port to connect to, default is 6868.
 .BR --list-properties/-P\fI " " \fIPORT
 Display the current s2p properties. The resulting output can directly be used for property files, e.g. for /etc/s2p.conf when running s2p as a system service.
 .TP
-.BR --reserved-ids/-r\fI " " \fIRESERVED_IDS
+.BR --reserved-ids/-r\fI " " \fIIDS
 Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
 .TP
 .BR --list-settings/-s\fI " " \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]
@@ -187,6 +187,7 @@ Specifies the device type. This type overrides the type derived from the file ex
 .TP 
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
 .TP 
 .BR --scsi-level\fI " " \fISCSI_LEVEL
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
@@ -197,13 +198,13 @@ In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" fi
 Logical unit number (0-31 for SCSI, 0-1 for SASI). The LUN defaults to 0. This option is used when there are multiple SCSI/SASI devices for the same SCSI ID.
 
 .SH EXAMPLES
-Show the completer remote service information.
+Display the completer remote service information.
    s2pctl -s
 
 Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "hdimage0.hds".
    s2pctl -i 0 -f hdimage0.hds
 
 .SH SEE ALSO
-s2p(1), s2pdump(1), s2pexec(1), s2pproto(1)
+s2p(1), s2pdump(1), s2pexec(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
 
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

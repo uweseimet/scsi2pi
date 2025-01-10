@@ -11,14 +11,15 @@
 
 #pragma once
 
-#include <span>
 #include "base/device.h"
+#include "shared/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN
 static constexpr int ETH_FRAME_LEN = 1514;
 #endif
 
 using namespace std;
+using namespace spdlog;
 
 class TapDriver
 {
@@ -28,37 +29,37 @@ public:
     TapDriver();
     ~TapDriver() = default;
 
-    bool Init(const param_map&);
-    void CleanUp() const;
+    string Init(const param_map&, logger&);
+    void CleanUp(logger&) const;
 
     param_map GetDefaultParams() const;
 
-    int Receive(uint8_t*) const;
-    int Send(const uint8_t*, int) const;
+    int Receive(data_in_t, logger&) const;
+    int Send(data_out_t) const;
     bool HasPendingPackets() const;
 
-    void Flush() const;
+    void Flush(logger&) const;
 
     static uint32_t Crc32(span<const uint8_t>);
 
-    static string GetBridgeName()
+    static const string& GetBridgeName()
     {
         return BRIDGE_NAME;
     }
 
     // Enable/Disable the piscsi0 interface
-    static string IpLink(bool);
+    static string IpLink(bool, logger&);
 
 private:
 
-    string AddBridge(int) const;
-    string DeleteBridge(int) const;
+    string AddBridge(int, logger&) const;
+    string DeleteBridge(int, logger&) const;
 
     static string IpLink(int, const string&, bool);
     static string BrSetIf(int fd, const string&, bool);
-    string CreateBridge(int, int);
-    pair<string, string> ExtractAddressAndMask() const;
-    string SetAddressAndNetMask(int, const string&) const;
+    string CreateBridge(int, int, logger&);
+    pair<string, string> ExtractAddressAndMask(logger&) const;
+    string SetAddressAndNetMask(int, const string&, logger&) const;
 
     int tap_fd = -1;
 
@@ -75,5 +76,9 @@ private:
 
     static constexpr const char *DEFAULT_IP = "10.10.20.1/24"; // NOSONAR This hardcoded IP address is safe
     static constexpr const char *DEFAULT_NETMASK = "255.255.255.0"; // NOSONAR This hardcoded netmask is safe
+
+    static constexpr const char *BRIDGE = "bridge";
+    static constexpr const char *INET = "inet";
+    static constexpr const char *INTERFACE = "interface";
 };
 

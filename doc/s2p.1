@@ -3,44 +3,46 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\--scsi-id/-i n[:u]\fR \fISCSI_IMAGE_FILE\fR]
-[\fB\--sasi-id/-h n[:u]\fR \fISASI_IMAGE_FILE\fR]
+[\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--type/-t\fR \fITYPE\fR]
 [\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
-[\fB\--reserved-ids/-r\fR \fIRESERVED_IDS\fR]
+[\fB\--reserved-ids/-r\fR \fIIDS\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--ignore-conf\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL[:ID:[LUN]]\fR]
-[\fB\--log-pattern/-l\fR \fILOG_PATTERN\fR]
+[\fB\--log-level/-L\fR \fILEVEL[:ID:[LUN]]\fR]
+[\fB\--log-limit\fR \fLIMIT\fR]
+[\fB\--log-pattern/-l\fR \f_PATTERN\fR]
+[\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--locale,-z\fR \fILOCALE\fR]
 [\fB\--version/-v\fR]
-[\fB\--help\fR]
+[\fB\--help/-h\fR]
 .SH DESCRIPTION
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
-In the arguments to s2p one or more SCSI (-i n[:u]) or SASI (-h n[:u]) devices can be specified. SCSI and SASI devices cannot be mixed on the same controller.
+In the arguments to s2p one or more SCSI/SASI (-i n[:u]) devices can be specified.
 The number (n) after the device identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
-The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31 for SCSI and 0-1 for SASI.
+The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supportes LUNs 0-1, but s2p supports LUNs 0-31 also for SASI.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
-    hd1: SCSI Hard Disk image (generic, non-removable, SCSI-1-CCS)
-    hds: SCSI Hard Disk image (generic, non-removable, SCSI-2)
-    hdr: SCSI Hard Disk image (generic, removable, SCSI-2)
-    hda: SCSI Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
-    mos: SCSI Magneto-Optical image (MO/MOD, SCSI-2)
-    is1: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
+    hd1: Hard Disk image (generic, non-removable, SCSI-1-CCS)
+    hds: Hard Disk image (generic, non-removable, SCSI-2)
+    hdr: Hard Disk image (generic, removable, SCSI-2)
+    hda: Hard Disk image (Apple compatible - typically used with Macintosh computers, but also compatible with any other, SCSI-2)
+    mos: Magneto-Optical image (MO/MOD, SCSI-2)
+    is1: CD-ROM or DVD-ROM image (ISO 9660, SCSI-1-CCS)
     iso, cdr, toast: SCSI CD-ROM or DVD-ROM image (ISO 9660, SCSI-2)
-    tar: SCSI Tape image (tar-compatible image, SCSI-2)
+    tar: Tape image (tar-compatible image, SCSI-2)
+    tap: Tape image (SIMH-compatible image, SCSI-2)
 
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
     s2p -id 0 /path/to/drive/hdimage.hda
@@ -57,26 +59,22 @@ This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP
-.BR --scsi-id/-i \fI " "\fIn[:u] " " \fIFILE
-n is the SCSI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
+.BR --id/-i \fI " "\fIn[:u] " " \fIFILE
+n is the SCSI/SASI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
 .IP
-FILE is the name of the image file to use for the SCSI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60".
-.TP
-.BR --sasi-id/-h\fI " "\fIn[:u] " " \fIFILE
-n is the SASI ID (0-7). u (0-1) is the optional LUN (logical unit). The default LUN is 0.
-.IP
-FILE is the name of the image file to use for the SASI hard drive.
+FILE is the name of the image file to use for the SCSI/SASI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
 .BR --type/-t\fI " " \fITYPE
 The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
 .TP
 .BR --scsi-level\fI " " \fITYPE
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
-Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
-In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might required older SCSI levels.
 .TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
 .TP
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
 The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
@@ -85,7 +83,7 @@ s2p supports non-standard block sizes as long as they are multiples of 4. Non-st
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
 .TP
-.BR --reserved-ids/-r\fI " " \fIRESERVED_IDS
+.BR --reserved-ids/-r\fI " " \fIIDS
 An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
@@ -104,11 +102,17 @@ Explicitly specified property files override the previously defined properties.
 .BR --ignore-conf\fI " " \fI
 Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
-.BR --log-level/-L\fI " " \fILOG_LEVEL[:ID:[LUN]]
+.BR --log-level/-L\fI " " \fILEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
 .TP
-.BR --log-pattern/-l\fI " " \fILOG_PATTERN
+.BR --log-pattern/-l\fI " " \fIPATTERN
 The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
+.TP
+.BR --log-limit/\fI " " \fILIMIT
+Limits the number of data bytes being logged, default is 128 bytes.
+.TP
+.BR --script-file/-s\fI " " \fISCRIPT_FILE
+Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
 .TP
 .BR --token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
@@ -122,7 +126,7 @@ Overrides the default locale (language) for client-facing error messages. A clie
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
 .TP
-.BR --help\fI " " \fI
+.BR --help/-h\fI " " \fI
 Displays a help page.
 
 .SH EXAMPLES
@@ -136,7 +140,7 @@ Launch s2p with a removable SCSI drive image as ID 0 and the raw device file /de
    s2p -i 0 -t scrm /dev/hdb -i 6 daynaport
 
 Launch s2p with a SASI hard drive image as ID 1
-   s2p -h 1 /path/to/harddrive.hds
+   s2p -i 1 -t sahd /path/to/harddrive.hds
 
 To create an empty 100 MiB drive image, use the following command:
    dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800
@@ -145,6 +149,6 @@ In case the fallocate command is available a much faster alternative to the dd c
    fallocate -l 104857600 /path/to/newimage.hda
 
 .SH SEE ALSO
-s2pctl(1), s2pdump(1), s2pexec(1), s2pproto(1)
+s2pctl(1), s2pdump(1), s2pexec(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

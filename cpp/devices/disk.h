@@ -14,28 +14,27 @@
 #pragma once
 
 #include <tuple>
-#include "base/interfaces/scsi_block_commands.h"
 #include "storage_device.h"
 
 using namespace std;
 
 class Cache;
 
-class Disk : public StorageDevice, public ScsiBlockCommands
+class Disk : public StorageDevice
 {
 
 public:
 
     ~Disk() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
     bool Eject(bool) override;
 
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
-    int ReadData(span<uint8_t>) override;
+    int ReadData(data_in_t) override;
 
     PbCachingMode GetCachingMode() const
     {
@@ -51,7 +50,7 @@ public:
 
 protected:
 
-    Disk(PbDeviceType, scsi_level, int, bool, bool, const set<uint32_t>&);
+    Disk(PbDeviceType, int, bool, bool, const set<uint32_t>&);
 
     void ValidateFile() override;
 
@@ -69,53 +68,21 @@ protected:
 
 private:
 
-    enum access_mode
+    enum AccessMode
     {
         RW6, RW10, RW16, SEEK6, SEEK10
     };
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
 
-    void SynchronizeCache();
     void ReadDefectData10() const;
-    virtual void Read6()
-    {
-        Read(RW6);
-    }
-    void Read10() override
-    {
-        Read(RW10);
-    }
-    void Read16() override
-    {
-        Read(RW16);
-    }
-    virtual void Write6()
-    {
-        Write(RW6);
-    }
-    void Write10() override
-    {
-        Write(RW10);
-    }
-    void Write16() override
-    {
-        Write(RW16);
-    }
-    void ReAssignBlocks();
-    void Seek10();
-    void ReadCapacity10() override;
-    void ReadCapacity16() override;
+    void ReadCapacity10();
+    void ReadCapacity16();
     void ReadFormatCapacities();
-    void FormatUnit() override;
-    void Seek6();
-    void Read(access_mode);
-    void Write(access_mode);
-    void Verify(access_mode);
-    void ReadLong10();
-    void ReadLong16();
-    void WriteLong10();
-    void WriteLong16();
+    void FormatUnit();
+    void Read(AccessMode);
+    void Write(AccessMode);
+    void Verify(AccessMode);
     void ReadCapacity16_ReadLong16();
 
     void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
@@ -125,8 +92,8 @@ private:
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
     void WriteVerify(uint64_t, uint32_t, bool);
-    uint64_t ValidateBlockAddress(access_mode) const;
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(access_mode) const;
+    uint64_t ValidateBlockAddress(AccessMode);
+    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
 
     shared_ptr<Cache> cache;
 

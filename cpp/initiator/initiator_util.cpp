@@ -7,10 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "initiator_util.h"
-#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 
 void initiator_util::ResetBus(Bus &bus)
@@ -22,29 +20,31 @@ void initiator_util::ResetBus(Bus &bus)
     bus.Reset();
 }
 
-tuple<sense_key, asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
+tuple<SenseKey, Asc, int> initiator_util::GetSenseData(InitiatorExecutor &executor)
 {
-    array<uint8_t, 14> buf = { };
+    array<uint8_t, 255> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (executor.Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()))) {
+    if (executor.Execute(ScsiCommand::REQUEST_SENSE, cdb, buf, static_cast<int>(buf.size()), 1, true)) {
         error("Can't execute REQUEST SENSE");
-        return {sense_key {-1}, asc {-1}, -1};
+        return {SenseKey {-1}, Asc {-1}, -1};
     }
 
-    if (executor.GetByteCount() < static_cast<int>(buf.size())) {
-        warn("Device did not return standard REQUEST SENSE data");
-        return {sense_key {-1}, asc {-1}, -1};
+    trace(executor.FormatBytes(buf, executor.GetByteCount()));
+
+    if (executor.GetByteCount() < 14) {
+        warn("Device did not return standard REQUEST SENSE data, sense data details are not available");
+        return {SenseKey {-1}, Asc {-1}, -1};
     }
 
-    return {static_cast<sense_key>(buf[2] & 0x0f), static_cast<asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
+    return {static_cast<SenseKey>(buf[2] & 0x0f), static_cast<Asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
 }
 
-bool initiator_util::SetLogLevel(const string &log_level)
+bool initiator_util::SetLogLevel(logger &logger, const string &log_level)
 {
     // Default spdlog format without the timestamp
-    set_pattern("[%^%l%$] %v");
+    logger.set_pattern("[%^%l%$] [%n] %v");
 
     if (log_level.empty()) {
         return true;
@@ -52,7 +52,7 @@ bool initiator_util::SetLogLevel(const string &log_level)
 
     // Compensate for spdlog using 'off' for unknown levels
     if (const level::level_enum level = level::from_str(log_level); to_string_view(level) == log_level) {
-        set_level(level);
+        logger.set_level(level);
         return true;
     }
 

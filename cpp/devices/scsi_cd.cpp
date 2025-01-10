@@ -4,26 +4,25 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "scsi_cd.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
-ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, false,
-    { 512, 2048 })
+ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, lun, true, false, { 512, 2048 })
 {
-    SetProduct("SCSI CD-ROM");
+    Disk::SetProductData( { "", "SCSI CD-ROM", "" }, true);
+    SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetReadOnly(true);
     SetRemovable(true);
 }
 
-bool ScsiCd::SetUp()
+string ScsiCd::SetUp()
 {
-    AddCommand(scsi_command::read_toc, [this]
+    AddCommand(ScsiCommand::READ_TOC, [this]
         {
             ReadToc();
         });
@@ -39,7 +38,7 @@ void ScsiCd::Open()
 
     // Default sector size is 2048 bytes
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048)) {
-        throw io_exception("Invalid sector size");
+        throw IoException("Invalid sector size");
     }
     SetBlockCount(GetFileSize() / GetBlockSize());
 
@@ -70,14 +69,14 @@ void ScsiCd::ReadToc()
 
     // Track must be 1, except for lead out track ($AA)
     if (track > 1 && track != 0xaa) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     uint8_t track_number = 1;
     uint32_t track_address = first_lba;
     if (track && !track_initialized) {
         if (track != 0xaa) {
-            throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
         }
 
         track_number = 0xaa;
@@ -98,9 +97,9 @@ void ScsiCd::ReadToc()
     buf[5] = 0x14;
     buf[6] = track_number;
 
-    // Track address in the requested format (MSF)
+    // Track address in the requested format
     if (GetCdbByte(1) & 0x02) {
-        LBAtoMSF(track_address, &buf[8]);
+        LBAtoMSF(track_address, span(buf.data() + 8, buf.size() - 8));
     } else {
         SetInt16(buf, 10, track_address);
     }
@@ -110,12 +109,12 @@ void ScsiCd::ReadToc()
 
 vector<uint8_t> ScsiCd::InquiryInternal() const
 {
-    return HandleInquiry(device_type::cd_rom, true);
+    return HandleInquiry(DeviceType::CD_DVD, true);
 }
 
-void ScsiCd::ModeSelect(cdb_t cdb, span<const uint8_t> buf, int length)
+void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset, int length)
 {
-    Disk::ModeSelect(cdb, buf, length);
+    Disk::ModeSelect(cdb, buf, offset, length);
 
     CreateDataTrack();
 }
@@ -135,29 +134,29 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
 
     if (!changeable) {
         // 2 seconds for inactive timer
-        buf[3] = (byte)0x05;
+        buf[3] = byte { 0x05 };
 
         // MSF multiples are 60 and 75 respectively
-        buf[5] = (byte)60;
-        buf[7] = (byte)75;
+        buf[5] = byte { 60 };
+        buf[7] = byte { 75 };
     }
 
     pages[13] = buf;
 }
 
-int ScsiCd::ReadData(span<uint8_t> buf)
+int ScsiCd::ReadData(data_in_t buf)
 {
     CheckReady();
 
     if (const auto lba = static_cast<uint32_t>(GetNextSector()); first_lba > lba || last_lba < lba) {
-        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
     if (!track_initialized) {
         SetBlockCount(last_lba - first_lba + 1);
 
         if (!InitCache(GetFilename())) {
-            throw scsi_exception(sense_key::medium_error, asc::read_error);
+            throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
         }
 
         track_initialized = true;
@@ -166,7 +165,7 @@ int ScsiCd::ReadData(span<uint8_t> buf)
     return Disk::ReadData(buf);
 }
 
-void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf)
+void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)
 {
     // 75 and 75*60 get the remainder
     uint32_t m = lba / (75 * 60);
@@ -178,7 +177,7 @@ void ScsiCd::LBAtoMSF(uint32_t lba, uint8_t *msf)
     s += 2;
     if (s >= 60) {
         s -= 60;
-        m++;
+        ++m;
     }
 
     assert(m < 0x100);

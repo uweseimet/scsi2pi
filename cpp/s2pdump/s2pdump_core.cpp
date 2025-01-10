@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,20 +10,23 @@
 #include <chrono>
 #include <csignal>
 #include <filesystem>
-#include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <regex>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/simh_util.h"
+#include "board_executor.h"
+#ifdef __linux__
+#include "sg_executor.h"
+#endif
 
 using namespace filesystem;
-using namespace spdlog;
 using namespace s2p_util;
 using namespace initiator_util;
+using namespace simh_util;
 
 void S2pDump::CleanUp() const
 {
@@ -34,55 +37,58 @@ void S2pDump::CleanUp() const
 
 void S2pDump::TerminationHandler(int)
 {
-    instance->bus->SetRST(true);
+    if (instance) {
+        instance->bus->SetRST(true);
 
-    instance->CleanUp();
+        instance->CleanUp();
+    }
 
-    // Process will terminate automatically
+    active = false;
 }
 
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Drive Dump/Restore Utility)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2024 Uwe Seimet\n";
+            << "Copyright (C) 2023-2025 Uwe Seimet\n";
     }
 
-    cout << "Usage: s2pdump [options]\n"
+    cout << "Usage: " + APP_NAME + " [options]\n"
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
         << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
         << "                                     default LUN is 0.\n"
         << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
-        << "  --image-file/-f IMAGE_FILE         Image file path.\n"
+        << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
         << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
         << "                                     default is 1 MiB.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
-        << "                                     error|critical|off), default is 'info'.\n"
+        << "                                     error|critical|off), default is 'warning'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
-        << "                                     device properties for s2p property files.\n"
+        << "                                     device properties for property files.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
-        << "  --start-sector/-S START            Start sector, default is 0.\n"
-        << "  --sector-count/-C COUNT            Sector count, default is the capacity.\n"
+        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "                                     default is the capacity.\n"
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
+        << "  --scsi-generic/-g DEVICE_FILE      Use the Linux SG driver instead of a\n"
+        << "                                     RaSCSI/PiSCSI board.\n"
         << "  --version/-v                       Display the program version.\n"
         << "  --help/-H                          Display this help.\n";
 }
 
 bool S2pDump::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process);
+    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME, false);
     if (!bus) {
         return false;
     }
-
-    executor = make_unique<S2pDumpExecutor>(*bus, initiator_id);
 
     instance = this;
     // Signal handler for cleaning up
@@ -108,6 +114,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "sector-count", required_argument, nullptr, 'C' },
         { "sasi-id", required_argument, nullptr, 'h' },
         { "scsi-id", required_argument, nullptr, 'i' },
+        { "scsi-generic", required_argument, nullptr, 'g' },
         { "inquiry", no_argument, nullptr, 'I' },
         { "image-file", required_argument, nullptr, 'f' },
         { "log-level", required_argument, nullptr, 'L' },
@@ -121,7 +128,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     };
 
     string buf;
-    string initiator = "7";
+    string initiator;
     string id_and_lun;
     string start_sector;
     string sector_count;
@@ -134,7 +141,8 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:h:Hi:If:L:rsS:tvz:", options.data(),
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rsS:tvz:",
+        options.data(),
         nullptr)) != -1) {
         switch (opt) {
         case 'a':
@@ -159,6 +167,10 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         case 'f':
             filename = optarg;
+            break;
+
+        case 'g':
+            device_file = optarg;
             break;
 
         case 'h':
@@ -225,57 +237,89 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         return false;
     }
 
-    if (!SetLogLevel(log_level)) {
-        throw parser_exception("Invalid log level '" + log_level + "'");
+    if (!SetLogLevel(*s2pdump_logger, log_level)) {
+        throw ParserException("Invalid log level '" + log_level + "'");
     }
 
     if (scsi && sasi) {
-        throw parser_exception("SCSI and SASI functionality cannot be mixed");
+        throw ParserException("SCSI and SASI functionality cannot be mixed");
     }
 
-    if (!GetAsUnsignedInt(initiator, initiator_id) || initiator_id > 7) {
-        throw parser_exception("Invalid board ID '" + initiator + "' (0-7)");
+    if (initiator.empty() && device_file.empty()) {
+        initiator = "7";
     }
+
+    if ((!initiator.empty() && !device_file.empty()) || (!device_file.empty() && !id_and_lun.empty())) {
+        throw ParserException("Either a RaSCSI/PiSCSI board or the Linux SG driver can be used");
+    }
+
+    if (!initiator.empty()) {
+        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+            throw ParserException("Invalid initiator ID '" + initiator + "' (0-7)");
+        }
+    }
+
+#ifdef __linux__
+    if (!device_file.empty()) {
+        sg_adapter = make_shared<SgAdapter>(*s2pdump_logger);
+        if (const string &error = sg_adapter->Init(device_file); !error.empty()) {
+            throw ParserException(error);
+        }
+    }
+#endif
 
     if (!run_bus_scan) {
-        if (const string &error = ProcessId(id_and_lun, target_id, target_lun); !error.empty()) {
-            throw parser_exception(error);
+        if (device_file.empty()) {
+            if (const string &error = ParseIdAndLun(id_and_lun, target_id, target_lun); !error.empty()) {
+                throw ParserException(error);
+            }
         }
 
-        if (!buf.empty() && (!GetAsUnsignedInt(buf, buffer_size) || buffer_size < MINIMUM_BUFFER_SIZE)) {
-            throw parser_exception(
-                "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
+        if (!buf.empty()) {
+            if (buffer_size = ParseAsUnsignedInt(buf); buffer_size < MINIMUM_BUFFER_SIZE) {
+                throw ParserException(
+                    "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
+            }
         }
 
-        if (!sector_count.empty() && (!GetAsUnsignedInt(sector_count, count) || !count)) {
-            throw parser_exception("Invalid sector count: '" + sector_count + "'");
+        if (!sector_count.empty()) {
+            if (count = ParseAsUnsignedInt(sector_count); count == -1 || !count) {
+                throw ParserException("Invalid sector count: '" + sector_count + "'");
+            }
         }
 
-        if (!start_sector.empty() && !!GetAsUnsignedInt(start_sector, start)) {
-            throw parser_exception("Invalid start sector: " + string(optarg));
+        if (!start_sector.empty()) {
+            if (start = ParseAsUnsignedInt(start_sector); start == -1) {
+                throw ParserException("Invalid start sector: " + string(optarg));
+            }
         }
 
         if (sasi) {
-            if (!GetAsUnsignedInt(capacity, sasi_capacity) || !sasi_capacity) {
-                throw parser_exception("Invalid SASI hard drive capacity: '" + capacity + "'");
+            if (sasi_capacity = ParseAsUnsignedInt(capacity); sasi_capacity <= 0) {
+                throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
-            if (!GetAsUnsignedInt(sector_size, sasi_sector_size)
-                || (sasi_sector_size != 256 && sasi_sector_size != 512 && sasi_sector_size != 1024)) {
-                throw parser_exception("Invalid SASI hard drive sector size: '" + sector_size + "'");
+            if (sasi_sector_size = ParseAsUnsignedInt(sector_size); sasi_sector_size != 256 && sasi_sector_size != 512
+                && sasi_sector_size != 1024) {
+                throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
             }
         }
 
-        if (target_id == -1) {
-            throw parser_exception("Missing target ID");
+        if (device_file.empty() && target_id == -1) {
+            throw ParserException("Missing target ID");
         }
 
         if (target_id == initiator_id) {
-            throw parser_exception("Target ID and board ID must not be identical");
+            throw ParserException("Target ID and initiator ID must not be identical");
         }
 
         if (filename.empty() && !run_bus_scan && !run_inquiry) {
-            throw parser_exception("Missing filename");
+            throw ParserException("Missing filename");
+        }
+
+        // Avoid -1 as target ID
+        if (!device_file.empty()) {
+            target_id = 0;
         }
 
         if (target_lun == -1) {
@@ -298,23 +342,38 @@ int S2pDump::Run(span<char*> args, bool in_process)
         return EXIT_FAILURE;
     }
 
+    s2pdump_logger = CreateLogger(APP_NAME);
+
     try {
         if (!ParseArguments(args)) {
             return EXIT_SUCCESS;
         }
 
-        if (!Init(in_process)) {
-            throw parser_exception("Can't initialize bus");
-        }
+        if (device_file.empty()) {
+            if (!Init(in_process)) {
+                throw ParserException("Can't initialize bus");
+            }
 
-        if (!in_process && !bus->IsRaspberryPi()) {
-            throw parser_exception("There is no board hardware support");
+            if (!in_process && !bus->IsRaspberryPi()) {
+                throw ParserException("There is no board hardware support");
+            }
         }
     }
-    catch (const parser_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+    catch (const ParserException &e) {
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
+
+#ifdef __linux__
+    if (device_file.empty()) {
+        s2pdump_executor = make_shared<BoardExecutor>(*bus, initiator_id, *s2pdump_logger);
+    }
+    else {
+        s2pdump_executor = make_shared<SgExecutor>(*sg_adapter, *s2pdump_logger);
+    }
+#else
+    s2pdump_executor = make_shared<BoardExecutor>(*bus, initiator_id, *s2pdump_logger);
+#endif
 
     if (run_bus_scan) {
         ScanBus();
@@ -328,7 +387,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
     }
     else {
         if (const string &error = DumpRestore(); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             CleanUp();
             return EXIT_FAILURE;
         }
@@ -341,7 +400,9 @@ int S2pDump::Run(span<char*> args, bool in_process)
 
 void S2pDump::DisplayBoardId() const
 {
-    cout << DIVIDER << "\nBoard (initiator) ID is " << initiator_id << "\n";
+    if (device_file.empty()) {
+        cout << DIVIDER << "\nBoard (initiator) ID is " << initiator_id << "\n";
+    }
 }
 
 void S2pDump::ScanBus()
@@ -359,7 +420,7 @@ void S2pDump::ScanBus()
             continue;
         }
 
-        auto luns = executor->ReportLuns();
+        auto luns = s2pdump_executor->ReportLuns();
         // LUN 0 has already been dealt with
         luns.erase(0);
 
@@ -373,20 +434,30 @@ void S2pDump::ScanBus()
 
 bool S2pDump::DisplayInquiry(bool check_type)
 {
-    cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
-        << target_lun << "\n" << flush;
+    if (device_file.empty()) {
+        cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
+            << target_lun << "\n" << flush;
+    }
+    else {
+        cout << "Checking device corresponding to Linux SG driver device file '" << device_file << "'\n" << flush;
+    }
 
-    executor->SetTarget(target_id, target_lun, sasi);
+    if (auto board_executor = dynamic_pointer_cast<BoardExecutor>(s2pdump_executor); board_executor) {
+        board_executor->SetTarget(target_id, target_lun, sasi);
+    }
+
+    // Clear potential UNIT ATTENTION status
+    s2pdump_executor->TestUnitReady();
 
     vector<uint8_t> buf(36);
-    if (!executor->Inquiry(buf)) {
+    if (!s2pdump_executor->Inquiry(buf)) {
         return false;
     }
 
     return sasi ? DisplaySasiInquiry(buf, check_type) : DisplayScsiInquiry(buf, check_type);
 }
 
-bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
+bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 {
     const auto type = static_cast<int>(buf[0]) & 0x0f;
     if (type == 0x1f) {
@@ -399,19 +470,12 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     scsi_device_info = { };
     scsi_device_info.type = static_cast<byte>(buf[0]);
 
-    array<char, 17> str = { };
-    memcpy(str.data(), &buf[8], 8);
-    scsi_device_info.vendor = string(str.data());
+    const auto& [vendor, product, revision] = GetInquiryProductData(buf);
+    scsi_device_info.vendor = vendor;
+    scsi_device_info.product = product;
+    scsi_device_info.revision = revision;
     cout << "Vendor:               '" << scsi_device_info.vendor << "'\n";
-
-    str.fill(0);
-    memcpy(str.data(), &buf[16], 16);
-    scsi_device_info.product = string(str.data());
     cout << "Product:              '" << scsi_device_info.product << "'\n";
-
-    str.fill(0);
-    memcpy(str.data(), &buf[32], 4);
-    scsi_device_info.revision = string(str.data());
     cout << "Revision:             '" << scsi_device_info.revision << "'\n";
 
     if (const auto &t = SCSI_DEVICE_TYPES.find(static_cast<byte>(type)); t != SCSI_DEVICE_TYPES.end()) {
@@ -421,9 +485,7 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
         cout << "Device Type:          Unknown\n";
     }
 
-    if (buf[2]) {
-        cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << "\n";
-    }
+    cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
     cout << "Response Data Format: ";
     switch (buf[3]) {
@@ -449,18 +511,19 @@ bool S2pDump::DisplayScsiInquiry(vector<uint8_t> &buf, bool check_type)
     cout << "Removable:            " << (scsi_device_info.removable ? "Yes" : "No")
         << "\n";
 
-    if (check_type && scsi_device_info.type != static_cast<byte>(device_type::direct_access) &&
-        scsi_device_info.type != static_cast<byte>(device_type::cd_rom)
-        && scsi_device_info.type != static_cast<byte>(device_type::optical_memory)) {
+    if (check_type && scsi_device_info.type != static_cast<byte>(DeviceType::DIRECT_ACCESS) &&
+        scsi_device_info.type != static_cast<byte>(DeviceType::CD_DVD)
+        && scsi_device_info.type != static_cast<byte>(DeviceType::OPTICAL_MEMORY)
+        && scsi_device_info.type != static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
-            << " CD-ROM/DVD/BD/DVD-RAM and OPTICAL MEMORY" << endl;
+            << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS\n";
         return false;
     }
 
     return true;
 }
 
-bool S2pDump::DisplaySasiInquiry(const vector<uint8_t> &buf, bool check_type) const
+bool S2pDump::DisplaySasiInquiry(span<const uint8_t> buf, bool check_type) const
 {
     const auto type = buf[0];
     if (!type) {
@@ -471,7 +534,7 @@ bool S2pDump::DisplaySasiInquiry(const vector<uint8_t> &buf, bool check_type) co
     }
 
     if (check_type && type) {
-        cerr << "Error: Invalid device type for SASI dump/restore, only hard drives are supported" << endl;
+        cerr << "Error: Invalid device type for SASI dump/restore, only hard drives are supported\n";
         return false;
     }
 
@@ -484,11 +547,23 @@ string S2pDump::DumpRestore()
         return "Can't get device information";
     }
 
-    fstream fs(filename, (restore ? ios::in : ios::out) | ios::binary);
-    if (fs.fail()) {
+    fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
+    if (file.fail()) {
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
+    if (!restore) {
+        permissions(filename, perms::group_read | perms::group_write | perms::others_read | perms::others_write,
+            perm_options::add);
+    }
+
+    return
+        scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS) ?
+            DumpRestoreTape(file) : DumpRestoreDisk(file);
+}
+
+string S2pDump::DumpRestoreDisk(fstream &file)
+{
     const auto effective_size = CalculateEffectiveSize();
     if (effective_size < 0) {
         return "";
@@ -498,7 +573,7 @@ string S2pDump::DumpRestore()
         return "";
     }
 
-    cout << "Starting " << (restore ? "restore" : "dump") << "\n"
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n"
         << "  Start sector is " << start << "\n"
         << "  Sector count is " << count << "\n"
         << "  Buffer size is " << buffer.size() << " bytes\n\n"
@@ -510,88 +585,202 @@ string S2pDump::DumpRestore()
 
     auto remaining = effective_size;
 
-    const auto start_time = chrono::high_resolution_clock::now();
+    const auto start_time = high_resolution_clock::now();
 
-    while (remaining) {
-        const auto byte_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
-        auto sector_count = byte_count / sector_size;
-        if (byte_count % sector_size) {
+    while (remaining && active) {
+        auto current_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
+        auto sector_count = current_count / sector_size;
+        if (current_count % sector_size) {
             ++sector_count;
         }
 
         if (sasi && sector_count > 256) {
             sector_count = 256;
+            current_count = sector_count * sector_size;
         }
 
-        debug("Remaining bytes: " + to_string(remaining));
-        debug("Current sector: " + to_string(sector_offset));
-        debug("Sector count: " + to_string(sector_count));
-        debug("Data transfer size: " + to_string(sector_count * sector_size));
-        debug("Image file chunk size: " + to_string(byte_count));
+        s2pdump_logger->info("Remaining bytes: {}", remaining);
+        s2pdump_logger->info("Current sector: {}", sector_offset);
+        s2pdump_logger->info("Sector count: {}", sector_count);
+        s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
+        s2pdump_logger->info("Image file chunk size: {}", current_count);
 
-        if (const string &error = ReadWrite(fs, sector_offset, sector_count, sector_size, byte_count); !error.empty()) {
+        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
             return error;
         }
 
         sector_offset += sector_count;
-        remaining -= byte_count;
+        remaining -= current_count;
 
         cout << setw(3) << (effective_size - remaining) * 100 / effective_size << "% ("
             << effective_size - remaining
             << "/" << effective_size << " bytes)\n" << flush;
     }
 
-    auto duration = chrono::duration_cast<chrono::seconds>(chrono::high_resolution_clock::now()
-        - start_time).count();
-    if (!duration) {
-        duration = 1;
-    }
-
     if (restore) {
         // Ensure that if the target device is also a SCSI2Pi instance its image file becomes complete immediately
-        executor->SynchronizeCache();
+        s2pdump_executor->SynchronizeCache();
     }
 
-    cout << DIVIDER
-        << "\nTransferred " << effective_size / 1024 / 1024 << " MiB (" << effective_size << " bytes)"
-        << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
-        << "\nAverage transfer rate: " << effective_size / duration << " bytes per second ("
-        << effective_size / 1024 / duration << " KiB per second)\n"
-        << DIVIDER << "\n" << flush;
+    DisplayStatistics(start_time, effective_size);
 
     return "";
 }
 
-string S2pDump::ReadWrite(fstream &fs, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::DumpRestoreTape(fstream &file)
+{
+    cout << "Rewinding tape\n";
+    if (s2pdump_executor->Rewind()) {
+        return "Can't rewind tape";
+    }
+
+    cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n";
+
+    const auto start_time = high_resolution_clock::now();
+
+    try {
+        restore ? RestoreTape(file) : DumpTape(file);
+    }
+    catch (const IoException &e) {
+        return e.what();
+    }
+
+    DisplayStatistics(start_time, byte_count);
+
+    return "";
+}
+
+string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
 {
     if (restore) {
-        fs.read((char*)buffer.data(), byte_count);
-        if (fs.fail()) {
-            return "Error reading from file '" + filename + "'";
+        file.read((char*)buffer.data(), byte_count);
+        if (file.fail()) {
+            return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-            return "Error/interrupted while writing to device";
+        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+            return "Can't write to device: " + string(strerror(errno));
         }
     } else {
-        if (!executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-            return "Error/interrupted while reading from device";
+        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+            return "Can't read from device: " + string(strerror(errno));
         }
 
-        fs.write((const char*)buffer.data(), byte_count);
-        if (fs.fail()) {
-            return "Error writing to file '" + filename + "'";
+        file.write((const char*)buffer.data(), byte_count);
+        if (file.fail()) {
+            return "Can't write to file '" + filename + "': " + strerror(errno);
         }
     }
 
     return "";
+}
+
+void S2pDump::DumpTape(ostream &file)
+{
+    while (active) {
+        const int length = s2pdump_executor->ReadWrite(buffer, 0);
+        if (length == BoardExecutor::NO_MORE_DATA) {
+            break;
+        }
+
+        if (length == BoardExecutor::BAD_BLOCK) {
+            const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
+            file.write((const char*)bad_data.data(), bad_data.size());
+            if (file.bad()) {
+                throw IoException("Can't write SIMH bad data record");
+            }
+        }
+        else if (length) {
+            if (!WriteGoodData(file, buffer, length)) {
+                throw IoException("Can't write SIMH good data record");
+            }
+
+            ++block_count;
+            byte_count += length;
+
+            log_count += length;
+        }
+        else {
+            if (!WriteFilemark(file)) {
+                throw IoException("Can't write SIMH tape mark");
+            }
+
+            ++filemark_count;
+        }
+
+        s2pdump_logger->info("Byte count: {}", byte_count);
+        s2pdump_logger->info("Block count: {}", block_count);
+        s2pdump_logger->info("Filemark count: {}", filemark_count);
+
+        if (log_count >= 131072) {
+            cout << "Dumped " << byte_count << " bytes (" << byte_count / 1048576 << " MB)\n" << flush;
+            log_count = 0;
+        }
+    }
+}
+
+void S2pDump::RestoreTape(istream &file)
+{
+    while (true) {
+        SimhMetaData meta_data;
+        if (!ReadMetaData(file, meta_data)) {
+            break;
+        }
+
+        if (meta_data.cls == SimhClass::RESERVERD_MARKER
+            && meta_data.value == static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM)) {
+            break;
+        }
+
+        // Tape mark
+        if (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD && !meta_data.value) {
+            s2pdump_logger->debug("Writing filemark");
+
+            if (s2pdump_executor->WriteFilemark()) {
+                throw IoException("Can't write filemark");
+            }
+
+            ++filemark_count;
+        }
+        else if ((meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD
+            || meta_data.cls == SimhClass::BAD_DATA_RECORD) && meta_data.value) {
+            s2pdump_logger->debug("Writing {} byte(s) block", meta_data.value);
+
+            buffer.resize(meta_data.value);
+
+            file.read((char*)buffer.data(), buffer.size());
+            if (file.bad()) {
+                throw IoException("Can't read SIMH data record");
+            }
+
+            if (s2pdump_executor->ReadWrite(buffer, meta_data.value) != static_cast<int>(meta_data.value)) {
+                throw IoException("Can't write block");
+            }
+
+            file.seekg(META_DATA_SIZE, ios::cur);
+
+            ++block_count;
+            byte_count += buffer.size();
+
+            log_count += buffer.size();
+        }
+
+        s2pdump_logger->info("Byte count: {}", byte_count);
+        s2pdump_logger->info("Block count: {}", block_count);
+        s2pdump_logger->info("Filemark count: {}", filemark_count);
+
+        if (log_count >= 131072) {
+            cout << "Restored " << byte_count << " bytes (" << byte_count / 1048576 << " MB)\n" << flush;
+            log_count = 0;
+        }
+    }
 }
 
 long S2pDump::CalculateEffectiveSize()
 {
     const auto capacity = sasi ? sasi_capacity : scsi_device_info.capacity;
     if (capacity <= static_cast<uint64_t>(start)) {
-        cerr << "Start sector " << start << " is out of range (" << capacity - 1 << ")" << endl;
+        cerr << "Start sector " << start << " is out of range (" << capacity - 1 << ")\n";
         return -1;
     }
 
@@ -600,7 +789,7 @@ long S2pDump::CalculateEffectiveSize()
     }
 
     if (capacity < static_cast<uint64_t>(start + count)) {
-        cerr << "Sector count " << count << " is out of range (" << capacity - start << ")" << endl;
+        cerr << "Sector count " << count << " is out of range (" << capacity - start << ")\n";
         return -1;
     }
 
@@ -613,7 +802,7 @@ long S2pDump::CalculateEffectiveSize()
             image_file_size = file_size(path(filename));
         }
         catch (const filesystem_error &e) {
-            cerr << "Can't determine image file size: " << e.what() << endl;
+            cerr << "Can't determine image file size: " << e.what() << '\n';
             return -1;
         }
 
@@ -638,17 +827,23 @@ long S2pDump::CalculateEffectiveSize()
 
 bool S2pDump::GetDeviceInfo()
 {
-    DisplayBoardId();
+    if (!device_file.empty()) {
+        DisplayBoardId();
+    }
 
     if (!DisplayInquiry(true)) {
         return false;
     }
 
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    s2pdump_executor->RequestSense( { });
+
+    if (scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
+        return true;
+    }
 
     if (!sasi) {
-        const auto [capacity, sector_size] = executor->ReadCapacity();
+        const auto [capacity, sector_size] = s2pdump_executor->ReadCapacity();
         if (!capacity || !sector_size) {
             trace("Can't read device capacity");
             return false;
@@ -682,9 +877,9 @@ bool S2pDump::GetDeviceInfo()
 void S2pDump::DisplayProperties(int id, int lun) const
 {
     // Clear any pending error condition, e.g. a medium just having being inserted
-    executor->RequestSense();
+    s2pdump_executor->RequestSense( { });
 
-    cout << "\nDevice properties for s2p property file:\n";
+    cout << "\nDevice properties for s2p properties file:\n";
 
     string id_and_lun = "device." + to_string(id);
     if (lun > 0) {
@@ -716,8 +911,8 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     vector<uint8_t> buf(255);
 
-    if (!executor->ModeSense6(buf)) {
-        cout << "Warning: Can't get mode page data, medium may be missing or drive was not ready, try again\n" << flush;
+    if (!s2pdump_executor->ModeSense6(buf)) {
+        cout << "Warning: No mode page data available, medium might be missing\n" << flush;
         return;
     }
 
@@ -746,4 +941,19 @@ void S2pDump::DisplayProperties(int id, int lun) const
     }
 
     cout << flush;
+}
+
+void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t count)
+{
+    auto duration = duration_cast<chrono::seconds>(high_resolution_clock::now() - start_time).count();
+    if (!duration) {
+        duration = 1;
+    }
+
+    cout << DIVIDER
+        << "\nTransferred " << count / 1024 / 1024 << " MiB (" << count << " bytes)"
+        << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
+        << "\nAverage transfer rate: " << count / duration << " bytes per second ("
+        << count / 1024 / duration << " KiB per second)\n"
+        << DIVIDER << "\n" << flush;
 }

@@ -2,17 +2,23 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <fstream>
 #include <unordered_map>
 #include <vector>
+#include <spdlog/spdlog.h>
+#include "buses/bus.h"
+#include "shared/sg_adapter.h"
 #include "s2pdump_executor.h"
 
 using namespace std;
+using namespace chrono;
+using namespace spdlog;
 
 class S2pDump
 {
@@ -21,8 +27,7 @@ public:
 
     int Run(span<char*>, bool);
 
-    struct scsi_device_info
-    {
+    using ScsiDeviceInfo = struct {
         bool removable;
         byte type;
         byte scsi_level;
@@ -32,7 +37,6 @@ public:
         uint32_t sector_size;
         uint64_t capacity;
     };
-    using scsi_device_info_t = struct scsi_device_info;
 
 private:
 
@@ -44,10 +48,12 @@ private:
     long CalculateEffectiveSize();
     void ScanBus();
     bool DisplayInquiry(bool);
-    bool DisplayScsiInquiry(vector<uint8_t>&, bool);
-    bool DisplaySasiInquiry(const vector<uint8_t>&, bool) const;
+    bool DisplayScsiInquiry(span<const uint8_t>, bool);
+    bool DisplaySasiInquiry(span<const uint8_t>, bool) const;
     void DisplayProperties(int, int) const;
     string DumpRestore();
+    string DumpRestoreDisk(fstream&);
+    string DumpRestoreTape(fstream&);
     bool GetDeviceInfo();
 
     void Reset() const;
@@ -55,11 +61,16 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
+    void DumpTape(ostream&);
+    void RestoreTape(istream&);
+
+    static void DisplayStatistics(time_point<high_resolution_clock>, uint64_t);
+
     unique_ptr<Bus> bus;
 
-    unique_ptr<S2pDumpExecutor> executor;
+    shared_ptr<S2pDumpExecutor> s2pdump_executor;
 
-    scsi_device_info_t scsi_device_info = { };
+    ScsiDeviceInfo scsi_device_info = { };
 
     int sasi_capacity = 0;
     int sasi_sector_size = 0;
@@ -74,10 +85,17 @@ private:
 
     string filename;
 
-    string log_level = "info";
+    shared_ptr<logger> s2pdump_logger;
+    string log_level = "warning";
 
     int start = 0;
     int count = 0;
+
+    uint64_t byte_count = 0;
+    uint32_t block_count = 0;
+    uint32_t filemark_count = 0;
+
+    int log_count = 0;
 
     bool run_inquiry = false;
 
@@ -87,23 +105,32 @@ private:
 
     bool restore = false;
 
+    inline static bool active = true;
+
+    string device_file;
+
+#ifdef __linux__
+    shared_ptr<SgAdapter> sg_adapter;
+#endif
+
     // Required for the termination handler
-    static inline S2pDump *instance;
+    inline static S2pDump *instance;
 
     static constexpr int MINIMUM_BUFFER_SIZE = 1024 * 64;
     static constexpr int DEFAULT_BUFFER_SIZE = 1024 * 1024;
 
     static constexpr const char *DIVIDER = "----------------------------------------";
 
-    static inline const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
+    inline static const unordered_map<byte, const char*> S2P_DEVICE_TYPES = {
         { byte { 0 }, "SCHD" },
+        { byte { 1 }, "SCTP" },
         { byte { 2 }, "SCLP" },
         { byte { 3 }, "SCHS" },
         { byte { 5 }, "SCCD" },
         { byte { 7 }, "SCMO" }
     };
 
-    static inline const unordered_map<byte, const char*> SCSI_DEVICE_TYPES = {
+    inline static const unordered_map<byte, const char*> SCSI_DEVICE_TYPES = {
         { byte { 0 }, "Direct Access" },
         { byte { 1 }, "Sequential Access" },
         { byte { 2 }, "Printer" },
@@ -127,4 +154,6 @@ private:
         { byte { 20 }, "Host Managed Zoned Block" },
         { byte { 30 }, "Well Known Logical Unit" }
     };
+
+    inline static const string APP_NAME = "s2pdump";
 };

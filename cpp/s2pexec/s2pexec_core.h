@@ -8,14 +8,15 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
+#include "shared/s2p_formatter.h"
 #include "s2pexec_executor.h"
 
 using namespace std;
 
 class S2pExec
 {
-
     class execution_exception : public runtime_error
     {
         using runtime_error::runtime_error;
@@ -30,11 +31,11 @@ private:
     static void Banner(bool, bool);
 
     bool Init(bool);
-    bool ParseArguments(span<char*>);
-    bool RunInteractive(bool);
+    bool ParseArguments(span<char*>, bool);
+    void RunInteractive(bool);
     int Run();
 
-    tuple<sense_key, asc, int> ExecuteCommand();
+    tuple<SenseKey, Asc, int> ExecuteCommand();
 
     string ReadData();
     string WriteData(span<const uint8_t>);
@@ -43,9 +44,9 @@ private:
     void CleanUp() const;
     static void TerminationHandler(int);
 
-    unique_ptr<Bus> bus;
-
     unique_ptr<S2pExecExecutor> executor;
+
+    S2pFormatter formatter;
 
     bool version = false;
     bool help = false;
@@ -56,6 +57,8 @@ private:
 
     int timeout = 3;
 
+    string log_limit = "128";
+
     bool request_sense = true;
 
     bool reset_bus = false;
@@ -63,6 +66,10 @@ private:
     bool hex_only = false;
 
     bool sasi = false;
+
+    bool use_sg = false;
+
+    bool is_initialized = false;
 
     vector<uint8_t> buffer;
 
@@ -74,12 +81,17 @@ private:
     string command;
     string data;
 
+    shared_ptr<logger> s2pexec_logger;
     string log_level;
 
     string last_input;
 
-    // Required for the termination handler
-    static inline S2pExec *instance;
+    string device_file;
 
-    static constexpr int DEFAULT_BUFFER_SIZE = 131072;
+    // Required for the termination handler
+    inline static S2pExec *instance;
+
+    static const int DEFAULT_BUFFER_SIZE = 131072;
+
+    inline static const string APP_NAME = "s2pexec";
 };

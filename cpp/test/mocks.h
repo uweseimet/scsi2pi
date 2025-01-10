@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@
 
 using namespace testing;
 
-class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
+class MockBus : public Bus
 {
 
 public:
@@ -89,16 +89,12 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 {
     friend class testing::TestShared;
 
-    friend shared_ptr<PrimaryDevice> CreateDevice(s2p_interface::PbDeviceType, AbstractController&, int);
-
     FRIEND_TEST(AbstractControllerTest, Reset);
-    FRIEND_TEST(AbstractControllerTest, Status);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
     FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, Message);
-    FRIEND_TEST(AbstractControllerTest, TransferSize);
-    FRIEND_TEST(AbstractControllerTest, Length);
+    FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(ControllerTest, Selection);
@@ -148,6 +144,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(DaynaportTest, SetInterfaceMode);
     FRIEND_TEST(DaynaportTest, SetMcastAddr);
     FRIEND_TEST(DaynaportTest, EnableInterface);
+    FRIEND_TEST(DaynaportTest, DisableInterface);
     FRIEND_TEST(HostServicesTest, StartStopUnit);
     FRIEND_TEST(HostServicesTest, ExecuteOperation);
     FRIEND_TEST(HostServicesTest, ReceiveOperationResults);
@@ -156,24 +153,42 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(HostServicesTest, ModeSense10);
     FRIEND_TEST(HostServicesTest, SetUpModePages);
     FRIEND_TEST(PrinterTest, Print);
+    FRIEND_TEST(PrinterTest, SynchronizeBuffer);
+    FRIEND_TEST(PrinterTest, WriteData);
     FRIEND_TEST(SasiHdTest, Inquiry);
     FRIEND_TEST(SasiHdTest, RequestSense);
     FRIEND_TEST(TapeTest, Read6);
+    FRIEND_TEST(TapeTest, Read6_BlockSizeMismatch);
+    FRIEND_TEST(TapeTest, Read16);
     FRIEND_TEST(TapeTest, Write6);
-    FRIEND_TEST(TapeTest, Erase6);
+    FRIEND_TEST(TapeTest, Write16);
+    FRIEND_TEST(TapeTest, Erase6_simh);
+    FRIEND_TEST(TapeTest, Erase6_tar);
     FRIEND_TEST(TapeTest, Rewind);
-    FRIEND_TEST(TapeTest, Space6);
-    FRIEND_TEST(TapeTest, Space16);
-    FRIEND_TEST(TapeTest, WriteFileMarks6);
-    FRIEND_TEST(TapeTest, Locate10);
-    FRIEND_TEST(TapeTest, Locate16);
+    FRIEND_TEST(TapeTest, Space6_simh);
+    FRIEND_TEST(TapeTest, Space6_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks6_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks6_simh);
+    FRIEND_TEST(TapeTest, WriteFileMarks16_tar);
+    FRIEND_TEST(TapeTest, WriteFileMarks16_simh);
+    FRIEND_TEST(TapeTest, FormatMedium_simh);
+    FRIEND_TEST(TapeTest, FormatMedium_tar);
+    FRIEND_TEST(TapeTest, Locate10_simh);
+    FRIEND_TEST(TapeTest, Locate10_tar);
+    FRIEND_TEST(TapeTest, Locate16_simh);
+    FRIEND_TEST(TapeTest, Locate16_tar);
     FRIEND_TEST(TapeTest, ReadPosition);
+    FRIEND_TEST(TapeTest, ModeSense6);
+    FRIEND_TEST(TapeTest, ModeSense10);
+    FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
+
+    const S2pFormatter formatter;
 
 public:
 
     MOCK_METHOD(bool, Process, (), (override));
     MOCK_METHOD(int, GetEffectiveLun, (), (const, override));
-    MOCK_METHOD(void, Error, (sense_key, asc, status_code), (override));
+    MOCK_METHOD(void, Error, (SenseKey, Asc, StatusCode), (override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, DataIn, (), (override));
     MOCK_METHOD(void, DataOut, (), (override));
@@ -183,18 +198,30 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0)
+    MockAbstractController() : AbstractController(*mock_bus, 0, formatter)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id)
+    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id)
+    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, formatter)
     {
         SetCurrentLength(512);
     }
     ~MockAbstractController() override = default;
+
+    void ResetCdb()
+    {
+        for (size_t i = 0; i < GetCdb().size(); ++i) {
+            SetCdbByte(static_cast<int>(i), 0);
+        }
+    }
+
+    void SetCdbByte(int index, int value) // NONSONAR Having the same name as the inherited method is intentional
+    {
+        AbstractController::SetCdbByte(index, value);
+    }
 };
 
 class MockController : public Controller
@@ -210,18 +237,21 @@ class MockController : public Controller
     FRIEND_TEST(ControllerTest, Error);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
+    FRIEND_TEST(TapeTest, Write6);
 
 public:
+
+    const S2pFormatter formatter;
 
     MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, Status, (), (override));
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, formatter)
     {
     }
     ~MockController() override = default;
@@ -240,9 +270,6 @@ public:
     MOCK_METHOD(int, GetId, (), (const, override));
 
     explicit MockDevice(int lun) : Device(UNDEFINED, lun)
-    {
-    }
-    explicit MockDevice(PbDeviceType type) : Device(type, 0)
     {
     }
     ~MockDevice() override = default;
@@ -265,18 +292,19 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
-    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
+    MOCK_METHOD(string, GetIdentifier, (), (const, override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
-    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, scsi_level::scsi_2, lun)
+    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
     {
     }
     ~MockPrimaryDevice() override = default;
 
-    bool SetUp() override
+    string SetUp() override
     {
-        return true;
+        return "";
     }
 };
 
@@ -301,24 +329,24 @@ class MockStorageDevice : public StorageDevice
 
 public:
 
-    MOCK_METHOD(int, WriteData, (span<const uint8_t>, scsi_command), (override));
+    MOCK_METHOD(int, WriteData, (cdb_t, data_out_t,int, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockStorageDevice() : StorageDevice(UNDEFINED, scsi_level::scsi_2, 0, false, false, { 256, 512, 1024, 2048, 4096 })
+    MockStorageDevice() : StorageDevice(UNDEFINED, 0, false, false, { 256, 512, 1024, 2048, 4096 })
     {
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b)
+    void SetReady(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b)
+    void SetRemovable(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b)
+    void SetLocked(bool b) // NONSONAR Having the same name as the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }
@@ -327,6 +355,7 @@ public:
 class MockDisk : public Disk
 {
     FRIEND_TEST(DiskTest, Dispatch);
+    FRIEND_TEST(DiskTest, ValidateFile);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
     FRIEND_TEST(DiskTest, ReassignBlocks);
@@ -363,22 +392,22 @@ public:
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
-    MockDisk() : Disk(SCHD, scsi_level::scsi_2, 0, false, false, { 512, 1024, 2048, 4096 })
+    MockDisk() : Disk(SCHD, 0, false, false, { 512, 1024, 2048, 4096 })
     {
-        SetCachingMode(PbCachingMode::PISCSI);
+        SetCachingMode(PbCachingMode::LINUX);
+        SetBlockSize(512);
     }
     ~MockDisk() override = default;
 };
 
 class MockSasiHd : public SasiHd
 {
+
 public:
 
     explicit MockSasiHd(int lun) : SasiHd(lun)
     {
-    }
-    explicit MockSasiHd(const set<uint32_t> &sector_sizes) : SasiHd(0, sector_sizes)
-    {
+        SetCachingMode(PbCachingMode::PISCSI);
     }
     ~MockSasiHd() override = default;
 };
@@ -426,7 +455,6 @@ public:
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
-    ~MockScsiCd() override = default;
 };
 
 class MockOpticalMemory : public OpticalMemory
@@ -436,7 +464,12 @@ class MockOpticalMemory : public OpticalMemory
     FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
-    using OpticalMemory::OpticalMemory;
+public:
+
+    explicit MockOpticalMemory(int lun) : OpticalMemory(lun)
+    {
+        SetCachingMode(PbCachingMode::PISCSI);
+    }
 };
 
 class MockHostServices : public HostServices
@@ -449,16 +482,17 @@ class MockHostServices : public HostServices
 class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
-    FRIEND_TEST(TapeTest, SetUpModePages);
-    FRIEND_TEST(TapeTest, ReadData);
     FRIEND_TEST(TapeTest, Unload);
+    FRIEND_TEST(TapeTest, ModeSense6);
+    FRIEND_TEST(TapeTest, ModeSense10);
+    FRIEND_TEST(TapeTest, SetUpModePages);
+    FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
 
 public:
 
     MockTape() : Tape(0)
     {
     }
-    ~MockTape() override = default;
 
     void SetReady(bool b)
     {
@@ -474,5 +508,8 @@ public:
     MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));
     MOCK_METHOD(bool, Stop, (shared_ptr<PrimaryDevice>, bool), (const));
 
-    using CommandExecutor::CommandExecutor;
+    MockCommandExecutor(Bus &bus, ControllerFactory &controller_factory) : CommandExecutor(bus,
+        controller_factory, *default_logger())
+    {
+    }
 };

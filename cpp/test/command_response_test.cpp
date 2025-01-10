@@ -28,14 +28,14 @@ TEST(CommandResponseTest, Operation_Count)
 
 void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
     CommandResponse response;
 
     auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
     const param_map params;
-    d->Init(params);
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, d));
+    d->Init();
+    EXPECT_TRUE(controller_factory.AttachToController(bus, 0, d));
 
     PbServerInfo info;
     response.GetDevices(controller_factory.GetAllDevices(), info);
@@ -103,7 +103,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     const int LUN2 = 5;
     const int LUN3 = 6;
 
-    auto bus = make_shared<MockBus>();
+    MockBus bus;
     ControllerFactory controller_factory;
     CommandResponse response;
     PbCommand command;
@@ -114,7 +114,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
     auto device1 = make_shared<MockHostServices>(LUN1);
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
 
     response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
@@ -125,7 +125,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_EQ(LUN1, devices1[0].unit());
 
     auto device2 = make_shared<MockScsiHd>(LUN2, false);
-    EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device2));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device2));
 
     PbResult result2;
     response.GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
@@ -133,7 +133,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     auto &devices2 = result2.devices_info().devices();
     EXPECT_EQ(2, devices2.size()) << "Device count mismatch";
 
-    auto requested_device = command.add_devices();
+    auto *requested_device = command.add_devices();
     requested_device->set_id(ID);
     requested_device->set_unit(LUN1);
     PbResult result3;
@@ -158,12 +158,15 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
     PbDeviceTypesInfo info;
     response.GetDeviceTypesInfo(info);
+#ifdef __linux__
+    EXPECT_EQ(10, info.properties().size());
+#else
     EXPECT_EQ(9, info.properties().size());
+#endif
 }
 
 TEST(CommandResponseTest, GetServerInfo)
 {
-    auto bus = make_shared<MockBus>();
     CommandResponse response;
     const unordered_set<shared_ptr<PrimaryDevice>> devices;
     const unordered_set<int> ids = { 1, 3 };
@@ -172,7 +175,7 @@ TEST(CommandResponseTest, GetServerInfo)
     PbServerInfo info1;
     CommandImageSupport::Instance().SetDepth(1234);
 
-    response.GetServerInfo(info1, command, devices, ids);
+    response.GetServerInfo(info1, command, devices, ids, *default_logger());
     EXPECT_TRUE(info1.has_version_info());
     EXPECT_TRUE(info1.has_log_level_info());
     EXPECT_TRUE(info1.has_device_types_info());
@@ -193,7 +196,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     SetParam(command, "operations", "log_level_info,mapping_info");
     PbServerInfo info2;
-    response.GetServerInfo(info2, command, devices, ids);
+    response.GetServerInfo(info2, command, devices, ids, *default_logger());
     EXPECT_FALSE(info2.has_version_info());
     EXPECT_TRUE(info2.has_log_level_info());
     EXPECT_FALSE(info2.has_device_types_info());
@@ -245,7 +248,7 @@ TEST(CommandResponseTest, GetMappingInfo)
 
     PbMappingInfo info;
     response.GetMappingInfo(info);
-    EXPECT_EQ(10U, info.mapping().size());
+    EXPECT_EQ(11U, info.mapping().size());
 }
 
 TEST(CommandResponseTest, GetStatisticsInfo)

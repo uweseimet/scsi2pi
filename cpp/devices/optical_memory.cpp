@@ -4,17 +4,15 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Coypright (C) akuker
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "optical_memory.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
-OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true, true, { 512, 1024, 2048, 4096 })
+OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, true, { 512, 1024, 2048, 4096 })
 {
     // 128 MB, 512 bytes per sector, 248826 sectors
     geometries[512 * 248826] = { 512, 248826 };
@@ -25,7 +23,8 @@ OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, scsi_level::scsi_2, lun, true
     // 640 MB, 20248 bytes per sector, 310352 sectors
     geometries[2048 * 310352] = { 2048, 310352 };
 
-    SetProduct("SCSI MO");
+    Disk::SetProductData( { "", "SCSI MO", "" }, true);
+    SetScsiLevel(ScsiLevel::SCSI_2);
     SetProtectable(true);
     SetRemovable(true);
 }
@@ -38,7 +37,7 @@ void OpticalMemory::Open()
     if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
         // Sector size (default 512 bytes) and number of sectors
         if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-            throw io_exception("Invalid sector size");
+            throw IoException("Invalid sector size");
         }
         SetBlockCount(size / GetBlockSize());
     }
@@ -52,7 +51,7 @@ void OpticalMemory::Open()
 
 vector<uint8_t> OpticalMemory::InquiryInternal() const
 {
-    return HandleInquiry(device_type::optical_memory, true);
+    return HandleInquiry(DeviceType::OPTICAL_MEMORY, true);
 }
 
 void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -153,9 +152,9 @@ void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable
         }
 
         // Format mode
-        buf[2] = (byte)0;
+        buf[2] = byte { 0 };
         // Format type
-        buf[3] = (byte)0;
+        buf[3] = byte { 0 };
         SetInt32(buf, 4, static_cast<uint32_t>(block_count));
         SetInt16(buf, 8, spare);
         SetInt16(buf, 10, bands);

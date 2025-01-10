@@ -2,13 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include "initiator/initiator_util.h"
+#include "shared/sg_adapter.h"
 
 using namespace std;
 
@@ -17,38 +18,47 @@ class S2pExecExecutor
 
 public:
 
-    enum class protobuf_format
-    {
-        binary = 0b001,
-        json = 0b010,
-        text = 0b100
-    };
-
-    S2pExecExecutor(Bus &bus, int id) : initiator_executor(make_unique<InitiatorExecutor>(bus, id))
+    explicit S2pExecExecutor(logger &logger) : s2pexec_logger(logger)
     {
     }
-    ~S2pExecExecutor() = default;
 
-    int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int);
+    string Init(const string&);
+    string Init(int, const string&, bool);
+    void CleanUp();
 
-    tuple<sense_key, asc, int> GetSenseData() const
+    bool IsSg() const
     {
-        return initiator_util::GetSenseData(*initiator_executor);
+        return is_sg;
     }
 
-    void SetTarget(int id, int lun, bool sasi)
-    {
-        initiator_executor->SetTarget(id, lun, sasi);
-    }
+    void ResetBus();
 
-    int GetByteCount() const
+    int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
+
+    tuple<SenseKey, Asc, int> GetSenseData() const;
+
+    int GetByteCount() const;
+
+    void SetTarget(int, int, bool);
+
+    void SetLimit(int limit)
     {
-        return initiator_executor->GetByteCount();
+        if (initiator_executor) {
+            initiator_executor->SetLimit(limit);
+        }
     }
 
 private:
 
+    unique_ptr<Bus> bus;
+
     unique_ptr<InitiatorExecutor> initiator_executor;
+
+    unique_ptr<SgAdapter> sg_adapter;
+
+    logger &s2pexec_logger;
+
+    bool is_sg = false;
 
     // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;

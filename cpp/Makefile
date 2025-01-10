@@ -26,6 +26,7 @@ CXXFLAGS += -std=c++20 -iquote . -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDL
 ifeq ("$(shell uname -s)", "Linux")
 # -Wno-psabi might not work on non-Linux platforms
 	CXXFLAGS += -Wno-psabi
+	IS_LINUX = 1
 endif
 
 ifeq ("$(shell uname -s)", "FreeBSD")
@@ -71,15 +72,17 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
+##       SCSG Linux Generic SCSI (sg driver)
 ##       SCHS Host Services
 ##       SAHD SASI Hard Drive
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
 	ENABLE_SCMO = 1
 	ENABLE_SCCD = 1
 	ENABLE_SCTP = 1
 	ENABLE_SCDP = 1
 	ENABLE_SCLP = 1
+	ENABLE_SCSG = 1
 	ENABLE_SCHS = 1
 	ENABLE_SAHD = 1
 endif
@@ -102,11 +105,18 @@ endif
 ifdef DISABLE_SCLP
 	ENABLE_SCLP =
 endif
+ifdef DISABLE_SCSG
+	ENABLE_SCSG =
+endif
 ifdef DISABLE_SCHS
 	ENABLE_SCHS =
 endif
 ifdef DISABLE_SAHD
 	ENABLE_SAHD =
+endif
+
+ifndef IS_LINUX
+	ENABLE_SCSG =
 endif
 
 ifdef ENABLE_SCHD
@@ -130,6 +140,9 @@ endif
 ifdef ENABLE_SCLP
 	CXXFLAGS += -DBUILD_SCLP
 endif
+ifdef ENABLE_SCSG
+	CXXFLAGS += -DBUILD_SCSG
+endif
 ifdef ENABLE_SCHS
 	CXXFLAGS += -DBUILD_SCHS
 endif
@@ -150,8 +163,10 @@ S2PCTL := s2pctl
 S2PDUMP := s2pdump
 S2PEXEC := s2pexec
 S2PPROTO := s2pproto
+S2PSIMH := s2psimh
+S2PFORMAT := s2pformat
+S2PTOOL := s2ptool
 S2P_TEST := s2p_test
-IN_PROCESS_TEST := in_process_test
 
 INSTALL_BIN := $(TARGET)/bin
 
@@ -161,14 +176,21 @@ BINDIR := bin
 
 BIN_ALL = \
 	$(BINDIR)/$(S2P) \
-	$(BINDIR)/$(S2PCTL)
-
-# s2pdump, s2pexec, s2pproto and in_process_test require initiator support
+	$(BINDIR)/$(S2PCTL) \
+	$(BINDIR)/$(S2PTOOL)
+# s2pdump, s2pexec and s2pproto require initiator support
 ifeq ($(BOARD), FULLSPEC)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
 	BIN_ALL += $(BINDIR)/$(S2PPROTO)
-	BIN_ALL += $(BINDIR)/$(IN_PROCESS_TEST)
+endif
+# s2psimh only makes sense with SCTP support
+ifeq ($(ENABLE_SCTP),1)
+	BIN_ALL += $(BINDIR)/$(S2PSIMH)
+endif
+# s2pformat requires the Linux SG 3 driver
+ifeq ($(IS_LINUX),1)
+	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
 endif
 
 DIR_SHARED := shared
@@ -184,7 +206,10 @@ SRC_PROTOC := ../proto/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED := $(shell ls -1 $(DIR_SHARED)/*.cpp)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
+ifdef IS_LINUX
+SRC_SHARED += $(shell ls -1 $(DIR_SHARED)/sg_*.cpp)
+endif
 SRC_SHARED_PROTOBUF := $(shell ls -1 $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(shell ls -1 $(DIR_SHARED_COMMAND)/*.cpp)
 SRC_SHARED_INITIATOR := $(shell ls -1 $(DIR_SHARED_INITIATOR)/*.cpp)
@@ -235,6 +260,11 @@ SRC_SCLP = \
 	$(DIR_DEVICES)/printer.cpp
 endif
 
+ifeq ($(ENABLE_SCSG),1)
+SRC_SCSG = \
+	$(DIR_DEVICES)/scsi_generic.cpp
+endif
+
 ifeq ($(ENABLE_SCHS),1)
 SRC_SCHS = \
 	$(DIR_DEVICES)/host_services.cpp \
@@ -254,22 +284,35 @@ SRC_S2PCTL_CORE = $(shell ls -1 s2pctl/*.cpp | grep -v s2pctl.cpp)
 SRC_S2PCTL = s2pctl/s2pctl.cpp
 
 SRC_S2PDUMP = s2pdump/s2pdump.cpp
-SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
+SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
+ifdef IS_LINUX
+SRC_S2PDUMP += $(shell ls -1 s2pdump/sg_*.cpp)
+endif
 
 SRC_S2PEXEC := $(shell ls -1 s2pexec/*.cpp)
 
 SRC_S2PPROTO := $(shell ls -1 s2pproto/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v in_process_test.cpp)
-SRC_S2P_TEST += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
+SRC_S2PSIMH := $(shell ls -1 s2psimh/*.cpp)
 
-SRC_IN_PROCESS_TEST = test/in_process_test.cpp
-SRC_IN_PROCESS_TEST += $(shell ls -1 s2pdump/*.cpp | grep -v s2pdump.cpp)
-SRC_IN_PROCESS_TEST += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
-SRC_IN_PROCESS_TEST += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
+SRC_S2PFORMAT := $(shell ls -1 s2pformat/*.cpp)
+
+SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_util_test.cpp | grep -v scsi_generic_test.cpp)
+ifdef IS_LINUX
+SRC_S2P_TEST += test/sg_util_test.cpp
+SRC_S2P_TEST += test/scsi_generic_test.cpp
+endif
+
+SRC_S2PTOOL = s2ptool/s2ptool.cpp
+SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
+SRC_S2PTOOL += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
+SRC_S2PTOOL += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
+ifdef IS_LINUX
+SRC_S2PTOOL += $(shell ls -1 s2pdump/sg_*.cpp)
+endif
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
-	$(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto
+	$(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
 
 vpath %.h $(VPATH)
 vpath %.cpp $(VPATH) test
@@ -289,6 +332,7 @@ OBJ_SCCD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCCD:%.cpp=%.o)))
 OBJ_SCTP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCTP:%.cpp=%.o)))
 OBJ_SCDP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCDP:%.cpp=%.o)))
 OBJ_SCLP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCLP:%.cpp=%.o)))
+OBJ_SCSG := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCSG:%.cpp=%.o)))
 OBJ_SCHS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHS:%.cpp=%.o)))
 OBJ_SAHD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SAHD:%.cpp=%.o)))
 OBJ_SHARED := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED:%.cpp=%.o)))
@@ -298,7 +342,7 @@ OBJ_SHARED_INITIATOR := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_INITIATOR:%
 OBJ_BASE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BASE:%.cpp=%.o)))
 OBJ_BUSES := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BUSES:%.cpp=%.o)))
 OBJ_CONTROLLERS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_CONTROLLERS:%.cpp=%.o)))
-OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
+OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
 OBJ_S2P_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_CORE:%.cpp=%.o)))
 OBJ_S2P := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P:%.cpp=%.o)))
 OBJ_S2PCTL_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL_CORE:%.cpp=%.o)))
@@ -306,17 +350,24 @@ OBJ_S2PCTL := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL:%.cpp=%.o)))
 OBJ_S2PDUMP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PDUMP:%.cpp=%.o)))
 OBJ_S2PEXEC := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PEXEC:%.cpp=%.o)))
 OBJ_S2PPROTO := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PPROTO:%.cpp=%.o)))
+OBJ_S2PSIMH := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PSIMH:%.cpp=%.o)))
+OBJ_S2PFORMAT := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PFORMAT:%.cpp=%.o)))
+OBJ_S2PTOOL := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PTOOL:%.cpp=%.o)))
 OBJ_GENERATED := $(addprefix $(OBJDIR)/,$(notdir $(SRC_GENERATED:%.cpp=%.o)))
 OBJ_S2P_TEST := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_TEST:%.cpp=%.o)))
-OBJ_IN_PROCESS_TEST := $(addprefix $(OBJDIR)/,$(notdir $(SRC_IN_PROCESS_TEST:%.cpp=%.o)))
 
 
 BINARIES = $(INSTALL_BIN)/$(S2PCTL) \
+	$(INSTALL_BIN)/$(S2PTOOL) \
 	$(INSTALL_BIN)/$(S2P)
 ifeq ($(BOARD), FULLSPEC)
 	BINARIES += $(INSTALL_BIN)/$(S2PDUMP)
 	BINARIES += $(INSTALL_BIN)/$(S2PEXEC)
 	BINARIES += $(INSTALL_BIN)/$(S2PPROTO)
+	BINARIES += $(INSTALL_BIN)/$(S2PFORMAT)
+endif
+ifeq ($(ENABLE_SCTP),1)
+	BINARIES += $(INSTALL_BIN)/$(S2PSIMH)
 endif
 
 GENERATED_DIR := generated
@@ -324,8 +375,8 @@ GENERATED_DIR := generated
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
 ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
-	$(OBJ_S2PEXEC) $(OBJ_S2PPROTO) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) \
-	$(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST) $(OBJ_IN_PROCESS_TEST))
+	$(OBJ_S2PEXEC) $(OBJ_S2PPROTO) $(OBJ_S2PSIMH) $(OBJ_S2PFORMAT) $(OBJ_S2PTOOL) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) \
+	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST))
 -include $(ALL_DEPS)
 
 $(OBJ_GENERATED): $(SRC_GENERATED)
@@ -356,7 +407,6 @@ $(SRC_GENERATED): $(SRC_PROTOC) | $(GENERATED_DIR)
 ## Build targets:
 ##   all             Buidl all executable files (default target)
 ##   test            Build and run unit tests
-##   in_process_test Build the in-process test
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
@@ -369,48 +419,56 @@ cpp: $(BIN_ALL)
 test: $(BINDIR)/$(S2P_TEST)
 	$(BINDIR)/$(S2P_TEST)
 
-in_process_test: $(BINDIR)/$(IN_PROCESS_TEST)
-
 coverage: CXXFLAGS += --coverage
 coverage: test
 
-$(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_IN_PROCESS_TEST): $(OBJ_GENERATED)
+$(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_GENERATED)
 
-$(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf
+$(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) \
+	$(LIB_DEVICE) $(LIB_SHARED) $(ABSEIL_LIBS) -lpthread -lprotobuf
 
 $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(ABSEIL_LIBS) -lprotobuf
 
 $(BINDIR)/$(S2PDUMP): $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED)
 
 $(BINDIR)/$(S2PEXEC): $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PEXEC) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED)
 
 $(BINDIR)/$(S2PPROTO): $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(OBJ_GENERATED) $(ABSEIL_LIBS) -lprotobuf
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) \
+	$(OBJ_GENERATED) $(ABSEIL_LIBS) -lprotobuf
 
-$(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) \
+$(BINDIR)/$(S2PSIMH): $(OBJ_S2PSIMH) $(LIB_SHARED) | $(BINDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PSIMH) $(LIB_SHARED)
+
+$(BINDIR)/$(S2PFORMAT): $(OBJ_S2PFORMAT) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) | $(BINDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PFORMAT) $(LIB_SHARED) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED)
+
+$(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
+	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(ABSEIL_LIBS) -lpthread -lprotobuf
+
+$(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(OBJ_S2PCTL_TEST) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
-		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf -lgmock -lgtest
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(ABSEIL_LIBS) -lpthread -lprotobuf -lgmock -lgtest
 
-$(BINDIR)/$(IN_PROCESS_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) \
-	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_IN_PROCESS_TEST) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_IN_PROCESS_TEST) $(LIB_SHARED_COMMAND) \
-		$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(ABSEIL_LIBS) -lpthread -lprotobuf
-
-# Phony rules for building individual utilities
-.PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2P_TEST) $(IN_PROCESS_TEST)
+# Rules for building individual binaries
+.PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)
 
 $(S2P): $(BINDIR)/$(S2P) 
 $(S2PCTL): $(BINDIR)/$(S2PCTL) 
 $(S2PDUMP): $(BINDIR)/$(S2PDUMP) 
 $(S2PEXEC): $(BINDIR)/$(S2PEXEC) 
 $(S2PPROTO): $(BINDIR)/$(S2PPROTO) 
+$(S2PSIMH): $(BINDIR)/$(S2PSIMH) 
+$(S2FORMAT): $(BINDIR)/$(S2PFORMAT) 
+$(S2PTOOL): $(BINDIR)/$(S2PTOOL)
 $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
-$(IN_PROCESS_TEST): $(BINDIR)/$(IN_PROCESS_TEST)
 
 ##   clean           Remove all of the object files, intermediate 
 ##                   compiler files and executable files 

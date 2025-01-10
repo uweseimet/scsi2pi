@@ -9,8 +9,10 @@
 #pragma once
 
 #include "shared/s2p_util.h"
+#include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
 
+using namespace spdlog;
 using namespace s2p_interface;
 
 // The map used for storing/passing device parameters
@@ -90,24 +92,7 @@ public:
         return lun;
     }
 
-    const string& GetVendor() const
-    {
-        return vendor;
-    }
-    void SetVendor(const string&);
-    const string& GetProduct() const
-    {
-        return product;
-    }
-    void SetProduct(const string&, bool = true);
-    const string& GetRevision() const
-    {
-        return revision;
-    }
-    void SetRevision(const string&);
-    string GetPaddedName() const;
-
-    virtual bool SupportsFile() const
+    virtual bool SupportsImageFile() const
     {
         return false;
     }
@@ -123,6 +108,7 @@ public:
     {
         return params;
     }
+    void SetParams(const param_map&);
     virtual param_map GetDefaultParams() const
     {
         return {};
@@ -132,9 +118,13 @@ public:
     void Stop();
     virtual bool Eject(bool);
 
+    logger& GetLogger() const;
+
 protected:
 
-    Device(PbDeviceType, int);
+    Device(PbDeviceType type, int lun) : type(type), lun(lun)
+    {
+    }
 
     void SetReady(bool b)
     {
@@ -171,7 +161,12 @@ protected:
     }
 
     string GetParam(const string&) const;
-    void SetParams(const param_map&);
+
+    void CreateLogger();
+    void LogTrace(const string&) const;
+    void LogDebug(const string&) const;
+    void LogWarn(const string&) const;
+    void LogError(const string&) const;
 
 private:
 
@@ -199,11 +194,9 @@ private:
 
     bool supports_params = false;
 
-    // Default device identifier for INQUIRY
-    string vendor = "SCSI2Pi";
-    string product;
-    string revision;
-
     // The parameters the device was created with
     param_map params;
+
+    // Use the default logger until the device-specific logger has been created
+    shared_ptr<logger> device_logger = default_logger();
 };

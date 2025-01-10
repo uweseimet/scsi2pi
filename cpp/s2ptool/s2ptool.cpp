@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <thread>
 #include <getopt.h>
 #include "s2p/s2p_core.h"
 #include "s2pctl/s2pctl_core.h"
@@ -18,19 +17,19 @@ using namespace s2p_util;
 
 void usage()
 {
-    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Test Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Tool)\n"
         << "Version " << GetVersionString() << "\n"
-        << "Copyright (C) 2023-2024 Uwe Seimet\n";
+        << "Copyright (C) 2023-2025 Uwe Seimet\n";
 
-    cout << "Usage: in_process_test [options]\n"
-        << "  --client/-c       In-process client to run against s2p (s2pctl|s2pdump|\n"
-        << "                    s2pexec|s2pproto), default is s2pexec.\n"
-        << "  --client-args/-a  Arguments to run client with,\n"
-        << "                    optional for s2pctl and s2pexec.\n"
-        << "  --s2p-args/-s     Arguments to run s2p with.\n"
-        << "  --log-signals/-l  On log level trace also log bus signals.\n"
-        << "  --version/-v      Display the program version.\n"
-        << "  --help/-h         Display this help.\n";
+    cout << "Usage: s2ptool [options]\n"
+        << "  --client/-c CLIENT  The client tool to run against s2p (s2pctl|s2pdump|\n"
+        << "                      s2pexec|s2pproto), default is s2pexec.\n"
+        << "  --client-args/-a    Arguments to run the client tool with,\n"
+        << "                      optional for s2pctl and s2pexec.\n"
+        << "  --s2p-args/-s       Arguments to run s2p with.\n"
+        << "  --log-signals/-l    On log level trace also log bus signals.\n"
+        << "  --version/-v        Display the program version.\n"
+        << "  --help/-h           Display this help.\n";
 }
 
 void add_arg(vector<char*> &args, const string &arg)
@@ -93,33 +92,33 @@ int main(int argc, char *argv[])
     }
 
     if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
-        cerr << "Invalid in-process test client: '" << client
-            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto" << endl;
+        cerr << "Invalid in-process test tool client: '" << client
+            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto\n";
         exit(EXIT_FAILURE);
     }
 
     // s2pctl and s2pexec do not require arguments because they support an interactive mode
     if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
-        cerr << "Test client '" << client << "' requires arguments" << endl;
+        cerr << "Test client '" << client << "' requires arguments\n";
         exit(EXIT_FAILURE);
     }
 
     vector<char*> client_args;
     add_arg(client_args, client);
     for (const auto &arg : Split(c_args, ' ')) {
-        add_arg(client_args, arg);
+        add_arg(client_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
     vector<char*> target_args;
     add_arg(target_args, "s2p");
     for (const auto &arg : Split(t_args, ' ')) {
-        add_arg(target_args, arg);
+        add_arg(target_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
 #ifndef __APPLE__
     auto s2p_thread = jthread([&target_args, log_signals]() {
 #else
-        auto s2p_thread = thread([&target_args]() {
+        auto s2p_thread = thread([&target_args, log_signals]() {
 #endif
         auto s2p = make_unique<S2p>();
         s2p->Run(target_args, true, log_signals);

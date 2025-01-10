@@ -1,6 +1,6 @@
 .TH s2pdump 1
 .SH NAME
-s2pdump \- SCSI/SASI drive dump/restore tool for SCSI2Pi
+s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 .SH SYNOPSIS
 .B s2pdump
 [\fB\--scsi-id/-i\fR \fIID[:LUN]\fR]
@@ -18,15 +18,20 @@ s2pdump \- SCSI/SASI drive dump/restore tool for SCSI2Pi
 [\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
 [\fB\--all-luns/-a\fR]
 [\fB\--restore/-r\fR]
-
+[\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
+[\fB\--help/-H\fR]
+[\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pdump
-has two modes of operation: dump and restore. These can be used with physical storage media like hard drives and magneto optical drives. Dump mode can be used with read-only media such as CD/DVD drives.
+has two modes of operation: dump and restore. These can be used with storage devices like hard drives, magneto optical drives or tape drives. Dump mode can also be used with read-only media such as CD/DVD drives.
+When using devices managed by the Linux SG driver, s2pdump can be used on any Linux system, not just on a Pi.
 
 When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
+When used with a tape drive, the data are dumped in a SIMH-compatible format.
 
 In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable. 
-
+ Restoring a tape drive expects a SIMH-compatible file.
+ 
 .SH NOTES
 
 .B s2pdump
@@ -46,16 +51,16 @@ ID and optional LUN (0-1) of the SASI target drive.
 SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device. Not relevant for SASI.
 .TP
 .BR --image-file/-f\fI " "\fIIMAGE_FILE
-Path to the dump/restore file.
+Path of the source/destination image file.
 .TP
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 The transfer buffer size in bytes. The default size is 1 MiB, the minimum size is 64 KiB.
 .TP
 .BR --inquiry/-I\fI " "\fIID[:LUN]
-Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with s2p properties files.
+Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with property files, e.g. /etc/s2p.conf.
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL
-Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
+Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'warning'.
 .TP
 .BR --scsi-scan/-s\fI
 Scan the bus for SCSI devices and display their properties.
@@ -64,10 +69,10 @@ Scan the bus for SCSI devices and display their properties.
 Scan the bus for SASI devices and display their properties.
 .TP
 .BR --start-sector/-S\fI "  " \fISTART
-Start sector for the dump/restore operation, the default is 0.
+Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.
 .TP
 .BR --sector-count/-C\fI "  " \fICOUNT
-Sector count for the dump/restore operation, the default is the drive capacity.
+Only for hard drives, not for tape drives: sector count for the dump/restore operation, the default is the drive capacity.
 .TP
 .BR --sasi-capacity/-c\fI " "\fISASI_CAPACITY
 The capacity of the SASI hard drive in sectors. This parameter only has a meaning for SASI drives.
@@ -81,17 +86,26 @@ If the target device supports the REPORT LUNS SCSI command s2pdump uses this com
 .TP
 .BR --restore/-r\fI
 Run in restore mode. The default is dump mode.
+.TP
+.BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
+Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
+.TP
+.BR --help/-H\fI
+Display a help text.
+.TP
+.BR --version/-v\fI
+Display the s2pdump version.
 
 .SH EXAMPLES
 Dump Mode: [SCSI/SASI Drive] ---> [SCSI2Pi host]
 Launch s2pdump to dump all data from the drive with SCSI ID 3 with a dump buffer size of 128 KiB. Store it on the local filesystem as a drive image named out_image.hds.
    s2pdump -i 3 -f out_image.hds -b 131072
 
-Restore Mode: [SCSI2Pi host] ---> [SCSI/SASI Drive]
+Restore Mode: [SCSI2Pi host] ---> [SCSI/SASI hard drive or SCSI tape drive]
 Launch s2pdump to restore/upload a drive image from the local file system to SCSI ID 0 with a restore buffer size of 1 MiB:
    s2pdump -r -i 0 -f in_image.hds -b 1048576
 
 .SH SEE ALSO
-s2p(1), s2pctl(1), s2pexec(1), s2pproto(1)
+s2p(1), s2pctl(1), s2pexec(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

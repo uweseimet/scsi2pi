@@ -8,14 +8,12 @@
 
 #include "command_image_support.h"
 #include <fstream>
-#include <spdlog/spdlog.h>
 #include "command_context.h"
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
 #include "protobuf/protobuf_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -57,7 +55,7 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -84,7 +82,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
     default_folder = folder.string();
 
-    info("Default image folder set to '" + default_folder + "'");
+    logger.info("Default image folder set to '{}'", default_folder);
 
     return "";
 }
@@ -102,7 +100,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
 
     const string &full_filename = GetFullName(filename);
     if (!IsValidDstFilename(full_filename)) {
-        return context.ReturnErrorStatus("Can't create image file: '" + full_filename + "': File already exists");
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': File already exists");
     }
 
     const string &size = GetParam(context.GetCommand(), "size");
@@ -115,13 +113,13 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         len = stoull(size);
     }
     catch (const invalid_argument&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size " + size);
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
     catch (const out_of_range&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size " + size);
+        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
     if (len < 512 || (len & 0x1ff)) {
-        return context.ReturnErrorStatus("Invalid image file size " + to_string(len) + " (not a multiple of 512)");
+        return context.ReturnErrorStatus(fmt::format("Invalid image file size: {} (not a multiple of 512)", len));
     }
 
     if (!CreateImageFolder(context, full_filename)) {
@@ -148,7 +146,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    context.GetLogger().info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -195,7 +193,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         last_slash = folder.rfind('/');
     }
 
-    info("Deleted image file '{}'", full_filename.string());
+    context.GetLogger().info("Deleted image file '{}'", full_filename.string());
 
     return context.ReturnSuccessStatus();
 }
@@ -215,7 +213,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Renamed/Moved image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -240,7 +238,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        info("Copied image file symlink '{0}' to '{1}'", from, to);
+        context.GetLogger().info("Copied image file symlink '{0}' to '{1}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -258,7 +256,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    info("Copied image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Copied image file '{0}' to '{1}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -296,7 +294,7 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
             full_filename + "': " + e.what());
     }
 
-    info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    context.GetLogger().info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }
@@ -308,13 +306,13 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
 #ifdef BUILD_STORAGE_DEVICE
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
     if (id != -1) {
-        return context.ReturnErrorStatus("Can't " + op + " image file '" + file +
-            "', it is currently being used by device " + to_string(id) + ":" + to_string(lun));
+        return context.ReturnErrorStatus(
+            fmt::format("Can't {0} image file '{1}', it is currently being used by device {2}:{3}", op, file, id, lun));
     }
 
     return true;
 #else
-	return false;
+    return false;
 #endif
 }
 #pragma GCC diagnostic pop

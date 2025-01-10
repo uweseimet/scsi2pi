@@ -2,29 +2,29 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "command_response.h"
-#include <spdlog/spdlog.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
+#include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/controller.h"
 #include "devices/disk.h"
+#include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
 
 void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
 {
-    properties.set_luns(Controller::GetLunMax(device->GetType() == SAHD));
+    properties.set_luns(GetLunMax(device->GetType()));
     properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
     properties.set_read_only(device->IsReadOnly());
     properties.set_protectable(device->IsProtectable());
@@ -32,7 +32,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     properties.set_removable(device->IsRemovable());
     // All emulated removable media devices are lockable
     properties.set_lockable(device->IsRemovable());
-    properties.set_supports_file(device->SupportsFile());
+    properties.set_supports_file(device->SupportsImageFile());
     properties.set_supports_params(device->SupportsParams());
 
     if (device->SupportsParams()) {
@@ -44,7 +44,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
             properties.add_block_sizes(block_size);
@@ -59,7 +59,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
     while (PbDeviceType_IsValid(ordinal)) {
         // Only report device types supported by the factory
         if (const auto device = DeviceFactory::Instance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
-            auto type_properties = device_types_info.add_properties();
+            auto *type_properties = device_types_info.add_properties();
             type_properties->set_type(device->GetType());
             GetDeviceProperties(device, *type_properties->mutable_properties());
         }
@@ -72,15 +72,16 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
-    pb_device.set_vendor(device->GetVendor());
-    pb_device.set_product(device->GetProduct());
-    pb_device.set_revision(device->GetRevision());
+    const auto &product_data = device->GetProductData();
+    pb_device.set_vendor(product_data.vendor);
+    pb_device.set_product(product_data.product);
+    pb_device.set_revision(product_data.revision);
     pb_device.set_type(device->GetType());
     pb_device.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
 
     GetDeviceProperties(device, *pb_device.mutable_properties());
 
-    auto status = pb_device.mutable_status();
+    auto *status = pb_device.mutable_status();
     status->set_protected_(device->IsProtected());
     status->set_stopped(device->IsStopped());
     status->set_removed(device->IsRemoved());
@@ -92,12 +93,15 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         }
     }
 
+    pb_device.mutable_file()->set_name(device->GetIdentifier());
+
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
+    if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
-        GetImageFile(*pb_device.mutable_file(), storage_device->IsReady() ? storage_device->GetFilename() : "");
+        GetImageFile(*pb_device.mutable_file(),
+            storage_device->IsReady() ? storage_device->GetFilename() : "NO MEDIUM");
     }
 #endif
 #ifdef BUILD_DISK
@@ -128,7 +132,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 }
 
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
 
@@ -141,7 +145,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
     const string file_pattern_lower = ToLower(file_pattern);
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
-        it != recursive_directory_iterator(); it++) {
+        it != recursive_directory_iterator(); ++it) {
         if (it.depth() > CommandImageSupport::Instance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
@@ -156,7 +160,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
             continue;
         }
 
-        if (!ValidateImageFile(it->path())) {
+        if (!ValidateImageFile(it->path(), logger)) {
             continue;
         }
 
@@ -170,20 +174,20 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 }
 
 void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     image_files_info.set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
     image_files_info.set_depth(CommandImageSupport::Instance().GetDepth());
 
-    GetAvailableImages(image_files_info, folder_pattern, file_pattern);
+    GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
-    const string &file_pattern) const
+    const string &file_pattern, logger &logger) const
 {
     server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
 
-    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern);
+    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
 
 void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids) const
@@ -235,7 +239,8 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
 }
 
 void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids) const
+    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
+    logger &logger) const
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -244,7 +249,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (!operations.empty()) {
-        trace("Requested operation(s): " + Join(operations, ","));
+        logger.trace("Requested operation(s): " + Join(operations, ","));
     }
 
     if (HasOperation(operations, PbOperation::VERSION_INFO)) {
@@ -260,7 +265,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 
     if (HasOperation(operations, PbOperation::DEFAULT_IMAGE_FILES_INFO)) {
-        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"));
+        GetAvailableImages(server_info, GetParam(command, "folder_pattern"), GetParam(command, "file_pattern"), logger);
     }
 
     if (HasOperation(operations, PbOperation::NETWORK_INTERFACES_INFO)) {
@@ -329,7 +334,7 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
 {
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
-            auto s = statistics_info.add_statistics();
+            auto *s = statistics_info.add_statistics();
             s->set_id(statistics.id());
             s->set_unit(statistics.unit());
             s->set_category(statistics.category());
@@ -348,7 +353,7 @@ void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
 
 void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
 {
-    auto operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
+    auto *operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
     AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
     AddOperationParameter(*operation, "interface", "Comma-separated prioritized network interface list");
     AddOperationParameter(*operation, "inet", "IP address and netmask of the network bridge");
@@ -469,7 +474,7 @@ void CommandResponse::AddOperationParameter(PbOperationMetaData &meta_data, cons
     const string &description, const string &default_value, bool is_mandatory,
     const vector<string> &permitted_values) const
 {
-    auto parameter = meta_data.add_parameters();
+    auto *parameter = meta_data.add_parameters();
     parameter->set_name(name);
     parameter->set_description(description);
     parameter->set_default_value(default_value);
@@ -496,7 +501,7 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
             id_sets.clear();
 
             result.set_status(false);
-            result.set_msg("No device for " + to_string(device.id()) + ":" + to_string(device.unit()));
+            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
 
             break;
         }
@@ -505,7 +510,7 @@ set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<Primary
     return id_sets;
 }
 
-bool CommandResponse::ValidateImageFile(const path &path)
+bool CommandResponse::ValidateImageFile(const path &path, logger &logger)
 {
     if (path.filename().string().starts_with(".")) {
         return false;
@@ -517,7 +522,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     if (is_symlink(p)) {
         p = read_symlink(p);
         if (!exists(p)) {
-            warn("Image file symlink '{}' is broken", path.string());
+            logger.warn("Image file symlink '{}' is broken", path.string());
             return false;
         }
     }
@@ -527,7 +532,7 @@ bool CommandResponse::ValidateImageFile(const path &path)
     }
 
     if (!is_block_file(p) && file_size(p) < 256) {
-        warn("Image file '{}' is invalid", p.string());
+        logger.warn("Image file '{}' is invalid", p.string());
         return false;
     }
 

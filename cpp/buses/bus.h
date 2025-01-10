@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "shared/scsi.h"
-#include "base/s2p_defs.h"
+#include "shared/s2p_defs.h"
 #include "board.h"
 
 //---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ public:
 
     virtual ~Bus() = default;
 
-    virtual bool Init(bool = true);
+    virtual bool Init(bool);
     virtual void Reset() = 0;
     virtual void CleanUp() = 0;
 
@@ -116,7 +116,7 @@ public:
 
     virtual bool WaitSignal(int, bool);
 
-    int CommandHandShake(vector<uint8_t>&);
+    int CommandHandShake(span<uint8_t>);
     int MsgInHandShake();
     int ReceiveHandShake(uint8_t*, int);
     int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
@@ -191,9 +191,9 @@ public:
         SetSignal(PIN_CD, state);
     }
 
-    bus_phase GetPhase();
+    BusPhase GetPhase();
 
-    static string GetPhaseName(bus_phase phase)
+    static string GetPhaseName(BusPhase phase)
     {
         return phase_names[static_cast<int>(phase)];
     }
@@ -214,7 +214,7 @@ protected:
 
 private:
 
-    static const array<bus_phase, 8> phases;
+    static const array<BusPhase, 8> phases;
 
     static const array<string, 11> phase_names;
 
@@ -223,5 +223,5 @@ private:
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    static constexpr int SCSI_DELAY_SEND_DATA_DAYNAPORT_NS = 100'000;
+    static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
 };

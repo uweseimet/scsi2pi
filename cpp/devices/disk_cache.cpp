@@ -16,31 +16,31 @@
 #include <cassert>
 #include "disk_track.h"
 
-DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), sec_blocks(
+DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(
     static_cast<int>(sectors))
 {
-    while ((1 << sec_size) != size) {
-        ++sec_size;
+    while ((1 << shift_count) != size) {
+        ++shift_count;
     }
-    assert(sec_size >= 8 && sec_size <= 12);
+    assert(shift_count >= 8 && shift_count <= 12);
 }
 
 bool DiskCache::Init()
 {
-    return sec_blocks && !sec_path.empty();
+    return blocks && !sec_path.empty();
 }
 
 bool DiskCache::Flush()
 {
     // Save valid tracks
-    return ranges::none_of(cache, [this](const cache_t &c)
+    return ranges::none_of(cache, [this](const CacheData &c)
         {   return c.disktrk && !c.disktrk->Save(sec_path, cache_miss_write_count);});
 }
 
 shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
 {
     // Update first
-    UpdateSerialNumber();
+    UpdateSerial();
 
     // Calculate track (fixed to 256 sectors/track)
     int track = block >> 8;
@@ -49,7 +49,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     return Assign(track);
 }
 
-int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
+int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
 {
     assert(count == 1);
     if (count != 1) {
@@ -65,7 +65,7 @@ int DiskCache::ReadSectors(span<uint8_t> buf, uint64_t sector, uint32_t count)
     return disktrk->ReadSector(buf, sector & 0xff);
 }
 
-int DiskCache::WriteSectors(span<const uint8_t> buf, uint64_t sector, uint32_t count)
+int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
 {
     assert(count == 1);
     if (count != 1) {
@@ -87,7 +87,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     assert(track >= 0);
 
     // First, check if it is already assigned
-    for (cache_t &c : cache) {
+    for (CacheData &c : cache) {
         if (c.disktrk && c.disktrk->GetTrack() == track) {
             // Track match
             c.serial = serial;
@@ -96,7 +96,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     }
 
     // Next, check for empty
-    for (size_t i = 0; i < cache.size(); i++) {
+    for (size_t i = 0; i < cache.size(); ++i) {
         if (!cache[i].disktrk) {
             // Try loading
             if (Load(static_cast<int>(i), track, nullptr)) {
@@ -117,7 +117,7 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
     size_t c = 0;
 
     // Compare candidate with serial and update to smaller one
-    for (size_t i = 0; i < cache.size(); i++) {
+    for (size_t i = 0; i < cache.size(); ++i) {
         assert(cache[i].disktrk);
 
         // Compare and update the existing serial
@@ -153,7 +153,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
     assert(!cache[index].disktrk);
 
     // Get the number of sectors on this track
-    int sectors = sec_blocks - (track << 8);
+    int sectors = blocks - (track << 8);
     assert(sectors > 0);
     if (sectors > 0x100) {
         sectors = 0x100;
@@ -163,7 +163,7 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, sec_size, sectors);
+    disktrk->Init(track, shift_count, sectors);
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {
@@ -178,16 +178,16 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
     return true;
 }
 
-void DiskCache::UpdateSerialNumber()
+void DiskCache::UpdateSerial()
 {
     // Update and do nothing except 0
-    serial++;
+    ++serial;
     if (serial != 0) {
         return;
     }
 
     // Clear serial of all caches
-    for (cache_t &c : cache) {
+    for (CacheData &c : cache) {
         c.serial = 0;
     }
 }

@@ -10,34 +10,38 @@
 #pragma once
 
 #include <fstream>
-#include <unordered_map>
-#include "base/interfaces/scsi_printer_commands.h"
 #include "base/primary_device.h"
 
 using namespace std;
 
-class Printer : public PrimaryDevice, public ScsiPrinterCommands
+class Printer : public PrimaryDevice
 {
 
 public:
 
     explicit Printer(int);
-    ~Printer() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
+
+    string GetIdentifier() const override
+    {
+        return "SCSI Printer";
+    }
 
     param_map GetDefaultParams() const override;
 
     vector<uint8_t> InquiryInternal() const override;
 
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
+
+    void CheckForFileError();
 
     vector<PbStatistics> GetStatistics() const override;
 
 private:
 
-    void Print() override;
+    void Print();
     void SynchronizeBuffer();
 
     string file_template;
@@ -52,6 +56,8 @@ private:
     uint64_t print_warning_count = 0;
 
     static constexpr int NOT_RESERVED = -2;
+
+    static constexpr const char *CMD = "cmd";
 
     static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
 

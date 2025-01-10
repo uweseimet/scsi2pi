@@ -7,12 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "sasi_hd.h"
-#include "shared/s2p_exceptions.h"
 
-SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, scsi_level::none, lun, false, false,
-    sector_sizes)
+SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false, sector_sizes)
 {
-    SetProduct("SASI HD");
+    Disk::SetProductData( { "", "SASI HD", "" }, true);
+    SetScsiLevel(ScsiLevel::NONE);
     SetProtectable(true);
 }
 
@@ -22,7 +21,7 @@ void SasiHd::Open()
 
     // Sector size (default 256 bytes) and number of sectors
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256)) {
-        throw io_exception("Invalid sector size");
+        throw IoException("Invalid sector size");
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
@@ -33,7 +32,7 @@ void SasiHd::Inquiry()
 {
     // Byte 0 = 0: Direct access device
 
-    const array<uint8_t, 2> buf = { };
+    const array<const uint8_t, 2> buf = { };
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());
@@ -54,7 +53,7 @@ void SasiHd::RequestSense()
     }
 
     // Non-extended format
-    const array<uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
+    const array<const uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(buf.data(), allocation_length);
 
     DataInPhase(buf.size());

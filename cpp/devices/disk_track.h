@@ -13,26 +13,14 @@
 
 #pragma once
 
-#include <cstdint>
-#include <span>
 #include <string>
 #include <vector>
+#include "shared/s2p_defs.h"
 
 using namespace std;
 
 class DiskTrack
 {
-    struct
-    {
-        int track; // Track Number
-        int size; // Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
-        int sectors; // Number of sectors(<0x100)
-        uint32_t length; // Data buffer length
-        uint8_t *buffer; // Data buffer
-        bool init; // Is it initilized?
-        bool changed; // Changed flag
-        vector<bool> changemap; // Changed map
-    } dt = { };
 
 public:
 
@@ -49,11 +37,30 @@ private:
     bool Load(const string&, uint64_t&);
     bool Save(const string&, uint64_t&);
 
-    int ReadSector(span<uint8_t>, int) const;
-    int WriteSector(span<const uint8_t> buf, int);
+    int ReadSector(data_in_t, int) const;
+    int WriteSector(data_out_t, int);
 
     int GetTrack() const
     {
-        return dt.track;
+        return track_number;
     }
+
+    int track_number = 0;
+
+    // 8 = 256, 9 = 512, 10 = 1024, 11 = 2048, 12 = 4096
+    int shift_count = 0;
+
+    // < 256
+    int sector_count = 0;
+
+    uint8_t *buffer = nullptr;
+
+    uint32_t buffer_size = 0;
+
+    bool is_initialized = false;
+
+    bool is_modified = false;
+
+    // Do not use bool here in order to avoid special rules for vector<bool>
+    vector<uint8_t> modified_flags;
 };

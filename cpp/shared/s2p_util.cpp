@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,12 +12,14 @@
 #include <iostream>
 #include <pwd.h>
 #include <unistd.h>
-#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
+#include "shared/memory_util.h"
 
 using namespace filesystem;
 using namespace spdlog;
+using namespace memory_util;
 
 string s2p_util::GetVersionString()
 {
@@ -124,6 +126,10 @@ string s2p_util::GetLine(const string &prompt)
         getline(cin, line);
         line = Trim(line);
 
+        if (const auto comment = line.find_first_of('#'); comment != string::npos) {
+            line.resize(comment);
+        }
+
         if (cin.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
@@ -143,27 +149,24 @@ string s2p_util::GetLine(const string &prompt)
     }
 }
 
-bool s2p_util::GetAsUnsignedInt(const string &value, int &result)
+int s2p_util::ParseAsUnsignedInt(const string &value)
 {
     if (value.find_first_not_of(" 0123456789 ") != string::npos) {
-        return false;
+        return -1;
     }
 
     try {
-        auto v = stoul(value);
-        result = (int)v;
+        return static_cast<int>(stoul(value));
     }
     catch (const invalid_argument&) {
-        return false;
+        return -1;
     }
     catch (const out_of_range&) {
-        return false;
+        return -1;
     }
-
-    return true;
 }
 
-string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
+string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
 {
     id = -1;
     lun = -1;
@@ -173,19 +176,19 @@ string s2p_util::ProcessId(const string &id_spec, int &id, int &lun)
     }
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
-        if (components.size() == 1) {
-            if (!GetAsUnsignedInt(components[0], id) || id > 7) {
-                id = -1;
-                return "Invalid device ID: '" + components[0] + "' (0-7)";
-            }
-
-            return "";
+        id = ParseAsUnsignedInt(components[0]);
+        if (id == -1 || id > 7) {
+            id = -1;
+            return "Invalid device ID: '" + components[0] + "' (0-7)";
         }
 
-        if (!GetAsUnsignedInt(components[0], id) || id > 7 || !GetAsUnsignedInt(components[1], lun) || lun >= 32) {
-            id = -1;
-            lun = -1;
-            return "Invalid LUN (0-31)";
+        if (components.size() >= 2) {
+            lun = ParseAsUnsignedInt(components[1]);
+            if (lun == -1 || lun >= 32) {
+                id = -1;
+                lun = -1;
+                return "Invalid LUN (0-31)";
+            }
         }
     }
 
@@ -196,20 +199,32 @@ string s2p_util::Banner(string_view app)
 {
     stringstream s;
 
-    s << "SCSI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
+    s << "SCSI/SASI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2016-2020 GIMONS\n"
         << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
-        << "Copyright (C) 2021-2024 Uwe Seimet\n";
+        << "Copyright (C) 2021-2025 Uwe Seimet\n";
 
     return s.str();
+}
+
+tuple<string, string, string> s2p_util::GetInquiryProductData(span<const uint8_t> data)
+{
+    array<char, 9> vendor = { };
+    memcpy(vendor.data(), &data[8], 8);
+    array<char, 17> product = { };
+    memcpy(product.data(), &data[16], 16);
+    array<char, 5> revision = { };
+    memcpy(revision.data(), &data[32], 4);
+
+    return {vendor.data(),product.data(), revision.data()};
 }
 
 string s2p_util::GetScsiLevel(int scsi_level)
 {
     switch (scsi_level) {
     case 0:
-        return "???";
+        return "-";
         break;
 
     case 1:
@@ -230,7 +245,35 @@ string s2p_util::GetScsiLevel(int scsi_level)
     }
 }
 
-string s2p_util::FormatSenseData(sense_key sense_key, asc asc, int ascq)
+string s2p_util::GetStatusString(int status_code)
+{
+    if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
+        return fmt::format("Device reported {0} (status code ${1:02x})", it->second, status_code);
+    }
+    else if (status_code != 0xff) {
+        return fmt::format("Device reported an unknown status (status code ${:02x})", status_code);
+    }
+    else {
+        return "Device did not respond";
+    }
+}
+
+string s2p_util::FormatSenseData(span<const byte> sense_data)
+{
+    const auto flags = static_cast<int>(sense_data[2]);
+
+    const string &s = FormatSenseData(static_cast<SenseKey>(flags & 0x0f), static_cast<Asc>(sense_data[12]),
+        static_cast<int>(sense_data[13]));
+
+    if (!(static_cast<int>(sense_data[0]) & 0x80)) {
+        return s;
+    }
+
+    return s + fmt::format(", EOM: {0}, ILI: {1}, INFORMATION: {2}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
+        static_cast<int>(GetInt32(sense_data, 3)));
+}
+
+string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, int ascq)
 {
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
@@ -260,58 +303,22 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
         size_t i = 0;
         while (i < line_lower.length()) {
             if (line_lower[i] == ':' && i + 2 < line_lower.length()) {
-                i++;
+                ++i;
             }
 
-            bytes.push_back(static_cast<byte>((HexToDec(line_lower[i]) << 4) + HexToDec(line_lower[i + 1])));
+            const int b1 = HexToDec(line_lower[i]);
+            const int b2 = HexToDec(line_lower[i + 1]);
+            if (b1 == -1 || b2 == -1) {
+                throw out_of_range("");
+            }
+
+            bytes.push_back(static_cast<byte>((b1 << 4) + b2));
 
             i += 2;
         }
     }
 
     return bytes;
-}
-
-string s2p_util::FormatBytes(span<const uint8_t> bytes, int count, bool hex_only)
-{
-    string str;
-
-    int offset = 0;
-    while (offset < count) {
-        string output_offset;
-        string output_hex;
-        string output_ascii;
-
-        if (!hex_only && !(offset % 16)) {
-            output_offset += fmt::format("{:08x}  ", offset);
-        }
-
-        int index = -1;
-        while (++index < 16 && offset < count) {
-            if (index) {
-                output_hex += ":";
-            }
-            output_hex += fmt::format("{:02x}", bytes[offset]);
-
-            output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
-
-            ++offset;
-        }
-
-        str += output_offset;
-        str += fmt::format("{:47}", output_hex);
-        str += hex_only ? "" : fmt::format("  '{}'", output_ascii);
-
-        if (hex_only) {
-            str.erase(str.find_last_not_of(' ') + 1);
-        }
-
-        if (offset < count) {
-            str += "\n";
-        }
-    }
-
-    return str;
 }
 
 int s2p_util::HexToDec(char c)
@@ -324,15 +331,25 @@ int s2p_util::HexToDec(char c)
         return c - 'a' + 10;
     }
 
-    throw out_of_range("");
+    return -1;
 }
 
-string s2p_util::Trim(const string &s)
+string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
 {
-    const size_t first = s.find_first_not_of(' ');
+    const size_t first = s.find_first_not_of(" \r");
     if (first == string::npos) {
-        return s;
+        return "";
     }
-    const size_t last = s.find_last_not_of(' ');
+    const size_t last = s.find_last_not_of(" \r");
     return s.substr(first, (last - first + 1));
+}
+
+shared_ptr<logger> s2p_util::CreateLogger(const string &name)
+{
+    auto l = spdlog::get(name);
+    if (!l) {
+        l = stdout_color_st(name);
+    }
+
+    return l;
 }

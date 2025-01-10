@@ -168,16 +168,16 @@ TEST(InProcessBusTest, WaitForSelection)
 TEST(DelegatingProcessBusTest, Reset)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, "", false);
 
-    EXPECT_CALL(bus, Reset());
+    EXPECT_CALL(bus, Reset);
     delegating_bus.Reset();
 }
 
 TEST(DelegatingProcessBusTest, Acquire)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, "", false);
 
     bus.SetDAT(0x45);
     EXPECT_EQ(0x45U, delegating_bus.Acquire());
@@ -186,7 +186,7 @@ TEST(DelegatingProcessBusTest, Acquire)
 TEST(DelegatingProcessBusTest, SetGetSignal)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, true);
+    DelegatingInProcessBus delegating_bus(bus, "", true);
 
     delegating_bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK));
@@ -202,7 +202,7 @@ TEST(DelegatingProcessBusTest, SetGetSignal)
 TEST(DelegatingProcessBusTest, WaitSignal)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, "", false);
 
     bus.SetACK(true);
     EXPECT_TRUE(delegating_bus.WaitSignal(PIN_ACK, true));
@@ -218,7 +218,7 @@ TEST(DelegatingProcessBusTest, WaitSignal)
 TEST(DelegatingProcessBusTest, DAT)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, "", false);
 
     delegating_bus.SetDAT(0x56);
     EXPECT_EQ(0x56, delegating_bus.GetDAT());
@@ -228,8 +228,8 @@ TEST(DelegatingProcessBusTest, DAT)
 TEST(DelegatingProcessBusTest, CleanUp)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, false);
+    DelegatingInProcessBus delegating_bus(bus, "", false);
 
-    EXPECT_CALL(bus, CleanUp());
+    EXPECT_CALL(bus, CleanUp);
     delegating_bus.CleanUp();
 }

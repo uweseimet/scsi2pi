@@ -46,11 +46,13 @@ private:
     string protobuf_input_filename;
     string protobuf_output_filename;
 
-    S2pProtoExecutor::protobuf_format input_format = S2pProtoExecutor::protobuf_format::json;
-    S2pProtoExecutor::protobuf_format output_format = S2pProtoExecutor::protobuf_format::json;
+    ProtobufFormat input_format = ProtobufFormat::JSON;
+    ProtobufFormat output_format = ProtobufFormat::JSON;
 
     string log_level = "info";
 
     // Required for the termination handler
-    static inline S2pProto *instance;
+    inline static S2pProto *instance;
+
+    inline static const string APP_NAME = "s2pproto";
 };

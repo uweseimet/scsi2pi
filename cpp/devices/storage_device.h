@@ -11,8 +11,6 @@
 #pragma once
 
 #include <filesystem>
-#include "shared/s2p_util.h"
-#include "base/primary_device.h"
 #include "page_handler.h"
 
 using namespace std;
@@ -24,12 +22,17 @@ public:
 
     ~StorageDevice() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
 
-    void Dispatch(scsi_command) override;
+    void Dispatch(ScsiCommand) override;
 
-    bool SupportsFile() const override
+    string GetIdentifier() const override
+    {
+        return filename.empty() ? "NO MEDIUM" : filename;
+    }
+
+    bool SupportsImageFile() const override
     {
         return true;
     }
@@ -46,7 +49,7 @@ public:
     {
         filename = filesystem::path(file);
     }
-    string GetLastFilename() const
+    const string& GetLastFilename() const
     {
         return last_filename;
     }
@@ -71,6 +74,15 @@ public:
     bool SetConfiguredBlockSize(uint32_t);
     virtual bool ValidateBlockSize(uint32_t) const;
 
+    virtual uint32_t GetBlockSizeForDescriptor(bool changeable) const
+    {
+        return changeable ? 0x0000ffff : block_size;
+    }
+    virtual uint64_t GetBlockCountForDescriptor() const
+    {
+        return blocks;
+    }
+
     bool ReserveFile() const;
     void UnreserveFile();
 
@@ -81,7 +93,7 @@ public:
         medium_changed = b;
     }
 
-    static auto GetReservedFiles()
+    static const auto& GetReservedFiles()
     {
         return reserved_files;
     }
@@ -95,9 +107,8 @@ public:
 
 protected:
 
-    StorageDevice(PbDeviceType type, scsi_level level, int lun, bool s, bool p, const set<uint32_t> &sizes)
-    : PrimaryDevice(type, level, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(
-        p)
+    StorageDevice(PbDeviceType type, int lun, bool s, bool p, const set<uint32_t> &sizes)
+    : PrimaryDevice(type, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
     {
     }
 
@@ -115,15 +126,14 @@ protected:
         blocks = b;
     }
 
-    void ModeSelect(cdb_t, span<const uint8_t>, int) override;
-    pair<int, int> EvaluateBlockDescriptors(scsi_command, span<const uint8_t>, int) const;
-    virtual int VerifyBlockSizeChange(int, bool) const;
-    unordered_set<uint32_t> GetBlockSizes() const;
+    void ModeSelect(cdb_t, data_out_t, int, int) override;
+    pair<int, int> EvaluateBlockDescriptors(ScsiCommand, data_out_t, int);
+    virtual uint32_t VerifyBlockSizeChange(uint32_t, bool);
     bool SetBlockSize(uint32_t);
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetFileSize() const;
+    off_t GetFileSize(bool ignore = false) const;
 
     void UpdateReadCount(uint64_t count)
     {
@@ -145,8 +155,8 @@ private:
 
     bool IsReadOnlyFile() const;
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
+    int ModeSense6(cdb_t, data_in_t) const override;
+    int ModeSense10(cdb_t, data_in_t) const override;
 
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
     void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;

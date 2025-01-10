@@ -14,21 +14,21 @@
 
 using namespace s2p_interface;
 
-void SetUpArgs(vector<char*> &args, const char *arg1, const char *arg2, const char *arg3 = nullptr, const char *arg4 =
-    nullptr)
+void SetUpArgs(vector<char*> &args, const string &arg1, const string &arg2, const string &arg3 = "",
+    const string &arg4 = "")
 {
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
     args.clear();
     args.emplace_back(strdup("s2p"));
-    args.emplace_back(strdup(arg1));
-    args.emplace_back(strdup(arg2));
-    if (arg3) {
-        args.emplace_back(strdup(arg3));
+    args.emplace_back(strdup(arg1.c_str()));
+    args.emplace_back(strdup(arg2.c_str()));
+    if (!arg3.empty()) {
+        args.emplace_back(strdup(arg3.c_str()));
     }
-    if (arg4) {
-        args.emplace_back(strdup(arg4));
+    if (!arg4.empty()) {
+        args.emplace_back(strdup(arg4.c_str()));
     }
 }
 
@@ -57,10 +57,10 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("locale", properties[PropertyHandler::LOCALE]);
 
-    SetUpArgs(args, "-C", "property_file");
+    SetUpArgs(args, "-C", "property_files");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
-    EXPECT_EQ("property_file", properties[PropertyHandler::PROPERTY_FILES]);
+    EXPECT_EQ("property_files", properties[PropertyHandler::PROPERTY_FILES]);
 
     SetUpArgs(args, "-F", "image_folder");
     properties = parser.ParseArguments(args, ignore_conf);
@@ -72,6 +72,16 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("log_level", properties[PropertyHandler::LOG_LEVEL]);
 
+    SetUpArgs(args, "-l", "log_pattern");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("log_pattern", properties[PropertyHandler::LOG_PATTERN]);
+
+    SetUpArgs(args, "--log-limit", "log_limit");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("log_limit", properties[PropertyHandler::LOG_LIMIT]);
+
     SetUpArgs(args, "-P", "token_file");
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
@@ -81,6 +91,11 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     properties = parser.ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("scan_depth", properties[PropertyHandler::SCAN_DEPTH]);
+
+    SetUpArgs(args, "-s", "script_file");
+    properties = parser.ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("script_file", properties[PropertyHandler::SCRIPT_FILE]);
 
     SetUpArgs(args, "-i0", "-b", "4096", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
@@ -93,12 +108,6 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(2UL, properties.size());
     EXPECT_EQ("schd", properties["device.1:2.type"]);
     EXPECT_EQ("test.hds", properties["device.1:2.params"]);
-
-    SetUpArgs(args, "-h2", "test.hds");
-    properties = parser.ParseArguments(args, ignore_conf);
-    EXPECT_EQ(2UL, properties.size());
-    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.2.type"]);
-    EXPECT_EQ("test.hds", properties["device.2.params"]);
 
     SetUpArgs(args, "-ID1:0", "-n", "a:b:c", "test.hds");
     properties = parser.ParseArguments(args, ignore_conf);
@@ -130,12 +139,12 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ("", properties["key"]);
 
     SetUpArgs(args, "-c", "xyz");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-c", "=xyz");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
 }
@@ -174,13 +183,6 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ(PbDeviceType_Name(SCHD), properties["device.5.type"]);
     EXPECT_EQ("512", properties["device.5.block_size"]);
     EXPECT_EQ("FD2.hds", properties["device.5.params"]);
-
-    SetUpArgs(args, "-h", "5", "-B", "HD2.hds");
-    properties = parser.ParseArguments(args, ignore_conf);
-    EXPECT_EQ(3UL, properties.size());
-    EXPECT_EQ(PbDeviceType_Name(SAHD), properties["device.5.type"]);
-    EXPECT_EQ("512", properties["device.5.block_size"]);
-    EXPECT_EQ("HD2.hds", properties["device.5.params"]);
 
     SetUpArgs(args, "-B", "CD13.iso");
     properties = parser.ParseArguments(args, ignore_conf);
@@ -259,15 +261,15 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ("TP73.tap", properties["device.7:3.params"]);
 
     SetUpArgs(args, "-B", "H1.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-B", "XX2.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
     SetUpArgs(args, "-B", "HD.hds");
-    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), parser_exception);
+    EXPECT_THROW(parser.ParseArguments(args, ignore_conf), ParserException);
 
-    for (const auto &arg : args) {
+    for (char *arg : args) {
         free(arg); // NOSONAR free() must be used here because of allocation with strdup()
     }
 }

@@ -31,34 +31,33 @@
 
 #include "printer.h"
 #include <filesystem>
-#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;
 
-Printer::Printer(int lun) : PrimaryDevice(SCLP, scsi_level::scsi_2, lun)
+Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
-    SetProduct("SCSI PRINTER");
+    PrimaryDevice::SetProductData( { "", "SCSI PRINTER", "" }, true);
+    SetScsiLevel(ScsiLevel::SCSI_2);
     SupportsParams(true);
     SetReady(true);
 }
 
-bool Printer::SetUp()
+string Printer::SetUp()
 {
-    if (GetParam("cmd").find("%f") == string::npos) {
-        LogTrace("Missing filename specifier '%f'");
-        return false;
+    if (GetParam(CMD).find("%f") == string::npos) {
+        return "Missing filename specifier '%f'";
     }
 
-    AddCommand(scsi_command::print, [this]
+    AddCommand(ScsiCommand::PRINT, [this]
         {
             Print();
         });
-    AddCommand(scsi_command::synchronize_buffer, [this]
+    AddCommand(ScsiCommand::SYNCHRONIZE_BUFFER, [this]
         {
             SynchronizeBuffer();
         });
-    AddCommand(scsi_command::stop_print, [this]
+    AddCommand(ScsiCommand::STOP_PRINT, [this]
         {
             StatusPhase();
         });
@@ -67,7 +66,7 @@ bool Printer::SetUp()
     file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here
     file_template += PRINTER_FILE_PATTERN;
 
-    return true;
+    return "";
 }
 
 void Printer::CleanUp()
@@ -87,13 +86,13 @@ void Printer::CleanUp()
 param_map Printer::GetDefaultParams() const
 {
     return {
-        {   "cmd", "lp -oraw %f"}
+        {   CMD, "lp -oraw %f"}
     };
 }
 
 vector<uint8_t> Printer::InquiryInternal() const
 {
-    return HandleInquiry(device_type::printer, false);
+    return HandleInquiry(DeviceType::PRINTER, false);
 }
 
 void Printer::Print()
@@ -103,13 +102,12 @@ void Printer::Print()
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError(
-            fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
-                GetController()->GetBuffer().size(), length));
+        LogError(fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
+            GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
 
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -124,20 +122,20 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw scsi_exception(sense_key::aborted_command, asc::printer_nothing_to_print);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 
     out.close();
 
-    string cmd = GetParam("cmd");
+    string cmd = GetParam(CMD);
     const size_t file_position = cmd.find("%f");
+    // The format has been verified before
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);
 
     error_code error;
-    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s)", filename, file_size(path(filename), error)));
-
-    LogDebug(fmt::format("Executing print command '{}'", cmd));
+    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s) using print command '{2}'", filename,
+        file_size(path(filename), error), cmd));
 
     if (system(cmd.c_str())) {
         LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
@@ -146,7 +144,7 @@ void Printer::SynchronizeBuffer()
 
         CleanUp();
 
-        throw scsi_exception(sense_key::aborted_command, asc::printer_printing_failed);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 
     CleanUp();
@@ -154,11 +152,11 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
+int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
-    assert(command == scsi_command::print);
-    if (command != scsi_command::print) {
-        throw scsi_exception(sense_key::aborted_command);
+    if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
+        assert(false);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt24(2);
@@ -174,18 +172,14 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
         if (fd == -1) {
             LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
             ++print_error_count;
-            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
         close(fd);
 
         filename = f.data();
 
         out.open(filename, ios::binary);
-        if (out.fail()) {
-            out.clear();
-            ++print_error_count;
-            throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
-        }
+        CheckForFileError();
 
         LogTrace("Created printer output file '" + filename + "'");
     }
@@ -193,13 +187,18 @@ int Printer::WriteData(span<const uint8_t> buf, scsi_command command)
     LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
 
     out.write((const char*)buf.data(), length);
+    CheckForFileError();
+
+    return l;
+}
+
+void Printer::CheckForFileError()
+{
     if (out.fail()) {
         out.clear();
         ++print_error_count;
-        throw scsi_exception(sense_key::aborted_command, asc::printer_write_failed);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
-
-    return length;
 }
 
 vector<PbStatistics> Printer::GetStatistics() const

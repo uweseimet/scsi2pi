@@ -12,29 +12,28 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <spdlog/spdlog.h>
 #include "command/command_context.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 
-string S2pThread::Init(const callback &cb, int port)
+string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)
 {
     assert(service_socket == -1);
 
     if (port <= 0 || port > 65535) {
-        return "Invalid port number: " + to_string(port);
+        return fmt::format("Invalid port number: {}", port);
     }
 
     service_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (service_socket == -1) {
-        return "Unable to create s2p service socket: " + string(strerror(errno));
+        return fmt::format("Can't create s2p service socket: {}", strerror(errno));
     }
 
     if (const int enable = 1; setsockopt(service_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         Stop();
-        return "Can't reuse socket: " + string(strerror(errno));
+        return fmt::format("Can't reuse socket: {}", strerror(errno));
     }
 
     sockaddr_in server = { };
@@ -44,7 +43,7 @@ string S2pThread::Init(const callback &cb, int port)
     if (bind(service_socket, reinterpret_cast<const sockaddr*>(&server), // NOSONAR bit_cast is not supported by the bullseye compiler
         static_cast<socklen_t>(sizeof(sockaddr_in))) < 0) {
         Stop();
-        return "Port " + to_string(port) + " is in use, s2p may already be running";
+        return fmt::format("Port {} is in use, s2p may already be running", port);
     }
 
     if (listen(service_socket, 2) == -1) {
@@ -52,7 +51,9 @@ string S2pThread::Init(const callback &cb, int port)
         return "Can't listen to service socket: " + string(strerror(errno));
     }
 
-    execute = cb;
+    s2p_logger = logger;
+
+    exec = cb;
 
     return "";
 }
@@ -64,7 +65,7 @@ void S2pThread::Start()
 #ifndef __APPLE__
     service_thread = jthread([this]() {Execute();});
 #else
-	service_thread = thread([this] () { Execute(); } );
+    service_thread = thread([this] () { Execute(); } );
 #endif
 }
 
@@ -97,13 +98,13 @@ void S2pThread::Execute() const
 
 void S2pThread::ExecuteCommand(int fd) const
 {
-    CommandContext context(fd);
+    CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
-            execute(context);
+            exec(context);
         }
     }
-    catch (const io_exception &e) {
+    catch (const IoException &e) {
         warn(e.what());
 
         // Try to return an error message (this may fail if the exception was caused when returning the actual result)
@@ -112,7 +113,7 @@ void S2pThread::ExecuteCommand(int fd) const
         try {
             context.WriteResult(result);
         }
-        catch (const io_exception&) { // NOSONAR Ignored because not relevant when writing the result
+        catch (const IoException&) { // NOSONAR Ignored because not relevant when writing the result
             // Ignore
         }
     }

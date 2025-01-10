@@ -7,26 +7,25 @@
 //---------------------------------------------------------------------------
 
 #include "scsi_hd.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
 ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, scsi1 ? scsi_level::scsi_1_ccs : scsi_level::scsi_2, lun, true, true, sector_sizes)
+: Disk(removable ? SCRM : SCHD, lun, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
     if (apple) {
-        SetVendor("QUANTUM");
-        SetProduct("FIREBALL");
+        Disk::SetProductData( { "QUANTUM", "FIREBALL", "" }, true);
     } else if (removable) {
-        SetProduct("SCSI HD (REM.)");
+        Disk::SetProductData( { "", "SCSI HD (REM.)", "" }, true);
     }
+    SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetProtectable(true);
     SetRemovable(removable);
 }
 
-string ScsiHd::GetProductData() const
+string ScsiHd::GetProductDataString() const
 {
     uint64_t capacity = GetBlockCount() * GetBlockSize();
     string unit;
@@ -46,7 +45,7 @@ string ScsiHd::GetProductData() const
         unit = "KiB";
     }
 
-    return DEFAULT_PRODUCT + " " + to_string(capacity) + " " + unit;
+    return fmt::format("{0} {1} {2}", DEFAULT_PRODUCT, capacity, unit);
 }
 
 void ScsiHd::FinalizeSetup()
@@ -55,7 +54,7 @@ void ScsiHd::FinalizeSetup()
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {
-        SetProduct(GetProductData(), false);
+        SetProductData( { "", GetProductDataString(), "" }, false);
     }
 }
 
@@ -65,7 +64,7 @@ void ScsiHd::Open()
 
     // Sector size (default 512 bytes) and number of sectors
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw io_exception("Invalid sector size");
+        throw IoException("Invalid sector size");
     }
     SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
 
@@ -74,7 +73,7 @@ void ScsiHd::Open()
 
 vector<uint8_t> ScsiHd::InquiryInternal() const
 {
-    return HandleInquiry(device_type::direct_access, IsRemovable());
+    return HandleInquiry(DeviceType::DIRECT_ACCESS, IsRemovable());
 }
 
 bool ScsiHd::ValidateBlockSize(uint32_t size) const
@@ -122,10 +121,10 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
     }
 
     if (IsReady()) {
-        // Set the number of tracks in one zone to 8
-        buf[3] = (byte)0x08;
+        // 8 tracks in one zone
+        buf[3] = byte { 0x08 };
 
-        // Set sector/track to 25
+        // 25 sectors/tracks
         SetInt16(buf, 10, 25);
 
         // The current sector size
@@ -141,10 +140,10 @@ void ScsiHd::AddFormatPage(map<int, vector<byte>> &pages, bool changeable) const
         SetInt16(buf, 18, 20);
     }
 
-    buf[20] = IsRemovable() ? (byte)0x20 : (byte)0x00;
+    buf[20] = IsRemovable() ? byte { 0x20 } : byte { 0x00 };
 
     // Hard-sectored
-    buf[20] |= (byte)0x40;
+    buf[20] |= byte { 0x40 };
 
     pages[3] = buf;
 }
@@ -168,8 +167,8 @@ void ScsiHd::AddDrivePage(map<int, vector<byte>> &pages, bool changeable) const
         cylinders /= 25;
         SetInt32(buf, 0x01, static_cast<uint32_t>(cylinders));
 
-        // Fix the head at 8
-        buf[0x05] = (byte)0x8;
+        // 8 heads
+        buf[0x05] = byte { 0x8 };
 
         // Medium rotation rate 7200
         SetInt16(buf, 0x14, 7200);

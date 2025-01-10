@@ -18,3 +18,14 @@ TEST(InitiatorUtilTest, ResetBus)
     EXPECT_CALL(bus, Reset);
     ResetBus(bus);
 }
+
+TEST(InitiatorUtilTest, SetLogLevel)
+{
+    const auto logger = stdout_color_st("initiator_util_test");
+    EXPECT_TRUE(SetLogLevel(*logger, "error"));
+    EXPECT_EQ(level::level_enum::err, logger->level());
+    EXPECT_FALSE(SetLogLevel(*logger, "abc"));
+    EXPECT_EQ(level::level_enum::err, logger->level());
+    EXPECT_TRUE(SetLogLevel(*logger, ""));
+    EXPECT_EQ(level::level_enum::err, logger->level());
+}

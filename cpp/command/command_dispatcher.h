@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,16 +15,17 @@ class CommandDispatcher
 
 public:
 
-    explicit CommandDispatcher(CommandExecutor &e) : executor(e)
+    explicit CommandDispatcher(CommandExecutor &e, ControllerFactory &f, logger &l) : executor(e), controller_factory(
+        f), s2p_logger(l)
     {
     }
     ~CommandDispatcher() = default;
 
     bool DispatchCommand(const CommandContext&, PbResult&);
 
-    bool ShutDown(shutdown_mode) const;
+    bool ShutDown(ShutdownMode) const;
 
-    static bool SetLogLevel(const string&);
+    bool SetLogLevel(const string&);
 
 private:
 
@@ -33,4 +34,8 @@ private:
     bool ShutDown(const CommandContext&) const;
 
     CommandExecutor &executor;
+
+    ControllerFactory &controller_factory;
+
+    logger &s2p_logger;
 };

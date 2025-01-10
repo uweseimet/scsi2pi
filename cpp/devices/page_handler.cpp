@@ -18,29 +18,29 @@ using namespace s2p_util;
 PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
     p)
 {
-    device.AddCommand(scsi_command::mode_sense6, [this]
+    device.AddCommand(ScsiCommand::MODE_SENSE_6, [this]
         {
             device.DataInPhase(
                 device.ModeSense6(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
-    device.AddCommand(scsi_command::mode_sense10, [this]
+    device.AddCommand(ScsiCommand::MODE_SENSE_10, [this]
         {
             device.DataInPhase(
                 device.ModeSense10(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
         });
 
     // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
-    device.AddCommand(scsi_command::mode_select6, [this]
+    device.AddCommand(ScsiCommand::MODE_SELECT_6, [this]
         {
             ModeSelect(device.GetCdbByte(4));
         });
-    device.AddCommand(scsi_command::mode_select10, [this]
+    device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
         {
             ModeSelect(device.GetCdbInt24(7));
         });
 }
 
-int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int length, int max_size) const
+int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, int max_size) const
 {
     const int max_length = length - offset;
     if (max_length < 0) {
@@ -49,12 +49,13 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
 
     const bool changeable = (cdb[2] & 0xc0) == 0x40;
 
-    const int page_code = cdb[2] & 0x3f;
+    const auto page_code = cdb[2] & 0x3f;
 
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;
     device.SetUpModePages(pages, page_code, changeable);
-    for (const auto& [p, data] : GetCustomModePages(device.GetVendor(), device.GetProduct())) {
+    const auto& [vendor, product, _] = device.GetProductData();
+    for (const auto& [p, data] : GetCustomModePages(vendor, product)) {
         if (data.empty()) {
             pages.erase(p);
         }
@@ -64,7 +65,7 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
     }
 
     if (pages.empty()) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     // Holds all mode page data
@@ -78,9 +79,9 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
             // Page data
             result.insert(result.end(), page_data.cbegin(), page_data.cend());
             // Page code, PS bit may already have been set
-            result[off] |= (byte)index;
+            result[off] |= static_cast<byte>(index);
             // Page payload size, does not count itself and the page code field
-            result[off + 1] = (byte)(page_data.size() - 2);
+            result[off + 1] = static_cast<byte>(page_data.size() - 2);
         }
     }
 
@@ -91,10 +92,10 @@ int PageHandler::AddModePages(cdb_t cdb, vector<uint8_t> &buf, int offset, int l
     }
 
     if (static_cast<int>(result.size()) > max_size) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const auto size = static_cast<int>(min(static_cast<size_t>(max_length), result.size()));
+    const int size = min(max_length, static_cast<int>(result.size()));
     memcpy(&buf.data()[offset], result.data(), size);
 
     // Do not return more than the requested number of bytes
@@ -112,8 +113,8 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
             continue;
         }
 
-        int page_code;
-        if (!GetAsUnsignedInt(key_components[1], page_code) || page_code > 0x3e) {
+        const int page_code = ParseAsUnsignedInt(key_components[1]);
+        if (page_code == -1 || page_code > 0x3e) {
             warn("Ignored invalid page code in mode page property '{}'", key);
             continue;
         }
@@ -137,7 +138,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         }
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
-            if (page_code != (static_cast<int>(page_data[0]) & 0x3f)) {
+            if (page_code && (page_code != to_integer<int>(page_data[0] & byte { 0x3f }))) {
                 warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
                 continue;
             }
@@ -159,7 +160,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 void PageHandler::ModeSelect(int length) const
 {
     if (!supports_mode_select || (!supports_save_parameters && (device.GetCdbByte(1) & 0x01))) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     device.DataOutPhase(length);

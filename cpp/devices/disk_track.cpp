@@ -5,9 +5,6 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 //
-// XM6i
-//   Copyright (C) 2010-2015 isaki@NetBSD.org
-//   Copyright (C) 2010 Y.Sugahara
 // Copyright (C) 2022-2024 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -19,8 +16,7 @@
 
 DiskTrack::~DiskTrack()
 {
-    // Release memory, but do not save automatically
-    free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
+    free(buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
 }
 
 void DiskTrack::Init(int track, int size, int sectors)
@@ -28,196 +24,153 @@ void DiskTrack::Init(int track, int size, int sectors)
     assert(track >= 0);
     assert(sectors > 0 && sectors <= 256);
 
-    dt.track = track;
-    dt.size = size;
-    dt.sectors = sectors;
-    dt.init = false;
-    dt.changed = false;
+    track_number = track;
+    shift_count = size;
+    sector_count = sectors;
+    is_initialized = false;
+    is_modified = false;
 }
 
 bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 {
     // Not needed if already loaded
-    if (dt.init) {
-        assert(dt.buffer);
+    if (is_initialized) {
+        assert(buffer);
         return true;
     }
 
     ++cache_miss_read_count;
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = ((off_t)dt.track << 8);
-    offset <<= dt.size;
+    off_t offset = (off_t)track_number << 8;
+    offset <<= shift_count;
 
-    // Calculate length (data size of this track)
-    const int length = dt.sectors << dt.size;
+    const int size = sector_count << shift_count;
 
-    // Allocate buffer memory
-    if (!dt.buffer && !posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
-        dt.length = length;
+    if (!buffer && !posix_memalign((void**)&buffer, 512, ((size + 511) / 512) * 512)) {
+        buffer_size = size;
     }
 
     // Reallocate if the buffer length is different
-    if (dt.buffer && dt.length != static_cast<uint32_t>(length)) {
-        free(dt.buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
-        dt.buffer = nullptr;
-        if (!posix_memalign((void**)&dt.buffer, 512, ((length + 511) / 512) * 512)) {
-            dt.length = length;
+    if (buffer && buffer_size != static_cast<uint32_t>(size)) {
+        free(buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
+        buffer = nullptr;
+        if (!posix_memalign((void**)&buffer, 512, ((size + 511) / 512) * 512)) {
+            buffer_size = size;
         }
     }
 
-    if (!dt.buffer) {
+    if (!buffer) {
         return false;
     }
 
-    // Resize and clear changemap
-    dt.changemap.resize(dt.sectors);
-    fill(dt.changemap.begin(), dt.changemap.end(), false); // NOSONAR ranges::fill() cannot be applied to vector<bool>
+    modified_flags.resize(sector_count);
+    ranges::fill(modified_flags, 0);
+    is_initialized = true;
+    is_modified = false;
 
     ifstream in(path, ios::binary);
     if (in.fail()) {
-        in.clear();
         return false;
     }
 
     in.seekg(offset);
-    if (in.fail()) {
-        in.clear();
-        return false;
-    }
-    in.read((char*)dt.buffer, length);
-    if (in.fail()) {
-        in.clear();
-        return false;
-    }
-
-    // Set a flag and end normally
-    dt.init = true;
-    dt.changed = false;
-    return true;
+    in.read((char*)buffer, size);
+    return in.good();
 }
 
 bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
 {
-    if (!dt.init) {
+    if (!is_initialized || !is_modified) {
         return true;
     }
 
-    if (!dt.changed) {
-        return true;
-    }
-    // Need to write
-    assert(dt.buffer);
+    assert(buffer);
 
     ++cache_miss_write_count;
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = ((off_t)dt.track << 8);
-    offset <<= dt.size;
+    off_t offset = (off_t)track_number << 8;
+    offset <<= shift_count;
 
-    // Calculate length per sector
-    const int length = 1 << dt.size;
+    const int size = 1 << shift_count;
 
+    // ios:in is required in order not to truncate
     ofstream out(path, ios::in | ios::out | ios::binary);
     if (out.fail()) {
-        out.clear();
         return false;
     }
 
-    // Partial write loop
-    int total;
-    for (int i = 0; i < dt.sectors;) {
-        // If changed
-        if (dt.changemap[i]) {
-            // Initialize write size
-            total = 0;
+    // Write consecutive sectors
+    for (int i = 0; i < sector_count;) {
+        if (modified_flags[i]) {
+            int total = 0;
 
-            out.seekp(offset + (i << dt.size));
-            if (out.fail()) {
-                out.clear();
-                return false;
-            }
-
-            // Consectutive sector length
+            // Determine consecutive sector range
             int j;
-            for (j = i; j < dt.sectors; j++) {
-                // end when interrupted
-                if (!dt.changemap[j]) {
+            for (j = i; j < sector_count; ++j) {
+                if (!modified_flags[j]) {
                     break;
                 }
 
-                // Add one sector
-                total += length;
+                total += size;
             }
 
-            out.write((const char*)&dt.buffer[i << dt.size], total);
+            out.seekp(offset + (i << shift_count));
+            out.write((const char*)buffer + (i << shift_count), total);
             if (out.fail()) {
-                out.clear();
                 return false;
             }
 
-            // To unmodified sector
+            // Next unmodified sector
             i = j;
         } else {
-            // Next Sector
-            i++;
+            ++i;
         }
     }
 
-    // Drop the change flag and exit
-    fill(dt.changemap.begin(), dt.changemap.end(), false); // NOSONAR ranges::fill() cannot be applied to vector<bool>
-    dt.changed = false;
+    ranges::fill(modified_flags, 0);
+    is_modified = false;
 
     return true;
 }
 
-int DiskTrack::ReadSector(span<uint8_t> buf, int sec) const
+int DiskTrack::ReadSector(data_in_t buf, int sector) const
 {
-    assert(sec >= 0 && sec < 256);
+    assert(sector >= 0 && sector < 256);
 
-    if (!dt.init) {
+    if (!is_initialized || sector >= sector_count) {
         return 0;
     }
 
-    if (sec >= dt.sectors) {
-        return 0;
-    }
+    assert(buffer);
 
-    const int length = 1 << dt.size;
+    const int size = 1 << shift_count;
 
-    // Copy
-    assert(dt.buffer);
-    memcpy(buf.data(), &dt.buffer[(off_t)sec << dt.size], length);
+    memcpy(buf.data(), buffer + ((off_t)sector << shift_count), size);
 
-    return length;
+    return size;
 }
 
-int DiskTrack::WriteSector(span<const uint8_t> buf, int sec)
+int DiskTrack::WriteSector(data_out_t buf, int sector)
 {
-    assert(sec >= 0 && sec < 256);
+    assert(sector >= 0 && sector < 256);
 
-    if (!dt.init) {
+    if (!is_initialized || sector >= sector_count) {
         return 0;
     }
 
-    if (sec >= dt.sectors) {
-        return 0;
+    assert(buffer);
+
+    const int offset = sector << shift_count;
+    const int size = 1 << shift_count;
+
+    // Check if any data have changed
+    if (memcmp(buf.data(), buffer + offset, size)) {
+        memcpy(buffer + offset, buf.data(), size);
+        modified_flags[sector] = 1;
+        is_modified = true;
     }
 
-    const int offset = sec << dt.size;
-    const int length = 1 << dt.size;
-
-    // Compare
-    assert(dt.buffer);
-    if (!memcmp(buf.data(), &dt.buffer[offset], length)) {
-        // Exit normally since it's attempting to write the same thing
-        return length;
-    }
-
-    // Copy, change
-    memcpy(&dt.buffer[offset], buf.data(), length);
-    dt.changemap[sec] = true;
-    dt.changed = true;
-
-    return length;
+    return size;
 }

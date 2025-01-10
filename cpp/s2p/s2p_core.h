@@ -40,8 +40,9 @@ private:
 
     bool ExecuteCommand(CommandContext&);
 
+    void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&) const;
+
     static bool CheckActive(const property_map&, const string&);
-    static void SetDeviceProperties(PbDeviceDefinition&, const string&, const string&);
 
     static void TerminationHandler(int);
 
@@ -60,5 +61,11 @@ private:
     PropertyHandler &property_handler = PropertyHandler::Instance();
 
     // Required for the termination handler
-    static inline S2p *instance;
+    inline static S2p *instance;
+
+    string log_level;
+
+    shared_ptr<logger> s2p_logger;
+
+    inline static const string APP_NAME = "s2p";
 };

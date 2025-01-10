@@ -7,17 +7,18 @@ s2pexec \- SCSI2Pi SCSI/SASI command executor
 [\fB\--sasi-target/-h\fR \fIID[:LUN]\fR]
 [\fB\--board-id/-B\fR \fIBOARD_ID\fR]
 [\fB\--cdb/-c\fR \fICDB[:CDB:...]\fR]
-[\fB\--data/-c\fR \fIDATA\fR]
+[\fB\--data/-d\fR \fIDATA\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
-[\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--log-level/-L\fR \fILEVEL\fR]
+[\fB\--log-limit/-l\fR \fILIMIT\fR]
 {\fB\--binary-input-file/-f\fR \fIFILE\fR]
 {\fB\--binary-output-file/-F\fR \fIFILE\fR]
-{\fB\--hex-input-file/-t\fR \fIFILE\fR]
 {\fB\--hex-output-file/-T\fR \fIFILE\fR]
-{\fB\--timeout/-o\fR \fITIMEOUT\fR]
-[\fB\--no-request-sense/-n\fR]
+{\fB\--timeout/-t\fR \fITIMEOUT\fR]
+[\fB\--request-sense/-R\fR]
 [\fB\--reset-bus/-r\fR]
 [\fB\--hex-only/\fR]
+[\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
 [\fB\--help/-H\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
@@ -26,6 +27,7 @@ sends SCSI or SASI commands to a device and displays the results.
 
 When launched without arguments s2pexec enters interactive mode, where you can enter commands on the command line. Like with the bash shell, "!!" repeats the last command.
 In interactive mode the target, initiator and log level settings are preserved between command invocations.
+When using devices managed by the Linux SG 3 driver, s2pdump can be used on any Linux system, not just on a Pi.
 
 .SH NOTES
 
@@ -47,13 +49,16 @@ Initiator ID used by s2pexec. If not specified, s2pexec will use the board (init
 Command blocks to send in hexecimal format. Hexadecimal numbers may be separated by a colon. s2pexec also accepts linked commands.
 .TP
 .BR --data/-d\fI " "\fIDATA
-Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase.
+Data to send with the command in hexedecimal format. These data are sent in the DATA OUT phase. If DATA starts with @, the remaining string is the name of a file in hexadecimal format to read the data from.
 .TP
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 Buffer size for received data, the default is 131072 bytes. When sending data the buffer is automatically sized to match the size of data to be sent.
 .TP
-.BR --log-level/-L\fI " " \fILOG_LEVEL
+.BR --log-level/-L\fI " " \fILEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
+.TP
+.BR --log-limit/-l\fI " " \fILIMIT
+Limits the number of data bytes being logged, 0 means no limit. The default is 128.
 .TP
 .BR --binary-input-file/-f\fI " "\fIFILE
 Optional file with binary data to send in the DATA OUT phase.
@@ -67,11 +72,11 @@ Optional file with data in hexadecimal (human-readable) format to send in the DA
 .BR \--hex-output-file/-T\fI " "\fIFILE
 Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
 .TP
-.BR --timeout/-o\fI " "\fITIMEOUT
-The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer.
+.BR --timeout/-t\fI " "\fITIMEOUT
+The command timeout in seconds, default is 3 seconds. Operations like formatting may take much longer. s2pexec remembers the last timeout setting.
 .TP
-.BR --no-request-sense/-n\fI
-Do not automatically send REQUEST SENSE after an error in order to get the sense data.
+.BR --request-sense/-R\fI
+Automatically send REQUEST SENSE after an error in order to get the sense data.
 .TP
 .BR --reset-bus/-r\fI
 Reset the bus.
@@ -79,11 +84,14 @@ Reset the bus.
 .BR --hex-only\fI
 Do not display/save the offsets and the ASCII representantion of the received data.
 .TP
+.BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
+Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
+.TP
 .BR --help/-H\fI
-Show a help text.
+Display a help text.
 .TP
 .BR --version/-v\fI
-Show the s2pexec version.
+Display the s2pexec version.
 
 .SH EXIT STATUS
 0:  No error. -1: There was a general error and the command could not be sent.
@@ -103,6 +111,6 @@ s2pexec -i 5:1 -c 15:11:00:04:0c:00 -d 00:00:00:08:00:00:00:00:00:00:02:00
 Send a MODE SELECT command to the device with SCSI ID 5 and LUN 1, with explicit parameter data.
 
 .SH SEE ALSO
-s2p(1), s2pctl(1), s2pdump(1), s2pproto(1)
+s2p(1), s2pctl(1), s2pdump(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
  
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

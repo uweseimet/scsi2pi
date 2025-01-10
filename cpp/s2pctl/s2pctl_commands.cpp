@@ -32,62 +32,62 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
 {
     switch (command.operation()) {
     case LOG_LEVEL:
-        return CommandLogLevel(log_level);
+        return HandleLogLevel(log_level);
 
     case DEFAULT_FOLDER:
-        return CommandDefaultImageFolder(default_folder);
+        return HandleDefaultImageFolder(default_folder);
 
     case RESERVE_IDS:
-        return CommandReserveIds(reserved_ids);
+        return HandleReserveIds(reserved_ids);
 
     case CREATE_IMAGE:
-        return CommandCreateImage(image_params);
+        return HandleCreateImage(image_params);
 
     case DELETE_IMAGE:
-        return CommandDeleteImage(image_params);
+        return HandleDeleteImage(image_params);
 
     case RENAME_IMAGE:
     case COPY_IMAGE:
-        return CommandRenameCopyImage(image_params);
+        return HandleRenameCopyImage(image_params);
 
     case DEVICES_INFO:
-        return CommandDeviceInfo();
+        return HandleDeviceInfo();
 
     case DEVICE_TYPES_INFO:
-        return CommandDeviceTypesInfo();
+        return HandleDeviceTypesInfo();
 
     case VERSION_INFO:
-        return CommandVersionInfo();
+        return HandleVersionInfo();
 
     case SERVER_INFO:
-        return CommandServerInfo();
+        return HandleServerInfo();
 
     case DEFAULT_IMAGE_FILES_INFO:
-        return CommandDefaultImageFilesInfo();
+        return HandleDefaultImageFilesInfo();
 
     case IMAGE_FILE_INFO:
-        return CommandImageFileInfo(filename);
+        return HandleImageFileInfo(filename);
 
     case NETWORK_INTERFACES_INFO:
-        return CommandNetworkInterfacesInfo();
+        return HandleNetworkInterfacesInfo();
 
     case LOG_LEVEL_INFO:
-        return CommandLogLevelInfo();
+        return HandleLogLevelInfo();
 
     case RESERVED_IDS_INFO:
-        return CommandReservedIdsInfo();
+        return HandleReservedIdsInfo();
 
     case MAPPING_INFO:
-        return CommandMappingInfo();
+        return HandleMappingInfo();
 
     case STATISTICS_INFO:
-        return CommandStatisticsInfo();
+        return HandleStatisticsInfo();
 
     case PROPERTIES_INFO:
-        return CommandPropertiesInfo();
+        return HandlePropertiesInfo();
 
     case OPERATION_INFO:
-        return CommandOperationInfo();
+        return HandleOperationInfo();
 
     case NO_OPERATION:
         return false;
@@ -118,26 +118,26 @@ bool S2pCtlCommands::SendCommand()
 
     sockaddr_in server_addr = { };
     if (!ResolveHostName(hostname, &server_addr)) {
-        throw io_exception("Can't resolve hostname '" + hostname + "'");
+        throw IoException("Can't resolve hostname '" + hostname + "'");
     }
 
     const int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
-        throw io_exception("Can't create socket: " + string(strerror(errno)));
+        throw IoException("Can't create socket: " + string(strerror(errno)));
     }
 
     server_addr.sin_port = htons(uint16_t(port));
     if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         close(fd);
 
-        throw io_exception("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
+        throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
             + ": " + strerror(errno));
     }
 
     if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
         close(fd);
 
-        throw io_exception("Can't write magic");
+        throw IoException("Can't write magic");
     }
 
     SerializeMessage(fd, command);
@@ -146,17 +146,17 @@ bool S2pCtlCommands::SendCommand()
     close(fd);
 
     if (!result.status()) {
-        throw io_exception(result.msg());
+        throw IoException(result.msg());
     }
 
     if (!result.msg().empty()) {
-        cout << result.msg() << endl;
+        cout << result.msg() << '\n';
     }
 
     return true;
 }
 
-bool S2pCtlCommands::CommandDevicesInfo()
+bool S2pCtlCommands::HandleDevicesInfo()
 {
     SendCommand();
 
@@ -165,24 +165,24 @@ bool S2pCtlCommands::CommandDevicesInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandLogLevel(string_view log_level)
+bool S2pCtlCommands::HandleLogLevel(string_view log_level)
 {
     SetParam(command, "level", log_level);
 
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandReserveIds(string_view reserved_ids)
+bool S2pCtlCommands::HandleReserveIds(string_view reserved_ids)
 {
     SetParam(command, "ids", reserved_ids);
 
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandCreateImage(string_view image_params)
+bool S2pCtlCommands::HandleCreateImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "file", "size")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is NAME:SIZE" << endl;
+        cerr << "Error: Invalid file descriptor '" << image_params << "', format is NAME:SIZE\n";
 
         return false;
     }
@@ -192,17 +192,17 @@ bool S2pCtlCommands::CommandCreateImage(string_view image_params)
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandDeleteImage(string_view filename)
+bool S2pCtlCommands::HandleDeleteImage(string_view filename)
 {
     SetParam(command, "file", filename);
 
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandRenameCopyImage(string_view image_params)
+bool S2pCtlCommands::HandleRenameCopyImage(string_view image_params)
 {
     if (!EvaluateParams(image_params, "from", "to")) {
-        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME" << endl;
+        cerr << "Error: Invalid file descriptor '" << image_params << "', format is CURRENT_NAME:NEW_NAME\n";
 
         return false;
     }
@@ -210,14 +210,14 @@ bool S2pCtlCommands::CommandRenameCopyImage(string_view image_params)
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandDefaultImageFolder(string_view folder)
+bool S2pCtlCommands::HandleDefaultImageFolder(string_view folder)
 {
     SetParam(command, "folder", folder);
 
     return SendCommand();
 }
 
-bool S2pCtlCommands::CommandDeviceInfo()
+bool S2pCtlCommands::HandleDeviceInfo()
 {
     SendCommand();
 
@@ -230,7 +230,7 @@ bool S2pCtlCommands::CommandDeviceInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandDeviceTypesInfo()
+bool S2pCtlCommands::HandleDeviceTypesInfo()
 {
     SendCommand();
 
@@ -239,7 +239,7 @@ bool S2pCtlCommands::CommandDeviceTypesInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandVersionInfo()
+bool S2pCtlCommands::HandleVersionInfo()
 {
     SendCommand();
 
@@ -248,7 +248,7 @@ bool S2pCtlCommands::CommandVersionInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandServerInfo()
+bool S2pCtlCommands::HandleServerInfo()
 {
     SendCommand();
 
@@ -311,7 +311,7 @@ bool S2pCtlCommands::CommandServerInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandDefaultImageFilesInfo()
+bool S2pCtlCommands::HandleDefaultImageFilesInfo()
 {
     SendCommand();
 
@@ -320,7 +320,7 @@ bool S2pCtlCommands::CommandDefaultImageFilesInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandImageFileInfo(string_view filename)
+bool S2pCtlCommands::HandleImageFileInfo(string_view filename)
 {
     SetParam(command, "file", filename);
 
@@ -331,7 +331,7 @@ bool S2pCtlCommands::CommandImageFileInfo(string_view filename)
     return true;
 }
 
-bool S2pCtlCommands::CommandNetworkInterfacesInfo()
+bool S2pCtlCommands::HandleNetworkInterfacesInfo()
 {
     SendCommand();
 
@@ -340,7 +340,7 @@ bool S2pCtlCommands::CommandNetworkInterfacesInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandLogLevelInfo()
+bool S2pCtlCommands::HandleLogLevelInfo()
 {
     SendCommand();
 
@@ -349,7 +349,7 @@ bool S2pCtlCommands::CommandLogLevelInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandReservedIdsInfo()
+bool S2pCtlCommands::HandleReservedIdsInfo()
 {
     SendCommand();
 
@@ -358,7 +358,7 @@ bool S2pCtlCommands::CommandReservedIdsInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandMappingInfo()
+bool S2pCtlCommands::HandleMappingInfo()
 {
     SendCommand();
 
@@ -367,7 +367,7 @@ bool S2pCtlCommands::CommandMappingInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandStatisticsInfo()
+bool S2pCtlCommands::HandleStatisticsInfo()
 {
     SendCommand();
 
@@ -376,7 +376,7 @@ bool S2pCtlCommands::CommandStatisticsInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandPropertiesInfo()
+bool S2pCtlCommands::HandlePropertiesInfo()
 {
     SendCommand();
 
@@ -385,7 +385,7 @@ bool S2pCtlCommands::CommandPropertiesInfo()
     return true;
 }
 
-bool S2pCtlCommands::CommandOperationInfo()
+bool S2pCtlCommands::HandleOperationInfo()
 {
     SendCommand();
 
@@ -414,7 +414,7 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
     ofstream out(filename, ios::binary);
     out.write((const char*)data.data(), data.size());
     if (out.fail()) {
-        throw io_exception("Error: Can't create protobuf binary file '" + filename + "'");
+        throw IoException("Error: Can't create protobuf binary file '" + filename + "'");
     }
 }
 
@@ -426,7 +426,7 @@ void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) 
     ofstream out(filename);
     out << json;
     if (out.fail()) {
-        throw io_exception("Can't create protobuf JSON file '" + filename + "'");
+        throw IoException("Can't create protobuf JSON file '" + filename + "'");
     }
 }
 
@@ -438,6 +438,6 @@ void S2pCtlCommands::ExportAsText(const PbCommand &cmd, const string &filename) 
     ofstream out(filename);
     out << text;
     if (out.fail()) {
-        throw io_exception("Can't create protobuf text format file '" + filename + "'");
+        throw IoException("Can't create protobuf text format file '" + filename + "'");
     }
 }

@@ -8,8 +8,6 @@
 
 #include "protobuf_util.h"
 #include <array>
-#include <iomanip>
-#include <sstream>
 #include <unistd.h>
 #include "shared/s2p_exceptions.h"
 
@@ -35,7 +33,7 @@ PbCachingMode protobuf_util::ParseCachingMode(const string &value)
         return mode;
     }
 
-    throw parser_exception("Invalid caching mode '" + value + "'");
+    throw ParserException("Invalid caching mode '" + value + "'");
 }
 
 void protobuf_util::ParseParameters(PbDeviceDefinition &device, const string &params)
@@ -129,7 +127,7 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
 {
     int id;
     int lun;
-    if (const string &error = ProcessId(value, id, lun); !error.empty()) {
+    if (const string &error = ParseIdAndLun(value, id, lun); !error.empty()) {
         return error;
     }
 
@@ -139,52 +137,34 @@ string protobuf_util::SetIdAndLun(PbDeviceDefinition &device, const string &valu
     return "";
 }
 
-string protobuf_util::ListDevices(const vector<PbDevice> &pb_devices)
+int protobuf_util::GetLunMax(PbDeviceType type)
 {
-    if (pb_devices.empty()) {
+    return type == SAHD ? 2 : 32;
+}
+
+string protobuf_util::ListDevices(const vector<PbDevice> &devices)
+{
+    if (devices.empty()) {
         return "No devices currently attached\n";
     }
 
-    ostringstream s;
-    s << "+----+-----+------+-------------------------------------\n"
-        << "| ID | LUN | TYPE | IMAGE FILE\n"
-        << "+----+-----+------+-------------------------------------\n";
+    vector<PbDevice> sorted_devices(devices);
+    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
 
-    vector<PbDevice> devices(pb_devices);
-    ranges::sort(devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
+    string s = "+--------+------+-------------------------------------------\n"
+        "| ID:LUN | Type | Image File/Device File/Description\n"
+        "+--------+------+-------------------------------------------\n";
 
-    for (const auto &device : devices) {
-        string filename;
-        switch (device.type()) {
-        case SCDP:
-            filename = "DaynaPort SCSI/Link";
-            break;
-
-        case SCHS:
-            filename = "Host Services";
-            break;
-
-        case SCLP:
-            filename = "SCSI Printer";
-            break;
-
-        default:
-            filename = device.file().name();
-            break;
-        }
-
-        s << "|  " << device.id() << " | " << setw(3) << device.unit() << " | " << PbDeviceType_Name(device.type())
-            << " | "
-            << (filename.empty() ? "NO MEDIUM" : filename)
-            << (
+    for (const auto &device : sorted_devices) {
+        s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
+            PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
-                " (READ-ONLY)" : "")
-            << '\n';
+                " (READ-ONLY)" : "");
     }
 
-    s << "+----+-----+------+-------------------------------------\n";
+    s += "+--------+------+-------------------------------------------\n";
 
-    return s.str();
+    return s;
 }
 
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
@@ -198,12 +178,12 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &me
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
         static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
     WriteBytes(fd, header) != header.size()) {
-        throw io_exception("Can't write message size: " + string(strerror(errno)));
+        throw IoException("Can't write message size: " + string(strerror(errno)));
     }
 
     // Write the actual protobuf data
     if (WriteBytes(fd, data) != data.size()) {
-        throw io_exception("Can't write message data: " + string(strerror(errno)));
+        throw IoException("Can't write message data: " + string(strerror(errno)));
     }
 }
 
@@ -212,19 +192,19 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
     if (ReadBytes(fd, header) != header.size()) {
-        throw io_exception("Can't read message size: " + string(strerror(errno)));
+        throw IoException("Can't read message size: " + string(strerror(errno)));
     }
 
     const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
         + (static_cast<int>(header[1]) << 8) + static_cast<int>(header[0]);
     if (size < 0) {
-        throw io_exception("Invalid message size: " + string(strerror(errno)));
+        throw IoException("Invalid message size: " + string(strerror(errno)));
     }
 
     // Read the binary protobuf data
     vector<byte> data_buf(size);
     if (ReadBytes(fd, data_buf) != data_buf.size()) {
-        throw io_exception("Invalid message data: " + string(strerror(errno)));
+        throw IoException("Invalid message data: " + string(strerror(errno)));
     }
 
     message.ParseFromArray(data_buf.data(), size);

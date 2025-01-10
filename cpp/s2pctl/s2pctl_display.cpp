@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "s2pctl_display.h"
-#include <iomanip>
 #include <map>
 #include <set>
 #include <spdlog/spdlog.h>
@@ -20,7 +19,6 @@ using namespace protobuf_util;
 string S2pCtlDisplay::DisplayDevicesInfo(const PbDevicesInfo &devices_info) const
 {
     const vector<PbDevice> devices(devices_info.devices().cbegin(), devices_info.devices().cend());
-
     return ListDevices(devices);
 }
 
@@ -33,9 +31,12 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     s << "  " << pb_device.id() << ":" << pb_device.unit() << "  " << type
         << "  " << pb_device.vendor() << ":" << pb_device.product() << ":" << pb_device.revision();
 
-    // Check for existence because PiSCSI does not support this setting
+    // Note: PiSCSI does not support this setting
     if (pb_device.scsi_level()) {
         s << "  " << GetScsiLevel(pb_device.scsi_level());
+    }
+    else {
+        s << "  -";
     }
 
     // There is no need to display "default"
@@ -53,7 +54,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
         }
     }
 
-    if (pb_device.properties().supports_file() && !pb_device.file().name().empty()) {
+    if (!pb_device.file().name().empty()) {
         s << "  " << pb_device.file().name();
     }
 
@@ -117,7 +118,7 @@ string S2pCtlDisplay::DisplayVersionInfo(const PbVersionInfo &version_info) cons
         }
     }
 
-    version += version_info.suffix() + "\n";
+    version += version_info.suffix() + '\n';
 
     return version;
 }
@@ -144,28 +145,55 @@ string S2pCtlDisplay::DisplayLogLevelInfo(const PbLogLevelInfo &log_level_info) 
 
 string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_types_info) const
 {
+    if (device_types_info.properties().empty()) {
+        return "";
+    }
+
     ostringstream s;
 
-    s << "Supported device types and their properties:";
+    s << "Supported device types and their properties:\n";
 
-    for (const auto &device_type_info : device_types_info.properties()) {
-        s << "\n  " << PbDeviceType_Name(device_type_info.type()) << "  ";
+    vector<PbDeviceTypeProperties> sorted_properties(device_types_info.properties().cbegin(),
+        device_types_info.properties().cend());
+    ranges::sort(sorted_properties,
+        [](const auto &a, const auto &b) {return PbDeviceType_Name(a.type()) < PbDeviceType_Name(b.type());});
+
+    bool has_type = false;
+    for (const auto &device_type_info : sorted_properties) {
+        if (has_type) {
+            s << '\n';
+        }
+        has_type = true;
+
+        s << "  " << PbDeviceType_Name(device_type_info.type());
+
+        string indent = "  ";
 
         const PbDeviceProperties &properties = device_type_info.properties();
 
-        s << DisplayAttributes(properties);
+        if (const string &props = DisplayAttributes(properties); !props.empty()) {
+            s << indent << props;
+            indent = "        ";
+        }
 
         if (properties.supports_file()) {
-            s << "Image files are supported\n        ";
+            s << indent << "Image files are supported";
+            indent = "\n        ";
         }
 
         if (properties.supports_params()) {
-            s << "Parameters are supported\n        ";
+            s << indent << "Parameters are supported";
+            indent = "\n        ";
         }
 
-        s << DisplayDefaultParameters(properties);
+        if (!properties.default_params().empty()) {
+            s << indent << DisplayDefaultParameters(properties);
+            indent = "\n        ";
+        }
 
-        s << DisplayBlockSizes(properties);
+        if (properties.block_sizes_size()) {
+            s << indent << DisplayBlockSizes(properties);
+        }
     }
 
     s << '\n';
@@ -189,7 +217,7 @@ string S2pCtlDisplay::DisplayImageFile(const PbImageFile &image_file_info) const
 {
     ostringstream s;
 
-    s << image_file_info.name() << "  " << image_file_info.size() << " bytes";
+    s << image_file_info.name() << "  " << image_file_info.size() << " byte(s)";
 
     if (image_file_info.read_only()) {
         s << "  read-only";
@@ -261,12 +289,24 @@ string S2pCtlDisplay::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_i
     vector<PbStatistics> sorted_statistics =
         { statistics_info.statistics().cbegin(), statistics_info.statistics().cend() };
     ranges::sort(sorted_statistics, [](const PbStatistics &a, const PbStatistics &b) {
-        if (a.category() > b.category()) return true;
-        if (a.category() < b.category()) return false;
-        if (a.id() < b.id()) return true;
-        if (a.id() > b.id()) return false;
-        if (a.unit() < b.unit()) return true;
-        if (a.unit() > b.unit()) return false;
+        if (a.category() > b.category()) {
+            return true;
+        }
+        if (a.category() < b.category()) {
+            return false;
+        }
+        if (a.id() < b.id()) {
+            return true;
+        }
+        if (a.id() > b.id()) {
+            return false;
+        }
+        if (a.unit() < b.unit()) {
+            return true;
+        }
+        if (a.unit() > b.unit()) {
+            return false;
+        }
         return a.key() < b.key();
     });
 
@@ -287,8 +327,6 @@ string S2pCtlDisplay::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_i
 
 string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info) const
 {
-    ostringstream s;
-
     const map<int, PbOperationMetaData, less<>> operations(operation_info.operations().cbegin(),
         operation_info.operations().cend());
 
@@ -306,6 +344,8 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
             sorted_operations[meta_data.server_side_name()] = *unknown_operation;
         }
     }
+
+    ostringstream s;
 
     s << "Operations supported by s2p server and their parameters:\n";
     for (const auto& [name, meta_data] : sorted_operations) {
@@ -328,14 +368,14 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
 
 string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_info) const
 {
-    ostringstream s;
-
     const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().cbegin(),
         properties_info.s2p_properties().cend());
 
+    ostringstream s;
+
     s << "s2p properties:\n";
     for (const auto& [key, value] : sorted_properties) {
-        s << "  " << key << "=" << value << "\n";
+        s << "  " << key << "=" << value << '\n';
     }
 
     return s.str();
@@ -373,7 +413,7 @@ string S2pCtlDisplay::DisplayAttributes(const PbDeviceProperties &props) const
     }
 
     if (!properties.empty()) {
-        s << "Properties: " << Join(properties) << "\n        ";
+        s << "Properties: " << Join(properties) << '\n';
     }
 
     return s.str();
@@ -384,12 +424,23 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
     ostringstream s;
 
     if (!properties.default_params().empty()) {
-        set<string, less<>> params;
+        s << "Default parameters: ";
+
+        set<string, less<>> sorted_params;
         for (const auto& [key, value] : properties.default_params()) {
-            params.insert(key + "=" + value);
+            sorted_params.insert(key + "=" + value);
         }
 
-        s << "Default parameters: " << Join(params, "\n                            ");
+        string p;
+
+        for (const auto &param : sorted_params) {
+            if (!p.empty()) {
+                p += "\n                            ";
+            }
+            p += param;
+        }
+
+        s << p;
     }
 
     return s.str();
@@ -397,12 +448,14 @@ string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &propert
 
 string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) const
 {
+    if (!properties.block_sizes_size()) {
+        return "";
+    }
+
     ostringstream s;
 
-    if (properties.block_sizes_size()) {
-        const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
-        s << "Configurable block sizes in bytes: " << Join(sorted_sizes);
-    }
+    const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
+    s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: " << Join(sorted_sizes);
 
     return s.str();
 }
@@ -435,12 +488,15 @@ string S2pCtlDisplay::DisplayParameters(const PbOperationMetaData &meta_data) co
 
 string S2pCtlDisplay::DisplayPermittedValues(const PbOperationParameter &parameter) const
 {
-    ostringstream s;
-    if (parameter.permitted_values_size()) {
-        const set<string, less<>> sorted_values(parameter.permitted_values().cbegin(),
-            parameter.permitted_values().cend());
-        s << "      Permitted values: " << Join(sorted_values) << '\n';
+    if (!parameter.permitted_values_size()) {
+        return "";
     }
+
+    ostringstream s;
+
+    const set<string, less<>> sorted_values(parameter.permitted_values().cbegin(),
+        parameter.permitted_values().cend());
+    s << "      Permitted values: " << Join(sorted_values) << '\n';
 
     return s.str();
 }

@@ -6,11 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 
-AbstractController::AbstractController(Bus &b, int id) : bus(b), target_id(id)
+using namespace s2p_util;
+
+AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
 {
-    device_logger.SetIdAndLun(target_id, -1);
+    controller_logger = CreateLogger(fmt::format("[s2p] (ID {})", id));
 }
 
 void AbstractController::CleanUp() const
@@ -22,14 +25,14 @@ void AbstractController::CleanUp() const
 
 void AbstractController::Reset()
 {
-    SetPhase(bus_phase::busfree);
+    SetPhase(BusPhase::BUS_FREE);
 
     offset = 0;
-    total_length = 0;
+    remaining_length = 0;
     current_length = 0;
     chunk_size = 0;
 
-    status = status_code::good;
+    status = StatusCode::GOOD;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 
@@ -38,6 +41,25 @@ void AbstractController::Reset()
     }
 
     bus.Reset();
+}
+
+void AbstractController::SetScriptGenerator(shared_ptr<ScriptGenerator> s)
+{
+    script_generator = s;
+}
+
+void AbstractController::AddCdbToScript()
+{
+    if (script_generator) {
+        script_generator->AddCdb(target_id, GetEffectiveLun(), cdb);
+    }
+}
+
+void AbstractController::AddDataToScript(span<const uint8_t> data) const
+{
+    if (script_generator) {
+        script_generator->AddData(data);
+    }
 }
 
 void AbstractController::SetCurrentLength(int length)
@@ -52,10 +74,30 @@ void AbstractController::SetCurrentLength(int length)
 void AbstractController::SetTransferSize(int length, int size)
 {
     // The total number of bytes to transfer for the current command
-    total_length = length;
+    remaining_length = length;
 
     // The number of bytes to transfer in a single chunk
-    chunk_size = size;
+    chunk_size = length < size ? length : size;
+}
+
+void AbstractController::UpdateTransferLength(int length)
+{
+    remaining_length -= length;
+
+    assert(remaining_length >= 0);
+    if (remaining_length < 0) {
+        remaining_length = 0;
+    }
+
+    if (remaining_length < chunk_size) {
+        chunk_size = remaining_length;
+    }
+}
+
+void AbstractController::UpdateOffsetAndLength()
+{
+    offset += current_length;
+    current_length = 0;
 }
 
 void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
@@ -81,7 +123,7 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
     return it == luns.end() ? nullptr : it->second;
 }
 
-shutdown_mode AbstractController::ProcessOnController(int ids)
+ShutdownMode AbstractController::ProcessOnController(int ids)
 {
     if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
         initiator_id = 0;
@@ -99,25 +141,22 @@ shutdown_mode AbstractController::ProcessOnController(int ids)
         // Handle bus phases until the bus is free for the next command
     }
 
-    return sh_mode;
+    if (script_generator) {
+        script_generator->WriteEol();
+    }
+
+    return shutdown_mode;
 }
 
 bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
 {
     const int lun = device->GetLun();
-    if (lun < 0 || lun >= 32 || GetDeviceForLun(lun) || device->GetController()) {
+    if (lun < 0 || lun >= (device->GetType() == SAHD ? 2 : 32) || luns.contains(lun) || device->GetController()) {
         return false;
     }
 
-    for (const auto& [_, d] : luns) {
-        if ((device->GetType() == SAHD && d->GetType() != SAHD)
-            || (device->GetType() != SAHD && d->GetType() == SAHD)) {
-            LogTrace("SCSI and SASI devices cannot share a controller");
-            return false;
-        }
-    }
-
     luns[lun] = device;
+
     device->SetController(this);
 
     return true;
@@ -128,4 +167,19 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
+}
+
+void AbstractController::LogTrace(const string &s) const
+{
+    controller_logger->trace(s);
+}
+
+void AbstractController::LogDebug(const string &s) const
+{
+    controller_logger->debug(s);
+}
+
+void AbstractController::LogWarn(const string &s) const
+{
+    controller_logger->warn(s);
 }

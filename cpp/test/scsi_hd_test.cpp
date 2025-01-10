@@ -28,52 +28,52 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
     EXPECT_EQ(24U, pages[48].size());
 }
 
-static void ValidateFormatPage(AbstractController &controller, int offset)
+static void ValidateFormatPage(const AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x08, buf[offset + 3]) << "Wrong number of tracks in one zone";
-    EXPECT_EQ(25U, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
-    EXPECT_EQ(1024U, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
-    EXPECT_EQ(1U, GetInt16(buf, offset + 14)) << "Wrong interleave";
-    EXPECT_EQ(11U, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
-    EXPECT_EQ(20U, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
+    EXPECT_EQ(25, GetInt16(buf, offset + 10)) << "Wrong number of sectors per track";
+    EXPECT_EQ(1024, GetInt16(buf, offset + 12)) << "Wrong number of bytes per sector";
+    EXPECT_EQ(1, GetInt16(buf, offset + 14)) << "Wrong interleave";
+    EXPECT_EQ(11, GetInt16(buf, offset + 16)) << "Wrong track skew factor";
+    EXPECT_EQ(20, GetInt16(buf, offset + 18)) << "Wrong cylinder skew factor";
     EXPECT_FALSE(buf[offset + 20] & 0x20) << "Wrong removable flag";
     EXPECT_TRUE(buf[offset + 20] & 0x40) << "Wrong hard-sectored flag";
 }
 
-static void ValidateDrivePage(AbstractController &controller, int offset)
+static void ValidateDrivePage(const AbstractController &controller, int offset)
 {
     const auto &buf = controller.GetBuffer();
     EXPECT_EQ(0x17, buf[offset + 2]);
-    EXPECT_EQ(0x4d3bU, GetInt16(buf, offset + 3));
+    EXPECT_EQ(0x4d3b, GetInt16(buf, offset + 3));
     EXPECT_EQ(8, buf[offset + 5]) << "Wrong number of heads";
-    EXPECT_EQ(7200U, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
+    EXPECT_EQ(7200, GetInt16(buf, offset + 20)) << "Wrong medium rotation rate";
 }
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
-    auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
+    auto hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
+    EXPECT_NE(nullptr, hd);
+    EXPECT_EQ(SCHD, hd->GetType());
+    EXPECT_TRUE(hd->SupportsImageFile());
+    EXPECT_FALSE(hd->SupportsParams());
+    EXPECT_TRUE(hd->IsProtectable());
+    EXPECT_FALSE(hd->IsProtected());
+    EXPECT_FALSE(hd->IsReadOnly());
+    EXPECT_FALSE(hd->IsRemovable());
+    EXPECT_FALSE(hd->IsRemoved());
+    EXPECT_FALSE(hd->IsLocked());
+    EXPECT_TRUE(hd->IsStoppable());
+    EXPECT_FALSE(hd->IsStopped());
 
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCHD, device->GetType());
-    EXPECT_TRUE(device->SupportsFile());
-    EXPECT_FALSE(device->SupportsParams());
-    EXPECT_TRUE(device->IsProtectable());
-    EXPECT_FALSE(device->IsProtected());
-    EXPECT_FALSE(device->IsReadOnly());
-    EXPECT_FALSE(device->IsRemovable());
-    EXPECT_FALSE(device->IsRemoved());
-    EXPECT_FALSE(device->IsLocked());
-    EXPECT_TRUE(device->IsStoppable());
-    EXPECT_FALSE(device->IsStopped());
+    const auto& [vendor, product, revision] = hd->GetProductData();
+    EXPECT_EQ("QUANTUM", vendor) << "Invalid default vendor for Apple drive";
+    EXPECT_EQ("FIREBALL", product) << "Invalid default vendor for Apple drive";
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 
-    EXPECT_EQ("QUANTUM", device->GetVendor()) << "Invalid default vendor for Apple drive";
-    EXPECT_EQ("FIREBALL", device->GetProduct()) << "Invalid default vendor for Apple drive";
-    EXPECT_EQ(TestShared::GetVersion(), device->GetRevision());
-
-    device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
-    EXPECT_NE(nullptr, device);
-    EXPECT_EQ(SCHD, device->GetType());
+    hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
+    EXPECT_NE(nullptr, hd);
+    EXPECT_EQ(SCHD, hd->GetType());
 }
 
 TEST(ScsiHdTest, SCRM_DeviceDefaults)
@@ -83,18 +83,10 @@ TEST(ScsiHdTest, SCRM_DeviceDefaults)
 
 TEST(ScsiHdTest, Inquiry)
 {
-    TestShared::Inquiry(SCHD, device_type::direct_access, scsi_level::scsi_2, "SCSI2Pi                 ", 0x1f, false);
+    TestShared::Inquiry(SCHD, DeviceType::DIRECT_ACCESS, ScsiLevel::SCSI_2, "SCSI2Pi                 ", 0x1f, false);
 
-    TestShared::Inquiry(SCHD, device_type::direct_access, scsi_level::scsi_1_ccs, "SCSI2Pi                 ", 0x1f,
+    TestShared::Inquiry(SCHD, DeviceType::DIRECT_ACCESS, ScsiLevel::SCSI_1_CCS, "SCSI2Pi                 ", 0x1f,
         false, "file.hd1");
-}
-
-TEST(ScsiHdTest, FinalizeSetup)
-{
-    MockScsiHd hd(0, false);
-
-    hd.SetBlockSize(1024);
-    EXPECT_THROW(hd.FinalizeSetup(), io_exception)<< "Device has 0 blocks";
 }
 
 TEST(ScsiHdTest, GetProductData)
@@ -103,27 +95,34 @@ TEST(ScsiHdTest, GetProductData)
     MockScsiHd hd_mb(0, false);
     MockScsiHd hd_gb(0, false);
 
-    const path filename = CreateTempFile(1);
+    const path &filename = CreateTempFile(1);
     hd_kb.SetFilename(filename.string());
     hd_kb.SetBlockSize(1024);
     hd_kb.SetBlockCount(1);
     hd_kb.FinalizeSetup();
-    string s = hd_kb.GetProduct();
+    string s = hd_kb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 KiB"));
 
     hd_mb.SetFilename(filename.string());
     hd_mb.SetBlockSize(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
     hd_mb.FinalizeSetup();
-    s = hd_mb.GetProduct();
+    s = hd_mb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 MiB"));
-
     hd_gb.SetFilename(filename.string());
     hd_gb.SetBlockSize(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
     hd_gb.FinalizeSetup();
-    s = hd_gb.GetProduct();
+    s = hd_gb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("10 GiB"));
+}
+
+TEST(ScsiHdTest, FinalizeSetup)
+{
+    MockScsiHd hd(0, false);
+
+    hd.SetBlockSize(1024);
+    EXPECT_THROW(hd.FinalizeSetup(), IoException)<< "Device has 0 blocks";
 }
 
 TEST(ScsiHdTest, GetBlockSizes)
@@ -153,6 +152,23 @@ TEST(ScsiHdTest, ConfiguredBlockSize)
     EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
 }
 
+TEST(ScsiHdTest, ValidateBlockSize)
+{
+    MockScsiHd hd(0, false);
+    EXPECT_FALSE(hd.ValidateBlockSize(0));
+    EXPECT_TRUE(hd.ValidateBlockSize(4));
+    EXPECT_FALSE(hd.ValidateBlockSize(7));
+    EXPECT_TRUE(hd.ValidateBlockSize(512));
+    EXPECT_TRUE(hd.ValidateBlockSize(131072));
+
+    MockScsiHd rm(0, true);
+    EXPECT_FALSE(rm.ValidateBlockSize(0));
+    EXPECT_FALSE(rm.ValidateBlockSize(4));
+    EXPECT_FALSE(rm.ValidateBlockSize(7));
+    EXPECT_TRUE(hd.ValidateBlockSize(512));
+    EXPECT_FALSE(rm.ValidateBlockSize(131072));
+}
+
 TEST(ScsiHdTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
@@ -172,7 +188,7 @@ TEST(ScsiHdTest, ModeSense6)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init( { }));
+    EXPECT_EQ("", hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data
@@ -186,14 +202,18 @@ TEST(ScsiHdTest, ModeSense6)
 
     // Format page
     controller.SetCdbByte(2, 0x03);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(4, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_6));
     ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(4, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense6));
+    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_6));
     ValidateDrivePage(controller, 12);
 }
 
@@ -201,7 +221,7 @@ TEST(ScsiHdTest, ModeSense10)
 {
     NiceMock<MockAbstractController> controller(0);
     auto hd = make_shared<MockScsiHd>(0, false);
-    EXPECT_TRUE(hd->Init( { }));
+    EXPECT_EQ("", hd->Init());
     EXPECT_TRUE(controller.AddDevice(hd));
 
     // Drive must be ready in order to return all data
@@ -215,14 +235,18 @@ TEST(ScsiHdTest, ModeSense10)
 
     // Format page
     controller.SetCdbByte(2, 0x03);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(8, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_10));
     ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
     controller.SetCdbByte(2, 0x04);
+    // ALLOCATION LENGTH
+    controller.SetCdbByte(8, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(hd->Dispatch(scsi_command::mode_sense10));
+    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_10));
     ValidateDrivePage(controller, 16);
 }
 
@@ -234,99 +258,94 @@ TEST(ScsiHdTest, ModeSelect)
     hd.SetBlockSize(512);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select6, "10");
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // Page 0
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, 16), scsi_exception);
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, 16, 0), ScsiException);
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
     buf[4] = 0;
     buf[5] = 0;
 
-    cdb = CreateCdb(scsi_command::mode_select10, "10");
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, "10");
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20, 0));
 }
 
 TEST(ScsiHdTest, ModeSelect6_Single)
 {
     vector<uint8_t> buf(28);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select6);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select6, "10");
+    const auto &cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 0
     buf[4] = 0x00;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size());},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Unsupported page 0 was not rejected";
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 12);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 12, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 7 (Verify error recovery page)
     buf[4] = 0x07;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size());},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
     buf[16] = 0x08;
     hd.SetBlockSize(2048);
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
 
@@ -364,27 +383,27 @@ TEST(ScsiHdTest, ModeSelect6_Multiple)
     hd.SetBlockSize(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<uint8_t> buf = CreateParameters(format_device_1);
-    vector<int> cdb = CreateCdb(scsi_command::mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    auto buf = CreateParameters(format_device_1);
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice
     buf = CreateParameters(format_device_2);
-    cdb = CreateCdb(scsi_command::mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes
     buf = CreateParameters(format_device_3);
-    cdb = CreateCdb(scsi_command::mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0), ScsiException);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes after a sequence of other mode pages
     buf = CreateParameters(format_device_4);
-    cdb = CreateCdb(scsi_command::mode_select6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0), ScsiException);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
 
@@ -392,73 +411,68 @@ TEST(ScsiHdTest, ModeSelect10_Single)
 {
     vector<uint8_t> buf(32);
     MockScsiHd hd( { 512, 1024, 2048 });
-
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select10);
     hd.SetBlockSize(1024);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
-    EXPECT_EQ(1024U, hd.GetBlockSize());
 
     // PF (standard parameter format)
-    cdb = CreateCdb(scsi_command::mode_select10, "10");
+    const auto &cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, "10");
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 0
     buf[8] = 0x00;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size());},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Unsupported page 0 was not rejected";
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 16);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 16, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 7 (Verify error recovery page)
     buf[8] = 0x07;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::parameter_list_length_error))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 3 (Format device page)
     buf[8] = 0x03;
     // Page length
     buf[9] = 0x16;
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size());},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
     buf[20] = 0x08;
     hd.SetBlockSize(2048);
-    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10);},
-        Throws<scsi_exception>(AllOf(
-                Property(&scsi_exception::get_sense_key, sense_key::illegal_request),
-                Property(&scsi_exception::get_asc, asc::invalid_field_in_parameter_list))))
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10, 0);},
+        Throws<ScsiException>(AllOf(
+                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
 
@@ -496,27 +510,39 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     hd.SetBlockSize(2048);
 
     // Select sector size of 2048 bytes, which is the current size, once
-    vector<uint8_t> buf = CreateParameters(format_device_1);
-    vector<int> cdb = CreateCdb(scsi_command::mode_select10,
-        fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    auto buf = CreateParameters(format_device_1);
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice
     buf = CreateParameters(format_device_2);
-    cdb = CreateCdb(scsi_command::mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes
     buf = CreateParameters(format_device_3);
-    cdb = CreateCdb(scsi_command::mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0), ScsiException);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes after a sequence of other mode pages
     buf = CreateParameters(format_device_4);
-    cdb = CreateCdb(scsi_command::mode_select10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size()), scsi_exception);
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
+    EXPECT_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0), ScsiException);
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
+
+TEST(ScsiHdTest, Open)
+{
+    MockScsiHd hd(0, false);
+
+    EXPECT_THROW(hd.Open(), IoException)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    hd.SetFilename(filename.string());
+    hd.Open();
+    EXPECT_EQ(4U, hd.GetBlockCount());
+}
+

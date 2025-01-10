@@ -14,7 +14,7 @@
 // All operations also accept an optional locale, specified with the "locale" parameter. If there is
 // a localized error message it is returned, with English being the fallback language.
 // This interface is backwards compatible with PiSCSI. Numbers 100 and higher are used for messages
-// and fields not supported by PISCSI 23.11.01 and newer.
+// and fields not known by PISCSI 23.11.01 and newer.
 //
 
 syntax = "proto3";
@@ -44,6 +44,8 @@ enum PbDeviceType {
     SCLP = 9;
     // Tape device
     SCTP = 10;
+    // Linux SG Driver (e.g. for a SCSI-to-USB bridge)
+    SCSG = 11;
 }
 
 // Remote operations, returning PbResult
@@ -56,6 +58,7 @@ enum PbOperation {
     //   "interface": A prioritized comma-separated list of interfaces to create a network bridge for
     //   "inet": The IP address and netmask for the network bridge
     //   "cmd": The command to be used for printing, with "%f" as file placeholder
+    //   "device": The device file ("/dev/sg*") for SCSG
     ATTACH = 1;
 
     // Detach a device and return the new device list (PbDevicesInfo)
@@ -279,7 +282,7 @@ message PbDeviceProperties {
     map<string, string> default_params = 8;
     // Maximum LUN number this device can have, usually 32 for SCSI and 2 for SASI devices
     int32 luns = 9;
-    // Unordered list of permitted block sizes in bytes, empty if the block size is not configurable
+    // Unordered list of the standard block sizes in bytes, empty if the block size is not configurable
     repeated uint32 block_sizes = 10;
     // The SCSI level, 0 if not explicitly set
     int32 scsi_level = 100;

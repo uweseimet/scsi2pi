@@ -6,153 +6,223 @@
 //
 //---------------------------------------------------------------------------
 
-#include "s2pdump_executor.h"
 #include <spdlog/spdlog.h>
+#include "s2pdump_executor.h"
+#include "shared/s2p_exceptions.h"
+#include "shared/memory_util.h"
+#include "shared/scsi.h"
 
-using namespace spdlog;
+using namespace memory_util;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
     vector<uint8_t> cdb(6);
 
-    initiator_executor->Execute(scsi_command::test_unit_ready, cdb, { }, 0);
+    TestUnitReady(cdb);
 }
 
-void S2pDumpExecutor::RequestSense() const
-{
-    array<uint8_t, 14> buf = { };
-    array<uint8_t, 6> cdb = { };
-    cdb[4] = static_cast<uint8_t>(buf.size());
-    initiator_executor->Execute(scsi_command::request_sense, cdb, buf, static_cast<int>(buf.size()));
-}
-
-bool S2pDumpExecutor::Inquiry(span<uint8_t> buffer)
+void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 {
     vector<uint8_t> cdb(6);
-    cdb[3] = static_cast<uint8_t>(buffer.size() >> 8);
-    cdb[4] = static_cast<uint8_t>(buffer.size());
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+    cdb[4] = static_cast<uint8_t>(buf.size());
 
-    return !initiator_executor->Execute(scsi_command::inquiry, cdb, buffer, static_cast<int>(buffer.size()));
+    RequestSense(cdb, buf);
 }
 
-pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity()
+bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
-    vector<uint8_t> buffer(14);
-    vector<uint8_t> cdb(10);
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
+    cdb[4] = static_cast<uint8_t>(buf.size());
 
-    if (initiator_executor->Execute(scsi_command::read_capacity10, cdb, buffer, 8)) {
+    return Inquiry(cdb, buf);
+}
+
+bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::MODE_SENSE_6);
+    cdb[1] = 0x08;
+    cdb[2] = 0x3f;
+    cdb[4] = static_cast<uint8_t>(buf.size());
+
+    return ModeSense6(cdb, buf);
+}
+
+set<int> S2pDumpExecutor::ReportLuns()
+{
+    vector<uint8_t> buf(512);
+    vector<uint8_t> cdb(12);
+    SetInt16(cdb, 8, buf.size());
+
+    return ReportLuns(cdb, buf);
+}
+
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
+{
+    vector<uint8_t> buf(14);
+    vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
+
+    if (ReadCapacity10(cdb, buf)) {
         return {0, 0};
     }
 
-    uint64_t capacity = GetInt32(buffer);
+    uint64_t capacity = GetInt32(buf, 0);
 
     int sector_size_offset = 4;
 
     if (static_cast<int32_t>(capacity) == -1) {
         cdb.resize(16);
+        cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_READ_LONG_16);
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
-        if (initiator_executor->Execute(scsi_command::read_capacity16_read_long16, cdb, buffer,
-            static_cast<int>(buffer.size()))) {
+        if (ReadCapacity16(cdb, buf)) {
             return {0, 0};
         }
 
-        capacity = GetInt64(buffer);
+        capacity = GetInt64(buf, 0);
 
         sector_size_offset = 8;
     }
 
-    const uint32_t sector_size = GetInt32(buffer, sector_size_offset);
-
-    return {capacity + 1, sector_size};
+    return {capacity + 1, GetInt32(buf, sector_size_offset)};
 }
 
-bool S2pDumpExecutor::ReadWrite(span<uint8_t> buffer, uint32_t bstart, uint32_t blength, int length, bool is_write)
-{
-    if (bstart < 16777216 && blength <= 256) {
-        vector<uint8_t> cdb(6);
-        cdb[1] = static_cast<uint8_t>(bstart >> 16);
-        cdb[2] = static_cast<uint8_t>(bstart >> 8);
-        cdb[3] = static_cast<uint8_t>(bstart);
-        cdb[4] = static_cast<uint8_t>(blength);
-
-        return !initiator_executor->Execute(is_write ? scsi_command::write6 : scsi_command::read6, cdb, buffer,
-            length);
-    }
-    else {
-        vector<uint8_t> cdb(10);
-        cdb[2] = static_cast<uint8_t>(bstart >> 24);
-        cdb[3] = static_cast<uint8_t>(bstart >> 16);
-        cdb[4] = static_cast<uint8_t>(bstart >> 8);
-        cdb[5] = static_cast<uint8_t>(bstart);
-        cdb[7] = static_cast<uint8_t>(blength >> 8);
-        cdb[8] = static_cast<uint8_t>(blength);
-
-        return !initiator_executor->Execute(is_write ? scsi_command::write10 : scsi_command::read10, cdb,
-            buffer,
-            length);
-    }
-}
-
-bool S2pDumpExecutor::ModeSense6(span<uint8_t> buffer)
-{
-    vector<uint8_t> cdb(6);
-    cdb[1] = 0x08;
-    cdb[2] = 0x3f;
-    cdb[4] = static_cast<uint8_t>(buffer.size());
-
-    return !initiator_executor->Execute(scsi_command::mode_sense6, cdb, buffer, static_cast<int>(buffer.size()));
-}
-
-void S2pDumpExecutor::SynchronizeCache()
+bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
     vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
+    SetInt32(cdb, 2, bstart);
+    SetInt16(cdb, 7, blength);
 
-    initiator_executor->Execute(scsi_command::synchronize_cache10, cdb, { }, 0);
+    return ReadWrite(cdb, buf, length);
 }
 
-set<int> S2pDumpExecutor::ReportLuns()
+void S2pDumpExecutor::SynchronizeCache() const
 {
-    vector<uint8_t> buffer(512);
-    vector<uint8_t> cdb(12);
-    cdb[8] = static_cast<uint8_t>(buffer.size() >> 8);
-    cdb[9] = static_cast<uint8_t>(buffer.size());
+    vector<uint8_t> cdb(10);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::SYNCHRONIZE_CACHE_10);
 
-    // Assume 8 LUNs in case REPORT LUNS is not available
-    if (initiator_executor->Execute(scsi_command::report_luns, cdb, buffer, static_cast<int>(buffer.size()))) {
-        trace("Target does not support REPORT LUNS");
-        return {0, 1, 2, 3, 4, 5, 6, 7};
+    SynchronizeCache(cdb);
+}
+
+void S2pDumpExecutor::SpaceBack() const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::SPACE_6);
+    cdb[1] = 0b000;
+    SetInt24(cdb, 2, -1);
+
+    SpaceBack(cdb);
+}
+
+int S2pDumpExecutor::Rewind()
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REWIND);
+
+    return Rewind(cdb);
+}
+
+int S2pDumpExecutor::WriteFilemark() const
+{
+    vector<uint8_t> cdb(6);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_FILEMARKS_6);
+    SetInt24(cdb, 2, 1);
+
+    return WriteFilemark(cdb);
+}
+
+int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
+{
+    vector<uint8_t> cdb(6);
+
+    // Restore
+    if (length) {
+        SetInt24(cdb, 2, length);
+
+        if (Write(cdb, buf, length)) {
+            throw IoException(fmt::format("Can't write block with {} byte(s)", length));
+        }
+
+        return length;
     }
 
-    const auto lun_count = (static_cast<size_t>(buffer[2]) << 8) | static_cast<size_t>(buffer[3]) / 8;
-    trace("Target reported LUN count of " + to_string(lun_count));
+    // Dump
+    bool has_error = false;
+    while (true) {
+        SetInt24(cdb, 2, default_length);
 
-    set<int> luns;
-    int offset = 8;
-    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buffer.size(); i++, offset += 8) {
-        const uint64_t lun = GetInt64(buffer, offset);
-        if (lun < 32) {
-            luns.insert(static_cast<int>(lun));
+        if (!Read(cdb, buf, default_length)) {
+            GetLogger().debug("Read block with {} byte(s)", default_length);
+            return default_length;
+        }
+
+        vector<uint8_t> sense_data(14);
+        fill_n(cdb.begin(), cdb.size(), 0);
+        cdb[4] = static_cast<uint8_t>(sense_data.size());
+        const int status = RequestSense(cdb, sense_data);
+        if (status == 0xff) {
+            return status;
+        }
+        else if (status && status != 0x02) {
+            throw IoException(fmt::format("Unknown error status {}", status));
+        }
+
+        const SenseKey sense_key = static_cast<SenseKey>(sense_data[2] & 0x0f);
+
+        // EOD or EOM?
+        if (sense_key == SenseKey::BLANK_CHECK || sense_data[2] & 0x40) {
+            GetLogger().debug("No more data");
+            return NO_MORE_DATA;
+        }
+
+        if (sense_key == SenseKey::MEDIUM_ERROR) {
+            if (has_error) {
+                return BAD_BLOCK;
+            }
+
+            has_error = true;
+
+            SpaceBack();
+
+            continue;
+        }
+
+        if (sense_data[2] & 0x80) {
+            GetLogger().debug("Encountered filemark");
+            return 0;
+        }
+
+        // VALID and ILI?
+        if (sense_data[0] & 0x80 && sense_data[2] & 0x20) {
+            length = default_length;
+
+            default_length -= GetInt32(sense_data, 3);
+
+            // If all available data have been read there is no need to re-try
+            if (default_length < length) {
+                GetLogger().debug("Read block with {} byte(s)", default_length);
+
+                return default_length;
+            }
+
+            SpaceBack();
         }
         else {
-            trace("Target reported invalid LUN " + to_string(lun));
+            return 0xff;
         }
     }
-
-    return luns;
 }
 
-uint32_t S2pDumpExecutor::GetInt32(span<uint8_t> buf, int offset)
+void S2pDumpExecutor::SetInt24(span<uint8_t> buf, int offset, int value)
 {
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
-        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
-}
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
 
-uint64_t S2pDumpExecutor::GetInt64(span<uint8_t> buf, int offset)
-{
-    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
-        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
-        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
-        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
+    buf[offset] = static_cast<uint8_t>(value >> 16);
+    buf[offset + 1] = static_cast<uint8_t>(value >> 8);
+    buf[offset + 2] = static_cast<uint8_t>(value);
 }

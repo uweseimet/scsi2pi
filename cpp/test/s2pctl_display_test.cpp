@@ -46,10 +46,10 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
     device.set_block_count(4321);
     s = display.DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find(to_string(1234 * 4321)));
+    EXPECT_NE(string::npos, s.find("5332114"));
 
     device.mutable_properties()->set_supports_file(true);
-    auto file = device.mutable_file();
+    auto *file = device.mutable_file();
     file->set_name("filename");
     s = display.DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
@@ -136,7 +136,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
         PbDeviceType type = UNDEFINED;
         PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
 
-        auto type_properties = info.add_properties();
+        auto *type_properties = info.add_properties();
         type_properties->set_type(type);
 
         if (type == SCHD) {
@@ -160,7 +160,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
             (*type_properties->mutable_properties()->mutable_default_params())["key2"] = "value2";
         }
 
-        ordinal++;
+        ++ordinal;
     }
 
     const string s = display.DisplayDeviceTypesInfo(info);
@@ -221,7 +221,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_EQ(string::npos, s.find("warning"));
     EXPECT_EQ(string::npos, s.find("error"));
 
-    auto st1 = info.add_statistics();
+    auto *st1 = info.add_statistics();
     st1->set_category(PbStatisticsCategory::CATEGORY_INFO);
     st1->set_key("info");
     st1->set_value(1);
@@ -233,7 +233,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_NE(string::npos, s.find("info"));
     EXPECT_EQ(string::npos, s.find("warning"));
     EXPECT_EQ(string::npos, s.find("error"));
-    auto st2 = info.add_statistics();
+    auto *st2 = info.add_statistics();
     st2->set_category(PbStatisticsCategory::CATEGORY_WARNING);
     st2->set_key("warning");
     st2->set_value(2);
@@ -245,7 +245,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_NE(string::npos, s.find("info"));
     EXPECT_NE(string::npos, s.find("warning"));
     EXPECT_EQ(string::npos, s.find("error"));
-    auto st3 = info.add_statistics();
+    auto *st3 = info.add_statistics();
     st3->set_category(PbStatisticsCategory::CATEGORY_ERROR);
     st3->set_key("error");
     st3->set_value(3);

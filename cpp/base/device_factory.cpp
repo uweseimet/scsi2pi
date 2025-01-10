@@ -32,7 +32,9 @@
 #if defined BUILD_SCHD || defined BUILD_SCRM
 #include "devices/scsi_hd.h"
 #endif
-#include "shared/s2p_util.h"
+#ifdef BUILD_SCSG
+#include "devices/scsi_generic.h"
+#endif
 
 using namespace s2p_util;
 
@@ -55,6 +57,7 @@ DeviceFactory::DeviceFactory()
 #endif
 #ifdef BUILD_SCTP
     mapping["tar"] = SCTP;
+    mapping["tap"] = SCTP;
 #endif
 }
 
@@ -86,10 +89,8 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 #endif
 
 #ifdef BUILD_SCCD
-    case SCCD: {
-        const string &ext = GetExtensionLowerCase(filename);
-        return make_shared<ScsiCd>(lun, ext == "is1");
-    }
+    case SCCD:
+        return make_shared<ScsiCd>(lun, GetExtensionLowerCase(filename) == "is1");
 #endif
 
 #ifdef BUILD_SCTP
@@ -110,6 +111,11 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 #ifdef BUILD_SCLP
     case SCLP:
         return make_shared<Printer>(lun);
+#endif
+
+#ifdef BUILD_SCSG
+    case SCSG:
+        return make_shared<ScsiGeneric>(lun, filename);
 #endif
 
 #ifdef BUILD_SAHD
@@ -134,7 +140,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    return UNDEFINED;
+    return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
 }
 
 bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)

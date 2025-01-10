@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <span>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "scsi.h"
 
 using namespace std;
@@ -61,19 +62,25 @@ string ToLower(const string&);
 string GetExtensionLowerCase(string_view);
 string GetLocale();
 string GetLine(const string&);
-bool GetAsUnsignedInt(const string&, int&);
-string ProcessId(const string&, int&, int&);
+int ParseAsUnsignedInt(const string&);
+string ParseIdAndLun(const string&, int&, int&);
 string Banner(string_view);
+
+tuple<string, string, string> GetInquiryProductData(span<const uint8_t>);
 
 string GetScsiLevel(int);
 
-string FormatSenseData(sense_key, asc, int = 0);
+string GetStatusString(int);
+
+string FormatSenseData(span<const byte>);
+string FormatSenseData(SenseKey, Asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-string FormatBytes(span<const uint8_t>, int, bool = false);
 int HexToDec(char);
 
 string Trim(const string&);
+
+shared_ptr<spdlog::logger> CreateLogger(const string&);
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
@@ -94,39 +101,44 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
     "RESERVED"
 };
 
-// This map only contains mappings for ASCs used by s2p
-static const unordered_map<asc, const char*> ASC_MAPPING = {
-    { asc::no_additional_sense_information, "NO ADDITIONAL_SENSE INFORMATION" },
-    { asc::write_fault, "PERIPHERAL DEVICE WRITE FAULT" },
-    { asc::write_error, "WRITE ERROR" },
-    { asc::read_error, "READ ERROR" },
-    { asc::parameter_list_length_error, "PARAMETER LIST LENGTH ERROR" },
-    { asc::invalid_command_operation_code, "INVALID COMMAND OPERATION CODE" },
-    { asc::lba_out_of_range, "LBA OUT OF RANGE" },
-    { asc::invalid_field_in_cdb, "INVALID FIELD IN CDB" },
-    { asc::invalid_lun, "LOGICAL UNIT NOT SUPPORTED" },
-    { asc::invalid_field_in_parameter_list, "INVALID FIELD IN PARAMETER LIST" },
-    { asc::write_protected, "WRITE PROTECTED" },
-    { asc::not_ready_to_ready_change, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
-    { asc::power_on_or_reset, "POWER ON, RESET, OR BUS DEVICE RESET OCCURRED" },
-    { asc::sequential_positioning_error, "SEQUENTIAL POSITIONING ERROR" },
-    { asc::medium_not_present, "MEDIUM NOT PRESENT" },
-    { asc::command_phase_error, "COMMAND PHASE ERROR" },
-    { asc::data_phase_error, "DATA PHASE ERROR" },
-    { asc::load_or_eject_failed, "MEDIA LOAD OR EJECT FAILED" }
+// This map only contains mappings for ASCs used by s2p or the Linux SG driver
+static const unordered_map<Asc, const char*> ASC_MAPPING = {
+    { Asc::NO_ADDITIONAL_SENSE_INFORMATION, "NO ADDITIONAL SENSE INFORMATION" },
+    { Asc::WRITE_FAULT, "PERIPHERAL DEVICE WRITE FAULT" },
+    { Asc::IO_PROCESS_TERMINATED, "I/O PROCESS TERMINATED" },
+    { Asc::WRITE_ERROR, "WRITE ERROR" },
+    { Asc::READ_ERROR, "READ ERROR" },
+    { Asc::LOCATE_OPERATION_FAILURE, "LOCATE OPERATION FAILURE" },
+    { Asc::PARAMETER_LIST_LENGTH_ERROR, "PARAMETER LIST LENGTH ERROR" },
+    { Asc::INVALID_COMMAND_OPERATION_CODE, "INVALID COMMAND OPERATION CODE" },
+    { Asc::LBA_OUT_OF_RANGE, "LBA OUT OF RANGE" },
+    { Asc::INVALID_FIELD_IN_CDB, "INVALID FIELD IN CDB" },
+    { Asc::LOGICAL_UNIT_NOT_SUPPORTED, "LOGICAL UNIT NOT SUPPORTED" },
+    { Asc::INVALID_FIELD_IN_PARAMETER_LIST, "INVALID FIELD IN PARAMETER LIST" },
+    { Asc::WRITE_PROTECTED, "WRITE PROTECTED" },
+    { Asc::NOT_READY_TO_READY_CHANGE, "NOT READY TO READY TRANSITION (MEDIUM MAY HAVE CHANGED)" },
+    { Asc::POWER_ON_OR_RESET, "POWER ON, RESET, OR BUS DEVICE RESET OCCURRED" },
+    { Asc::INCOMPATIBLE_MEDIUM_INSTALLED, "INCOMPATIBLE MEDIUM INSTALLED" },
+    { Asc::SEQUENTIAL_POSITIONING_ERROR, "SEQUENTIAL POSITIONING ERROR" },
+    { Asc::MEDIUM_NOT_PRESENT, "MEDIUM NOT PRESENT" },
+    { Asc::INTERNAL_TARGET_FAILURE, "INTERNAL TARGET FAILURE" },
+    { Asc::COMMAND_PHASE_ERROR, "COMMAND PHASE ERROR" },
+    { Asc::DATA_PHASE_ERROR, "DATA PHASE ERROR" },
+    { Asc::MEDIUM_LOAD_OR_EJECT_FAILED, "MEDIA LOAD OR EJECT FAILED" },
+    { Asc::DATA_CURRENTLY_UNAVAILABLE, "DATA CURRENTLY UNAVAILALBLE" }
 };
 
-static const unordered_map<status_code, const char*> STATUS_MAPPING = {
-    { status_code::good, "GOOD" },
-    { status_code::check_condition, "CHECK CONDITION" },
-    { status_code::condition_met, "CONDITION MET" },
-    { status_code::busy, "BUSY" },
-    { status_code::intermediate, "INTERMEDIATE" },
-    { status_code::intermediate_condition_met, "INTERMEDIATE-CONDITION MET" },
-    { status_code::reservation_conflict, "RESERVATION CONFLICT" },
-    { status_code::command_terminated, "COMMAND TERMINATED" },
-    { status_code::queue_full, "QUEUE FULL" },
-    { status_code::aca_active, "ACA ACTIVE" },
-    { status_code::task_aborted, "TASK ABORTED" }
+static const unordered_map<StatusCode, const char*> STATUS_MAPPING = {
+    { StatusCode::GOOD, "GOOD" },
+    { StatusCode::CHECK_CONDITION, "CHECK CONDITION" },
+    { StatusCode::CONDITION_MET, "CONDITION MET" },
+    { StatusCode::BUSY, "BUSY" },
+    { StatusCode::INTERMEDIATE, "INTERMEDIATE" },
+    { StatusCode::INTERMEDIATE_CONDITION_MET, "INTERMEDIATE-CONDITION MET" },
+    { StatusCode::RESERVATION_CONFLICT, "RESERVATION CONFLICT" },
+    { StatusCode::COMMAND_TERMINATED, "COMMAND TERMINATED" },
+    { StatusCode::QUEUE_FULL, "QUEUE FULL" },
+    { StatusCode::ACA_ACTIVE, "ACA ACTIVE" },
+    { StatusCode::TASK_ABORTED, "TASK ABORTED" }
 };
 }

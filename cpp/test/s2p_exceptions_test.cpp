@@ -12,8 +12,8 @@
 TEST(S2pExceptionsTest, ParserException)
 {
     try {
-        throw parser_exception("msg");
-    } catch (const parser_exception &e) {
+        throw ParserException("msg");
+    } catch (const ParserException &e) {
         EXPECT_STREQ("msg", e.what());
     }
 }
@@ -21,8 +21,8 @@ TEST(S2pExceptionsTest, ParserException)
 TEST(S2pExceptionsTest, IoException)
 {
     try {
-        throw io_exception("msg");
-    } catch (const io_exception &e) {
+        throw IoException("msg");
+    } catch (const IoException &e) {
         EXPECT_STREQ("msg", e.what());
     }
 }
@@ -30,19 +30,19 @@ TEST(S2pExceptionsTest, IoException)
 TEST(S2pExceptionsTest, ScsiException)
 {
     try {
-        throw scsi_exception(sense_key::unit_attention);
-    } catch (const scsi_exception &e) {
-        EXPECT_EQ(sense_key::unit_attention, e.get_sense_key());
-        EXPECT_EQ(asc::no_additional_sense_information, e.get_asc());
+        throw ScsiException(SenseKey::UNIT_ATTENTION);
+    } catch (const ScsiException &e) {
+        EXPECT_EQ(SenseKey::UNIT_ATTENTION, e.get_sense_key());
+        EXPECT_EQ(Asc::NO_ADDITIONAL_SENSE_INFORMATION, e.get_asc());
         EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
         EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }
 
     try {
-        throw scsi_exception(sense_key::illegal_request, asc::lba_out_of_range);
-    } catch (const scsi_exception &e) {
-        EXPECT_EQ(sense_key::illegal_request, e.get_sense_key());
-        EXPECT_EQ(asc::lba_out_of_range, e.get_asc());
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+    } catch (const ScsiException &e) {
+        EXPECT_EQ(SenseKey::ILLEGAL_REQUEST, e.get_sense_key());
+        EXPECT_EQ(Asc::LBA_OUT_OF_RANGE, e.get_asc());
         EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
         EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }

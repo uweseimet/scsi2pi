@@ -8,11 +8,11 @@
 
 #include "command_context.h"
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
-using namespace spdlog;
+using namespace s2p_util;
 using namespace protobuf_util;
 
 bool CommandContext::ReadCommand()
@@ -21,7 +21,7 @@ bool CommandContext::ReadCommand()
     array<byte, 6> magic;
     if (const auto bytes_read = ReadBytes(fd, magic); bytes_read) {
         if (bytes_read != magic.size() || memcmp(magic.data(), "RASCSI", magic.size())) {
-            throw io_exception("Invalid magic");
+            throw IoException("Invalid magic");
         }
 
         // Fetch the command
@@ -63,25 +63,25 @@ bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error
     // For the logfile always use English
     // Do not log unknown operations as an error for backward/forward compatibility with old/new clients
     if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
-        trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
+        s2p_logger.trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
     else {
-        error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
+        s2p_logger.error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
     }
 
     return ReturnStatus(false, command_localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
 }
 
-bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool log) const
+bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool enable_log) const
 {
     // Do not log twice if logging has already been done in the localized error handling above
-    if (log && !status && !msg.empty()) {
-        error(msg);
+    if (enable_log && !status && !msg.empty()) {
+        s2p_logger.error(msg);
     }
 
     if (fd == -1) {
         if (!msg.empty()) {
-            cerr << "Error: " << msg << endl;
+            cerr << "Error: " << msg << '\n';
         }
         return status;
     }

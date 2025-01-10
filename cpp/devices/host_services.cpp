@@ -86,9 +86,7 @@
 #include <google/protobuf/util/json_util.h>
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
-#include "controllers/controller.h"
 #include "protobuf/protobuf_util.h"
-#include "shared/s2p_exceptions.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
@@ -96,35 +94,36 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace protobuf_util;
 
-HostServices::HostServices(int lun) : PrimaryDevice(SCHS, scsi_level::spc_3, lun)
+HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
 {
-    SetProduct("Host Services");
+    PrimaryDevice::SetProductData( { "", "Host Services", "" }, true);
+    SetScsiLevel(ScsiLevel::SPC_3);
     SetReady(true);
 }
 
-bool HostServices::SetUp()
+string HostServices::SetUp()
 {
-    AddCommand(scsi_command::start_stop, [this]
+    AddCommand(ScsiCommand::START_STOP, [this]
         {
             StartStopUnit();
         });
-    AddCommand(scsi_command::execute_operation, [this]
+    AddCommand(ScsiCommand::EXECUTE_OPERATION, [this]
         {
             ExecuteOperation();
         });
-    AddCommand(scsi_command::receive_operation_results, [this]
+    AddCommand(ScsiCommand::RECEIVE_OPERATION_RESULTS, [this]
         {
             ReceiveOperationResults();
         });
 
     page_handler = make_unique<PageHandler>(*this, false, false);
 
-    return true;
+    return "";
 }
 
 vector<uint8_t> HostServices::InquiryInternal() const
 {
-    return HandleInquiry(device_type::processor, false);
+    return HandleInquiry(DeviceType::PROCESSOR, false);
 }
 
 void HostServices::StartStopUnit() const
@@ -132,13 +131,13 @@ void HostServices::StartStopUnit() const
     const bool load = GetCdbByte(4) & 0x02;
 
     if (const bool start = GetCdbByte(4) & 0x01; !start) {
-        GetController()->ScheduleShutdown(load ? shutdown_mode::stop_pi : shutdown_mode::stop_s2p);
+        GetController()->ScheduleShutdown(load ? ShutdownMode::STOP_PI : ShutdownMode::STOP_S2P);
     }
     else if (load) {
-        GetController()->ScheduleShutdown(shutdown_mode::restart_pi);
+        GetController()->ScheduleShutdown(ShutdownMode::RESTART_PI);
     }
     else {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
@@ -152,7 +151,7 @@ void HostServices::ExecuteOperation()
 
     const int length = GetCdbInt16(7);
     if (!length) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -162,28 +161,28 @@ void HostServices::ExecuteOperation()
 
 void HostServices::ReceiveOperationResults()
 {
-    const protobuf_format output_format = ConvertFormat();
+    const ProtobufFormat output_format = ConvertFormat();
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw scsi_exception(sense_key::aborted_command, asc::host_services_receive_operation_results);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::DATA_CURRENTLY_UNAVAILABLE);
     }
     const string &execution_result = it->second;
 
     string data;
     switch (output_format) {
-    case protobuf_format::binary:
+    case ProtobufFormat::BINARY:
         data = execution_result;
         break;
 
-    case protobuf_format::json: {
+    case ProtobufFormat::JSON: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
         (void)MessageToJsonString(result, &data).ok();
         break;
     }
 
-    case protobuf_format::text: {
+    case ProtobufFormat::TEXT: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
         TextFormat::PrintToString(result, &data);
@@ -197,44 +196,38 @@ void HostServices::ReceiveOperationResults()
 
     execution_results.erase(GetController()->GetInitiatorId());
 
-    const auto allocation_length = static_cast<size_t>(GetCdbInt16(7));
-    const auto length = static_cast<int>(min(allocation_length, data.size()));
-    if (!length) {
-        StatusPhase();
-    }
-    else {
-        GetController()->CopyToBuffer(data.data(), length);
+    const int length = min(GetCdbInt16(7), static_cast<int>(data.size()));
+    GetController()->CopyToBuffer(data.data(), length);
 
-        DataInPhase(length);
-    }
+    DataInPhase(length);
 }
 
-int HostServices::ModeSense6(cdb_t cdb, vector<uint8_t> &buf) const
+int HostServices::ModeSense6(cdb_t cdb, data_in_t buf) const
 {
     // Block descriptors cannot be returned, subpages are not supported
     if (cdb[3] || !(cdb[1] & 0x08)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(cdb[4])));
+    const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
     const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
 
     // The size field does not count itself
-    buf[0] = (uint8_t)(size - 1);
+    buf[0] = static_cast<uint8_t>((size - 1));
 
     return size;
 }
 
-int HostServices::ModeSense10(cdb_t cdb, vector<uint8_t> &buf) const
+int HostServices::ModeSense10(cdb_t cdb, data_in_t buf) const
 {
     // Block descriptors cannot be returned, subpages are not supported
     if (cdb[3] || !(cdb[1] & 0x08)) {
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(GetInt16(cdb, 7))));
+    const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
     fill_n(buf.begin(), length, 0);
 
     const int size = page_handler->AddModePages(cdb, buf, 8, length, 65535);
@@ -254,99 +247,93 @@ void HostServices::SetUpModePages(map<int, vector<byte>> &pages, int page, bool 
 
 void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable) const
 {
-    pages[32] = vector<byte>(sizeof(mode_page_datetime) + 2);
+    pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
     if (!changeable) {
         const time_t &t = system_clock::to_time_t(system_clock::now());
-        tm localtime;
-        localtime_r(&t, &localtime);
+        tm local_time;
+        localtime_r(&t, &local_time);
 
-        mode_page_datetime datetime;
+        ModePageDateTime datetime;
         datetime.major_version = 0x01;
         datetime.minor_version = 0x00;
-        datetime.year = static_cast<uint8_t>(localtime.tm_year);
-        datetime.month = static_cast<uint8_t>(localtime.tm_mon);
-        datetime.day = static_cast<uint8_t>(localtime.tm_mday);
-        datetime.hour = static_cast<uint8_t>(localtime.tm_hour);
-        datetime.minute = static_cast<uint8_t>(localtime.tm_min);
+        datetime.year = static_cast<uint8_t>(local_time.tm_year);
+        datetime.month = static_cast<uint8_t>(local_time.tm_mon);
+        datetime.day = static_cast<uint8_t>(local_time.tm_mday);
+        datetime.hour = static_cast<uint8_t>(local_time.tm_hour);
+        datetime.minute = static_cast<uint8_t>(local_time.tm_min);
         // Ignore leap second for simplicity
-        datetime.second = static_cast<uint8_t>(localtime.tm_sec < 60 ? localtime.tm_sec : 59);
+        datetime.second = static_cast<uint8_t>(local_time.tm_sec < 60 ? local_time.tm_sec : 59);
 
         memcpy(&pages[32][2], &datetime, sizeof(datetime));
     }
 }
 
-int HostServices::WriteData(span<const uint8_t> buf, scsi_command command)
+int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 {
-    if (command != scsi_command::execute_operation) {
-        throw scsi_exception(sense_key::aborted_command);
+    if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt16(7);
     if (!length) {
         execution_results[GetController()->GetInitiatorId()].clear();
-        return 0;
+        return l;
     }
 
     PbCommand cmd;
     switch (input_format) {
-    case protobuf_format::binary:
+    case ProtobufFormat::BINARY:
         if (!cmd.ParseFromArray(buf.data(), length)) {
-            LogTrace("Failed to deserialize protobuf binary data");
-            throw scsi_exception(sense_key::aborted_command);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
 
-    case protobuf_format::json: {
+    case ProtobufFormat::JSON: {
         if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
-            LogTrace("Failed to deserialize protobuf JSON data");
-            throw scsi_exception(sense_key::aborted_command);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
     }
 
-    case protobuf_format::text: {
+    case ProtobufFormat::TEXT: {
         if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
-            LogTrace("Failed to deserialize protobuf text format data");
-            throw scsi_exception(sense_key::aborted_command);
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
     }
 
     default:
         assert(false);
-        throw scsi_exception(sense_key::aborted_command);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     PbResult result;
-    CommandContext context(cmd);
+    CommandContext context(cmd, GetLogger());
     context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
-        throw scsi_exception(sense_key::aborted_command);
+        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
 
-    return length;
+    return l;
 }
 
-HostServices::protobuf_format HostServices::ConvertFormat() const
+ProtobufFormat HostServices::ConvertFormat() const
 {
-    switch (GetCdbByte(1) & 0b00000111) {
+    switch (GetCdbByte(1) & 0b00011111) {
     case 0x001:
-        return protobuf_format::binary;
-        break;
+        return ProtobufFormat::BINARY;
 
     case 0b010:
-        return protobuf_format::json;
-        break;
+        return ProtobufFormat::JSON;
 
     case 0b100:
-        return protobuf_format::text;
-        break;
+        return ProtobufFormat::TEXT;
 
     default:
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 }

@@ -2,22 +2,19 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "command_dispatcher.h"
 #include <fstream>
-#include <spdlog/spdlog.h>
 #include "command_context.h"
 #include "command_image_support.h"
 #include "command_response.h"
-#include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace protobuf_util;
 
@@ -27,13 +24,13 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
+        s2p_logger.trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
 
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
             to_string(static_cast<int>(operation)));
     }
 
-    trace("Executing {} command", PbOperation_Name(operation));
+    s2p_logger.trace("Executing {} command", PbOperation_Name(operation));
 
     CommandResponse response;
 
@@ -48,7 +45,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEFAULT_FOLDER:
-        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder")); !error.empty()) {
+        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder"),
+            s2p_logger); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
@@ -58,7 +56,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
+        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
@@ -66,8 +64,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
-        response.GetServerInfo(*result.mutable_server_info(), command, executor.GetAllDevices(),
-            executor.GetReservedIds());
+        response.GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
+            executor.GetReservedIds(), s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -80,7 +78,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_IMAGE_FILES_INFO:
         response.GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
-            GetParam(command, "file_pattern"));
+            GetParam(command, "file_pattern"), s2p_logger);
         return context.WriteSuccessResult(result);
 
     case IMAGE_FILE_INFO:
@@ -109,7 +107,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case STATISTICS_INFO:
-        response.GetStatisticsInfo(*result.mutable_statistics_info(), executor.GetAllDevices());
+        response.GetStatisticsInfo(*result.mutable_statistics_info(), controller_factory.GetAllDevices());
         return context.WriteSuccessResult(result);
 
     case PROPERTIES_INFO:
@@ -173,7 +171,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
         PbCommand command;
         PbResult result;
         CommandResponse response;
-        response.GetDevicesInfo(executor.GetAllDevices(), result, command);
+        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteResult(result);
     }
 
@@ -183,23 +181,23 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
 // Shutdown on a remote interface command
 bool CommandDispatcher::ShutDown(const CommandContext &context) const
 {
-    shutdown_mode mode = shutdown_mode::none;
+    ShutdownMode mode = ShutdownMode::NONE;
 
     if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
-        mode = shutdown_mode::stop_s2p;
+        mode = ShutdownMode::STOP_S2P;
     }
     else if (m == "system") {
-        mode = shutdown_mode::stop_pi;
+        mode = ShutdownMode::STOP_PI;
     }
     else if (m == "reboot") {
-        mode = shutdown_mode::restart_pi;
+        mode = ShutdownMode::RESTART_PI;
     }
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != shutdown_mode::stop_s2p && getuid()) {
+    if (mode != ShutdownMode::STOP_S2P && getuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -211,27 +209,27 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
 }
 
 // Shutdown on a SCSI command
-bool CommandDispatcher::ShutDown(shutdown_mode mode) const
+bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 {
     switch (mode) {
-    case shutdown_mode::stop_s2p:
-        info("s2p shutdown requested");
+    case ShutdownMode::STOP_S2P:
+        s2p_logger.info("s2p shutdown requested");
         return true;
 
-    case shutdown_mode::stop_pi:
-        info("Pi shutdown requested");
+    case ShutdownMode::STOP_PI:
+        s2p_logger.info("Pi shutdown requested");
         (void)system("init 0");
-        error("Pi shutdown failed");
+        s2p_logger.error("Pi shutdown failed");
         break;
 
-    case shutdown_mode::restart_pi:
-        info("Pi restart requested");
+    case ShutdownMode::RESTART_PI:
+        s2p_logger.info("Pi restart requested");
         (void)system("init 6");
-        error("Pi restart failed");
+        s2p_logger.error("Pi restart failed");
         break;
 
     default:
-        error("Invalid shutdown mode {}", static_cast<int>(mode));
+        s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
         break;
     }
 
@@ -248,8 +246,8 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         level = components[0];
 
         if (components.size() > 1) {
-            if (const string &error = ProcessId(components[1], id, lun); !error.empty()) {
-                warn("Error setting log level: " + error);
+            if (const string &error = ParseIdAndLun(components[1], id, lun); !error.empty()) {
+                s2p_logger.warn("Error setting log level: {}", error);
                 return false;
             }
         }
@@ -258,23 +256,23 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     const level::level_enum l = level::from_str(level);
     // Compensate for spdlog using 'off' for unknown levels
     if (to_string_view(l) != level) {
-        warn("Invalid log level '{}'", level);
+        s2p_logger.warn("Invalid log level '{}'", level);
         return false;
     }
 
-    set_level(l);
-    DeviceLogger::SetLogIdAndLun(id, lun);
+    s2p_logger.set_level(l);
+    controller_factory.SetLogLevel(id, lun, l);
 
     if (id != -1) {
         if (lun == -1) {
-            info("Set log level for device {0} to '{1}'", id, level);
+            s2p_logger.info("Set log level for device {0} to '{1}'", id, level);
         }
         else {
-            info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
+            s2p_logger.info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
         }
     }
     else {
-        info("Set log level to '{}'", level);
+        s2p_logger.info("Set log level to '{}'", level);
     }
 
     return true;

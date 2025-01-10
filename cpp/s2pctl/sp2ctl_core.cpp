@@ -32,8 +32,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 |unprotect).\n"
             << "  --type/-t TYPE                 Optional device type\n"
             << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
-            << "  --block-size/-b BLOCK_SIZE     Optional block size, 4-4096 bytes\n"
-            << "                                 in multiples of 4.\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
@@ -114,7 +113,7 @@ int S2pCtl::RunInteractive()
         interactive_args.emplace_back(strdup(prompt.c_str()));
         interactive_args.emplace_back(strdup(args[0].c_str())
         );
-        for (size_t i = 1; i < args.size(); i++) {
+        for (size_t i = 1; i < args.size(); ++i) {
             if (!args[i].empty()) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
             }
@@ -214,18 +213,19 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'b':
-            int block_size;
-            if (!GetAsUnsignedInt(optarg, block_size)) {
-                cerr << "Error: Invalid block size " << optarg << endl;
+            if (const int block_size = ParseAsUnsignedInt(optarg); block_size <= 0) {
+                cerr << "Error: Invalid block size " << optarg << '\n';
                 return EXIT_FAILURE;
             }
-            device->set_block_size(block_size);
+            else {
+                device->set_block_size(block_size);
+            }
             break;
 
         case 'c':
             command.set_operation(ParseOperation(optarg));
             if (command.operation() == NO_OPERATION) {
-                cerr << "Error: Unknown operation '" << optarg << "'" << endl;
+                cerr << "Error: Unknown operation '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -242,7 +242,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'E':
             filename = optarg;
             if (filename.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             command.set_operation(IMAGE_FILE_INFO);
@@ -272,7 +272,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 'H':
             hostname = optarg;
             if (hostname.empty()) {
-                cerr << "Error: Missing hostname" << endl;
+                cerr << "Error: Missing hostname\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -280,7 +280,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_BINARY_PROTOBUF:
             filename_binary = optarg;
             if (filename_binary.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -288,7 +288,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_JSON_PROTOBUF:
             filename_json = optarg;
             if (filename_json.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -296,7 +296,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case OPT_TEXT_PROTOBUF:
             filename_text = optarg;
             if (filename_text.empty()) {
-                cerr << "Error: Missing filename" << endl;
+                cerr << "Error: Missing filename\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -341,7 +341,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 't':
             device->set_type(ParseDeviceType(optarg));
             if (device->type() == UNDEFINED) {
-                cerr << "Error: Invalid device type '" << optarg << "'" << endl;
+                cerr << "Error: Invalid device type '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -360,8 +360,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             try {
                 device->set_caching_mode(ParseCachingMode(optarg));
             }
-            catch (const parser_exception &e) {
-                cerr << "Error: " << e.what() << endl;
+            catch (const ParserException &e) {
+                cerr << "Error: " << e.what() << '\n';
                 return EXIT_FAILURE;
             }
             break;
@@ -371,8 +371,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case 'p':
-            if (!GetAsUnsignedInt(optarg, port) || port <= 0 || port > 65535) {
-                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535" << endl;
+            port = ParseAsUnsignedInt(optarg);
+            if (port <= 0 || port > 65535) {
+                cerr << "Error: Invalid port '" << optarg << "', port must be between 1 and 65535\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -380,7 +381,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         case 's':
             command.set_operation(SERVER_INFO);
             if (const string &error = SetCommandParams(command, optarg ? optarg : ""); !error.empty()) {
-                cerr << "Error: " << error << endl;
+                cerr << "Error: " << error << '\n';
                 return EXIT_FAILURE;
             }
             break;
@@ -417,12 +418,13 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case OPT_SCSI_LEVEL:
-            if (int scsi_level; !GetAsUnsignedInt(optarg, scsi_level) || !scsi_level) {
-                cerr << "Error: Invalid SCSI level '" << optarg << "'" << endl;
+            if (const int level = ParseAsUnsignedInt(optarg); level == -1 || !level
+                || level >= static_cast<int>(ScsiLevel::LAST)) {
+                cerr << "Error: Invalid SCSI level '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }
             else {
-                device->set_scsi_level(scsi_level);
+                device->set_scsi_level(level);
             }
             break;
 
@@ -443,7 +445,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
 
     if (!id_and_lun.empty()) {
         if (const string &error = SetIdAndLun(*device, id_and_lun); !error.empty()) {
-            cerr << "Error: " << error << endl;
+            cerr << "Error: " << error << '\n';
             return EXIT_FAILURE;
         }
     }
@@ -459,7 +461,7 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         if (command.operation() == DEVICES_INFO) {
             command.clear_devices();
 
-            status = s2pctl_commands.CommandDevicesInfo();
+            status = s2pctl_commands.HandleDevicesInfo();
         }
         else {
             ParseParameters(*device, params);
@@ -467,8 +469,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             status = s2pctl_commands.Execute(log_level, default_folder, reserved_ids, image_params, filename);
         }
     }
-    catch (const io_exception &e) {
-        cerr << "Error: " << e.what() << endl;
+    catch (const IoException &e) {
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 

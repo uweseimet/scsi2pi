@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "base/primary_device.h"
 #include "page_handler.h"
 
 class CommandDispatcher;
@@ -23,11 +22,16 @@ public:
     explicit HostServices(int);
     ~HostServices() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
+
+    string GetIdentifier() const override
+    {
+        return "Host Services";
+    }
 
     vector<uint8_t> InquiryInternal() const override;
 
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {
@@ -40,14 +44,7 @@ protected:
 
 private:
 
-    enum class protobuf_format
-    {
-        binary = 0b001,
-        json = 0b010,
-        text = 0b100
-    };
-
-    using mode_page_datetime = struct __attribute__((packed)) {
+    using ModePageDateTime = struct __attribute__((packed)) {
         // Major and minor version of this data structure (e.g. 1.0)
         uint8_t major_version;
         uint8_t minor_version;
@@ -64,12 +61,12 @@ private:
     void ExecuteOperation();
     void ReceiveOperationResults();
 
-    int ModeSense6(cdb_t, vector<uint8_t>&) const override;
-    int ModeSense10(cdb_t, vector<uint8_t>&) const override;
+    int ModeSense6(cdb_t, data_in_t) const override;
+    int ModeSense10(cdb_t, data_in_t) const override;
 
     void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
 
-    protobuf_format ConvertFormat() const;
+    ProtobufFormat ConvertFormat() const;
 
     unique_ptr<PageHandler> page_handler;
 
@@ -78,7 +75,7 @@ private:
 
     shared_ptr<CommandDispatcher> dispatcher;
 
-    protobuf_format input_format = protobuf_format::binary;
+    ProtobufFormat input_format = ProtobufFormat::BINARY;
 
     static constexpr int EXECUTE_BUFFER_SIZE = 65535;
 };

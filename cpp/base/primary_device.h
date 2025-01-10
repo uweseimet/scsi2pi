@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -11,13 +11,12 @@
 #pragma once
 
 #include <functional>
-#include "interfaces/scsi_primary_commands.h"
 #include "controllers/abstract_controller.h"
+#include "shared/memory_util.h"
 #include "shared/s2p_exceptions.h"
-#include "s2p_defs.h"
 #include "device.h"
 
-class PrimaryDevice : public ScsiPrimaryCommands, public Device
+class PrimaryDevice : public Device
 {
     friend class AbstractController;
     friend class PageHandler;
@@ -26,43 +25,55 @@ class PrimaryDevice : public ScsiPrimaryCommands, public Device
 
 public:
 
-    ~PrimaryDevice() override = default;
+    using ProductData = struct {
+        string vendor;
+        string product;
+        string revision;
+    };
 
-    bool Init(const param_map&);
-    virtual bool SetUp() = 0;
+    string Init();
+    virtual string SetUp() = 0;
     virtual void CleanUp()
     {
         // Override if cleanup work is required for a derived device
     }
 
-    virtual void Dispatch(scsi_command);
+    virtual void Dispatch(ScsiCommand);
 
-    auto GetController() const
+    auto* GetController() const
     {
         return controller;
     }
 
-    scsi_level GetScsiLevel() const
+    ProductData GetProductData() const;
+    virtual string SetProductData(const ProductData&, bool);
+
+    string GetPaddedName() const
+    {
+        return fmt::format("{0:8}{1:16}{2:4}", product_data.vendor, product_data.product, product_data.revision);
+    }
+
+    ScsiLevel GetScsiLevel() const
     {
         return level;
     }
-    bool SetScsiLevel(scsi_level);
+    bool SetScsiLevel(ScsiLevel);
+    bool SetResponseDataFormat(ScsiLevel);
 
-    enum sense_key GetSenseKey() const
+    enum SenseKey GetSenseKey() const
     {
         return sense_key;
     }
-    enum asc GetAsc() const
+    enum Asc GetAsc() const
     {
         return asc;
     }
-    void SetStatus(enum sense_key s, enum asc a)
-    {
-        sense_key = s;
-        asc = a;
-    }
+    void SetStatus(SenseKey, Asc);
+    void ResetStatus();
 
     int GetId() const override;
+
+    virtual string GetIdentifier() const = 0;
 
     int GetDelayAfterBytes() const
     {
@@ -74,7 +85,7 @@ public:
 
     void Reset();
 
-    virtual int ReadData(span<uint8_t>)
+    virtual int ReadData(data_in_t)
     {
         // Devices that implement a DATA IN phase have to override this method
 
@@ -82,12 +93,12 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual int WriteData(span<const uint8_t>, scsi_command) = 0;
+    virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, span<const uint8_t>, int)
+    virtual void ModeSelect(cdb_t, data_out_t, int, int)
     {
         // There is no default implementation of MODE SELECT
-        throw scsi_exception(sense_key::illegal_request, asc::invalid_field_in_cdb);
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
     virtual void FlushCache()
@@ -98,36 +109,32 @@ public:
     // Devices providing statistics have to override this method
     virtual vector<PbStatistics> GetStatistics() const
     {
-        return vector<PbStatistics>();
+        return {};
     }
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, scsi_level l, int lun, int delay = SEND_NO_DELAY)
-    : Device(type, lun), level(l), delay_after_bytes(delay)
+    PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
+    : Device(type, lun), delay_after_bytes(delay)
     {
     }
 
-    void AddCommand(scsi_command, const command&);
+    void AddCommand(ScsiCommand, const command&);
 
-    vector<uint8_t> HandleInquiry(device_type, bool) const;
+    vector<uint8_t> HandleInquiry(DeviceType, bool) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 
-    void Inquiry() override;
-    void RequestSense() override;
+    virtual void Inquiry();
+    virtual void RequestSense();
+    void SendDiagnostic() const;
 
-
-    void SendDiagnostic() override;
-    void ReserveUnit() override;
-    void ReleaseUnit() override;
-
-    virtual int ModeSense6(cdb_t, vector<uint8_t>&) const
+    virtual int ModeSense6(cdb_t, data_in_t) const
     {
         // Nothing to do in base class
         return 0;
     }
-    virtual int ModeSense10(cdb_t, vector<uint8_t>&) const
+    virtual int ModeSense10(cdb_t, data_in_t) const
     {
         // Nothing to do in base class
         return 0;
@@ -137,23 +144,10 @@ protected:
         // Nothing to do in base class
     }
 
-    void SetFilemark()
-    {
-        filemark = true;
-    }
-    void SetEom()
-    {
-        eom = true;
-    }
-    void SetIli()
-    {
-        ili = true;
-    }
-    void SetInformation(int64_t value)
-    {
-        information = static_cast<int32_t>(value);
-        valid = true;
-    }
+    void SetFilemark();
+    void SetEom(Ascq);
+    void SetIli();
+    void SetInformation(int32_t);
 
     void StatusPhase() const;
     void DataInPhase(int) const;
@@ -180,48 +174,28 @@ protected:
         return memory_util::GetInt64(controller->GetCdb(), index);
     }
 
-    void LogTrace(const string &s) const
-    {
-        device_logger.Trace(s);
-    }
-    void LogDebug(const string &s) const
-    {
-        device_logger.Debug(s);
-    }
-    void LogInfo(const string &s) const
-    {
-        device_logger.Info(s);
-    }
-    void LogWarn(const string &s) const
-    {
-        device_logger.Warn(s);
-    }
-    void LogError(const string &s) const
-    {
-        device_logger.Error(s);
-    }
-
 private:
 
     static constexpr int NOT_RESERVED = -2;
 
     void SetController(AbstractController*);
 
-    void TestUnitReady() override;
-    void ReportLuns() override;
+    void ReportLuns() const;
 
     vector<byte> HandleRequestSense() const;
 
-    DeviceLogger device_logger;
+    ProductData product_data = ProductData(
+        { "SCSI2Pi", "", fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
-    scsi_level level = scsi_level::none;
+    ScsiLevel level = ScsiLevel::NONE;
+    ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;
 
-    enum sense_key sense_key = sense_key::no_sense;
-    enum asc asc = asc::no_additional_sense_information;
+    SenseKey sense_key = SenseKey::NO_SENSE;
+    Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+    Ascq eom = Ascq::NONE;
 
     bool valid = false;
     bool filemark = false;
-    bool eom = false;
     bool ili = false;
     int32_t information = 0;
 

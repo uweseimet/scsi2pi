@@ -25,7 +25,7 @@ static void SetUpModePages(map<int, vector<byte>> &pages)
 
 TEST(OpticalMemoryTest, Inquiry)
 {
-    TestShared::Inquiry(SCMO, device_type::optical_memory, scsi_level::scsi_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
+    TestShared::Inquiry(SCMO, DeviceType::OPTICAL_MEMORY, ScsiLevel::SCSI_2, "SCSI2Pi SCSI MO         ", 0x1f, true);
 }
 
 TEST(OpticalMemoryTest, GetBlockSizes)
@@ -68,7 +68,7 @@ TEST(OpticalMemoryTest, AddVendorPages)
     mo.SetBlockCount(0x12345678);
     mo.SetUpModePages(pages, 0x20, false);
     EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
-    vector<byte> &page_32 = pages[32];
+    auto &page_32 = pages[32];
     EXPECT_EQ(12U, page_32.size());
     EXPECT_EQ(0, to_integer<int>(page_32[2])) << "Wrong format mode";
     EXPECT_EQ(0, to_integer<int>(page_32[3])) << "Wrong format type";
@@ -127,33 +127,45 @@ TEST(OpticalMemoryTest, ModeSelect)
     vector<uint8_t> buf(32);
 
     // PF (vendor-specific parameter format) must not fail but be ignored
-    vector<int> cdb = CreateCdb(scsi_command::mode_select6, "10");
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28, 0), ScsiException)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16, 0));
     buf[4] = 0;
     buf[5] = 0;
 
-    cdb = CreateCdb(scsi_command::mode_select10, "10");
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, "10");
 
     // Page 3 (Format device page)
     buf[8] = 0x04;
     // Page length
     buf[9] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32), scsi_exception)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32, 0), ScsiException)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20, 0));
+}
+
+TEST(OpticalMemoryTest, Open)
+{
+    MockOpticalMemory mo(0);
+
+    EXPECT_THROW(mo.Open(), IoException)<< "Missing filename";
+
+    const path &filename = CreateTempFile(2048);
+    mo.SetFilename(filename.string());
+    mo.Open();
+    EXPECT_EQ(4U, mo.GetBlockCount());
 }

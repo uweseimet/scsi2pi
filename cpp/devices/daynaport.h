@@ -23,24 +23,26 @@
 #pragma once
 
 #include <array>
-#include <unordered_map>
 #ifndef __NetBSD__
 #include <net/ethernet.h>
 #endif
-#include "base/interfaces/scsi_communications_commands.h"
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice, public ScsiCommunicationsCommands
+class DaynaPort : public PrimaryDevice
 {
 
 public:
 
     explicit DaynaPort(int);
-    ~DaynaPort() override = default;
 
-    bool SetUp() override;
+    string SetUp() override;
     void CleanUp() override;
+
+    string GetIdentifier() const override
+    {
+        return "DaynaPort SCSI/Link";
+    }
 
     param_map GetDefaultParams() const override
     {
@@ -48,10 +50,10 @@ public:
     }
 
     vector<uint8_t> InquiryInternal() const override;
-    int WriteData(span<const uint8_t>, scsi_command) override;
+    int WriteData(cdb_t, data_out_t, int, int) override;
 
-    void GetMessage6() override;
-    void SendMessage6() const override;
+    void GetMessage6();
+    void SendMessage6() const;
     void RetrieveStats() const;
     void SetInterfaceMode() const;
     void SetMcastAddr() const;
@@ -72,28 +74,28 @@ public:
 
 private:
 
-    enum class read_data_flags_t : uint32_t
+    enum class ReadDataFlagsType : uint32_t
     {
-        e_no_more_data = 0x00000000,
-        e_more_data_available = 0x00000001,
-        e_dropped_packets = 0xFFFFFFFF,
+        NO_MORE_DATA = 0x00000000,
+        MORE_DATA_AVAILABLE = 0x00000001,
+        DROPPED_PACKETS = 0xFFFFFFFF,
     };
 
-    using scsi_resp_read_t = struct __attribute__((packed)) {
+    using ScsiRespRead = struct __attribute__((packed)) {
         uint32_t length;
-        read_data_flags_t flags;
+        ReadDataFlagsType flags;
         byte pad;
         array<byte, ETH_FRAME_LEN + sizeof(uint32_t)> data; // Frame length + 4 byte CRC
     };
 
-    using scsi_resp_link_stats_t = struct __attribute__((packed)) {
+    using ScsiRespLinkStats = struct __attribute__((packed)) {
         array<byte, 6> mac_address;
         uint32_t frame_alignment_errors;
         uint32_t crc_errors;
         uint32_t frames_lost;
     };
 
-    static constexpr scsi_resp_link_stats_t SCSI_LINK_STATS = {
+    static constexpr ScsiRespLinkStats SCSI_LINK_STATS = {
         // The last 3 bytes of this MAC address are replaced by those of the bridge interface
         .mac_address = { byte { 0x00 }, byte { 0x80 }, byte { 0x19 }, byte { 0x10 }, byte { 0x98 }, byte { 0xe3 } },
         .frame_alignment_errors = 0,
@@ -101,7 +103,7 @@ private:
         .frames_lost = 0,
     };
 
-    int GetMessage(vector<uint8_t>&);
+    int GetMessage(data_in_t);
 
     TapDriver tap;
 

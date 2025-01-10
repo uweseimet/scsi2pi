@@ -8,37 +8,52 @@
 
 #pragma once
 
-#include <ctime>
-#include <stdexcept>
 #include <memory>
-#include <span>
+#include <stdexcept>
+#include <spdlog/spdlog.h>
 #include "buses/bus.h"
+#include "shared/s2p_formatter.h"
 
 using namespace std;
+using namespace spdlog;
 
 class InitiatorExecutor
 {
-    class phase_exception : public runtime_error
+    class PhaseException : public runtime_error
     {
         using runtime_error::runtime_error;
     };
 
 public:
 
-    InitiatorExecutor(Bus &b, int id) : bus(b), initiator_id(id)
+    InitiatorExecutor(Bus &b, int id, logger &l) : bus(b), initiator_id(id), initiator_logger(l)
     {
     }
     ~InitiatorExecutor() = default;
 
     void SetTarget(int, int, bool);
 
-    // Execute command with a default timeout of 3 s
-    int Execute(scsi_command, span<uint8_t>, span<uint8_t>, int, int = 3);
-    int Execute(span<uint8_t>, span<uint8_t>, int, int = 3);
+    int Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool);
+    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
 
     int GetByteCount() const
     {
         return byte_count;
+    }
+
+    logger& GetLogger() const
+    {
+        return initiator_logger;
+    }
+
+    string FormatBytes(span<const uint8_t> bytes, int count) const
+    {
+        return formatter.FormatBytes(bytes, count);
+    }
+
+    void SetLimit(int limit)
+    {
+        formatter.SetLimit(limit);
     }
 
 private:
@@ -46,18 +61,16 @@ private:
     bool Dispatch(span<uint8_t>, span<uint8_t>, int&);
 
     bool Arbitration() const;
-    bool Selection() const;
+    bool Selection(bool) const;
     void Command(span<uint8_t>);
     void Status();
-    void DataIn(span<uint8_t>, int&);
-    void DataOut(span<uint8_t>, int&);
+    void DataIn(data_in_t, int&);
+    void DataOut(data_out_t, int&);
     void MsgIn();
     void MsgOut();
 
     bool WaitForFree() const;
     bool WaitForBusy() const;
-
-    void LogStatus() const;
 
     void Sleep(const timespec &ns) const
     {
@@ -66,12 +79,16 @@ private:
 
     Bus &bus;
 
+    S2pFormatter formatter;
+
     int initiator_id;
+
+    logger &initiator_logger;
 
     int target_id = -1;
     int target_lun = -1;
 
-    int status = 0xff;
+    int status_code = 0xff;
 
     int byte_count = 0;
 
@@ -79,7 +96,7 @@ private:
 
     bool sasi = false;
 
-    message_code next_message = message_code::identify;
+    MessageCode next_message = MessageCode::IDENTIFY;
 
     static constexpr timespec BUS_SETTLE_DELAY = { .tv_sec = 0, .tv_nsec = 400 };
     static constexpr timespec BUS_CLEAR_DELAY = { .tv_sec = 0, .tv_nsec = 800 };

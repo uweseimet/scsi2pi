@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,8 +19,7 @@ public:
 
     bool Process() override;
 
-    void Error(sense_key, asc asc = asc::no_additional_sense_information, status_code status =
-        status_code::check_condition) override;
+    void Error(SenseKey, Asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode = StatusCode::CHECK_CONDITION) override;
     void Reset() override;
 
     void BusFree() override;
@@ -34,25 +33,23 @@ public:
 
     int GetEffectiveLun() const override;
 
-    static int GetLunMax(bool sasi)
-    {
-        return sasi ? 2 : 32;
-    }
-
 private:
+
+    void ResetFlags();
 
     void Execute();
     void Send();
     void Receive();
     void XferMsg();
-    bool XferIn();
-    bool XferOut(bool);
+    void TransferToHost();
+    bool TransferFromHost(int);
 
     void ParseMessage();
     void ProcessMessage();
     void ProcessEndOfMessage();
 
-    void LogCdb() const;
+    void RaiseDeferredError(SenseKey, Asc);
+    void ProvideSenseData();
 
     // The LUN from the IDENTIFY message
     int identified_lun = -1;
@@ -62,6 +59,11 @@ private:
     bool linked = false;
 
     bool flag = false;
+
+    // For the last error reported by the controller, the controller and not the device has to provide the sense data.
+    // This is required for SCSG because REQUEST SENSE is passed through to the actual device.
+    SenseKey deferred_sense_key = SenseKey::NO_SENSE;
+    Asc deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
     vector<uint8_t> msg_bytes;
 };
