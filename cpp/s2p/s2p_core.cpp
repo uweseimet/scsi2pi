@@ -408,8 +408,6 @@ void S2p::AttachInitialDevices(PbCommand &command)
         }
 #endif
     }
-
-    dispatcher->SetLogLevel(log_level);
 }
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
