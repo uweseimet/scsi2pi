@@ -145,7 +145,7 @@ Launch s2p with a SASI hard drive image as ID 1
 To create an empty 100 MiB drive image, use the following command:
    dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800
 
-In case the fallocate command is available a much faster alternative to the dd command is:
+In case the fallocate command is available, a much faster alternative to the dd command is:
    fallocate -l 104857600 /path/to/newimage.hda
 
 .SH SEE ALSO
