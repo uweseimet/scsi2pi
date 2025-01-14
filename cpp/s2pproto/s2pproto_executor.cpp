@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -20,14 +20,14 @@ using namespace s2p_interface;
 
 string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_format, PbResult &result)
 {
+    ifstream in(filename, input_format == ProtobufFormat::BINARY ? ios::binary : ios::in);
+    if (in.fail()) {
+        return "Can't open input file '" + filename + "': " + strerror(errno);
+    }
+
     int length = 0;
     switch (input_format) {
         case ProtobufFormat::BINARY: {
-        ifstream in(filename, ios::binary);
-        if (in.fail()) {
-            return "Can't open input file '" + filename + "': " + strerror(errno);
-        }
-
         length = file_size(filename);
         vector<char> data(length);
         in.read(data.data(), length);
@@ -35,13 +35,8 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
         break;
     }
 
-        case ProtobufFormat::JSON:
-        case ProtobufFormat::TEXT: {
-        ifstream in(filename);
-        if (in.fail()) {
-            return "Can't open input file '" + filename + "': " + strerror(errno);
-        }
-
+    case ProtobufFormat::JSON:
+    case ProtobufFormat::TEXT: {
         stringstream buf;
         buf << in.rdbuf();
         const string &data = buf.str();
