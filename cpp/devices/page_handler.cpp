@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -87,8 +87,7 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
 
     if (pages.contains(0)) {
         // Page data only (there is no standardized size field for page 0)
-        const auto &page_data = pages[0];
-        result.insert(result.end(), page_data.cbegin(), page_data.cend());
+        result.insert(result.end(), pages[0].cbegin(), pages[0].cend());
     }
 
     if (static_cast<int>(result.size()) > max_size) {
@@ -106,6 +105,8 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 {
     map<int, vector<byte>> pages;
 
+    const string identifier = vendor + COMPONENT_SEPARATOR + product;
+
     for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
         const auto &key_components = Split(key, '.', 3);
 
@@ -119,8 +120,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
             continue;
         }
 
-        if (const string identifier = vendor + COMPONENT_SEPARATOR + product; !identifier.starts_with(
-            key_components[2])) {
+        if (!identifier.starts_with(key_components[2])) {
             continue;
         }
 

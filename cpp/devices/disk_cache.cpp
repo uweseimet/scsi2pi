@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     int track = block >> 8;
 
     // Get track data
-    return Assign(track);
+    return AssignTrack(track);
 }
 
 int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
@@ -81,12 +81,9 @@ int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
     return disktrk->WriteSector(buf, sector & 0xff);
 }
 
-// Track Assignment
-shared_ptr<DiskTrack> DiskCache::Assign(int track)
+shared_ptr<DiskTrack> DiskCache::AssignTrack(int track)
 {
-    assert(track >= 0);
-
-    // First, check if it is already assigned
+    // Check if it is already assigned
     for (CacheData &c : cache) {
         if (c.disktrk && c.disktrk->GetTrack() == track) {
             // Track match
@@ -95,54 +92,29 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
         }
     }
 
-    // Next, check for empty
-    for (size_t i = 0; i < cache.size(); ++i) {
-        if (!cache[i].disktrk) {
-            // Try loading
-            if (Load(static_cast<int>(i), track, nullptr)) {
-                // Success loading
-                cache[i].serial = serial;
-                return cache[i].disktrk;
-            }
-
-            // Load failed
-            return nullptr;
+    // Check for an empty cache slot
+    for (CacheData &c : cache) {
+        if (!c.disktrk && Load(static_cast<int>(&c - &cache[0]), track, nullptr)) {
+            c.serial = serial;
+            return c.disktrk;
         }
     }
 
-    // Finally, find the youngest serial number and delete it
+    // Find the cache entry with the smallest serial number, i.e. the oldest entry and save this track
+    if (auto c = ranges::min_element(cache,
+        [](const CacheData &d1, const CacheData &d2) {return d1.serial < d2.serial;})
+        - cache.begin(); cache[c].disktrk->Save(sec_path, cache_miss_write_count)) {
+        // Delete this track
+        auto disktrk = std::move(cache[c].disktrk);
 
-    // Set index 0 as candidate c
-    uint32_t s = cache[0].serial;
-    size_t c = 0;
-
-    // Compare candidate with serial and update to smaller one
-    for (size_t i = 0; i < cache.size(); ++i) {
-        assert(cache[i].disktrk);
-
-        // Compare and update the existing serial
-        if (cache[i].serial < s) {
-            s = cache[i].serial;
-            c = i;
+        if (Load(static_cast<int>(c), track, disktrk)) {
+            // Successful loading
+            cache[c].serial = serial;
+            return cache[c].disktrk;
         }
     }
 
-    // Save this track
-    if (!cache[c].disktrk->Save(sec_path, cache_miss_write_count)) {
-        return nullptr;
-    }
-
-    // Delete this track
-    shared_ptr<DiskTrack> disktrk = cache[c].disktrk;
-    cache[c].disktrk.reset();
-
-    if (Load(static_cast<int>(c), track, disktrk)) {
-        // Successful loading
-        cache[c].serial = serial;
-        return cache[c].disktrk;
-    }
-
-    // Load failed
+    // Save or load failed
     return nullptr;
 }
 

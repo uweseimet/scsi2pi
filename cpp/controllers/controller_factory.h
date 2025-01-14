@@ -56,5 +56,5 @@ private:
     shared_ptr<ScriptGenerator> script_generator;
 
     spdlog::level::level_enum log_level = spdlog::get_level();
-    string log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %n %v";
+    string log_pattern = "%n [%^%l%$] %v";
 };

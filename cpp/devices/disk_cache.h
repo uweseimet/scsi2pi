@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ private:
         uint32_t serial;
     };
 
-    shared_ptr<DiskTrack> Assign(int);
+    shared_ptr<DiskTrack> AssignTrack(int);
     shared_ptr<DiskTrack> GetTrack(uint32_t);
     bool Load(int index, int track, shared_ptr<DiskTrack>);
     void UpdateSerial();

@@ -684,10 +684,9 @@ SimhMetaData Tape::FindNextObject(ObjectType type_to_find, int32_t requested_cou
             if (type_to_find == ObjectType::END_OF_DATA) {
                 return meta_data;
             }
-            else {
-                // End-of-data while spacing over something else
-                RaiseEndOfData(type_to_find, requested_count);
-            }
+
+            // End-of-data while spacing over something else
+            RaiseEndOfData(type_to_find, requested_count);
         }
         else if (type_found == ObjectType::FILEMARK && type_to_find == ObjectType::BLOCK) {
             // Terminate while spacing over blocks and a filemark is found
@@ -849,22 +848,18 @@ void Tape::Erase()
     file.seekp(tape_position);
 
     // Erase in chunks, using SIMH gaps as a pattern (little endian)
-    vector<uint8_t> buf;
-    buf.reserve(1024 * sizeof(SimhMarker::ERASE_GAP));
+    vector<uint8_t> buf(1024 * sizeof(SimhMarker::ERASE_GAP));
     const auto gap = static_cast<uint32_t>(SimhMarker::ERASE_GAP);
-    for (int i = 0; i < 1024; ++i) {
-        buf.push_back(gap & 0xff);
-        buf.push_back((gap >> 8) & 0xff);
-        buf.push_back((gap >> 16) & 0xff);
-        buf.push_back((gap >> 24) & 0xff);
+    for (size_t i = 0; i < buf.size(); i += 4) {
+        buf[i] = gap & 0xff;
+        buf[i + 1] = (gap >> 8) & 0xff;
+        buf[i + 2] = (gap >> 16) & 0xff;
+        buf[i + 3] = (gap >> 24) & 0xff;
     }
 
     uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
-        uint64_t chunk = remaining;
-        if (chunk > buf.size()) {
-            chunk = buf.size();
-        }
+        const uint64_t chunk = min(remaining, buf.size());
 
         file.write((const char*)buf.data(), chunk);
         CheckForWriteError();
@@ -975,7 +970,7 @@ uint32_t Tape::CheckBlockLength()
 
             GetController()->SetStatus(StatusCode::CHECK_CONDITION);
 
-            return record_length < byte_count ? record_length : byte_count;
+            return min(record_length, byte_count);
         }
 
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
@@ -988,7 +983,7 @@ uint32_t Tape::CheckBlockLength()
 
             GetController()->SetStatus(StatusCode::CHECK_CONDITION);
 
-            return record_length < byte_count ? record_length : byte_count;
+            return min(record_length, byte_count);
         }
     }
 

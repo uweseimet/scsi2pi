@@ -110,9 +110,20 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
         sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
     }
 
-    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
-    if (status == -1) {
+    const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    if (!EvaluateStatus(status, buf, cdb)) {
         return {status, length};
+    }
+
+    byte_count += length - io_hdr.resid;
+
+    return {status, length - io_hdr.resid};
+}
+
+bool SgAdapter::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> cdb)
+{
+    if (status == -1) {
+        return false;
     }
     // Do not consider CONDITION MET an error
     else if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
@@ -128,9 +139,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
         sense_data_valid = true;
     }
 
-    byte_count += length - io_hdr.resid;
-
-    return {status, length - io_hdr.resid};
+    return true;
 }
 
 void SgAdapter::GetBlockSize()

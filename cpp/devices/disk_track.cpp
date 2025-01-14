@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@
 
 DiskTrack::~DiskTrack()
 {
-    free(buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
+    free(buffer); // NOSONAR free() must be used here due to posix_memalign
 }
 
 void DiskTrack::Init(int track, int size, int sectors)
@@ -41,27 +41,18 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 
     ++cache_miss_read_count;
 
-    // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = (off_t)track_number << 8;
-    offset <<= shift_count;
-
     const int size = sector_count << shift_count;
 
-    if (!buffer && !posix_memalign((void**)&buffer, 512, ((size + 511) / 512) * 512)) {
-        buffer_size = size;
-    }
-
-    // Reallocate if the buffer length is different
-    if (buffer && buffer_size != static_cast<uint32_t>(size)) {
-        free(buffer); // NOSONAR free() must be used here because of allocation with posix_memalign
+    // Allocate or reallocate the buffer
+    if (!buffer || buffer_size != static_cast<uint32_t>(size)) {
+        free(buffer); // NOSONAR free() must be used here due to posix_memalign
         buffer = nullptr;
-        if (!posix_memalign((void**)&buffer, 512, ((size + 511) / 512) * 512)) {
-            buffer_size = size;
-        }
-    }
 
-    if (!buffer) {
-        return false;
+        if (posix_memalign((void**)&buffer, 512, (size + 511) & ~511)) {
+            return false;
+        }
+
+        buffer_size = size;
     }
 
     modified_flags.resize(sector_count);
@@ -73,6 +64,10 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     if (in.fail()) {
         return false;
     }
+
+    // Calculate offset (previous tracks are considered to hold 256 sectors)
+    off_t offset = static_cast<off_t>(track_number) << 8;
+    offset <<= shift_count;
 
     in.seekg(offset);
     in.read((char*)buffer, size);
@@ -102,18 +97,16 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     }
 
     // Write consecutive sectors
-    for (int i = 0; i < sector_count;) {
+    int i = 0;
+    while (i < sector_count) {
         if (modified_flags[i]) {
             int total = 0;
 
             // Determine consecutive sector range
-            int j;
-            for (j = i; j < sector_count; ++j) {
-                if (!modified_flags[j]) {
-                    break;
-                }
-
+            int j = i;
+            while (j < sector_count && modified_flags[j]) {
                 total += size;
+                ++j;
             }
 
             out.seekp(offset + (i << shift_count));

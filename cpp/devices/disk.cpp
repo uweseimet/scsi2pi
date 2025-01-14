@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -577,7 +577,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
     }
 
     // Do not process 0 blocks
-    return tuple(count || mode == SEEK6 || mode == SEEK10, start, count);
+    return {count || mode == SEEK6 || mode == SEEK10, start, count};
 }
 
 vector<PbStatistics> Disk::GetStatistics() const

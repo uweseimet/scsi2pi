@@ -41,6 +41,8 @@ private:
 
     SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
 
+    bool EvaluateStatus(int, span<uint8_t>, span<uint8_t>);
+
     void GetBlockSize();
 
     logger &sg_logger;
