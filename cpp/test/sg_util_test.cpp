@@ -141,6 +141,13 @@ TEST(SgUtilTest, SetBlockCount)
     EXPECT_EQ(12345U, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
+    cdb.resize(12);
+
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CD);
+    SetBlockCount(cdb, 12345);
+    EXPECT_EQ(12345U, GetInt24(cdb, 6));
+    SetInt24(cdb, 6, 0);
+
     cdb.resize(16);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_16);
