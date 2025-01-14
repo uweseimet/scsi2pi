@@ -158,7 +158,10 @@ int s2p_util::ParseAsUnsignedInt(const string &value)
     try {
         return static_cast<int>(stoul(value));
     }
-    catch (...) {
+    catch (const invalid_argument&) {
+        return -1;
+    }
+    catch (const out_of_range&) {
         return -1;
     }
 }
