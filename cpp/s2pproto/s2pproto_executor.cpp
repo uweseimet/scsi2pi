@@ -21,19 +21,17 @@ using namespace s2p_interface;
 string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_format, PbResult &result)
 {
     ifstream in(filename, input_format == ProtobufFormat::BINARY ? ios::binary : ios::in);
-    if (in.fail()) {
+    if (!in) {
         return "Can't open input file '" + filename + "': " + strerror(errno);
     }
 
     int length = 0;
     switch (input_format) {
-        case ProtobufFormat::BINARY: {
+    case ProtobufFormat::BINARY:
         length = file_size(filename);
-        vector<char> data(length);
-        in.read(data.data(), length);
-        memcpy(buffer.data(), data.data(), length);
+        buffer.resize(length);
+        in.read((char*)buffer.data(), length);
         break;
-    }
 
     case ProtobufFormat::JSON:
     case ProtobufFormat::TEXT: {
@@ -41,6 +39,7 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
         buf << in.rdbuf();
         const string &data = buf.str();
         length = data.size();
+        buffer.resize(length);
         memcpy(buffer.data(), data.data(), length);
         break;
     }
@@ -48,6 +47,10 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     default:
         assert(false);
         break;
+    }
+
+    if (buffer.size() > BUFFER_SIZE) {
+        return "Buffer overflow";
     }
 
     array<uint8_t, 10> cdb = { };

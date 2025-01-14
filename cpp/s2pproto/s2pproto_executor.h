@@ -42,7 +42,7 @@ private:
     // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;
 
-    array<uint8_t, BUFFER_SIZE> buffer;
+    vector<uint8_t> buffer;
 
     unique_ptr<InitiatorExecutor> initiator_executor;
 };
