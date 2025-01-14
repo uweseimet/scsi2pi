@@ -21,6 +21,7 @@ public:
 
 private:
 
+    static void SetDeviceProperty(property_map&, const string&, const string&, string&);
     static string ParseBlueScsiFilename(property_map&, const string&, const string&);
     static vector<char*> ConvertLegacyOptions(const span<char*>&);
     static string ParseNumber(const string&);

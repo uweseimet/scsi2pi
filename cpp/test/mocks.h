@@ -264,6 +264,7 @@ class MockDevice : public Device
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
     FRIEND_TEST(DeviceTest, Eject);
+    FRIEND_TEST(DeviceTest, EnrichStatistics);
 
 public:
 

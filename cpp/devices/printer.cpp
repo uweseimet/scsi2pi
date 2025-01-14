@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -205,31 +205,10 @@ vector<PbStatistics> Printer::GetStatistics() const
 {
     vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
 
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(FILE_PRINT_COUNT);
-    s.set_value(file_print_count);
-    statistics.push_back(s);
-
-    s.set_key(BYTE_RECEIVE_COUNT);
-    s.set_value(byte_receive_count);
-    statistics.push_back(s);
-
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(PRINT_ERROR_COUNT);
-    s.set_value(print_error_count);
-    statistics.push_back(s);
-
-    s.set_category(PbStatisticsCategory::CATEGORY_WARNING);
-
-    s.set_key(PRINT_WARNING_COUNT);
-    s.set_value(print_warning_count);
-    statistics.push_back(s);
+    EnrichStatistics(statistics, CATEGORY_INFO, FILE_PRINT_COUNT, file_print_count);
+    EnrichStatistics(statistics, CATEGORY_INFO, BYTE_RECEIVE_COUNT, byte_receive_count);
+    EnrichStatistics(statistics, CATEGORY_ERROR, PRINT_ERROR_COUNT, print_error_count);
+    EnrichStatistics(statistics, CATEGORY_WARNING, PRINT_WARNING_COUNT, print_warning_count);
 
     return statistics;
 }

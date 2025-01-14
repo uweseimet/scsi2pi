@@ -201,26 +201,12 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
             device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
 
-        if (!block_size.empty()) {
-            properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
-            block_size.clear();
-        }
-        if (!caching_mode.empty()) {
-            properties[device_key + PropertyHandler::CACHING_MODE] = caching_mode;
-            caching_mode.clear();
-        }
-        if (!type.empty()) {
-            properties[device_key + PropertyHandler::TYPE] = type;
-            type.clear();
-        }
-        if (!scsi_level.empty()) {
-            properties[device_key + PropertyHandler::SCSI_LEVEL] = scsi_level;
-            scsi_level.clear();
-        }
-        if (!name.empty()) {
-            properties[device_key + PropertyHandler::NAME] = name;
-            name.clear();
-        }
+        SetDeviceProperty(properties, device_key, PropertyHandler::BLOCK_SIZE, block_size);
+        SetDeviceProperty(properties, device_key, PropertyHandler::CACHING_MODE, caching_mode);
+        SetDeviceProperty(properties, device_key, PropertyHandler::TYPE, type);
+        SetDeviceProperty(properties, device_key, PropertyHandler::SCSI_LEVEL, scsi_level);
+        SetDeviceProperty(properties, device_key, PropertyHandler::NAME, name);
+
         if (!params.empty()) {
             properties[device_key + PropertyHandler::PARAMS] = params;
         }
@@ -229,6 +215,14 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     }
 
     return properties;
+}
+
+void S2pParser::SetDeviceProperty(property_map &properties, const string &key, const string &name, string &value)
+{
+    if (!value.empty()) {
+        properties[key + name] = value;
+        value.clear();
+    }
 }
 
 string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
@@ -296,16 +290,9 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string arg : initial_args) {
-        int start_of_ids = -1;
-        for (int i = 0; i < static_cast<int>(arg.length()); ++i) {
-            if (isdigit(arg[i])) {
-                start_of_ids = i;
-                break;
-            }
-        }
-
-        const string &ids = start_of_ids != -1 ? arg.substr(start_of_ids) : "";
+    for (const string &arg : initial_args) {
+        const size_t start_of_ids = arg.find_first_of("0123456789");
+        const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
 
         const string &arg_lower = ToLower(arg);
         if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {

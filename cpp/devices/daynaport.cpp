@@ -394,19 +394,8 @@ vector<PbStatistics> DaynaPort::GetStatistics() const
 {
     vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
 
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(BYTE_READ_COUNT);
-    s.set_value(byte_read_count);
-    statistics.push_back(s);
-
-    s.set_key(BYTE_WRITE_COUNT);
-    s.set_value(byte_write_count);
-    statistics.push_back(s);
+    EnrichStatistics(statistics, CATEGORY_INFO, BYTE_READ_COUNT, byte_read_count);
+    EnrichStatistics(statistics, CATEGORY_INFO, BYTE_WRITE_COUNT, byte_write_count);
 
     return statistics;
 }

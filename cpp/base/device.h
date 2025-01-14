@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -167,6 +167,8 @@ protected:
     void LogDebug(const string&) const;
     void LogWarn(const string&) const;
     void LogError(const string&) const;
+
+    void EnrichStatistics(vector<PbStatistics>&, PbStatisticsCategory, const string&, uint64_t) const;
 
 private:
 

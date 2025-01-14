@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -191,8 +191,8 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
         switch (page_code) {
         // Read-write/Verify error recovery and caching pages
         case 0x01:
-            case 0x07:
-            case 0x08:
+        case 0x07:
+        case 0x08:
             // Simply ignore the requested changes in the error handling or caching, they are not relevant for SCSI2Pi
             break;
 
@@ -529,20 +529,9 @@ vector<PbStatistics> StorageDevice::GetStatistics() const
 {
     vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
 
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(BLOCK_READ_COUNT);
-    s.set_value(block_read_count);
-    statistics.push_back(s);
-
+    EnrichStatistics(statistics, CATEGORY_INFO, BLOCK_READ_COUNT, block_read_count);
     if (!IsReadOnly()) {
-        s.set_key(BLOCK_WRITE_COUNT);
-        s.set_value(block_write_count);
-        statistics.push_back(s);
+        EnrichStatistics(statistics, CATEGORY_INFO, BLOCK_WRITE_COUNT, block_write_count);
     }
 
     return statistics;

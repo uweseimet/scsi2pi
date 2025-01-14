@@ -101,14 +101,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
 // Initiator MESSAGE IN
 int Bus::MsgInHandShake()
 {
-    const BusPhase phase = GetPhase();
-
-    if (!WaitSignal(PIN_REQ, true)) {
-        return -1;
-    }
-
-    // Phase error
-    if (GetPhase() != phase) {
+    if (const BusPhase phase = GetPhase(); !WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
         return -1;
     }
 
@@ -162,12 +155,7 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
         const BusPhase phase = GetPhase();
 
         for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-            if (!WaitSignal(PIN_REQ, true)) {
-                break;
-            }
-
-            // Phase error
-            if (GetPhase() != phase) {
+            if (!WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
                 break;
             }
 

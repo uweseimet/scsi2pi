@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 // The SCTP device is a SCSI-2 sequential access device with some SSC-5 command extensions.
 //
@@ -870,28 +870,6 @@ void Tape::Erase()
     }
 }
 
-vector<PbStatistics> Tape::GetStatistics() const
-{
-    vector<PbStatistics> statistics = StorageDevice::GetStatistics();
-
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(READ_ERROR_COUNT);
-    s.set_value(read_error_count);
-    statistics.push_back(s);
-
-    if (!IsReadOnly()) {
-        s.set_key(WRITE_ERROR_COUNT);
-        s.set_value(write_error_count);
-        statistics.push_back(s);
-    }
-
-    return statistics;
-}
-
 pair<Tape::ObjectType, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int32_t count, bool reverse)
 {
     while (ReadNextMetaData(meta_data, reverse)) {
@@ -1035,4 +1013,16 @@ int32_t Tape::GetSignedInt24(cdb_t buf, int offset)
 {
     const int value = GetInt24(buf, offset);
     return value >= 0x800000 ? value - 0x1000000 : value;
+}
+
+vector<PbStatistics> Tape::GetStatistics() const
+{
+    vector<PbStatistics> statistics = StorageDevice::GetStatistics();
+
+    EnrichStatistics(statistics, CATEGORY_ERROR, READ_ERROR_COUNT, read_error_count);
+    if (!IsReadOnly()) {
+        EnrichStatistics(statistics, CATEGORY_ERROR, WRITE_ERROR_COUNT, write_error_count);
+    }
+
+    return statistics;
 }
