@@ -548,7 +548,7 @@ string S2pDump::DumpRestore()
     }
 
     fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
-    if (file.fail()) {
+    if (!file) {
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 

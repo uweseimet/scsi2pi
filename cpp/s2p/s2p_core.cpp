@@ -79,7 +79,7 @@ void S2p::ReadAccessToken(const path &filename)
     }
 
     ifstream token_file(filename);
-    if (token_file.fail()) {
+    if (!token_file) {
         throw ParserException("Can't open access token file '" + filename.string() + "'");
     }
 
