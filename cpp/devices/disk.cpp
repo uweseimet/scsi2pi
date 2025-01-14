@@ -586,7 +586,7 @@ vector<PbStatistics> Disk::GetStatistics() const
 
     // Enrich cache statistics with device information before adding them to device statistics
     if (cache) {
-        for (auto &s : cache->GetStatistics(IsReadOnly())) {
+        for (auto &s : cache->GetStatistics(*this, IsReadOnly())) {
             s.set_id(GetId());
             s.set_unit(GetLun());
             statistics.push_back(s);
