@@ -325,9 +325,10 @@ TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
     S2pCtlDisplay display;
     PbPropertiesInfo info;
 
-    const string s = display.DisplayPropertiesInfo(info);
-    EXPECT_FALSE(s.empty());
+    (*info.mutable_s2p_properties())["key"] = "value";
+    const string &s = display.DisplayPropertiesInfo(info);
     EXPECT_NE(string::npos, s.find("s2p properties"));
+    EXPECT_NE(string::npos, s.find("key=value"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)
