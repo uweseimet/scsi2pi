@@ -859,7 +859,7 @@ void Tape::Erase()
 
     uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
-        const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size())); // NOSONAR Cast is required for bullseye
+        const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size())); // NOSONAR Cast is required for the armv6 compilers
 
         file.write((const char*)buf.data(), chunk);
         CheckForWriteError();
