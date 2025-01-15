@@ -859,7 +859,7 @@ void Tape::Erase()
 
     uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
-        const uint64_t chunk = min(remaining, buf.size());
+        const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size()));
 
         file.write((const char*)buf.data(), chunk);
         CheckForWriteError();
