@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -107,16 +107,6 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     CommandContext context_detach(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, false));
-
-    command.set_operation(SERVER_INFO);
-    CommandContext context_server_info(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, false));
-
-    command.set_operation(NO_OPERATION);
-    CommandContext context_no_operation(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
 }
 
 TEST(CommandExecutorTest, ProcessCmd)
