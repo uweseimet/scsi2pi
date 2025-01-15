@@ -289,19 +289,17 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         }
         break;
 
-    case ProtobufFormat::JSON: {
+    case ProtobufFormat::JSON:
         if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
-    case ProtobufFormat::TEXT: {
+    case ProtobufFormat::TEXT:
         if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
     default:
         assert(false);
