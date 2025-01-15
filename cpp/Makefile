@@ -72,8 +72,8 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCMO SCSI Optical Memory
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
-##       SCSG Linux Generic SCSI (sg driver)
-##       SCHS Host Services
+##       SCSG Linux Generic SCSI (e.g. for SCSI-to-USB bridge)
+##       SCHS Host Services (e.g. for realtime clock and shutdown)
 ##       SAHD SASI Hard Drive
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
@@ -87,68 +87,23 @@ ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_
 	ENABLE_SAHD = 1
 endif
 
-ifdef DISABLE_SCHD
-	ENABLE_SCHD =
-endif
-ifdef DISABLE_SCMO
-	ENABLE_SCMO =
-endif
-ifdef DISABLE_SCCD
-	ENABLE_SCCD =
-endif
-ifdef DISABLE_SCTP
-	ENABLE_SCTP =
-endif
-ifdef DISABLE_SCDP
-	ENABLE_SCDP =
-endif
-ifdef DISABLE_SCLP
-	ENABLE_SCLP =
-endif
-ifdef DISABLE_SCSG
-	ENABLE_SCSG =
-endif
-ifdef DISABLE_SCHS
-	ENABLE_SCHS =
-endif
-ifdef DISABLE_SAHD
-	ENABLE_SAHD =
-endif
-
 ifndef IS_LINUX
 	ENABLE_SCSG =
 endif
 
-ifdef ENABLE_SCHD
-	CXXFLAGS += -DBUILD_SCHD
-endif
-ifdef ENABLE_SCRM
-	CXXFLAGS += -DBUILD_SCRM
-endif
-ifdef ENABLE_SCMO
-	CXXFLAGS += -DBUILD_SCMO
-endif
-ifdef ENABLE_SCCD
-	CXXFLAGS += -DBUILD_SCCD
-endif
-ifdef ENABLE_SCTP
-	CXXFLAGS += -DBUILD_SCTP
-endif
-ifdef ENABLE_SCDP
-	CXXFLAGS += -DBUILD_SCDP
-endif
-ifdef ENABLE_SCLP
-	CXXFLAGS += -DBUILD_SCLP
-endif
-ifdef ENABLE_SCSG
-	CXXFLAGS += -DBUILD_SCSG
-endif
-ifdef ENABLE_SCHS
-	CXXFLAGS += -DBUILD_SCHS
-endif
-ifdef ENABLE_SAHD
-	CXXFLAGS += -DBUILD_SAHD
-endif
+define disable_type
+	ifdef DISABLE_$1
+		ENABLE_$1 =
+	endif
+endef
+$(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disable_type,$(var))))
+
+define add_cxx_flag
+	ifdef ENABLE_$1
+		CXXFLAGS += -DBUILD_$1
+	endif
+endef
+$(foreach var, SCHD SCRM SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cxx_flag,$(var))))
 
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
 	CXXFLAGS += -DBUILD_STORAGE_DEVICE
