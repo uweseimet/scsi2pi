@@ -311,7 +311,12 @@ void Tape::Open()
 
     block_size_for_descriptor = GetBlockSize();
 
-    file_size = GetFileSize(true);
+    try {
+        file_size = GetFileSize();
+    }
+    catch (const IoException&) {
+        file_size = 0;
+    }
 
     // In append mode, ensure that the image file size is at least the block size
     if (max_file_size && file_size < GetBlockSize()) {
