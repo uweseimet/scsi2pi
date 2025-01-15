@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ tuple<SenseKey, Asc, int> initiator_util::GetSenseData(InitiatorExecutor &execut
         return {SenseKey {-1}, Asc {-1}, -1};
     }
 
-    return {static_cast<SenseKey>(buf[2] & 0x0f), static_cast<Asc>(buf[12]), buf[13]}; // NOSONAR Using byte type does not work with the bullseye compiler
+    return {static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f), static_cast<Asc>(buf[12]), buf[13]};
 }
 
 bool initiator_util::SetLogLevel(logger &logger, const string &log_level)
