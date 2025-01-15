@@ -208,14 +208,14 @@ SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
 ifdef IS_LINUX
-SRC_SHARED += $(shell ls -1 $(DIR_SHARED)/sg_*.cpp)
+SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_*.cpp)
 endif
-SRC_SHARED_PROTOBUF := $(shell ls -1 $(DIR_SHARED_PROTOBUF)/*.cpp)
-SRC_SHARED_COMMAND := $(shell ls -1 $(DIR_SHARED_COMMAND)/*.cpp)
-SRC_SHARED_INITIATOR := $(shell ls -1 $(DIR_SHARED_INITIATOR)/*.cpp)
-SRC_BASE = $(shell ls -1 $(DIR_BASE)/*.cpp)
-SRC_BUSES = $(shell ls -1 $(DIR_BUSES)/*.cpp)
-SRC_CONTROLLERS = $(shell ls -1 $(DIR_CONTROLLERS)/*.cpp)
+SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
+SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
+SRC_SHARED_INITIATOR := $(wildcard $(DIR_SHARED_INITIATOR)/*.cpp)
+SRC_BASE = $(wildcard $(DIR_BASE)/*.cpp)
+SRC_BUSES = $(wildcard $(DIR_BUSES)/*.cpp)
+SRC_CONTROLLERS = $(wildcard $(DIR_CONTROLLERS)/*.cpp)
 
 SRC_DISK = \
 	$(DIR_DEVICES)/disk.cpp \
@@ -286,16 +286,16 @@ SRC_S2PCTL = s2pctl/s2pctl.cpp
 SRC_S2PDUMP = s2pdump/s2pdump.cpp
 SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
 ifdef IS_LINUX
-SRC_S2PDUMP += $(shell ls -1 s2pdump/sg_*.cpp)
+SRC_S2PDUMP += $(wildcard s2pdump/sg_*.cpp)
 endif
 
-SRC_S2PEXEC := $(shell ls -1 s2pexec/*.cpp)
+SRC_S2PEXEC := $(wildcard s2pexec/*.cpp)
 
-SRC_S2PPROTO := $(shell ls -1 s2pproto/*.cpp)
+SRC_S2PPROTO := $(wildcard s2pproto/*.cpp)
 
-SRC_S2PSIMH := $(shell ls -1 s2psimh/*.cpp)
+SRC_S2PSIMH := $(wildcard s2psimh/*.cpp)
 
-SRC_S2PFORMAT := $(shell ls -1 s2pformat/*.cpp)
+SRC_S2PFORMAT := $(wildcard s2pformat/*.cpp)
 
 SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_util_test.cpp | grep -v scsi_generic_test.cpp)
 ifdef IS_LINUX
@@ -308,7 +308,7 @@ SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
 SRC_S2PTOOL += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
 ifdef IS_LINUX
-SRC_S2PTOOL += $(shell ls -1 s2pdump/sg_*.cpp)
+SRC_S2PTOOL += $(wildcard s2pdump/sg_*.cpp)
 endif
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
