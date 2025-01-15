@@ -96,13 +96,15 @@ define disable_type
 		ENABLE_$1 =
 	endif
 endef
-$(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disable_type,$(var))))
 
 define add_cxx_flag
 	ifdef ENABLE_$1
 		CXXFLAGS += -DBUILD_$1
 	endif
 endef
+
+$(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disable_type,$(var))))
+
 $(foreach var, SCHD SCRM SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cxx_flag,$(var))))
 
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
@@ -281,36 +283,41 @@ LIB_BUS := $(LIBDIR)/libbus.a
 LIB_CONTROLLER := $(LIBDIR)/libcontroller.a
 LIB_DEVICE := $(LIBDIR)/libdevice.a
 
-OBJ_SCHD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHD:%.cpp=%.o)))
-OBJ_SCMO := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCMO:%.cpp=%.o)))
-OBJ_SCCD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCCD:%.cpp=%.o)))
-OBJ_SCTP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCTP:%.cpp=%.o)))
-OBJ_SCDP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCDP:%.cpp=%.o)))
-OBJ_SCLP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCLP:%.cpp=%.o)))
-OBJ_SCSG := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCSG:%.cpp=%.o)))
-OBJ_SCHS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SCHS:%.cpp=%.o)))
-OBJ_SAHD := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SAHD:%.cpp=%.o)))
-OBJ_SHARED := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED:%.cpp=%.o)))
-OBJ_SHARED_PROTOBUF := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_PROTOBUF:%.cpp=%.o)))
-OBJ_SHARED_COMMAND := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_COMMAND:%.cpp=%.o)))
-OBJ_SHARED_INITIATOR := $(addprefix $(OBJDIR)/,$(notdir $(SRC_SHARED_INITIATOR:%.cpp=%.o)))
-OBJ_BASE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BASE:%.cpp=%.o)))
-OBJ_BUSES := $(addprefix $(OBJDIR)/,$(notdir $(SRC_BUSES:%.cpp=%.o)))
-OBJ_CONTROLLERS := $(addprefix $(OBJDIR)/,$(notdir $(SRC_CONTROLLERS:%.cpp=%.o)))
-OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
-OBJ_S2P_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_CORE:%.cpp=%.o)))
-OBJ_S2P := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P:%.cpp=%.o)))
-OBJ_S2PCTL_CORE := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL_CORE:%.cpp=%.o)))
-OBJ_S2PCTL := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PCTL:%.cpp=%.o)))
-OBJ_S2PDUMP := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PDUMP:%.cpp=%.o)))
-OBJ_S2PEXEC := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PEXEC:%.cpp=%.o)))
-OBJ_S2PPROTO := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PPROTO:%.cpp=%.o)))
-OBJ_S2PSIMH := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PSIMH:%.cpp=%.o)))
-OBJ_S2PFORMAT := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PFORMAT:%.cpp=%.o)))
-OBJ_S2PTOOL := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2PTOOL:%.cpp=%.o)))
-OBJ_GENERATED := $(addprefix $(OBJDIR)/,$(notdir $(SRC_GENERATED:%.cpp=%.o)))
-OBJ_S2P_TEST := $(addprefix $(OBJDIR)/,$(notdir $(SRC_S2P_TEST:%.cpp=%.o)))
+define obj_files
+$(addprefix $(OBJDIR)/,$(notdir $(1:%.cpp=%.o)))
+endef
 
+OBJ_SCHD := $(call obj_files,$(SRC_SCHD))
+OBJ_SCMO := $(call obj_files,$(SRC_SCMO))
+OBJ_SCCD := $(call obj_files,$(SRC_SCCD))
+OBJ_SCTP := $(call obj_files,$(SRC_SCTP))
+OBJ_SCDP := $(call obj_files,$(SRC_SCDP))
+OBJ_SCLP := $(call obj_files,$(SRC_SCLP))
+OBJ_SCSG := $(call obj_files,$(SRC_SCSG))
+OBJ_SCHS := $(call obj_files,$(SRC_SCHS))
+OBJ_SAHD := $(call obj_files,$(SRC_SAHD))
+OBJ_SHARED := $(call obj_files,$(SRC_SHARED))
+OBJ_SHARED_PROTOBUF := $(call obj_files,$(SRC_SHARED_PROTOBUF))
+OBJ_SHARED_COMMAND := $(call obj_files,$(SRC_SHARED_COMMAND))
+OBJ_SHARED_INITIATOR := $(call obj_files,$(SRC_SHARED_INITIATOR))
+OBJ_BASE := $(call obj_files,$(SRC_BASE))
+OBJ_BUSES := $(call obj_files,$(SRC_BUSES))
+OBJ_CONTROLLERS := $(call obj_files,$(SRC_CONTROLLERS))
+
+OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
+
+OBJ_S2P_CORE := $(call obj_files,$(SRC_S2P_CORE))
+OBJ_S2P := $(call obj_files,$(SRC_S2P))
+OBJ_S2PCTL_CORE := $(call obj_files,$(SRC_S2PCTL_CORE))
+OBJ_S2PCTL := $(call obj_files,$(SRC_S2PCTL))
+OBJ_S2PDUMP := $(call obj_files,$(SRC_S2PDUMP))
+OBJ_S2PEXEC := $(call obj_files,$(SRC_S2PEXEC))
+OBJ_S2PPROTO := $(call obj_files,$(SRC_S2PPROTO))
+OBJ_S2PSIMH := $(call obj_files,$(SRC_S2PSIMH))
+OBJ_S2PFORMAT := $(call obj_files,$(SRC_S2PFORMAT))
+OBJ_S2PTOOL := $(call obj_files,$(SRC_S2PTOOL))
+OBJ_GENERATED := $(call obj_files,$(SRC_GENERATED))
+OBJ_S2P_TEST := $(call obj_files,$(SRC_S2P_TEST))
 
 BINARIES = $(INSTALL_BIN)/$(S2PCTL) \
 	$(INSTALL_BIN)/$(S2PTOOL) \
