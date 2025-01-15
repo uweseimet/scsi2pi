@@ -141,11 +141,8 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
 
 string testing::CreateTempName()
 {
-    const string &filename = fmt::format("/tmp/scsi2pi_test-{}-XXXXXX", getpid()); // NOSONAR Public directory is fine here
-    vector<char> f(filename.cbegin(), filename.cend());
-    f.emplace_back(0);
-
-    return f.data();
+    error_code error;
+    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path(error).string()); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> testing::OpenTempFile(const string &extension)

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, const string
 RpiBus::PiType BusFactory::CheckForPi()
 {
     ifstream in("/proc/device-tree/model");
-    if (in.fail()) {
+    if (!in) {
         warn("This platform is not a Raspberry Pi, functionality is limited");
         return RpiBus::PiType::UNKNOWN;
     }

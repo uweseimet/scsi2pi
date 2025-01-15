@@ -164,34 +164,15 @@ void DiskCache::UpdateSerial()
     }
 }
 
-vector<PbStatistics> DiskCache::GetStatistics(bool is_read_only) const
+vector<PbStatistics> DiskCache::GetStatistics(const Device &device) const
 {
     vector<PbStatistics> statistics;
 
-    PbStatistics s;
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(CACHE_MISS_READ_COUNT);
-    s.set_value(cache_miss_read_count);
-    statistics.push_back(s);
-
-    if (!is_read_only) {
-        s.set_key(CACHE_MISS_WRITE_COUNT);
-        s.set_value(cache_miss_write_count);
-        statistics.push_back(s);
-    }
-
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(READ_ERROR_COUNT);
-    s.set_value(read_error_count);
-    statistics.push_back(s);
-
-    if (!is_read_only) {
-        s.set_key(WRITE_ERROR_COUNT);
-        s.set_value(write_error_count);
-        statistics.push_back(s);
+    device.EnrichStatistics(statistics, CATEGORY_INFO, CACHE_MISS_READ_COUNT, cache_miss_read_count);
+    device.EnrichStatistics(statistics, CATEGORY_ERROR, READ_ERROR_COUNT, read_error_count);
+    if (!device.IsReadOnly()) {
+        device.EnrichStatistics(statistics, CATEGORY_INFO, CACHE_MISS_WRITE_COUNT, cache_miss_write_count);
+        device.EnrichStatistics(statistics, CATEGORY_ERROR, WRITE_ERROR_COUNT, write_error_count);
     }
 
     return statistics;

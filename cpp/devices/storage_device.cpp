@@ -73,13 +73,7 @@ void StorageDevice::StartStopUnit()
     if (!start) {
         // Look at the eject bit and eject if necessary
         if (load) {
-            if (IsLocked()) {
-                // Cannot be ejected because it is locked
-                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
-            }
-
-            // Eject
-            if (!Eject(false)) {
+            if (IsLocked() || !Eject(false)) {
                 throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
             }
         }
@@ -358,16 +352,12 @@ bool StorageDevice::IsReadOnlyFile() const
     return access(filename.c_str(), W_OK);
 }
 
-off_t StorageDevice::GetFileSize(bool ignore_error) const
+off_t StorageDevice::GetFileSize() const
 {
     try {
         return file_size(filename);
     }
     catch (const filesystem_error &e) {
-        if (ignore_error) {
-            return 0;
-        }
-
         throw IoException("Can't get size of '" + filename.string() + "': " + e.what());
     }
 }

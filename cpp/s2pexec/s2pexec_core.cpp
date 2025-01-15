@@ -529,7 +529,7 @@ string S2pExec::ReadData()
     const bool text = binary_input_filename.empty();
 
     ifstream in(filename, text ? ios::in : ios::in | ios::binary);
-    if (in.fail()) {
+    if (!in) {
         return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
     }
 
@@ -563,7 +563,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     }
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
-        if (out.fail()) {
+        if (!out) {
             return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
         }
 

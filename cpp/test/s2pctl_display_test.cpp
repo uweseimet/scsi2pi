@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // These tests only test key aspects of the expected output, because the output may change over time.
 //
@@ -26,6 +26,8 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
 
     EXPECT_FALSE(display.DisplayDeviceInfo(device).empty());
 
+    device.set_scsi_level(5);
+    device.set_caching_mode(PbCachingMode::LINUX);
     device.mutable_properties()->set_supports_file(true);
     device.mutable_properties()->set_read_only(true);
     device.mutable_properties()->set_protectable(true);
@@ -323,9 +325,10 @@ TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
     S2pCtlDisplay display;
     PbPropertiesInfo info;
 
-    const string s = display.DisplayPropertiesInfo(info);
-    EXPECT_FALSE(s.empty());
+    (*info.mutable_s2p_properties())["key"] = "value";
+    const string &s = display.DisplayPropertiesInfo(info);
     EXPECT_NE(string::npos, s.find("s2p properties"));
+    EXPECT_NE(string::npos, s.find("key=value"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)

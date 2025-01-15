@@ -28,7 +28,7 @@ public:
     int ReadSectors(data_in_t, uint64_t, uint32_t) override;
     int WriteSectors(data_out_t, uint64_t, uint32_t) override;
 
-    vector<PbStatistics> GetStatistics(bool) const override;
+    vector<PbStatistics> GetStatistics(const Device&) const override;
 
 private:
 

@@ -311,7 +311,12 @@ void Tape::Open()
 
     block_size_for_descriptor = GetBlockSize();
 
-    file_size = GetFileSize(true);
+    try {
+        file_size = GetFileSize();
+    }
+    catch (const IoException&) {
+        file_size = 0;
+    }
 
     // In append mode, ensure that the image file size is at least the block size
     if (max_file_size && file_size < GetBlockSize()) {
@@ -400,14 +405,14 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
     }
 }
 
-void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const
+void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages)
 {
     vector<byte> buf(16);
 
     pages[15] = buf;
 }
 
-void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable) const
+void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable)
 {
     vector<byte> buf(16);
 
@@ -422,7 +427,7 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool change
     pages[16] = buf;
 }
 
-void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable) const
+void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable)
 {
     vector<byte> buf(8);
 
@@ -859,7 +864,7 @@ void Tape::Erase()
 
     uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
-        const uint64_t chunk = min(remaining, buf.size());
+        const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size())); // NOSONAR Cast is required for armv6
 
         file.write((const char*)buf.data(), chunk);
         CheckForWriteError();

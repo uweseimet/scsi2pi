@@ -173,5 +173,5 @@ TEST(DeviceTest, EnrichStatistics)
     const PbStatistics &s = statistics[0];
     EXPECT_EQ(CATEGORY_INFO, s.category());
     EXPECT_EQ("test", s.key());
-    EXPECT_EQ(123, s.value());
+    EXPECT_EQ(123U, s.value());
 }

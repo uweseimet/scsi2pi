@@ -139,7 +139,7 @@ bool S2pSimh::ParseArguments(span<char*> args)
 
     if (truncate) {
         ofstream f(simh_filename);
-        if (f.fail()) {
+        if (!f) {
             cerr << "Error: Can't open '" << simh_filename << "'\n";
             return false;
         }
@@ -161,7 +161,7 @@ int S2pSimh::Run(span<char*> args)
     }
 
     simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
-    if (simh_file.fail()) {
+    if (!simh_file) {
         cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << '\n';
         return EXIT_FAILURE;
     }

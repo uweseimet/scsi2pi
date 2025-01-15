@@ -133,7 +133,7 @@ protected:
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetFileSize(bool ignore = false) const;
+    off_t GetFileSize() const;
 
     void UpdateReadCount(uint64_t count)
     {

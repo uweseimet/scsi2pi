@@ -262,7 +262,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     }
 
     ofstream out(output_filename, output_format == ProtobufFormat::BINARY ? ios::binary : ios::out);
-    if (out.fail()) {
+    if (!out) {
         cerr << "Error: Can't open protobuf data output file '" << output_filename << "'\n";
         return EXIT_FAILURE;
     }

@@ -290,7 +290,7 @@ vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string &arg : initial_args) {
+    for (const string arg : initial_args) {
         const size_t start_of_ids = arg.find_first_of("0123456789");
         const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
 

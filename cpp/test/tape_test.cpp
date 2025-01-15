@@ -797,7 +797,7 @@ TEST(TapeTest, Space6_simh)
     controller->SetCdbByte(4, 0xfa);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::SPACE_6));
     RequestSense(controller, tape);
-    EXPECT_EQ(-6, GetInt32(controller->GetBuffer(), 3));
+    EXPECT_EQ(0xfffffffaU, GetInt32(controller->GetBuffer(), 3));
     CheckPositions(tape, 520, 1);
 
     Rewind(tape);

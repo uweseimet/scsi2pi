@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -84,22 +84,13 @@ bool LinuxCache::Flush()
     return true;
 }
 
-vector<PbStatistics> LinuxCache::GetStatistics(bool is_read_only) const
+vector<PbStatistics> LinuxCache::GetStatistics(const Device &device) const
 {
     vector<PbStatistics> statistics;
 
-    PbStatistics s;
-
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(READ_ERROR_COUNT);
-    s.set_value(read_error_count);
-    statistics.push_back(s);
-
-    if (!is_read_only) {
-        s.set_key(WRITE_ERROR_COUNT);
-        s.set_value(write_error_count);
-        statistics.push_back(s);
+    device.EnrichStatistics(statistics, CATEGORY_ERROR, READ_ERROR_COUNT, read_error_count);
+    if (!device.IsReadOnly()) {
+        device.EnrichStatistics(statistics, CATEGORY_ERROR, WRITE_ERROR_COUNT, write_error_count);
     }
 
     return statistics;

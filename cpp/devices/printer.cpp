@@ -63,7 +63,7 @@ string Printer::SetUp()
         });
 
     error_code error;
-    file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is fine here
+    file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is safe here
     file_template += PRINTER_FILE_PATTERN;
 
     return "";
@@ -180,8 +180,6 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
         out.open(filename, ios::binary);
         CheckForFileError();
-
-        LogTrace("Created printer output file '" + filename + "'");
     }
 
     LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));

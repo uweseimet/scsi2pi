@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,13 +37,6 @@ TEST(ScsiGenericTest, GetIdentifier)
     ScsiGeneric device(0, "");
 
     EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
-}
-
-TEST(ScsiGenericTest, GetDevice)
-{
-    ScsiGeneric device(0, "device");
-
-    EXPECT_EQ("device", device.GetDevice());
 }
 
 TEST(ScsiGenericTest, SetProductData)

@@ -91,8 +91,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 
     FRIEND_TEST(AbstractControllerTest, Reset);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
-    FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
-    FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, Message);
     FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
@@ -104,7 +102,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
     FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
-    FRIEND_TEST(PrimaryDeviceTest, UnknownCommand);
     FRIEND_TEST(StorageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, ModeSense6);
@@ -264,7 +261,6 @@ class MockDevice : public Device
     FRIEND_TEST(DeviceTest, Start);
     FRIEND_TEST(DeviceTest, Stop);
     FRIEND_TEST(DeviceTest, Eject);
-    FRIEND_TEST(DeviceTest, EnrichStatistics);
 
 public:
 

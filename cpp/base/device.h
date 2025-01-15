@@ -120,6 +120,8 @@ public:
 
     logger& GetLogger() const;
 
+    void EnrichStatistics(vector<PbStatistics>&, PbStatisticsCategory, const string&, uint64_t) const;
+
 protected:
 
     Device(PbDeviceType type, int lun) : type(type), lun(lun)
@@ -167,8 +169,6 @@ protected:
     void LogDebug(const string&) const;
     void LogWarn(const string&) const;
     void LogError(const string&) const;
-
-    void EnrichStatistics(vector<PbStatistics>&, PbStatisticsCategory, const string&, uint64_t) const;
 
 private:
 

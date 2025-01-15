@@ -128,7 +128,7 @@ void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     }
 }
 
-void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable) const
+void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable)
 {
     vector<byte> buf(8);
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -245,7 +245,7 @@ void HostServices::SetUpModePages(map<int, vector<byte>> &pages, int page, bool 
     }
 }
 
-void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable) const
+void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable)
 {
     pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
@@ -289,19 +289,17 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         }
         break;
 
-    case ProtobufFormat::JSON: {
+    case ProtobufFormat::JSON:
         if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
-    case ProtobufFormat::TEXT: {
+    case ProtobufFormat::TEXT:
         if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
     default:
         assert(false);

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -92,6 +92,11 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, false));
 
+    command.set_operation(static_cast<PbOperation>(numeric_limits<int32_t>::max()));
+    CommandContext context_invalid_command(command, *default_logger());
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
+
     command.set_operation(INSERT);
     SetParam(definition, "file", "filename");
     CommandContext context_insert2(command, *default_logger());
@@ -102,21 +107,6 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     CommandContext context_detach(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, false));
-
-    command.set_operation(SERVER_INFO);
-    CommandContext context_server_info(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, false));
-
-    command.set_operation(NO_OPERATION);
-    CommandContext context_no_operation(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
-
-    command.set_operation(static_cast<PbOperation>(-1));
-    CommandContext context_invalid_command(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
 }
 
 TEST(CommandExecutorTest, ProcessCmd)

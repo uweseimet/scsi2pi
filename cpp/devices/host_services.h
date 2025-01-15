@@ -64,9 +64,9 @@ private:
     int ModeSense6(cdb_t, data_in_t) const override;
     int ModeSense10(cdb_t, data_in_t) const override;
 
-    void AddRealtimeClockPage(map<int, vector<byte>>&, bool) const;
-
     ProtobufFormat ConvertFormat() const;
+
+    static void AddRealtimeClockPage(map<int, vector<byte>>&, bool);
 
     unique_ptr<PageHandler> page_handler;
 

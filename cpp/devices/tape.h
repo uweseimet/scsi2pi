@@ -93,10 +93,6 @@ private:
 
     uint32_t GetByteCount();
 
-    void AddMediumPartitionPage(map<int, vector<byte>>&, bool) const;
-    void AddDataCompressionPage(map<int, vector<byte>>&) const;
-    void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool) const;
-
     void Erase();
 
     void ResetPositions();
@@ -113,6 +109,10 @@ private:
     void CheckForOverflow(int64_t);
     void CheckForReadError();
     void CheckForWriteError();
+
+    static void AddMediumPartitionPage(map<int, vector<byte>>&, bool);
+    static void AddDataCompressionPage(map<int, vector<byte>>&);
+    static void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool);
 
     static int32_t GetSignedInt24(cdb_t, int);
 
