@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,7 +12,6 @@
 
 class ScsiHd : public Disk
 {
-    inline static const string DEFAULT_PRODUCT = "SCSI HD";
 
 public:
 
@@ -32,8 +31,6 @@ protected:
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:
-
-    string GetProductDataString() const;
 
     void AddFormatPage(map<int, vector<byte>>&, bool) const;
     void AddDrivePage(map<int, vector<byte>>&, bool) const;
