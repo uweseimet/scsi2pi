@@ -92,6 +92,11 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, false));
 
+    command.set_operation(static_cast<PbOperation>(numeric_limits<int32_t>::max()));
+    CommandContext context_invalid_command(command, *default_logger());
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
+
     command.set_operation(INSERT);
     SetParam(definition, "file", "filename");
     CommandContext context_insert2(command, *default_logger());
@@ -112,11 +117,6 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     CommandContext context_no_operation(command, *default_logger());
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
     EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
-
-    command.set_operation(static_cast<PbOperation>(-1));
-    CommandContext context_invalid_command(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
 }
 
 TEST(CommandExecutorTest, ProcessCmd)
