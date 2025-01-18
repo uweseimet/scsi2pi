@@ -309,7 +309,7 @@ void PrimaryDevice::CheckReady()
     // Not ready if it needs attention
     if (IsAttn()) {
         SetAttn(false);
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     }
 
     // Return status if not ready

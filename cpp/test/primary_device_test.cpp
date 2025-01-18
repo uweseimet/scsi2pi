@@ -251,7 +251,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
 
     device->SetReset(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     device->SetReset(true);
     device->SetAttn(false);
@@ -260,7 +260,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetReset(false);
     device->SetAttn(true);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);

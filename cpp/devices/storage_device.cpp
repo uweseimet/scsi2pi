@@ -43,7 +43,7 @@ void StorageDevice::Dispatch(ScsiCommand cmd)
 
         SetMediumChanged(false);
 
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     }
 
     PrimaryDevice::Dispatch(cmd);

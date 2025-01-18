@@ -60,6 +60,7 @@ string Tape::SetUp()
         });
     AddCommand(ScsiCommand::REWIND, [this]
         {
+            CheckReady();
             ResetPositions();
             StatusPhase();
         });
@@ -114,6 +115,10 @@ void Tape::ValidateFile()
     }
 
     tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
+
+    if (IsReady()) {
+        SetAttn(true);
+    }
 }
 
 void Tape::Read(bool read_16)

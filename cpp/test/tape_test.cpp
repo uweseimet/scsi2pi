@@ -172,19 +172,12 @@ TEST(TapeTest, Read6)
 
     Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
-    tape->SetReady(true);
+    const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::READ_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::READ_6));
-
-    // Fixed, 0 blocks
-    controller->SetCdbByte(1, 0x01);
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Drive is not in fixed mode");
-
-    tape->SetReady(false);
-
-    const string &filename = CreateImageFile(*tape);
 
     // Fixed, 0 blocks
     controller->SetCdbByte(1, 0x01);
@@ -296,6 +289,8 @@ TEST(TapeTest, Read6_BlockSizeMismatch)
     auto [controller, tape] = CreateTape();
     const string &filename = CreateImageFile(*tape);
 
+    Dispatch(tape, ScsiCommand::READ_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     fstream file(filename);
     WriteGoodData(file, 256);
     file.flush();
@@ -374,16 +369,15 @@ TEST(TapeTest, Read16)
 
     Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
-    tape->SetReady(true);
+    const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::READ_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // Partition 1
     controller->SetCdbByte(3, 1);
     Dispatch(tape, ScsiCommand::READ_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     CheckPositions(tape, 0, 0);
 
-    tape->SetReady(false);
-
-    const string &filename = CreateImageFile(*tape);
     fstream file(filename);
     WriteGoodData(file, 512);
     WriteGoodData(file, 512);
@@ -412,23 +406,16 @@ TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::WRITE_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
-    tape->SetReady(true);
+    const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::WRITE_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // Non-fixed, 0 bytes
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_6));
     CheckPositions(tape, 0, 0);
 
-    // Fixed, 1 block
-    controller->SetCdbByte(1, 0x01);
-    Dispatch(tape, ScsiCommand::WRITE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Drive is not in fixed mode, block size is 0");
-    CheckPositions(tape, 0, 0);
-
-    tape->SetReady(false);
-
-    const string &filename = CreateImageFile(*tape);
     ifstream file(filename);
 
     // Non-fixed, 2 bytes
@@ -482,9 +469,11 @@ TEST(TapeTest, Write16)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::WRITE_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
-    tape->SetReady(true);
+    const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::WRITE_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // FCS/LCS
     controller->SetCdbByte(1, 0b1100);
@@ -496,9 +485,6 @@ TEST(TapeTest, Write16)
     Dispatch(tape, ScsiCommand::WRITE_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     CheckPositions(tape, 0, 0);
 
-    tape->SetReady(false);
-
-    const string &filename = CreateImageFile(*tape);
     fstream file(filename);
     WriteGoodData(file, 512);
     WriteGoodData(file, 512);
@@ -528,8 +514,9 @@ TEST(TapeTest, Write16)
 TEST(TapeTest, Erase6_simh)
 {
     auto [controller, tape] = CreateTape();
-
     CreateImageFile(*tape, 4567);
+
+    Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     tape->SetProtected(true);
     Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::DATA_PROTECT, Asc::WRITE_PROTECTED);
@@ -558,8 +545,9 @@ TEST(TapeTest, Erase6_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
-    Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::ILLEGAL_REQUEST,
-        Asc::INVALID_COMMAND_OPERATION_CODE);
+    Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
+    Dispatch(tape, ScsiCommand::ERASE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
 }
 
 TEST(TapeTest, ReadBlockLimits)
@@ -575,8 +563,10 @@ TEST(TapeTest, ReadBlockLimits)
 TEST(TapeTest, Rewind)
 {
     auto [controller, tape] = CreateTape();
-
     CreateImageFile(*tape, 600);
+
+    Dispatch(tape, ScsiCommand::REWIND, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     Rewind(tape);
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
@@ -595,6 +585,8 @@ TEST(TapeTest, Space6_simh)
 {
     auto [controller, tape] = CreateTape();
     const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::SPACE_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // Invalid object type
     controller->SetCdbByte(1, 0b111);
@@ -814,14 +806,17 @@ TEST(TapeTest, Space6_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
-    Dispatch(tape, ScsiCommand::SPACE_6, SenseKey::ILLEGAL_REQUEST,
-        Asc::INVALID_COMMAND_OPERATION_CODE);
+    Dispatch(tape, ScsiCommand::SPACE_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
+    Dispatch(tape, ScsiCommand::SPACE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
 }
 
 TEST(TapeTest, WriteFileMarks6_simh)
 {
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 1024);
+
+    Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // Setmarks are not supported
     controller->SetCdbByte(1, 0b010);
@@ -853,6 +848,8 @@ TEST(TapeTest, WriteFileMarks6_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
+    Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_6, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_6));
 }
 
@@ -860,6 +857,8 @@ TEST(TapeTest, WriteFileMarks16_simh)
 {
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 1024);
+
+    Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // 0 filemarks
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_16));
@@ -883,6 +882,8 @@ TEST(TapeTest, WriteFileMarks16_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
+    Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_16));
 }
 
@@ -890,6 +891,8 @@ TEST(TapeTest, Locate10_simh)
 {
     auto [controller, tape] = CreateTape();
     const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::LOCATE_10, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -930,6 +933,8 @@ TEST(TapeTest, Locate10_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
+    Dispatch(tape, ScsiCommand::LOCATE_10, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(tape, ScsiCommand::LOCATE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -954,6 +959,8 @@ TEST(TapeTest, Locate16_simh)
 {
     auto [controller, tape] = CreateTape();
     const string &filename = CreateImageFile(*tape);
+
+    Dispatch(tape, ScsiCommand::LOCATE_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
@@ -994,6 +1001,8 @@ TEST(TapeTest, Locate16_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
+    Dispatch(tape, ScsiCommand::LOCATE_16, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
     // CP is not supported
     controller->SetCdbByte(1, 0x02);
     Dispatch(tape, ScsiCommand::LOCATE_16, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -1031,7 +1040,8 @@ TEST(TapeTest, FormatMedium_simh)
     Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     CreateImageFile(*tape);
-    tape->SetReady(true);
+
+    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::FORMAT_MEDIUM));
     CheckPositions(tape, 0, 0);
@@ -1055,8 +1065,9 @@ TEST(TapeTest, FormatMedium_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::ILLEGAL_REQUEST,
-        Asc::INVALID_COMMAND_OPERATION_CODE);
+    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+
+    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
 }
 
 TEST(TapeTest, GetBlockSizes)

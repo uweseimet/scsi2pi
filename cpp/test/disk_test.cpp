@@ -34,7 +34,7 @@ TEST(DiskTest, Dispatch)
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+    Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 

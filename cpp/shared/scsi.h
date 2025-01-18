@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -220,7 +220,7 @@ enum class Asc
     LOGICAL_UNIT_NOT_SUPPORTED = 0x25,
     INVALID_FIELD_IN_PARAMETER_LIST = 0x26,
     WRITE_PROTECTED = 0x27,
-    NOT_READY_TO_READY_CHANGE = 0x28,
+    NOT_READY_TO_READY_TRANSITION = 0x28,
     POWER_ON_OR_RESET = 0x29,
     INCOMPATIBLE_MEDIUM_INSTALLED = 0x30,
     SEQUENTIAL_POSITIONING_ERROR = 0x38,
