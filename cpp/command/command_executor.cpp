@@ -575,17 +575,17 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     }
 
     if (!pb_device.vendor().empty()) {
-        s << ", vendor='" << pb_device.vendor();
+        s << ", vendor='" << pb_device.vendor() << '\'';
     }
     if (!pb_device.product().empty()) {
-        s << "', product='" << pb_device.product();
+        s << ", product='" << pb_device.product() << '\'';
     }
     if (!pb_device.revision().empty()) {
-        s << "', revision='" << pb_device.revision();
+        s << ", revision='" << pb_device.revision() << '\'';
     }
 
     if (pb_device.block_size()) {
-        s << "', block size=" << pb_device.block_size();
+        s << ", block size=" << pb_device.block_size();
     }
 
     if (pb_device.caching_mode() != PbCachingMode::DEFAULT) {
