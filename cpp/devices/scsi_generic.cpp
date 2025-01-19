@@ -51,13 +51,6 @@ void ScsiGeneric::CleanUp()
     }
 }
 
-string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
-{
-    return
-        product_data.vendor.empty() && product_data.product.empty() && product_data.revision.empty() ?
-            "" : "The product data of SCSG can't be changed";
-}
-
 void ScsiGeneric::Dispatch(ScsiCommand cmd)
 {
     count = command_meta_data.GetByteCount(cmd);
@@ -312,9 +305,9 @@ string ScsiGeneric::GetDeviceData()
         return e.what();
     }
 
+    // These initial data may be overridden with properties or on the command line
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
-    PrimaryDevice::SetProductData( { vendor, product, revision }, true);
-
+    SetProductData( { vendor, product, revision }, true);
     SetScsiLevel(static_cast<ScsiLevel>(buf[2]));
     SetResponseDataFormat(static_cast<ScsiLevel>(buf[3]));
 

@@ -277,6 +277,10 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
             fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
     }
 
+    // Set the final data (they may have been overriden during the initialization of SCSG)
+    SetScsiLevel(context, device, pb_device.scsi_level());
+    SetProductData(context, pb_device, *device);
+
     if (!controller_factory.AttachToController(bus, id, device)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
@@ -575,17 +579,17 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     }
 
     if (!pb_device.vendor().empty()) {
-        s << ", vendor='" << pb_device.vendor();
+        s << ", vendor='" << pb_device.vendor() << '\'';
     }
     if (!pb_device.product().empty()) {
-        s << "', product='" << pb_device.product();
+        s << ", product='" << pb_device.product() << '\'';
     }
     if (!pb_device.revision().empty()) {
-        s << "', revision='" << pb_device.revision();
+        s << ", revision='" << pb_device.revision() << '\'';
     }
 
     if (pb_device.block_size()) {
-        s << "', block size=" << pb_device.block_size();
+        s << ", block size=" << pb_device.block_size();
     }
 
     if (pb_device.caching_mode() != PbCachingMode::DEFAULT) {

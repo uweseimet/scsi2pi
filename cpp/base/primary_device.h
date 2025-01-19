@@ -46,7 +46,7 @@ public:
     }
 
     ProductData GetProductData() const;
-    virtual string SetProductData(const ProductData&, bool);
+    string SetProductData(const ProductData&, bool);
 
     string GetPaddedName() const
     {

@@ -39,16 +39,6 @@ TEST(ScsiGenericTest, GetIdentifier)
     EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
 }
 
-TEST(ScsiGenericTest, SetProductData)
-{
-    ScsiGeneric device(0, "");
-
-    EXPECT_TRUE(device.SetProductData( { "", "", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "1", "", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "", "2", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "", "", "3" }, true).empty());
-}
-
 TEST(ScsiGenericTest, SetUp)
 {
     ScsiGeneric device1(0, "");

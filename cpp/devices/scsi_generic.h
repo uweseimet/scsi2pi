@@ -30,8 +30,6 @@ public:
         return device + " (" + GetPaddedName() + ")";
     }
 
-    string SetProductData(const ProductData&, bool) override;
-
     void Dispatch(ScsiCommand) override;
 
     vector<uint8_t> InquiryInternal() const override;
