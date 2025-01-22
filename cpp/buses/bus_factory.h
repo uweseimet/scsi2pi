@@ -9,24 +9,12 @@
 #pragma once
 
 #include <memory>
-#include "rpi_bus.h"
+#include "bus.h"
 
 class BusFactory
 {
 
 public:
 
-    static BusFactory& Instance()
-    {
-        static BusFactory instance; // NOSONAR instance cannot be inlined
-        return instance;
-    }
-
-    unique_ptr<Bus> CreateBus(bool, bool, const string&, bool);
-
-private:
-
-    BusFactory() = default;
-
-    static RpiBus::PiType CheckForPi();
+    static unique_ptr<Bus> CreateBus(bool, bool, const string&, bool);
 };

@@ -31,7 +31,7 @@ TEST(ControllerTest, Reset)
 TEST(ControllerTest, Process)
 {
     const S2pFormatter formatter;
-    auto bus = BusFactory::Instance().CreateBus(true, true, "", false);
+    auto bus = BusFactory::CreateBus(true, true, "", false);
     auto controller = make_shared<Controller>(*bus, 2, formatter);
 
     bus->SetRST(true);

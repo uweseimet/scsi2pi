@@ -33,7 +33,7 @@ using namespace protobuf_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::Instance().CreateBus(true, in_process, APP_NAME, log_signals);
+    bus = BusFactory::CreateBus(true, in_process, APP_NAME, log_signals);
     if (!bus) {
         return false;
     }

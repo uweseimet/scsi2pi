@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
@@ -133,4 +133,3 @@ TEST(S2pCtlCommandsTest, Export)
     EXPECT_TRUE(commands3.Execute("", "", "", "", ""));
     EXPECT_NE(string::npos, ReadTempFileToString(filename_txt).find(PbOperation_Name(OPERATION_INFO)));
 }
-

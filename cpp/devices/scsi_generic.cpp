@@ -155,7 +155,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span(const_cast<uint8_t*>(buf.data()), buf.size()), length); // NOSONAR Cast is required for SG driver API
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)

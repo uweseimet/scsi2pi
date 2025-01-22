@@ -271,5 +271,4 @@ TEST(CommandResponseTest, GetStatisticsInfo)
     EXPECT_EQ(0, statistics.Get(1).unit());
     EXPECT_EQ(0U, statistics.Get(0).value());
     EXPECT_EQ(0U, statistics.Get(1).value());
-
 }

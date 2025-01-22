@@ -11,7 +11,6 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <string>
 #include <vector>
 #include "shared/scsi.h"

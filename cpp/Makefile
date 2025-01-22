@@ -1,3 +1,11 @@
+##---------------------------------------------------------------------------
+##
+## SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
+##
+## Copyright (C) 2023-2025 Uwe Seimet
+##
+##---------------------------------------------------------------------------
+
 .DEFAULT_GOAL: all
 
 ## Optional build flags:
@@ -158,6 +166,7 @@ DIR_BASE := base
 DIR_BUSES := buses
 DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
+DIR_PI := pi
 
 SRC_PROTOC := ../proto/s2p_interface.proto
 
@@ -166,6 +175,7 @@ SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
 ifdef IS_LINUX
 SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_*.cpp)
+SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
 endif
 SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
@@ -269,7 +279,7 @@ SRC_S2PTOOL += $(wildcard s2pdump/sg_*.cpp)
 endif
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
-	$(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
+	$(DIR_PI) $(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
 
 vpath %.h $(VPATH)
 vpath %.cpp $(VPATH) test
@@ -303,6 +313,7 @@ OBJ_SHARED_INITIATOR := $(call obj_files,$(SRC_SHARED_INITIATOR))
 OBJ_BASE := $(call obj_files,$(SRC_BASE))
 OBJ_BUSES := $(call obj_files,$(SRC_BUSES))
 OBJ_CONTROLLERS := $(call obj_files,$(SRC_CONTROLLERS))
+OBJ_PI := $(call obj_files,$(SRC_PI))
 
 OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
 
@@ -346,7 +357,7 @@ $(LIB_SHARED): $(OBJ_SHARED)
 $(LIB_SHARED_PROTOBUF): $(OBJ_GENERATED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
 $(LIB_SHARED_COMMAND): $(OBJ_SHARED_COMMAND) $(OBJ_GENERATED) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
 $(LIB_SHARED_INITIATOR): $(OBJ_SHARED_INITIATOR)
-$(LIB_BUS): $(OBJ_BUSES)
+$(LIB_BUS): $(OBJ_BUSES) $(OBJ_PI)
 $(LIB_CONTROLLER): $(OBJ_CONTROLLERS)
 $(LIB_DEVICE): $(OBJ_DEVICES) $(OBJ_BASE)
 
@@ -456,4 +467,3 @@ $(INSTALL_BIN)%: $(BINDIR)/%
 .PHONY: help
 help: Makefile
 	@sed -n 's/^##//p' $<
-

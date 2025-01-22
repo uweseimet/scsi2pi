@@ -8,6 +8,8 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <fstream>
+#include <sstream>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -148,7 +150,6 @@ bool RpiBus::Init(bool target)
         return false;
     }
 
-#ifdef __linux__
     // Event request setting
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
@@ -167,7 +168,6 @@ bool RpiBus::Init(bool target)
     ev.events = EPOLLIN | EPOLLPRI;
     ev.data.fd = selevreq.fd;
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev);
-#endif
 
     CreateWorkTable();
 
@@ -180,9 +180,7 @@ bool RpiBus::Init(bool target)
 void RpiBus::CleanUp()
 {
     // Release SEL signal interrupt
-#ifdef __linux__
     close(selevreq.fd);
-#endif
 
     // Set control signals
     PinSetSignal(PIN_ENB, false);
@@ -236,9 +234,6 @@ void RpiBus::Reset()
 
 bool RpiBus::WaitForSelection()
 {
-#ifndef __linux__
-    return false;
-#else
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
@@ -252,7 +247,6 @@ bool RpiBus::WaitForSelection()
         }
         return false;
     }
-#endif
 
     Acquire();
 
@@ -447,7 +441,6 @@ void RpiBus::SetSignal(int pin, bool state)
 
 void RpiBus::DisableIRQ()
 {
-#ifdef __linux__
     switch (pi_type) {
     case PiType::PI_1:
         // Stop system timer interrupt with interrupt controller
@@ -472,12 +465,10 @@ void RpiBus::DisableIRQ()
         // Currently do nothing
         break;
     }
-#endif
 }
 
 void RpiBus::EnableIRQ()
 {
-#ifdef __linux__
     switch (pi_type) {
     case PiType::PI_1:
         // Restart the system timer interrupt with the interrupt controller
@@ -499,7 +490,6 @@ void RpiBus::EnableIRQ()
         // Currently do nothing
         break;
     }
-#endif
 }
 
 //---------------------------------------------------------------------------
@@ -607,4 +597,30 @@ void RpiBus::WaitBusSettle() const
             // Intentionally empty
         }
     }
+}
+
+RpiBus::PiType RpiBus::CheckForPi()
+{
+    ifstream in("/proc/device-tree/model");
+    if (!in) {
+        warn("This platform is not a Raspberry Pi, functionality is limited");
+        return RpiBus::PiType::UNKNOWN;
+    }
+
+    stringstream s;
+    s << in.rdbuf();
+    const string &model = s.str();
+
+    if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
+        warn("This platform is not a Raspberry Pi, functionality is limited");
+        return RpiBus::PiType::UNKNOWN;
+    }
+
+    const int type = model.find("Zero") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+    if (type <= 0 || type > 4) {
+        warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
+        return RpiBus::PiType::UNKNOWN;
+    }
+
+    return static_cast<RpiBus::PiType>(type);
 }

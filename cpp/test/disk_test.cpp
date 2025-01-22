@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -720,7 +720,7 @@ TEST(DiskTest, WriteData)
                 Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
-TEST(DiskTest, SynchronizeCache)
+TEST(DiskTest, SynchronizeCache10)
 {
     auto [controller, disk] = CreateDisk();
 
@@ -728,6 +728,11 @@ TEST(DiskTest, SynchronizeCache)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+}
+
+TEST(DiskTest, SynchronizeCache16)
+{
+    auto [controller, disk] = CreateDisk();
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
