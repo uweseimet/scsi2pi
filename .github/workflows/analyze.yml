@@ -69,4 +69,5 @@ jobs:
             --define sonar.sonarLanguages=c++ \
             --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.exclusions="obj/**,lib/**,bin/**,generated/**" \
+            --define sonar.cpd.exclusions="cpp/s2pdump/board_executor.h,cpp/s2pdump/sg_executor.h" \
             --define sonar.test.inclusions=test/**
