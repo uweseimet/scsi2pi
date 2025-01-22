@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -92,24 +92,24 @@ CommandLocalizer::CommandLocalizer()
     Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "es", "Comando para ID %1 inexistente, unidad %2");
     Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "zh", "不存在的 ID %1, 单元 %2 的指令");
 
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "en", "%1:%2: Unknown device type %1");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "de", "%1:%2: Unbekannter Gerätetyp %1");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "sv", "%1:%2: Obekant enhetstyp: %1");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "fr", "%1:%2: Type de périphérique inconnu %1");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "es", "%1:%2: Tipo de dispositivo desconocido %1");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "zh", "%1:%2: 未知设备类型 %1");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "en", "%1:%2: Unknown device type %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "de", "%1:%2: Unbekannter Gerätetyp %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "sv", "%1:%2: Obekant enhetstyp: %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "fr", "%1:%2: Type de périphérique inconnu %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "es", "%1:%2: Tipo de dispositivo desconocido %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "zh", "%1:%2: 未知设备类型 %3");
 
     Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "en",
-        "%1:%2: Device type required for unknown extension of file '%1'");
+        "%1:%2: Device type required for unknown extension of file '%3'");
     Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "de",
-        "%1:%2: Gerätetyp erforderlich für unbekannte Extension der Datei '%1'");
+        "%1:%2: Gerätetyp erforderlich für unbekannte Extension der Datei '%3'");
     Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "sv",
-        "%1:%2: Man måste ange enhetstyp för obekant filändelse '%1'");
+        "%1:%2: Man måste ange enhetstyp för obekant filändelse '%3'");
     Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "fr",
-        "%1:%2: Type de périphérique requis pour extension inconnue du fichier '%1'");
+        "%1:%2: Type de périphérique requis pour extension inconnue du fichier '%3'");
     Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "es",
-        "%1:%2: Tipo de dispositivo requerido para la extensión desconocida del archivo '%1'");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "zh", "%1:%2: 文件'%1'的未知扩展名所需的设备类型");
+        "%1:%2: Tipo de dispositivo requerido para la extensión desconocida del archivo '%3'");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "zh", "%1:%2: 文件'%3'的未知扩展名所需的设备类型");
 
     Add(LocalizationKey::ERROR_DUPLICATE_ID, "en", "Duplicate ID %1, unit %2");
     Add(LocalizationKey::ERROR_DUPLICATE_ID, "de", "Doppelte ID %1, Einheit %2");
