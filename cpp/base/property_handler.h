@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ public:
     static constexpr const char *SCSI_LEVEL = "scsi_level";
     static constexpr const char *TYPE = "type";
 
-    static PropertyHandler& Instance()
+    static PropertyHandler& GetInstance()
     {
         static PropertyHandler instance; // NOSONAR instance cannot be inlined
         return instance;

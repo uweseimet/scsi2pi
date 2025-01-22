@@ -58,7 +58,7 @@ void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) c
     int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
         // Only report device types supported by the factory
-        if (const auto device = DeviceFactory::Instance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
+        if (const auto device = DeviceFactory::GetInstance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
             auto *type_properties = device_types_info.add_properties();
             type_properties->set_type(device->GetType());
             GetDeviceProperties(device, *type_properties->mutable_properties());
@@ -115,9 +115,9 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 {
     if (!filename.empty()) {
         image_file.set_name(filename);
-        image_file.set_type(DeviceFactory::Instance().GetTypeForFile(filename));
+        image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
 
-        const path p(filename[0] == '/' ? filename : CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename);
+        const path p(filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
 
         image_file.set_read_only(access(p.c_str(), W_OK));
 
@@ -134,7 +134,7 @@ bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filena
 void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern, logger &logger) const
 {
-    const string &default_folder = CommandImageSupport::Instance().GetDefaultFolder();
+    const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
 
     const path default_path(default_folder);
     if (!is_directory(default_path)) {
@@ -146,7 +146,7 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 
     for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
         it != recursive_directory_iterator(); ++it) {
-        if (it.depth() > CommandImageSupport::Instance().GetDepth()) {
+        if (it.depth() > CommandImageSupport::GetInstance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
         }
@@ -176,8 +176,8 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
 void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern, logger &logger) const
 {
-    image_files_info.set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
-    image_files_info.set_depth(CommandImageSupport::Instance().GetDepth());
+    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
+    image_files_info.set_depth(CommandImageSupport::GetInstance().GetDepth());
 
     GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
@@ -185,7 +185,7 @@ void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, cons
 void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
     const string &file_pattern, logger &logger) const
 {
-    server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::Instance().GetDefaultFolder());
+    server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
 
     GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
@@ -324,7 +324,7 @@ void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_
 
 void CommandResponse::GetMappingInfo(PbMappingInfo &mapping_info) const
 {
-    for (const auto& [name, type] : DeviceFactory::Instance().GetExtensionMapping()) {
+    for (const auto& [name, type] : DeviceFactory::GetInstance().GetExtensionMapping()) {
         (*mapping_info.mutable_mapping())[name] = type;
     }
 }
@@ -346,7 +346,7 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
 
 void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
 {
-    for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
+    for (const auto& [key, value] : PropertyHandler::GetInstance().GetProperties()) {
         (*properties_info.mutable_s2p_properties())[key] = value;
     }
 }
@@ -377,7 +377,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
     CreateOperation(operation_info, UNPROTECT, "Unprotect medium, device-specific parameters are required");
 
     operation = CreateOperation(operation_info, SERVER_INFO, "Get server information");
-    if (CommandImageSupport::Instance().GetDepth()) {
+    if (CommandImageSupport::GetInstance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
@@ -389,7 +389,7 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
     CreateOperation(operation_info, DEVICE_TYPES_INFO, "Get device properties by device type");
 
     operation = CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
-    if (CommandImageSupport::Instance().GetDepth()) {
+    if (CommandImageSupport::GetInstance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");

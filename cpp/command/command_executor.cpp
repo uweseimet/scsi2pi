@@ -89,7 +89,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
             return context.ReturnErrorStatus(error);
         }
         else {
-            PropertyHandler::Instance().AddProperty("reserved_ids", Join(reserved_ids, ","));
+            PropertyHandler::GetInstance().AddProperty("reserved_ids", Join(reserved_ids, ","));
             return context.ReturnSuccessStatus();
         }
 
@@ -160,9 +160,9 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
         return true;
     }
 
-    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
+    PropertyHandler::GetInstance().RemoveProperties(fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
     if (!device.GetLun()) {
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
     }
 
     return true;
@@ -387,9 +387,9 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // Consider both potential identifiers if the LUN is 0
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.", id, lun));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("device.{0}:{1}.", id, lun));
         if (!lun) {
-            PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
+            PropertyHandler::GetInstance().RemoveProperties(fmt::format("device.{}.", id));
         }
 
         s2p_logger.info("Detached " + identifier);
@@ -401,7 +401,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 void CommandExecutor::DetachAll() const
 {
     if (controller_factory.DeleteAllControllers()) {
-        PropertyHandler::Instance().RemoveProperties("device.");
+        PropertyHandler::GetInstance().RemoveProperties("device.");
 
         s2p_logger.info("Detached all devices");
     }
@@ -410,22 +410,22 @@ void CommandExecutor::DetachAll() const
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
-    PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
+    PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
     const auto& [product, vendor, revision] = device->GetProductData();
-    PropertyHandler::Instance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
+    PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         if (storage_device->GetConfiguredBlockSize()) {
-            PropertyHandler::Instance().AddProperty(identifier + "block_size",
+            PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
                 to_string(storage_device->GetConfiguredBlockSize()));
         }
         string filename = storage_device->GetFilename();
         if (!filename.empty()) {
-            if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
-                filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+            if (filename.starts_with(CommandImageSupport::GetInstance().GetDefaultFolder())) {
+                filename = filename.substr(CommandImageSupport::GetInstance().GetDefaultFolder().length() + 1);
             }
-            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+            PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
             return;
         }
     }
@@ -436,7 +436,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         for (const auto& [param, value] : device->GetParams()) {
             p.emplace_back(param + "=" + value);
         }
-        PropertyHandler::Instance().AddProperty(identifier + "params", Join(p, ":"));
+        PropertyHandler::GetInstance().AddProperty(identifier + "params", Join(p, ":"));
     }
 }
 
@@ -502,7 +502,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        effective_filename = CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename;
+        effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
@@ -623,7 +623,7 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,
     const PbDeviceDefinition &pb_device, const string &filename) const
 {
-    auto device = DeviceFactory::Instance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
+    auto device = DeviceFactory::GetInstance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
     if (!device) {
         if (pb_device.type() == UNDEFINED) {
             context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, to_string(pb_device.id()),

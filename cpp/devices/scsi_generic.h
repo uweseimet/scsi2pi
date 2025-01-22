@@ -48,7 +48,7 @@ private:
     string GetDeviceData();
     void GetBlockSize();
 
-    const CommandMetaData &command_meta_data = CommandMetaData::Instance();
+    const CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
 
     string device;
 

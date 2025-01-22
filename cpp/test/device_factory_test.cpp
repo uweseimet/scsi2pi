@@ -18,7 +18,7 @@
 
 TEST(DeviceFactoryTest, CreateDevice)
 {
-    const DeviceFactory &factory = DeviceFactory::Instance();
+    const DeviceFactory &factory = DeviceFactory::GetInstance();
 
     EXPECT_EQ(SCHD, factory.CreateDevice(SCHD, 0, "")->GetType());
     EXPECT_EQ(SCRM, factory.CreateDevice(SCRM, 0, "")->GetType());
@@ -38,7 +38,7 @@ TEST(DeviceFactoryTest, CreateDevice)
 
 TEST(DeviceFactoryTest, GetTypeForFile)
 {
-    const DeviceFactory &factory = DeviceFactory::Instance();
+    const DeviceFactory &factory = DeviceFactory::GetInstance();
 
     EXPECT_EQ(factory.GetTypeForFile("test.hd1"), SCHD);
     EXPECT_EQ(factory.GetTypeForFile("test.hds"), SCHD);
@@ -63,7 +63,7 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 
 TEST(DeviceFactoryTest, GetExtensionMapping)
 {
-    const auto &mapping = DeviceFactory::Instance().GetExtensionMapping();
+    const auto &mapping = DeviceFactory::GetInstance().GetExtensionMapping();
 
     EXPECT_EQ(11U, mapping.size());
     EXPECT_EQ(SCHD, mapping.at("hd1"));
@@ -81,7 +81,7 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 
 TEST(DeviceFactoryTest, AddExtensionMapping)
 {
-    DeviceFactory &factory = DeviceFactory::Instance();
+    DeviceFactory &factory = DeviceFactory::GetInstance();
 
     EXPECT_FALSE(factory.AddExtensionMapping("iso", SCHS));
     auto mapping = factory.GetExtensionMapping();

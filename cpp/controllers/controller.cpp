@@ -122,7 +122,7 @@ void Controller::Command()
             return;
         }
 
-        const int command_bytes_count = CommandMetaData::Instance().GetByteCount(
+        const int command_bytes_count = CommandMetaData::GetInstance().GetByteCount(
             static_cast<ScsiCommand>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
@@ -133,7 +133,7 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (GetLogger().level() <= level::debug) {
-            LogDebug(CommandMetaData::Instance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
+            LogDebug(CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
         if (actual_count != command_bytes_count) {
@@ -196,7 +196,7 @@ void Controller::Execute()
             device->Dispatch(opcode);
         }
         catch (const ScsiException &e) {
-            Error(e.get_sense_key(), e.get_asc());
+            Error(e.GetSenseKey(), e.GetAsc());
         }
     }
 }
@@ -486,7 +486,7 @@ void Controller::Receive()
 
 void Controller::TransferToHost()
 {
-    assert(!CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
+    assert(!CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
 
     try {
         GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer());
@@ -496,14 +496,14 @@ void Controller::TransferToHost()
         }
     }
     catch (const ScsiException &e) {
-        Error(e.get_sense_key(), e.get_asc());
+        Error(e.GetSenseKey(), e.GetAsc());
     }
 }
 
 bool Controller::TransferFromHost(int length)
 {
     const auto cmd = static_cast<ScsiCommand>(GetCdb()[0]);
-    assert(CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
+    assert(CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
 
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
@@ -518,7 +518,7 @@ bool Controller::TransferFromHost(int length)
         }
     }
     catch (const ScsiException &e) {
-        Error(e.get_sense_key(), e.get_asc());
+        Error(e.GetSenseKey(), e.GetAsc());
         return false;
     }
 

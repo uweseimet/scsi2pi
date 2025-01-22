@@ -1164,8 +1164,8 @@ TEST(TapeTest, VerifyBlockSizeChange)
     EXPECT_EQ(0U, tape.VerifyBlockSizeChange(0, true));
 
     EXPECT_THAT([&] { tape.VerifyBlockSizeChange(0, false) ; }, Throws<ScsiException>(AllOf(
-        Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+        Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
 }
 
 TEST(TapeTest, GetStatistics)

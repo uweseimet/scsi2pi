@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ class CommandImageSupport
 
 public:
 
-    static CommandImageSupport& Instance()
+    static CommandImageSupport& GetInstance()
     {
         static CommandImageSupport instance; // NOSONAR instance cannot be inlined
         return instance;

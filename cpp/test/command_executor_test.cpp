@@ -182,7 +182,7 @@ TEST(CommandExecutorTest, Attach)
     definition.set_unit(32);
     EXPECT_FALSE(executor->Attach(context, definition, false));
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHD, LUN, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHD, LUN, "");
     definition.set_id(ID);
     definition.set_unit(LUN);
 
@@ -309,9 +309,9 @@ TEST(CommandExecutorTest, Detach)
     PbCommand command;
     CommandContext context(command, *default_logger());
 
-    const auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
+    const auto device1 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
-    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, LUN2, "");
+    const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device2));
 
     const auto d1 = controller_factory.GetDeviceForIdAndLun(ID, LUN1);
@@ -330,7 +330,7 @@ TEST(CommandExecutorTest, DetachAll)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
     EXPECT_NE(nullptr, device->GetController());
     EXPECT_FALSE(controller_factory.GetAllDevices().empty());
@@ -371,7 +371,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     EXPECT_TRUE(reserved_ids.contains(5));
     EXPECT_TRUE(reserved_ids.contains(7));
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 5, device));
     error = executor->SetReservedIds("5");
     EXPECT_FALSE(error.empty());
@@ -385,7 +385,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
     PbCommand command;
     CommandContext context(command, *default_logger());
 
-    const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
+    const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::GetInstance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
 
     EXPECT_FALSE(executor->ValidateImageFile(context, *device, "/non_existing_file"));
@@ -428,7 +428,7 @@ TEST(CommandExecutorTest, EnsureLun0)
     device1->set_unit(1);
     EXPECT_FALSE(executor->EnsureLun0(context, command));
 
-    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, device2));
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 }
@@ -581,7 +581,7 @@ TEST(CommandExecutorTest, ValidateDevice)
     device.set_unit(2);
     EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
 
-    const auto d = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto d = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 1, d));
     command.set_operation(DETACH);
     CommandContext context_detach(command, *default_logger());

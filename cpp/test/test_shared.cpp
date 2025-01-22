@@ -22,7 +22,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     const string &extension)
 {
     const auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
-    const auto device = DeviceFactory::Instance().CreateDevice(type, lun, extension);
+    const auto device = DeviceFactory::GetInstance().CreateDevice(type, lun, extension);
     device->SetParams( { });
     device->Init();
 
@@ -36,8 +36,8 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
     ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
-    if (CommandMetaData::Instance().GetByteCount(cmd)) {
-        cdb.resize(CommandMetaData::Instance().GetByteCount(cmd));
+    if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
+        cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
     }
     return cdb;
 }
@@ -95,7 +95,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    const auto device = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, filename);
+    const auto device = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
@@ -126,9 +126,9 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
         }
     }
     catch (const ScsiException &e) {
-        if (e.get_sense_key() != sense_key || e.get_asc() != asc) {
+        if (e.GetSenseKey() != sense_key || e.GetAsc() != asc) {
             spdlog::critical("Expected: " + FormatSenseData(sense_key, asc));
-            spdlog::critical("Actual: " + FormatSenseData(e.get_sense_key(), e.get_asc()));
+            spdlog::critical("Actual: " + FormatSenseData(e.GetSenseKey(), e.GetAsc()));
             FAIL() << msg;
         }
     }
@@ -203,7 +203,7 @@ void testing::SetUpProperties(string_view properties1, string_view properties2, 
         (void)write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
-    PropertyHandler::Instance().Init(filenames, cmd_properties, true);
+    PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
 }
 
 void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)

@@ -58,7 +58,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    PropertyHandler &property_handler = PropertyHandler::Instance();
+    PropertyHandler &property_handler = PropertyHandler::GetInstance();
 
     // Required for the termination handler
     inline static S2p *instance;

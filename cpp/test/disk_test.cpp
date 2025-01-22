@@ -707,8 +707,8 @@ TEST(DiskTest, ReadData)
     MockDisk disk;
 
     EXPECT_THAT([&] {disk.ReadData( {});}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
-                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
+                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, WriteData)
@@ -716,8 +716,8 @@ TEST(DiskTest, WriteData)
     MockDisk disk;
 
     EXPECT_THAT([&] {disk.WriteData( {}, {}, 0, 0);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
-                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
+                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache10)

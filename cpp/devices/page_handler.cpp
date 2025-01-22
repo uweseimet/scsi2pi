@@ -107,7 +107,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 
     const string identifier = vendor + COMPONENT_SEPARATOR + product;
 
-    for (const auto& [key, value] : PropertyHandler::Instance().GetProperties()) {
+    for (const auto& [key, value] : PropertyHandler::GetInstance().GetProperties()) {
         const auto &key_components = Split(key, '.', 3);
 
         if (key_components[0] != PropertyHandler::MODE_PAGE) {

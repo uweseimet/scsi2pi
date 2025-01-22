@@ -15,7 +15,7 @@ using namespace protobuf_util;
 
 TEST(CommandImageSupportTest, SetGetDepth)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     image.SetDepth(1);
     EXPECT_EQ(1, image.GetDepth());
@@ -23,7 +23,7 @@ TEST(CommandImageSupportTest, SetGetDepth)
 
 TEST(CommandImageSupportTest, SetGetDefaultFolder)
 {
-    CommandImageSupport &image = CommandImageSupport::Instance();
+    CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     EXPECT_NE(string::npos, image.GetDefaultFolder().find("/images"));
 
@@ -33,7 +33,7 @@ TEST(CommandImageSupportTest, SetGetDefaultFolder)
 
 TEST(CommandImageSupportTest, CreateImage)
 {
-    const CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -73,7 +73,7 @@ TEST(CommandImageSupportTest, CreateImage)
 
 TEST(CommandImageSupportTest, DeleteImage)
 {
-    const CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -99,7 +99,7 @@ TEST(CommandImageSupportTest, DeleteImage)
 
 TEST(CommandImageSupportTest, RenameImage)
 {
-    const CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -122,7 +122,7 @@ TEST(CommandImageSupportTest, RenameImage)
 
 TEST(CommandImageSupportTest, CopyImage)
 {
-    const CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     StorageDevice::SetReservedFiles( { });
 
@@ -145,7 +145,7 @@ TEST(CommandImageSupportTest, CopyImage)
 
 TEST(CommandImageSupportTest, SetImagePermissions)
 {
-    const CommandImageSupport &image = CommandImageSupport::Instance();
+    const CommandImageSupport &image = CommandImageSupport::GetInstance();
 
     StorageDevice::SetReservedFiles( { });
 

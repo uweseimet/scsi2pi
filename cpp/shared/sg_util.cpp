@@ -39,7 +39,7 @@ int sg_util::OpenDevice(const string &device)
 
 int sg_util::GetAllocationLength(span<const uint8_t> cdb)
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
+    const auto &meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
 
     // For commands without allocation length field the length is coded as a negative offset
     if (meta_data.allocation_length_offset < 0) {
@@ -72,7 +72,7 @@ int sg_util::GetAllocationLength(span<const uint8_t> cdb)
 
 void sg_util::UpdateStartBlock(span<uint8_t> cdb, int length)
 {
-    switch (const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])); meta_data.block_size) {
+    switch (const auto &meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])); meta_data.block_size) {
     case 3:
         SetInt24(cdb, meta_data.block_offset, GetInt24(cdb, meta_data.block_offset) + length);
         break;
@@ -92,7 +92,7 @@ void sg_util::UpdateStartBlock(span<uint8_t> cdb, int length)
 
 void sg_util::SetBlockCount(span<uint8_t> cdb, int length)
 {
-    const auto &meta_data = CommandMetaData::Instance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
+    const auto &meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
     if (meta_data.block_size) {
         switch (meta_data.allocation_length_size) {
         case 1:

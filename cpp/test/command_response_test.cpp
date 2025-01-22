@@ -32,7 +32,7 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
     ControllerFactory controller_factory;
     CommandResponse response;
 
-    auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
+    auto d = DeviceFactory::GetInstance().CreateDevice(type, 0, "");
     const param_map params;
     d->Init();
     EXPECT_TRUE(controller_factory.AttachToController(bus, 0, d));
@@ -173,7 +173,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     PbCommand command;
     PbServerInfo info1;
-    CommandImageSupport::Instance().SetDepth(1234);
+    CommandImageSupport::GetInstance().SetDepth(1234);
 
     response.GetServerInfo(info1, command, devices, ids, *default_logger());
     EXPECT_TRUE(info1.has_version_info());

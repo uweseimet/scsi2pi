@@ -255,7 +255,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
+            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
                 throw ParserException(error);
             }
         }
@@ -265,7 +265,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
                 throw ParserException("Invalid image file scan depth: " + scan_depth);
             }
             else {
-                CommandImageSupport::Instance().SetDepth(depth);
+                CommandImageSupport::GetInstance().SetDepth(depth);
             }
         }
 
@@ -320,7 +320,7 @@ string S2p::MapExtensions() const
         }
 
         for (const string &extension : Split(value, ',')) {
-            if (!DeviceFactory::Instance().AddExtensionMapping(extension, type)) {
+            if (!DeviceFactory::GetInstance().AddExtensionMapping(extension, type)) {
                 return "Duplicate extension mapping for extension '" + extension + "'";
             }
         }

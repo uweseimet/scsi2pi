@@ -62,7 +62,7 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::Instance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }

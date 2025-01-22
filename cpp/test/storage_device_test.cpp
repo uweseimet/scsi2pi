@@ -357,25 +357,25 @@ TEST(StorageDeviceTest, EvaluateBlockDescriptors)
 
     EXPECT_THAT([&] {device.EvaluateBlockDescriptors(ScsiCommand::MODE_SELECT_6, {}, 512);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
 
     EXPECT_THAT([&] {device.EvaluateBlockDescriptors(ScsiCommand::MODE_SELECT_6,
                 CreateParameters("00:00:00:ff:00:00:00:00:00:00:08:00"), 512);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
 
     EXPECT_THAT([&] {device.EvaluateBlockDescriptors(ScsiCommand::MODE_SELECT_10, {}, 512);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
 
     EXPECT_THAT([&] {device.EvaluateBlockDescriptors(ScsiCommand::MODE_SELECT_10,
                 CreateParameters("00:00:00:00:00:00:00:ff:00:08:00:00:00:00:00:00"), 512);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
 
     pair<int, int> result;
 
@@ -414,21 +414,21 @@ TEST(StorageDeviceTest, VerifyBlockSizeChange)
     EXPECT_EQ(1024U, device.VerifyBlockSizeChange(1024, true));
 
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(2048, false);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
 
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(0, false);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(513, false);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(0, true);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
     EXPECT_THAT([&] {device.VerifyBlockSizeChange(513, true);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-        Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
 }
 
 TEST(StorageDeviceTest, ModeSense6)

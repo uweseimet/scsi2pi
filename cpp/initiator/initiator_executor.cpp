@@ -33,18 +33,18 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     const auto cmd = static_cast<ScsiCommand>(cdb[0]);
 
-    auto command_name = string(CommandMetaData::Instance().GetCommandName(cmd));
+    auto command_name = string(CommandMetaData::GetInstance().GetCommandName(cmd));
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
 
     // Only report byte count mismatch for non-linked commands
-    if (const int count = CommandMetaData::Instance().GetByteCount(cmd); count
+    if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
         initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb, "Initiator"));
+    initiator_logger.debug(CommandMetaData::GetInstance().LogCdb(cdb, "Initiator"));
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
@@ -207,7 +207,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
-        initiator_logger.error("Execution of {} failed", CommandMetaData::Instance().GetCommandName(cmd));
+        initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
     }
 
     cdb_offset += sent_count;

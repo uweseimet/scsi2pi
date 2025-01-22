@@ -52,7 +52,7 @@ static void ValidateDrivePage(const AbstractController &controller, int offset)
 
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
-    auto hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hda");
+    auto hd = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, "test.hda");
     EXPECT_NE(nullptr, hd);
     EXPECT_EQ(SCHD, hd->GetType());
     EXPECT_TRUE(hd->SupportsImageFile());
@@ -71,7 +71,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
     EXPECT_EQ("FIREBALL", product) << "Invalid default vendor for Apple drive";
     EXPECT_EQ(TestShared::GetVersion(), revision);
 
-    hd = DeviceFactory::Instance().CreateDevice(UNDEFINED, 0, "test.hds");
+    hd = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, "test.hds");
     EXPECT_NE(nullptr, hd);
     EXPECT_EQ(SCHD, hd->GetType());
 }
@@ -298,8 +298,8 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     buf[4] = 0x00;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Unsupported page 0 was not rejected";
 
     // Page 1 (Read-write error recovery page)
@@ -308,8 +308,8 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     buf[5] = 0x0a;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 12, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
@@ -320,8 +320,8 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     buf[5] = 0x0a;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
@@ -332,8 +332,8 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     buf[5] = 0x16;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
@@ -341,8 +341,8 @@ TEST(ScsiHdTest, ModeSelect6_Single)
     hd.SetBlockSize(2048);
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));
@@ -425,8 +425,8 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     buf[8] = 0x00;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Unsupported page 0 was not rejected";
 
     // Page 1 (Read-write error recovery page)
@@ -435,8 +435,8 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     buf[9] = 0x0a;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 16, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
@@ -447,8 +447,8 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     buf[9] = 0x0a;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 2, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20, 0));
     EXPECT_EQ(512U, hd.GetBlockSize());
@@ -459,8 +459,8 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     buf[9] = 0x16;
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size(), 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Requested sector size does not match current sector size";
 
     // Match the requested to the current sector size
@@ -468,8 +468,8 @@ TEST(ScsiHdTest, ModeSelect10_Single)
     hd.SetBlockSize(2048);
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, buf.size() - 10, 0);},
         Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::ILLEGAL_REQUEST),
-                Property(&ScsiException::get_asc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
+                Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+                Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size(), 0));

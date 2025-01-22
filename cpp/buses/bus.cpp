@@ -66,7 +66,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
         }
     }
 
-    const int command_byte_count = CommandMetaData::Instance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
+    const int command_byte_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 
@@ -303,7 +303,7 @@ BusPhase Bus::GetPhase()
     return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
 }
 
-// Phase Table with the phases based upon the MSG, C/D and I/O signals
+// Phase table with the phases based upon the MSG, C/D and I/O signals
 //
 // |MSG|C/D|I/O| Phase
 // | 0 | 0 | 0 | DATA OUT

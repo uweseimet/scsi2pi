@@ -40,18 +40,18 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
         }
         else {
-            PropertyHandler::Instance().AddProperty(PropertyHandler::LOG_LEVEL, log_level);
+            PropertyHandler::GetInstance().AddProperty(PropertyHandler::LOG_LEVEL, log_level);
             return context.ReturnSuccessStatus();
         }
 
     case DEFAULT_FOLDER:
-        if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(GetParam(command, "folder"),
+        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(GetParam(command, "folder"),
             s2p_logger); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
         else {
-            PropertyHandler::Instance().AddProperty(PropertyHandler::IMAGE_FOLDER, GetParam(command, "folder"));
+            PropertyHandler::GetInstance().AddProperty(PropertyHandler::IMAGE_FOLDER, GetParam(command, "folder"));
             return context.WriteSuccessResult(result);
         }
 
@@ -126,23 +126,23 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return CommandImageSupport::Instance().CreateImage(context);
+        return CommandImageSupport::GetInstance().CreateImage(context);
 
     case DELETE_IMAGE:
-        return CommandImageSupport::Instance().DeleteImage(context);
+        return CommandImageSupport::GetInstance().DeleteImage(context);
 
     case RENAME_IMAGE:
-        return CommandImageSupport::Instance().RenameImage(context);
+        return CommandImageSupport::GetInstance().RenameImage(context);
 
     case COPY_IMAGE:
-        return CommandImageSupport::Instance().CopyImage(context);
+        return CommandImageSupport::GetInstance().CopyImage(context);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return CommandImageSupport::Instance().SetImagePermissions(context);
+        return CommandImageSupport::GetInstance().SetImagePermissions(context);
 
     case PERSIST_CONFIGURATION:
-        return PropertyHandler::Instance().Persist() ?
+        return PropertyHandler::GetInstance().Persist() ?
                 context.ReturnSuccessStatus() : context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
 
     case NO_OPERATION:

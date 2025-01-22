@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ public:
         bool has_data_out;
     };
 
-    static CommandMetaData& Instance()
+    static CommandMetaData& GetInstance()
     {
         static CommandMetaData instance; // NOSONAR instance cannot be inlined
         return instance;
@@ -55,7 +55,6 @@ private:
 
     void AddCommand(ScsiCommand, int, string_view, const CdbMetaData&);
 
-    // These are arrays instead of maps because of performance reasons
     array<int, 256> command_byte_counts;
     array<string, 256> command_names;
     array<CdbMetaData, 256> cdb_meta_data;

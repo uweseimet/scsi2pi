@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -34,11 +34,11 @@ public:
     }
     ~ScsiException() override = default;
 
-    SenseKey get_sense_key() const
+    SenseKey GetSenseKey() const
     {
         return sense_key;
     }
-    Asc get_asc() const
+    Asc GetAsc() const
     {
         return asc;
     }
