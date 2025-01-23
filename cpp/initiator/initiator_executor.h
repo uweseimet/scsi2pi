@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,11 +11,14 @@
 #include <memory>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
-#include "buses/bus.h"
 #include "shared/s2p_formatter.h"
+#include "shared/scsi.h"
+#include "shared/s2p_defs.h"
 
 using namespace std;
 using namespace spdlog;
+
+class Bus;
 
 class InitiatorExecutor
 {

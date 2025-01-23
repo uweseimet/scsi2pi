@@ -555,7 +555,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
                 s << ", ";
             }
             isFirst = false;
-            string v = key != "token" ? value : "???";
+            string v = key != "token" ? value : "????";
             s << "'" << key << "=" << v << "'";
         }
     }

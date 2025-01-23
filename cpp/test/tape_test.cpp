@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -22,7 +23,8 @@ static void CheckPosition(const AbstractController &controller, shared_ptr<Prima
 
 static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
 {
-    const auto c = static_cast<MockAbstractController*>(tape->GetController());
+    auto *c = dynamic_cast<MockAbstractController*>(tape->GetController());
+    assert(c);
     c->ResetCdb();
     c->SetCdbByte(1, 0x01);
     CheckPosition(*c, tape, position);

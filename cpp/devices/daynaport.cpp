@@ -23,6 +23,7 @@
 
 #include "daynaport.h"
 #include "shared/network_util.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;

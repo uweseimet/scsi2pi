@@ -10,6 +10,7 @@
 
 #include "controller.h"
 #include "base/primary_device.h"
+#include "buses/bus.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 

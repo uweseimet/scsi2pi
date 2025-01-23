@@ -75,7 +75,7 @@ TEST(LinuxCache, Flush)
 
 TEST(LinuxCache, GetStatistics)
 {
-    MockDevice device(0);
+    NiceMock<MockDevice> device(0);
     LinuxCache cache("", 0, 0, false);
 
     EXPECT_EQ(2U, cache.GetStatistics(device).size());

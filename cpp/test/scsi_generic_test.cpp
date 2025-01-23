@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "devices/scsi_generic.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ScsiGenericTest, Device_Defaults)
 {

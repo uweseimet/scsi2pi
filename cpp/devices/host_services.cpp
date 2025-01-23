@@ -87,6 +87,8 @@
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "protobuf/protobuf_util.h"
+#include "shared/s2p_exceptions.h"
+#include "page_handler.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;

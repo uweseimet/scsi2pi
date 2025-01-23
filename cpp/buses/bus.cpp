@@ -337,5 +337,5 @@ const array<string, 11> Bus::phase_names = {
     "STATUS",
     "MESSAGE IN",
     "MESSAGE OUT",
-    "???"
+    "????"
 };

@@ -14,7 +14,7 @@
 
 using namespace spdlog;
 
-unique_ptr<Bus> BusFactory::CreateBus(bool target, bool in_process, const string &identifier, bool log_signals)
+unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const string &identifier, bool log_signals)
 {
     unique_ptr<Bus> bus;
 

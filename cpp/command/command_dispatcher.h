@@ -8,7 +8,16 @@
 
 #pragma once
 
-#include "command_executor.h"
+#include <spdlog/spdlog.h>
+#include "shared/s2p_defs.h"
+#include "generated/s2p_interface.pb.h"
+
+class CommandContext;
+class CommandExecutor;
+class ControllerFactory;
+
+using namespace spdlog;
+using namespace s2p_interface;
 
 class CommandDispatcher
 {

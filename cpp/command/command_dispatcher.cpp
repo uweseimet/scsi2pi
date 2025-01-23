@@ -9,14 +9,17 @@
 #include "command_dispatcher.h"
 #include <fstream>
 #include "command_context.h"
+#include "command_executor.h"
 #include "command_image_support.h"
 #include "command_response.h"
+#include "controllers/controller_factory.h"
 #include "protobuf/protobuf_util.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace s2p_util;
+using namespace command_response;
 using namespace protobuf_util;
+using namespace s2p_util;
 
 bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {
@@ -31,8 +34,6 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     }
 
     s2p_logger.trace("Executing {} command", PbOperation_Name(operation));
-
-    CommandResponse response;
 
     switch (operation) {
     case LOG_LEVEL:
@@ -56,28 +57,28 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         }
 
     case DEVICES_INFO:
-        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
+        GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
-        response.GetDeviceTypesInfo(*result.mutable_device_types_info());
+        GetDeviceTypesInfo(*result.mutable_device_types_info());
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
-        response.GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
+        GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
             executor.GetReservedIds(), s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
-        response.GetVersionInfo(*result.mutable_version_info());
+        GetVersionInfo(*result.mutable_version_info());
         return context.WriteSuccessResult(result);
 
     case LOG_LEVEL_INFO:
-        response.GetLogLevelInfo(*result.mutable_log_level_info());
+        GetLogLevelInfo(*result.mutable_log_level_info());
         return context.WriteSuccessResult(result);
 
     case DEFAULT_IMAGE_FILES_INFO:
-        response.GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
+        GetImageFilesInfo(*result.mutable_image_files_info(), GetParam(command, "folder_pattern"),
             GetParam(command, "file_pattern"), s2p_logger);
         return context.WriteSuccessResult(result);
 
@@ -86,7 +87,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
-            if (const auto &image_file = make_unique<PbImageFile>(); response.GetImageFile(*image_file.get(),
+            if (const auto &image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(),
                 filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
@@ -99,27 +100,27 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         break;
 
     case NETWORK_INTERFACES_INFO:
-        response.GetNetworkInterfacesInfo(*result.mutable_network_interfaces_info());
+        GetNetworkInterfacesInfo(*result.mutable_network_interfaces_info());
         return context.WriteSuccessResult(result);
 
     case MAPPING_INFO:
-        response.GetMappingInfo(*result.mutable_mapping_info());
+        GetMappingInfo(*result.mutable_mapping_info());
         return context.WriteSuccessResult(result);
 
     case STATISTICS_INFO:
-        response.GetStatisticsInfo(*result.mutable_statistics_info(), controller_factory.GetAllDevices());
+        GetStatisticsInfo(*result.mutable_statistics_info(), controller_factory.GetAllDevices());
         return context.WriteSuccessResult(result);
 
     case PROPERTIES_INFO:
-        response.GetPropertiesInfo(*result.mutable_properties_info());
+        GetPropertiesInfo(*result.mutable_properties_info());
         return context.WriteSuccessResult(result);
 
     case OPERATION_INFO:
-        response.GetOperationInfo(*result.mutable_operation_info());
+        GetOperationInfo(*result.mutable_operation_info());
         return context.WriteSuccessResult(result);
 
     case RESERVED_IDS_INFO:
-        response.GetReservedIds(*result.mutable_reserved_ids_info(), executor.GetReservedIds());
+        GetReservedIds(*result.mutable_reserved_ids_info(), executor.GetReservedIds());
         return context.WriteSuccessResult(result);
 
     case SHUT_DOWN:
@@ -170,8 +171,7 @@ bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) co
         // A command with an empty device list is required here in order to return data for all devices
         PbCommand command;
         PbResult result;
-        CommandResponse response;
-        response.GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
+        GetDevicesInfo(controller_factory.GetAllDevices(), result, command);
         return context.WriteResult(result);
     }
 

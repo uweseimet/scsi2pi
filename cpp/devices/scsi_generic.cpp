@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
+#include "shared/s2p_exceptions.h"
 #include "shared/sg_util.h"
 
 using namespace spdlog;

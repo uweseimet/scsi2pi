@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
@@ -200,5 +201,5 @@ private:
     param_map params;
 
     // Use the default logger until the device-specific logger has been created
-    shared_ptr<logger> device_logger = default_logger();
+    shared_ptr<spdlog::logger> device_logger = default_logger();
 };

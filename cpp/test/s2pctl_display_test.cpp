@@ -11,20 +11,20 @@
 #include <gtest/gtest.h>
 #include "s2pctl/s2pctl_display.h"
 
+using namespace s2pctl_display;
+
 TEST(S2pCtlDisplayTest, DisplayDevicesInfo)
 {
-    S2pCtlDisplay display;
     PbDevicesInfo info;
 
-    EXPECT_FALSE(display.DisplayDevicesInfo(info).empty());
+    EXPECT_FALSE(DisplayDevicesInfo(info).empty());
 }
 
 TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
 {
-    S2pCtlDisplay display;
     PbDevice device;
 
-    EXPECT_FALSE(display.DisplayDeviceInfo(device).empty());
+    EXPECT_FALSE(DisplayDeviceInfo(device).empty());
 
     device.set_scsi_level(5);
     device.set_caching_mode(PbCachingMode::LINUX);
@@ -38,32 +38,32 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
     device.mutable_status()->set_removed(true);
     device.mutable_properties()->set_lockable(true);
     device.mutable_status()->set_locked(true);
-    EXPECT_FALSE(display.DisplayDeviceInfo(device).empty());
+    EXPECT_FALSE(DisplayDeviceInfo(device).empty());
 
     device.set_block_size(1234);
-    string s = display.DisplayDeviceInfo(device);
+    string s = DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("1234"));
 
     device.set_block_count(4321);
-    s = display.DisplayDeviceInfo(device);
+    s = DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("5332114"));
 
     device.mutable_properties()->set_supports_file(true);
     auto *file = device.mutable_file();
     file->set_name("filename");
-    s = display.DisplayDeviceInfo(device);
+    s = DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("filename"));
 
     device.mutable_properties()->set_supports_params(true);
     (*device.mutable_params())["key1"] = "value1";
-    s = display.DisplayDeviceInfo(device);
+    s = DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("key1=value1"));
     (*device.mutable_params())["key2"] = "value2";
-    s = display.DisplayDeviceInfo(device);
+    s = DisplayDeviceInfo(device);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("key1=value1"));
     EXPECT_NE(string::npos, s.find("key2=value2"));
@@ -71,66 +71,63 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
 
 TEST(S2pCtlDisplayTest, DisplayVersionInfo)
 {
-    S2pCtlDisplay display;
     PbVersionInfo info;
 
     info.set_major_version(1);
     info.set_minor_version(2);
     info.set_patch_version(3);
     info.set_identifier("identifier");
-    string s = display.DisplayVersionInfo(info);
+    string s = DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("1.2.3"));
     EXPECT_NE(string::npos, s.find("identifier"));
     EXPECT_EQ(string::npos, s.find("development"));
 
     info.set_patch_version(-1);
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("1.2"));
 
     info.set_suffix("rc");
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("rc"));
 
     info.set_major_version(21);
     info.set_minor_version(11);
     info.set_identifier("");
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_NE(string::npos, s.find("RaSCSI"));
     EXPECT_NE(string::npos, s.find("development"));
 
     info.set_major_version(22);
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_NE(string::npos, s.find("PiSCSI"));
     EXPECT_NE(string::npos, s.find("development"));
 
     info.set_patch_version(0);
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_EQ(string::npos, s.find("development"));
     info.set_patch_version(1);
-    s = display.DisplayVersionInfo(info);
+    s = DisplayVersionInfo(info);
     EXPECT_EQ(string::npos, s.find("development"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayLogLevelInfo)
 {
-    S2pCtlDisplay display;
     PbLogLevelInfo info;
 
-    string s = display.DisplayLogLevelInfo(info);
+    string s = DisplayLogLevelInfo(info);
     EXPECT_FALSE(s.empty());
 
     info.add_log_levels("test");
-    s = display.DisplayLogLevelInfo(info);
+    s = DisplayLogLevelInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("test"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
 {
-    S2pCtlDisplay display;
     PbDeviceTypesInfo info;
 
     int ordinal = 1;
@@ -165,7 +162,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
         ++ordinal;
     }
 
-    const string s = display.DisplayDeviceTypesInfo(info);
+    const string s = DisplayDeviceTypesInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("key1=value1"));
     EXPECT_NE(string::npos, s.find("key2=value2"));
@@ -173,48 +170,45 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
 
 TEST(S2pCtlDisplayTest, DisplayReservedIdsInfo)
 {
-    S2pCtlDisplay display;
     PbReservedIdsInfo info;
 
-    string s = display.DisplayReservedIdsInfo(info);
+    string s = DisplayReservedIdsInfo(info);
     EXPECT_TRUE(s.empty());
 
     info.mutable_ids()->Add(5);
-    s = display.DisplayReservedIdsInfo(info);
+    s = DisplayReservedIdsInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("5"));
 
     info.mutable_ids()->Add(6);
-    s = display.DisplayReservedIdsInfo(info);
+    s = DisplayReservedIdsInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("5, 6"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayNetworkInterfaces)
 {
-    S2pCtlDisplay display;
     PbNetworkInterfacesInfo info;
 
-    string s = display.DisplayNetworkInterfaces(info);
+    string s = DisplayNetworkInterfaces(info);
     EXPECT_FALSE(s.empty());
 
     info.mutable_name()->Add("eth0");
-    s = display.DisplayNetworkInterfaces(info);
+    s = DisplayNetworkInterfaces(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("eth0"));
 
     info.mutable_name()->Add("wlan0");
-    s = display.DisplayNetworkInterfaces(info);
+    s = DisplayNetworkInterfaces(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("eth0, wlan0"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
 {
-    S2pCtlDisplay display;
     PbStatisticsInfo info;
 
-    string s = display.DisplayStatisticsInfo(info);
+    string s = DisplayStatisticsInfo(info);
     EXPECT_NE(string::npos, s.find("Statistics:"));
     EXPECT_EQ(string::npos, s.find("INFO"));
     EXPECT_EQ(string::npos, s.find("WARNING"));
@@ -227,7 +221,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st1->set_category(PbStatisticsCategory::CATEGORY_INFO);
     st1->set_key("info");
     st1->set_value(1);
-    s = display.DisplayStatisticsInfo(info);
+    s = DisplayStatisticsInfo(info);
     EXPECT_NE(string::npos, s.find("Statistics:"));
     EXPECT_NE(string::npos, s.find("INFO"));
     EXPECT_EQ(string::npos, s.find("WARNING"));
@@ -239,7 +233,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st2->set_category(PbStatisticsCategory::CATEGORY_WARNING);
     st2->set_key("warning");
     st2->set_value(2);
-    s = display.DisplayStatisticsInfo(info);
+    s = DisplayStatisticsInfo(info);
     EXPECT_NE(string::npos, s.find("Statistics:"));
     EXPECT_NE(string::npos, s.find("INFO"));
     EXPECT_NE(string::npos, s.find("WARNING"));
@@ -251,7 +245,7 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st3->set_category(PbStatisticsCategory::CATEGORY_ERROR);
     st3->set_key("error");
     st3->set_value(3);
-    s = display.DisplayStatisticsInfo(info);
+    s = DisplayStatisticsInfo(info);
     EXPECT_NE(string::npos, s.find("Statistics:"));
     EXPECT_NE(string::npos, s.find("INFO"));
     EXPECT_NE(string::npos, s.find("WARNING"));
@@ -263,80 +257,75 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
 
 TEST(S2pCtlDisplayTest, DisplayImageFile)
 {
-    S2pCtlDisplay display;
     PbImageFile file;
 
-    string s = display.DisplayImageFile(file);
+    string s = DisplayImageFile(file);
     EXPECT_FALSE(s.empty());
 
     file.set_name("filename");
-    s = display.DisplayImageFile(file);
+    s = DisplayImageFile(file);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("filename"));
     EXPECT_EQ(string::npos, s.find("read-only"));
     EXPECT_EQ(string::npos, s.find("SCHD"));
 
     file.set_read_only(true);
-    s = display.DisplayImageFile(file);
+    s = DisplayImageFile(file);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("filename"));
     EXPECT_NE(string::npos, s.find("read-only"));
     EXPECT_EQ(string::npos, s.find("SCHD"));
 
     file.set_type(SCHD);
-    s = display.DisplayImageFile(file);
+    s = DisplayImageFile(file);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("SCHD"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayImageFilesInfo)
 {
-    S2pCtlDisplay display;
     PbImageFilesInfo info;
 
-    string s = display.DisplayImageFilesInfo(info);
-    EXPECT_FALSE(display.DisplayImageFilesInfo(info).empty());
+    string s = DisplayImageFilesInfo(info);
+    EXPECT_FALSE(DisplayImageFilesInfo(info).empty());
     EXPECT_EQ(string::npos, s.find("filename"));
 
     PbImageFile *file = info.add_image_files();
     file->set_name("filename");
-    s = display.DisplayImageFilesInfo(info);
+    s = DisplayImageFilesInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("filename"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayMappingInfo)
 {
-    S2pCtlDisplay display;
     PbMappingInfo info;
 
-    string s = display.DisplayMappingInfo(info);
+    string s = DisplayMappingInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_EQ(string::npos, s.find("key->SCHD"));
 
     (*info.mutable_mapping())["key"] = SCHD;
-    s = display.DisplayMappingInfo(info);
+    s = DisplayMappingInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("key->SCHD"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
 {
-    S2pCtlDisplay display;
     PbPropertiesInfo info;
 
     (*info.mutable_s2p_properties())["key"] = "value";
-    const string &s = display.DisplayPropertiesInfo(info);
+    const string &s = DisplayPropertiesInfo(info);
     EXPECT_NE(string::npos, s.find("s2p properties"));
     EXPECT_NE(string::npos, s.find("key=value"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)
 {
-    S2pCtlDisplay display;
     PbOperationInfo info;
 
-    string s = display.DisplayOperationInfo(info);
+    string s = DisplayOperationInfo(info);
     EXPECT_FALSE(s.empty());
 
     PbOperationMetaData meta_data;
@@ -354,14 +343,14 @@ TEST(S2pCtlDisplayTest, DisplayOperationInfo)
     param3->add_permitted_values("permitted_value3_1");
     param3->add_permitted_values("permitted_value3_2");
     (*info.mutable_operations())[0] = meta_data;
-    s = display.DisplayOperationInfo(info);
+    s = DisplayOperationInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find(PbOperation_Name(NO_OPERATION)));
 
     meta_data.set_server_side_name("server_side_name");
     meta_data.set_description("description");
     (*info.mutable_operations())[0] = meta_data;
-    s = display.DisplayOperationInfo(info);
+    s = DisplayOperationInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("default_key1"));
     EXPECT_NE(string::npos, s.find("default_value1"));
@@ -374,7 +363,7 @@ TEST(S2pCtlDisplayTest, DisplayOperationInfo)
     EXPECT_EQ(string::npos, s.find("server_side_name"));
 
     (*info.mutable_operations())[1234] = meta_data;
-    s = display.DisplayOperationInfo(info);
+    s = DisplayOperationInfo(info);
     EXPECT_FALSE(s.empty());
     EXPECT_NE(string::npos, s.find("server_side_name"));
 }

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "sasi_hd.h"
+#include "shared/s2p_exceptions.h"
 
 SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false, sector_sizes)
 {

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,11 +12,6 @@
 #include "shared/network_util.h"
 
 using namespace network_util;
-
-TEST(NetworkUtilTest, IsInterfaceUp)
-{
-    EXPECT_FALSE(IsInterfaceUp("foo_bar"));
-}
 
 #ifdef __linux__
 TEST(NetworkUtilTest, GetNetworkInterfaces)

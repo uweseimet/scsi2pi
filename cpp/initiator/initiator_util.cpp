@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "initiator_util.h"
+#include "buses/bus.h"
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;

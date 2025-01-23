@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,11 +10,12 @@
 
 #include <filesystem>
 #include "command/command_dispatcher.h"
+#include "command/command_executor.h"
 #include "base/property_handler.h"
+#include "buses/bus.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;
-using namespace s2p_interface;
 
 class S2p
 {

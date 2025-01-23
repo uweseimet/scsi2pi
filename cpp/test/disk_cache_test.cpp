@@ -40,7 +40,7 @@ TEST(DiskCache, ReadWriteSectors)
 
 TEST(DiskCache, GetStatistics)
 {
-    MockDevice device(0);
+    NiceMock<MockDevice> device(0);
     DiskCache cache("", 512, 0);
 
     EXPECT_EQ(4U, cache.GetStatistics(device).size());

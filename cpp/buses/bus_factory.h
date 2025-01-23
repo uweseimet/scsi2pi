@@ -11,10 +11,9 @@
 #include <memory>
 #include "bus.h"
 
-class BusFactory
+namespace bus_factory
 {
 
-public:
+unique_ptr<Bus> CreateBus(bool, bool, const string&, bool);
 
-    static unique_ptr<Bus> CreateBus(bool, bool, const string&, bool);
-};
+}

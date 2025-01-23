@@ -31,6 +31,7 @@
 
 #include "printer.h"
 #include <filesystem>
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;

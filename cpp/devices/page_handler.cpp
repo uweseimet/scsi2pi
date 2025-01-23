@@ -8,6 +8,7 @@
 
 #include <spdlog/spdlog.h>
 #include "page_handler.h"
+#include "base/primary_device.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 

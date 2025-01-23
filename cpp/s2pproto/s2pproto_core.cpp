@@ -66,7 +66,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process)
 {
-    bus = BusFactory::CreateBus(false, in_process, APP_NAME, false);
+    bus = bus_factory::CreateBus(false, in_process, APP_NAME, false);
     if (!bus) {
         return false;
     }

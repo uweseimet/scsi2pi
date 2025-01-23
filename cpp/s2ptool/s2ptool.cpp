@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,6 +12,7 @@
 #include "s2pdump/s2pdump_core.h"
 #include "s2pexec/s2pexec_core.h"
 #include "s2pproto/s2pproto_core.h"
+#include "shared/s2p_util.h"
 
 using namespace s2p_util;
 

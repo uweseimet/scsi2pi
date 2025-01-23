@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,13 +16,138 @@
 using namespace s2p_util;
 using namespace protobuf_util;
 
-string S2pCtlDisplay::DisplayDevicesInfo(const PbDevicesInfo &devices_info) const
+namespace
+{
+
+string DisplayParams(const PbDevice &pb_device)
+{
+    set<string, less<>> params;
+    for (const auto& [key, value] : pb_device.params()) {
+        params.insert(key + "=" + value);
+    }
+
+    return Join(params, ":");
+}
+
+string DisplayAttributes(const PbDeviceProperties &props)
+{
+    ostringstream s;
+
+    vector < string > properties;
+    if (props.read_only()) {
+        properties.emplace_back("read-only");
+    }
+    if (props.protectable()) {
+        properties.emplace_back("protectable");
+    }
+    if (props.stoppable()) {
+        properties.emplace_back("stoppable");
+    }
+    if (props.removable()) {
+        properties.emplace_back("removable");
+    }
+    if (props.lockable()) {
+        properties.emplace_back("lockable");
+    }
+
+    if (!properties.empty()) {
+        s << "Properties: " << Join(properties) << '\n';
+    }
+
+    return s.str();
+}
+
+string DisplayDefaultParameters(const PbDeviceProperties &properties)
+{
+    ostringstream s;
+
+    if (!properties.default_params().empty()) {
+        s << "Default parameters: ";
+
+        set<string, less<>> sorted_params;
+        for (const auto& [key, value] : properties.default_params()) {
+            sorted_params.insert(key + "=" + value);
+        }
+
+        string p;
+
+        for (const auto &param : sorted_params) {
+            if (!p.empty()) {
+                p += "\n                            ";
+            }
+            p += param;
+        }
+
+        s << p;
+    }
+
+    return s.str();
+}
+
+string DisplayBlockSizes(const PbDeviceProperties &properties)
+{
+    if (!properties.block_sizes_size()) {
+        return "";
+    }
+
+    ostringstream s;
+
+    const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
+    s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: " << Join(sorted_sizes);
+
+    return s.str();
+}
+
+string DisplayPermittedValues(const PbOperationParameter &parameter)
+{
+    if (!parameter.permitted_values_size()) {
+        return "";
+    }
+
+    ostringstream s;
+
+    const set<string, less<>> sorted_values(parameter.permitted_values().cbegin(),
+        parameter.permitted_values().cend());
+    s << "      Permitted values: " << Join(sorted_values) << '\n';
+
+    return s.str();
+}
+
+string DisplayParameters(const PbOperationMetaData &meta_data)
+{
+    vector < PbOperationParameter > sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
+    ranges::sort(sorted_parameters, [](const auto &a, const auto &b) {return a.name() < b.name();});
+
+    ostringstream s;
+
+    for (const auto &parameter : sorted_parameters) {
+        s << "    " << parameter.name() << ": "
+            << (parameter.is_mandatory() ? "mandatory" : "optional");
+
+        if (!parameter.description().empty()) {
+            s << " (" << parameter.description() << ")";
+        }
+        s << '\n';
+
+        s << DisplayPermittedValues(parameter);
+
+        if (!parameter.default_value().empty()) {
+            s << "      Default value: " << parameter.default_value() << '\n';
+        }
+    }
+
+    return s.str();
+}
+
+}
+
+string s2pctl_display::DisplayDevicesInfo(const PbDevicesInfo &devices_info)
 {
     const vector<PbDevice> devices(devices_info.devices().cbegin(), devices_info.devices().cend());
     return ListDevices(devices);
 }
 
-string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
+string s2pctl_display::DisplayDeviceInfo(const PbDevice &pb_device)
 {
     ostringstream s;
 
@@ -91,7 +216,7 @@ string S2pCtlDisplay::DisplayDeviceInfo(const PbDevice &pb_device) const
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayVersionInfo(const PbVersionInfo &version_info) const
+string s2pctl_display::DisplayVersionInfo(const PbVersionInfo &version_info)
 {
     string version = "Server version: " + version_info.identifier();
     if (version_info.identifier().empty() || version_info.major_version() >= 21) {
@@ -123,7 +248,7 @@ string S2pCtlDisplay::DisplayVersionInfo(const PbVersionInfo &version_info) cons
     return version;
 }
 
-string S2pCtlDisplay::DisplayLogLevelInfo(const PbLogLevelInfo &log_level_info) const
+string s2pctl_display::DisplayLogLevelInfo(const PbLogLevelInfo &log_level_info)
 {
     ostringstream s;
 
@@ -143,7 +268,7 @@ string S2pCtlDisplay::DisplayLogLevelInfo(const PbLogLevelInfo &log_level_info) 
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_types_info) const
+string s2pctl_display::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_types_info)
 {
     if (device_types_info.properties().empty()) {
         return "";
@@ -201,7 +326,7 @@ string S2pCtlDisplay::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_typ
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayReservedIdsInfo(const PbReservedIdsInfo &reserved_ids_info) const
+string s2pctl_display::DisplayReservedIdsInfo(const PbReservedIdsInfo &reserved_ids_info)
 {
     ostringstream s;
 
@@ -213,7 +338,7 @@ string S2pCtlDisplay::DisplayReservedIdsInfo(const PbReservedIdsInfo &reserved_i
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayImageFile(const PbImageFile &image_file_info) const
+string s2pctl_display::DisplayImageFile(const PbImageFile &image_file_info)
 {
     ostringstream s;
 
@@ -232,7 +357,7 @@ string S2pCtlDisplay::DisplayImageFile(const PbImageFile &image_file_info) const
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayImageFilesInfo(const PbImageFilesInfo &image_files_info) const
+string s2pctl_display::DisplayImageFilesInfo(const PbImageFilesInfo &image_files_info)
 {
     ostringstream s;
 
@@ -254,7 +379,7 @@ string S2pCtlDisplay::DisplayImageFilesInfo(const PbImageFilesInfo &image_files_
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayNetworkInterfaces(const PbNetworkInterfacesInfo &network_interfaces_info) const
+string s2pctl_display::DisplayNetworkInterfaces(const PbNetworkInterfacesInfo &network_interfaces_info)
 {
     ostringstream s;
 
@@ -265,7 +390,7 @@ string S2pCtlDisplay::DisplayNetworkInterfaces(const PbNetworkInterfacesInfo &ne
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayMappingInfo(const PbMappingInfo &mapping_info) const
+string s2pctl_display::DisplayMappingInfo(const PbMappingInfo &mapping_info)
 {
     ostringstream s;
 
@@ -279,7 +404,7 @@ string S2pCtlDisplay::DisplayMappingInfo(const PbMappingInfo &mapping_info) cons
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_info) const
+string s2pctl_display::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_info)
 {
     ostringstream s;
 
@@ -325,7 +450,7 @@ string S2pCtlDisplay::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_i
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info) const
+string s2pctl_display::DisplayOperationInfo(const PbOperationInfo &operation_info)
 {
     const map<int, PbOperationMetaData, less<>> operations(operation_info.operations().cbegin(),
         operation_info.operations().cend());
@@ -366,7 +491,7 @@ string S2pCtlDisplay::DisplayOperationInfo(const PbOperationInfo &operation_info
     return s.str();
 }
 
-string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_info) const
+string s2pctl_display::DisplayPropertiesInfo(const PbPropertiesInfo &properties_info)
 {
     const map<string, string, less<>> sorted_properties(properties_info.s2p_properties().cbegin(),
         properties_info.s2p_properties().cend());
@@ -377,126 +502,6 @@ string S2pCtlDisplay::DisplayPropertiesInfo(const PbPropertiesInfo &properties_i
     for (const auto& [key, value] : sorted_properties) {
         s << "  " << key << "=" << value << '\n';
     }
-
-    return s.str();
-}
-
-string S2pCtlDisplay::DisplayParams(const PbDevice &pb_device) const
-{
-    set<string, less<>> params;
-    for (const auto& [key, value] : pb_device.params()) {
-        params.insert(key + "=" + value);
-    }
-
-    return Join(params, ":");
-}
-
-string S2pCtlDisplay::DisplayAttributes(const PbDeviceProperties &props) const
-{
-    ostringstream s;
-
-    vector<string> properties;
-    if (props.read_only()) {
-        properties.emplace_back("read-only");
-    }
-    if (props.protectable()) {
-        properties.emplace_back("protectable");
-    }
-    if (props.stoppable()) {
-        properties.emplace_back("stoppable");
-    }
-    if (props.removable()) {
-        properties.emplace_back("removable");
-    }
-    if (props.lockable()) {
-        properties.emplace_back("lockable");
-    }
-
-    if (!properties.empty()) {
-        s << "Properties: " << Join(properties) << '\n';
-    }
-
-    return s.str();
-}
-
-string S2pCtlDisplay::DisplayDefaultParameters(const PbDeviceProperties &properties) const
-{
-    ostringstream s;
-
-    if (!properties.default_params().empty()) {
-        s << "Default parameters: ";
-
-        set<string, less<>> sorted_params;
-        for (const auto& [key, value] : properties.default_params()) {
-            sorted_params.insert(key + "=" + value);
-        }
-
-        string p;
-
-        for (const auto &param : sorted_params) {
-            if (!p.empty()) {
-                p += "\n                            ";
-            }
-            p += param;
-        }
-
-        s << p;
-    }
-
-    return s.str();
-}
-
-string S2pCtlDisplay::DisplayBlockSizes(const PbDeviceProperties &properties) const
-{
-    if (!properties.block_sizes_size()) {
-        return "";
-    }
-
-    ostringstream s;
-
-    const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
-    s << "Standard block size" << (sorted_sizes.size() > 1 ? "s" : "") << " in bytes: " << Join(sorted_sizes);
-
-    return s.str();
-}
-
-string S2pCtlDisplay::DisplayParameters(const PbOperationMetaData &meta_data) const
-{
-    vector<PbOperationParameter> sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
-    ranges::sort(sorted_parameters, [](const auto &a, const auto &b) {return a.name() < b.name();});
-
-    ostringstream s;
-
-    for (const auto &parameter : sorted_parameters) {
-        s << "    " << parameter.name() << ": "
-            << (parameter.is_mandatory() ? "mandatory" : "optional");
-
-        if (!parameter.description().empty()) {
-            s << " (" << parameter.description() << ")";
-        }
-        s << '\n';
-
-        s << DisplayPermittedValues(parameter);
-
-        if (!parameter.default_value().empty()) {
-            s << "      Default value: " << parameter.default_value() << '\n';
-        }
-    }
-
-    return s.str();
-}
-
-string S2pCtlDisplay::DisplayPermittedValues(const PbOperationParameter &parameter) const
-{
-    if (!parameter.permitted_values_size()) {
-        return "";
-    }
-
-    ostringstream s;
-
-    const set<string, less<>> sorted_values(parameter.permitted_values().cbegin(),
-        parameter.permitted_values().cend());
-    s << "      Permitted values: " << Join(sorted_values) << '\n';
 
     return s.str();
 }

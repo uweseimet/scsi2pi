@@ -9,6 +9,7 @@
 #include "primary_device.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "shared/command_meta_data.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -412,3 +413,10 @@ void PrimaryDevice::DiscardReservation()
 {
     reserving_initiator = NOT_RESERVED;
 }
+
+void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int, int)
+{
+    // There is no default implementation of MODE SELECT
+    throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+}
+

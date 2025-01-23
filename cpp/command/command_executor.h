@@ -11,13 +11,14 @@
 #include <mutex>
 #include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
-#ifdef BUILD_STORAGE_DEVICE
-#include "devices/storage_device.h"
-#endif
+#include "generated/s2p_interface.pb.h"
 
 using namespace spdlog;
+using namespace s2p_interface;
 
 class CommandContext;
+class Device;
+class StorageDevice;
 
 class CommandExecutor
 {

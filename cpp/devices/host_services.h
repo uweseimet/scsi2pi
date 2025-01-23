@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include "page_handler.h"
+#include "base/primary_device.h"
 
 class CommandDispatcher;
+class PageHandler;
 
 class HostServices : public PrimaryDevice
 {

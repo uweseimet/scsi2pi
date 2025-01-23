@@ -164,7 +164,7 @@ TEST(DeviceTest, Eject)
 
 TEST(DeviceTest, EnrichStatistics)
 {
-    MockDevice device(0);
+    NiceMock<MockDevice> device(0);
 
     vector<PbStatistics> statistics;
 

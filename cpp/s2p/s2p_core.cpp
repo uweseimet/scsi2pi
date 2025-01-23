@@ -28,12 +28,13 @@
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
+using namespace s2p_parser;
 using namespace s2p_util;
 using namespace protobuf_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::CreateBus(true, in_process, APP_NAME, log_signals);
+    bus = bus_factory::CreateBus(true, in_process, APP_NAME, log_signals);
     if (!bus) {
         return false;
     }
@@ -126,15 +127,13 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    S2pParser parser;
-
-    parser.Banner(false);
+    Banner(false);
 
     bool ignore_conf = false;
 
     property_map properties;
     try {
-        properties = parser.ParseArguments(args, ignore_conf);
+        properties = ParseArguments(args, ignore_conf);
     }
     catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
@@ -202,8 +201,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     // Display and log the device list
     PbServerInfo server_info;
-    CommandResponse response;
-    response.GetDevices(controller_factory.GetAllDevices(), server_info);
+    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
     const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);

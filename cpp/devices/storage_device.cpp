@@ -8,6 +8,7 @@
 
 #include "storage_device.h"
 #include <unistd.h>
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;

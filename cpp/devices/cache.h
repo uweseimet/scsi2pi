@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include "base/device.h"
 #include "shared/s2p_defs.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
 using namespace s2p_interface;
+
+class Device;
 
 class Cache
 {

@@ -13,7 +13,6 @@
 #include <functional>
 #include "controllers/abstract_controller.h"
 #include "shared/memory_util.h"
-#include "shared/s2p_exceptions.h"
 #include "device.h"
 
 class PrimaryDevice : public Device
@@ -95,11 +94,7 @@ public:
     // For DATA OUT phase, except for MODE SELECT
     virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int, int)
-    {
-        // There is no default implementation of MODE SELECT
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
+    virtual void ModeSelect(cdb_t, data_out_t, int, int);
 
     virtual void FlushCache()
     {

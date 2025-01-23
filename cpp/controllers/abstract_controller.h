@@ -13,11 +13,11 @@
 #include <spdlog/spdlog.h>
 #include "phase_handler.h"
 #include "script_generator.h"
-#include "buses/bus.h"
 #include "shared/s2p_formatter.h"
 
 using namespace spdlog;
 
+class Bus;
 class PrimaryDevice;
 
 class AbstractController : public PhaseHandler

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "linux_cache.h"
+#include "base/device.h"
 
 bool LinuxCache::Init()
 {

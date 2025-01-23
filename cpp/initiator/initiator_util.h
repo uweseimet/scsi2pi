@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,9 @@ using namespace spdlog;
 
 namespace initiator_util
 {
+
 void ResetBus(Bus&);
 tuple<SenseKey, Asc, int> GetSenseData(InitiatorExecutor&);
 bool SetLogLevel(logger&, const string&);
+
 }

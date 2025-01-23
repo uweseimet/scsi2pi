@@ -2,14 +2,15 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2023 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include "s2pctl_display.h"
+#include "generated/s2p_interface.pb.h"
 
+using namespace std;
 using namespace s2p_interface;
 
 struct sockaddr_in;
@@ -67,6 +68,4 @@ private:
     string filename_text;
 
     PbResult result;
-
-    [[no_unique_address]] const S2pCtlDisplay s2pctl_display;
 };

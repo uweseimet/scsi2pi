@@ -22,7 +22,44 @@ using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
 
-void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties) const
+namespace
+{
+
+bool FilterMatches(const string &input, string_view pattern_lower)
+{
+    return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
+}
+
+bool ValidateImageFile(const path &path, logger &logger)
+{
+    if (path.filename().string().starts_with(".")) {
+        return false;
+    }
+
+    filesystem::path p(path);
+
+    // Follow symlink
+    if (is_symlink(p)) {
+        p = read_symlink(p);
+        if (!exists(p)) {
+            logger.warn("Image file symlink '{}' is broken", path.string());
+            return false;
+        }
+    }
+
+    if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
+        return false;
+    }
+
+    if (!is_block_file(p) && file_size(p) < 256) {
+        logger.warn("Image file '{}' is invalid", p.string());
+        return false;
+    }
+
+    return true;
+}
+
+void GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &properties)
 {
     properties.set_luns(GetLunMax(device->GetType()));
     properties.set_scsi_level(static_cast<int>(device->GetScsiLevel()));
@@ -53,22 +90,7 @@ void CommandResponse::GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDe
 #endif
 }
 
-void CommandResponse::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info) const
-{
-    int ordinal = 1;
-    while (PbDeviceType_IsValid(ordinal)) {
-        // Only report device types supported by the factory
-        if (const auto device = DeviceFactory::GetInstance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
-            auto *type_properties = device_types_info.add_properties();
-            type_properties->set_type(device->GetType());
-            GetDeviceProperties(device, *type_properties->mutable_properties());
-        }
-
-        ++ordinal;
-    }
-}
-
-void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device) const
+void GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device)
 {
     pb_device.set_id(device->GetId());
     pb_device.set_unit(device->GetLun());
@@ -100,7 +122,7 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
         const auto storage_device = static_pointer_cast<const StorageDevice>(device);
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
-        GetImageFile(*pb_device.mutable_file(),
+        command_response::GetImageFile(*pb_device.mutable_file(),
             storage_device->IsReady() ? storage_device->GetFilename() : "NO MEDIUM");
     }
 #endif
@@ -111,28 +133,8 @@ void CommandResponse::GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_d
 #endif
 }
 
-bool CommandResponse::GetImageFile(PbImageFile &image_file, const string &filename) const
-{
-    if (!filename.empty()) {
-        image_file.set_name(filename);
-        image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
-
-        const path p(filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
-
-        image_file.set_read_only(access(p.c_str(), W_OK));
-
-        error_code error;
-        if (is_regular_file(p, error) || (is_symlink(p, error) && !is_block_file(p, error))) {
-            image_file.set_size(file_size(p));
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern, logger &logger) const
+void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern, const string &file_pattern,
+    logger &logger)
 {
     const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
 
@@ -167,14 +169,117 @@ void CommandResponse::GetAvailableImages(PbImageFilesInfo &image_files_info, con
         const string filename = folder.empty() ?
                                                  it->path().filename().string() :
                                                  folder + "/" + it->path().filename().string();
-        if (PbImageFile image_file; GetImageFile(image_file, filename)) {
-            GetImageFile(*image_files_info.add_image_files(), filename);
+        if (PbImageFile image_file; command_response::GetImageFile(image_file, filename)) {
+            command_response::GetImageFile(*image_files_info.add_image_files(), filename);
         }
     }
 }
 
-void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
-    const string &file_pattern, logger &logger) const
+void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern, const string &file_pattern,
+    logger &logger)
+{
+    server_info.mutable_image_files_info()->set_default_image_folder(
+        CommandImageSupport::GetInstance().GetDefaultFolder());
+
+    command_response::GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
+}
+
+// This method returns a raw pointer because protobuf does not have support for smart pointers
+PbOperationMetaData* CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
+    const string &description)
+{
+    PbOperationMetaData meta_data;
+    meta_data.set_server_side_name(PbOperation_Name(operation));
+    meta_data.set_description(description);
+    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
+    (*operation_info.mutable_operations())[number] = meta_data;
+    return &(*operation_info.mutable_operations())[number];
+}
+
+void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, const string &description,
+    const string &default_value = "", bool is_mandatory = false, const vector<string> &permitted_values = { })
+{
+    auto *parameter = meta_data.add_parameters();
+    parameter->set_name(name);
+    parameter->set_description(description);
+    parameter->set_default_value(default_value);
+    parameter->set_is_mandatory(is_mandatory);
+    for (const auto &permitted_value : permitted_values) {
+        parameter->add_permitted_values(permitted_value);
+    }
+}
+
+set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
+    const PbCommand &command)
+{
+    set<id_set> id_sets;
+
+    for (const auto &device : command.devices()) {
+        bool has_device = false;
+        if (ranges::any_of(devices,
+            [&device](const auto &d) {return d->GetId() == device.id() && d->GetLun() == device.unit();})) {
+            id_sets.insert( { device.id(), device.unit() });
+            has_device = true;
+        }
+
+        if (!has_device) {
+            id_sets.clear();
+
+            result.set_status(false);
+            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
+
+            break;
+        }
+    }
+
+    return id_sets;
+}
+
+bool HasOperation(const set<string, less<>> &operations, PbOperation operation)
+{
+    return operations.empty() || operations.contains(PbOperation_Name(operation));
+}
+
+}
+
+void command_response::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info)
+{
+    int ordinal = 1;
+    while (PbDeviceType_IsValid(ordinal)) {
+        // Only report device types supported by the factory
+        if (const auto device = DeviceFactory::GetInstance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
+            auto *type_properties = device_types_info.add_properties();
+            type_properties->set_type(device->GetType());
+            GetDeviceProperties(device, *type_properties->mutable_properties());
+        }
+
+        ++ordinal;
+    }
+}
+
+bool command_response::GetImageFile(PbImageFile &image_file, const string &filename)
+{
+    if (!filename.empty()) {
+        image_file.set_name(filename);
+        image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
+
+        const path p(
+            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
+
+        image_file.set_read_only(access(p.c_str(), W_OK));
+
+        error_code error;
+        if (is_regular_file(p, error) || (is_symlink(p, error) && !is_block_file(p, error))) {
+            image_file.set_size(file_size(p));
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void command_response::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
+    const string &file_pattern, logger &logger)
 {
     image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
     image_files_info.set_depth(CommandImageSupport::GetInstance().GetDepth());
@@ -182,23 +287,15 @@ void CommandResponse::GetImageFilesInfo(PbImageFilesInfo &image_files_info, cons
     GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
 
-void CommandResponse::GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
-    const string &file_pattern, logger &logger) const
-{
-    server_info.mutable_image_files_info()->set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
-
-    GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
-}
-
-void CommandResponse::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids) const
+void command_response::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, const unordered_set<int> &ids)
 {
     for (const int id : ids) {
         reserved_ids_info.add_ids(id);
     }
 }
 
-void CommandResponse::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices,
-    PbServerInfo &server_info) const
+void command_response::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices,
+    PbServerInfo &server_info)
 {
     for (const auto &device : devices) {
         PbDevice *pb_device = server_info.mutable_devices_info()->add_devices();
@@ -206,8 +303,8 @@ void CommandResponse::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> 
     }
 }
 
-void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
-    const PbCommand &command) const
+void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
+    const PbCommand &command)
 {
     set<id_set> id_sets;
 
@@ -238,9 +335,9 @@ void CommandResponse::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevic
     result.set_status(true);
 }
 
-void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
+void command_response::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
     const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
-    logger &logger) const
+    logger &logger)
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -297,7 +394,7 @@ void CommandResponse::GetServerInfo(PbServerInfo &server_info, const PbCommand &
     }
 }
 
-void CommandResponse::GetVersionInfo(PbVersionInfo &version_info) const
+void command_response::GetVersionInfo(PbVersionInfo &version_info)
 {
     version_info.set_major_version(s2p_major_version);
     version_info.set_minor_version(s2p_minor_version);
@@ -306,7 +403,7 @@ void CommandResponse::GetVersionInfo(PbVersionInfo &version_info) const
     version_info.set_identifier("SCSI2Pi");
 }
 
-void CommandResponse::GetLogLevelInfo(PbLogLevelInfo &log_level_info) const
+void command_response::GetLogLevelInfo(PbLogLevelInfo &log_level_info)
 {
     for (const auto &log_level : level::level_string_views) {
         log_level_info.add_log_levels(log_level.data());
@@ -315,22 +412,22 @@ void CommandResponse::GetLogLevelInfo(PbLogLevelInfo &log_level_info) const
     log_level_info.set_current_log_level(level::level_string_views[get_level()].data());
 }
 
-void CommandResponse::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info) const
+void command_response::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info)
 {
     for (const auto &network_interface : GetNetworkInterfaces()) {
         network_interfaces_info.add_name(network_interface);
     }
 }
 
-void CommandResponse::GetMappingInfo(PbMappingInfo &mapping_info) const
+void command_response::GetMappingInfo(PbMappingInfo &mapping_info)
 {
     for (const auto& [name, type] : DeviceFactory::GetInstance().GetExtensionMapping()) {
         (*mapping_info.mutable_mapping())[name] = type;
     }
 }
 
-void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices) const
+void command_response::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
+    const unordered_set<shared_ptr<PrimaryDevice>> &devices)
 {
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
@@ -344,14 +441,14 @@ void CommandResponse::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
     }
 }
 
-void CommandResponse::GetPropertiesInfo(PbPropertiesInfo &properties_info) const
+void command_response::GetPropertiesInfo(PbPropertiesInfo &properties_info)
 {
     for (const auto& [key, value] : PropertyHandler::GetInstance().GetProperties()) {
         (*properties_info.mutable_s2p_properties())[key] = value;
     }
 }
 
-void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
+void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 {
     auto *operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
     AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
@@ -456,95 +553,4 @@ void CommandResponse::GetOperationInfo(PbOperationInfo &operation_info) const
     CreateOperation(operation_info, PERSIST_CONFIGURATION, "Save current configuration to /etc/s2p.conf");
 
     CreateOperation(operation_info, OPERATION_INFO, "Get operation meta data");
-}
-
-// This method returns a raw pointer because protobuf does not have support for smart pointers
-PbOperationMetaData* CommandResponse::CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
-    const string &description) const
-{
-    PbOperationMetaData meta_data;
-    meta_data.set_server_side_name(PbOperation_Name(operation));
-    meta_data.set_description(description);
-    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
-    (*operation_info.mutable_operations())[number] = meta_data;
-    return &(*operation_info.mutable_operations())[number];
-}
-
-void CommandResponse::AddOperationParameter(PbOperationMetaData &meta_data, const string &name,
-    const string &description, const string &default_value, bool is_mandatory,
-    const vector<string> &permitted_values) const
-{
-    auto *parameter = meta_data.add_parameters();
-    parameter->set_name(name);
-    parameter->set_description(description);
-    parameter->set_default_value(default_value);
-    parameter->set_is_mandatory(is_mandatory);
-    for (const auto &permitted_value : permitted_values) {
-        parameter->add_permitted_values(permitted_value);
-    }
-}
-
-set<id_set> CommandResponse::MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
-    const PbCommand &command) const
-{
-    set<id_set> id_sets;
-
-    for (const auto &device : command.devices()) {
-        bool has_device = false;
-        if (ranges::any_of(devices,
-            [&device](const auto &d) {return d->GetId() == device.id() && d->GetLun() == device.unit();})) {
-            id_sets.insert( { device.id(), device.unit() });
-            has_device = true;
-        }
-
-        if (!has_device) {
-            id_sets.clear();
-
-            result.set_status(false);
-            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
-
-            break;
-        }
-    }
-
-    return id_sets;
-}
-
-bool CommandResponse::ValidateImageFile(const path &path, logger &logger)
-{
-    if (path.filename().string().starts_with(".")) {
-        return false;
-    }
-
-    filesystem::path p(path);
-
-    // Follow symlink
-    if (is_symlink(p)) {
-        p = read_symlink(p);
-        if (!exists(p)) {
-            logger.warn("Image file symlink '{}' is broken", path.string());
-            return false;
-        }
-    }
-
-    if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
-        return false;
-    }
-
-    if (!is_block_file(p) && file_size(p) < 256) {
-        logger.warn("Image file '{}' is invalid", p.string());
-        return false;
-    }
-
-    return true;
-}
-
-bool CommandResponse::FilterMatches(const string &input, string_view pattern_lower)
-{
-    return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
-}
-
-bool CommandResponse::HasOperation(const set<string, less<>> &operations, PbOperation operation)
-{
-    return operations.empty() || operations.contains(PbOperation_Name(operation));
 }

@@ -9,6 +9,7 @@
 #include "initiator_executor.h"
 #include <chrono>
 #include "initiator_util.h"
+#include "buses/bus.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -106,5 +106,5 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
 string DelegatingInProcessBus::GetSignalName(int pin)
 {
     const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "???";
+    return it != SIGNALS.end() ? it->second : "????";
 }

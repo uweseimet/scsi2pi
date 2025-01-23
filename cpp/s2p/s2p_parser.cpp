@@ -18,7 +18,119 @@
 using namespace s2p_util;
 using namespace s2p_interface;
 
-void S2pParser::Banner(bool usage) const
+namespace
+{
+
+void SetDeviceProperty(property_map &properties, const string &key, const string &name, string &value)
+{
+    if (!value.empty()) {
+        properties[key + name] = value;
+        value.clear();
+    }
+}
+
+string ParseNumber(const string &s)
+{
+    string result;
+    size_t i = -1;
+    while (s.size() > ++i) {
+        if (!isdigit(s[i])) {
+            break;
+        }
+
+        result += s[i];
+    }
+
+    return result;
+}
+
+string ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
+{
+    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
+        { "CD", SCCD },
+        { "FD", SCHD },
+        { "HD", SCHD },
+        { "MO", SCMO },
+        { "RE", SCRM },
+        { "TP", SCTP }
+    };
+
+    const auto index = filename.find(".");
+    const string &specifier = index == string::npos ? filename : filename.substr(0, index);
+    const auto &components = Split(specifier, '_');
+
+    const string &type_id_lun = components[0];
+    if (type_id_lun.size() < 3) {
+        throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
+    }
+
+    // An explicit ID/LUN on the command line overrides the BlueSCSI ID/LUN
+    string device_key = d;
+    if (d.empty()) {
+        const char id = type_id_lun[2];
+        string lun;
+        if (type_id_lun.size() > 3) {
+            lun = ParseNumber(type_id_lun.substr(3));
+        }
+        lun = !lun.empty() && lun != "0" ? ":" + lun : "";
+        device_key = fmt::format("device.{0}{1}.", id, lun);
+    }
+
+    const string &type = type_id_lun.substr(0, 2);
+    const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
+    if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
+        throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
+    }
+    properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
+
+    string block_size = "512";
+    if (components.size() > 1) {
+        if (const string b = ParseNumber(components[1]); !b.empty()) {
+            block_size = b;
+        }
+        // When there is no block_size number after the "_" separator the string is the product data
+        else {
+            properties[device_key + PropertyHandler::NAME] = components[1];
+        }
+    }
+    properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
+
+    if (components.size() > 2) {
+        properties[device_key + PropertyHandler::NAME] = components[2];
+    }
+
+    return device_key;
+}
+
+vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
+{
+    // Convert legacy RaSCSI/PiSCSI ID options to a consistent getopt() format:
+    //   -id|-ID -> -i
+    //   -hd|-HD -> -h
+    //   -idn:u|-hdn:u -> -i|-h n:u
+    vector<char*> args;
+    for (const string arg : initial_args) {
+        const size_t start_of_ids = arg.find_first_of("0123456789");
+        const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
+
+        const string &arg_lower = ToLower(arg);
+        if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
+            args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
+            if (!ids.empty()) {
+                args.emplace_back(strdup(ids.c_str()));
+            }
+        }
+        else {
+            args.emplace_back(strdup(arg.c_str()));
+        }
+    }
+
+    return args;
+}
+
+}
+
+void s2p_parser::Banner(bool usage)
 {
     if (!usage) {
         cout << s2p_util::Banner("(Device Emulation)") << flush;
@@ -67,7 +179,7 @@ void S2pParser::Banner(bool usage) const
     }
 }
 
-property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_conf) const // NOSONAR Acceptable complexity for parsing
+property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_conf) // NOSONAR Acceptable complexity for parsing
 {
     const int OPT_SCSI_LEVEL = 2;
     const int OPT_LOG_LIMIT = 3;
@@ -215,111 +327,4 @@ property_map S2pParser::ParseArguments(span<char*> initial_args, bool &ignore_co
     }
 
     return properties;
-}
-
-void S2pParser::SetDeviceProperty(property_map &properties, const string &key, const string &name, string &value)
-{
-    if (!value.empty()) {
-        properties[key + name] = value;
-        value.clear();
-    }
-}
-
-string S2pParser::ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
-{
-    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
-        { "CD", SCCD },
-        { "FD", SCHD },
-        { "HD", SCHD },
-        { "MO", SCMO },
-        { "RE", SCRM },
-        { "TP", SCTP }
-    };
-
-    const auto index = filename.find(".");
-    const string &specifier = index == string::npos ? filename : filename.substr(0, index);
-    const auto &components = Split(specifier, '_');
-
-    const string &type_id_lun = components[0];
-    if (type_id_lun.size() < 3) {
-        throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
-    }
-
-    // An explicit ID/LUN on the command line overrides the BlueSCSI ID/LUN
-    string device_key = d;
-    if (d.empty()) {
-        const char id = type_id_lun[2];
-        string lun;
-        if (type_id_lun.size() > 3) {
-            lun = ParseNumber(type_id_lun.substr(3));
-        }
-        lun = !lun.empty() && lun != "0" ? ":" + lun : "";
-        device_key = fmt::format("device.{0}{1}.", id, lun);
-    }
-
-    const string &type = type_id_lun.substr(0, 2);
-    const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
-    if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
-        throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
-    }
-    properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
-
-    string block_size = "512";
-    if (components.size() > 1) {
-        if (const string b = ParseNumber(components[1]); !b.empty()) {
-            block_size = b;
-        }
-        // When there is no block_size number after the "_" separator the string is the product data
-        else {
-            properties[device_key + PropertyHandler::NAME] = components[1];
-        }
-    }
-    properties[device_key + PropertyHandler::BLOCK_SIZE] = block_size;
-
-    if (components.size() > 2) {
-        properties[device_key + PropertyHandler::NAME] = components[2];
-    }
-
-    return device_key;
-}
-
-vector<char*> S2pParser::ConvertLegacyOptions(const span<char*> &initial_args)
-{
-    // Convert legacy RaSCSI/PiSCSI ID options to a consistent getopt() format:
-    //   -id|-ID -> -i
-    //   -hd|-HD -> -h
-    //   -idn:u|-hdn:u -> -i|-h n:u
-    vector<char*> args;
-    for (const string arg : initial_args) {
-        const size_t start_of_ids = arg.find_first_of("0123456789");
-        const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
-
-        const string &arg_lower = ToLower(arg);
-        if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
-            args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
-            if (!ids.empty()) {
-                args.emplace_back(strdup(ids.c_str()));
-            }
-        }
-        else {
-            args.emplace_back(strdup(arg.c_str()));
-        }
-    }
-
-    return args;
-}
-
-string S2pParser::ParseNumber(const string &s)
-{
-    string result;
-    size_t i = -1;
-    while (s.size() > ++i) {
-        if (!isdigit(s[i])) {
-            break;
-        }
-
-        result += s[i];
-    }
-
-    return result;
 }

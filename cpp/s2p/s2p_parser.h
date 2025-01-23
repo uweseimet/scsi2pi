@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,18 +11,10 @@
 #include "base/property_handler.h"
 #include <span>
 
-class S2pParser
+namespace s2p_parser
 {
 
-public:
+void Banner(bool);
+property_map ParseArguments(span<char*>, bool&);
 
-    void Banner(bool) const;
-    property_map ParseArguments(span<char*>, bool&) const;
-
-private:
-
-    static void SetDeviceProperty(property_map&, const string&, const string&, string&);
-    static string ParseBlueScsiFilename(property_map&, const string&, const string&);
-    static vector<char*> ConvertLegacyOptions(const span<char*>&);
-    static string ParseNumber(const string&);
-};
+}
