@@ -12,11 +12,11 @@
 #include <sstream>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
+#include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace s2p_interface;
 
 string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_format, PbResult &result)
 {

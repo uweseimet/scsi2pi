@@ -10,15 +10,18 @@
 
 #include <memory>
 #include <stdexcept>
-#include <spdlog/spdlog.h>
 #include "shared/s2p_formatter.h"
 #include "shared/scsi.h"
 #include "shared/s2p_defs.h"
 
+class Bus;
+namespace spdlog
+{
+class logger;
+}
+
 using namespace std;
 using namespace spdlog;
-
-class Bus;
 
 class InitiatorExecutor
 {

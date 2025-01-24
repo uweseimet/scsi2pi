@@ -2,14 +2,20 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include <memory>
+#include <vector>
 #include "shared/command_meta_data.h"
+
+namespace spdlog
+{
+class logger;
+}
 
 using namespace spdlog;
 
@@ -47,7 +53,7 @@ private:
 
     logger &sg_logger;
 
-    CommandMetaData command_meta_data = CommandMetaData::GetInstance();
+    CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
 
     int fd = -1;
 

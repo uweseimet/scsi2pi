@@ -8,14 +8,22 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include <string>
 #include "shared/s2p_defs.h"
-#include "generated/s2p_interface.pb.h"
 
 class CommandContext;
 class CommandExecutor;
 class ControllerFactory;
+namespace spdlog
+{
+class logger;
+}
+namespace s2p_interface
+{
+class PbResult;
+}
 
+using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 

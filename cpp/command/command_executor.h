@@ -8,17 +8,30 @@
 
 #pragma once
 
+#include <memory>
 #include <mutex>
-#include <spdlog/spdlog.h>
-#include "controllers/controller_factory.h"
-#include "generated/s2p_interface.pb.h"
+#include <string>
+#include <unordered_set>
 
+class Bus;
+class CommandContext;
+class ControllerFactory;
+class Device;
+class PrimaryDevice;
+class StorageDevice;
+namespace spdlog
+{
+class logger;
+}
+namespace s2p_interface
+{
+class PbCommand;
+class PbDeviceDefinition;
+}
+
+using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
-
-class CommandContext;
-class Device;
-class StorageDevice;
 
 class CommandExecutor
 {
@@ -90,9 +103,4 @@ private:
     mutex execution_locker;
 
     unordered_set<int> reserved_ids;
-
-    const inline static unordered_set<PbDeviceType> UNIQUE_DEVICE_TYPES = {
-        SCDP,
-        SCHS
-    };
 };

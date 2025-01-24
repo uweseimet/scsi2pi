@@ -8,17 +8,19 @@
 
 #pragma once
 
-#include <filesystem>
-#include <set>
-#include <spdlog/spdlog.h>
-#include "shared/s2p_defs.h"
+#include <string>
+#include <unordered_set>
 #include "generated/s2p_interface.pb.h"
 
-using namespace filesystem;
+class PrimaryDevice;
+namespace spdlog
+{
+class logger;
+}
+
+using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
-
-class PrimaryDevice;
 
 namespace command_response
 {

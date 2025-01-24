@@ -9,6 +9,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 #include "buses/bus.h"
+#include "script_generator.h"
 
 using namespace s2p_util;
 

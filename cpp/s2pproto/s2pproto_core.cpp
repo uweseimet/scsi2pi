@@ -16,6 +16,7 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;

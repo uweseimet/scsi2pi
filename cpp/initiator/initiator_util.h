@@ -8,8 +8,16 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
-#include "initiator_executor.h"
+#include <string>
+#include <tuple>
+#include "shared/scsi.h"
+
+class Bus;
+class InitiatorExecutor;
+namespace spdlog
+{
+class logger;
+}
 
 using namespace std;
 using namespace spdlog;

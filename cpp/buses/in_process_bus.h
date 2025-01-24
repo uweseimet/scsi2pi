@@ -9,10 +9,15 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include "bus.h"
+
+namespace spdlog
+{
+class logger;
+}
 
 class InProcessBus : public Bus
 {

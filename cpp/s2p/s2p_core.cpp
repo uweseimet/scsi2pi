@@ -18,6 +18,7 @@
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
+#include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #ifdef BUILD_SCHS
@@ -253,8 +254,11 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
+            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw ParserException(error);
+            }
+            else {
+                s2p_logger->info("Default image folder set to '{}'", image_folder);
             }
         }
 

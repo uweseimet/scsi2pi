@@ -2,15 +2,15 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <span>
+#include <unordered_map>
 #include <vector>
-#include "base/primary_device.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;

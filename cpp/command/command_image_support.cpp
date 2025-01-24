@@ -55,7 +55,7 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
+string CommandImageSupport::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -81,8 +81,6 @@ string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
     }
 
     default_folder = folder.string();
-
-    logger.info("Default image folder set to '{}'", default_folder);
 
     return "";
 }

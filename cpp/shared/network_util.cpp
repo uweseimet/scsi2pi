@@ -17,6 +17,7 @@
 
 using namespace std;
 
+#ifdef __linux__
 namespace
 {
 
@@ -36,6 +37,7 @@ bool IsInterfaceUp(const string &interface)
 }
 
 }
+#endif
 
 vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {

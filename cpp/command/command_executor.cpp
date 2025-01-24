@@ -12,7 +12,7 @@
 #include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
-#include "controllers/controller.h"
+#include "controllers/controller_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
@@ -637,8 +637,8 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
-    // Some device types must be unique
-    if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
+    // SCDP must be attached only once
+    if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
                 context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));

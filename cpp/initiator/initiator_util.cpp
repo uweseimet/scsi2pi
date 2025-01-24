@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "initiator_util.h"
+#include "initiator/initiator_executor.h"
 #include "buses/bus.h"
 #include "shared/s2p_util.h"
 

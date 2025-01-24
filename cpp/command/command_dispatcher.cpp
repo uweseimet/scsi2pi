@@ -8,6 +8,7 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
+#include <spdlog/spdlog.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -45,16 +46,18 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnSuccessStatus();
         }
 
-    case DEFAULT_FOLDER:
-        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(GetParam(command, "folder"),
-            s2p_logger); !error.empty()) {
+    case DEFAULT_FOLDER: {
+        const string &folder = GetParam(command, "folder");
+        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(folder); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
         else {
-            PropertyHandler::GetInstance().AddProperty(PropertyHandler::IMAGE_FOLDER, GetParam(command, "folder"));
+            s2p_logger.info("Default image folder set to '{}'", folder);
+            PropertyHandler::GetInstance().AddProperty(PropertyHandler::IMAGE_FOLDER, folder);
             return context.WriteSuccessResult(result);
         }
+    }
 
     case DEVICES_INFO:
         GetDevicesInfo(controller_factory.GetAllDevices(), result, command);

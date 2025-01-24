@@ -8,17 +8,22 @@
 
 #pragma once
 
+#include <memory>
 #include <span>
 #include <unordered_set>
-#include <spdlog/spdlog.h>
 #include "phase_handler.h"
-#include "script_generator.h"
+#include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
-
-using namespace spdlog;
 
 class Bus;
 class PrimaryDevice;
+class ScriptGenerator;
+namespace spdlog
+{
+class logger;
+}
+
+using namespace spdlog;
 
 class AbstractController : public PhaseHandler
 {

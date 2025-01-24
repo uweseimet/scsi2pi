@@ -9,13 +9,15 @@
 #pragma once
 
 #include <filesystem>
-#include "command/command_dispatcher.h"
-#include "command/command_executor.h"
 #include "base/property_handler.h"
 #include "buses/bus.h"
+#include "command/command_executor.h"
+#include "controllers/controller_factory.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;
+
+class CommandDispatcher;
 
 class S2p
 {

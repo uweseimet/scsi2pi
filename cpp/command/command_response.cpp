@@ -9,18 +9,16 @@
 #include "command_response.h"
 #include "base/device_factory.h"
 #include "base/property_handler.h"
-#include "command_context.h"
 #include "command_image_support.h"
-#include "controllers/controller.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 
-using namespace s2p_util;
 using namespace network_util;
 using namespace protobuf_util;
+using namespace s2p_util;
 
 namespace
 {

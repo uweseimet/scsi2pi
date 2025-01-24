@@ -2,18 +2,22 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <thread>
-#include <spdlog/spdlog.h>
 
 class CommandContext;
+namespace spdlog
+{
+class logger;
+}
 
 using namespace std;
 using namespace spdlog;

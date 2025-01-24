@@ -8,13 +8,19 @@
 
 #pragma once
 
+#include <chrono>
 #include <fstream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <spdlog/spdlog.h>
 #include "buses/bus.h"
-#include "shared/sg_adapter.h"
-#include "s2pdump_executor.h"
+
+class S2pDumpExecutor;
+class SgAdapter;
+namespace spdlog
+{
+class logger;
+}
 
 using namespace std;
 using namespace chrono;

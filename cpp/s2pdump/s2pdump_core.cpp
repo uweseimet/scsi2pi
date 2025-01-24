@@ -20,6 +20,7 @@
 #include "shared/simh_util.h"
 #include "board_executor.h"
 #ifdef __linux__
+#include "shared/sg_adapter.h"
 #include "sg_executor.h"
 #endif
 

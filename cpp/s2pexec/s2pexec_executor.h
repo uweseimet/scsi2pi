@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "initiator/initiator_util.h"
+#include "initiator/initiator_executor.h"
 #include "shared/sg_adapter.h"
 
 using namespace std;

@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
+#include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
