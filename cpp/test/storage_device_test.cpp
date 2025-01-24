@@ -266,7 +266,7 @@ TEST(StorageDeviceTest, GetIdsForReservedFile)
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    MockAbstractController controller(bus, ID);
+    MockAbstractController controller(ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");
     StorageDevice::SetReservedFiles( { });
@@ -294,7 +294,7 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     const int LUN = 0;
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
-    MockAbstractController controller(bus, ID);
+    MockAbstractController controller(ID);
     auto device = make_shared<MockScsiHd>(LUN, false);
     device->SetFilename("filename");
 

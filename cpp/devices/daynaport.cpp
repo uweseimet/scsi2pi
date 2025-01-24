@@ -22,6 +22,7 @@
 //---------------------------------------------------------------------------
 
 #include "daynaport.h"
+#include "controllers/abstract_controller.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
 

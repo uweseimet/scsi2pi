@@ -6,14 +6,14 @@
 //
 //---------------------------------------------------------------------------
 
+#include "abstract_controller.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "base/primary_device.h"
 #include "buses/bus.h"
-#include "script_generator.h"
 
 using namespace s2p_util;
 
-AbstractController::AbstractController(Bus &b, int id, const S2pFormatter &f) : bus(b), target_id(id), formatter(f)
+AbstractController::AbstractController(int id, const S2pFormatter &f) : target_id(id), formatter(f)
 {
     controller_logger = CreateLogger(fmt::format("[s2p] (ID {})", id));
 }
@@ -40,27 +40,6 @@ void AbstractController::Reset()
 
     for (const auto& [_, lun] : luns) {
         lun->Reset();
-    }
-
-    bus.Reset();
-}
-
-void AbstractController::SetScriptGenerator(shared_ptr<ScriptGenerator> s)
-{
-    script_generator = s;
-}
-
-void AbstractController::AddCdbToScript()
-{
-    if (script_generator) {
-        script_generator->AddCdb(target_id, GetEffectiveLun(), cdb);
-    }
-}
-
-void AbstractController::AddDataToScript(span<const uint8_t> data) const
-{
-    if (script_generator) {
-        script_generator->AddData(data);
     }
 }
 
@@ -141,10 +120,6 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
 
     while (Process()) {
         // Handle bus phases until the bus is free for the next command
-    }
-
-    if (script_generator) {
-        script_generator->WriteEol();
     }
 
     return shutdown_mode;

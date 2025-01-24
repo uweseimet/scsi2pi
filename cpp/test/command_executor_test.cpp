@@ -22,7 +22,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     const int LUN = 0;
 
     const auto bus = make_shared<MockBus>();
-    MockAbstractController controller(bus, ID);
+    MockAbstractController controller(ID);
     ControllerFactory controller_factory;
     const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
@@ -112,7 +112,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
 TEST(CommandExecutorTest, ProcessCmd)
 {
     const auto bus = make_shared<MockBus>();
-    MockAbstractController controller(bus, 0);
+    MockAbstractController controller(0);
     ControllerFactory controller_factory;
     const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
 

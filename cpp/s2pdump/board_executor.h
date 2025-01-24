@@ -11,13 +11,9 @@
 #include <cstdint>
 #include <set>
 #include <span>
+#include <spdlog/spdlog.h>
 #include "initiator/initiator_executor.h"
 #include "s2pdump_executor.h"
-
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace spdlog;

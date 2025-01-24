@@ -15,7 +15,6 @@
 #include "command/command_context.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 
 string S2pThread::Init(const callback &cb, int port, shared_ptr<logger> logger)

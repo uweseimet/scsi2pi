@@ -86,6 +86,7 @@
 #include <google/protobuf/util/json_util.h>
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
+#include "controllers/abstract_controller.h"
 #include "protobuf/protobuf_util.h"
 #include "shared/s2p_exceptions.h"
 #include "page_handler.h"

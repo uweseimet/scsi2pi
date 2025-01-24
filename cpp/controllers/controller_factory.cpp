@@ -24,12 +24,12 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
 
     // If this is LUN 0 create a new controller
     if (!device->GetLun()) {
-        if (auto controller = make_shared<Controller>(bus, id, formatter); controller->AddDevice(device)) {
+        if (auto controller = make_shared<Controller>(bus, id, script_generator, formatter); controller->AddDevice(
+            device)) {
             controller->GetLogger().set_level(log_level);
             controller->GetLogger().set_pattern(log_pattern);
 
             controller->Init();
-            controller->SetScriptGenerator(script_generator);
 
             controllers[id] = controller;
 

@@ -10,13 +10,10 @@
 
 #include <string>
 #include <unordered_set>
+#include <spdlog/spdlog.h>
 #include "generated/s2p_interface.pb.h"
 
 class PrimaryDevice;
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace spdlog;

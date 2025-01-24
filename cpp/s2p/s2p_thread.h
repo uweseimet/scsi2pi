@@ -12,12 +12,9 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <spdlog/spdlog.h>
 
 class CommandContext;
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace spdlog;

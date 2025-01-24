@@ -13,14 +13,11 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "buses/bus.h"
 
 class S2pDumpExecutor;
 class SgAdapter;
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace chrono;

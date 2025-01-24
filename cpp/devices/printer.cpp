@@ -31,6 +31,7 @@
 
 #include "printer.h"
 #include <filesystem>
+#include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;

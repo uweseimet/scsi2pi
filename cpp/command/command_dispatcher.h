@@ -9,15 +9,12 @@
 #pragma once
 
 #include <string>
+#include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
 
 class CommandContext;
 class CommandExecutor;
 class ControllerFactory;
-namespace spdlog
-{
-class logger;
-}
 namespace s2p_interface
 {
 class PbResult;

@@ -12,11 +12,7 @@
 #include <set>
 #include <span>
 #include <vector>
-
-namespace spdlog
-{
-class logger;
-}
+#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace spdlog;

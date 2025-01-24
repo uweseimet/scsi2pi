@@ -10,6 +10,7 @@
 #include "page_handler.h"
 #include "base/primary_device.h"
 #include "base/property_handler.h"
+#include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;

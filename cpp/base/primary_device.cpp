@@ -8,6 +8,7 @@
 
 #include "primary_device.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include "controllers/abstract_controller.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
@@ -420,3 +421,27 @@ void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int, int)
     throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
+int PrimaryDevice::GetCdbByte(int index) const
+{
+    return controller->GetCdb()[index];
+}
+
+int PrimaryDevice::GetCdbInt16(int index) const
+{
+    return memory_util::GetInt16(controller->GetCdb(), index);
+}
+
+int PrimaryDevice::GetCdbInt24(int index) const
+{
+    return memory_util::GetInt24(controller->GetCdb(), index);
+}
+
+uint32_t PrimaryDevice::GetCdbInt32(int index) const
+{
+    return memory_util::GetInt32(controller->GetCdb(), index);
+}
+
+uint64_t PrimaryDevice::GetCdbInt64(int index) const
+{
+    return memory_util::GetInt64(controller->GetCdb(), index);
+}

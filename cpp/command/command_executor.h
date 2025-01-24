@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
+#include <spdlog/spdlog.h>
 
 class Bus;
 class CommandContext;
@@ -19,10 +20,6 @@ class ControllerFactory;
 class Device;
 class PrimaryDevice;
 class StorageDevice;
-namespace spdlog
-{
-class logger;
-}
 namespace s2p_interface
 {
 class PbCommand;

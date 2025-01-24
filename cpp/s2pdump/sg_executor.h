@@ -11,13 +11,10 @@
 #include <cstdint>
 #include <set>
 #include <span>
+#include <spdlog/spdlog.h>
 #include "s2pdump_executor.h"
 
 class SgAdapter;
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace spdlog;

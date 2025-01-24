@@ -10,12 +10,19 @@
 
 #include "abstract_controller.h"
 
+class Bus;
+class ScriptGenerator;
+
 class Controller : public AbstractController
 {
 
 public:
 
-    using AbstractController::AbstractController;
+    Controller(Bus &b, int id, shared_ptr<ScriptGenerator> s, const S2pFormatter &formatter) : AbstractController(id,
+        formatter), bus(b), script_generator(s)
+    {
+    }
+    ~Controller() override = default;
 
     bool Process() override;
 
@@ -50,6 +57,10 @@ private:
 
     void RaiseDeferredError(SenseKey, Asc);
     void ProvideSenseData();
+
+    Bus &bus;
+
+    shared_ptr<ScriptGenerator> script_generator;
 
     // The LUN from the IDENTIFY message
     int identified_lun = -1;

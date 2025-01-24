@@ -13,6 +13,7 @@
 #include "buses/bus.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
+#include "script_generator.h"
 
 using namespace spdlog;
 using namespace s2p_util;
@@ -20,6 +21,8 @@ using namespace s2p_util;
 void Controller::Reset()
 {
     AbstractController::Reset();
+
+    bus.Reset();
 
     identified_lun = -1;
 
@@ -35,9 +38,9 @@ void Controller::ResetFlags()
 
 bool Controller::Process()
 {
-    GetBus().Acquire();
+    bus.Acquire();
 
-    if (GetBus().GetRST()) {
+    if (bus.GetRST()) {
         LogWarn("Received RESET signal");
         Reset();
         return false;
@@ -49,7 +52,15 @@ bool Controller::Process()
         return false;
     }
 
-    return !IsBusFree();
+    if (IsBusFree()) {
+        if (script_generator) {
+            script_generator->WriteEol();
+        }
+
+        return false;
+    }
+
+    return true;
 }
 
 void Controller::BusFree()
@@ -58,11 +69,11 @@ void Controller::BusFree()
         LogTrace("BUS FREE phase");
         SetPhase(BusPhase::BUS_FREE);
 
-        GetBus().SetREQ(false);
-        GetBus().SetMSG(false);
-        GetBus().SetCD(false);
-        GetBus().SetIO(false);
-        GetBus().SetBSY(false);
+        bus.SetREQ(false);
+        bus.SetMSG(false);
+        bus.SetCD(false);
+        bus.SetIO(false);
+        bus.SetBSY(false);
 
         SetStatus(StatusCode::GOOD);
 
@@ -73,7 +84,7 @@ void Controller::BusFree()
         return;
     }
 
-    if (GetBus().GetSEL() && !GetBus().GetBSY()) {
+    if (bus.GetSEL() && !bus.GetBSY()) {
         Selection();
     }
 }
@@ -84,13 +95,13 @@ void Controller::Selection()
         LogTrace("SELECTION phase");
         SetPhase(BusPhase::SELECTION);
 
-        GetBus().SetBSY(true);
+        bus.SetBSY(true);
         return;
     }
 
-    if (!GetBus().GetSEL() && GetBus().GetBSY()) {
+    if (!bus.GetSEL() && bus.GetBSY()) {
         // Message out phase if ATN=1, otherwise command phase
-        if (GetBus().GetATN()) {
+        if (bus.GetATN()) {
             MsgOut();
         } else {
             Command();
@@ -104,20 +115,20 @@ void Controller::Command()
         LogTrace("COMMAND phase");
         SetPhase(BusPhase::COMMAND);
 
-        GetBus().SetMSG(false);
-        GetBus().SetCD(true);
-        GetBus().SetIO(false);
+        bus.SetMSG(false);
+        bus.SetCD(true);
+        bus.SetIO(false);
 
         auto &buf = GetBuffer();
 
-        const int actual_count = GetBus().CommandHandShake(buf);
+        const int actual_count = bus.CommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
                 RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
-                GetBus().SetRST(true);
+                bus.SetRST(true);
                 RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             }
             return;
@@ -130,7 +141,10 @@ void Controller::Command()
         for (int i = 0; i < command_bytes_count; ++i) {
             SetCdbByte(i, buf[i]);
         }
-        AddCdbToScript();
+
+        if (script_generator) {
+            script_generator->AddCdb(GetTargetId(), GetEffectiveLun(), GetCdb());
+        }
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (GetLogger().level() <= level::debug) {
@@ -140,7 +154,7 @@ void Controller::Command()
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
                 command_bytes_count, GetCdb()[0], actual_count));
-            GetBus().SetRST(true);
+            bus.SetRST(true);
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             return;
         }
@@ -214,9 +228,9 @@ void Controller::Status()
 
     SetPhase(BusPhase::STATUS);
 
-    GetBus().SetMSG(false);
-    GetBus().SetCD(true);
-    GetBus().SetIO(true);
+    bus.SetMSG(false);
+    bus.SetCD(true);
+    bus.SetIO(true);
 
     ResetOffset();
     SetCurrentLength(1);
@@ -238,9 +252,9 @@ void Controller::MsgIn()
     LogTrace("MESSAGE IN phase");
     SetPhase(BusPhase::MSG_IN);
 
-    GetBus().SetMSG(true);
-    GetBus().SetCD(true);
-    GetBus().SetIO(true);
+    bus.SetMSG(true);
+    bus.SetCD(true);
+    bus.SetIO(true);
 
     ResetOffset();
 }
@@ -262,9 +276,9 @@ void Controller::MsgOut()
 
     SetPhase(BusPhase::MSG_OUT);
 
-    GetBus().SetMSG(true);
-    GetBus().SetCD(true);
-    GetBus().SetIO(false);
+    bus.SetMSG(true);
+    bus.SetCD(true);
+    bus.SetIO(false);
 
     ResetOffset();
     SetCurrentLength(1);
@@ -286,9 +300,9 @@ void Controller::DataIn()
     LogTrace("DATA IN phase");
     SetPhase(BusPhase::DATA_IN);
 
-    GetBus().SetMSG(false);
-    GetBus().SetCD(false);
-    GetBus().SetIO(true);
+    bus.SetMSG(false);
+    bus.SetCD(false);
+    bus.SetIO(true);
 
     ResetOffset();
 }
@@ -312,17 +326,17 @@ void Controller::DataOut()
     LogTrace("DATA OUT phase");
     SetPhase(BusPhase::DATA_OUT);
 
-    GetBus().SetMSG(false);
-    GetBus().SetCD(false);
-    GetBus().SetIO(false);
+    bus.SetMSG(false);
+    bus.SetCD(false);
+    bus.SetIO(false);
 
     ResetOffset();
 }
 
 void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status)
 {
-    GetBus().Acquire();
-    if (GetBus().GetRST() || IsStatus() || IsMsgIn()) {
+    bus.Acquire();
+    if (bus.GetRST() || IsStatus() || IsMsgIn()) {
         BusFree();
         return;
     }
@@ -346,8 +360,8 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status)
 
 void Controller::Send()
 {
-    assert(!GetBus().GetREQ());
-    assert(GetBus().GetIO());
+    assert(!bus.GetREQ());
+    assert(bus.GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
         if (GetLogger().level() == level::trace && IsDataIn()) {
@@ -359,10 +373,10 @@ void Controller::Send()
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
-        if (const int l = GetBus().SendHandShake(GetBuffer().data() + GetOffset(), length,
+        if (const int l = bus.SendHandShake(GetBuffer().data() + GetOffset(), length,
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             LogWarn(fmt::format("Sent {0} byte(s), {1} required", l, length));
-            GetBus().SetRST(true);
+            bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
@@ -414,17 +428,17 @@ void Controller::Send()
 
 void Controller::Receive()
 {
-    assert(!GetBus().GetREQ());
-    assert(!GetBus().GetIO());
+    assert(!bus.GetREQ());
+    assert(!bus.GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
         if (!IsMsgOut()) {
             LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
         }
 
-        if (const int l = GetBus().ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
+        if (const int l = bus.ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
             LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
-            GetBus().SetRST(true);
+            bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
@@ -435,8 +449,8 @@ void Controller::Receive()
                 fmt::format("Received {0} byte(s) in DATA OUT phase{1}{2}", length, bytes.empty() ? "" : ":\n", bytes));
         }
 
-        if (IsDataOut()) {
-            AddDataToScript(span(GetBuffer().data() + GetOffset(), length));
+        if (IsDataOut() && script_generator) {
+            script_generator->AddData(span(GetBuffer().data() + GetOffset(), length));
         }
 
         UpdateOffsetAndLength();
@@ -619,7 +633,7 @@ void Controller::ParseMessage()
 void Controller::ProcessMessage()
 {
     // MESSAGE OUT phase as long as ATN is asserted
-    if (GetBus().GetATN()) {
+    if (bus.GetATN()) {
         ResetOffset();
         SetCurrentLength(1);
         SetTransferSize(1, 1);

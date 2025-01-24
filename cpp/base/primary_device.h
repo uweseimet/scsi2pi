@@ -11,9 +11,11 @@
 #pragma once
 
 #include <functional>
-#include "controllers/abstract_controller.h"
-#include "shared/memory_util.h"
 #include "device.h"
+#include "shared/memory_util.h"
+#include "shared/s2p_defs.h"
+
+class AbstractController;
 
 class PrimaryDevice : public Device
 {
@@ -39,7 +41,7 @@ public:
 
     virtual void Dispatch(ScsiCommand);
 
-    auto* GetController() const
+    AbstractController* GetController() const
     {
         return controller;
     }
@@ -148,26 +150,11 @@ protected:
     void DataInPhase(int) const;
     void DataOutPhase(int) const;
 
-    auto GetCdbByte(int index) const
-    {
-        return controller->GetCdb()[index];
-    }
-    auto GetCdbInt16(int index) const
-    {
-        return memory_util::GetInt16(controller->GetCdb(), index);
-    }
-    auto GetCdbInt24(int index) const
-    {
-        return memory_util::GetInt24(controller->GetCdb(), index);
-    }
-    auto GetCdbInt32(int index) const
-    {
-        return memory_util::GetInt32(controller->GetCdb(), index);
-    }
-    auto GetCdbInt64(int index) const
-    {
-        return memory_util::GetInt64(controller->GetCdb(), index);
-    }
+    int GetCdbByte(int) const;
+    int GetCdbInt16(int) const;
+    int GetCdbInt24(int) const;
+    uint32_t GetCdbInt32(int) const;
+    uint64_t GetCdbInt64(int) const;
 
 private:
 

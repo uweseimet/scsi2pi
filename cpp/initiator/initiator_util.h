@@ -10,14 +10,11 @@
 
 #include <string>
 #include <tuple>
+#include <spdlog/spdlog.h>
 #include "shared/scsi.h"
 
 class Bus;
 class InitiatorExecutor;
-namespace spdlog
-{
-class logger;
-}
 
 using namespace std;
 using namespace spdlog;

@@ -12,6 +12,7 @@
 #include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
+#include "controllers/abstract_controller.h"
 #include "controllers/controller_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
