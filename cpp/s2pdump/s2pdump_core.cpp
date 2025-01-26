@@ -646,13 +646,16 @@ string S2pDump::ReadWriteWithRetry(fstream &file, int sector_offset, int sector_
 {
     int r = 0;
     while (true) {
-        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
-            if (r == retries) {
-                return error;
-            }
-
-            ++r;
+        const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count);
+        if (error.empty()) {
+            return "";
         }
+
+        if (r == retries) {
+            return error;
+        }
+
+        ++r;
     }
 }
 
