@@ -619,7 +619,7 @@ string S2pDump::DumpRestoreDisk(fstream &file)
         s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
         s2pdump_logger->info("Image file chunk size: {}", current_count);
 
-        if (const string &error = ReadWriteWithRetry(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
+        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
             return error;
         }
 
@@ -639,24 +639,6 @@ string S2pDump::DumpRestoreDisk(fstream &file)
     DisplayStatistics(start_time, effective_size);
 
     return "";
-}
-
-string S2pDump::ReadWriteWithRetry(fstream &file, int sector_offset, int sector_count, int sector_size,
-    int current_count)
-{
-    int r = 0;
-    while (true) {
-        const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count);
-        if (error.empty()) {
-            return "";
-        }
-
-        if (r == retries) {
-            return error;
-        }
-
-        ++r;
-    }
 }
 
 string S2pDump::DumpRestoreTape(fstream &file)
@@ -690,12 +672,28 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
-        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-            return "Can't write to device: " + string(strerror(errno));
+        int r = 0;
+        while (r <= retries) {
+            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+                break;
+            }
+
+            ++r;
         }
+
+        return "Can't write to device";
     } else {
-        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-            return "Can't read from device: " + string(strerror(errno));
+        int r = 0;
+        while (r <= retries) {
+            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+                break;
+            }
+
+            ++r;
+        }
+
+        if (r > retries) {
+            return "Can't read from device";
         }
 
         file.write((const char*)buffer.data(), byte_count);
