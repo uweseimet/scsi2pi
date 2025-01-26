@@ -68,6 +68,7 @@ void S2pDump::Banner(bool header) const
         << "                                     error|critical|off), default is 'warning'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
         << "                                     device properties for property files.\n"
+        << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
@@ -120,6 +121,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "image-file", required_argument, nullptr, 'f' },
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
+        { "retries", required_argument, nullptr, 'R' },
         { "scsi-scan", no_argument, nullptr, 's' },
         { "start-sector", required_argument, nullptr, 'S' },
         { "sasi-scan", no_argument, nullptr, 't' },
@@ -131,6 +133,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     string buf;
     string initiator;
     string id_and_lun;
+    string retry_count;
     string start_sector;
     string sector_count;
     string capacity;
@@ -142,7 +145,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rsS:tvz:",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rR:sS:tvz:",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -200,6 +203,10 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             restore = true;
             break;
 
+        case 'R':
+            retry_count = optarg;
+            break;
+
         case 's':
             run_bus_scan = true;
             scsi = true;
@@ -255,7 +262,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!initiator.empty()) {
-        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id < 0 || initiator_id > 7) {
             throw ParserException("Invalid initiator ID '" + initiator + "' (0-7)");
         }
     }
@@ -284,14 +291,20 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
 
         if (!sector_count.empty()) {
-            if (count = ParseAsUnsignedInt(sector_count); count == -1 || !count) {
+            if (count = ParseAsUnsignedInt(sector_count); count <= 0) {
                 throw ParserException("Invalid sector count: '" + sector_count + "'");
             }
         }
 
         if (!start_sector.empty()) {
-            if (start = ParseAsUnsignedInt(start_sector); start == -1) {
+            if (start = ParseAsUnsignedInt(start_sector); start < 0) {
                 throw ParserException("Invalid start sector: " + string(optarg));
+            }
+        }
+
+        if (!retry_count.empty()) {
+            if (retries = ParseAsUnsignedInt(retry_count); retries < 0) {
+                throw ParserException("Invalid retry count: " + string(optarg));
             }
         }
 
@@ -606,7 +619,7 @@ string S2pDump::DumpRestoreDisk(fstream &file)
         s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
         s2pdump_logger->info("Image file chunk size: {}", current_count);
 
-        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
+        if (const string &error = ReadWriteWithRetry(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
             return error;
         }
 
@@ -626,6 +639,21 @@ string S2pDump::DumpRestoreDisk(fstream &file)
     DisplayStatistics(start_time, effective_size);
 
     return "";
+}
+
+string S2pDump::ReadWriteWithRetry(fstream &file, int sector_offset, int sector_count, int sector_size,
+    int current_count)
+{
+    int r = 0;
+    while (true) {
+        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
+            if (r == retries) {
+                return error;
+            }
+
+            ++r;
+        }
+    }
 }
 
 string S2pDump::DumpRestoreTape(fstream &file)

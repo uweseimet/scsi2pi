@@ -38,6 +38,7 @@ public:
     static constexpr const char *TOKEN_FILE = "token_file";
 
     // Device-specific property keys
+    static constexpr const char *DEVICE = "device.";
     static constexpr const char *ACTIVE = "active";
     static constexpr const char *BLOCK_SIZE = "block_size";
     static constexpr const char *CACHING_MODE = "caching_mode";

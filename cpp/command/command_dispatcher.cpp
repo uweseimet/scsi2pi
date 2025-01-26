@@ -89,8 +89,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
-            if (const auto &image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(),
-                filename)) {
+            if (const auto &image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(), filename)) {
                 result.set_allocated_image_file_info(image_file.get());
                 result.set_status(true);
                 return context.WriteResult(result);

@@ -443,16 +443,17 @@ TEST(CommandExecutorTest, CreateDevice)
     CommandContext context(command, *default_logger());
 
     device.set_type(UNDEFINED);
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     device.set_type(SCBR);
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device));
 #pragma GCC diagnostic pop
-    device.set_type(UNDEFINED);
-    EXPECT_NE(nullptr, executor->CreateDevice(context, device, "services"));
     device.set_type(SCHS);
-    EXPECT_NE(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device));
+    device.set_type(UNDEFINED);
+    SetParam(device, "file", "services");
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device));
 }
 
 TEST(CommandExecutorTest, SetBlockSize)

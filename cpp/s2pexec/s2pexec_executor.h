@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "buses/bus.h"
 #include "initiator/initiator_executor.h"
 #include "shared/sg_adapter.h"
 

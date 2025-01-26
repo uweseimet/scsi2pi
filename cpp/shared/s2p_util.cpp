@@ -13,7 +13,6 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "s2p_exceptions.h"
 #include "s2p_version.h"
 #include "shared/memory_util.h"
 

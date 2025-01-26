@@ -255,7 +255,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (!initiator.empty()) {
-        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id < 0 || initiator_id > 7) {
             throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
         }
     }

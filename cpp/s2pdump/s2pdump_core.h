@@ -56,6 +56,7 @@ private:
     void DisplayProperties(int, int) const;
     string DumpRestore();
     string DumpRestoreDisk(fstream&);
+    string ReadWriteWithRetry(fstream&, int, int, int, int);
     string DumpRestoreTape(fstream&);
     bool GetDeviceInfo();
 
@@ -99,6 +100,8 @@ private:
     uint32_t filemark_count = 0;
 
     int log_count = 0;
+
+    int retries = 0;
 
     bool run_inquiry = false;
 

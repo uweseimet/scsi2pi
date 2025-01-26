@@ -192,7 +192,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
-        if (!key.starts_with("device.")) {
+        if (!key.starts_with(PropertyHandler::DEVICE)) {
             cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
                 << PropertyHandler::CONFIGURATION << '\n';
             CleanUp();
@@ -263,7 +263,7 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         }
 
         if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
-            if (const int depth = ParseAsUnsignedInt(scan_depth); depth == -1) {
+            if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
                 throw ParserException("Invalid image file scan depth: " + scan_depth);
             }
             else {
@@ -273,9 +273,9 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
             if (!controller_factory.SetScriptFile(script_file)) {
-                throw ParserException("Can't create s2pexec script file '" + script_file + "': " + strerror(errno));
+                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
             }
-            s2p_logger->info("Generating s2pexec script file '" + script_file + "'");
+            s2p_logger->info("Generating script file '" + script_file + "'");
         }
 
         const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
@@ -349,11 +349,8 @@ void S2p::CreateDevices()
     int id = -1;
     int lun = -1;
     bool is_active = false;
-    for (const property_map &properties = property_handler.GetProperties(); const auto& [key, value] : properties) {
-        if (!key.starts_with("device.")) {
-            continue;
-        }
-
+    for (const property_map &properties = property_handler.GetProperties(PropertyHandler::DEVICE);
+        const auto& [key, value] : properties) {
         const auto &key_components = Split(key, '.', 3);
         if (key_components.size() < 3) {
             throw ParserException(fmt::format("Invalid device definition '{}'", key));
@@ -414,7 +411,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
 {
-    if (const auto &it = properties.find("device." + id_and_lun + ".active"); it != properties.end()) {
+    if (const auto &it = properties.find(PropertyHandler::DEVICE + id_and_lun + ".active"); it != properties.end()) {
         const string &active = it->second;
         if (active != "true" && active != "false") {
             throw ParserException(fmt::format("Invalid boolean: '{}'", active));
@@ -434,8 +431,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         device.set_type(ParseDeviceType(value));
     }
     else if (key == PropertyHandler::SCSI_LEVEL) {
-        if (const int level = ParseAsUnsignedInt(value); level == -1 || !level
-            || level >= static_cast<int>(ScsiLevel::LAST)) {
+        if (const int level = ParseAsUnsignedInt(value); level <= 0 || level >= static_cast<int>(ScsiLevel::LAST)) {
             throw ParserException(fmt::format("Invalid SCSI level: '{}'", value));
         }
         else {
@@ -443,7 +439,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         }
     }
     else if (key == PropertyHandler::BLOCK_SIZE) {
-        if (const int block_size = ParseAsUnsignedInt(value); block_size == -1) {
+        if (const int block_size = ParseAsUnsignedInt(value); block_size < 0) {
             throw ParserException(fmt::format("Invalid block size: '{}'", value));
         }
         else {

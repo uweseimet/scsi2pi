@@ -9,7 +9,6 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include "buses/bus_factory.h"
 #include "shared/s2p_formatter.h"
 #include "s2pexec_executor.h"
 

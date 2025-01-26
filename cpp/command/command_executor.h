@@ -57,16 +57,16 @@ public:
     bool Protect(PrimaryDevice&) const;
     bool Unprotect(PrimaryDevice&) const;
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
-    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>&, bool) const;
+    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
     void DetachAll() const;
     string SetReservedIds(const string&);
-    #ifdef BUILD_STORAGE_DEVICE
+#ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
 #endif
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
-    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&, const string&) const;
+    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     mutex& GetExecutionLocker()
@@ -80,7 +80,7 @@ public:
 
 protected:
 
-    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
+    bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
 
 private:
 

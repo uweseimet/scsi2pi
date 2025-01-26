@@ -52,15 +52,7 @@ bool Controller::Process()
         return false;
     }
 
-    if (IsBusFree()) {
-        if (script_generator) {
-            script_generator->WriteEol();
-        }
-
-        return false;
-    }
-
-    return true;
+    return !IsBusFree();
 }
 
 void Controller::BusFree()
