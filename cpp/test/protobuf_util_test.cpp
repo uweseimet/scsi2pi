@@ -14,7 +14,7 @@
 using namespace protobuf_util;
 using namespace testing;
 
-TEST(ProtobufUtil, SerializeMessage)
+TEST(ProtobufUtilTest, SerializeMessage)
 {
     PbResult result;
 
@@ -25,7 +25,7 @@ TEST(ProtobufUtil, SerializeMessage)
     EXPECT_THROW(SerializeMessage(-1, result), IoException)<< "Writing a message must fail";
 }
 
-TEST(ProtobufUtil, DeserializeMessage)
+TEST(ProtobufUtilTest, DeserializeMessage)
 {
     PbResult result;
     vector<byte> buf(1);
@@ -54,7 +54,7 @@ TEST(ProtobufUtil, DeserializeMessage)
     EXPECT_THROW(DeserializeMessage(fd2, result), IoException)<< "Invalid data were not rejected";
 }
 
-TEST(ProtobufUtil, SerializeDeserializeMessage)
+TEST(ProtobufUtilTest, SerializeDeserializeMessage)
 {
     PbResult result;
     result.set_status(true);
@@ -73,7 +73,7 @@ TEST(ProtobufUtil, SerializeDeserializeMessage)
     EXPECT_TRUE(result.status());
 }
 
-TEST(ProtobufUtil, ReadBytes)
+TEST(ProtobufUtilTest, ReadBytes)
 {
     vector<byte> buf1(1);
     vector<byte> buf2;

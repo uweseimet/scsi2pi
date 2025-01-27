@@ -174,9 +174,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         ReadAccessToken(path(token_file));
     }
 
-    if (const string &error = service_thread.Init([this](CommandContext &context) {
+    if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
-    }, port, s2p_logger); !error.empty()) {
+    }, s2p_logger); !error.empty()) {
         cerr << "Error: " << error << '\n';
         CleanUp();
         return EXIT_FAILURE;

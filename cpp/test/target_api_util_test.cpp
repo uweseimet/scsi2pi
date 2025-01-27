@@ -20,7 +20,7 @@ void TestSpecialDevice(const string &name)
     EXPECT_EQ("", GetParam(device, "interfaces"));
 }
 
-TEST(ProtobufUtil, ParseDeviceType)
+TEST(TargetApiUtilTest, ParseDeviceType)
 {
     EXPECT_EQ(SCCD, ParseDeviceType("sccd"));
     EXPECT_EQ(SCDP, ParseDeviceType("scdp"));
@@ -45,7 +45,7 @@ TEST(ProtobufUtil, ParseDeviceType)
     EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
 }
 
-TEST(ProtobufUtil, ParseCachingMode)
+TEST(TargetApiUtilTest, ParseCachingMode)
 {
     EXPECT_EQ(DEFAULT, ParseCachingMode("default"));
     EXPECT_EQ(LINUX, ParseCachingMode("linux"));
@@ -58,7 +58,7 @@ TEST(ProtobufUtil, ParseCachingMode)
     EXPECT_THROW(ParseCachingMode("xyz"), ParserException);
 }
 
-TEST(ProtobufUtil, GetSetParam)
+TEST(TargetApiUtilTest, GetSetParam)
 {
     // The implementation is a function template, testing one possible T is sufficient
     PbCommand command;
@@ -68,7 +68,7 @@ TEST(ProtobufUtil, GetSetParam)
     EXPECT_EQ("", GetParam(command, ""));
 }
 
-TEST(ProtobufUtil, ParseParameters)
+TEST(TargetApiUtilTest, ParseParameters)
 {
     PbDeviceDefinition device1;
     ParseParameters(device1, "a=b:c=d:e");
@@ -90,7 +90,7 @@ TEST(ProtobufUtil, ParseParameters)
     TestSpecialDevice("services");
 }
 
-TEST(ProtobufUtil, SetCommandParams)
+TEST(TargetApiUtilTest, SetCommandParams)
 {
     PbCommand command1;
 
@@ -138,7 +138,7 @@ TEST(ProtobufUtil, SetCommandParams)
     EXPECT_EQ("pattern", GetParam(command_generic, "folder_pattern"));
 }
 
-TEST(ProtobufUtil, SetFromGenericParams)
+TEST(TargetApiUtilTest, SetFromGenericParams)
 {
     PbCommand command1;
     EXPECT_TRUE(SetFromGenericParams(command1, "operations=mapping_info:folder_pattern=pattern").empty());
@@ -152,13 +152,13 @@ TEST(ProtobufUtil, SetFromGenericParams)
     EXPECT_FALSE(SetFromGenericParams(command3, "=").empty());
 }
 
-TEST(ProtobufUtil, GetLunMax)
+TEST(TargetApiUtilTest, GetLunMax)
 {
     EXPECT_EQ(32, GetLunMax(SCHD));
     EXPECT_EQ(2, GetLunMax(SAHD));
 }
 
-TEST(ProtobufUtil, ListDevices)
+TEST(TargetApiUtilTest, ListDevices)
 {
     vector<PbDevice> devices;
 
@@ -177,7 +177,7 @@ TEST(ProtobufUtil, ListDevices)
     EXPECT_FALSE(device_list.empty());
 }
 
-TEST(ProtobufUtil, SetProductData)
+TEST(TargetApiUtilTest, SetProductData)
 {
     PbDeviceDefinition device;
 
@@ -202,7 +202,7 @@ TEST(ProtobufUtil, SetProductData)
     EXPECT_EQ("revision", device.revision());
 }
 
-TEST(ProtobufUtil, SetIdAndLun)
+TEST(TargetApiUtilTest, SetIdAndLun)
 {
     PbDeviceDefinition device;
 

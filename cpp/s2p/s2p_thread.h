@@ -13,6 +13,7 @@
 #include <string>
 #include <thread>
 #include <spdlog/spdlog.h>
+#include "s2p_server.h"
 
 class CommandContext;
 
@@ -25,7 +26,7 @@ class S2pThread
 
 public:
 
-    string Init(const callback&, int, shared_ptr<logger> logger);
+    string Init(int, const callback&, shared_ptr<logger> logger);
     void Start();
     void Stop();
     bool IsRunning() const;
@@ -43,7 +44,7 @@ private:
     thread service_thread;
 #endif
 
-    int service_socket = -1;
+    S2pServer server;
 
     shared_ptr<logger> s2p_logger;
 };
