@@ -9,13 +9,13 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "s2pctl/s2pctl_commands.h"
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
 using namespace testing;
-using namespace protobuf_util;
+using namespace target_api_util;
 
 TEST(S2pCtlCommandsTest, Execute)
 {

@@ -87,7 +87,7 @@
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "controllers/abstract_controller.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/s2p_exceptions.h"
 #include "page_handler.h"
 
@@ -95,7 +95,7 @@ using namespace std::chrono;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace memory_util;
-using namespace protobuf_util;
+using namespace target_api_util;
 
 HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
 {
@@ -311,7 +311,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
     PbResult result;
     CommandContext context(cmd, GetLogger());
-    context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
+    context.SetLocale(target_api_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);

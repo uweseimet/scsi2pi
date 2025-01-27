@@ -17,6 +17,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
 #include "s2pctl_display.h"
@@ -24,10 +25,11 @@
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace network_util;
+using namespace protobuf_util;
 using namespace s2p_interface;
 using namespace s2p_util;
-using namespace protobuf_util;
 using namespace s2pctl_display;
+using namespace target_api_util;
 
 bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, string_view reserved_ids,
     string_view image_params, string_view filename)

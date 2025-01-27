@@ -10,9 +10,9 @@
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 
-using namespace protobuf_util;
+using namespace target_api_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {

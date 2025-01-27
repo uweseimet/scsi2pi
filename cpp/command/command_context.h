@@ -10,7 +10,7 @@
 
 #include <spdlog/spdlog.h>
 #include "command_localizer.h"
-#include "generated/s2p_interface.pb.h"
+#include "generated/target_api.pb.h"
 
 using namespace std;
 using namespace spdlog;

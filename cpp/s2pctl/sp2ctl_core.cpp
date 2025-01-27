@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,13 +12,13 @@
 #include <locale>
 #include <getopt.h>
 #include <unistd.h>
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2pctl_commands.h"
 
 using namespace s2p_util;
-using namespace protobuf_util;
+using namespace target_api_util;
 
 void S2pCtl::Banner(bool usage) const
 {

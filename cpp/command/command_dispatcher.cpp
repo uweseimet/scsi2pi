@@ -13,13 +13,13 @@
 #include "command_image_support.h"
 #include "command_response.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "base/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace command_response;
-using namespace protobuf_util;
 using namespace s2p_util;
+using namespace target_api_util;
 
 bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {

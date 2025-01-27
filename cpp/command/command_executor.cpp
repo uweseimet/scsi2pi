@@ -16,11 +16,11 @@
 #include "controllers/controller_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace protobuf_util;
 using namespace s2p_util;
+using namespace target_api_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {

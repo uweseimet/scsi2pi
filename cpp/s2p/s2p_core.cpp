@@ -24,14 +24,14 @@
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
 #endif
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
 using namespace s2p_parser;
 using namespace s2p_util;
-using namespace protobuf_util;
+using namespace target_api_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {

@@ -12,13 +12,13 @@
 #include "command_image_support.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_version.h"
 
 using namespace network_util;
-using namespace protobuf_util;
 using namespace s2p_util;
+using namespace target_api_util;
 
 namespace
 {

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "generated/s2p_interface.pb.h"
+#include "generated/target_api.pb.h"
 
 using namespace std;
 using namespace s2p_interface;

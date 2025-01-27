@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,10 +12,10 @@
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
-#include "protobuf/protobuf_util.h"
+#include "protobuf/target_api_util.h"
 
 using namespace s2p_util;
-using namespace protobuf_util;
+using namespace target_api_util;
 
 CommandImageSupport::CommandImageSupport()
 {

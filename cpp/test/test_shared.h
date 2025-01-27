@@ -13,7 +13,7 @@
 #include "shared/scsi.h"
 #include "base/property_handler.h"
 #include "devices/storage_device.h"
-#include "generated/s2p_interface.pb.h"
+#include "generated/target_api.pb.h"
 
 using namespace filesystem;
 using namespace s2p_interface;
