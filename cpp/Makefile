@@ -168,7 +168,7 @@ DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
 DIR_PI := pi
 
-SRC_PROTOC := ../proto/s2p_interface.proto
+SRC_PROTOC := ../api/s2p_interface.proto
 
 SRC_GENERATED = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
@@ -374,7 +374,7 @@ $(OBJ_GENERATED): | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(SRC_GENERATED): $(SRC_PROTOC) | $(GENERATED_DIR)
-	protoc -I ../proto --cpp_out=$(GENERATED_DIR) $(SRC_PROTOC)
+	protoc -I ../api --cpp_out=$(GENERATED_DIR) $(SRC_PROTOC)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:

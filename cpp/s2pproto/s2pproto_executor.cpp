@@ -54,18 +54,20 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     }
 
     array<uint8_t, 10> cdb = { };
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::EXECUTE_OPERATION);
     cdb[1] = static_cast<uint8_t>(input_format);
     cdb[7] = static_cast<uint8_t>(length >> 8);
     cdb[8] = static_cast<uint8_t>(length);
 
-    if (initiator_executor->Execute(ScsiCommand::EXECUTE_OPERATION, cdb, buffer, length, 3, true)) {
+    if (initiator_executor->Execute(cdb, buffer, length, 3, true)) {
         return "Can't execute operation";
     }
 
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::RECEIVE_OPERATION_RESULTS);
     cdb[7] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[8] = static_cast<uint8_t>(buffer.size());
 
-    if (initiator_executor->Execute(ScsiCommand::RECEIVE_OPERATION_RESULTS, cdb, buffer, buffer.size(), 3, true)) {
+    if (initiator_executor->Execute(cdb, buffer, buffer.size(), 3, true)) {
         return "Can't read operation result";
     }
 

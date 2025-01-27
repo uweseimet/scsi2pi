@@ -9,12 +9,7 @@
 #pragma once
 
 #include <string>
-#include <tuple>
 #include <spdlog/spdlog.h>
-#include "shared/scsi.h"
-
-class Bus;
-class InitiatorExecutor;
 
 using namespace std;
 using namespace spdlog;
@@ -22,8 +17,6 @@ using namespace spdlog;
 namespace initiator_util
 {
 
-void ResetBus(Bus&);
-tuple<SenseKey, Asc, int> GetSenseData(InitiatorExecutor&);
 bool SetLogLevel(logger&, const string&);
 
 }

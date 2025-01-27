@@ -59,5 +59,7 @@ protected:
 
 private:
 
+    bool Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool) const;
+
     unique_ptr<InitiatorExecutor> initiator_executor;
 };

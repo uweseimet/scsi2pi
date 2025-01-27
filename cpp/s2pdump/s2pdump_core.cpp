@@ -369,7 +369,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             }
 
             if (!in_process && !bus->IsRaspberryPi()) {
-                throw ParserException("There is no board hardware support");
+                throw ParserException("No RaSCSI/PiSCSI board found");
             }
         }
     }

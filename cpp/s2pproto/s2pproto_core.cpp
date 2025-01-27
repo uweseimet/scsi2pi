@@ -234,7 +234,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
     }
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No board hardware support\n";
+        cerr << "Error: No RaSCSI/PiSCSI board found\n";
         return EXIT_FAILURE;
     }
 

@@ -266,7 +266,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         }
     }
 
-    if (executor && executor->IsSg() != use_sg) {
+    if (executor) {
         executor->CleanUp();
     }
 

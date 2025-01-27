@@ -6,19 +6,11 @@
 //
 //---------------------------------------------------------------------------
 
+#include <gtest/gtest.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "mocks.h"
 #include "initiator/initiator_util.h"
 
 using namespace initiator_util;
-
-TEST(InitiatorUtilTest, ResetBus)
-{
-    NiceMock<MockBus> bus;
-
-    EXPECT_CALL(bus, Reset);
-    ResetBus(bus);
-}
 
 TEST(InitiatorUtilTest, SetLogLevel)
 {

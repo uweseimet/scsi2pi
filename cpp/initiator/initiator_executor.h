@@ -8,12 +8,11 @@
 
 #pragma once
 
-#include <memory>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
+#include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
 #include "shared/scsi.h"
-#include "shared/s2p_defs.h"
 
 class Bus;
 
@@ -36,22 +35,15 @@ public:
 
     void SetTarget(int, int, bool);
 
-    int Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool);
     int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
+
+    tuple<SenseKey, Asc, int> GetSenseData();
+
+    void ResetBus();
 
     int GetByteCount() const
     {
         return byte_count;
-    }
-
-    logger& GetLogger() const
-    {
-        return initiator_logger;
-    }
-
-    string FormatBytes(span<const uint8_t> bytes, int count) const
-    {
-        return formatter.FormatBytes(bytes, count);
     }
 
     void SetLimit(int limit)

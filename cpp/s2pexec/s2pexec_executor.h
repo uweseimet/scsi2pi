@@ -27,14 +27,9 @@ public:
     string Init(int, const string&, bool);
     void CleanUp();
 
-    bool IsSg() const
-    {
-        return is_sg;
-    }
-
     void ResetBus();
 
-    int ExecuteCommand(vector<uint8_t>&, vector<uint8_t>&, int, bool);
+    int ExecuteCommand(span<uint8_t>, span<uint8_t>, int, bool);
 
     tuple<SenseKey, Asc, int> GetSenseData() const;
 
