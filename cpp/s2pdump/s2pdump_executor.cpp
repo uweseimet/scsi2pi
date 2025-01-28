@@ -171,10 +171,10 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             throw IoException(fmt::format("Unknown error status {}", status));
         }
 
-        const SenseKey sense_key = static_cast<SenseKey>(sense_data[2] & 0x0f);
+        const SenseKey sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[2]) & 0x0f);
 
         // EOD or EOM?
-        if (sense_key == SenseKey::BLANK_CHECK || sense_data[2] & 0x40) {
+        if (sense_key == SenseKey::BLANK_CHECK || static_cast<int>(sense_data[2]) & 0x40) {
             GetLogger().debug("No more data");
             return NO_MORE_DATA;
         }
@@ -191,13 +191,13 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             continue;
         }
 
-        if (sense_data[2] & 0x80) {
+        if (static_cast<int>(sense_data[2]) & 0x80) {
             GetLogger().debug("Encountered filemark");
             return 0;
         }
 
         // VALID and ILI?
-        if (sense_data[0] & 0x80 && sense_data[2] & 0x20) {
+        if (static_cast<int>(sense_data[0]) & 0x80 && static_cast<int>(sense_data[2]) & 0x20) {
             length = default_length;
 
             default_length -= GetInt32(sense_data, 3);

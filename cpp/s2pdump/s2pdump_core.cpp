@@ -262,7 +262,8 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!initiator.empty()) {
-        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id < 0 || initiator_id > 7) {
+        initiator_id = ParseAsUnsignedInt(initiator);
+        if (initiator_id < 0 || initiator_id > 7) {
             throw ParserException("Invalid initiator ID '" + initiator + "' (0-7)");
         }
     }
@@ -284,36 +285,42 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
 
         if (!buf.empty()) {
-            if (buffer_size = ParseAsUnsignedInt(buf); buffer_size < MINIMUM_BUFFER_SIZE) {
+            buffer_size = ParseAsUnsignedInt(buf);
+            if (buffer_size < MINIMUM_BUFFER_SIZE) {
                 throw ParserException(
                     "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
             }
         }
 
         if (!sector_count.empty()) {
-            if (count = ParseAsUnsignedInt(sector_count); count <= 0) {
+            count = ParseAsUnsignedInt(sector_count);
+            if (count <= 0) {
                 throw ParserException("Invalid sector count: '" + sector_count + "'");
             }
         }
 
         if (!start_sector.empty()) {
-            if (start = ParseAsUnsignedInt(start_sector); start < 0) {
+            start = ParseAsUnsignedInt(start_sector);
+            if (start < 0) {
                 throw ParserException("Invalid start sector: " + string(optarg));
             }
         }
 
         if (!retry_count.empty()) {
-            if (retries = ParseAsUnsignedInt(retry_count); retries < 0) {
+            retries = ParseAsUnsignedInt(retry_count);
+            if (retries < 0) {
                 throw ParserException("Invalid retry count: " + string(optarg));
             }
         }
 
         if (sasi) {
-            if (sasi_capacity = ParseAsUnsignedInt(capacity); sasi_capacity <= 0) {
+            sasi_capacity = ParseAsUnsignedInt(capacity);
+            if (sasi_capacity <= 0) {
                 throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
-            if (sasi_sector_size = ParseAsUnsignedInt(sector_size); sasi_sector_size != 256 && sasi_sector_size != 512
+            sasi_sector_size = ParseAsUnsignedInt(sector_size);
+            if (sasi_sector_size != 256 && sasi_sector_size != 512
                 && sasi_sector_size != 1024) {
                 throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
             }
@@ -423,7 +430,7 @@ void S2pDump::ScanBus()
 {
     DisplayBoardId();
 
-    for (target_id = 0; target_id < 8; target_id++) {
+    for (target_id = 0; target_id < 8; ++target_id) {
         if (initiator_id == target_id) {
             continue;
         }
@@ -664,10 +671,10 @@ string S2pDump::DumpRestoreTape(fstream &file)
     return "";
 }
 
-string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
     if (restore) {
-        file.read((char*)buffer.data(), byte_count);
+        file.read(reinterpret_cast<char*>(buffer.data()), bytes);
         if (file.fail()) {
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
@@ -696,7 +703,7 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
             return "Can't read from device";
         }
 
-        file.write((const char*)buffer.data(), byte_count);
+        file.write(reinterpret_cast<const char*>(buffer.data()), bytes);
         if (file.fail()) {
             return "Can't write to file '" + filename + "': " + strerror(errno);
         }
@@ -715,7 +722,7 @@ void S2pDump::DumpTape(ostream &file)
 
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
-            file.write((const char*)bad_data.data(), bad_data.size());
+            file.write(reinterpret_cast<const char*>(bad_data.data()), bad_data.size());
             if (file.bad()) {
                 throw IoException("Can't write SIMH bad data record");
             }
@@ -754,12 +761,12 @@ void S2pDump::RestoreTape(istream &file)
     while (true) {
         SimhMetaData meta_data;
         if (!ReadMetaData(file, meta_data)) {
-            break;
+            return;
         }
 
         if (meta_data.cls == SimhClass::RESERVERD_MARKER
             && meta_data.value == static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM)) {
-            break;
+            return;
         }
 
         // Tape mark
@@ -778,7 +785,7 @@ void S2pDump::RestoreTape(istream &file)
 
             buffer.resize(meta_data.value);
 
-            file.read((char*)buffer.data(), buffer.size());
+            file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
             if (file.bad()) {
                 throw IoException("Can't read SIMH data record");
             }
@@ -963,7 +970,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
             ++offset;
         }
 
-        for (int i = 0; i < page_length && offset < length; i++, offset++) {
+        for (int i = 0; i < page_length && offset < length; ++i, ++offset) {
             cout << fmt::format(":{:02x}", buf[offset]);
         }
 
@@ -973,7 +980,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     cout << flush;
 }
 
-void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t count)
+void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t transfer_count)
 {
     auto duration = duration_cast<chrono::seconds>(high_resolution_clock::now() - start_time).count();
     if (!duration) {
@@ -981,9 +988,9 @@ void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, ui
     }
 
     cout << DIVIDER
-        << "\nTransferred " << count / 1024 / 1024 << " MiB (" << count << " bytes)"
+        << "\nTransferred " << transfer_count / 1024 / 1024 << " MiB (" << transfer_count << " bytes)"
         << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
-        << "\nAverage transfer rate: " << count / duration << " bytes per second ("
-        << count / 1024 / duration << " KiB per second)\n"
+        << "\nAverage transfer rate: " << transfer_count / duration << " bytes per second ("
+        << transfer_count / 1024 / duration << " KiB per second)\n"
         << DIVIDER << "\n" << flush;
 }

@@ -133,9 +133,9 @@ public:
     {
         return bus.GetDAT();
     }
-    void SetDAT(uint8_t dat) override
+    void SetDAT(uint8_t d) override
     {
-        bus.SetDAT(dat);
+        bus.SetDAT(d);
     }
 
     bool GetSignal(int) const override;

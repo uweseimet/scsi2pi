@@ -173,7 +173,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
 
     for (auto i = 12; i < buf[3]; i += 8) {
         // Ignore other format types than 0
-        if (!(buf[i + 4] & 0x03)) {
+        if (!(static_cast<int>(buf[i + 4]) & 0x03)) {
             descriptors.push_back( { GetInt32(buf, i), GetInt32(buf, i + 4) & 0xffffff });
         }
     }
@@ -199,7 +199,7 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
     try {
         n = stoi(input);
     }
-    catch (const invalid_argument&)
+    catch (const invalid_argument&) // NOSONAR The exception details do not matter
     {
         // Fall through
     }

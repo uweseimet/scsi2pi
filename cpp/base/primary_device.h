@@ -111,8 +111,7 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
-    : Device(type, lun), delay_after_bytes(delay)
+    PrimaryDevice(PbDeviceType t, int l, int delay = SEND_NO_DELAY) : Device(t, l), delay_after_bytes(delay)
     {
     }
 

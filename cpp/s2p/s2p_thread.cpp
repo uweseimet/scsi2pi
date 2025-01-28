@@ -27,14 +27,14 @@ void S2pThread::Start()
 #ifndef __APPLE__
     service_thread = jthread([this]() {Execute();});
 #else
-    service_thread = thread([this] () { Execute(); } );
+    service_thread = thread([this]() {Execute();});
 #endif
 }
 
 // This method might be called twice when pressing Ctrl-C, because of the installed handlers
 void S2pThread::Stop()
 {
-    server.Stop();
+    server.CleanUp();
 }
 
 bool S2pThread::IsRunning() const
@@ -61,7 +61,7 @@ void S2pThread::ExecuteCommand(int fd) const
         }
     }
     catch (const IoException &e) {
-        warn(e.what());
+        s2p_logger->warn(e.what());
 
         // Try to return an error message (this may fail if the exception was caused when returning the actual result)
         PbResult result;

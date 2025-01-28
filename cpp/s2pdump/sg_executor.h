@@ -27,7 +27,6 @@ public:
     SgExecutor(SgAdapter &adapter, logger &l) : S2pDumpExecutor(l), sg_adapter(adapter)
     {
     }
-    virtual ~SgExecutor() = default;
 
     // Disk and tape support
     void TestUnitReady(vector<uint8_t>&) const override;

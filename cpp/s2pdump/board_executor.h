@@ -27,7 +27,6 @@ public:
         make_unique<InitiatorExecutor>(bus, id, l))
     {
     }
-    virtual ~BoardExecutor() = default;
 
     // Disk and tape support
     void TestUnitReady(vector<uint8_t>&) const override;

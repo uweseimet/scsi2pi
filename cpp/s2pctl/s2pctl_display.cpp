@@ -414,23 +414,14 @@ string s2pctl_display::DisplayStatisticsInfo(const PbStatisticsInfo &statistics_
     vector<PbStatistics> sorted_statistics =
         { statistics_info.statistics().cbegin(), statistics_info.statistics().cend() };
     ranges::sort(sorted_statistics, [](const PbStatistics &a, const PbStatistics &b) {
-        if (a.category() > b.category()) {
-            return true;
+        if (a.category() != b.category()) {
+            return a.category() > b.category();
         }
-        if (a.category() < b.category()) {
-            return false;
+        if (a.id() != b.id()) {
+            return a.id() < b.id();
         }
-        if (a.id() < b.id()) {
-            return true;
-        }
-        if (a.id() > b.id()) {
-            return false;
-        }
-        if (a.unit() < b.unit()) {
-            return true;
-        }
-        if (a.unit() > b.unit()) {
-            return false;
+        if (a.unit() != b.unit()) {
+            return a.unit() < b.unit();
         }
         return a.key() < b.key();
     });

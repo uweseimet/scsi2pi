@@ -16,7 +16,7 @@ using namespace std;
 
 class S2pExec
 {
-    class execution_exception : public runtime_error
+    class ExecutionException : public runtime_error
     {
         using runtime_error::runtime_error;
     };

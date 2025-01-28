@@ -25,29 +25,29 @@ string S2pServer::Init(int port)
     }
 
     if (const int enable = 1; setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
-        Stop();
+        CleanUp();
         return "Can't reuse socket: " + string(strerror(errno));
     }
 
     sockaddr_in server = { };
     server.sin_family = PF_INET;
-    server.sin_port = htons((uint16_t)port);
+    server.sin_port = htons(static_cast<uint16_t>(port));
     server.sin_addr.s_addr = INADDR_ANY;
     if (bind(server_socket, reinterpret_cast<const sockaddr*>(&server), // NOSONAR bit_cast is not supported by the bullseye compiler
         static_cast<socklen_t>(sizeof(sockaddr_in))) < 0) {
-        Stop();
+        CleanUp();
         return "Port " + to_string(port) + " is in use, s2p may already be running";
     }
 
     if (listen(server_socket, 2) == -1) {
-        Stop();
+        CleanUp();
         return "Can't listen on server socket: " + string(strerror(errno));
     }
 
     return "";
 }
 
-void S2pServer::Stop()
+void S2pServer::CleanUp()
 {
     if (server_socket != -1) {
         shutdown(server_socket, SHUT_RD);

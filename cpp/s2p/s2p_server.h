@@ -19,7 +19,7 @@ public:
 
     string Init(int);
 
-    void Stop();
+    void CleanUp();
 
     int Accept() const;
 

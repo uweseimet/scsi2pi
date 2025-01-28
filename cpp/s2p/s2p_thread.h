@@ -26,7 +26,7 @@ class S2pThread
 
 public:
 
-    string Init(int, const callback&, shared_ptr<logger> logger);
+    string Init(int, const callback&, shared_ptr<logger>);
     void Start();
     void Stop();
     bool IsRunning() const;

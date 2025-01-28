@@ -45,7 +45,7 @@ set<int> BoardExecutor::ReportLuns(vector<uint8_t> &cdb, span<uint8_t> buf)
 
     set<int> luns;
     int offset = 8;
-    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buf.size(); i++, offset += 8) {
+    for (size_t i = 0; i < lun_count && static_cast<size_t>(offset) + 8 < buf.size(); ++i, offset += 8) {
         const uint64_t lun = GetInt64(buf, offset);
         if (lun < 32) {
             luns.insert(static_cast<int>(lun));

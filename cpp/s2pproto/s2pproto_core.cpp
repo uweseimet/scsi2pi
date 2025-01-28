@@ -181,7 +181,8 @@ bool S2pProto::ParseArguments(span<char*> args)
         throw ParserException("Invalid log level: '" + log_level + "'");
     }
 
-    if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id < 0 || initiator_id > 7) {
+    initiator_id = ParseAsUnsignedInt(initiator);
+    if (initiator_id < 0 || initiator_id > 7) {
         throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
