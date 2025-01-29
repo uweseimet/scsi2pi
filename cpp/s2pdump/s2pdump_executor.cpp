@@ -15,14 +15,13 @@ using namespace memory_util;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
-    vector<uint8_t> cdb(6);
-
+    array<uint8_t, 6> cdb = { };
     TestUnitReady(cdb);
 }
 
 void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
@@ -31,7 +30,7 @@ void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
 
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
@@ -40,7 +39,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::MODE_SENSE_6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
@@ -51,8 +50,9 @@ bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 
 set<int> S2pDumpExecutor::ReportLuns()
 {
-    vector<uint8_t> buf(512);
-    vector<uint8_t> cdb(12);
+    array<uint8_t, 512> buf = { };
+    array<uint8_t, 12> cdb = { };
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REPORT_LUNS);
     SetInt16(cdb, 8, buf.size());
 
     return ReportLuns(cdb, buf);
@@ -60,7 +60,7 @@ set<int> S2pDumpExecutor::ReportLuns()
 
 pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
 {
-    vector<uint8_t> buf(14);
+    array<uint8_t, 14> buf = { };
     vector<uint8_t> cdb(10);
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
 
@@ -92,7 +92,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
 
 bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
 {
-    vector<uint8_t> cdb(10);
+    array<uint8_t, 10> cdb = { };
     cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
     SetInt32(cdb, 2, bstart);
     SetInt16(cdb, 7, blength);
@@ -102,7 +102,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
 
 void S2pDumpExecutor::SynchronizeCache() const
 {
-    vector<uint8_t> cdb(10);
+    array<uint8_t, 10> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::SYNCHRONIZE_CACHE_10);
 
     SynchronizeCache(cdb);
@@ -110,9 +110,8 @@ void S2pDumpExecutor::SynchronizeCache() const
 
 void S2pDumpExecutor::SpaceBack() const
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::SPACE_6);
-    cdb[1] = 0b000;
     SetInt24(cdb, 2, -1);
 
     SpaceBack(cdb);
@@ -120,7 +119,7 @@ void S2pDumpExecutor::SpaceBack() const
 
 int S2pDumpExecutor::Rewind()
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::REWIND);
 
     return Rewind(cdb);
@@ -128,7 +127,7 @@ int S2pDumpExecutor::Rewind()
 
 int S2pDumpExecutor::WriteFilemark() const
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_FILEMARKS_6);
     SetInt24(cdb, 2, 1);
 
@@ -137,7 +136,7 @@ int S2pDumpExecutor::WriteFilemark() const
 
 int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
 {
-    vector<uint8_t> cdb(6);
+    array<uint8_t, 6> cdb = { };
 
     // Restore
     if (length) {
@@ -160,7 +159,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             return default_length;
         }
 
-        vector<uint8_t> sense_data(14);
+        array<uint8_t, 14> sense_data = { };
         fill_n(cdb.begin(), cdb.size(), 0);
         cdb[4] = static_cast<uint8_t>(sense_data.size());
         const int status = RequestSense(cdb, sense_data);

@@ -55,26 +55,26 @@ protected:
     virtual ~S2pDumpExecutor() = default;
 
     // Disk and tape support
-    virtual void TestUnitReady(vector<uint8_t>&) const = 0;
-    virtual int RequestSense(vector<uint8_t>&, span<uint8_t>) const = 0;
-    virtual bool Inquiry(vector<uint8_t>&, span<uint8_t>) const = 0;
-    virtual bool ModeSense6(vector<uint8_t>&, span<uint8_t>) const = 0;
-    virtual set<int> ReportLuns(vector<uint8_t>&, span<uint8_t>) = 0;
+    virtual void TestUnitReady(span<uint8_t>) const = 0;
+    virtual int RequestSense(span<uint8_t>, span<uint8_t>) const = 0;
+    virtual bool Inquiry(span<uint8_t>, span<uint8_t>) const = 0;
+    virtual bool ModeSense6(span<uint8_t>, span<uint8_t>) const = 0;
+    virtual set<int> ReportLuns(span<uint8_t>, span<uint8_t>) = 0;
 
     // Disk support
-    virtual int ReadCapacity10(vector<uint8_t>&, span<uint8_t>) const = 0;
-    virtual int ReadCapacity16(vector<uint8_t>&, span<uint8_t>) const = 0;
-    virtual bool ReadWrite(vector<uint8_t>&, span<uint8_t>, int) = 0;
-    virtual void SynchronizeCache(vector<uint8_t>&) const = 0;
+    virtual int ReadCapacity10(span<uint8_t>, span<uint8_t>) const = 0;
+    virtual int ReadCapacity16(span<uint8_t>, span<uint8_t>) const = 0;
+    virtual bool ReadWrite(span<uint8_t>, span<uint8_t>, int) = 0;
+    virtual void SynchronizeCache(span<uint8_t>) const = 0;
 
     // Tape support
-    virtual int Rewind(vector<uint8_t>&) const = 0;
-    virtual int WriteFilemark(vector<uint8_t>&) const = 0;
-    virtual bool Read(vector<uint8_t>&, span<uint8_t>, int) = 0;
-    virtual bool Write(vector<uint8_t>&, span<uint8_t>, int) = 0;
+    virtual int Rewind(span<uint8_t>) const = 0;
+    virtual int WriteFilemark(span<uint8_t>) const = 0;
+    virtual bool Read(span<uint8_t>, span<uint8_t>, int) = 0;
+    virtual bool Write(span<uint8_t>, span<uint8_t>, int) = 0;
 
     void SpaceBack() const;
-    virtual void SpaceBack(vector<uint8_t>&) const = 0;
+    virtual void SpaceBack(span<uint8_t>) const = 0;
 
     static void SetInt24(span<uint8_t>, int, int);
 

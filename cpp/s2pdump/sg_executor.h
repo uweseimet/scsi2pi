@@ -29,27 +29,27 @@ public:
     }
 
     // Disk and tape support
-    void TestUnitReady(vector<uint8_t>&) const override;
-    int RequestSense(vector<uint8_t>&, span<uint8_t>) const override;
-    bool Inquiry(vector<uint8_t>&, span<uint8_t>) const override;
-    bool ModeSense6(vector<uint8_t>&, span<uint8_t>) const override;
-    set<int> ReportLuns(vector<uint8_t>&, span<uint8_t>) override;
+    void TestUnitReady(span<uint8_t>) const override;
+    int RequestSense(span<uint8_t>, span<uint8_t>) const override;
+    bool Inquiry(span<uint8_t>, span<uint8_t>) const override;
+    bool ModeSense6(span<uint8_t>, span<uint8_t>) const override;
+    set<int> ReportLuns(span<uint8_t>, span<uint8_t>) override;
 
     // Disk support
-    int ReadCapacity10(vector<uint8_t>&, span<uint8_t>) const override;
-    int ReadCapacity16(vector<uint8_t>&, span<uint8_t>) const override;
-    bool ReadWrite(vector<uint8_t>&, span<uint8_t>, int) override;
-    void SynchronizeCache(vector<uint8_t>&) const override;
+    int ReadCapacity10(span<uint8_t>, span<uint8_t>) const override;
+    int ReadCapacity16(span<uint8_t>, span<uint8_t>) const override;
+    bool ReadWrite(span<uint8_t>, span<uint8_t>, int) override;
+    void SynchronizeCache(span<uint8_t>) const override;
 
     // Tape support
-    int Rewind(vector<uint8_t>&) const override;
-    int WriteFilemark(vector<uint8_t>&) const override;
-    bool Read(vector<uint8_t>&, span<uint8_t>, int) override;
-    bool Write(vector<uint8_t>&, span<uint8_t>, int) override;
+    int Rewind(span<uint8_t>) const override;
+    int WriteFilemark(span<uint8_t>) const override;
+    bool Read(span<uint8_t>, span<uint8_t>, int) override;
+    bool Write(span<uint8_t>, span<uint8_t>, int) override;
 
 protected:
 
-    void SpaceBack(vector<uint8_t>&) const override;
+    void SpaceBack(span<uint8_t>) const override;
 
 private:
 
