@@ -372,7 +372,7 @@ TEST(TapeTest, Read16)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::READ_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     tape->SetReady(true);
 
@@ -412,7 +412,7 @@ TEST(TapeTest, Write6)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::WRITE_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     tape->SetReady(true);
 
@@ -482,7 +482,7 @@ TEST(TapeTest, Write16)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::WRITE_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     tape->SetReady(true);
 

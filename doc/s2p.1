@@ -65,7 +65,7 @@ n is the SCSI/SASI ID (0-7). u (0-31) is the optional LUN (logical unit). The de
 FILE is the name of the image file to use for the SCSI/SASI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
 .BR --type/-t\fI " " \fITYPE
-The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
+The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCTP, SCSG, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
 .TP
 .BR --scsi-level\fI " " \fITYPE
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.

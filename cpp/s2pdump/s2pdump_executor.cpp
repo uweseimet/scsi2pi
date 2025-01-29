@@ -54,6 +54,7 @@ set<int> S2pDumpExecutor::ReportLuns()
 {
     vector<uint8_t> buf(512);
     vector<uint8_t> cdb(12);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REPORT_LUNS);
     SetInt16(cdb, 8, buf.size());
 
     return ReportLuns(cdb, buf);

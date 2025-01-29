@@ -38,7 +38,7 @@ bool S2p::InitBus(bool in_process, bool log_signals)
         return false;
     }
 
-    s2p_logger = CreateLogger("[" + APP_NAME + "]");
+    s2p_logger = CreateLogger(APP_NAME);
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory, *s2p_logger);
 
@@ -408,8 +408,6 @@ void S2p::AttachInitialDevices(PbCommand &command)
         }
 #endif
     }
-
-    dispatcher->SetLogLevel(log_level);
 }
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)

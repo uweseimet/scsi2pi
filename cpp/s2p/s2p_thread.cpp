@@ -105,7 +105,7 @@ void S2pThread::ExecuteCommand(int fd) const
         }
     }
     catch (const IoException &e) {
-        warn(e.what());
+        s2p_logger->warn(e.what());
 
         // Try to return an error message (this may fail if the exception was caused when returning the actual result)
         PbResult result;
