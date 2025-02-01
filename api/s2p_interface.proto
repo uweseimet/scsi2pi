@@ -20,6 +20,7 @@
 syntax = "proto3";
 
 package s2p_interface;
+option java_package = "net.scsi2pi.s2p_interface";
 
 // The available device types
 enum PbDeviceType {

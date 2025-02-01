@@ -44,20 +44,26 @@ bool S2pThread::IsRunning() const
 
 void S2pThread::Execute() const
 {
+    int fd = -1;
     while (server.IsRunning()) {
-        if (const int fd = server.Accept(); fd != -1) {
-            ExecuteCommand(fd);
+        if (fd == -1) {
+            fd = server.Accept();
+        }
+
+        if (fd != -1 && !ExecuteCommand(fd)) {
             close(fd);
+            fd = -1;
         }
     }
 }
 
-void S2pThread::ExecuteCommand(int fd) const
+bool S2pThread::ExecuteCommand(int fd) const
 {
     CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
             exec(context);
+            return true;
         }
     }
     catch (const IoException &e) {
@@ -73,4 +79,6 @@ void S2pThread::ExecuteCommand(int fd) const
             // Ignore
         }
     }
+
+    return false;
 }

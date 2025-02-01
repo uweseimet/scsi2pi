@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 class PrimaryDevice;
 

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "shared/s2p_defs.h"
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace std;
 using namespace s2p_interface;

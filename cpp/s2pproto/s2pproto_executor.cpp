@@ -12,7 +12,7 @@
 #include <sstream>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;
 using namespace google::protobuf;

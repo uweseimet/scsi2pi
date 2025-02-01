@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace std;
 using namespace s2p_interface;

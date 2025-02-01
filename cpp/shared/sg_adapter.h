@@ -45,6 +45,8 @@ private:
 
     void GetBlockSize();
 
+    string device;
+
     logger &sg_logger;
 
     CommandMetaData &command_meta_data = CommandMetaData::GetInstance();

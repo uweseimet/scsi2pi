@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,14 +18,16 @@
 using namespace memory_util;
 using namespace sg_util;
 
-string SgAdapter::Init(const string &device)
+string SgAdapter::Init(const string &d)
 {
     try {
-        fd = OpenDevice(device);
+        fd = OpenDevice(d);
     }
     catch (const IoException &e) {
         return e.what();
     }
+
+    device = d;
 
     GetBlockSize();
 
@@ -107,7 +109,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
     io_hdr.timeout = timeout * 1000;
 
     if (enable_log && sg_logger.level() <= level::debug) {
-        sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
+        sg_logger.debug(command_meta_data.LogCdb(cdb, fmt::format("SG driver ({})", device)));
     }
 
     const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;

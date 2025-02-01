@@ -10,7 +10,7 @@
 #include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
 #include "shared/s2p_exceptions.h"
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace s2p_interface;
 using namespace s2p_parser;

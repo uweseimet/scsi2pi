@@ -11,7 +11,7 @@
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace spdlog;
 using namespace s2p_interface;

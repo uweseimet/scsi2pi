@@ -12,7 +12,7 @@
 
 #include <unordered_map>
 #include "shared/s2p_util.h"
-#include "generated/target_api.pb.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace std;
 using namespace s2p_interface;
