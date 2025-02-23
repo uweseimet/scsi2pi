@@ -241,5 +241,5 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
 int S2pFormat::ExecuteCommand(span<const uint8_t> cdb, span<uint8_t> buf, int timeout)
 {
-    return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
+    return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
 }

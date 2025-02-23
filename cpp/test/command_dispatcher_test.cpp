@@ -10,9 +10,9 @@
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 
-using namespace target_api_util;
+using namespace s2p_interface_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {

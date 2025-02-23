@@ -22,15 +22,10 @@ public:
     {
     }
 
-    using SgResult = struct {
-        int status;
-        int length;
-    };
-
     string Init(const string&);
     void CleanUp();
 
-    SgResult SendCommand(span<const uint8_t>, span<uint8_t>, int, int);
+    int SendCommand(span<const uint8_t>, span<uint8_t>, int, int);
 
     int GetByteCount() const
     {
@@ -39,7 +34,7 @@ public:
 
 private:
 
-    SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
+    int SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
 
     bool EvaluateStatus(int, span<uint8_t>, span<uint8_t>);
 

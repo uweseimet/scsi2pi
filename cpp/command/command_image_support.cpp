@@ -12,10 +12,10 @@
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 
+using namespace s2p_interface_util;
 using namespace s2p_util;
-using namespace target_api_util;
 
 CommandImageSupport::CommandImageSupport()
 {

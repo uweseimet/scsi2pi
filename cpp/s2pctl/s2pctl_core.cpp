@@ -12,13 +12,13 @@
 #include <locale>
 #include <getopt.h>
 #include <unistd.h>
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2pctl_commands.h"
 
+using namespace s2p_interface_util;
 using namespace s2p_util;
-using namespace target_api_util;
 
 void S2pCtl::Banner(bool usage) const
 {

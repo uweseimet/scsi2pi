@@ -9,9 +9,9 @@
 #include "mocks.h"
 #include "command/command_context.h"
 #include "command/command_image_support.h"
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 
-using namespace target_api_util;
+using namespace s2p_interface_util;
 
 TEST(CommandImageSupportTest, SetGetDepth)
 {

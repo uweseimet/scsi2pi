@@ -6,13 +6,13 @@
 //
 //---------------------------------------------------------------------------
 
-#include "target_api_util.h"
+#include "s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
 
-PbDeviceType target_api_util::ParseDeviceType(const string &value)
+PbDeviceType s2p_interface_util::ParseDeviceType(const string &value)
 {
     if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
         return type;
@@ -23,7 +23,7 @@ PbDeviceType target_api_util::ParseDeviceType(const string &value)
     return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
 }
 
-PbCachingMode target_api_util::ParseCachingMode(const string &value)
+PbCachingMode s2p_interface_util::ParseCachingMode(const string &value)
 {
     string v = value;
     ranges::replace(v, '-', '_');
@@ -35,7 +35,7 @@ PbCachingMode target_api_util::ParseCachingMode(const string &value)
     throw ParserException("Invalid caching mode '" + value + "'");
 }
 
-void target_api_util::ParseParameters(PbDeviceDefinition &device, const string &params)
+void s2p_interface_util::ParseParameters(PbDeviceDefinition &device, const string &params)
 {
     if (params.empty()) {
         return;
@@ -54,7 +54,7 @@ void target_api_util::ParseParameters(PbDeviceDefinition &device, const string &
     }
 }
 
-string target_api_util::SetCommandParams(PbCommand &command, const string &params)
+string s2p_interface_util::SetCommandParams(PbCommand &command, const string &params)
 {
     if (params.empty()) {
         return "";
@@ -86,7 +86,7 @@ string target_api_util::SetCommandParams(PbCommand &command, const string &param
     return "";
 }
 
-string target_api_util::SetFromGenericParams(PbCommand &command, const string &params)
+string s2p_interface_util::SetFromGenericParams(PbCommand &command, const string &params)
 {
     for (const string &key_value : Split(params, COMPONENT_SEPARATOR)) {
         const auto &param = Split(key_value, KEY_VALUE_SEPARATOR, 2);
@@ -101,7 +101,7 @@ string target_api_util::SetFromGenericParams(PbCommand &command, const string &p
     return "";
 }
 
-void target_api_util::SetProductData(PbDeviceDefinition &device, const string &data)
+void s2p_interface_util::SetProductData(PbDeviceDefinition &device, const string &data)
 {
     const auto &components = Split(data, COMPONENT_SEPARATOR, 3);
     switch (components.size()) {
@@ -122,7 +122,7 @@ void target_api_util::SetProductData(PbDeviceDefinition &device, const string &d
     }
 }
 
-string target_api_util::SetIdAndLun(PbDeviceDefinition &device, const string &value)
+string s2p_interface_util::SetIdAndLun(PbDeviceDefinition &device, const string &value)
 {
     int id;
     int lun;
@@ -136,12 +136,12 @@ string target_api_util::SetIdAndLun(PbDeviceDefinition &device, const string &va
     return "";
 }
 
-int target_api_util::GetLunMax(PbDeviceType type)
+int s2p_interface_util::GetLunMax(PbDeviceType type)
 {
     return type == SAHD ? 2 : 32;
 }
 
-string target_api_util::ListDevices(const vector<PbDevice> &devices)
+string s2p_interface_util::ListDevices(const vector<PbDevice> &devices)
 {
     if (devices.empty()) {
         return "No devices currently attached\n";

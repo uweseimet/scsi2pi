@@ -8,9 +8,9 @@
 
 #include "mocks.h"
 #include "shared/s2p_exceptions.h"
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 
-using namespace target_api_util;
+using namespace s2p_interface_util;
 
 void TestSpecialDevice(const string &name)
 {
@@ -20,7 +20,7 @@ void TestSpecialDevice(const string &name)
     EXPECT_EQ("", GetParam(device, "interfaces"));
 }
 
-TEST(TargetApiUtilTest, ParseDeviceType)
+TEST(S2pInterfaceUtilTest, ParseDeviceType)
 {
     EXPECT_EQ(SCCD, ParseDeviceType("sccd"));
     EXPECT_EQ(SCDP, ParseDeviceType("scdp"));
@@ -45,7 +45,7 @@ TEST(TargetApiUtilTest, ParseDeviceType)
     EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
 }
 
-TEST(TargetApiUtilTest, ParseCachingMode)
+TEST(S2pInterfaceUtilTest, ParseCachingMode)
 {
     EXPECT_EQ(DEFAULT, ParseCachingMode("default"));
     EXPECT_EQ(LINUX, ParseCachingMode("linux"));
@@ -58,7 +58,7 @@ TEST(TargetApiUtilTest, ParseCachingMode)
     EXPECT_THROW(ParseCachingMode("xyz"), ParserException);
 }
 
-TEST(TargetApiUtilTest, GetSetParam)
+TEST(S2pInterfaceUtilTest, GetSetParam)
 {
     // The implementation is a function template, testing one possible T is sufficient
     PbCommand command;
@@ -68,7 +68,7 @@ TEST(TargetApiUtilTest, GetSetParam)
     EXPECT_EQ("", GetParam(command, ""));
 }
 
-TEST(TargetApiUtilTest, ParseParameters)
+TEST(S2pInterfaceUtilTest, ParseParameters)
 {
     PbDeviceDefinition device1;
     ParseParameters(device1, "a=b:c=d:e");
@@ -90,7 +90,7 @@ TEST(TargetApiUtilTest, ParseParameters)
     TestSpecialDevice("services");
 }
 
-TEST(TargetApiUtilTest, SetCommandParams)
+TEST(S2pInterfaceUtilTest, SetCommandParams)
 {
     PbCommand command1;
 
@@ -138,7 +138,7 @@ TEST(TargetApiUtilTest, SetCommandParams)
     EXPECT_EQ("pattern", GetParam(command_generic, "folder_pattern"));
 }
 
-TEST(TargetApiUtilTest, SetFromGenericParams)
+TEST(S2pInterfaceUtilTest, SetFromGenericParams)
 {
     PbCommand command1;
     EXPECT_TRUE(SetFromGenericParams(command1, "operations=mapping_info:folder_pattern=pattern").empty());
@@ -152,13 +152,13 @@ TEST(TargetApiUtilTest, SetFromGenericParams)
     EXPECT_FALSE(SetFromGenericParams(command3, "=").empty());
 }
 
-TEST(TargetApiUtilTest, GetLunMax)
+TEST(S2pInterfaceUtilTest, GetLunMax)
 {
     EXPECT_EQ(32, GetLunMax(SCHD));
     EXPECT_EQ(2, GetLunMax(SAHD));
 }
 
-TEST(TargetApiUtilTest, ListDevices)
+TEST(S2pInterfaceUtilTest, ListDevices)
 {
     vector<PbDevice> devices;
 
@@ -177,7 +177,7 @@ TEST(TargetApiUtilTest, ListDevices)
     EXPECT_FALSE(device_list.empty());
 }
 
-TEST(TargetApiUtilTest, SetProductData)
+TEST(S2pInterfaceUtilTest, SetProductData)
 {
     PbDeviceDefinition device;
 
@@ -202,7 +202,7 @@ TEST(TargetApiUtilTest, SetProductData)
     EXPECT_EQ("revision", device.revision());
 }
 
-TEST(TargetApiUtilTest, SetIdAndLun)
+TEST(S2pInterfaceUtilTest, SetIdAndLun)
 {
     PbDeviceDefinition device;
 

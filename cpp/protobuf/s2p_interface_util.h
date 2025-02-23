@@ -16,7 +16,7 @@
 using namespace std;
 using namespace s2p_interface;
 
-namespace target_api_util
+namespace s2p_interface_util
 {
 
 static constexpr char KEY_VALUE_SEPARATOR = '=';

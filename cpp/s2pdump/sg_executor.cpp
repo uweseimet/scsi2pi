@@ -20,17 +20,17 @@ void SgExecutor::TestUnitReady(span<uint8_t> cdb) const
 
 int SgExecutor::RequestSense(span<uint8_t> cdb, span<uint8_t> buf) const
 {
-    return sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1).status;
+    return sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1);
 }
 
 bool SgExecutor::Inquiry(span<uint8_t> cdb, span<uint8_t> buf) const
 {
-    return !sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1).status;
+    return !sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1);
 }
 
 bool SgExecutor::ModeSense6(span<uint8_t> cdb, span<uint8_t> buf) const
 {
-    return !sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1).status;
+    return !sg_adapter.SendCommand(cdb, buf, static_cast<int>(buf.size()), 1);
 }
 
 set<int> SgExecutor::ReportLuns(span<uint8_t>, span<uint8_t>)
@@ -40,17 +40,17 @@ set<int> SgExecutor::ReportLuns(span<uint8_t>, span<uint8_t>)
 
 int SgExecutor::ReadCapacity10(span<uint8_t> cdb, span<uint8_t> buf) const
 {
-    return sg_adapter.SendCommand(cdb, buf, 8, 1).status;
+    return sg_adapter.SendCommand(cdb, buf, 8, 1);
 }
 
 int SgExecutor::ReadCapacity16(span<uint8_t> cdb, span<uint8_t> buf) const
 {
-    return sg_adapter.SendCommand(cdb, buf, 14, 1).status;
+    return sg_adapter.SendCommand(cdb, buf, 14, 1);
 }
 
 bool SgExecutor::ReadWrite(span<uint8_t> cdb, span<uint8_t> buf, int length)
 {
-    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
+    return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT);
 }
 
 void SgExecutor::SynchronizeCache(span<uint8_t> cdb) const
@@ -60,27 +60,27 @@ void SgExecutor::SynchronizeCache(span<uint8_t> cdb) const
 
 int SgExecutor::Rewind(span<uint8_t> cdb) const
 {
-    return !sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT).status;
+    return !sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT);
 }
 
 void SgExecutor::SpaceBack(span<uint8_t> cdb) const
 {
-    if (sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT).status) {
+    if (sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT)) {
         throw IoException("Can't space back one block");
     }
 }
 
 int SgExecutor::WriteFilemark(span<uint8_t> cdb) const
 {
-    return sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT).status;
+    return sg_adapter.SendCommand(cdb, { }, 0, LONG_TIMEOUT);
 }
 
 bool SgExecutor::Read(span<uint8_t> cdb, span<uint8_t> buf, int length)
 {
-    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
+    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT);
 }
 
 bool SgExecutor::Write(span<uint8_t> cdb, span<uint8_t> buf, int length)
 {
-    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT).status;
+    return sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT);
 }

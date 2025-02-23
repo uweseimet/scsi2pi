@@ -11,12 +11,12 @@
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_version.h"
 
 using namespace spdlog;
 using namespace command_response;
-using namespace target_api_util;
+using namespace s2p_interface_util;
 
 TEST(CommandResponseTest, Operation_Count)
 {

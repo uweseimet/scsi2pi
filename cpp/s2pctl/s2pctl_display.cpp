@@ -10,11 +10,11 @@
 #include <map>
 #include <set>
 #include <spdlog/spdlog.h>
-#include "protobuf/target_api_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_util.h"
 
+using namespace s2p_interface_util;
 using namespace s2p_util;
-using namespace target_api_util;
 
 namespace
 {
