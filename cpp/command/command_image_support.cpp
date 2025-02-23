@@ -93,7 +93,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     }
 
     if (!CheckDepth(filename)) {
-        return context.ReturnErrorStatus(("Invalid folder hierarchy depth '" + filename + "'"));
+        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + filename + "'");
     }
 
     const string &full_filename = GetFullName(filename);
