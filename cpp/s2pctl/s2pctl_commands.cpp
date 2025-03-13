@@ -425,7 +425,7 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
 void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) const
 {
     string json;
-    (void)MessageToJsonString(cmd, &json);
+    static_cast<void>(MessageToJsonString(cmd, &json));
 
     ofstream out(filename);
     out << json;

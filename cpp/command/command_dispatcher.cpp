@@ -219,13 +219,13 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        (void)system("init 0");
+        static_cast<void>(system("init 0"));
         s2p_logger.error("Pi shutdown failed");
         break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        (void)system("init 6");
+        static_cast<void>(system("init 6"));
         s2p_logger.error("Pi restart failed");
         break;
 

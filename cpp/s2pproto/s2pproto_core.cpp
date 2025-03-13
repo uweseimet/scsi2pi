@@ -258,7 +258,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     if (output_filename.empty()) {
         string json;
-        (void)MessageToJsonString(result, &json);
+        static_cast<void>(MessageToJsonString(result, &json));
         cout << json << '\n';
         return EXIT_SUCCESS;
     }
@@ -279,7 +279,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     case ProtobufFormat::JSON: {
         string json;
-        (void)MessageToJsonString(result, &json);
+        static_cast<void>(MessageToJsonString(result, &json));
         out << json << '\n';
         break;
     }
