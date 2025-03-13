@@ -186,8 +186,8 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
     cout << "Formats supported by this drive:\n";
 
     int n = 1;
-    for (const auto &descriptor : descriptors) {
-        cout << "  " << n << ". " << descriptor.blocks << " sectors, " << descriptor.length << " bytes per sector\n";
+    for (const auto &desc : descriptors) {
+        cout << "  " << n << ". " << desc.blocks << " sectors, " << desc.length << " bytes per sector\n";
         ++n;
     }
 
