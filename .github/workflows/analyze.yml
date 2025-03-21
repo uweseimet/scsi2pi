@@ -23,7 +23,7 @@ jobs:
       SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_SCANNER_VERSION: 7.0.2.4839
+      SONAR_SCANNER_VERSION: 7.1.0.4889
       BUILD_WRAPPER_OUT_DIR: "$HOME/.build_wrapper_out"
       APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
