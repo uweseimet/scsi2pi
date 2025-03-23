@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 // The DeviceFactory creates devices based on their type and the image file extension
 //
@@ -24,7 +24,7 @@ class DeviceFactory
 
 public:
 
-    static DeviceFactory& Instance()
+    static DeviceFactory& GetInstance()
     {
         static DeviceFactory instance; // NOSONAR instance cannot be inlined
         return instance;

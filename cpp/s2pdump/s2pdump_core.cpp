@@ -20,6 +20,7 @@
 #include "shared/simh_util.h"
 #include "board_executor.h"
 #ifdef __linux__
+#include "shared/sg_adapter.h"
 #include "sg_executor.h"
 #endif
 
@@ -67,6 +68,7 @@ void S2pDump::Banner(bool header) const
         << "                                     error|critical|off), default is 'warning'.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
         << "                                     device properties for property files.\n"
+        << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
@@ -85,7 +87,7 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME, false);
+    bus = bus_factory::CreateBus(false, in_process, APP_NAME, false);
     if (!bus) {
         return false;
     }
@@ -119,6 +121,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "image-file", required_argument, nullptr, 'f' },
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
+        { "retries", required_argument, nullptr, 'R' },
         { "scsi-scan", no_argument, nullptr, 's' },
         { "start-sector", required_argument, nullptr, 'S' },
         { "sasi-scan", no_argument, nullptr, 't' },
@@ -130,6 +133,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     string buf;
     string initiator;
     string id_and_lun;
+    string retry_count;
     string start_sector;
     string sector_count;
     string capacity;
@@ -141,7 +145,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rsS:tvz:",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rR:sS:tvz:",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -199,6 +203,10 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             restore = true;
             break;
 
+        case 'R':
+            retry_count = optarg;
+            break;
+
         case 's':
             run_bus_scan = true;
             scsi = true;
@@ -254,7 +262,8 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!initiator.empty()) {
-        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+        initiator_id = ParseAsUnsignedInt(initiator);
+        if (initiator_id < 0 || initiator_id > 7) {
             throw ParserException("Invalid initiator ID '" + initiator + "' (0-7)");
         }
     }
@@ -276,30 +285,42 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
 
         if (!buf.empty()) {
-            if (buffer_size = ParseAsUnsignedInt(buf); buffer_size < MINIMUM_BUFFER_SIZE) {
+            buffer_size = ParseAsUnsignedInt(buf);
+            if (buffer_size < MINIMUM_BUFFER_SIZE) {
                 throw ParserException(
                     "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
             }
         }
 
         if (!sector_count.empty()) {
-            if (count = ParseAsUnsignedInt(sector_count); count == -1 || !count) {
+            count = ParseAsUnsignedInt(sector_count);
+            if (count <= 0) {
                 throw ParserException("Invalid sector count: '" + sector_count + "'");
             }
         }
 
         if (!start_sector.empty()) {
-            if (start = ParseAsUnsignedInt(start_sector); start == -1) {
+            start = ParseAsUnsignedInt(start_sector);
+            if (start < 0) {
                 throw ParserException("Invalid start sector: " + string(optarg));
             }
         }
 
+        if (!retry_count.empty()) {
+            retries = ParseAsUnsignedInt(retry_count);
+            if (retries < 0) {
+                throw ParserException("Invalid retry count: " + string(optarg));
+            }
+        }
+
         if (sasi) {
-            if (sasi_capacity = ParseAsUnsignedInt(capacity); sasi_capacity <= 0) {
+            sasi_capacity = ParseAsUnsignedInt(capacity);
+            if (sasi_capacity <= 0) {
                 throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
-            if (sasi_sector_size = ParseAsUnsignedInt(sector_size); sasi_sector_size != 256 && sasi_sector_size != 512
+            sasi_sector_size = ParseAsUnsignedInt(sector_size);
+            if (sasi_sector_size != 256 && sasi_sector_size != 512
                 && sasi_sector_size != 1024) {
                 throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
             }
@@ -355,7 +376,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
             }
 
             if (!in_process && !bus->IsRaspberryPi()) {
-                throw ParserException("There is no board hardware support");
+                throw ParserException("No RaSCSI/PiSCSI board found");
             }
         }
     }
@@ -409,7 +430,7 @@ void S2pDump::ScanBus()
 {
     DisplayBoardId();
 
-    for (target_id = 0; target_id < 8; target_id++) {
+    for (target_id = 0; target_id < 8; ++target_id) {
         if (initiator_id == target_id) {
             continue;
         }
@@ -548,7 +569,7 @@ string S2pDump::DumpRestore()
     }
 
     fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
-    if (file.fail()) {
+    if (!file) {
         return "Can't open image file '" + filename + "': " + strerror(errno);
     }
 
@@ -650,23 +671,39 @@ string S2pDump::DumpRestoreTape(fstream &file)
     return "";
 }
 
-string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int byte_count)
+string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
     if (restore) {
-        file.read((char*)buffer.data(), byte_count);
+        file.read(reinterpret_cast<char*>(buffer.data()), bytes);
         if (file.fail()) {
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
-        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-            return "Can't write to device: " + string(strerror(errno));
-        }
-    } else {
-        if (!s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-            return "Can't read from device: " + string(strerror(errno));
+        int r = 0;
+        while (r <= retries) {
+            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
+                break;
+            }
+
+            ++r;
         }
 
-        file.write((const char*)buffer.data(), byte_count);
+        return "Can't write to device";
+    } else {
+        int r = 0;
+        while (r <= retries) {
+            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
+                break;
+            }
+
+            ++r;
+        }
+
+        if (r > retries) {
+            return "Can't read from device";
+        }
+
+        file.write(reinterpret_cast<const char*>(buffer.data()), bytes);
         if (file.fail()) {
             return "Can't write to file '" + filename + "': " + strerror(errno);
         }
@@ -685,7 +722,7 @@ void S2pDump::DumpTape(ostream &file)
 
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
-            file.write((const char*)bad_data.data(), bad_data.size());
+            file.write(reinterpret_cast<const char*>(bad_data.data()), bad_data.size());
             if (file.bad()) {
                 throw IoException("Can't write SIMH bad data record");
             }
@@ -724,12 +761,12 @@ void S2pDump::RestoreTape(istream &file)
     while (true) {
         SimhMetaData meta_data;
         if (!ReadMetaData(file, meta_data)) {
-            break;
+            return;
         }
 
         if (meta_data.cls == SimhClass::RESERVERD_MARKER
             && meta_data.value == static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM)) {
-            break;
+            return;
         }
 
         // Tape mark
@@ -748,7 +785,7 @@ void S2pDump::RestoreTape(istream &file)
 
             buffer.resize(meta_data.value);
 
-            file.read((char*)buffer.data(), buffer.size());
+            file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
             if (file.bad()) {
                 throw IoException("Can't read SIMH data record");
             }
@@ -933,7 +970,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
             ++offset;
         }
 
-        for (int i = 0; i < page_length && offset < length; i++, offset++) {
+        for (int i = 0; i < page_length && offset < length; ++i, ++offset) {
             cout << fmt::format(":{:02x}", buf[offset]);
         }
 
@@ -943,7 +980,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     cout << flush;
 }
 
-void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t count)
+void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, uint64_t transfer_count)
 {
     auto duration = duration_cast<chrono::seconds>(high_resolution_clock::now() - start_time).count();
     if (!duration) {
@@ -951,9 +988,9 @@ void S2pDump::DisplayStatistics(time_point<high_resolution_clock> start_time, ui
     }
 
     cout << DIVIDER
-        << "\nTransferred " << count / 1024 / 1024 << " MiB (" << count << " bytes)"
+        << "\nTransferred " << transfer_count / 1024 / 1024 << " MiB (" << transfer_count << " bytes)"
         << "\nTotal time: " << duration << " seconds (" << duration / 60 << " minutes)"
-        << "\nAverage transfer rate: " << count / duration << " bytes per second ("
-        << count / 1024 / duration << " KiB per second)\n"
+        << "\nAverage transfer rate: " << transfer_count / duration << " bytes per second ("
+        << transfer_count / 1024 / duration << " KiB per second)\n"
         << DIVIDER << "\n" << flush;
 }

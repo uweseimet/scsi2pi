@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,10 +11,10 @@
 #include "command/command_context.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace protobuf_util;
+using namespace s2p_interface_util;
 
 TEST(CommandExecutorTest, ProcessDeviceCmd)
 {
@@ -22,7 +22,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     const int LUN = 0;
 
     const auto bus = make_shared<MockBus>();
-    MockAbstractController controller(bus, ID);
+    MockAbstractController controller(ID);
     ControllerFactory controller_factory;
     const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
     PbDeviceDefinition definition;
@@ -92,6 +92,11 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_eject, definition, false));
 
+    command.set_operation(static_cast<PbOperation>(numeric_limits<int32_t>::max()));
+    CommandContext context_invalid_command(command, *default_logger());
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
+    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
+
     command.set_operation(INSERT);
     SetParam(definition, "file", "filename");
     CommandContext context_insert2(command, *default_logger());
@@ -102,27 +107,12 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     CommandContext context_detach(command, *default_logger());
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, true));
     EXPECT_TRUE(executor->ProcessDeviceCmd(context_detach, definition, false));
-
-    command.set_operation(SERVER_INFO);
-    CommandContext context_server_info(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_server_info, definition, false));
-
-    command.set_operation(NO_OPERATION);
-    CommandContext context_no_operation(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_no_operation, definition, false));
-
-    command.set_operation(static_cast<PbOperation>(-1));
-    CommandContext context_invalid_command(command, *default_logger());
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, true));
-    EXPECT_FALSE(executor->ProcessDeviceCmd(context_invalid_command, definition, false));
 }
 
 TEST(CommandExecutorTest, ProcessCmd)
 {
     const auto bus = make_shared<MockBus>();
-    MockAbstractController controller(bus, 0);
+    MockAbstractController controller(0);
     ControllerFactory controller_factory;
     const auto executor = make_shared<MockCommandExecutor>(*bus, controller_factory);
 
@@ -192,7 +182,7 @@ TEST(CommandExecutorTest, Attach)
     definition.set_unit(32);
     EXPECT_FALSE(executor->Attach(context, definition, false));
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHD, LUN, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHD, LUN, "");
     definition.set_id(ID);
     definition.set_unit(LUN);
 
@@ -319,9 +309,9 @@ TEST(CommandExecutorTest, Detach)
     PbCommand command;
     CommandContext context(command, *default_logger());
 
-    const auto device1 = DeviceFactory::Instance().CreateDevice(SCHS, LUN1, "");
+    const auto device1 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device1));
-    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, LUN2, "");
+    const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device2));
 
     const auto d1 = controller_factory.GetDeviceForIdAndLun(ID, LUN1);
@@ -340,7 +330,7 @@ TEST(CommandExecutorTest, DetachAll)
     ControllerFactory controller_factory;
     const auto executor = make_shared<CommandExecutor>(*bus, controller_factory, *default_logger());
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, ID, device));
     EXPECT_NE(nullptr, device->GetController());
     EXPECT_FALSE(controller_factory.GetAllDevices().empty());
@@ -381,7 +371,7 @@ TEST(CommandExecutorTest, SetReservedIds)
     EXPECT_TRUE(reserved_ids.contains(5));
     EXPECT_TRUE(reserved_ids.contains(7));
 
-    const auto device = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 5, device));
     error = executor->SetReservedIds("5");
     EXPECT_FALSE(error.empty());
@@ -395,7 +385,7 @@ TEST(CommandExecutorTest, ValidateImageFile)
     PbCommand command;
     CommandContext context(command, *default_logger());
 
-    const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::Instance().CreateDevice(SCHD, 0, "test"));
+    const auto device = static_pointer_cast<StorageDevice>(DeviceFactory::GetInstance().CreateDevice(SCHD, 0, "test"));
     EXPECT_TRUE(executor->ValidateImageFile(context, *device, ""));
 
     EXPECT_FALSE(executor->ValidateImageFile(context, *device, "/non_existing_file"));
@@ -438,7 +428,7 @@ TEST(CommandExecutorTest, EnsureLun0)
     device1->set_unit(1);
     EXPECT_FALSE(executor->EnsureLun0(context, command));
 
-    const auto device2 = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 0, device2));
     EXPECT_TRUE(executor->EnsureLun0(context, command));
 }
@@ -453,16 +443,17 @@ TEST(CommandExecutorTest, CreateDevice)
     CommandContext context(command, *default_logger());
 
     device.set_type(UNDEFINED);
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     device.set_type(SCBR);
-    EXPECT_EQ(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_EQ(nullptr, executor->CreateDevice(context, device));
 #pragma GCC diagnostic pop
-    device.set_type(UNDEFINED);
-    EXPECT_NE(nullptr, executor->CreateDevice(context, device, "services"));
     device.set_type(SCHS);
-    EXPECT_NE(nullptr, executor->CreateDevice(context, device, ""));
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device));
+    device.set_type(UNDEFINED);
+    SetParam(device, "file", "services");
+    EXPECT_NE(nullptr, executor->CreateDevice(context, device));
 }
 
 TEST(CommandExecutorTest, SetBlockSize)
@@ -591,7 +582,7 @@ TEST(CommandExecutorTest, ValidateDevice)
     device.set_unit(2);
     EXPECT_FALSE(executor->ValidateDevice(context_attach, device));
 
-    const auto d = DeviceFactory::Instance().CreateDevice(SCHS, 0, "");
+    const auto d = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(*bus, 1, d));
     command.set_operation(DETACH);
     CommandContext context_detach(command, *default_logger());

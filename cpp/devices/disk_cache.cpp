@@ -8,12 +8,13 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "disk_cache.h"
 #include <cassert>
+#include "base/device.h"
 #include "disk_track.h"
 
 DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(
@@ -46,7 +47,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
     int track = block >> 8;
 
     // Get track data
-    return Assign(track);
+    return AssignTrack(track);
 }
 
 int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
@@ -81,12 +82,9 @@ int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
     return disktrk->WriteSector(buf, sector & 0xff);
 }
 
-// Track Assignment
-shared_ptr<DiskTrack> DiskCache::Assign(int track)
+shared_ptr<DiskTrack> DiskCache::AssignTrack(int track)
 {
-    assert(track >= 0);
-
-    // First, check if it is already assigned
+    // Check if it is already assigned
     for (CacheData &c : cache) {
         if (c.disktrk && c.disktrk->GetTrack() == track) {
             // Track match
@@ -95,54 +93,29 @@ shared_ptr<DiskTrack> DiskCache::Assign(int track)
         }
     }
 
-    // Next, check for empty
-    for (size_t i = 0; i < cache.size(); ++i) {
-        if (!cache[i].disktrk) {
-            // Try loading
-            if (Load(static_cast<int>(i), track, nullptr)) {
-                // Success loading
-                cache[i].serial = serial;
-                return cache[i].disktrk;
-            }
-
-            // Load failed
-            return nullptr;
+    // Check for an empty cache slot
+    for (CacheData &c : cache) {
+        if (!c.disktrk && Load(static_cast<int>(&c - &cache[0]), track, nullptr)) {
+            c.serial = serial;
+            return c.disktrk;
         }
     }
 
-    // Finally, find the youngest serial number and delete it
+    // Find the cache entry with the smallest serial number, i.e. the oldest entry and save this track
+    if (auto c = ranges::min_element(cache,
+        [](const CacheData &d1, const CacheData &d2) {return d1.serial < d2.serial;})
+        - cache.begin(); cache[c].disktrk->Save(sec_path, cache_miss_write_count)) {
+        // Delete this track
+        auto disktrk = std::move(cache[c].disktrk);
 
-    // Set index 0 as candidate c
-    uint32_t s = cache[0].serial;
-    size_t c = 0;
-
-    // Compare candidate with serial and update to smaller one
-    for (size_t i = 0; i < cache.size(); ++i) {
-        assert(cache[i].disktrk);
-
-        // Compare and update the existing serial
-        if (cache[i].serial < s) {
-            s = cache[i].serial;
-            c = i;
+        if (Load(static_cast<int>(c), track, disktrk)) {
+            // Successful loading
+            cache[c].serial = serial;
+            return cache[c].disktrk;
         }
     }
 
-    // Save this track
-    if (!cache[c].disktrk->Save(sec_path, cache_miss_write_count)) {
-        return nullptr;
-    }
-
-    // Delete this track
-    shared_ptr<DiskTrack> disktrk = cache[c].disktrk;
-    cache[c].disktrk.reset();
-
-    if (Load(static_cast<int>(c), track, disktrk)) {
-        // Successful loading
-        cache[c].serial = serial;
-        return cache[c].disktrk;
-    }
-
-    // Load failed
+    // Save or load failed
     return nullptr;
 }
 
@@ -192,34 +165,15 @@ void DiskCache::UpdateSerial()
     }
 }
 
-vector<PbStatistics> DiskCache::GetStatistics(bool is_read_only) const
+vector<PbStatistics> DiskCache::GetStatistics(const Device &device) const
 {
     vector<PbStatistics> statistics;
 
-    PbStatistics s;
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(CACHE_MISS_READ_COUNT);
-    s.set_value(cache_miss_read_count);
-    statistics.push_back(s);
-
-    if (!is_read_only) {
-        s.set_key(CACHE_MISS_WRITE_COUNT);
-        s.set_value(cache_miss_write_count);
-        statistics.push_back(s);
-    }
-
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(READ_ERROR_COUNT);
-    s.set_value(read_error_count);
-    statistics.push_back(s);
-
-    if (!is_read_only) {
-        s.set_key(WRITE_ERROR_COUNT);
-        s.set_value(write_error_count);
-        statistics.push_back(s);
+    device.EnrichStatistics(statistics, CATEGORY_INFO, CACHE_MISS_READ_COUNT, cache_miss_read_count);
+    device.EnrichStatistics(statistics, CATEGORY_ERROR, READ_ERROR_COUNT, read_error_count);
+    if (!device.IsReadOnly()) {
+        device.EnrichStatistics(statistics, CATEGORY_INFO, CACHE_MISS_WRITE_COUNT, cache_miss_write_count);
+        device.EnrichStatistics(statistics, CATEGORY_ERROR, WRITE_ERROR_COUNT, write_error_count);
     }
 
     return statistics;

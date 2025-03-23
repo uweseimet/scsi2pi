@@ -2,11 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <gtest/gtest.h>
+#include "mocks.h"
 #include "devices/linux_cache.h"
 #include "test_shared.h"
 
@@ -75,8 +75,10 @@ TEST(LinuxCache, Flush)
 
 TEST(LinuxCache, GetStatistics)
 {
+    NiceMock<MockDevice> device(0);
     LinuxCache cache("", 0, 0, false);
 
-    EXPECT_EQ(1U, cache.GetStatistics(true).size());
-    EXPECT_EQ(2U, cache.GetStatistics(false).size());
+    EXPECT_EQ(2U, cache.GetStatistics(device).size());
+    device.SetReadOnly(true);
+    EXPECT_EQ(1U, cache.GetStatistics(device).size());
 }

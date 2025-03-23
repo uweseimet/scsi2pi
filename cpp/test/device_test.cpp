@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -160,4 +160,18 @@ TEST(DeviceTest, Eject)
     EXPECT_TRUE(device.IsRemoved());
     EXPECT_FALSE(device.IsLocked());
     EXPECT_TRUE(device.IsStopped());
+}
+
+TEST(DeviceTest, EnrichStatistics)
+{
+    NiceMock<MockDevice> device(0);
+
+    vector<PbStatistics> statistics;
+
+    device.EnrichStatistics(statistics, CATEGORY_INFO, "test", 123);
+    EXPECT_EQ(1U, statistics.size());
+    const PbStatistics &s = statistics[0];
+    EXPECT_EQ(CATEGORY_INFO, s.category());
+    EXPECT_EQ("test", s.key());
+    EXPECT_EQ(123U, s.value());
 }

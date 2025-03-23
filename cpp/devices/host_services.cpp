@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -86,13 +86,16 @@
 #include <google/protobuf/util/json_util.h>
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
-#include "protobuf/protobuf_util.h"
+#include "controllers/abstract_controller.h"
+#include "protobuf/s2p_interface_util.h"
+#include "shared/s2p_exceptions.h"
+#include "page_handler.h"
 
 using namespace std::chrono;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace memory_util;
-using namespace protobuf_util;
+using namespace s2p_interface_util;
 
 HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
 {
@@ -178,7 +181,7 @@ void HostServices::ReceiveOperationResults()
     case ProtobufFormat::JSON: {
         PbResult result;
         result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()));
-        (void)MessageToJsonString(result, &data).ok();
+        static_cast<void>(MessageToJsonString(result, &data).ok());
         break;
     }
 
@@ -245,7 +248,7 @@ void HostServices::SetUpModePages(map<int, vector<byte>> &pages, int page, bool 
     }
 }
 
-void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable) const
+void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool changeable)
 {
     pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
@@ -289,19 +292,17 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         }
         break;
 
-    case ProtobufFormat::JSON: {
+    case ProtobufFormat::JSON:
         if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
-    case ProtobufFormat::TEXT: {
+    case ProtobufFormat::TEXT:
         if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
-    }
 
     default:
         assert(false);
@@ -310,7 +311,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
 
     PbResult result;
     CommandContext context(cmd, GetLogger());
-    context.SetLocale(protobuf_util::GetParam(cmd, "locale"));
+    context.SetLocale(s2p_interface_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);

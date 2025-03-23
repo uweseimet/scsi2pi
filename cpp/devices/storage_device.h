@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // The base class for all mass storage devices with image file support
 //
@@ -11,6 +11,7 @@
 #pragma once
 
 #include <filesystem>
+#include "base/primary_device.h"
 #include "page_handler.h"
 
 using namespace std;
@@ -107,8 +108,8 @@ public:
 
 protected:
 
-    StorageDevice(PbDeviceType type, int lun, bool s, bool p, const set<uint32_t> &sizes)
-    : PrimaryDevice(type, lun), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
+    StorageDevice(PbDeviceType t, int l, bool s, bool p, const set<uint32_t> &sizes)
+    : PrimaryDevice(t, l), supported_block_sizes(sizes), supports_mode_select(s), supports_save_parameters(p)
     {
     }
 
@@ -133,7 +134,7 @@ protected:
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetFileSize(bool ignore = false) const;
+    off_t GetFileSize() const;
 
     void UpdateReadCount(uint64_t count)
     {

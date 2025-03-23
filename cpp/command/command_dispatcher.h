@@ -8,15 +8,29 @@
 
 #pragma once
 
-#include "command_executor.h"
+#include <string>
+#include <spdlog/spdlog.h>
+#include "shared/s2p_defs.h"
+
+class CommandContext;
+class CommandExecutor;
+class ControllerFactory;
+namespace s2p_interface
+{
+class PbResult;
+}
+
+using namespace std;
+using namespace spdlog;
+using namespace s2p_interface;
 
 class CommandDispatcher
 {
 
 public:
 
-    explicit CommandDispatcher(CommandExecutor &e, ControllerFactory &f, logger &l) : executor(e), controller_factory(
-        f), s2p_logger(l)
+    CommandDispatcher(CommandExecutor &e, ControllerFactory &f, logger &l) : executor(e), controller_factory(f), s2p_logger(
+        l)
     {
     }
     ~CommandDispatcher() = default;

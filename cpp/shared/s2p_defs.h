@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,5 +37,5 @@ using data_out_t = span<const uint8_t>;
 // A combination of device ID and LUN
 using id_set = pair<int, int>;
 
-// For work-around required by the DaynaPort emulation
+// For work-around required by the DaynaPort driver for the Mac
 static constexpr int SEND_NO_DELAY = -1;

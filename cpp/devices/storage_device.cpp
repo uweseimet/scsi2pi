@@ -2,12 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "storage_device.h"
 #include <unistd.h>
+#include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace memory_util;
@@ -43,7 +44,7 @@ void StorageDevice::Dispatch(ScsiCommand cmd)
 
         SetMediumChanged(false);
 
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     }
 
     PrimaryDevice::Dispatch(cmd);
@@ -73,13 +74,7 @@ void StorageDevice::StartStopUnit()
     if (!start) {
         // Look at the eject bit and eject if necessary
         if (load) {
-            if (IsLocked()) {
-                // Cannot be ejected because it is locked
-                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
-            }
-
-            // Eject
-            if (!Eject(false)) {
+            if (IsLocked() || !Eject(false)) {
                 throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
             }
         }
@@ -191,8 +186,8 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
         switch (page_code) {
         // Read-write/Verify error recovery and caching pages
         case 0x01:
-            case 0x07:
-            case 0x08:
+        case 0x07:
+        case 0x08:
             // Simply ignore the requested changes in the error handling or caching, they are not relevant for SCSI2Pi
             break;
 
@@ -358,16 +353,12 @@ bool StorageDevice::IsReadOnlyFile() const
     return access(filename.c_str(), W_OK);
 }
 
-off_t StorageDevice::GetFileSize(bool ignore_error) const
+off_t StorageDevice::GetFileSize() const
 {
     try {
         return file_size(filename);
     }
     catch (const filesystem_error &e) {
-        if (ignore_error) {
-            return 0;
-        }
-
         throw IoException("Can't get size of '" + filename.string() + "': " + e.what());
     }
 }
@@ -529,20 +520,9 @@ vector<PbStatistics> StorageDevice::GetStatistics() const
 {
     vector<PbStatistics> statistics = PrimaryDevice::GetStatistics();
 
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-
-    s.set_category(PbStatisticsCategory::CATEGORY_INFO);
-
-    s.set_key(BLOCK_READ_COUNT);
-    s.set_value(block_read_count);
-    statistics.push_back(s);
-
+    EnrichStatistics(statistics, CATEGORY_INFO, BLOCK_READ_COUNT, block_read_count);
     if (!IsReadOnly()) {
-        s.set_key(BLOCK_WRITE_COUNT);
-        s.set_value(block_write_count);
-        statistics.push_back(s);
+        EnrichStatistics(statistics, CATEGORY_INFO, BLOCK_WRITE_COUNT, block_write_count);
     }
 
     return statistics;

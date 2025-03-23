@@ -110,3 +110,15 @@ void Device::LogError(const string &s) const
 {
     device_logger->error(s);
 }
+
+void Device::EnrichStatistics(vector<PbStatistics> &statistics, PbStatisticsCategory category, const string &key,
+    uint64_t value) const
+{
+    PbStatistics s;
+    s.set_id(GetId());
+    s.set_unit(lun);
+    s.set_category(category);
+    s.set_key(key);
+    s.set_value(value);
+    statistics.push_back(s);
+}

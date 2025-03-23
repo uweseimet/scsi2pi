@@ -12,13 +12,14 @@
 #include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
-#include "controllers/controller.h"
+#include "controllers/abstract_controller.h"
+#include "controllers/controller_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace protobuf_util;
+using namespace s2p_interface_util;
 using namespace s2p_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
@@ -89,7 +90,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
             return context.ReturnErrorStatus(error);
         }
         else {
-            PropertyHandler::Instance().AddProperty("reserved_ids", Join(reserved_ids, ","));
+            PropertyHandler::GetInstance().AddProperty("reserved_ids", Join(reserved_ids, ","));
             return context.ReturnSuccessStatus();
         }
 
@@ -155,14 +156,15 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
 {
     s2p_logger.info("Eject requested for {}", GetIdentifier(device));
 
-    if (!device.Eject(true)) {
-        s2p_logger.warn("Ejecting {} failed", GetIdentifier(device));
-        return true;
+    if (device.Eject(true)) {
+        // Remove both potential properties, with and without LUN
+        PropertyHandler::GetInstance().RemoveProperties(
+            fmt::format("{0}{1}:{2}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
+        PropertyHandler::GetInstance().RemoveProperties(
+            fmt::format("{0}{1}.params", PropertyHandler::DEVICE, device.GetId()));
     }
-
-    PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.params", device.GetId(), device.GetLun()));
-    if (!device.GetLun()) {
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.params", device.GetId()));
+    else {
+        s2p_logger.warn("Ejecting {} failed", GetIdentifier(device));
     }
 
     return true;
@@ -204,16 +206,14 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return context.ReturnLocalizedError(LocalizationKey::ERROR_RESERVED_ID, to_string(id));
     }
 
-    const string &filename = GetParam(pb_device, "file");
-
-    const auto device = CreateDevice(context, pb_device, filename);
+    const auto device = CreateDevice(context, pb_device);
     if (!device) {
         return false;
     }
 
     param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
     if (!device->SupportsImageFile()) {
-        // Legacy clients like scsictl might have sent both "file" and "interfaces"
+        // Legacy clients like PiSCSI's scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
     device->SetParams(params);
@@ -225,7 +225,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
-    if (!SetScsiLevel(context, device, pb_device.scsi_level())) {
+    if (!SetScsiLevel(context, *device, pb_device.scsi_level())) {
         return false;
     }
 
@@ -239,6 +239,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
+        const string &filename = GetParam(pb_device, "file");
+
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
@@ -277,6 +279,10 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
             fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
     }
 
+    // Set the final data (they may have been overriden during the initialization of SCSG)
+    SetScsiLevel(context, *device, pb_device.scsi_level());
+    SetProductData(context, pb_device, *device);
+
     if (!controller_factory.AttachToController(bus, id, device)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_CONTROLLER);
     }
@@ -297,7 +303,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
-    const shared_ptr<PrimaryDevice> &device, bool dryRun) const
+    const shared_ptr<PrimaryDevice> device, bool dryRun) const
 {
     if (!device->SupportsImageFile()) {
         return false;
@@ -358,9 +364,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
     auto *controller = device.GetController();
-    if (!controller) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
-    }
+    assert(controller);
 
     // LUN 0 can only be detached if there is no other LUN anymore
     if (!device.GetLun() && controller->GetLunCount() > 1) {
@@ -368,7 +372,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
     }
 
     if (!dryRun) {
-        // Remember some device data before they become invalid on removal
+        // Remember device data before they become invalid on removal
         const int id = device.GetId();
         const int lun = device.GetLun();
         const string &identifier = GetIdentifier(device) + ", " + device.GetIdentifier();
@@ -377,15 +381,13 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
         }
 
+        // Remove both potential identifiers
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, id, lun));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}.", PropertyHandler::DEVICE, id));
+
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
-        }
-
-        // Consider both potential identifiers if the LUN is 0
-        PropertyHandler::Instance().RemoveProperties(fmt::format("device.{0}:{1}.", id, lun));
-        if (!lun) {
-            PropertyHandler::Instance().RemoveProperties(fmt::format("device.{}.", id));
         }
 
         s2p_logger.info("Detached " + identifier);
@@ -397,7 +399,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 void CommandExecutor::DetachAll() const
 {
     if (controller_factory.DeleteAllControllers()) {
-        PropertyHandler::Instance().RemoveProperties("device.");
+        PropertyHandler::GetInstance().RemoveProperties(PropertyHandler::DEVICE);
 
         s2p_logger.info("Detached all devices");
     }
@@ -405,23 +407,23 @@ void CommandExecutor::DetachAll() const
 
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
-    const string &identifier = fmt::format("device.{0}:{1}.", device->GetId(), device->GetLun());
-    PropertyHandler::Instance().AddProperty(identifier + "type", GetTypeString(*device));
+    const string &identifier = fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
+    PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
     const auto& [product, vendor, revision] = device->GetProductData();
-    PropertyHandler::Instance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
+    PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         if (storage_device->GetConfiguredBlockSize()) {
-            PropertyHandler::Instance().AddProperty(identifier + "block_size",
+            PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
                 to_string(storage_device->GetConfiguredBlockSize()));
         }
         string filename = storage_device->GetFilename();
         if (!filename.empty()) {
-            if (filename.starts_with(CommandImageSupport::Instance().GetDefaultFolder())) {
-                filename = filename.substr(CommandImageSupport::Instance().GetDefaultFolder().length() + 1);
+            if (filename.starts_with(CommandImageSupport::GetInstance().GetDefaultFolder())) {
+                filename = filename.substr(CommandImageSupport::GetInstance().GetDefaultFolder().length() + 1);
             }
-            PropertyHandler::Instance().AddProperty(identifier + "params", filename);
+            PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
             return;
         }
     }
@@ -432,7 +434,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         for (const auto& [param, value] : device->GetParams()) {
             p.emplace_back(param + "=" + value);
         }
-        PropertyHandler::Instance().AddProperty(identifier + "params", Join(p, ":"));
+        PropertyHandler::GetInstance().AddProperty(identifier + "params", Join(p, ":"));
     }
 }
 
@@ -498,7 +500,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!StorageDevice::FileExists(filename)) {
         // If the file does not exist search for it in the default image folder
-        effective_filename = CommandImageSupport::Instance().GetDefaultFolder() + "/" + filename;
+        effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
@@ -551,7 +553,7 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
                 s << ", ";
             }
             isFirst = false;
-            string v = key != "token" ? value : "???";
+            string v = key != "token" ? value : "????";
             s << "'" << key << "=" << v << "'";
         }
     }
@@ -617,9 +619,11 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand 
 }
 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,
-    const PbDeviceDefinition &pb_device, const string &filename) const
+    const PbDeviceDefinition &pb_device) const
 {
-    auto device = DeviceFactory::Instance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
+    const string &filename = GetParam(pb_device, "file");
+
+    auto device = DeviceFactory::GetInstance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
     if (!device) {
         if (pb_device.type() == UNDEFINED) {
             context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, to_string(pb_device.id()),
@@ -633,8 +637,8 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
-    // Some device types must be unique
-    if (UNIQUE_DEVICE_TYPES.contains(device->GetType())) {
+    // SCDP must be attached only once
+    if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
             if (d->GetType() == device->GetType()) {
                 context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));
@@ -646,9 +650,9 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     return device;
 }
 
-bool CommandExecutor::SetScsiLevel(const CommandContext &context, shared_ptr<PrimaryDevice> device, int level) const
+bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice &device, int level) const
 {
-    if (level && !device->SetScsiLevel(static_cast<ScsiLevel>(level))) {
+    if (level && !device.SetScsiLevel(static_cast<ScsiLevel>(level))) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, to_string(level));
     }
 

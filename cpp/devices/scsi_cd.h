@@ -36,7 +36,7 @@ private:
 
     void CreateDataTrack();
 
-    void AddDeviceParametersPage(map<int, vector<byte>>&, bool) const;
+    static void AddDeviceParametersPage(map<int, vector<byte>>&, bool);
 
     static void LBAtoMSF(uint32_t, span<uint8_t>);
 

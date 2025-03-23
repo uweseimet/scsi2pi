@@ -2,14 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <span>
 #include <vector>
+#include "buses/bus.h"
 #include "s2pproto_executor.h"
 
 using namespace std;

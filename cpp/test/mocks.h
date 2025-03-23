@@ -22,7 +22,7 @@
 
 using namespace testing;
 
-class MockBus : public Bus
+class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
 {
 
 public:
@@ -91,8 +91,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
 
     FRIEND_TEST(AbstractControllerTest, Reset);
     FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
-    FRIEND_TEST(AbstractControllerTest, ExtractInitiatorId);
-    FRIEND_TEST(AbstractControllerTest, GetOpcode);
     FRIEND_TEST(AbstractControllerTest, Message);
     FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
@@ -104,7 +102,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(PrimaryDeviceTest, RequestSense);
     FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
     FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
-    FRIEND_TEST(PrimaryDeviceTest, UnknownCommand);
     FRIEND_TEST(StorageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, ModeSense6);
@@ -198,14 +195,10 @@ public:
     MOCK_METHOD(void, MsgIn, (), (override));
     MOCK_METHOD(void, MsgOut, (), (override));
 
-    MockAbstractController() : AbstractController(*mock_bus, 0, formatter)
+    MockAbstractController() : AbstractController(0, formatter)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(*mock_bus, target_id, formatter)
-    {
-        SetCurrentLength(512);
-    }
-    MockAbstractController(shared_ptr<Bus> bus, int target_id) : AbstractController(*bus, target_id, formatter)
+    explicit MockAbstractController(int target_id) : AbstractController(target_id, formatter)
     {
         SetCurrentLength(512);
     }
@@ -248,10 +241,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, formatter)
+    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, nullptr, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, formatter)
+    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, nullptr, formatter)
     {
     }
     ~MockController() override = default;

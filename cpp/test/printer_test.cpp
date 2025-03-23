@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -163,4 +163,3 @@ TEST(PrinterTest, GetStatistics)
     EXPECT_EQ(0U, statistics[3].value());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_WARNING, statistics[3].category());
 }
-

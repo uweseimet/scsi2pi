@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -25,11 +25,9 @@ TEST(ScriptGeneratorTest, AddCdb)
     generator.AddCdb(1, 2, cdb);
     vector<uint8_t> data = { 0xff, 0xfe, 0xfd, 0xfc };
     generator.AddData(data);
-    generator.WriteEol();
     cdb = CreateCdb(static_cast<ScsiCommand>(0x1f), "01:02:03");
     assert(!cdb.empty());
     generator.AddCdb(3, 31, cdb);
-    generator.WriteEol();
 
     generator.AddCdb(3, 31, cdb);
     data.clear();
@@ -37,11 +35,11 @@ TEST(ScriptGeneratorTest, AddCdb)
         data.push_back(i);
     }
     generator.AddData(data);
-    generator.WriteEol();
 
     ifstream in(filename);
     string line;
 
+    getline(in, line);
     getline(in, line);
     EXPECT_EQ("-i 1:2 -c 00:01:02:03:04:05 -d ff:fe:fd:fc", line);
 
@@ -55,7 +53,7 @@ TEST(ScriptGeneratorTest, AddCdb)
     EXPECT_EQ("10:11:12:13:14:15:16:17:18:19:1a:1b:1c:1d:1e:1f\\", line);
     getline(in, line);
     EXPECT_EQ("20:21", line);
-    getline(in, line);
 
-    EXPECT_TRUE(line.empty());
+    getline(in, line);
+    EXPECT_TRUE(in.eof());
 }

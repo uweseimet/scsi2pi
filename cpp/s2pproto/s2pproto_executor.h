@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,8 +10,13 @@
 
 #include <array>
 #include <cstdint>
+#include <vector>
 #include "initiator/initiator_executor.h"
-#include "generated/s2p_interface.pb.h"
+
+namespace s2p_interface
+{
+class PbResult;
+}
 
 using namespace s2p_interface;
 
@@ -42,7 +47,7 @@ private:
     // The SCSI ExecuteOperation command supports a byte count of up to 65535 bytes
     static constexpr int BUFFER_SIZE = 65535;
 
-    array<uint8_t, BUFFER_SIZE> buffer;
+    vector<uint8_t> buffer;
 
     unique_ptr<InitiatorExecutor> initiator_executor;
 };

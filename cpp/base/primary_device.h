@@ -11,10 +11,11 @@
 #pragma once
 
 #include <functional>
-#include "controllers/abstract_controller.h"
-#include "shared/memory_util.h"
-#include "shared/s2p_exceptions.h"
 #include "device.h"
+#include "shared/memory_util.h"
+#include "shared/s2p_defs.h"
+
+class AbstractController;
 
 class PrimaryDevice : public Device
 {
@@ -40,13 +41,13 @@ public:
 
     virtual void Dispatch(ScsiCommand);
 
-    auto* GetController() const
+    AbstractController* GetController() const
     {
         return controller;
     }
 
     ProductData GetProductData() const;
-    virtual string SetProductData(const ProductData&, bool);
+    string SetProductData(const ProductData&, bool);
 
     string GetPaddedName() const
     {
@@ -95,11 +96,7 @@ public:
     // For DATA OUT phase, except for MODE SELECT
     virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int, int)
-    {
-        // There is no default implementation of MODE SELECT
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
+    virtual void ModeSelect(cdb_t, data_out_t, int, int);
 
     virtual void FlushCache()
     {
@@ -114,8 +111,7 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType type, int lun, int delay = SEND_NO_DELAY)
-    : Device(type, lun), delay_after_bytes(delay)
+    PrimaryDevice(PbDeviceType t, int l, int delay = SEND_NO_DELAY) : Device(t, l), delay_after_bytes(delay)
     {
     }
 
@@ -153,26 +149,11 @@ protected:
     void DataInPhase(int) const;
     void DataOutPhase(int) const;
 
-    auto GetCdbByte(int index) const
-    {
-        return controller->GetCdb()[index];
-    }
-    auto GetCdbInt16(int index) const
-    {
-        return memory_util::GetInt16(controller->GetCdb(), index);
-    }
-    auto GetCdbInt24(int index) const
-    {
-        return memory_util::GetInt24(controller->GetCdb(), index);
-    }
-    auto GetCdbInt32(int index) const
-    {
-        return memory_util::GetInt32(controller->GetCdb(), index);
-    }
-    auto GetCdbInt64(int index) const
-    {
-        return memory_util::GetInt64(controller->GetCdb(), index);
-    }
+    int GetCdbByte(int) const;
+    int GetCdbInt16(int) const;
+    int GetCdbInt24(int) const;
+    uint32_t GetCdbInt32(int) const;
+    uint64_t GetCdbInt64(int) const;
 
 private:
 

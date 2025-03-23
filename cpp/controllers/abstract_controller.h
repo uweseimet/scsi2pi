@@ -8,24 +8,24 @@
 
 #pragma once
 
+#include <memory>
 #include <span>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
 #include "phase_handler.h"
-#include "script_generator.h"
-#include "buses/bus.h"
+#include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
 
-using namespace spdlog;
-
 class PrimaryDevice;
+
+using namespace spdlog;
 
 class AbstractController : public PhaseHandler
 {
 
 public:
 
-    AbstractController(Bus&, int, const S2pFormatter&);
+    AbstractController(int id, const S2pFormatter&);
     ~AbstractController() override = default;
 
     virtual void Error(SenseKey, Asc, StatusCode) = 0;
@@ -35,8 +35,6 @@ public:
     virtual void Reset();
 
     void CleanUp() const;
-
-    void SetScriptGenerator(shared_ptr<ScriptGenerator>);
 
     int GetInitiatorId() const
     {
@@ -108,15 +106,7 @@ public:
 
 protected:
 
-    void AddCdbToScript();
-    void AddDataToScript(span<const uint8_t>) const;
-
     virtual bool Process() = 0;
-
-    Bus& GetBus() const
-    {
-        return bus;
-    }
 
     void SetCdbByte(int index, int value)
     {
@@ -156,11 +146,7 @@ private:
 
     StatusCode status = StatusCode::GOOD;
 
-    Bus &bus;
-
     shared_ptr<logger> controller_logger;
-
-    shared_ptr<ScriptGenerator> script_generator;
 
     // Logical units of this controller mapped to their LUN numbers
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;

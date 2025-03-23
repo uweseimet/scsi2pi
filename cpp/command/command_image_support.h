@@ -2,18 +2,16 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <filesystem>
-#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace filesystem;
-using namespace spdlog;
 
 class CommandContext;
 
@@ -22,7 +20,7 @@ class CommandImageSupport
 
 public:
 
-    static CommandImageSupport& Instance()
+    static CommandImageSupport& GetInstance()
     {
         static CommandImageSupport instance; // NOSONAR instance cannot be inlined
         return instance;
@@ -40,7 +38,7 @@ public:
     {
         return default_folder;
     }
-    string SetDefaultFolder(string_view, logger&);
+    string SetDefaultFolder(string_view);
 
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 // The SCTP device is a SCSI-2 sequential access device with some SSC-5 command extensions.
 //
@@ -18,6 +18,8 @@
 
 #include "tape.h"
 #include "base/property_handler.h"
+#include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
 using namespace memory_util;
@@ -60,6 +62,7 @@ string Tape::SetUp()
         });
     AddCommand(ScsiCommand::REWIND, [this]
         {
+            CheckReady();
             ResetPositions();
             StatusPhase();
         });
@@ -114,6 +117,10 @@ void Tape::ValidateFile()
     }
 
     tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
+
+    if (IsReady()) {
+        SetAttn(true);
+    }
 }
 
 void Tape::Read(bool read_16)
@@ -311,7 +318,12 @@ void Tape::Open()
 
     block_size_for_descriptor = GetBlockSize();
 
-    file_size = GetFileSize(true);
+    try {
+        file_size = GetFileSize();
+    }
+    catch (const IoException&) {
+        file_size = 0;
+    }
 
     // In append mode, ensure that the image file size is at least the block size
     if (max_file_size && file_size < GetBlockSize()) {
@@ -400,14 +412,14 @@ void Tape::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeab
     }
 }
 
-void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages) const
+void Tape::AddDataCompressionPage(map<int, vector<byte>> &pages)
 {
     vector<byte> buf(16);
 
     pages[15] = buf;
 }
 
-void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable) const
+void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool changeable)
 {
     vector<byte> buf(16);
 
@@ -422,7 +434,7 @@ void Tape::AddDeviceConfigurationPage(map<int, vector<byte>> &pages, bool change
     pages[16] = buf;
 }
 
-void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable) const
+void Tape::AddMediumPartitionPage(map<int, vector<byte> > &pages, bool changeable)
 {
     vector<byte> buf(8);
 
@@ -684,10 +696,9 @@ SimhMetaData Tape::FindNextObject(ObjectType type_to_find, int32_t requested_cou
             if (type_to_find == ObjectType::END_OF_DATA) {
                 return meta_data;
             }
-            else {
-                // End-of-data while spacing over something else
-                RaiseEndOfData(type_to_find, requested_count);
-            }
+
+            // End-of-data while spacing over something else
+            RaiseEndOfData(type_to_find, requested_count);
         }
         else if (type_found == ObjectType::FILEMARK && type_to_find == ObjectType::BLOCK) {
             // Terminate while spacing over blocks and a filemark is found
@@ -849,22 +860,18 @@ void Tape::Erase()
     file.seekp(tape_position);
 
     // Erase in chunks, using SIMH gaps as a pattern (little endian)
-    vector<uint8_t> buf;
-    buf.reserve(1024 * sizeof(SimhMarker::ERASE_GAP));
+    vector<uint8_t> buf(1024 * sizeof(SimhMarker::ERASE_GAP));
     const auto gap = static_cast<uint32_t>(SimhMarker::ERASE_GAP);
-    for (int i = 0; i < 1024; ++i) {
-        buf.push_back(gap & 0xff);
-        buf.push_back((gap >> 8) & 0xff);
-        buf.push_back((gap >> 16) & 0xff);
-        buf.push_back((gap >> 24) & 0xff);
+    for (size_t i = 0; i < buf.size(); i += 4) {
+        buf[i] = gap & 0xff;
+        buf[i + 1] = (gap >> 8) & 0xff;
+        buf[i + 2] = (gap >> 16) & 0xff;
+        buf[i + 3] = (gap >> 24) & 0xff;
     }
 
     uint64_t remaining = file_size - tape_position;
     while (remaining >= 4) {
-        uint64_t chunk = remaining;
-        if (chunk > buf.size()) {
-            chunk = buf.size();
-        }
+        const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size())); // NOSONAR Cast is required for armv6
 
         file.write((const char*)buf.data(), chunk);
         CheckForWriteError();
@@ -873,28 +880,6 @@ void Tape::Erase()
         tape_position += chunk;
         object_location += chunk / GetBlockSize();
     }
-}
-
-vector<PbStatistics> Tape::GetStatistics() const
-{
-    vector<PbStatistics> statistics = StorageDevice::GetStatistics();
-
-    PbStatistics s;
-    s.set_id(GetId());
-    s.set_unit(GetLun());
-    s.set_category(PbStatisticsCategory::CATEGORY_ERROR);
-
-    s.set_key(READ_ERROR_COUNT);
-    s.set_value(read_error_count);
-    statistics.push_back(s);
-
-    if (!IsReadOnly()) {
-        s.set_key(WRITE_ERROR_COUNT);
-        s.set_value(write_error_count);
-        statistics.push_back(s);
-    }
-
-    return statistics;
 }
 
 pair<Tape::ObjectType, int> Tape::ReadSimhMetaData(SimhMetaData &meta_data, int32_t count, bool reverse)
@@ -975,7 +960,7 @@ uint32_t Tape::CheckBlockLength()
 
             GetController()->SetStatus(StatusCode::CHECK_CONDITION);
 
-            return record_length < byte_count ? record_length : byte_count;
+            return min(record_length, byte_count);
         }
 
         // Report CHECK CONDITION if SILI is not set and the actual length does not match the requested length.
@@ -988,7 +973,7 @@ uint32_t Tape::CheckBlockLength()
 
             GetController()->SetStatus(StatusCode::CHECK_CONDITION);
 
-            return record_length < byte_count ? record_length : byte_count;
+            return min(record_length, byte_count);
         }
     }
 
@@ -1040,4 +1025,16 @@ int32_t Tape::GetSignedInt24(cdb_t buf, int offset)
 {
     const int value = GetInt24(buf, offset);
     return value >= 0x800000 ? value - 0x1000000 : value;
+}
+
+vector<PbStatistics> Tape::GetStatistics() const
+{
+    vector<PbStatistics> statistics = StorageDevice::GetStatistics();
+
+    EnrichStatistics(statistics, CATEGORY_ERROR, READ_ERROR_COUNT, read_error_count);
+    if (!IsReadOnly()) {
+        EnrichStatistics(statistics, CATEGORY_ERROR, WRITE_ERROR_COUNT, write_error_count);
+    }
+
+    return statistics;
 }

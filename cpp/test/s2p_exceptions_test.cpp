@@ -32,8 +32,8 @@ TEST(S2pExceptionsTest, ScsiException)
     try {
         throw ScsiException(SenseKey::UNIT_ATTENTION);
     } catch (const ScsiException &e) {
-        EXPECT_EQ(SenseKey::UNIT_ATTENTION, e.get_sense_key());
-        EXPECT_EQ(Asc::NO_ADDITIONAL_SENSE_INFORMATION, e.get_asc());
+        EXPECT_EQ(SenseKey::UNIT_ATTENTION, e.GetSenseKey());
+        EXPECT_EQ(Asc::NO_ADDITIONAL_SENSE_INFORMATION, e.GetAsc());
         EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
         EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }
@@ -41,8 +41,8 @@ TEST(S2pExceptionsTest, ScsiException)
     try {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     } catch (const ScsiException &e) {
-        EXPECT_EQ(SenseKey::ILLEGAL_REQUEST, e.get_sense_key());
-        EXPECT_EQ(Asc::LBA_OUT_OF_RANGE, e.get_asc());
+        EXPECT_EQ(SenseKey::ILLEGAL_REQUEST, e.GetSenseKey());
+        EXPECT_EQ(Asc::LBA_OUT_OF_RANGE, e.GetAsc());
         EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
         EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
     }

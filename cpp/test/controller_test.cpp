@@ -18,7 +18,7 @@ TEST(ControllerTest, Reset)
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
-    auto controller = make_shared<Controller>(bus, TARGET_ID, formatter);
+    auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
 
     controller->Init();
 
@@ -31,8 +31,8 @@ TEST(ControllerTest, Reset)
 TEST(ControllerTest, Process)
 {
     const S2pFormatter formatter;
-    auto bus = BusFactory::Instance().CreateBus(true, true, "", false);
-    auto controller = make_shared<Controller>(*bus, 2, formatter);
+    auto bus = bus_factory::CreateBus(true, true, "", false);
+    auto controller = make_shared<Controller>(*bus, 2, nullptr, formatter);
 
     bus->SetRST(true);
     EXPECT_FALSE(controller->Process());
@@ -45,7 +45,7 @@ TEST(ControllerTest, GetInitiatorId)
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
-    auto controller = make_shared<Controller>(bus, TARGET_ID, formatter);
+    auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
 
     controller->Init();
 

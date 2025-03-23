@@ -2,19 +2,22 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <filesystem>
-#include "command/command_dispatcher.h"
 #include "base/property_handler.h"
+#include "buses/bus.h"
+#include "command/command_executor.h"
+#include "controllers/controller_factory.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;
-using namespace s2p_interface;
+
+class CommandDispatcher;
 
 class S2p
 {
@@ -58,7 +61,7 @@ private:
 
     unique_ptr<Bus> bus;
 
-    PropertyHandler &property_handler = PropertyHandler::Instance();
+    PropertyHandler &property_handler = PropertyHandler::GetInstance();
 
     // Required for the termination handler
     inline static S2p *instance;

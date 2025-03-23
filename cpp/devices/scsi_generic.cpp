@@ -12,6 +12,8 @@
 #include <fcntl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
+#include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 #include "shared/sg_util.h"
 
 using namespace spdlog;
@@ -49,13 +51,6 @@ void ScsiGeneric::CleanUp()
     if (fd != -1) {
         close(fd);
     }
-}
-
-string ScsiGeneric::SetProductData(const ProductData &product_data, bool)
-{
-    return
-        product_data.vendor.empty() && product_data.product.empty() && product_data.revision.empty() ?
-            "" : "The product data of SCSG can't be changed";
 }
 
 void ScsiGeneric::Dispatch(ScsiCommand cmd)
@@ -150,24 +145,19 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
     if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
-            format_header.push_back(buf[0]);
-            format_header.push_back(buf[1]);
-            format_header.push_back(buf[2]);
-            format_header.push_back(buf[3]);
+            format_header.insert(format_header.end(), buf.begin(), buf.begin() + 4);
             byte_count = GetInt16(buf, 2) + 4;
             GetController()->SetTransferSize(byte_count, byte_count);
             return 0;
         }
         else {
-            for (int i = 4; i < length; ++i) {
-                format_header.push_back(buf[i - 4]);
-            }
+            format_header.insert(format_header.end(), buf.begin() + 4, buf.begin() + length);
             buf = format_header;
             remaining_count = byte_count;
         }
     }
 
-    return ReadWriteData(span((uint8_t*)buf.data(), buf.size()), length); // NOSONAR Cast required for SG driver API
+    return ReadWriteData(span(const_cast<uint8_t*>(buf.data()), buf.size()), length); // NOSONAR Cast is required for SG driver API
 }
 
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
@@ -317,9 +307,9 @@ string ScsiGeneric::GetDeviceData()
         return e.what();
     }
 
+    // These initial data may be overridden with properties or on the command line
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
-    PrimaryDevice::SetProductData( { vendor, product, revision }, true);
-
+    SetProductData( { vendor, product, revision }, true);
     SetScsiLevel(static_cast<ScsiLevel>(buf[2]));
     SetResponseDataFormat(static_cast<ScsiLevel>(buf[3]));
 

@@ -8,13 +8,16 @@
 
 #pragma once
 
+#include <chrono>
 #include <fstream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include <spdlog/spdlog.h>
 #include "buses/bus.h"
-#include "shared/sg_adapter.h"
-#include "s2pdump_executor.h"
+
+class S2pDumpExecutor;
+class SgAdapter;
 
 using namespace std;
 using namespace chrono;
@@ -96,6 +99,8 @@ private:
     uint32_t filemark_count = 0;
 
     int log_count = 0;
+
+    int retries = 0;
 
     bool run_inquiry = false;
 

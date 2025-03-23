@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,6 +13,8 @@
 
 using namespace std;
 using namespace s2p_interface;
+
+class Device;
 
 class Cache
 {
@@ -28,7 +30,7 @@ public:
 
     virtual bool Init() = 0;
 
-    virtual vector<PbStatistics> GetStatistics(bool) const = 0;
+    virtual vector<PbStatistics> GetStatistics(const Device&) const = 0;
 
 protected:
 

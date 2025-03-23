@@ -173,7 +173,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
 
     for (auto i = 12; i < buf[3]; i += 8) {
         // Ignore other format types than 0
-        if (!(buf[i + 4] & 0x03)) {
+        if (!(static_cast<int>(buf[i + 4]) & 0x03)) {
             descriptors.push_back( { GetInt32(buf, i), GetInt32(buf, i + 4) & 0xffffff });
         }
     }
@@ -186,8 +186,8 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
     cout << "Formats supported by this drive:\n";
 
     int n = 1;
-    for (const auto &descriptor : descriptors) {
-        cout << "  " << n << ". " << descriptor.blocks << " sectors, " << descriptor.length << " bytes per sector\n";
+    for (const auto &desc : descriptors) {
+        cout << "  " << n << ". " << desc.blocks << " sectors, " << desc.length << " bytes per sector\n";
         ++n;
     }
 
@@ -199,7 +199,7 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
     try {
         n = stoi(input);
     }
-    catch (const invalid_argument&)
+    catch (const invalid_argument&) // NOSONAR The exception details do not matter
     {
         // Fall through
     }
@@ -241,5 +241,5 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
 int S2pFormat::ExecuteCommand(span<const uint8_t> cdb, span<uint8_t> buf, int timeout)
 {
-    return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
+    return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
 }

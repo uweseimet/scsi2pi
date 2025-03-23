@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -69,8 +69,8 @@ bool InProcessBus::WaitForSelection()
     return true;
 }
 
-DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &bus, const string &name, bool log_signals) : bus(
-    bus), in_process_logger(CreateLogger(name)), log_signals(log_signals)
+DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &name, bool l) : bus(b), in_process_logger(
+    CreateLogger(name)), log_signals(l)
 {
     // Log without timestamps
     in_process_logger->set_pattern("[%^%l%$] [%n] %v");
@@ -106,5 +106,5 @@ void DelegatingInProcessBus::SetSignal(int pin, bool state)
 string DelegatingInProcessBus::GetSignalName(int pin)
 {
     const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "???";
+    return it != SIGNALS.end() ? it->second : "????";
 }

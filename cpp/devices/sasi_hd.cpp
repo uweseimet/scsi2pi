@@ -2,11 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "sasi_hd.h"
+#include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 
 SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false, sector_sizes)
 {

@@ -2,11 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <gtest/gtest.h>
+#include "mocks.h"
 #include "devices/disk_cache.h"
 #include "test_shared.h"
 
@@ -40,8 +40,10 @@ TEST(DiskCache, ReadWriteSectors)
 
 TEST(DiskCache, GetStatistics)
 {
+    NiceMock<MockDevice> device(0);
     DiskCache cache("", 512, 0);
 
-    EXPECT_EQ(2U, cache.GetStatistics(true).size());
-    EXPECT_EQ(4U, cache.GetStatistics(false).size());
+    EXPECT_EQ(4U, cache.GetStatistics(device).size());
+    device.SetReadOnly(true);
+    EXPECT_EQ(2U, cache.GetStatistics(device).size());
 }

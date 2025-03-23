@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,18 +11,17 @@
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
-#include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_version.h"
 
 using namespace spdlog;
-using namespace protobuf_util;
+using namespace command_response;
+using namespace s2p_interface_util;
 
 TEST(CommandResponseTest, Operation_Count)
 {
-    CommandResponse response;
-
     PbOperationInfo info;
-    response.GetOperationInfo(info);
+    GetOperationInfo(info);
     EXPECT_EQ(34, info.operations_size());
 }
 
@@ -30,15 +29,14 @@ void TestNonDiskDevice(PbDeviceType type, unsigned int default_param_count)
 {
     MockBus bus;
     ControllerFactory controller_factory;
-    CommandResponse response;
 
-    auto d = DeviceFactory::Instance().CreateDevice(type, 0, "");
+    auto d = DeviceFactory::GetInstance().CreateDevice(type, 0, "");
     const param_map params;
     d->Init();
     EXPECT_TRUE(controller_factory.AttachToController(bus, 0, d));
 
     PbServerInfo info;
-    response.GetDevices(controller_factory.GetAllDevices(), info);
+    GetDevices(controller_factory.GetAllDevices(), info);
 
     EXPECT_EQ(1, info.devices_info().devices().size());
 
@@ -69,29 +67,27 @@ TEST(CommandResponseTest, GetDevices)
 
 TEST(CommandResponseTest, GetImageFile)
 {
-    CommandResponse response;
     PbImageFile image_file;
 
-    EXPECT_FALSE(response.GetImageFile(image_file, ""));
+    EXPECT_FALSE(GetImageFile(image_file, ""));
 
     // Even though the call fails (non-existing file) some properties must be set
-    EXPECT_FALSE(response.GetImageFile(image_file, "filename.hds"));
+    EXPECT_FALSE(GetImageFile(image_file, "filename.hds"));
     EXPECT_EQ("filename.hds", image_file.name());
     EXPECT_EQ(SCHD, image_file.type());
 }
 
 TEST(CommandResponseTest, GetReservedIds)
 {
-    CommandResponse response;
     unordered_set<int> ids;
 
     PbReservedIdsInfo info1;
-    response.GetReservedIds(info1, ids);
+    GetReservedIds(info1, ids);
     EXPECT_TRUE(info1.ids().empty());
 
     ids.insert(3);
     PbReservedIdsInfo info2;
-    response.GetReservedIds(info2, ids);
+    GetReservedIds(info2, ids);
     EXPECT_EQ(1, info2.ids().size());
     EXPECT_EQ(3, info2.ids()[0]);
 }
@@ -105,18 +101,17 @@ TEST(CommandResponseTest, GetDevicesInfo)
 
     MockBus bus;
     ControllerFactory controller_factory;
-    CommandResponse response;
     PbCommand command;
 
     PbResult result1;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
+    GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
     auto device1 = make_shared<MockHostServices>(LUN1);
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
 
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
+    GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
     auto &devices1 = result1.devices_info().devices();
     EXPECT_EQ(1, devices1.size());
@@ -128,7 +123,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device2));
 
     PbResult result2;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
+    GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
     EXPECT_TRUE(result2.status());
     auto &devices2 = result2.devices_info().devices();
     EXPECT_EQ(2, devices2.size()) << "Device count mismatch";
@@ -137,7 +132,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     requested_device->set_id(ID);
     requested_device->set_unit(LUN1);
     PbResult result3;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result3, command);
+    GetDevicesInfo(controller_factory.GetAllDevices(), result3, command);
     EXPECT_TRUE(result3.status());
     auto &devices3 = result3.devices_info().devices();
     EXPECT_EQ(1, devices3.size()) << "Only data for the specified ID and LUN must be returned";
@@ -148,16 +143,14 @@ TEST(CommandResponseTest, GetDevicesInfo)
     requested_device->set_id(ID);
     requested_device->set_unit(LUN3);
     PbResult result4;
-    response.GetDevicesInfo(controller_factory.GetAllDevices(), result4, command);
+    GetDevicesInfo(controller_factory.GetAllDevices(), result4, command);
     EXPECT_FALSE(result4.status()) << "Only data for the specified ID and LUN must be returned";
 }
 
 TEST(CommandResponseTest, GetDeviceTypesInfo)
 {
-    CommandResponse response;
-
     PbDeviceTypesInfo info;
-    response.GetDeviceTypesInfo(info);
+    GetDeviceTypesInfo(info);
 #ifdef __linux__
     EXPECT_EQ(10, info.properties().size());
 #else
@@ -167,15 +160,14 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
 TEST(CommandResponseTest, GetServerInfo)
 {
-    CommandResponse response;
     const unordered_set<shared_ptr<PrimaryDevice>> devices;
     const unordered_set<int> ids = { 1, 3 };
 
     PbCommand command;
     PbServerInfo info1;
-    CommandImageSupport::Instance().SetDepth(1234);
+    CommandImageSupport::GetInstance().SetDepth(1234);
 
-    response.GetServerInfo(info1, command, devices, ids, *default_logger());
+    GetServerInfo(info1, command, devices, ids, *default_logger());
     EXPECT_TRUE(info1.has_version_info());
     EXPECT_TRUE(info1.has_log_level_info());
     EXPECT_TRUE(info1.has_device_types_info());
@@ -196,7 +188,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     SetParam(command, "operations", "log_level_info,mapping_info");
     PbServerInfo info2;
-    response.GetServerInfo(info2, command, devices, ids, *default_logger());
+    GetServerInfo(info2, command, devices, ids, *default_logger());
     EXPECT_FALSE(info2.has_version_info());
     EXPECT_TRUE(info2.has_log_level_info());
     EXPECT_FALSE(info2.has_device_types_info());
@@ -211,10 +203,8 @@ TEST(CommandResponseTest, GetServerInfo)
 
 TEST(CommandResponseTest, GetVersionInfo)
 {
-    CommandResponse response;
-
     PbVersionInfo info;
-    response.GetVersionInfo(info);
+    GetVersionInfo(info);
     EXPECT_EQ(s2p_major_version, info.major_version());
     EXPECT_EQ(s2p_minor_version, info.minor_version());
     EXPECT_EQ(s2p_revision, info.patch_version());
@@ -223,10 +213,8 @@ TEST(CommandResponseTest, GetVersionInfo)
 
 TEST(CommandResponseTest, GetLogLevelInfo)
 {
-    CommandResponse response;
-
     PbLogLevelInfo info;
-    response.GetLogLevelInfo(info);
+    GetLogLevelInfo(info);
     EXPECT_EQ(level::level_string_views[get_level()], info.current_log_level());
     EXPECT_EQ(7, info.log_levels().size());
 }
@@ -234,35 +222,30 @@ TEST(CommandResponseTest, GetLogLevelInfo)
 #ifdef __linux__
 TEST(CommandResponseTest, GetNetworkInterfacesInfo)
 {
-    CommandResponse response;
-
     PbNetworkInterfacesInfo info;
-    response.GetNetworkInterfacesInfo(info);
+    GetNetworkInterfacesInfo(info);
     EXPECT_FALSE(info.name().empty());
 }
 #endif
 
 TEST(CommandResponseTest, GetMappingInfo)
 {
-    CommandResponse response;
-
     PbMappingInfo info;
-    response.GetMappingInfo(info);
+    GetMappingInfo(info);
     EXPECT_EQ(11U, info.mapping().size());
 }
 
 TEST(CommandResponseTest, GetStatisticsInfo)
 {
-    CommandResponse response;
     unordered_set<shared_ptr<PrimaryDevice>> devices;
 
     PbStatisticsInfo info;
     devices.insert(make_shared<MockPrimaryDevice>(0));
-    response.GetStatisticsInfo(info, devices);
+    GetStatisticsInfo(info, devices);
     EXPECT_EQ(0, info.statistics().size());
 
     devices.insert(make_shared<MockScsiHd>(0, false));
-    response.GetStatisticsInfo(info, devices);
+    GetStatisticsInfo(info, devices);
     const auto &statistics = info.statistics();
     EXPECT_EQ(2, statistics.size());
     EXPECT_EQ(PbStatisticsCategory::CATEGORY_INFO, statistics.Get(0).category());
@@ -271,5 +254,4 @@ TEST(CommandResponseTest, GetStatisticsInfo)
     EXPECT_EQ(0, statistics.Get(1).unit());
     EXPECT_EQ(0U, statistics.Get(0).value());
     EXPECT_EQ(0U, statistics.Get(1).value());
-
 }

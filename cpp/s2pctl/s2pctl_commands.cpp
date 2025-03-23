@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,15 +17,19 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
+#include "s2pctl_display.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace s2p_interface;
 using namespace network_util;
-using namespace s2p_util;
 using namespace protobuf_util;
+using namespace s2p_interface;
+using namespace s2p_interface_util;
+using namespace s2p_util;
+using namespace s2pctl_display;
 
 bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, string_view reserved_ids,
     string_view image_params, string_view filename)
@@ -160,7 +164,7 @@ bool S2pCtlCommands::HandleDevicesInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayDevicesInfo(result.devices_info()) << flush;
+    cout << DisplayDevicesInfo(result.devices_info()) << flush;
 
     return true;
 }
@@ -222,7 +226,7 @@ bool S2pCtlCommands::HandleDeviceInfo()
     SendCommand();
 
     for (const auto &device : result.devices_info().devices()) {
-        cout << s2pctl_display.DisplayDeviceInfo(device);
+        cout << DisplayDeviceInfo(device);
     }
 
     cout << flush;
@@ -234,7 +238,7 @@ bool S2pCtlCommands::HandleDeviceTypesInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayDeviceTypesInfo(result.device_types_info()) << flush;
+    cout << DisplayDeviceTypesInfo(result.device_types_info()) << flush;
 
     return true;
 }
@@ -243,7 +247,7 @@ bool S2pCtlCommands::HandleVersionInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayVersionInfo(result.version_info()) << flush;
+    cout << DisplayVersionInfo(result.version_info()) << flush;
 
     return true;
 }
@@ -255,43 +259,43 @@ bool S2pCtlCommands::HandleServerInfo()
     PbServerInfo server_info = result.server_info();
 
     if (server_info.has_version_info()) {
-        cout << s2pctl_display.DisplayVersionInfo(server_info.version_info());
+        cout << DisplayVersionInfo(server_info.version_info());
     }
 
     if (server_info.has_log_level_info()) {
-        cout << s2pctl_display.DisplayLogLevelInfo(server_info.log_level_info());
+        cout << DisplayLogLevelInfo(server_info.log_level_info());
     }
 
     if (server_info.has_image_files_info()) {
-        cout << s2pctl_display.DisplayImageFilesInfo(server_info.image_files_info());
+        cout << DisplayImageFilesInfo(server_info.image_files_info());
     }
 
     if (server_info.has_mapping_info()) {
-        cout << s2pctl_display.DisplayMappingInfo(server_info.mapping_info());
+        cout << DisplayMappingInfo(server_info.mapping_info());
     }
 
     if (server_info.has_network_interfaces_info()) {
-        cout << s2pctl_display.DisplayNetworkInterfaces(server_info.network_interfaces_info());
+        cout << DisplayNetworkInterfaces(server_info.network_interfaces_info());
     }
 
     if (server_info.has_device_types_info()) {
-        cout << s2pctl_display.DisplayDeviceTypesInfo(server_info.device_types_info());
+        cout << DisplayDeviceTypesInfo(server_info.device_types_info());
     }
 
     if (server_info.has_reserved_ids_info()) {
-        cout << s2pctl_display.DisplayReservedIdsInfo(server_info.reserved_ids_info());
+        cout << DisplayReservedIdsInfo(server_info.reserved_ids_info());
     }
 
     if (server_info.has_statistics_info()) {
-        cout << s2pctl_display.DisplayStatisticsInfo(server_info.statistics_info());
+        cout << DisplayStatisticsInfo(server_info.statistics_info());
     }
 
     if (server_info.has_properties_info()) {
-        cout << s2pctl_display.DisplayPropertiesInfo(server_info.properties_info());
+        cout << DisplayPropertiesInfo(server_info.properties_info());
     }
 
     if (server_info.has_operation_info()) {
-        cout << s2pctl_display.DisplayOperationInfo(server_info.operation_info());
+        cout << DisplayOperationInfo(server_info.operation_info());
     }
 
     if (server_info.has_devices_info() && server_info.devices_info().devices_size()) {
@@ -302,7 +306,7 @@ bool S2pCtlCommands::HandleServerInfo()
         cout << "Attached devices:\n";
 
         for (const auto &device : sorted_devices) {
-            cout << s2pctl_display.DisplayDeviceInfo(device);
+            cout << DisplayDeviceInfo(device);
         }
     }
 
@@ -315,7 +319,7 @@ bool S2pCtlCommands::HandleDefaultImageFilesInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayImageFilesInfo(result.image_files_info()) << flush;
+    cout << DisplayImageFilesInfo(result.image_files_info()) << flush;
 
     return true;
 }
@@ -326,7 +330,7 @@ bool S2pCtlCommands::HandleImageFileInfo(string_view filename)
 
     SendCommand();
 
-    cout << s2pctl_display.DisplayImageFile(result.image_file_info()) << flush;
+    cout << DisplayImageFile(result.image_file_info()) << flush;
 
     return true;
 }
@@ -335,7 +339,7 @@ bool S2pCtlCommands::HandleNetworkInterfacesInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayNetworkInterfaces(result.network_interfaces_info()) << flush;
+    cout << DisplayNetworkInterfaces(result.network_interfaces_info()) << flush;
 
     return true;
 }
@@ -344,7 +348,7 @@ bool S2pCtlCommands::HandleLogLevelInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayLogLevelInfo(result.log_level_info()) << flush;
+    cout << DisplayLogLevelInfo(result.log_level_info()) << flush;
 
     return true;
 }
@@ -353,7 +357,7 @@ bool S2pCtlCommands::HandleReservedIdsInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayReservedIdsInfo(result.reserved_ids_info()) << flush;
+    cout << DisplayReservedIdsInfo(result.reserved_ids_info()) << flush;
 
     return true;
 }
@@ -362,7 +366,7 @@ bool S2pCtlCommands::HandleMappingInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayMappingInfo(result.mapping_info()) << flush;
+    cout << DisplayMappingInfo(result.mapping_info()) << flush;
 
     return true;
 }
@@ -371,7 +375,7 @@ bool S2pCtlCommands::HandleStatisticsInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayStatisticsInfo(result.statistics_info()) << flush;
+    cout << DisplayStatisticsInfo(result.statistics_info()) << flush;
 
     return true;
 }
@@ -380,7 +384,7 @@ bool S2pCtlCommands::HandlePropertiesInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayPropertiesInfo(result.properties_info()) << flush;
+    cout << DisplayPropertiesInfo(result.properties_info()) << flush;
 
     return true;
 }
@@ -389,7 +393,7 @@ bool S2pCtlCommands::HandleOperationInfo()
 {
     SendCommand();
 
-    cout << s2pctl_display.DisplayOperationInfo(result.operation_info()) << flush;
+    cout << DisplayOperationInfo(result.operation_info()) << flush;
 
     return true;
 }
@@ -421,7 +425,7 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
 void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) const
 {
     string json;
-    (void)MessageToJsonString(cmd, &json);
+    static_cast<void>(MessageToJsonString(cmd, &json));
 
     ofstream out(filename);
     out << json;

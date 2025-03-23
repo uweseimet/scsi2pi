@@ -41,7 +41,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     // Normalize properties by adding an explicit LUN where required
     for (const auto& [key, value] : properties) {
         const auto &components = Split(key, '.');
-        if (key.starts_with("device.") && key.find(":") == string::npos && components.size() == 3) {
+        if (key.starts_with(PropertyHandler::DEVICE) && key.find(":") == string::npos && components.size() == 3) {
             AddProperty(components[0] + "." + components[1] + ":0." + components[2], value);
         }
         else {
@@ -55,7 +55,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
 {
     ifstream property_file(filename);
-    if (property_file.fail() && !default_file) {
+    if (!property_file && !default_file) {
         // Only report an error if an explicitly specified file is missing
         throw ParserException(fmt::format("No property file '{}'", filename));
     }

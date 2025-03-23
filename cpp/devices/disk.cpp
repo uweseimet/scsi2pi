@@ -8,13 +8,14 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "disk.h"
 #include "disk_cache.h"
 #include "linux_cache.h"
+#include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -577,20 +578,16 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
     }
 
     // Do not process 0 blocks
-    return tuple(count || mode == SEEK6 || mode == SEEK10, start, count);
+    return {count || mode == SEEK6 || mode == SEEK10, start, count};
 }
 
 vector<PbStatistics> Disk::GetStatistics() const
 {
     vector<PbStatistics> statistics = StorageDevice::GetStatistics();
 
-    // Enrich cache statistics with device information before adding them to device statistics
     if (cache) {
-        for (auto &s : cache->GetStatistics(IsReadOnly())) {
-            s.set_id(GetId());
-            s.set_unit(GetLun());
-            statistics.push_back(s);
-        }
+        auto s = cache->GetStatistics(*this);
+        statistics.insert(statistics.end(), s.begin(), s.end());
     }
 
     return statistics;

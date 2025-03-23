@@ -8,7 +8,9 @@
 
 #include "primary_device.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include "controllers/abstract_controller.h"
 #include "shared/command_meta_data.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 using namespace s2p_util;
@@ -62,7 +64,7 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::Instance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }
@@ -309,7 +311,7 @@ void PrimaryDevice::CheckReady()
     // Not ready if it needs attention
     if (IsAttn()) {
         SetAttn(false);
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     }
 
     // Return status if not ready
@@ -411,4 +413,35 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
 void PrimaryDevice::DiscardReservation()
 {
     reserving_initiator = NOT_RESERVED;
+}
+
+void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int, int)
+{
+    // There is no default implementation of MODE SELECT
+    throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+}
+
+int PrimaryDevice::GetCdbByte(int index) const
+{
+    return controller->GetCdb()[index];
+}
+
+int PrimaryDevice::GetCdbInt16(int index) const
+{
+    return memory_util::GetInt16(controller->GetCdb(), index);
+}
+
+int PrimaryDevice::GetCdbInt24(int index) const
+{
+    return memory_util::GetInt24(controller->GetCdb(), index);
+}
+
+uint32_t PrimaryDevice::GetCdbInt32(int index) const
+{
+    return memory_util::GetInt32(controller->GetCdb(), index);
+}
+
+uint64_t PrimaryDevice::GetCdbInt64(int index) const
+{
+    return memory_util::GetInt64(controller->GetCdb(), index);
 }

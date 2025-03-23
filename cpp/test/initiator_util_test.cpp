@@ -2,22 +2,15 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "mocks.h"
+#include <gtest/gtest.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "initiator/initiator_util.h"
 
 using namespace initiator_util;
-
-TEST(InitiatorUtilTest, ResetBus)
-{
-    NiceMock<MockBus> bus;
-
-    EXPECT_CALL(bus, Reset);
-    ResetBus(bus);
-}
 
 TEST(InitiatorUtilTest, SetLogLevel)
 {

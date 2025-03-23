@@ -32,7 +32,7 @@ public:
 
     bool Flush() override;
 
-    vector<PbStatistics> GetStatistics(bool) const override;
+    vector<PbStatistics> GetStatistics(const Device&) const override;
 
 private:
 

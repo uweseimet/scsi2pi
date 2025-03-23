@@ -2,12 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "generated/s2p_interface.pb.h"
@@ -120,6 +121,8 @@ public:
 
     logger& GetLogger() const;
 
+    void EnrichStatistics(vector<PbStatistics>&, PbStatisticsCategory, const string&, uint64_t) const;
+
 protected:
 
     Device(PbDeviceType type, int lun) : type(type), lun(lun)
@@ -198,5 +201,5 @@ private:
     param_map params;
 
     // Use the default logger until the device-specific logger has been created
-    shared_ptr<logger> device_logger = default_logger();
+    shared_ptr<spdlog::logger> device_logger = default_logger();
 };

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -35,14 +35,14 @@ public:
 
     int WriteData(cdb_t, data_out_t, int, int) override;
 
-    void CheckForFileError();
-
     vector<PbStatistics> GetStatistics() const override;
 
 private:
 
     void Print();
     void SynchronizeBuffer();
+
+    void CheckForFileError();
 
     string file_template;
 

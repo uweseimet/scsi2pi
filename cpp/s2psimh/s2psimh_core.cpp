@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -77,7 +77,7 @@ bool S2pSimh::ParseArguments(span<char*> args)
             break;
 
         case 'l':
-            if (const int l = ParseAsUnsignedInt(string(optarg)); l == -1) {
+            if (const int l = ParseAsUnsignedInt(string(optarg)); l < 0) {
                 cerr << "Error: Invalid dump size limit '" << optarg << "'\n";
                 return false;
             }
@@ -139,7 +139,7 @@ bool S2pSimh::ParseArguments(span<char*> args)
 
     if (truncate) {
         ofstream f(simh_filename);
-        if (f.fail()) {
+        if (!f) {
             cerr << "Error: Can't open '" << simh_filename << "'\n";
             return false;
         }
@@ -161,7 +161,7 @@ int S2pSimh::Run(span<char*> args)
     }
 
     simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
-    if (simh_file.fail()) {
+    if (!simh_file) {
         cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << '\n';
         return EXIT_FAILURE;
     }
@@ -476,7 +476,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
         }
 
         const string &value = components[1];
-        if (const int v = ParseAsUnsignedInt(value); v == -1) {
+        if (const int v = ParseAsUnsignedInt(value); v < 0) {
             cerr << "Error: Invalid value '" << value << "'\n";
             return {};
         }

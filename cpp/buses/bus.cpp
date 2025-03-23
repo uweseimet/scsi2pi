@@ -66,7 +66,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
         }
     }
 
-    const int command_byte_count = CommandMetaData::Instance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
+    const int command_byte_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
     if (!command_byte_count) {
         EnableIRQ();
 
@@ -101,14 +101,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
 // Initiator MESSAGE IN
 int Bus::MsgInHandShake()
 {
-    const BusPhase phase = GetPhase();
-
-    if (!WaitSignal(PIN_REQ, true)) {
-        return -1;
-    }
-
-    // Phase error
-    if (GetPhase() != phase) {
+    if (const BusPhase phase = GetPhase(); !WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
         return -1;
     }
 
@@ -162,12 +155,7 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
         const BusPhase phase = GetPhase();
 
         for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-            if (!WaitSignal(PIN_REQ, true)) {
-                break;
-            }
-
-            // Phase error
-            if (GetPhase() != phase) {
+            if (!WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
                 break;
             }
 
@@ -315,7 +303,7 @@ BusPhase Bus::GetPhase()
     return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
 }
 
-// Phase Table with the phases based upon the MSG, C/D and I/O signals
+// Phase table with the phases based upon the MSG, C/D and I/O signals
 //
 // |MSG|C/D|I/O| Phase
 // | 0 | 0 | 0 | DATA OUT
@@ -349,5 +337,5 @@ const array<string, 11> Bus::phase_names = {
     "STATUS",
     "MESSAGE IN",
     "MESSAGE OUT",
-    "???"
+    "????"
 };

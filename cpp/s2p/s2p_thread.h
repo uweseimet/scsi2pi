@@ -2,16 +2,18 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <thread>
 #include <spdlog/spdlog.h>
+#include "s2p_server.h"
 
 class CommandContext;
 
@@ -24,7 +26,7 @@ class S2pThread
 
 public:
 
-    string Init(const callback&, int, shared_ptr<logger> logger);
+    string Init(int, const callback&, shared_ptr<logger>);
     void Start();
     void Stop();
     bool IsRunning() const;
@@ -32,7 +34,7 @@ public:
 private:
 
     void Execute() const;
-    void ExecuteCommand(int) const;
+    bool ExecuteCommand(int) const;
 
     callback exec;
 
@@ -42,7 +44,7 @@ private:
     thread service_thread;
 #endif
 
-    int service_socket = -1;
+    S2pServer server;
 
     shared_ptr<logger> s2p_logger;
 };

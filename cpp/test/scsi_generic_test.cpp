@@ -2,13 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "devices/scsi_generic.h"
+#include "shared/s2p_exceptions.h"
 
 TEST(ScsiGenericTest, Device_Defaults)
 {
@@ -37,23 +38,6 @@ TEST(ScsiGenericTest, GetIdentifier)
     ScsiGeneric device(0, "");
 
     EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
-}
-
-TEST(ScsiGenericTest, GetDevice)
-{
-    ScsiGeneric device(0, "device");
-
-    EXPECT_EQ("device", device.GetDevice());
-}
-
-TEST(ScsiGenericTest, SetProductData)
-{
-    ScsiGeneric device(0, "");
-
-    EXPECT_TRUE(device.SetProductData( { "", "", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "1", "", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "", "2", "" }, true).empty());
-    EXPECT_FALSE(device.SetProductData( { "", "", "3" }, true).empty());
 }
 
 TEST(ScsiGenericTest, SetUp)

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,14 +18,16 @@
 using namespace memory_util;
 using namespace sg_util;
 
-string SgAdapter::Init(const string &device)
+string SgAdapter::Init(const string &d)
 {
     try {
-        fd = OpenDevice(device);
+        fd = OpenDevice(d);
     }
     catch (const IoException &e) {
         return e.what();
     }
+
+    device = d;
 
     GetBlockSize();
 
@@ -40,7 +42,7 @@ void SgAdapter::CleanUp()
     }
 }
 
-SgAdapter::SgResult SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t> buf, int total_length, int timeout)
+int SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t> buf, int total_length, int timeout)
 {
     byte_count = 0;
 
@@ -54,10 +56,10 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t
         const int length = total_length < MAX_TRANSFER_LENGTH ? total_length : MAX_TRANSFER_LENGTH;
         SetBlockCount(local_cdb, length / block_size);
 
-        if (const auto &result = SendCommandInternal(local_cdb, span(buf.data() + offset, buf.size() - offset), length,
-            timeout, true); result.status
+        if (const int status = SendCommandInternal(local_cdb, span(buf.data() + offset, buf.size() - offset), length,
+            timeout, true); status
             || !command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])).block_size) {
-            return {result.status, byte_count};
+            return status;
         }
 
         offset += length;
@@ -66,10 +68,10 @@ SgAdapter::SgResult SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t
         UpdateStartBlock(local_cdb, length / block_size);
     } while (total_length);
 
-    return {0, byte_count};
+    return 0;
 }
 
-SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout,
+int SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int length, int timeout,
     bool enable_log)
 {
     // Return deferred sense data, if any
@@ -78,7 +80,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
         memcpy(buf.data(), sense_data.data(), l);
         byte_count = l;
         sense_data_valid = false;
-        return {0, 0};
+        return 0;
     }
     sense_data_valid = false;
 
@@ -107,12 +109,23 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
     io_hdr.timeout = timeout * 1000;
 
     if (enable_log && sg_logger.level() <= level::debug) {
-        sg_logger.debug(command_meta_data.LogCdb(cdb, "SG driver"));
+        sg_logger.debug(command_meta_data.LogCdb(cdb, fmt::format("SG driver ({})", device)));
     }
 
-    int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
+    if (!EvaluateStatus(status, buf, cdb)) {
+        return status;
+    }
+
+    byte_count += length - io_hdr.resid;
+
+    return status;
+}
+
+bool SgAdapter::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> cdb)
+{
     if (status == -1) {
-        return {status, length};
+        return false;
     }
     // Do not consider CONDITION MET an error
     else if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
@@ -128,9 +141,7 @@ SgAdapter::SgResult SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8
         sense_data_valid = true;
     }
 
-    byte_count += length - io_hdr.resid;
-
-    return {status, length - io_hdr.resid};
+    return true;
 }
 
 void SgAdapter::GetBlockSize()
@@ -140,7 +151,7 @@ void SgAdapter::GetBlockSize()
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
 
     try {
-        if (!SendCommandInternal(cdb, buf, static_cast<int>(buf.size()), 1, false).status) {
+        if (!SendCommandInternal(cdb, buf, static_cast<int>(buf.size()), 1, false)) {
             block_size = GetInt32(buf, 4);
             assert(block_size);
         }

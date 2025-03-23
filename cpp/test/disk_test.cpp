@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ TEST(DiskTest, Dispatch)
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_CHANGE);
+    Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
@@ -707,8 +707,8 @@ TEST(DiskTest, ReadData)
     MockDisk disk;
 
     EXPECT_THAT([&] {disk.ReadData( {});}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
-                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
+                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, WriteData)
@@ -716,11 +716,11 @@ TEST(DiskTest, WriteData)
     MockDisk disk;
 
     EXPECT_THAT([&] {disk.WriteData( {}, {}, 0, 0);}, Throws<ScsiException>(AllOf(
-                Property(&ScsiException::get_sense_key, SenseKey::NOT_READY),
-                Property(&ScsiException::get_asc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
+                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
 
-TEST(DiskTest, SynchronizeCache)
+TEST(DiskTest, SynchronizeCache10)
 {
     auto [controller, disk] = CreateDisk();
 
@@ -728,6 +728,11 @@ TEST(DiskTest, SynchronizeCache)
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+}
+
+TEST(DiskTest, SynchronizeCache16)
+{
+    auto [controller, disk] = CreateDisk();
 
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);

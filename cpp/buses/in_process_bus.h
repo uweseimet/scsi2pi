@@ -2,16 +2,17 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 #include "bus.h"
 
 class InProcessBus : public Bus
@@ -21,7 +22,7 @@ public:
 
     ~InProcessBus() override = default;
 
-    static InProcessBus& Instance()
+    static InProcessBus& GetInstance()
     {
         static InProcessBus instance; // NOSONAR instance cannot be inlined
         return instance;
@@ -132,9 +133,9 @@ public:
     {
         return bus.GetDAT();
     }
-    void SetDAT(uint8_t dat) override
+    void SetDAT(uint8_t d) override
     {
-        bus.SetDAT(dat);
+        bus.SetDAT(d);
     }
 
     bool GetSignal(int) const override;

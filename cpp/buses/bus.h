@@ -11,9 +11,7 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <string>
-#include <vector>
 #include "shared/scsi.h"
 #include "shared/s2p_defs.h"
 #include "board.h"
@@ -69,22 +67,20 @@ constexpr static int GPIO_OUTPUT = 1;
 constexpr static int GPIO_PULLNONE = 0;
 constexpr static int GPIO_PULLDOWN = 1;
 
-// Constant declarations (Control signals)
-#define ACT_OFF !ACT_ON
-#define ENB_OFF !ENB_ON
-#define TAD_OUT !TAD_IN
-#define IND_OUT !IND_IN
-#define DTD_OUT !DTD_IN
-
 // Constant declarations (SCSI)
 constexpr static int IN = GPIO_INPUT;
 constexpr static int OUT = GPIO_OUTPUT;
-constexpr static int ON = 1;
-constexpr static int OFF = 0;
+
+// Constant declarations (Control signals)
+constexpr static int ACT_OFF = !ACT_ON;
+constexpr static int ENB_OFF = !ENB_ON;
+constexpr static int TAD_OUT = !TAD_IN;
+constexpr static int IND_OUT = !IND_IN;
+constexpr static int DTD_OUT = !DTD_IN;
 
 using namespace std;
 
-class Bus // NOSONAR The number of convenience methods is justified
+class Bus // NOSONAR The high number of convenience methods is justified
 {
 
 public:

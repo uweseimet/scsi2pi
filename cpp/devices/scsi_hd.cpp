@@ -2,11 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "scsi_hd.h"
+#include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -25,36 +27,31 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32
     SetRemovable(removable);
 }
 
-string ScsiHd::GetProductDataString() const
-{
-    uint64_t capacity = GetBlockCount() * GetBlockSize();
-    string unit;
-
-    // 10,000 MiB and more
-    if (capacity >= 10'485'760'000) {
-        capacity /= 1'073'741'824;
-        unit = "GiB";
-    }
-    // 1 MiB and more
-    else if (capacity >= 1'048'576) {
-        capacity /= 1'048'576;
-        unit = "MiB";
-    }
-    else {
-        capacity /= 1024;
-        unit = "KiB";
-    }
-
-    return fmt::format("{0} {1} {2}", DEFAULT_PRODUCT, capacity, unit);
-}
-
 void ScsiHd::FinalizeSetup()
 {
     ValidateFile();
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {
-        SetProductData( { "", GetProductDataString(), "" }, false);
+        uint64_t capacity = GetBlockCount() * GetBlockSize();
+        string unit;
+
+        // 10,000 MiB and more
+        if (capacity >= 10'485'760'000) {
+            capacity /= 1'073'741'824;
+            unit = "G";
+        }
+        // 1 MiB and more
+        else if (capacity >= 1'048'576) {
+            capacity /= 1'048'576;
+            unit = "M";
+        }
+        else {
+            capacity /= 1024;
+            unit = "K";
+        }
+
+        SetProductData( { "", fmt::format("SCSI HD {0} {1}iB", capacity, unit), "" }, false);
     }
 }
 

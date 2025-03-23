@@ -8,6 +8,7 @@
 
 #include "s2pexec_executor.h"
 #include "buses/bus_factory.h"
+#include "initiator/initiator_util.h"
 
 string S2pExecExecutor::Init(const string &device)
 {
@@ -32,7 +33,7 @@ string S2pExecExecutor::Init(const string &device)
 string S2pExecExecutor::Init(int id, const string &name, bool in_process)
 {
     if (!bus) {
-        bus = BusFactory::Instance().CreateBus(false, in_process, name, false);
+        bus = bus_factory::CreateBus(false, in_process, name, false);
         if (!bus) {
             return "Can't initialize bus";
         }
@@ -67,19 +68,19 @@ void S2pExecExecutor::CleanUp()
 void S2pExecExecutor::ResetBus()
 {
     if (!is_sg && bus) {
-        initiator_util::ResetBus(*bus);
+        initiator_executor->ResetBus();
     }
 }
 
-int S2pExecExecutor::ExecuteCommand(vector<uint8_t> &cdb, vector<uint8_t> &buf, int timeout, bool log)
+int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout, bool enable_log)
 {
 #ifdef __linux__
     if (is_sg) {
-        return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout).status;
+        return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
     }
 #endif
 
-    return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, log);
+    return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, enable_log);
 }
 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
@@ -87,7 +88,7 @@ tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 #ifdef __linux__
     if (is_sg) {
         array<uint8_t, 14> sense_data;
-        vector<uint8_t> cdb(6);
+        array<uint8_t, 6> cdb = { };
         cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
         cdb[4] = static_cast<uint8_t>(sense_data.size());
 
@@ -97,7 +98,7 @@ tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
     }
 #endif
 
-    return initiator_util::GetSenseData(*initiator_executor);
+    return initiator_executor->GetSenseData();
 }
 
 int S2pExecExecutor::GetByteCount() const

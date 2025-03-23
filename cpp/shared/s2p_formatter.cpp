@@ -21,10 +21,7 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
 
     string str;
 
-    size_t limit = format_limit;
-    if (limit > count) {
-        limit = count;
-    }
+    size_t limit = min(static_cast<size_t>(format_limit), count);
 
     size_t offset = 0;
     while (offset < limit) {
@@ -33,11 +30,11 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
         string output_ascii;
 
         if (!hex_only && !(offset % 16)) {
-            output_offset += fmt::format("{:08x}  ", offset);
+            output_offset = fmt::format("{:08x}  ", offset);
         }
 
-        size_t index = -1;
-        while (++index < 16 && offset < limit) {
+        size_t index = 0;
+        while (index < 16 && offset < limit) {
             if (index) {
                 output_hex += ":";
             }
@@ -46,6 +43,7 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
             output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
 
             ++offset;
+            ++index;
         }
 
         str += output_offset;

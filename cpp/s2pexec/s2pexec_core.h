@@ -2,14 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include "buses/bus_factory.h"
 #include "shared/s2p_formatter.h"
 #include "s2pexec_executor.h"
 
@@ -17,7 +16,7 @@ using namespace std;
 
 class S2pExec
 {
-    class execution_exception : public runtime_error
+    class ExecutionException : public runtime_error
     {
         using runtime_error::runtime_error;
     };

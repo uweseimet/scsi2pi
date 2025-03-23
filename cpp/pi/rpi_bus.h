@@ -3,17 +3,15 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#ifdef __linux__
 #include <linux/gpio.h>
 #include <sys/epoll.h>
-#endif
-#include "bus.h"
+#include "buses/bus.h"
 
 class RpiBus final : public Bus
 {
@@ -30,7 +28,7 @@ public:
         PI_5 = 5
     };
 
-    explicit RpiBus(PiType t) : pi_type(t)
+    explicit RpiBus(PiType type) : pi_type(type)
     {
     }
     ~RpiBus() override = default;
@@ -61,6 +59,8 @@ public:
     {
         return true;
     }
+
+    static PiType CheckForPi();
 
 private:
 
@@ -108,7 +108,6 @@ private:
     // QA7 register
     volatile uint32_t *qa7_regs = nullptr;
 
-#ifdef __linux__
     // Interrupt enabled state
     uint32_t irpt_enb;
 
@@ -124,7 +123,6 @@ private:
     struct gpioevent_request selevreq = { };
 
     int epoll_fd = 0;
-#endif
 
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;

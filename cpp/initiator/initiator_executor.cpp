@@ -9,6 +9,7 @@
 #include "initiator_executor.h"
 #include <chrono>
 #include "initiator_util.h"
+#include "buses/bus.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
@@ -16,35 +17,26 @@ using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(ScsiCommand cmd, span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout,
-    bool enable_log)
-{
-    cdb[0] = static_cast<uint8_t>(cmd);
-    return Execute(cdb, buffer, length, timeout, enable_log);
-}
-
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
-    bus.Reset();
-
     status_code = 0xff;
     byte_count = 0;
     cdb_offset = 0;
 
     const auto cmd = static_cast<ScsiCommand>(cdb[0]);
 
-    auto command_name = string(CommandMetaData::Instance().GetCommandName(cmd));
+    auto command_name = string(CommandMetaData::GetInstance().GetCommandName(cmd));
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
 
     // Only report byte count mismatch for non-linked commands
-    if (const int count = CommandMetaData::Instance().GetByteCount(cmd); count
+    if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
         initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
     }
 
-    initiator_logger.debug(CommandMetaData::Instance().LogCdb(cdb, "Initiator"));
+    initiator_logger.debug(CommandMetaData::GetInstance().LogCdb(cdb, "Initiator"));
 
     // There is no arbitration phase with SASI
     if (!sasi && !Arbitration()) {
@@ -67,13 +59,13 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
                 if (Dispatch(cdb, buffer, length)) {
                     now = steady_clock::now();
                 }
-                else if (static_cast<StatusCode>(status_code) != StatusCode::INTERMEDIATE) {
+                else if (status_code != static_cast<int>(StatusCode::INTERMEDIATE)) {
                     break;
                 }
             }
             catch (const PhaseException &e) {
                 initiator_logger.error(e.what());
-                ResetBus(bus);
+                ResetBus();
                 return 0xff;
             }
         }
@@ -207,7 +199,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
     const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
-        initiator_logger.error("Execution of {} failed", CommandMetaData::Instance().GetCommandName(cmd));
+        initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
     }
 
     cdb_offset += sent_count;
@@ -296,6 +288,38 @@ void InitiatorExecutor::MsgOut()
 
     // Reset default message for MESSAGE OUT to IDENTIFY
     next_message = MessageCode::IDENTIFY;
+}
+
+tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
+{
+    array<uint8_t, 255> buf = { };
+    array<uint8_t, 6> cdb = { };
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+    cdb[4] = static_cast<uint8_t>(buf.size());
+
+    if (Execute(cdb, buf, static_cast<int>(buf.size()), 1, true)) {
+        initiator_logger.error("Can't execute REQUEST SENSE");
+        return {SenseKey {-1}, Asc {-1}, -1};
+    }
+
+    initiator_logger.trace(formatter.FormatBytes(buf, byte_count));
+
+    if (byte_count < 14) {
+        initiator_logger.warn(
+            "Device did not return standard REQUEST SENSE data, sense data details are not available");
+        return {SenseKey {-1}, Asc {-1}, -1};
+    }
+
+    return {static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f), static_cast<Asc>(buf[12]), buf[13]};
+}
+
+void InitiatorExecutor::ResetBus()
+{
+    bus.SetRST(true);
+    // 50 us should be enough, the specification requires at least 25 us
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
+    nanosleep(&ts, nullptr);
+    bus.Reset();
 }
 
 bool InitiatorExecutor::WaitForFree() const

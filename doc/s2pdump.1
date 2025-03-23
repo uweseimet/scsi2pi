@@ -10,6 +10,7 @@ s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--inquiry/-I\fR] \fID[:LUN]\fR
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--retries/-R\fR \fIRETRIES\fR]
 [\fB\--scsi-scan/-s\fR]
 [\fB\--sasi-scan/-t\fR]
 [\fB\--start-sector/-S\fR \fISTART\fR]
@@ -61,6 +62,9 @@ Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with 
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'warning'.
+.TP
+.BR --retries/-R\fI " " \fIRETRIES
+Set the number of retries when dumping/restoring a disk drive, default is 0.
 .TP
 .BR --scsi-scan/-s\fI
 Scan the bus for SCSI devices and display their properties.

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
@@ -43,10 +43,7 @@ TEST(S2pThreadTest, Init)
 {
     S2pThread service_thread;
 
-    EXPECT_FALSE(service_thread.Init(nullptr, 65536, default_logger()).empty()) << "Illegal port number";
-    EXPECT_FALSE(service_thread.Init(nullptr, 0,default_logger()).empty()) << "Illegal port number";
-    EXPECT_FALSE(service_thread.Init(nullptr, -1, default_logger()).empty()) << "Illegal port number";
-    EXPECT_TRUE(service_thread.Init(nullptr, 9999, default_logger()).empty())
+    EXPECT_TRUE(service_thread.Init(9999, nullptr,default_logger()).empty())
         << "Port 9999 is expected not to be in use for this test";
     service_thread.Stop();
 }
@@ -55,7 +52,7 @@ TEST(S2pThreadTest, IsRunning)
 {
     S2pThread service_thread;
     EXPECT_FALSE(service_thread.IsRunning());
-    EXPECT_TRUE(service_thread.Init(nullptr, 9999, default_logger()).empty())
+    EXPECT_TRUE(service_thread.Init(9999, nullptr, default_logger()).empty())
         << "Port 9999 is expected not to be in use for this test";
     EXPECT_FALSE(service_thread.IsRunning());
 
@@ -80,7 +77,7 @@ TEST(S2pThreadTest, Execute)
     close(fd);
 
     S2pThread service_thread;
-    service_thread.Init([](const CommandContext &context) {
+    service_thread.Init(9999, [](const CommandContext &context) {
         if (context.GetCommand().operation() != PbOperation::NO_OPERATION) {
             throw IoException("error");
         }
@@ -88,7 +85,7 @@ TEST(S2pThreadTest, Execute)
         PbResult result;
         result.set_status(true);
         return context.WriteResult(result);
-    }, 9999, default_logger());
+    }, default_logger());
 
     service_thread.Start();
 

@@ -21,5 +21,5 @@ TEST(BusTest, GetPhaseName)
     EXPECT_EQ("STATUS", Bus::GetPhaseName(BusPhase::STATUS));
     EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(BusPhase::MSG_IN));
     EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(BusPhase::MSG_OUT));
-    EXPECT_EQ("???", Bus::GetPhaseName(BusPhase::RESERVED));
+    EXPECT_EQ("????", Bus::GetPhaseName(BusPhase::RESERVED));
 }

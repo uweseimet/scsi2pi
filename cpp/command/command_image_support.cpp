@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,10 +12,10 @@
 #ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
 #endif
-#include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 
+using namespace s2p_interface_util;
 using namespace s2p_util;
-using namespace protobuf_util;
 
 CommandImageSupport::CommandImageSupport()
 {
@@ -55,7 +55,7 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
+string CommandImageSupport::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
         return "Missing default folder name";
@@ -82,8 +82,6 @@ string CommandImageSupport::SetDefaultFolder(string_view f, logger &logger)
 
     default_folder = folder.string();
 
-    logger.info("Default image folder set to '{}'", default_folder);
-
     return "";
 }
 
@@ -95,7 +93,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     }
 
     if (!CheckDepth(filename)) {
-        return context.ReturnErrorStatus(("Invalid folder hierarchy depth '" + filename + "'"));
+        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + filename + "'");
     }
 
     const string &full_filename = GetFullName(filename);

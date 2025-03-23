@@ -18,22 +18,24 @@
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
+#include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #ifdef BUILD_SCHS
 #include "devices/host_services.h"
 #endif
-#include "protobuf/protobuf_util.h"
+#include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
+using namespace s2p_interface_util;
+using namespace s2p_parser;
 using namespace s2p_util;
-using namespace protobuf_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = BusFactory::Instance().CreateBus(true, in_process, APP_NAME, log_signals);
+    bus = bus_factory::CreateBus(true, in_process, APP_NAME, log_signals);
     if (!bus) {
         return false;
     }
@@ -79,7 +81,7 @@ void S2p::ReadAccessToken(const path &filename)
     }
 
     ifstream token_file(filename);
-    if (token_file.fail()) {
+    if (!token_file) {
         throw ParserException("Can't open access token file '" + filename.string() + "'");
     }
 
@@ -126,15 +128,13 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    S2pParser parser;
-
-    parser.Banner(false);
+    Banner(false);
 
     bool ignore_conf = false;
 
     property_map properties;
     try {
-        properties = parser.ParseArguments(args, ignore_conf);
+        properties = ParseArguments(args, ignore_conf);
     }
     catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
@@ -174,9 +174,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         ReadAccessToken(path(token_file));
     }
 
-    if (const string &error = service_thread.Init([this](CommandContext &context) {
+    if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
-    }, port, s2p_logger); !error.empty()) {
+    }, s2p_logger); !error.empty()) {
         cerr << "Error: " << error << '\n';
         CleanUp();
         return EXIT_FAILURE;
@@ -192,7 +192,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
-        if (!key.starts_with("device.")) {
+        if (!key.starts_with(PropertyHandler::DEVICE)) {
             cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
                 << PropertyHandler::CONFIGURATION << '\n';
             CleanUp();
@@ -202,8 +202,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     // Display and log the device list
     PbServerInfo server_info;
-    CommandResponse response;
-    response.GetDevices(controller_factory.GetAllDevices(), server_info);
+    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
     const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
         server_info.devices_info().devices().cend() };
     const string device_list = ListDevices(devices);
@@ -255,25 +254,28 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
         LogProperties();
 
         if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::Instance().SetDefaultFolder(image_folder, *s2p_logger); !error.empty()) {
+            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
                 throw ParserException(error);
+            }
+            else {
+                s2p_logger->info("Default image folder set to '{}'", image_folder);
             }
         }
 
         if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
-            if (const int depth = ParseAsUnsignedInt(scan_depth); depth == -1) {
+            if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
                 throw ParserException("Invalid image file scan depth: " + scan_depth);
             }
             else {
-                CommandImageSupport::Instance().SetDepth(depth);
+                CommandImageSupport::GetInstance().SetDepth(depth);
             }
         }
 
         if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
             if (!controller_factory.SetScriptFile(script_file)) {
-                throw ParserException("Can't create s2pexec script file '" + script_file + "': " + strerror(errno));
+                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
             }
-            s2p_logger->info("Generating s2pexec script file '" + script_file + "'");
+            s2p_logger->info("Generating script file '" + script_file + "'");
         }
 
         const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
@@ -320,7 +322,7 @@ string S2p::MapExtensions() const
         }
 
         for (const string &extension : Split(value, ',')) {
-            if (!DeviceFactory::Instance().AddExtensionMapping(extension, type)) {
+            if (!DeviceFactory::GetInstance().AddExtensionMapping(extension, type)) {
                 return "Duplicate extension mapping for extension '" + extension + "'";
             }
         }
@@ -347,11 +349,8 @@ void S2p::CreateDevices()
     int id = -1;
     int lun = -1;
     bool is_active = false;
-    for (const property_map &properties = property_handler.GetProperties(); const auto& [key, value] : properties) {
-        if (!key.starts_with("device.")) {
-            continue;
-        }
-
+    for (const property_map &properties = property_handler.GetProperties(PropertyHandler::DEVICE);
+        const auto& [key, value] : properties) {
         const auto &key_components = Split(key, '.', 3);
         if (key_components.size() < 3) {
             throw ParserException(fmt::format("Invalid device definition '{}'", key));
@@ -412,7 +411,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
 {
-    if (const auto &it = properties.find("device." + id_and_lun + ".active"); it != properties.end()) {
+    if (const auto &it = properties.find(PropertyHandler::DEVICE + id_and_lun + ".active"); it != properties.end()) {
         const string &active = it->second;
         if (active != "true" && active != "false") {
             throw ParserException(fmt::format("Invalid boolean: '{}'", active));
@@ -432,8 +431,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         device.set_type(ParseDeviceType(value));
     }
     else if (key == PropertyHandler::SCSI_LEVEL) {
-        if (const int level = ParseAsUnsignedInt(value); level == -1 || !level
-            || level >= static_cast<int>(ScsiLevel::LAST)) {
+        if (const int level = ParseAsUnsignedInt(value); level <= 0 || level >= static_cast<int>(ScsiLevel::LAST)) {
             throw ParserException(fmt::format("Invalid SCSI level: '{}'", value));
         }
         else {
@@ -441,7 +439,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         }
     }
     else if (key == PropertyHandler::BLOCK_SIZE) {
-        if (const int block_size = ParseAsUnsignedInt(value); block_size == -1) {
+        if (const int block_size = ParseAsUnsignedInt(value); block_size < 0) {
             throw ParserException(fmt::format("Invalid block size: '{}'", value));
         }
         else {

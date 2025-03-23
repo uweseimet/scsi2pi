@@ -2,17 +2,19 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <memory>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
-#include "buses/bus.h"
+#include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
+#include "shared/scsi.h"
+
+class Bus;
 
 using namespace std;
 using namespace spdlog;
@@ -33,22 +35,15 @@ public:
 
     void SetTarget(int, int, bool);
 
-    int Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool);
     int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
+
+    tuple<SenseKey, Asc, int> GetSenseData();
+
+    void ResetBus();
 
     int GetByteCount() const
     {
         return byte_count;
-    }
-
-    logger& GetLogger() const
-    {
-        return initiator_logger;
-    }
-
-    string FormatBytes(span<const uint8_t> bytes, int count) const
-    {
-        return formatter.FormatBytes(bytes, count);
     }
 
     void SetLimit(int limit)

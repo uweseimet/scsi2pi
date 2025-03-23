@@ -9,6 +9,8 @@
 //---------------------------------------------------------------------------
 
 #include "scsi_cd.h"
+#include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
 
@@ -16,6 +18,7 @@ ScsiCd::ScsiCd(int lun, bool scsi1) : Disk(SCCD, lun, true, false, { 512, 2048 }
 {
     Disk::SetProductData( { "", "SCSI CD-ROM", "" }, true);
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
+    SetProtectable(false);
     SetReadOnly(true);
     SetRemovable(true);
 }
@@ -43,9 +46,6 @@ void ScsiCd::Open()
     SetBlockCount(GetFileSize() / GetBlockSize());
 
     ValidateFile();
-
-    SetReadOnly(true);
-    SetProtectable(false);
 
     CreateDataTrack();
 
@@ -128,7 +128,7 @@ void ScsiCd::SetUpModePages(map<int, vector<byte>> &pages, int page, bool change
     }
 }
 
-void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable) const
+void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changeable)
 {
     vector<byte> buf(8);
 

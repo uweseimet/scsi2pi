@@ -30,13 +30,6 @@ public:
         return device + " (" + GetPaddedName() + ")";
     }
 
-    const string& GetDevice() const
-    {
-        return device;
-    }
-
-    string SetProductData(const ProductData&, bool) override;
-
     void Dispatch(ScsiCommand) override;
 
     vector<uint8_t> InquiryInternal() const override;
@@ -55,7 +48,7 @@ private:
     string GetDeviceData();
     void GetBlockSize();
 
-    CommandMetaData command_meta_data = CommandMetaData::Instance();
+    const CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
 
     string device;
 

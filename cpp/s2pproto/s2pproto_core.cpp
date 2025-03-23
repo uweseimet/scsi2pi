@@ -16,6 +16,7 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
+#include "generated/s2p_interface.pb.h"
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
@@ -66,7 +67,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process)
 {
-    bus = BusFactory::Instance().CreateBus(false, in_process, APP_NAME, false);
+    bus = bus_factory::CreateBus(false, in_process, APP_NAME, false);
     if (!bus) {
         return false;
     }
@@ -180,7 +181,8 @@ bool S2pProto::ParseArguments(span<char*> args)
         throw ParserException("Invalid log level: '" + log_level + "'");
     }
 
-    if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+    initiator_id = ParseAsUnsignedInt(initiator);
+    if (initiator_id < 0 || initiator_id > 7) {
         throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
     }
 
@@ -233,7 +235,7 @@ int S2pProto::Run(span<char*> args, bool in_process)
     }
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No board hardware support\n";
+        cerr << "Error: No RaSCSI/PiSCSI board found\n";
         return EXIT_FAILURE;
     }
 
@@ -256,13 +258,13 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     if (output_filename.empty()) {
         string json;
-        (void)MessageToJsonString(result, &json);
+        static_cast<void>(MessageToJsonString(result, &json));
         cout << json << '\n';
         return EXIT_SUCCESS;
     }
 
     ofstream out(output_filename, output_format == ProtobufFormat::BINARY ? ios::binary : ios::out);
-    if (out.fail()) {
+    if (!out) {
         cerr << "Error: Can't open protobuf data output file '" << output_filename << "'\n";
         return EXIT_FAILURE;
     }
@@ -277,7 +279,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     case ProtobufFormat::JSON: {
         string json;
-        (void)MessageToJsonString(result, &json);
+        static_cast<void>(MessageToJsonString(result, &json));
         out << json << '\n';
         break;
     }

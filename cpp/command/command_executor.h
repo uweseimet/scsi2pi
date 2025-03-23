@@ -8,16 +8,27 @@
 
 #pragma once
 
+#include <memory>
 #include <mutex>
+#include <string>
+#include <unordered_set>
 #include <spdlog/spdlog.h>
-#include "controllers/controller_factory.h"
-#ifdef BUILD_STORAGE_DEVICE
-#include "devices/storage_device.h"
-#endif
 
-using namespace spdlog;
-
+class Bus;
 class CommandContext;
+class ControllerFactory;
+class Device;
+class PrimaryDevice;
+class StorageDevice;
+namespace s2p_interface
+{
+class PbCommand;
+class PbDeviceDefinition;
+}
+
+using namespace std;
+using namespace spdlog;
+using namespace s2p_interface;
 
 class CommandExecutor
 {
@@ -46,16 +57,16 @@ public:
     bool Protect(PrimaryDevice&) const;
     bool Unprotect(PrimaryDevice&) const;
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
-    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>&, bool) const;
+    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
     void DetachAll() const;
     string SetReservedIds(const string&);
-    #ifdef BUILD_STORAGE_DEVICE
+#ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
 #endif
     bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
-    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&, const string&) const;
+    shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
 
     mutex& GetExecutionLocker()
@@ -69,7 +80,7 @@ public:
 
 protected:
 
-    bool SetScsiLevel(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
+    bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
 
 private:
 
@@ -89,9 +100,4 @@ private:
     mutex execution_locker;
 
     unordered_set<int> reserved_ids;
-
-    const inline static unordered_set<PbDeviceType> UNIQUE_DEVICE_TYPES = {
-        SCDP,
-        SCHS
-    };
 };

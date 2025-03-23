@@ -20,7 +20,7 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     MockBus bus;
     ControllerFactory controller_factory;
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
+    const DeviceFactory &device_factory = DeviceFactory::GetInstance();
 
     auto device = device_factory.CreateDevice(SCHS, -1, "");
     EXPECT_FALSE(controller_factory.AttachToController(bus, ID1, device));
@@ -60,7 +60,7 @@ TEST(ControllerFactoryTest, AttachToController)
 
     MockBus bus;
     ControllerFactory controller_factory;
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
+    const DeviceFactory &device_factory = DeviceFactory::GetInstance();
 
     const auto device = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_FALSE(controller_factory.AttachToController(bus, ID, device)) << "LUN 0 is missing";
@@ -107,7 +107,7 @@ TEST(ControllerFactoryTest, SetLogLevel)
 
     MockBus bus;
     ControllerFactory controller_factory;
-    const DeviceFactory &device_factory = DeviceFactory::Instance();
+    const DeviceFactory &device_factory = DeviceFactory::GetInstance();
 
     const auto device1 = device_factory.CreateDevice(SCHS, LUN1, "");
     controller_factory.AttachToController(bus, ID, device1);

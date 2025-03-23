@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,15 +22,10 @@ public:
     {
     }
 
-    using SgResult = struct {
-        int status;
-        int length;
-    };
-
     string Init(const string&);
     void CleanUp();
 
-    SgResult SendCommand(span<const uint8_t>, span<uint8_t>, int, int);
+    int SendCommand(span<const uint8_t>, span<uint8_t>, int, int);
 
     int GetByteCount() const
     {
@@ -39,13 +34,17 @@ public:
 
 private:
 
-    SgResult SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
+    int SendCommandInternal(span<uint8_t>, span<uint8_t>, int, int, bool);
+
+    bool EvaluateStatus(int, span<uint8_t>, span<uint8_t>);
 
     void GetBlockSize();
 
+    string device;
+
     logger &sg_logger;
 
-    CommandMetaData command_meta_data = CommandMetaData::Instance();
+    CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
 
     int fd = -1;
 

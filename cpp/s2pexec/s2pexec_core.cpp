@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
+#include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
@@ -254,7 +255,8 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (!initiator.empty()) {
-        if (initiator_id = ParseAsUnsignedInt(initiator); initiator_id == -1 || initiator_id > 7) {
+        initiator_id = ParseAsUnsignedInt(initiator);
+        if (initiator_id < 0 || initiator_id > 7) {
             throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
         }
     }
@@ -265,7 +267,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
         }
     }
 
-    if (executor && executor->IsSg() != use_sg) {
+    if (executor) {
         executor->CleanUp();
     }
 
@@ -332,7 +334,8 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
 
     int buffer_size = DEFAULT_BUFFER_SIZE;
     if (!buf.empty()) {
-        if (buffer_size = ParseAsUnsignedInt(buf); buffer_size <= 0) {
+        buffer_size = ParseAsUnsignedInt(buf);
+        if (buffer_size <= 0) {
             throw ParserException("Invalid receive buffer size: '" + buf + "'");
         }
     }
@@ -372,7 +375,7 @@ void S2pExec::RunInteractive(bool in_process)
         vector<char*> interactive_args;
         interactive_args.emplace_back(strdup(APP_NAME.c_str()));
         interactive_args.emplace_back(strdup(args[0].c_str()));
-        for (size_t i = 1; i < args.size(); i++) {
+        for (size_t i = 1; i < args.size(); ++i) {
             if (!args[i].empty()) {
                 interactive_args.emplace_back(strdup(args[i].c_str()));
             }
@@ -451,7 +454,7 @@ int S2pExec::Run()
             }
         }
     }
-    catch (const execution_exception &e) {
+    catch (const ExecutionException &e) {
         cerr << "Error: " << e.what() << '\n';
         result = -1;
     }
@@ -468,7 +471,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
     }
     catch (const out_of_range&)
     {
-        throw execution_exception("Invalid CDB input format: '" + command + "'");
+        throw ExecutionException("Invalid CDB input format: '" + command + "'");
     }
 
     vector<uint8_t> cdb;
@@ -476,12 +479,12 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
 
     if (!data.empty()) {
         if (const string &error = ConvertData(data); !error.empty()) {
-            throw execution_exception(error);
+            throw ExecutionException(error);
         }
     }
     else if (!binary_input_filename.empty() || !hex_input_filename.empty()) {
         if (const string &error = ReadData(); !error.empty()) {
-            throw execution_exception(error);
+            throw ExecutionException(error);
         }
     }
 
@@ -492,11 +495,11 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
                 return executor->GetSenseData();
             }
 
-            throw execution_exception(GetStatusString(status_code));
+            throw ExecutionException(GetStatusString(status_code));
         }
         else {
-            throw execution_exception(fmt::format("Can't execute command {0} (${1:2x})",
-                CommandMetaData::Instance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
+            throw ExecutionException(fmt::format("Can't execute command {0} (${1:2x})",
+                CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
         }
     }
 
@@ -511,7 +514,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
         if (const int count = executor->GetByteCount(); count) {
             s2pexec_logger->debug("Received {} data byte(s)", count);
             if (const string &error = WriteData(span<const uint8_t>(buffer.begin(), buffer.begin() + count)); !error.empty()) {
-                throw execution_exception(error);
+                throw ExecutionException(error);
             }
         }
 
@@ -529,7 +532,7 @@ string S2pExec::ReadData()
     const bool text = binary_input_filename.empty();
 
     ifstream in(filename, text ? ios::in : ios::in | ios::binary);
-    if (in.fail()) {
+    if (!in) {
         return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
     }
 
@@ -563,7 +566,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
     }
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
-        if (out.fail()) {
+        if (!out) {
             return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
         }
 

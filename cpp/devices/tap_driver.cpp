@@ -64,7 +64,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
     ifreq ifr = { };
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    if (const int ret = ioctl(tap_fd, TUNSETIFF, (void*)&ifr); ret == -1) {
+    if (const int ret = ioctl(tap_fd, TUNSETIFF, static_cast<void*>(&ifr)); ret == -1) {
         close(tap_fd);
         return fmt::format("Can't ioctl TUNSETIFF: {}", strerror(errno));
     }
@@ -227,7 +227,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
         }
 
         // long long is required for compatibility with 32 bit platforms
-        const auto mask = (long long)(pow(2, 32) - (1 << (32 - m)));
+        const auto mask = static_cast<long long>(pow(2, 32) - (1 << (32 - m)));
         netmask = to_string((mask >> 24) & 0xff) + '.' + to_string((mask >> 16) & 0xff) + '.' +
             to_string((mask >> 8) & 0xff) + '.' + to_string(mask & 0xff);
     }
@@ -323,7 +323,7 @@ void TapDriver::Flush(logger &logger) const
 {
     while (HasPendingPackets()) {
         array<uint8_t, ETH_FRAME_LEN> m_garbage_buffer;
-        (void)Receive(m_garbage_buffer, logger);
+        static_cast<void>(Receive(m_garbage_buffer, logger));
     }
 }
 
