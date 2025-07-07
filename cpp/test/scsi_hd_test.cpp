@@ -78,7 +78,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
 
 TEST(ScsiHdTest, SCRM_DeviceDefaults)
 {
-    TestShared::TestRemovableDrive(SCRM, "test.hdr", "SCSI HD (REM.)");
+    TestShared::TestRemovableDrive(SCRM, "test.hdr", "SCSI HD (SCRM)");
 }
 
 TEST(ScsiHdTest, Inquiry)
