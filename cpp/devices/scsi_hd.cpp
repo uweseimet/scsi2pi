@@ -20,7 +20,7 @@ ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32
     if (apple) {
         Disk::SetProductData( { "QUANTUM", "FIREBALL", "" }, true);
     } else if (removable) {
-        Disk::SetProductData( { "", "SCSI HD (REM.)", "" }, true);
+        Disk::SetProductData( { "", "SCSI HD (SCRM)", "" }, true);
     }
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetProtectable(true);
