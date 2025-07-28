@@ -325,7 +325,7 @@ void Controller::DataOut()
     ResetOffset();
 }
 
-void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status)
+void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
 {
     bus.Acquire();
     if (bus.GetRST() || IsStatus() || IsMsgIn()) {
@@ -345,7 +345,7 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status)
         GetDeviceForLun(lun)->SetStatus(sense_key, asc);
     }
 
-    SetStatus(status);
+    SetStatus(status_code);
 
     Status();
 }
@@ -423,26 +423,26 @@ void Controller::Receive()
     assert(!bus.GetREQ());
     assert(!bus.GetIO());
 
-    if (const auto length = GetCurrentLength(); length) {
+    if (const auto curr_length = GetCurrentLength(); curr_length) {
         if (!IsMsgOut()) {
-            LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", length, GetOffset()));
+            LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", curr_length, GetOffset()));
         }
 
-        if (const int l = bus.ReceiveHandShake(GetBuffer().data() + GetOffset(), length); l != length) {
-            LogWarn(fmt::format("Received {0} byte(s), {1} required", l, length));
+        if (const int l = bus.ReceiveHandShake(GetBuffer().data() + GetOffset(), curr_length); l != curr_length) {
+            LogWarn(fmt::format("Received {0} byte(s), {1} required", l, curr_length));
             bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
 
         if (GetLogger().level() == level::trace && IsDataOut()) {
-            const string &bytes = FormatBytes(GetBuffer(), length);
+            const string &bytes = FormatBytes(GetBuffer(), curr_length);
             LogTrace(
-                fmt::format("Received {0} byte(s) in DATA OUT phase{1}{2}", length, bytes.empty() ? "" : ":\n", bytes));
+                fmt::format("Received {0} byte(s) in DATA OUT phase{1}{2}", curr_length, bytes.empty() ? "" : ":\n", bytes));
         }
 
         if (IsDataOut() && script_generator) {
-            script_generator->AddData(span(GetBuffer().data() + GetOffset(), length));
+            script_generator->AddData(span(GetBuffer().data() + GetOffset(), curr_length));
         }
 
         UpdateOffsetAndLength();

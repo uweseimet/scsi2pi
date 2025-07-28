@@ -125,7 +125,7 @@ public:
 
 protected:
 
-    Device(PbDeviceType type, int lun) : type(type), lun(lun)
+    Device(PbDeviceType t, int l) : type(t), lun(l)
     {
     }
 

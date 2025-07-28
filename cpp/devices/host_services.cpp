@@ -97,7 +97,7 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace s2p_interface_util;
 
-HostServices::HostServices(int lun) : PrimaryDevice(SCHS, lun)
+HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
     PrimaryDevice::SetProductData( { "", "Host Services", "" }, true);
     SetScsiLevel(ScsiLevel::SPC_3);

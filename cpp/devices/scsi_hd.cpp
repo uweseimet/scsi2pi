@@ -12,19 +12,19 @@
 
 using namespace memory_util;
 
-ScsiHd::ScsiHd(int lun, bool removable, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
-: Disk(removable ? SCRM : SCHD, lun, true, true, sector_sizes)
+ScsiHd::ScsiHd(int l, bool r, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
+: Disk(r ? SCRM : SCHD, l, true, true, sector_sizes)
 {
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
     if (apple) {
         Disk::SetProductData( { "QUANTUM", "FIREBALL", "" }, true);
-    } else if (removable) {
+    } else if (r) {
         Disk::SetProductData( { "", "SCSI HD (SCRM)", "" }, true);
     }
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetProtectable(true);
-    SetRemovable(removable);
+    SetRemovable(r);
 }
 
 void ScsiHd::FinalizeSetup()

@@ -35,8 +35,8 @@ class CommandExecutor
 
 public:
 
-    CommandExecutor(Bus &bus, ControllerFactory &factory, logger &logger)
-    : bus(bus), controller_factory(factory), s2p_logger(logger)
+    CommandExecutor(Bus &b, ControllerFactory &factory, logger &logger)
+    : bus(b), controller_factory(factory), s2p_logger(logger)
     {
     }
     ~CommandExecutor() = default;

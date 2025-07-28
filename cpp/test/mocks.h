@@ -198,7 +198,7 @@ public:
     MockAbstractController() : AbstractController(0, formatter)
     {
     }
-    explicit MockAbstractController(int target_id) : AbstractController(target_id, formatter)
+    explicit MockAbstractController(int t) : AbstractController(t, formatter)
     {
         SetCurrentLength(512);
     }
@@ -241,10 +241,10 @@ public:
     MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> bus, int target_id) : Controller(*bus, target_id, nullptr, formatter)
+    MockController(shared_ptr<Bus> b, int t) : Controller(*b, t, nullptr, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> bus) : Controller(*bus, 0, nullptr, formatter)
+    explicit MockController(shared_ptr<Bus> b) : Controller(*b, 0, nullptr, formatter)
     {
     }
     ~MockController() override = default;
@@ -262,7 +262,7 @@ public:
 
     MOCK_METHOD(int, GetId, (), (const, override));
 
-    explicit MockDevice(int lun) : Device(UNDEFINED, lun)
+    explicit MockDevice(int l) : Device(UNDEFINED, l)
     {
     }
     ~MockDevice() override = default;
@@ -290,7 +290,7 @@ public:
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
 
-    explicit MockPrimaryDevice(int lun) : PrimaryDevice(UNDEFINED, lun)
+    explicit MockPrimaryDevice(int l) : PrimaryDevice(UNDEFINED, l)
     {
     }
     ~MockPrimaryDevice() override = default;
@@ -398,7 +398,7 @@ class MockSasiHd : public SasiHd
 
 public:
 
-    explicit MockSasiHd(int lun) : SasiHd(lun)
+    explicit MockSasiHd(int l) : SasiHd(l)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
@@ -424,7 +424,7 @@ class MockScsiHd : public ScsiHd
 
 public:
 
-    MockScsiHd(int lun, bool removable) : ScsiHd(lun, removable, false, false)
+    MockScsiHd(int l, bool r) : ScsiHd(l, r, false, false)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
@@ -444,7 +444,7 @@ class MockScsiCd : public ScsiCd
 
 public:
 
-    explicit MockScsiCd(int lun) : ScsiCd(lun, false)
+    explicit MockScsiCd(int l) : ScsiCd(l, false)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
@@ -459,7 +459,7 @@ class MockOpticalMemory : public OpticalMemory
 
 public:
 
-    explicit MockOpticalMemory(int lun) : OpticalMemory(lun)
+    explicit MockOpticalMemory(int l) : OpticalMemory(l)
     {
         SetCachingMode(PbCachingMode::PISCSI);
     }
@@ -501,8 +501,7 @@ public:
     MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));
     MOCK_METHOD(bool, Stop, (shared_ptr<PrimaryDevice>, bool), (const));
 
-    MockCommandExecutor(Bus &bus, ControllerFactory &controller_factory) : CommandExecutor(bus,
-        controller_factory, *default_logger())
+    MockCommandExecutor(Bus &b, ControllerFactory &f) : CommandExecutor(b, f, *default_logger())
     {
     }
 };
