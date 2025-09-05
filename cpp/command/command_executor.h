@@ -44,7 +44,7 @@ public:
     // TODO At least some of these methods and of the protected methods should be private.
     // Currently they are called by the unit tests.
 
-    auto GetReservedIds() const
+    const auto& GetReservedIds() const
     {
         return reserved_ids;
     }

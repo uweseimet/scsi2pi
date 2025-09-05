@@ -355,9 +355,9 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     storage_device->SetProtected(pb_device.protected_());
 
     SetUpDeviceProperties(storage_device);
+#endif
 
     return true;
-#endif
 }
 #pragma GCC diagnostic pop
 
