@@ -22,7 +22,6 @@ jobs:
       SONAR_ORGANIZATION: "uweseimet-org"
       SCAN_HOST: ${{ secrets.SCAN_HOST }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_SCANNER_VERSION: 7.2.0.5079
       BUILD_WRAPPER_OUT_DIR: "$HOME/.build_wrapper_out"
       APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
@@ -70,4 +69,5 @@ jobs:
             --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.exclusions="obj/**,lib/**,bin/**,generated/**" \
             --define sonar.cpd.exclusions="s2pdump/sg_executor.h" \
-            --define sonar.test.inclusions=test/**
+            --define sonar.test.inclusions=test/** \
+            --define sonar.token=${{ secrets.SONAR_TOKEN }}
