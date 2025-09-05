@@ -28,7 +28,8 @@ public:
     AbstractController(int id, const S2pFormatter&);
     ~AbstractController() override = default;
 
-    virtual void Error(SenseKey, Asc, StatusCode) = 0;
+    virtual void Error(SenseKey, Asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION,
+        StatusCode = StatusCode::CHECK_CONDITION) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
