@@ -616,7 +616,7 @@ RpiBus::PiType RpiBus::CheckForPi()
         return RpiBus::PiType::UNKNOWN;
     }
 
-    const int type = model.find("Zero") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+    const int type = model.find("Zero") != string::npos || model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
         return RpiBus::PiType::UNKNOWN;
