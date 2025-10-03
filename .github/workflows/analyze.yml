@@ -20,7 +20,7 @@ jobs:
       SONAR_SERVER_URL: "https://sonarcloud.io"
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
-      SONAR_SCANNER_VERSION: 7.2.0.5079
+      SONAR_SCANNER_VERSION: 7.3.0.5189
       BUILD_WRAPPER_OUT_DIR: "$HOME/.build_wrapper_out"
       APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
