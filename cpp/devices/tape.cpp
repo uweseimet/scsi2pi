@@ -25,7 +25,7 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Tape::Tape(int lun) : StorageDevice(SCTP, lun, true, false, { 512, 1024, 2048, 4096, 8192 })
+Tape::Tape(int l) : StorageDevice(SCTP, l, true, false, { 512, 1024, 2048, 4096, 8192 })
 {
     StorageDevice::SetProductData( { "", "SCSI TAPE", "" }, true);
     SetScsiLevel(ScsiLevel::SCSI_2);
@@ -640,7 +640,7 @@ void Tape::FormatMedium()
     StatusPhase();
 }
 
-void Tape::WriteMetaData(Tape::ObjectType type, uint32_t size)
+void Tape::WriteMetaData(Tape::ObjectType object_type, uint32_t size)
 {
     if (tar_file) {
         return;
@@ -650,7 +650,7 @@ void Tape::WriteMetaData(Tape::ObjectType type, uint32_t size)
 
     file.seekp(tape_position);
 
-    if (type == ObjectType::BLOCK || type == ObjectType::FILEMARK) {
+    if (object_type == ObjectType::BLOCK || object_type == ObjectType::FILEMARK) {
         tape_position += WriteSimhMetaData(SimhClass::TAPE_MARK_GOOD_DATA_RECORD, size);
     }
 
@@ -735,12 +735,12 @@ void Tape::RaiseEndOfPartition(int32_t info)
     throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::NO_ADDITIONAL_SENSE_INFORMATION);
 }
 
-void Tape::RaiseEndOfData(ObjectType type, int32_t info)
+void Tape::RaiseEndOfData(ObjectType object_type, int32_t info)
 {
     tape_position -= META_DATA_SIZE;
 
     LogTrace(fmt::format("Encountered end-of-data at position {0} while spacing over object type {1}", tape_position,
-        static_cast<int>(type)));
+        static_cast<int>(object_type)));
 
     SetInformation(info);
 

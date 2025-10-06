@@ -109,16 +109,17 @@ private:
     volatile uint32_t *qa7_regs = nullptr;
 
     // Interrupt enabled state
-    uint32_t irpt_enb;
+    uint32_t irpt_enb = 0;
 
     // Interupt control target CPU
-    int tint_core;
+    int tint_core = 0;
 
     // Interupt control
-    uint32_t tint_ctl;
+    uint32_t tint_ctl = 0;
 
     // GIC priority setting
-    uint32_t gicc_pmr_saved;
+    uint32_t gicc_pmr_saved = 0;
+
     // SEL signal event request
     struct gpioevent_request selevreq = { };
 

@@ -369,41 +369,41 @@ int S2pSimh::Add()
     return EXIT_SUCCESS;
 }
 
-void S2pSimh::PrintClass(const SimhMetaData &meta_data) const
+void S2pSimh::PrintClass(const SimhMetaData &meta) const
 {
     cout << "Offset " << old_position << hex << "/$" << old_position << ": Class " << uppercase
-        << static_cast<int>(meta_data.cls) << nouppercase << dec;
+        << static_cast<int>(meta.cls) << nouppercase << dec;
 }
 
-void S2pSimh::PrintValue(const SimhMetaData &meta_data)
+void S2pSimh::PrintValue(const SimhMetaData &meta)
 {
-    cout << " " << meta_data.value << " ($" << hex << meta_data.value << ")\n" << dec;
+    cout << " " << meta.value << " ($" << hex << meta.value << ")\n" << dec;
 }
 
-bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_data)
+bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta)
 {
     cout << ", " << identifier;
 
-    if (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value) {
+    if (meta.cls == SimhClass::BAD_DATA_RECORD && !meta.value) {
         cout << '\n';
         return true;
     }
 
     cout << ", record length";
 
-    PrintValue(meta_data);
+    PrintValue(meta);
 
     if (dump && limit) {
-        vector<uint8_t> record(limit < meta_data.value ? limit : meta_data.value);
+        vector<uint8_t> record(limit < meta.value ? limit : meta.value);
         if (!ReadRecord(record)) {
-            cerr << "Error: Can't read record of " << meta_data.value << " byte(s)\n";
+            cerr << "Error: Can't read record of " << meta.value << " byte(s)\n";
             return false;
         }
 
         cout << formatter.FormatBytes(record, record.size()) << '\n';
     }
 
-    position += Pad(meta_data.value);
+    position += Pad(meta.value);
 
     array<uint8_t, META_DATA_SIZE> data = { };
     simh_file.seekg(position);
@@ -412,10 +412,10 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
         return false;
     }
 
-    if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta_data.value) {
+    if (const uint32_t trailing_length = FromLittleEndian(data).value; trailing_length != meta.value) {
         cerr << "Error: Trailing record length " << trailing_length << " ($" << hex << trailing_length
-            << ") at offset " << dec << position << " does not match leading length " << meta_data.value << hex
-            << " ($" << meta_data.value << ")\n";
+            << ") at offset " << dec << position << " does not match leading length " << meta.value << hex
+            << " ($" << meta.value << ")\n";
         return false;
     }
 
@@ -424,11 +424,11 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta_dat
     return true;
 }
 
-bool S2pSimh::PrintReservedMarker(const simh_util::SimhMetaData &meta_data)
+bool S2pSimh::PrintReservedMarker(const simh_util::SimhMetaData &meta)
 {
     cout << ", reserved marker";
 
-    switch (meta_data.value) {
+    switch (meta.value) {
     case 0x0ffffffe:
         cout << " (erase gap)\n";
         break;
@@ -439,7 +439,7 @@ bool S2pSimh::PrintReservedMarker(const simh_util::SimhMetaData &meta_data)
 
     default:
         cout << ", marker value";
-        PrintValue(meta_data);
+        PrintValue(meta);
         break;
     }
 

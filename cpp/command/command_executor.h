@@ -35,8 +35,8 @@ class CommandExecutor
 
 public:
 
-    CommandExecutor(Bus &bus, ControllerFactory &factory, logger &logger)
-    : bus(bus), controller_factory(factory), s2p_logger(logger)
+    CommandExecutor(Bus &b, ControllerFactory &factory, logger &logger)
+    : bus(b), controller_factory(factory), s2p_logger(logger)
     {
     }
     ~CommandExecutor() = default;
@@ -44,7 +44,7 @@ public:
     // TODO At least some of these methods and of the protected methods should be private.
     // Currently they are called by the unit tests.
 
-    auto GetReservedIds() const
+    const auto& GetReservedIds() const
     {
         return reserved_ids;
     }
