@@ -409,7 +409,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
     const string &identifier = fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
     PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
-    const auto& [product, vendor, revision] = device->GetProductData();
+    const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
