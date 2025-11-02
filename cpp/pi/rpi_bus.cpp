@@ -609,14 +609,25 @@ RpiBus::PiType RpiBus::CheckForPi()
 
     stringstream s;
     s << in.rdbuf();
-    const string &model = s.str();
 
+    return GetPiType(s.str());
+}
+
+RpiBus::PiType RpiBus::GetPiType(const string &model)
+{
     if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
         warn("This platform is not a Raspberry Pi, functionality is limited");
         return RpiBus::PiType::UNKNOWN;
     }
 
-    const int type = model.find("Zero") != string::npos || model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+    int type;
+    if(model.find("Zero 2") != string::npos) {
+        type = static_cast<int>(RpiBus::PiType::PI_3);
+    }
+    else {
+        type = model.find("Zero") != string::npos ||
+        model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+    }
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
         return RpiBus::PiType::UNKNOWN;
