@@ -11,4 +11,4 @@
 const int s2p_major_version = 6;
 const int s2p_minor_version = 0;
 const int s2p_revision = 1;
-const std::string s2p_suffix = "-devel";
+const std::string s2p_suffix = "";
