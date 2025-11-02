@@ -62,6 +62,8 @@ public:
 
     static PiType CheckForPi();
 
+    static PiType GetPiType(const string&);
+
 private:
 
     void InitializeSignals(int);
