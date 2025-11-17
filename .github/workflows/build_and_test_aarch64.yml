@@ -40,7 +40,7 @@ jobs:
     runs-on: [ora, ARM64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch }}
 
@@ -52,5 +52,5 @@ jobs:
       - name: Run unit tests
         run: |
           debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
-          make -C cpp test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
+          make test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
 

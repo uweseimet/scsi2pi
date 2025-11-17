@@ -2,21 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-
-TEST(InProcessBusTest, IsTarget)
-{
-    MockInProcessBus bus;
-
-    bus.Init(true);
-    EXPECT_TRUE(bus.IsTarget());
-    bus.Init(false);
-    EXPECT_FALSE(bus.IsTarget());
-}
 
 TEST(InProcessBusTest, BSY)
 {

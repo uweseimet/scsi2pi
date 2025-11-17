@@ -556,8 +556,8 @@ string S2pExec::ReadData()
 
 string S2pExec::WriteData(span<const uint8_t> data)
 {
-    const string &filename = binary_output_filename.empty() ? hex_output_filename : binary_output_filename;
     const bool text = binary_output_filename.empty();
+    const string &filename = text ? hex_output_filename : binary_output_filename;
 
     string hex = formatter.FormatBytes(data, data.size(), hex_only);
 

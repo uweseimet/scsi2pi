@@ -17,8 +17,7 @@
 #include "base/device.h"
 #include "disk_track.h"
 
-DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(
-    static_cast<int>(sectors))
+DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(sectors)
 {
     while ((1 << shift_count) != size) {
         ++shift_count;
@@ -38,13 +37,13 @@ bool DiskCache::Flush()
         {   return c.disktrk && !c.disktrk->Save(sec_path, cache_miss_write_count);});
 }
 
-shared_ptr<DiskTrack> DiskCache::GetTrack(uint32_t block)
+shared_ptr<DiskTrack> DiskCache::GetTrack(uint64_t sector)
 {
     // Update first
     UpdateSerial();
 
     // Calculate track (fixed to 256 sectors/track)
-    int track = block >> 8;
+    const int64_t track = sector >> 8;
 
     // Get track data
     return AssignTrack(track);
@@ -57,7 +56,7 @@ int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
         return 0;
     }
 
-    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
+    shared_ptr<DiskTrack> disktrk = GetTrack(sector);
     if (!disktrk) {
         return 0;
     }
@@ -73,7 +72,7 @@ int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
         return 0;
     }
 
-    shared_ptr<DiskTrack> disktrk = GetTrack(static_cast<uint32_t>(sector));
+    shared_ptr<DiskTrack> disktrk = GetTrack(sector);
     if (!disktrk) {
         return 0;
     }
@@ -82,7 +81,7 @@ int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
     return disktrk->WriteSector(buf, sector & 0xff);
 }
 
-shared_ptr<DiskTrack> DiskCache::AssignTrack(int track)
+shared_ptr<DiskTrack> DiskCache::AssignTrack(int64_t track)
 {
     // Check if it is already assigned
     for (CacheData &c : cache) {
@@ -119,14 +118,14 @@ shared_ptr<DiskTrack> DiskCache::AssignTrack(int track)
     return nullptr;
 }
 
-bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
+bool DiskCache::Load(int index, int64_t track, shared_ptr<DiskTrack> disktrk)
 {
     assert(index >= 0 && index < static_cast<int>(cache.size()));
     assert(track >= 0);
     assert(!cache[index].disktrk);
 
     // Get the number of sectors on this track
-    int sectors = blocks - (track << 8);
+    int64_t sectors = blocks - (track << 8);
     assert(sectors > 0);
     if (sectors > 0x100) {
         sectors = 0x100;
@@ -136,7 +135,8 @@ bool DiskCache::Load(int index, int track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, shift_count, sectors);
+    // sectors <= 0x100
+    disktrk->Init(track, shift_count, static_cast<int>(sectors));
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {
