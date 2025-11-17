@@ -41,10 +41,10 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 
     ++cache_miss_read_count;
 
-    const int size = sector_count << shift_count;
+    const uint64_t size = sector_count << shift_count;
 
     // Allocate or reallocate the buffer
-    if (!buffer || buffer_size != static_cast<uint32_t>(size)) {
+    if (!buffer || buffer_size != size) {
         free(buffer); // NOSONAR free() must be used here due to posix_memalign
         buffer = nullptr;
 

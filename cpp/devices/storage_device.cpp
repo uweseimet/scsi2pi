@@ -298,9 +298,7 @@ bool StorageDevice::ValidateBlockSize(uint32_t size) const
 
 void StorageDevice::ValidateFile()
 {
-    if (GetFileSize() > 2LL * 1024 * 1024 * 1024 * 1024) {
-        throw IoException("Image files > 2 TiB are not supported");
-    }
+    GetFileSize();
 
     // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {

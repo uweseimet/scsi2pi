@@ -7,7 +7,7 @@
 //
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ private:
 
     uint8_t *buffer = nullptr;
 
-    uint32_t buffer_size = 0;
+    uint64_t buffer_size = 0;
 
     bool is_initialized = false;
 

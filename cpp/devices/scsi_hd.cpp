@@ -36,8 +36,13 @@ void ScsiHd::FinalizeSetup()
         uint64_t capacity = GetBlockCount() * GetBlockSize();
         string unit;
 
+        // 10,000,000 MiB and more
+        if (capacity >= 10'737'418'240'000) {
+            capacity /= 1'099'511'627'776;
+            unit = "T";
+        }
         // 10,000 MiB and more
-        if (capacity >= 10'485'760'000) {
+        else if (capacity >= 10'485'760'000) {
             capacity /= 1'073'741'824;
             unit = "G";
         }
@@ -63,7 +68,7 @@ void ScsiHd::Open()
     if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
         throw IoException("Invalid sector size");
     }
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
+    SetBlockCount(GetFileSize() / GetBlockSize());
 
     FinalizeSetup();
 }
