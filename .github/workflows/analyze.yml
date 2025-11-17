@@ -10,7 +10,7 @@ on:
 
 jobs:
   code_analysis:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     defaults:
       run:
@@ -25,7 +25,7 @@ jobs:
       APT_PACKAGES: protobuf-compiler libspdlog-dev libpcap-dev libgmock-dev
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
