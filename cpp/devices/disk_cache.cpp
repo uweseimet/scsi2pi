@@ -43,7 +43,7 @@ shared_ptr<DiskTrack> DiskCache::GetTrack(uint64_t sector)
     UpdateSerial();
 
     // Calculate track (fixed to 256 sectors/track)
-    int track = sector >> 8;
+    const int64_t track = sector >> 8;
 
     // Get track data
     return AssignTrack(track);
@@ -135,7 +135,8 @@ bool DiskCache::Load(int index, int64_t track, shared_ptr<DiskTrack> disktrk)
         disktrk = make_shared<DiskTrack>();
     }
 
-    disktrk->Init(track, shift_count, sectors);
+    // sectors <= 0x100
+    disktrk->Init(track, shift_count, static_cast<int>(sectors));
 
     // Try loading
     if (!disktrk->Load(sec_path, cache_miss_read_count)) {

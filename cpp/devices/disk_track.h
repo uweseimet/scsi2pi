@@ -33,19 +33,19 @@ private:
 
     friend class DiskCache;
 
-    void Init(int, int, int);
+    void Init(int64_t, int, int);
     bool Load(const string&, uint64_t&);
     bool Save(const string&, uint64_t&);
 
     int ReadSector(data_in_t, int) const;
     int WriteSector(data_out_t, int);
 
-    int GetTrack() const
+    auto GetTrack() const
     {
         return track_number;
     }
 
-    int track_number = 0;
+    int64_t track_number = 0;
 
     // 8 = 256, 9 = 512, 10 = 1024, 11 = 2048, 12 = 4096
     int shift_count = 0;

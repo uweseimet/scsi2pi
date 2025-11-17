@@ -19,7 +19,7 @@ DiskTrack::~DiskTrack()
     free(buffer); // NOSONAR free() must be used here due to posix_memalign
 }
 
-void DiskTrack::Init(int track, int size, int sectors)
+void DiskTrack::Init(int64_t track, int size, int sectors)
 {
     assert(track >= 0);
     assert(sectors > 0 && sectors <= 256);
@@ -66,7 +66,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     }
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = static_cast<off_t>(track_number) << 8;
+    off_t offset = track_number << 8;
     offset <<= shift_count;
 
     in.seekg(offset);
@@ -85,7 +85,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     ++cache_miss_write_count;
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = (off_t)track_number << 8;
+    off_t offset = track_number << 8;
     offset <<= shift_count;
 
     const int size = 1 << shift_count;
