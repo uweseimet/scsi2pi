@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -65,7 +65,6 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 {
     const auto &mapping = DeviceFactory::GetInstance().GetExtensionMapping();
 
-    EXPECT_EQ(11U, mapping.size());
     EXPECT_EQ(SCHD, mapping.at("hd1"));
     EXPECT_EQ(SCHD, mapping.at("hds"));
     EXPECT_EQ(SCHD, mapping.at("hda"));

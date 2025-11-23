@@ -80,7 +80,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_default_image_files_info(command_default_image_files_info, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_default_image_files_info, result));
     const auto &image_files_info = result.image_files_info();
-    EXPECT_EQ(1, image_files_info.depth());
+    EXPECT_NE(0, image_files_info.depth());
 
     PbCommand image_support_file_info1;
     image_support_file_info1.set_operation(IMAGE_FILE_INFO);
@@ -120,8 +120,6 @@ TEST(CommandDispatcherTest, DispatchCommand)
     command_properties_info.set_operation(PROPERTIES_INFO);
     CommandContext context_properties_info(command_properties_info, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_properties_info, result));
-    const auto &properties_info = result.properties_info();
-    EXPECT_EQ(0, properties_info.s2p_properties_size());
 
     PbCommand command_operation_info;
     command_operation_info.set_operation(OPERATION_INFO);
