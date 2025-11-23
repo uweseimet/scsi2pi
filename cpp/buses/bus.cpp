@@ -133,7 +133,7 @@ int Bus::TargetReceiveHandShake(uint8_t *buf, int count)
 
         WaitBusSettle();
 
-        *buf = GetDAT();
+        buf[bytes_received] = GetDAT();
 
         SetREQ(false);
 
@@ -141,8 +141,6 @@ int Bus::TargetReceiveHandShake(uint8_t *buf, int count)
         if (!ack || !WaitHandshakeSignal(PIN_ACK, false)) {
             break;
         }
-
-        ++buf;
     }
 
     EnableIRQ();
@@ -165,7 +163,7 @@ int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count)
 
         WaitBusSettle();
 
-        *buf = GetDAT();
+        buf[bytes_received] = GetDAT();
 
         SetACK(true);
 
@@ -176,8 +174,6 @@ int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count)
         if (!req || !IsPhase(phase)) {
             break;
         }
-
-        ++buf;
     }
 
     EnableIRQ();
@@ -204,7 +200,7 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
         }
 #endif
 
-        SetDAT(*buf);
+        SetDAT(buf[bytes_sent]);
 
         if (!WaitHandshakeSignal(PIN_ACK, false)) {
             return ReturnHandshakeTimeout();
@@ -219,8 +215,6 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
         if (!ack) {
             break;
         }
-
-        ++buf;
     }
 
     WaitHandshakeSignal(PIN_ACK, false);
@@ -230,7 +224,7 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
     return bytes_sent;
 }
 
-// For MSG OUT, DATA OUT and COMMAND
+// For MESSAGE OUT, DATA OUT and COMMAND
 int Bus::InitiatorSendHandShake(const uint8_t *buf, int count)
 {
     DisableIRQ();
@@ -239,7 +233,7 @@ int Bus::InitiatorSendHandShake(const uint8_t *buf, int count)
 
     int bytes_sent;
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
-        SetDAT(*buf);
+        SetDAT(buf[bytes_sent]);
 
         if (!WaitHandshakeSignal(PIN_REQ, true)) {
             break;
@@ -263,8 +257,6 @@ int Bus::InitiatorSendHandShake(const uint8_t *buf, int count)
         if (!req || !IsPhase(phase)) {
             break;
         }
-
-        ++buf;
     }
 
     EnableIRQ();

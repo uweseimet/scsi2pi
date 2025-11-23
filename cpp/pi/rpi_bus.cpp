@@ -279,7 +279,7 @@ bool RpiBus::GetIO()
 {
     const bool state = GetSignal(PIN_IO);
 
-    if (!IsTarget() && io_state != state ? OUT : IN) {
+    if (!IsTarget()) {
         SetDir(!state);
     }
 
@@ -303,8 +303,6 @@ void RpiBus::SetDir(bool out)
     for (const int pin : DATA_PINS) {
         SetMode(pin, out ? OUT : IN);
     }
-
-    io_state = out ? OUT : IN;
 }
 
 inline uint8_t RpiBus::GetDAT()
@@ -582,10 +580,8 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read date byte from bus
 inline uint32_t RpiBus::Acquire()
 {
-    signals = *level;
-
     // Invert because of negative logic (internal processing uses positive logic)
-    signals = ~signals;
+    signals = ~(*level);
 
     return signals;
 }

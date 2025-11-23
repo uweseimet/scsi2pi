@@ -147,9 +147,6 @@ private:
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
 
-    // Initialize with neither IN nor OUT
-    int io_state = -1;
-
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
 
