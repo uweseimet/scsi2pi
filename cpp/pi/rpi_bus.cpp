@@ -123,7 +123,7 @@ bool RpiBus::Init(bool target)
     SetSignalDriveStrength(7);
 
     // Set pull up/pull down
-    InitializeSignals(GPIO_PULLNONE);
+    InitializeSignals();
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
@@ -193,7 +193,7 @@ void RpiBus::CleanUp()
     PinConfig(PIN_IND, GPIO_INPUT);
     PinConfig(PIN_DTD, GPIO_INPUT);
 
-    InitializeSignals(GPIO_PULLNONE);
+    InitializeSignals();
 
     // Set drive strength back to 8mA
     SetSignalDriveStrength(3);
@@ -211,11 +211,6 @@ void RpiBus::Reset()
 
     // Set target signal to input for all modes
     SetControl(PIN_TAD, TAD_IN);
-    SetModeIn(PIN_BSY);
-    SetModeIn(PIN_MSG);
-    SetModeIn(PIN_CD);
-    SetModeIn(PIN_REQ);
-    SetModeIn(PIN_IO);
 
     // Set the initiator signal direction
     SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
@@ -223,14 +218,6 @@ void RpiBus::Reset()
     // Set data bus signal directions
     SetDir(!IsTarget());
 
-    if (IsTarget()) {
-        SetModeIn(PIN_SEL);
-        SetModeIn(PIN_ATN);
-        SetModeIn(PIN_ACK);
-        SetModeIn(PIN_RST);
-    }
-
-    // Initialize all signals
     signals = 0;
 }
 
@@ -263,11 +250,10 @@ void RpiBus::SetBSY(bool state)
     SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
     if (!state) {
-        SetModeIn(PIN_BSY);
-        SetModeIn(PIN_MSG);
-        SetModeIn(PIN_CD);
-        SetModeIn(PIN_REQ);
-        SetModeIn(PIN_IO);
+        SetSignal(PIN_MSG, false);
+        SetSignal(PIN_CD, false);
+        SetSignal(PIN_REQ, false);
+        SetSignal(PIN_IO, false);
     }
 }
 
@@ -286,7 +272,7 @@ void RpiBus::SetDir(bool out)
 
     if (!out) {
         for (const int pin : DATA_PINS) {
-            SetModeIn(pin);
+            SetSignal(pin, false);
         }
     }
 }
@@ -306,12 +292,12 @@ inline void RpiBus::SetDAT(uint8_t dat)
     gpio[GPIO_FSEL_1] = fsel;
 }
 
-void RpiBus::InitializeSignals(int pull_mode)
+void RpiBus::InitializeSignals()
 {
     for (const int s : SIGNAL_TABLE) {
         PinSetSignal(s, false);
         PinConfig(s, GPIO_INPUT);
-        PullConfig(s, pull_mode);
+        PullConfig(s);
     }
 }
 
@@ -371,23 +357,6 @@ void RpiBus::SetControl(int pin, bool state)
     PinSetSignal(pin, state);
 }
 
-//---------------------------------------------------------------------------
-//
-// Set mode to IN
-// Pins are implicitly set to OUT when applying the mask
-//
-//---------------------------------------------------------------------------
-void RpiBus::SetModeIn(int pin)
-{
-    const int index = pin / 10;
-    assert(index <= 2);
-    const int shift = (pin % 10) * 3;
-    uint32_t data = gpfsel[index];
-    data &= ~(7 << shift);
-    gpio[index] = data;
-    gpfsel[index] = data;
-}
-
 inline bool RpiBus::GetSignal(int pin) const
 {
     return (signals >> pin) & 1;
@@ -396,6 +365,7 @@ inline bool RpiBus::GetSignal(int pin) const
 //---------------------------------------------------------------------------
 //
 // Set output signal value
+// Sets signal direction to IN by default. Pins are implicitly set to OUT when applying the mask.
 //
 //---------------------------------------------------------------------------
 void RpiBus::SetSignal(int pin, bool state)
@@ -486,8 +456,7 @@ void RpiBus::PinConfig(int pin, int mode)
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
-// Pin pull-up/pull-down setting
-void RpiBus::PullConfig(int pin, int mode)
+void RpiBus::PullConfig(int pin)
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
@@ -495,34 +464,17 @@ void RpiBus::PullConfig(int pin, int mode)
     }
 #endif
 
-    if (pi_type >= PiType::PI_4) {
-        uint32_t pull;
-        switch (mode) {
-        case GPIO_PULLNONE:
-            pull = 0;
-            break;
-
-        case GPIO_PULLDOWN:
-            pull = 2;
-            break;
-
-        default:
-            assert(false);
-            return;
-        }
-
-        pin &= 0x1f;
-        const int shift = (pin & 0xf) << 1;
+    pin &= 0x1f;
+    if (pi_type == PiType::PI_4) {
+        const int shift = pin << 1;
         uint32_t bits = gpio[GPIO_PUPPDN0 + (pin >> 4)];
         bits &= ~(3 << shift);
-        bits |= (pull << shift);
         gpio[GPIO_PUPPDN0 + (pin >> 4)] = bits;
     } else {
         // 2 us
         constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
 
-        pin &= 0x1f;
-        gpio[GPIO_PUD] = mode & 0x3;
+        gpio[GPIO_PUD] = 0;
         nanosleep(&ts, nullptr);
         gpio[GPIO_CLK_0] = 1 << pin;
         nanosleep(&ts, nullptr);

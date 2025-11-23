@@ -63,14 +63,11 @@ public:
 
 private:
 
-    void InitializeSignals(int);
+    void InitializeSignals();
 
     void CreateWorkTable();
 
     void SetControl(int, bool);
-
-    // Sets signal direction to IN
-    void SetModeIn(int);
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
@@ -80,8 +77,8 @@ private:
 
     void SetDir(bool) override;
 
-    //GPIO pin pull up/down resistor setting
-    void PullConfig(int, int);
+    // Set GPIO pin pull up/down resistor setting to PULLDOWN
+    void PullConfig(int);
 
     //GPIO pin direction setting
     void PinConfig(int, int);
@@ -157,8 +154,6 @@ private:
 
     constexpr static int GPIO_INPUT = 0;
     constexpr static int GPIO_OUTPUT = 1;
-    constexpr static int GPIO_PULLNONE = 0;
-    constexpr static int GPIO_PULLDOWN = 1;
 
     constexpr static int GPIO_FSEL_0 = 0;
     constexpr static int GPIO_FSEL_1 = 1;

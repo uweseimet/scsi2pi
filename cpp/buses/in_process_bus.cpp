@@ -22,9 +22,8 @@ bool InProcessBus::Init(bool target)
         return true;
     }
 
+    // Wait for the in-process target up to 1 s
     const auto now = chrono::steady_clock::now();
-
-    // Wait for the target up to 1 s
     do {
         if (target_enabled) {
             return true;
