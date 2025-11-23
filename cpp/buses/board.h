@@ -13,6 +13,51 @@
 // SCSI2Pi/PiSCSI standard (SCSI logic, standard pin assignment)
 //
 
+//---------------------------------------------------------------------------
+//
+// Control signal pin assignment setting
+//  GPIO pin mapping table for control signals.
+//
+//  Control signal:
+//   PIN_ACT
+//     Signal that indicates the status of processing SCSI command.
+//   PIN_ENB
+//     Signal that indicates the valid signal from start to finish.
+//   PIN_TAD
+//     Signal that indicates the input/output direction of the target signal (BSY,IO,CD,MSG,REG).
+//   PIN_IND
+//     Signal that indicates the input/output direction of the initiator signal (SEL, ATN, RST, ACK).
+//   PIN_DTD
+//     Signal that indicates the input/output direction of the data lines (DT0...DT7,DP).
+//
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+//
+// Control signal output logic
+//   0V:FALSE  3.3V:TRUE
+//
+//   ACT_ON
+//     PIN_ACT signal
+//   ENB_ON
+//     PIN_ENB signal
+//   TAD_IN
+//     PIN_TAD This is the logic when inputting.
+//   IND_IN
+//     PIN_ENB This is the logic when inputting.
+//    DTD_IN
+//     PIN_ENB This is the logic when inputting.
+//
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+//
+// SCSI signal pin assignment setting
+//   GPIO pin mapping table for SCSI signals.
+//   PIN_DT0～PIN_SEL
+//
+//---------------------------------------------------------------------------
+
 constexpr static int ON = 1;
 constexpr static int OFF = 0;
 
@@ -32,8 +77,6 @@ constexpr static int PIN_DTD = -1;
 #endif
 
 // Control signal output logic
-constexpr static int ACT_ON = ON; // ACTIVE SIGNAL ON
-constexpr static int ENB_ON = ON; // ENABLE SIGNAL ON
 constexpr static int IND_IN = OFF; // INITIATOR SIGNAL INPUT
 constexpr static int TAD_IN = OFF; // TARGET SIGNAL INPUT
 constexpr static int DTD_IN = ON; // DATA SIGNAL INPUT

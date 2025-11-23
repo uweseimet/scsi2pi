@@ -47,15 +47,6 @@ public:
         SetSignal(PIN_SEL, state);
     }
 
-    bool GetIO() override
-    {
-        return GetSignal(PIN_IO);
-    }
-    void SetIO(bool state) override
-    {
-        SetSignal(PIN_IO, state);
-    }
-
     uint8_t GetDAT() override
     {
         return dat;
@@ -92,7 +83,12 @@ private:
     }
     void EnableIRQ() override
     {
-        // Nothing to do }
+        // Nothing to do
+    }
+
+    void SetDir(bool) override
+    {
+        // Nothing to do
     }
 
     static inline atomic_bool target_enabled;

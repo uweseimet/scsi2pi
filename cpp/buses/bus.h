@@ -16,64 +16,11 @@
 #include "shared/s2p_defs.h"
 #include "board.h"
 
-//---------------------------------------------------------------------------
-//
-// Control signal pin assignment setting
-//  GPIO pin mapping table for control signals.
-//
-//  Control signal:
-//   PIN_ACT
-//     Signal that indicates the status of processing SCSI command.
-//   PIN_ENB
-//     Signal that indicates the valid signal from start to finish.
-//   PIN_TAD
-//     Signal that indicates the input/output direction of the target signal (BSY,IO,CD,MSG,REG).
-//   PIN_IND
-//     Signal that indicates the input/output direction of the initiator signal (SEL, ATN, RST, ACK).
-//   PIN_DTD
-//     Signal that indicates the input/output direction of the data lines (DT0...DT7,DP).
-//
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-//
-// Control signal output logic
-//   0V:FALSE  3.3V:TRUE
-//
-//   ACT_ON
-//     PIN_ACT signal
-//   ENB_ON
-//     PIN_ENB signal
-//   TAD_IN
-//     PIN_TAD This is the logic when inputting.
-//   IND_IN
-//     PIN_ENB This is the logic when inputting.
-//    DTD_IN
-//     PIN_ENB This is the logic when inputting.
-//
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-//
-// SCSI signal pin assignment setting
-//   GPIO pin mapping table for SCSI signals.
-//   PIN_DT0～PIN_SEL
-//
-//---------------------------------------------------------------------------
-
-// Constant declarations (GPIO)
-constexpr static int GPIO_INPUT = 0;
-constexpr static int GPIO_OUTPUT = 1;
-constexpr static int GPIO_PULLNONE = 0;
-constexpr static int GPIO_PULLDOWN = 1;
-
 // Constant declarations (SCSI)
-constexpr static int IN = GPIO_INPUT;
-constexpr static int OUT = GPIO_OUTPUT;
+constexpr static int IN = 0;
+constexpr static int OUT = 1;
 
 // Constant declarations (Control signals)
-constexpr static int ACT_OFF = !ACT_ON;
-constexpr static int ENB_OFF = !ENB_ON;
 constexpr static int TAD_OUT = !TAD_IN;
 constexpr static int IND_OUT = !IND_IN;
 constexpr static int DTD_OUT = !DTD_IN;
@@ -98,9 +45,6 @@ public:
     virtual void SetBSY(bool) = 0;
 
     virtual void SetSEL(bool) = 0;
-
-    virtual bool GetIO() = 0;
-    virtual void SetIO(bool) = 0;
 
     virtual uint8_t GetDAT() = 0;
     virtual void SetDAT(uint8_t) = 0;
@@ -189,6 +133,9 @@ public:
         SetSignal(PIN_CD, state);
     }
 
+    bool GetIO();
+    void SetIO(bool);
+
     BusPhase GetPhase();
 
     static string GetPhaseName(BusPhase phase)
@@ -204,6 +151,8 @@ protected:
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
+
+    virtual void SetDir(bool) = 0;
 
     bool IsTarget() const
     {

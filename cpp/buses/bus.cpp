@@ -121,7 +121,7 @@ int Bus::InitiatorMsgInHandShake()
     return msg;
 }
 
-int Bus::TargetReceiveHandShake(uint8_t *buf, int count)
+int Bus::TargetReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
 {
     DisableIRQ();
 
@@ -149,7 +149,7 @@ int Bus::TargetReceiveHandShake(uint8_t *buf, int count)
 }
 
 // For DATA IN and STATUS
-int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count)
+int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
 {
     DisableIRQ();
 
@@ -182,7 +182,7 @@ int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count)
 }
 
 #ifdef BUILD_SCDP
-int Bus::TargetSendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes)
+int Bus::TargetSendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes) // NOSONAR This should not be a span, buf and count are unrelated
 #else
 int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
 #endif
@@ -225,7 +225,7 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
-int Bus::InitiatorSendHandShake(const uint8_t *buf, int count)
+int Bus::InitiatorSendHandShake(const uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
 {
     DisableIRQ();
 
@@ -311,6 +311,26 @@ BusPhase Bus::GetPhase()
 inline bool Bus::IsPhase(BusPhase phase)
 {
     return GetPhase() == phase;
+}
+
+bool Bus::GetIO()
+{
+    const bool state = GetSignal(PIN_IO);
+
+    if (!target_mode) {
+        SetDir(!state);
+    }
+
+    return state;
+}
+
+void Bus::SetIO(bool state)
+{
+    assert(target_mode);
+
+    SetSignal(PIN_IO, state);
+
+    SetDir(state);
 }
 
 int Bus::ReturnHandshakeTimeout()

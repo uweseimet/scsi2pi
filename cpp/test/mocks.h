@@ -32,8 +32,7 @@ public:
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, SetBSY, (bool), (override));
     MOCK_METHOD(void, SetSEL, (bool), (override));
-    MOCK_METHOD(bool, GetIO, (), (override));
-    MOCK_METHOD(void, SetIO, (bool), (override));
+    MOCK_METHOD(void, SetDir, (bool), (override));
     MOCK_METHOD(uint8_t, GetDAT, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
     MOCK_METHOD(uint32_t, Acquire, (), (override));

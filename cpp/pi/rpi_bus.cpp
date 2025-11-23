@@ -135,7 +135,7 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_IND, GPIO_OUTPUT);
     PinConfig(PIN_DTD, GPIO_OUTPUT);
 
-    PinSetSignal(PIN_ENB, ENB_OFF);
+    PinSetSignal(PIN_ENB, OFF);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
     // GPIO Function Select (GPFSEL) registers copy
@@ -172,7 +172,7 @@ bool RpiBus::Init(bool target)
     CreateWorkTable();
 
     // Enable ENABLE in order to show the user that s2p is running
-    SetControl(PIN_ENB, ENB_ON);
+    SetControl(PIN_ENB, ON);
 
     return true;
 }
@@ -221,12 +221,12 @@ void RpiBus::Reset()
     SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 
     // Set data bus signal directions
-    SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
+    SetDir(!IsTarget());
 
-    for (const int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5,
-        PIN_DT6, PIN_DT7, PIN_DP }) {
-        SetMode(pin, IsTarget() ? IN : OUT);
-    }
+    SetMode(PIN_SEL, IsTarget() ? IN : OUT);
+    SetMode(PIN_ATN, IsTarget() ? IN : OUT);
+    SetMode(PIN_ACK, IsTarget() ? IN : OUT);
+    SetMode(PIN_RST, IsTarget() ? IN : OUT);
 
     // Initialize all signals
     signals = 0;
@@ -273,26 +273,6 @@ void RpiBus::SetSEL(bool state)
 
     SetControl(PIN_ACT, state);
     SetSignal(PIN_SEL, state);
-}
-
-bool RpiBus::GetIO()
-{
-    const bool state = GetSignal(PIN_IO);
-
-    if (!IsTarget()) {
-        SetDir(!state);
-    }
-
-    return state;
-}
-
-void RpiBus::SetIO(bool state)
-{
-    assert(IsTarget());
-
-    SetSignal(PIN_IO, state);
-
-    SetDir(state);
 }
 
 void RpiBus::SetDir(bool out)
@@ -396,20 +376,15 @@ void RpiBus::SetControl(int pin, bool state)
 void RpiBus::SetMode(int pin, int mode)
 {
     // Pins are implicitly set to OUT when applying the mask
-    if (mode == OUT) {
-        return;
+    if (mode == IN) {
+        const int index = pin / 10;
+        assert(index <= 2);
+        const int shift = (pin % 10) * 3;
+        uint32_t data = gpfsel[index];
+        data &= ~(7 << shift);
+        gpio[index] = data;
+        gpfsel[index] = data;
     }
-
-    const int index = pin / 10;
-    const int shift = (pin % 10) * 3;
-    assert(index <= 2);
-    uint32_t data = gpfsel[index];
-    data &= ~(7 << shift);
-    if (mode == OUT) {
-        data |= (1 << shift);
-    }
-    gpio[index] = data;
-    gpfsel[index] = data;
 }
 
 // Get input signal value

@@ -47,9 +47,6 @@ public:
 
     void SetSEL(bool) override;
 
-    bool GetIO() override;
-    void SetIO(bool) override;
-
     uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
 
@@ -81,6 +78,8 @@ private:
     void DisableIRQ() override;
     void EnableIRQ() override;
 
+    void SetDir(bool) override;
+
     //GPIO pin pull up/down resistor setting
     void PullConfig(int, int);
 
@@ -91,8 +90,6 @@ private:
 
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t);
-
-    void SetDir(bool);
 
     PiType pi_type;
 
@@ -157,6 +154,11 @@ private:
     constexpr static int ARMT_FREERUN = 8;
 
     constexpr static uint32_t ARMT_OFFSET = 0x0000B400;
+
+    constexpr static int GPIO_INPUT = 0;
+    constexpr static int GPIO_OUTPUT = 1;
+    constexpr static int GPIO_PULLNONE = 0;
+    constexpr static int GPIO_PULLDOWN = 1;
 
     constexpr static int GPIO_FSEL_0 = 0;
     constexpr static int GPIO_FSEL_1 = 1;
