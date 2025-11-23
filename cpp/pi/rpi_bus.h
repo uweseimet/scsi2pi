@@ -69,8 +69,8 @@ private:
 
     void SetControl(int, bool);
 
-    // Sets signal direction (in/out) depending on initiator/target mode
-    void SetMode(int, int);
+    // Sets signal direction to IN
+    void SetModeIn(int);
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
