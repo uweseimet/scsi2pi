@@ -44,20 +44,23 @@ void InProcessBus::CleanUp()
 
 void InProcessBus::Reset()
 {
-    signals = { };
-
+    signals = 0;
     dat = 0;
 }
 
 bool InProcessBus::GetSignal(int pin) const
 {
-    return signals[pin];
+    return (signals >> pin) & 1;
 }
 
 void InProcessBus::SetSignal(int pin, bool state)
 {
     scoped_lock lock(write_locker);
-    signals[pin] = state;
+    if (state) {
+        signals |= (1 << pin);
+    } else {
+        signals &= ~(7 << pin);
+    }
 }
 
 bool InProcessBus::WaitForSelection()

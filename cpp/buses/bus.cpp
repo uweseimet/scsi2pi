@@ -26,7 +26,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
 
     SetREQ(true);
 
-    bool ack = WaitSignal(PIN_ACK, true);
+    bool ack = WaitHandshakeSignal(PIN_ACK, true);
 
     WaitBusSettle();
 
@@ -35,9 +35,8 @@ int Bus::CommandHandShake(span<uint8_t> buf)
     SetREQ(false);
 
     // Timeout waiting for ACK to change
-    if (!ack || !WaitSignal(PIN_ACK, false)) {
-        EnableIRQ();
-        return -1;
+    if (!ack || !WaitHandshakeSignal(PIN_ACK, false)) {
+        return ReturnHandshakeTimeout();
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
@@ -50,7 +49,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
     if (buf[0] == 0x1f) {
         SetREQ(true);
 
-        ack = WaitSignal(PIN_ACK, true);
+        ack = WaitHandshakeSignal(PIN_ACK, true);
 
         WaitBusSettle();
 
@@ -60,9 +59,8 @@ int Bus::CommandHandShake(span<uint8_t> buf)
         SetREQ(false);
 
         // Timeout waiting for ACK to change
-        if (!ack || !WaitSignal(PIN_ACK, false)) {
-            EnableIRQ();
-            return -1;
+        if (!ack || !WaitHandshakeSignal(PIN_ACK, false)) {
+            return ReturnHandshakeTimeout();
         }
     }
 
@@ -78,7 +76,7 @@ int Bus::CommandHandShake(span<uint8_t> buf)
     for (bytes_received = 1; bytes_received < command_byte_count; ++bytes_received) {
         SetREQ(true);
 
-        ack = WaitSignal(PIN_ACK, true);
+        ack = WaitHandshakeSignal(PIN_ACK, true);
 
         WaitBusSettle();
 
@@ -87,9 +85,8 @@ int Bus::CommandHandShake(span<uint8_t> buf)
         SetREQ(false);
 
         // Timeout waiting for ACK to change
-        if (!ack || !WaitSignal(PIN_ACK, false)) {
-            EnableIRQ();
-            return -1;
+        if (!ack || !WaitHandshakeSignal(PIN_ACK, false)) {
+            return ReturnHandshakeTimeout();
         }
     }
 
@@ -98,10 +95,9 @@ int Bus::CommandHandShake(span<uint8_t> buf)
     return bytes_received;
 }
 
-// Initiator MESSAGE IN
-int Bus::MsgInHandShake()
+int Bus::InitiatorMsgInHandShake()
 {
-    if (const BusPhase phase = GetPhase(); !WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
+    if (!WaitHandshakeSignal(PIN_REQ, true) || !IsPhase(BusPhase::MSG_IN)) {
         return -1;
     }
 
@@ -118,63 +114,35 @@ int Bus::MsgInHandShake()
         SetATN(true);
     }
 
-    WaitSignal(PIN_REQ, false);
+    WaitHandshakeSignal(PIN_REQ, false);
 
     SetACK(false);
 
     return msg;
 }
 
-// Handshake for DATA OUT and target MESSAGE OUT
-int Bus::ReceiveHandShake(uint8_t *buf, int count)
+int Bus::TargetReceiveHandShake(uint8_t *buf, int count)
 {
-    int bytes_received;
-
     DisableIRQ();
 
-    if (target_mode) {
-        for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-            SetREQ(true);
+    int bytes_received;
+    for (bytes_received = 0; bytes_received < count; ++bytes_received) {
+        SetREQ(true);
 
-            const bool ack = WaitSignal(PIN_ACK, true);
+        const bool ack = WaitHandshakeSignal(PIN_ACK, true);
 
-            WaitBusSettle();
+        WaitBusSettle();
 
-            *buf = GetDAT();
+        *buf = GetDAT();
 
-            SetREQ(false);
+        SetREQ(false);
 
-            // Timeout waiting for ACK to change
-            if (!ack || !WaitSignal(PIN_ACK, false)) {
-                break;
-            }
-
-            ++buf;
+        // Timeout waiting for ACK to change
+        if (!ack || !WaitHandshakeSignal(PIN_ACK, false)) {
+            break;
         }
-    } else {
-        const BusPhase phase = GetPhase();
 
-        for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-            if (!WaitSignal(PIN_REQ, true) || GetPhase() != phase) {
-                break;
-            }
-
-            WaitBusSettle();
-
-            *buf = GetDAT();
-
-            SetACK(true);
-
-            const bool req = WaitSignal(PIN_REQ, false);
-
-            SetACK(false);
-
-            if (!req || GetPhase() != phase) {
-                break;
-            }
-
-            ++buf;
-        }
+        ++buf;
     }
 
     EnableIRQ();
@@ -182,80 +150,121 @@ int Bus::ReceiveHandShake(uint8_t *buf, int count)
     return bytes_received;
 }
 
-// Handshake for DATA IN and MESSAGE IN
-#ifdef BUILD_SCDP
-int Bus::SendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes)
-#else
-int Bus::SendHandShake(const uint8_t *buf, int count, int)
-#endif
+// For DATA IN and STATUS
+int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count)
 {
-    int bytes_sent;
-
     DisableIRQ();
 
-    if (target_mode) {
-        for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+    const BusPhase phase = GetPhase();
+
+    int bytes_received;
+    for (bytes_received = 0; bytes_received < count; ++bytes_received) {
+        if (!WaitHandshakeSignal(PIN_REQ, true) || !IsPhase(phase)) {
+            break;
+        }
+
+        WaitBusSettle();
+
+        *buf = GetDAT();
+
+        SetACK(true);
+
+        const bool req = WaitHandshakeSignal(PIN_REQ, false);
+
+        SetACK(false);
+
+        if (!req || !IsPhase(phase)) {
+            break;
+        }
+
+        ++buf;
+    }
+
+    EnableIRQ();
+
+    return bytes_received;
+}
+
 #ifdef BUILD_SCDP
-            if (bytes_sent == daynaport_delay_after_bytes) {
-                const timespec ts = { .tv_sec = 0, .tv_nsec = DAYNAPORT_SEND_DELAY_NS };
-                EnableIRQ();
-                nanosleep(&ts, nullptr);
-                DisableIRQ();
-            }
+int Bus::TargetSendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes)
+#else
+int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
+#endif
+{
+    DisableIRQ();
+
+    int bytes_sent;
+    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+#ifdef BUILD_SCDP
+        if (bytes_sent == daynaport_delay_after_bytes) {
+            const timespec ts = { .tv_sec = 0, .tv_nsec = DAYNAPORT_SEND_DELAY_NS };
+            EnableIRQ();
+            nanosleep(&ts, nullptr);
+            DisableIRQ();
+        }
 #endif
 
-            SetDAT(*buf);
+        SetDAT(*buf);
 
-            if (!WaitSignal(PIN_ACK, false)) {
-                break;
-            }
-
-            SetREQ(true);
-
-            const bool ack = WaitSignal(PIN_ACK, true);
-
-            SetREQ(false);
-
-            if (!ack) {
-                break;
-            }
-
-            ++buf;
+        if (!WaitHandshakeSignal(PIN_ACK, false)) {
+            return ReturnHandshakeTimeout();
         }
 
-        WaitSignal(PIN_ACK, false);
-    } else {
-        const BusPhase phase = GetPhase();
+        SetREQ(true);
 
-        for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
-            SetDAT(*buf);
+        const bool ack = WaitHandshakeSignal(PIN_ACK, true);
 
-            if (!WaitSignal(PIN_REQ, true)) {
-                break;
-            }
+        SetREQ(false);
 
-            // Signal the last MESSAGE OUT byte
-            if (phase == BusPhase::MSG_OUT && bytes_sent == count - 1) {
-                SetATN(false);
-            }
-
-            // Phase error
-            if (GetPhase() != phase) {
-                break;
-            }
-
-            SetACK(true);
-
-            const bool req = WaitSignal(PIN_REQ, false);
-
-            SetACK(false);
-
-            if (!req || GetPhase() != phase) {
-                break;
-            }
-
-            ++buf;
+        if (!ack) {
+            break;
         }
+
+        ++buf;
+    }
+
+    WaitHandshakeSignal(PIN_ACK, false);
+
+    EnableIRQ();
+
+    return bytes_sent;
+}
+
+// For MSG OUT, DATA OUT and COMMAND
+int Bus::InitiatorSendHandShake(const uint8_t *buf, int count)
+{
+    DisableIRQ();
+
+    const BusPhase phase = GetPhase();
+
+    int bytes_sent;
+    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+        SetDAT(*buf);
+
+        if (!WaitHandshakeSignal(PIN_REQ, true)) {
+            break;
+        }
+
+        // Signal the last MESSAGE OUT byte
+        if (phase == BusPhase::MSG_OUT && bytes_sent == count - 1) {
+            SetATN(false);
+        }
+
+        if (!IsPhase(phase)) {
+            break;
+        }
+
+        SetACK(true);
+
+        const bool req = WaitHandshakeSignal(PIN_REQ, false);
+
+        SetACK(false);
+
+        if (!req || !IsPhase(phase)) {
+            break;
+        }
+
+        ++buf;
     }
 
     EnableIRQ();
@@ -263,22 +272,26 @@ int Bus::SendHandShake(const uint8_t *buf, int count, int)
     return bytes_sent;
 }
 
-bool Bus::WaitSignal(int pin, bool state)
+bool Bus::WaitHandshakeSignal(int pin, bool state)
 {
+    // Shortcut for the case where REQ/ACK is already in the required state
+    Acquire();
+    if (GetSignal(pin) == state) {
+        return true;
+    }
+
+    // Wait for REQ or ACK for up to 3 s
     const auto now = chrono::steady_clock::now();
-
-    // Wait for up to 3 s
     do {
-        Acquire();
-
-        if (GetSignal(pin) == state) {
-            return true;
-        }
-
         if (GetRST()) {
             spdlog::warn("{0} received RST signal during {1} phase, aborting", target_mode ? "Target" : "Initiator",
                 GetPhaseName(GetPhase()));
             return false;
+        }
+
+        Acquire();
+        if (GetSignal(pin) == state) {
+            return true;
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
@@ -301,6 +314,17 @@ BusPhase Bus::GetPhase()
 
     // Get phase from bus signal lines
     return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
+}
+
+inline bool Bus::IsPhase(BusPhase phase)
+{
+    return GetPhase() == phase;
+}
+
+int Bus::ReturnHandshakeTimeout()
+{
+    EnableIRQ();
+    return -1;
 }
 
 // Phase table with the phases based upon the MSG, C/D and I/O signals

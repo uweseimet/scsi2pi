@@ -110,12 +110,14 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual bool WaitSignal(int, bool);
+    virtual bool WaitHandshakeSignal(int, bool);
 
     int CommandHandShake(span<uint8_t>);
-    int MsgInHandShake();
-    int ReceiveHandShake(uint8_t*, int);
-    int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
+    int InitiatorMsgInHandShake();
+    int TargetReceiveHandShake(uint8_t*, int);
+    int InitiatorReceiveHandShake(uint8_t*, int);
+    int TargetSendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
+    int InitiatorSendHandShake(const uint8_t*, int);
 
     bool GetBSY() const
     {
@@ -210,11 +212,15 @@ protected:
 
 private:
 
+    int ReturnHandshakeTimeout();
+
+    bool IsPhase(BusPhase);
+
+    bool target_mode = true;
+
     static const array<BusPhase, 8> phases;
 
     static const array<string, 11> phase_names;
-
-    bool target_mode = true;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the

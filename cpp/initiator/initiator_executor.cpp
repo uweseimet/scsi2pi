@@ -197,7 +197,8 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     }
 
     const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
-    const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
+    const int sent_count = bus.InitiatorSendHandShake(cdb.data() + cdb_offset,
+        static_cast<int>(cdb.size()) - cdb_offset);
     if (static_cast<int>(cdb.size()) < sent_count) {
         initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
     }
@@ -209,7 +210,7 @@ void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf = { };
 
-    if (bus.ReceiveHandShake(buf.data(), 1) != 1) {
+    if (bus.InitiatorReceiveHandShake(buf.data(), 1) != 1) {
         initiator_logger.error("STATUS phase failed");
     }
     else {
@@ -225,7 +226,7 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
 
     initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
-    byte_count = bus.ReceiveHandShake(buf.data(), length);
+    byte_count = bus.InitiatorReceiveHandShake(buf.data(), length);
 
     length -= byte_count;
 }
@@ -238,7 +239,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
 
     initiator_logger.debug("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length));
 
-    byte_count = bus.SendHandShake(buf.data(), length);
+    byte_count = bus.InitiatorSendHandShake(buf.data(), length);
     if (byte_count != length) {
         initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
         throw PhaseException("DATA OUT phase failed");
@@ -249,7 +250,7 @@ void InitiatorExecutor::DataOut(data_out_t buf, int &length)
 
 void InitiatorExecutor::MsgIn()
 {
-    const int msg = bus.MsgInHandShake();
+    const int msg = bus.InitiatorMsgInHandShake();
     switch (msg) {
     case -1:
         initiator_logger.error("MESSAGE IN phase failed");
@@ -281,7 +282,7 @@ void InitiatorExecutor::MsgOut()
     // IDENTIFY or MESSAGE REJECT
     buf[0] = static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message);
 
-    if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
+    if (bus.InitiatorSendHandShake(buf.data(), buf.size()) != buf.size()) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
             next_message == MessageCode::IDENTIFY ? "IDENTIFY" : "MESSAGE REJECT");
     }

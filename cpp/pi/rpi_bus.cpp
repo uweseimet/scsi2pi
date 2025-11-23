@@ -279,13 +279,8 @@ bool RpiBus::GetIO()
 {
     const bool state = GetSignal(PIN_IO);
 
-    if (!IsTarget()) {
-        // Change the data input/output direction by IO signal
-        SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
-
-        for (const int pin : DATA_PINS) {
-            SetMode(pin, state ? IN : OUT);
-        }
+    if (!IsTarget() && io_state != state ? OUT : IN) {
+        SetDir(!state);
     }
 
     return state;
@@ -297,12 +292,19 @@ void RpiBus::SetIO(bool state)
 
     SetSignal(PIN_IO, state);
 
-    // Change the data input/output direction by IO signal
-    SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
+    SetDir(state);
+}
 
-    for (int pin : DATA_PINS) {
-        SetMode(pin, state ? OUT : IN);
+void RpiBus::SetDir(bool out)
+{
+    // Change the data input/output direction by IO signal
+    SetControl(PIN_DTD, out ? DTD_OUT : DTD_IN);
+
+    for (const int pin : DATA_PINS) {
+        SetMode(pin, out ? OUT : IN);
     }
+
+    io_state = out ? OUT : IN;
 }
 
 inline uint8_t RpiBus::GetDAT()
@@ -333,8 +335,10 @@ void RpiBus::CreateWorkTable()
 {
     array<bool, 256> tblParity;
 
+    const auto tblSize = static_cast<uint32_t>(tblParity.size());
+
     // Create parity table
-    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
+        for (uint32_t i = 0; i < tblSize; ++i) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
@@ -350,7 +354,7 @@ void RpiBus::CreateWorkTable()
         tbl.fill(-1);
     }
 
-        for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
+        for (uint32_t i = 0; i < tblSize; ++i) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -447,6 +451,7 @@ void RpiBus::DisableIRQ()
         irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
         irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
         break;
+
     case PiType::PI_2:
     case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
@@ -462,7 +467,6 @@ void RpiBus::DisableIRQ()
         break;
 
     default:
-        // Currently do nothing
         break;
     }
 }
@@ -487,7 +491,6 @@ void RpiBus::EnableIRQ()
         break;
 
     default:
-        // Currently do nothing
         break;
     }
 }
@@ -581,7 +584,7 @@ inline uint32_t RpiBus::Acquire()
 {
     signals = *level;
 
-    // Invert because of negative logic (internal processing is unified to positive logic)
+    // Invert because of negative logic (internal processing uses positive logic)
     signals = ~signals;
 
     return signals;

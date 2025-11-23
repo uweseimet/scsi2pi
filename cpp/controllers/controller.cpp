@@ -365,7 +365,7 @@ void Controller::Send()
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
-        if (const int l = bus.SendHandShake(GetBuffer().data() + GetOffset(), length,
+        if (const int l = bus.TargetSendHandShake(GetBuffer().data() + GetOffset(), length,
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             LogWarn(fmt::format("Sent {0} byte(s), {1} required", l, length));
             bus.SetRST(true);
@@ -428,7 +428,7 @@ void Controller::Receive()
             LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", curr_length, GetOffset()));
         }
 
-        if (const int l = bus.ReceiveHandShake(GetBuffer().data() + GetOffset(), curr_length); l != curr_length) {
+        if (const int l = bus.TargetReceiveHandShake(GetBuffer().data() + GetOffset(), curr_length); l != curr_length) {
             LogWarn(fmt::format("Received {0} byte(s), {1} required", l, curr_length));
             bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);

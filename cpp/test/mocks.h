@@ -39,7 +39,7 @@ public:
     MOCK_METHOD(uint32_t, Acquire, (), (override));
     MOCK_METHOD(bool, GetSignal, (int), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
-    MOCK_METHOD(bool, WaitSignal, (int, bool), (override));
+    MOCK_METHOD(bool, WaitHandshakeSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitBusSettle, (), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));

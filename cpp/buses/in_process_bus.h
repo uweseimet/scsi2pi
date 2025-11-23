@@ -101,7 +101,7 @@ private:
 
     atomic<uint8_t> dat = 0;
 
-    array<bool, 28> signals = { };
+    uint32_t signals = 0;
 };
 
 class DelegatingInProcessBus : public InProcessBus
@@ -124,9 +124,9 @@ public:
         return bus.Acquire();
     }
 
-    bool WaitSignal(int pin, bool state) override
+    bool WaitHandshakeSignal(int pin, bool state) override
     {
-        return bus.WaitSignal(pin, state);
+        return bus.WaitHandshakeSignal(pin, state);
     }
 
     uint8_t GetDAT() override
