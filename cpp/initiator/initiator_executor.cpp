@@ -19,6 +19,9 @@ using namespace initiator_util;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
+    // TODO Try to get rid of bus reset
+    bus.Reset();
+
     status_code = 0xff;
     byte_count = 0;
     cdb_offset = 0;
