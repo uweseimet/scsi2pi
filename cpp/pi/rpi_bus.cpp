@@ -278,14 +278,6 @@ void RpiBus::SetDir(bool out)
     }
 }
 
-inline uint8_t RpiBus::GetDAT()
-{
-    Acquire();
-
-    // Invert because of negative logic (internal processing uses positive logic)
-    return static_cast<uint8_t>(~GetSignals() >> PIN_DT0);
-}
-
 inline void RpiBus::SetDAT(uint8_t dat)
 {
     uint32_t fsel = gpfsel[GPIO_FSEL_1];

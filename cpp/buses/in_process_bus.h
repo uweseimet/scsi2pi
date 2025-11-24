@@ -30,7 +30,6 @@ public:
 
     bool Init(bool) override;
     void CleanUp() override;
-    void Reset() override;
 
     void Acquire() override
     {
@@ -47,14 +46,7 @@ public:
         SetControl(PIN_SEL, state);
     }
 
-    uint8_t GetDAT() override
-    {
-        return dat;
-    }
-    void SetDAT(uint8_t d) override
-    {
-        dat = d;
-    }
+    void SetDAT(uint8_t) override;
 
     void SetControl(int, bool) override;
 
@@ -93,8 +85,6 @@ private:
     static inline atomic_bool target_enabled;
 
     mutex write_locker;
-
-    atomic<uint8_t> dat = 0;
 };
 
 class DelegatingInProcessBus : public InProcessBus
@@ -126,9 +116,9 @@ public:
     {
         return bus.GetDAT();
     }
-    void SetDAT(uint8_t d) override
+    void SetDAT(uint8_t dat) override
     {
-        bus.SetDAT(d);
+        bus.SetDAT(dat);
     }
 
     bool GetControl(int) const override;

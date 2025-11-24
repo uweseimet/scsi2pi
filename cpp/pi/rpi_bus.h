@@ -47,7 +47,6 @@ public:
 
     void SetSEL(bool) override;
 
-    uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
 
     void WaitBusSettle() const override;

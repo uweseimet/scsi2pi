@@ -45,7 +45,7 @@ public:
 
     virtual void SetSEL(bool) = 0;
 
-    virtual uint8_t GetDAT() = 0;
+    virtual uint8_t GetDAT();
     virtual void SetDAT(uint8_t) = 0;
 
     virtual bool GetControl(int) const;

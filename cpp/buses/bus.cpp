@@ -341,7 +341,15 @@ inline bool Bus::GetControl(int pinMask) const
     assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
 
     // Invert because of negative logic (internal processing uses positive logic)
-    return !(GetSignals() & pinMask);
+    return !(signals & pinMask);
+}
+
+inline uint8_t Bus::GetDAT()
+{
+    Acquire();
+
+    // Invert because of negative logic (internal processing uses positive logic)
+    return static_cast<uint8_t>(~signals >> PIN_DT0);
 }
 
 int Bus::HandshakeTimeoutError()

@@ -41,11 +41,12 @@ void InProcessBus::CleanUp()
     }
 }
 
-void InProcessBus::Reset()
+void InProcessBus::SetDAT(uint8_t dat)
 {
-    Bus::Reset();
-
-    dat = 0;
+    uint32_t s = GetSignals();
+    s |= 0b0000000000000111111110000000000;
+    s &= static_cast<uint32_t>(~static_cast<byte>(dat)) << PIN_DT0;
+    SetSignals(s);
 }
 
 void InProcessBus::SetControl(int pin, bool state)

@@ -6,6 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
+#ifdef __linux__
+
 #include <gtest/gtest.h>
 #include "pi/rpi_bus.h"
 
@@ -22,3 +24,5 @@ TEST(RpiBusTest, GetPiType)
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType(""));
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType("abc"));
 }
+
+#endif

@@ -22,21 +22,17 @@
 
 using namespace testing;
 
-class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
+class MockBus : public Bus
 {
 
 public:
 
-    MOCK_METHOD(bool, Init, (bool), (override));
-    MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, SetBSY, (bool), (override));
     MOCK_METHOD(void, SetSEL, (bool), (override));
     MOCK_METHOD(void, SetDir, (bool), (override));
-    MOCK_METHOD(uint8_t, GetDAT, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
     MOCK_METHOD(void, Acquire, (), (override));
-    MOCK_METHOD(bool, GetControl, (int), (const, override));
     MOCK_METHOD(void, SetControl, (int, bool), (override));
     MOCK_METHOD(bool, WaitHandshake, (int, bool), (override));
     MOCK_METHOD(bool, WaitForSelection, (), (override));
