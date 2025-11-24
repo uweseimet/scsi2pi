@@ -65,17 +65,17 @@ public:
 
     bool GetBSY() const
     {
-        return GetSignal(PIN_BSY);
+        return GetSignal(PIN_BSY_MASK);
     }
 
     bool GetSEL() const
     {
-        return GetSignal(PIN_SEL);
+        return GetSignal(PIN_SEL_MASK);
     }
 
     bool GetREQ() const
     {
-        return GetSignal(PIN_REQ);
+        return GetSignal(PIN_REQ_MASK);
     }
 
     void SetREQ(bool state)
@@ -85,7 +85,7 @@ public:
 
     bool GetATN() const
     {
-        return GetSignal(PIN_ATN);
+        return GetSignal(PIN_ATN_MASK);
     }
 
     void SetATN(bool state)
@@ -95,7 +95,7 @@ public:
 
     bool GetACK() const
     {
-        return GetSignal(PIN_ACK);
+        return GetSignal(PIN_ACK_MASK);
     }
 
     void SetACK(bool state)
@@ -105,7 +105,7 @@ public:
 
     bool GetRST() const
     {
-        return GetSignal(PIN_RST);
+        return GetSignal(PIN_RST_MASK);
     }
 
     void SetRST(bool state)
@@ -115,7 +115,7 @@ public:
 
     bool GetMSG() const
     {
-        return GetSignal(PIN_MSG);
+        return GetSignal(PIN_MSG_MASK);
     }
 
     void SetMSG(bool state)
@@ -125,7 +125,7 @@ public:
 
     bool GetCD() const
     {
-        return GetSignal(PIN_CD);
+        return GetSignal(PIN_CD_MASK);
     }
 
     void SetCD(bool state)

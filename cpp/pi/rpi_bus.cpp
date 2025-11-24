@@ -359,15 +359,11 @@ void RpiBus::SetControl(int pin, bool state)
 
 inline bool RpiBus::GetSignal(int pin) const
 {
-    return (signals >> pin) & 1;
+    return signals & pin;
 }
 
-//---------------------------------------------------------------------------
-//
 // Set output signal value
 // Sets signal direction to IN by default. Pins are implicitly set to OUT when applying the mask.
-//
-//---------------------------------------------------------------------------
 void RpiBus::SetSignal(int pin, bool state)
 {
     const int index = pin / 10;
@@ -407,6 +403,7 @@ void RpiBus::DisableIRQ()
         break;
 
     default:
+        assert(false);
         break;
     }
 }
@@ -431,18 +428,14 @@ void RpiBus::EnableIRQ()
         break;
 
     default:
+        assert(false);
         break;
     }
 }
 
-//---------------------------------------------------------------------------
-//
 // Pin direction setting (input/output)
-//
 // Used in Init() for ACT, TAD, IND, DTD, ENB to set direction (GPIO_OUTPUT vs GPIO_INPUT)
 // Also used on SignalTable
-// Only used in Init and Cleanup. Reset uses SetMode
-//---------------------------------------------------------------------------
 void RpiBus::PinConfig(int pin, int mode)
 {
 #ifdef BOARD_STANDARD
@@ -501,7 +494,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
 
-// Read date byte from bus
+// Read data from bus
 inline uint32_t RpiBus::Acquire()
 {
     // Invert because of negative logic (internal processing uses positive logic)

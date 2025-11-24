@@ -90,14 +90,25 @@ constexpr static int PIN_DT4 = 14;
 constexpr static int PIN_DT5 = 15;
 constexpr static int PIN_DT6 = 16;
 constexpr static int PIN_DT7 = 17;
+
 // Data parity
 constexpr static int PIN_DP = 18;
+
 constexpr static int PIN_ATN = 19;
+constexpr static int PIN_ATN_MASK = 1 << PIN_ATN;
 constexpr static int PIN_RST = 20;
+constexpr static int PIN_RST_MASK = 1 << PIN_RST;
 constexpr static int PIN_ACK = 21;
+constexpr static int PIN_ACK_MASK = 1 << PIN_ACK;
 constexpr static int PIN_REQ = 22;
+constexpr static int PIN_REQ_MASK = 1 << PIN_REQ;
 constexpr static int PIN_MSG = 23;
+constexpr static int PIN_MSG_MASK = 1 << PIN_MSG;
 constexpr static int PIN_CD = 24;
+constexpr static int PIN_CD_MASK = 1 << PIN_CD;
 constexpr static int PIN_IO = 25;
+constexpr static int PIN_IO_MASK = 1 << PIN_IO;
 constexpr static int PIN_BSY = 26;
+constexpr static int PIN_BSY_MASK = 1 << PIN_BSY;
 constexpr static int PIN_SEL = 27;
+constexpr static int PIN_SEL_MASK = 1 << PIN_SEL;

@@ -49,7 +49,7 @@ void InProcessBus::Reset()
 
 bool InProcessBus::GetSignal(int pin) const
 {
-    return (signals >> pin) & 1;
+    return signals & pin;
 }
 
 void InProcessBus::SetSignal(int pin, bool state)
@@ -89,8 +89,9 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 {
     const bool state = bus.GetSignal(pin);
 
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
-        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false");
+    if (log_signals && pin != PIN_ACK_MASK && pin != PIN_REQ_MASK && in_process_logger->level() == level::trace) {
+        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
+            state ? "true" : "false");
     }
 
     return state;
