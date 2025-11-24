@@ -2,11 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <gtest/gtest.h>
+#include "mocks.h"
 #include "buses/bus.h"
 
 TEST(BusTest, GetPhaseName)
@@ -22,4 +22,14 @@ TEST(BusTest, GetPhaseName)
     EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(BusPhase::MSG_IN));
     EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(BusPhase::MSG_OUT));
     EXPECT_EQ("????", Bus::GetPhaseName(BusPhase::RESERVED));
+}
+
+TEST(BusTest, GetSetSignals)
+{
+    MockBus bus;
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_EQ(0x12345678U, bus.GetSignals());
+    bus.SetSignals(0x87654321U);
+    EXPECT_EQ(0x87654321U, bus.GetSignals());
 }

@@ -48,22 +48,15 @@ void InProcessBus::Reset()
     dat = 0;
 }
 
-bool InProcessBus::GetControlSignal(int pinMask) const
-{
-    assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
-
-    return GetSignals() & pinMask;
-}
-
-void InProcessBus::SetControlSignal(int pin, bool state)
+void InProcessBus::SetControl(int pin, bool state)
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
     scoped_lock lock(write_locker);
     if (state) {
-        SetSignals(GetSignals() | (1 << pin));
-    } else {
         SetSignals(GetSignals() & ~(7 << pin));
+    } else {
+        SetSignals(GetSignals() | (1 << pin));
     }
 }
 
@@ -90,9 +83,9 @@ void DelegatingInProcessBus::Reset()
     bus.Reset();
 }
 
-bool DelegatingInProcessBus::GetControlSignal(int pin) const
+bool DelegatingInProcessBus::GetControl(int pin) const
 {
-    const bool state = bus.GetControlSignal(pin);
+    const bool state = bus.GetControl(pin);
 
     if (log_signals && pin != PIN_ACK_MASK && pin != PIN_REQ_MASK && in_process_logger->level() == level::trace) {
         in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
@@ -102,13 +95,13 @@ bool DelegatingInProcessBus::GetControlSignal(int pin) const
     return state;
 }
 
-void DelegatingInProcessBus::SetControlSignal(int pin, bool state)
+void DelegatingInProcessBus::SetControl(int pin, bool state)
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
         in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
-    bus.SetControlSignal(pin, state);
+    bus.SetControl(pin, state);
 }
 
 string DelegatingInProcessBus::GetSignalName(int pin)

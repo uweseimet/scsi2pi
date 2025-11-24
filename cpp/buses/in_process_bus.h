@@ -39,12 +39,12 @@ public:
 
     void SetBSY(bool state) override
     {
-        SetControlSignal(PIN_BSY, state);
+        SetControl(PIN_BSY, state);
     }
 
     void SetSEL(bool state) override
     {
-        SetControlSignal(PIN_SEL, state);
+        SetControl(PIN_SEL, state);
     }
 
     uint8_t GetDAT() override
@@ -56,8 +56,7 @@ public:
         dat = d;
     }
 
-    bool GetControlSignal(int) const override;
-    void SetControlSignal(int, bool) override;
+    void SetControl(int, bool) override;
 
     bool WaitForSelection() override;
 
@@ -118,9 +117,9 @@ public:
         bus.Acquire();
     }
 
-    bool WaitHandshakeSignal(int pin, bool state) override
+    bool WaitHandshake(int pin, bool state) override
     {
-        return bus.WaitHandshakeSignal(pin, state);
+        return bus.WaitHandshake(pin, state);
     }
 
     uint8_t GetDAT() override
@@ -132,8 +131,8 @@ public:
         bus.SetDAT(d);
     }
 
-    bool GetControlSignal(int) const override;
-    void SetControlSignal(int, bool) override;
+    bool GetControl(int) const override;
+    void SetControl(int, bool) override;
 
 private:
 

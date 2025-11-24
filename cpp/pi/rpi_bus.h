@@ -67,10 +67,7 @@ private:
 
     void CreateWorkTable();
 
-    void SetControl(int, bool);
-
-    bool GetControlSignal(int) const override;
-    void SetControlSignal(int, bool) override;
+    void SetControl(int, bool) override;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
@@ -78,7 +75,7 @@ private:
     void SetDir(bool) override;
 
     // Set GPIO pin pull up/down resistor setting to PULLDOWN
-    void PullConfig(int);
+    void ConfigurePullDown(int);
 
     //GPIO pin direction setting
     void PinConfig(int, int);

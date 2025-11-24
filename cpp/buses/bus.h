@@ -48,12 +48,12 @@ public:
     virtual uint8_t GetDAT() = 0;
     virtual void SetDAT(uint8_t) = 0;
 
-    virtual bool GetControlSignal(int) const = 0;
-    virtual void SetControlSignal(int, bool) = 0;
+    virtual bool GetControl(int) const;
+    virtual void SetControl(int, bool) = 0;
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual bool WaitHandshakeSignal(int, bool);
+    virtual bool WaitHandshake(int, bool);
 
     int CommandHandShake(span<uint8_t>);
     int InitiatorMsgInHandShake();
@@ -64,7 +64,7 @@ public:
 
     virtual void Reset()
     {
-        signals = 0;
+        signals = 0xffffffff;
     }
 
     uint32_t GetSignals() const
@@ -78,72 +78,72 @@ public:
 
     bool GetBSY() const
     {
-        return GetControlSignal(PIN_BSY_MASK);
+        return GetControl(PIN_BSY_MASK);
     }
 
     bool GetSEL() const
     {
-        return GetControlSignal(PIN_SEL_MASK);
+        return GetControl(PIN_SEL_MASK);
     }
 
     bool GetREQ() const
     {
-        return GetControlSignal(PIN_REQ_MASK);
+        return GetControl(PIN_REQ_MASK);
     }
 
     void SetREQ(bool state)
     {
-        SetControlSignal(PIN_REQ, state);
+        SetControl(PIN_REQ, state);
     }
 
     bool GetATN() const
     {
-        return GetControlSignal(PIN_ATN_MASK);
+        return GetControl(PIN_ATN_MASK);
     }
 
     void SetATN(bool state)
     {
-        SetControlSignal(PIN_ATN, state);
+        SetControl(PIN_ATN, state);
     }
 
     bool GetACK() const
     {
-        return GetControlSignal(PIN_ACK_MASK);
+        return GetControl(PIN_ACK_MASK);
     }
 
     void SetACK(bool state)
     {
-        SetControlSignal(PIN_ACK, state);
+        SetControl(PIN_ACK, state);
     }
 
     bool GetRST() const
     {
-        return GetControlSignal(PIN_RST_MASK);
+        return GetControl(PIN_RST_MASK);
     }
 
     void SetRST(bool state)
     {
-        SetControlSignal(PIN_RST, state);
+        SetControl(PIN_RST, state);
     }
 
     bool GetMSG() const
     {
-        return GetControlSignal(PIN_MSG_MASK);
+        return GetControl(PIN_MSG_MASK);
     }
 
     void SetMSG(bool state)
     {
-        SetControlSignal(PIN_MSG, state);
+        SetControl(PIN_MSG, state);
     }
 
     bool GetCD() const
     {
-        return GetControlSignal(PIN_CD_MASK);
+        return GetControl(PIN_CD_MASK);
     }
 
     void SetCD(bool state)
     {
-        SetControlSignal(PIN_CD, state);
+        SetControl(PIN_CD, state);
     }
 
     bool GetIO();
@@ -174,14 +174,14 @@ protected:
 
 private:
 
-    int ReturnHandshakeTimeout();
+    int HandshakeTimeoutError();
 
     bool IsPhase(BusPhase);
 
     bool target_mode = true;
 
-    // All bus signals
-    uint32_t signals = 0;
+    // All bus signals, inverted
+    uint32_t signals = 0xffffffff;
 
     static const array<BusPhase, 8> phases;
 

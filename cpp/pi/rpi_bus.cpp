@@ -139,9 +139,9 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
     // GPIO Function Select (GPFSEL) registers copy
-    gpfsel[0] = gpio[GPIO_FSEL_0];
-    gpfsel[1] = gpio[GPIO_FSEL_1];
-    gpfsel[2] = gpio[GPIO_FSEL_2];
+    gpfsel[GPIO_FSEL_0] = gpio[GPIO_FSEL_0];
+    gpfsel[GPIO_FSEL_1] = gpio[GPIO_FSEL_1];
+    gpfsel[GPIO_FSEL_2] = gpio[GPIO_FSEL_2];
 
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
@@ -172,7 +172,7 @@ bool RpiBus::Init(bool target)
     CreateWorkTable();
 
     // Enable ENABLE in order to show the user that s2p is running
-    SetControl(PIN_ENB, ON);
+    PinSetSignal(PIN_ENB, ON);
 
     return true;
 }
@@ -204,21 +204,21 @@ void RpiBus::Reset()
     Bus::Reset();
 
     // Turn off active signal
-    SetControl(PIN_ACT, false);
+    PinSetSignal(PIN_ACT, false);
 
     // Set all signals to off
     for (const int s : SIGNAL_TABLE) {
         if (s > PIN_DP) {
-            SetControlSignal(s, false);
+            SetControl(s, false);
         }
     }
     SetDAT(0);
 
     // Set target signal to input for all modes
-    SetControl(PIN_TAD, TAD_IN);
+    PinSetSignal(PIN_TAD, TAD_IN);
 
     // Set the initiator signal direction
-    SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
+    PinSetSignal(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 
     // Set data bus signal directions
     SetDir(!IsTarget());
@@ -247,16 +247,16 @@ bool RpiBus::WaitForSelection()
 
 void RpiBus::SetBSY(bool state)
 {
-    SetControlSignal(PIN_BSY, state);
+    SetControl(PIN_BSY, state);
 
-    SetControl(PIN_ACT, state);
-    SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
+    PinSetSignal(PIN_ACT, state);
+    PinSetSignal(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
     if (!state) {
-        SetControlSignal(PIN_MSG, false);
-        SetControlSignal(PIN_CD, false);
-        SetControlSignal(PIN_REQ, false);
-        SetControlSignal(PIN_IO, false);
+        SetControl(PIN_MSG, false);
+        SetControl(PIN_CD, false);
+        SetControl(PIN_REQ, false);
+        SetControl(PIN_IO, false);
     }
 }
 
@@ -264,14 +264,14 @@ void RpiBus::SetSEL(bool state)
 {
     assert(!IsTarget());
 
-    SetControl(PIN_ACT, state);
-    SetControlSignal(PIN_SEL, state);
+    PinSetSignal(PIN_ACT, state);
+    SetControl(PIN_SEL, state);
 }
 
 void RpiBus::SetDir(bool out)
 {
     // Change the data input/output direction by IO signal
-    SetControl(PIN_DTD, out ? DTD_OUT : DTD_IN);
+    PinSetSignal(PIN_DTD, out ? DTD_OUT : DTD_IN);
 
     if (!out) {
         SetDAT(0);
@@ -288,11 +288,11 @@ inline uint8_t RpiBus::GetDAT()
 
 inline void RpiBus::SetDAT(uint8_t dat)
 {
-    uint32_t fsel = gpfsel[1];
+    uint32_t fsel = gpfsel[GPIO_FSEL_1];
     // Mask for the DT0-DT7 and DP pins
     fsel &= 0b11111000000000000000000000000000;
     fsel |= tblDatSet[1][dat];
-    gpfsel[1] = fsel;
+    gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 }
 
@@ -301,7 +301,7 @@ void RpiBus::InitializeSignals()
     for (const int s : SIGNAL_TABLE) {
         PinSetSignal(s, false);
         PinConfig(s, GPIO_INPUT);
-        PullConfig(s);
+        ConfigurePullDown(s);
     }
 }
 
@@ -356,23 +356,9 @@ void RpiBus::CreateWorkTable()
     }
 }
 
-void RpiBus::SetControl(int pin, bool state)
-{
-    PinSetSignal(pin, state);
-}
-
-// Get input signal value (except for DP and DT0-DT7)
-inline bool RpiBus::GetControlSignal(int pinMask) const
-{
-    assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
-
-    // Invert because of negative logic (internal processing uses positive logic)
-    return !(GetSignals() & pinMask);
-}
-
 // Set output signal value (except for DP and DT0-DT7)
 // Sets signal direction to IN by default. Pins are implicitly set to OUT when applying the mask.
-void RpiBus::SetControlSignal(int pin, bool state)
+void RpiBus::SetControl(int pin, bool state)
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
@@ -458,7 +444,7 @@ void RpiBus::PinConfig(int pin, int mode)
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
-void RpiBus::PullConfig(int pin)
+void RpiBus::ConfigurePullDown(int pin)
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
