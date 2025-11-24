@@ -218,7 +218,7 @@ void RpiBus::Reset()
     // Set data bus signal directions
     SetDir(!IsTarget());
 
-    signals = 0;
+    signals = 0xffffffff;
 }
 
 bool RpiBus::WaitForSelection()
@@ -279,7 +279,10 @@ void RpiBus::SetDir(bool out)
 
 inline uint8_t RpiBus::GetDAT()
 {
-    return static_cast<uint8_t>(Acquire() >> PIN_DT0);
+    Acquire();
+
+    // Invert because of negative logic (internal processing uses positive logic)
+    return static_cast<uint8_t>(~signals >> PIN_DT0);
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)
@@ -359,7 +362,8 @@ void RpiBus::SetControl(int pin, bool state)
 
 inline bool RpiBus::GetSignal(int pin) const
 {
-    return signals & pin;
+    // Invert because of negative logic (internal processing uses positive logic)
+    return !(signals & pin);
 }
 
 // Set output signal value
@@ -495,12 +499,9 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 }
 
 // Read data from bus
-inline uint32_t RpiBus::Acquire()
+inline void RpiBus::Acquire()
 {
-    // Invert because of negative logic (internal processing uses positive logic)
-    signals = ~(*level);
-
-    return signals;
+    signals = *level;
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).

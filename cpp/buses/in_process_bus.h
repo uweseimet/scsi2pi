@@ -32,9 +32,9 @@ public:
     void CleanUp() override;
     void Reset() override;
 
-    uint32_t Acquire() override
+    void Acquire() override
     {
-        return dat;
+        // Nothing to do
     }
 
     void SetBSY(bool state) override
@@ -115,9 +115,9 @@ public:
         bus.CleanUp();
     }
 
-    uint32_t Acquire() override
+    void Acquire() override
     {
-        return bus.Acquire();
+        bus.Acquire();
     }
 
     bool WaitHandshakeSignal(int pin, bool state) override

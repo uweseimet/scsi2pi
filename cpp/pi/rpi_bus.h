@@ -41,7 +41,7 @@ public:
     bool WaitForSelection() override;
 
     // Bus signal acquisition
-    uint32_t Acquire() override;
+    void Acquire() override;
 
     void SetBSY(bool) override;
 
@@ -131,7 +131,7 @@ private:
     array<uint32_t, 3> gpfsel;
 
     // All bus signals
-    uint32_t signals = 0;
+    uint32_t signals = 0xffffffff;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;

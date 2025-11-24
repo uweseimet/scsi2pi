@@ -35,7 +35,7 @@ public:
     MOCK_METHOD(void, SetDir, (bool), (override));
     MOCK_METHOD(uint8_t, GetDAT, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
-    MOCK_METHOD(uint32_t, Acquire, (), (override));
+    MOCK_METHOD(void, Acquire, (), (override));
     MOCK_METHOD(bool, GetSignal, (int), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
     MOCK_METHOD(bool, WaitHandshakeSignal, (int, bool), (override));

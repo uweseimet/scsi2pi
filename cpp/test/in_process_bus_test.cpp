@@ -123,7 +123,8 @@ TEST(InProcessBusTest, Acquire)
     MockInProcessBus bus;
 
     bus.SetDAT(0x12);
-    EXPECT_EQ(0x12U, bus.Acquire());
+    bus.Acquire();
+    EXPECT_EQ(0x12U, bus.GetDAT());
 }
 
 TEST(InProcessBusTest, Reset)
@@ -180,7 +181,8 @@ TEST(DelegatingProcessBusTest, Acquire)
     DelegatingInProcessBus delegating_bus(bus, "", false);
 
     bus.SetDAT(0x45);
-    EXPECT_EQ(0x45U, delegating_bus.Acquire());
+    bus.Acquire();
+    EXPECT_EQ(0x45U, delegating_bus.GetDAT());
 }
 
 TEST(DelegatingProcessBusTest, SetGetSignal)

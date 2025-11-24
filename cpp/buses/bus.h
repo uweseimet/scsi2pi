@@ -38,7 +38,7 @@ public:
     virtual void Reset() = 0;
     virtual void CleanUp() = 0;
 
-    virtual uint32_t Acquire() = 0;
+    virtual void Acquire() = 0;
 
     virtual bool WaitForSelection() = 0;
 

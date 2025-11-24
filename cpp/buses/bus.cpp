@@ -266,6 +266,8 @@ int Bus::InitiatorSendHandShake(const uint8_t *buf, int count) // NOSONAR This s
 
 bool Bus::WaitHandshakeSignal(int pin, bool state)
 {
+    assert(pin == PIN_REQ_MASK || pin == PIN_ACK_MASK);
+
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
     if (GetSignal(pin) == state) {
