@@ -69,8 +69,8 @@ private:
 
     void SetControl(int, bool);
 
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    bool GetControlSignal(int) const override;
+    void SetControlSignal(int, bool) override;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
@@ -129,9 +129,6 @@ private:
     // RAM copy of GPFSEL0-2  values (GPIO Function Select)
     // Reading the current data from the copy is faster than directly reading them from the ports
     array<uint32_t, 3> gpfsel;
-
-    // All bus signals
-    uint32_t signals = 0xffffffff;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;

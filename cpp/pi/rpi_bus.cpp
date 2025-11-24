@@ -201,13 +201,18 @@ void RpiBus::CleanUp()
 
 void RpiBus::Reset()
 {
+    Bus::Reset();
+
     // Turn off active signal
     SetControl(PIN_ACT, false);
 
     // Set all signals to off
     for (const int s : SIGNAL_TABLE) {
-        SetSignal(s, false);
+        if (s > PIN_DP) {
+            SetControlSignal(s, false);
+        }
     }
+    SetDAT(0);
 
     // Set target signal to input for all modes
     SetControl(PIN_TAD, TAD_IN);
@@ -217,8 +222,6 @@ void RpiBus::Reset()
 
     // Set data bus signal directions
     SetDir(!IsTarget());
-
-    signals = 0xffffffff;
 }
 
 bool RpiBus::WaitForSelection()
@@ -244,16 +247,16 @@ bool RpiBus::WaitForSelection()
 
 void RpiBus::SetBSY(bool state)
 {
-    SetSignal(PIN_BSY, state);
+    SetControlSignal(PIN_BSY, state);
 
     SetControl(PIN_ACT, state);
     SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
     if (!state) {
-        SetSignal(PIN_MSG, false);
-        SetSignal(PIN_CD, false);
-        SetSignal(PIN_REQ, false);
-        SetSignal(PIN_IO, false);
+        SetControlSignal(PIN_MSG, false);
+        SetControlSignal(PIN_CD, false);
+        SetControlSignal(PIN_REQ, false);
+        SetControlSignal(PIN_IO, false);
     }
 }
 
@@ -262,7 +265,7 @@ void RpiBus::SetSEL(bool state)
     assert(!IsTarget());
 
     SetControl(PIN_ACT, state);
-    SetSignal(PIN_SEL, state);
+    SetControlSignal(PIN_SEL, state);
 }
 
 void RpiBus::SetDir(bool out)
@@ -271,9 +274,7 @@ void RpiBus::SetDir(bool out)
     SetControl(PIN_DTD, out ? DTD_OUT : DTD_IN);
 
     if (!out) {
-        for (const int pin : DATA_PINS) {
-            SetSignal(pin, false);
-        }
+        SetDAT(0);
     }
 }
 
@@ -282,7 +283,7 @@ inline uint8_t RpiBus::GetDAT()
     Acquire();
 
     // Invert because of negative logic (internal processing uses positive logic)
-    return static_cast<uint8_t>(~signals >> PIN_DT0);
+    return static_cast<uint8_t>(~GetSignals() >> PIN_DT0);
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)
@@ -360,24 +361,28 @@ void RpiBus::SetControl(int pin, bool state)
     PinSetSignal(pin, state);
 }
 
-inline bool RpiBus::GetSignal(int pin) const
+// Get input signal value (except for DP and DT0-DT7)
+inline bool RpiBus::GetControlSignal(int pinMask) const
 {
+    assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
+
     // Invert because of negative logic (internal processing uses positive logic)
-    return !(signals & pin);
+    return !(GetSignals() & pinMask);
 }
 
-// Set output signal value
+// Set output signal value (except for DP and DT0-DT7)
 // Sets signal direction to IN by default. Pins are implicitly set to OUT when applying the mask.
-void RpiBus::SetSignal(int pin, bool state)
+void RpiBus::SetControlSignal(int pin, bool state)
 {
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
     const int index = pin / 10;
-    assert(index <= 2);
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
-        data |= (1 << shift);
+        data |= (0b001 << shift);
     } else {
-        data &= ~(7 << shift);
+        data &= ~(0b111 << shift);
     }
     gpio[index] = data;
     gpfsel[index] = data;
@@ -501,7 +506,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read data from bus
 inline void RpiBus::Acquire()
 {
-    signals = *level;
+    SetSignals(*level);
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).

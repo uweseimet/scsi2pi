@@ -42,7 +42,7 @@ jobs:
       PACKAGES: "libspdlog-dev libgmock-dev protobuf-compiler"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch }}
 

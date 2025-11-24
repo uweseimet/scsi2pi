@@ -131,31 +131,31 @@ TEST(InProcessBusTest, Reset)
 {
     MockInProcessBus bus;
 
-    bus.SetSignal(PIN_BSY, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
+    bus.SetControlSignal(PIN_BSY, true);
+    EXPECT_TRUE(bus.GetControlSignal(PIN_BSY_MASK));
     bus.ResetMock();
-    EXPECT_FALSE(bus.GetSignal(PIN_BSY_MASK));
+    EXPECT_FALSE(bus.GetControlSignal(PIN_BSY_MASK));
 }
 
 TEST(InProcessBusTest, SetGetSignal)
 {
     MockInProcessBus bus;
 
-    bus.SetSignal(PIN_REQ, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
-    bus.SetSignal(PIN_REQ, false);
-    EXPECT_FALSE(bus.GetSignal(PIN_REQ_MASK));
+    bus.SetControlSignal(PIN_REQ, true);
+    EXPECT_TRUE(bus.GetControlSignal(PIN_REQ_MASK));
+    bus.SetControlSignal(PIN_REQ, false);
+    EXPECT_FALSE(bus.GetControlSignal(PIN_REQ_MASK));
 }
 
 TEST(InProcessBusTest, WaitHandshakeSignal)
 {
     MockInProcessBus bus;
 
-    bus.SetSignal(PIN_ACK, true);
+    bus.SetControlSignal(PIN_ACK, true);
     EXPECT_TRUE(bus.WaitHandshakeSignal(PIN_ACK_MASK, true));
 
-    bus.SetSignal(PIN_ACK, false);
-    bus.SetSignal(PIN_RST, true);
+    bus.SetControlSignal(PIN_ACK, false);
+    bus.SetControlSignal(PIN_RST, true);
     EXPECT_FALSE(bus.WaitHandshakeSignal(PIN_ACK_MASK, true));
 }
 
@@ -190,15 +190,15 @@ TEST(DelegatingProcessBusTest, SetGetSignal)
     MockInProcessBus bus;
     DelegatingInProcessBus delegating_bus(bus, "", true);
 
-    delegating_bus.SetSignal(PIN_ACK, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK_MASK));
-    delegating_bus.SetSignal(PIN_ACK, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK_MASK));
+    delegating_bus.SetControlSignal(PIN_ACK, true);
+    EXPECT_TRUE(delegating_bus.GetControlSignal(PIN_ACK_MASK));
+    delegating_bus.SetControlSignal(PIN_ACK, false);
+    EXPECT_FALSE(delegating_bus.GetControlSignal(PIN_ACK_MASK));
 
-    delegating_bus.SetSignal(PIN_IO, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO_MASK));
-    delegating_bus.SetSignal(PIN_IO, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO_MASK));
+    delegating_bus.SetControlSignal(PIN_IO, true);
+    EXPECT_TRUE(delegating_bus.GetControlSignal(PIN_IO_MASK));
+    delegating_bus.SetControlSignal(PIN_IO, false);
+    EXPECT_FALSE(delegating_bus.GetControlSignal(PIN_IO_MASK));
 }
 
 TEST(DelegatingProcessBusTest, WaitHandshakeSignal)

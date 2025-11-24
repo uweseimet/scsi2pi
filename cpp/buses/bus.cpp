@@ -270,7 +270,7 @@ bool Bus::WaitHandshakeSignal(int pin, bool state)
 
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
-    if (GetSignal(pin) == state) {
+    if (GetControlSignal(pin) == state) {
         return true;
     }
 
@@ -284,7 +284,7 @@ bool Bus::WaitHandshakeSignal(int pin, bool state)
         }
 
         Acquire();
-        if (GetSignal(pin) == state) {
+        if (GetControlSignal(pin) == state) {
             return true;
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
@@ -317,7 +317,7 @@ inline bool Bus::IsPhase(BusPhase phase)
 
 bool Bus::GetIO()
 {
-    const bool state = GetSignal(PIN_IO_MASK);
+    const bool state = GetControlSignal(PIN_IO_MASK);
 
     if (!target_mode) {
         SetDir(!state);
@@ -330,7 +330,7 @@ void Bus::SetIO(bool state)
 {
     assert(target_mode);
 
-    SetSignal(PIN_IO, state);
+    SetControlSignal(PIN_IO, state);
 
     SetDir(state);
 }

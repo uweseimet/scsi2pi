@@ -39,12 +39,12 @@ public:
 
     void SetBSY(bool state) override
     {
-        SetSignal(PIN_BSY, state);
+        SetControlSignal(PIN_BSY, state);
     }
 
     void SetSEL(bool state) override
     {
-        SetSignal(PIN_SEL, state);
+        SetControlSignal(PIN_SEL, state);
     }
 
     uint8_t GetDAT() override
@@ -56,8 +56,8 @@ public:
         dat = d;
     }
 
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    bool GetControlSignal(int) const override;
+    void SetControlSignal(int, bool) override;
 
     bool WaitForSelection() override;
 
@@ -96,8 +96,6 @@ private:
     mutex write_locker;
 
     atomic<uint8_t> dat = 0;
-
-    uint32_t signals = 0;
 };
 
 class DelegatingInProcessBus : public InProcessBus
@@ -134,8 +132,8 @@ public:
         bus.SetDAT(d);
     }
 
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    bool GetControlSignal(int) const override;
+    void SetControlSignal(int, bool) override;
 
 private:
 
