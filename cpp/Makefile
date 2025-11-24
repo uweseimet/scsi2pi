@@ -23,7 +23,7 @@ STRIP = $(CROSS_COMPILE)strip
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
 # Debug compiler flags
-	CXXFLAGS += -O3 -g -DDEBUG
+	CXXFLAGS += -O0 -g -DDEBUG
 else
 # Release compiler flags
 	CXXFLAGS += -O3 -Wall -DNDEBUG
