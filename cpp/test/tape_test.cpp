@@ -34,7 +34,7 @@ static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, ui
 
 static void CheckMetaData(istream &file, const SimhMetaData &expected)
 {
-    array<uint8_t, META_DATA_SIZE> data;
+    array<uint8_t, META_DATA_SIZE> data = { };
     file.read((char*)data.data(), data.size());
     SimhMetaData meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
