@@ -64,10 +64,7 @@ public:
     int TargetSendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
     int InitiatorSendHandShake(const uint8_t*, int);
 
-    virtual void Reset()
-    {
-        signals = 0xffffffff;
-    }
+    virtual void Reset();
 
     uint32_t GetSignals() const
     {
@@ -173,12 +170,15 @@ private:
 
     int HandshakeTimeoutError();
 
-    bool IsPhase(BusPhase);
+    bool IsPhase(BusPhase phase)
+    {
+        return GetPhase() == phase;
+    }
 
     bool target_mode = true;
 
-    // All bus signals, inverted
-    uint32_t signals = 0xffffffff;
+    // All bus signals
+    uint32_t signals = 0;
 
     static const array<BusPhase, 8> phases;
 

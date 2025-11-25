@@ -206,22 +206,18 @@ void RpiBus::Reset()
     // Turn off active signal
     PinSetSignal(PIN_ACT, false);
 
-    // Set all signals to off
+    // Set all control signals to off
     for (const int s : SIGNAL_TABLE) {
         if (s > PIN_DP) {
             SetControl(s, false);
         }
     }
-    SetDAT(0);
 
     // Set target signal to input for all modes
     PinSetSignal(PIN_TAD, TAD_IN);
 
     // Set the initiator signal direction
     PinSetSignal(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
-
-    // Set data bus signal directions
-    SetDir(!IsTarget());
 }
 
 bool RpiBus::WaitForSelection()
@@ -480,7 +476,8 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read data from bus
 inline void RpiBus::Acquire()
 {
-    SetSignals(*level);
+    // Invert because of negative logic (internal processing uses positive logic)
+    SetSignals(~(*level));
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).
