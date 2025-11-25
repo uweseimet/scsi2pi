@@ -53,6 +53,8 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
+    virtual void SetDir(bool) = 0;
+
     virtual bool WaitHandshake(int, bool);
 
     int CommandHandShake(span<uint8_t>);
@@ -90,7 +92,6 @@ public:
     {
         return GetControl(PIN_REQ_MASK);
     }
-
     void SetREQ(bool state)
     {
         SetControl(PIN_REQ, state);
@@ -100,7 +101,6 @@ public:
     {
         return GetControl(PIN_ATN_MASK);
     }
-
     void SetATN(bool state)
     {
         SetControl(PIN_ATN, state);
@@ -110,7 +110,6 @@ public:
     {
         return GetControl(PIN_ACK_MASK);
     }
-
     void SetACK(bool state)
     {
         SetControl(PIN_ACK, state);
@@ -120,7 +119,6 @@ public:
     {
         return GetControl(PIN_RST_MASK);
     }
-
     void SetRST(bool state)
     {
         SetControl(PIN_RST, state);
@@ -130,7 +128,6 @@ public:
     {
         return GetControl(PIN_MSG_MASK);
     }
-
     void SetMSG(bool state)
     {
         SetControl(PIN_MSG, state);
@@ -140,13 +137,15 @@ public:
     {
         return GetControl(PIN_CD_MASK);
     }
-
     void SetCD(bool state)
     {
         SetControl(PIN_CD, state);
     }
 
-    bool GetIO();
+    bool GetIO() const
+    {
+        return GetControl(PIN_IO_MASK);
+    }
     void SetIO(bool);
 
     BusPhase GetPhase();
@@ -164,8 +163,6 @@ protected:
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
-
-    virtual void SetDir(bool) = 0;
 
     bool IsTarget() const
     {

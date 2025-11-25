@@ -315,17 +315,6 @@ inline bool Bus::IsPhase(BusPhase phase)
     return GetPhase() == phase;
 }
 
-bool Bus::GetIO()
-{
-    const bool state = GetControl(PIN_IO_MASK);
-
-    if (!target_mode) {
-        SetDir(!state);
-    }
-
-    return state;
-}
-
 void Bus::SetIO(bool state)
 {
     assert(target_mode);

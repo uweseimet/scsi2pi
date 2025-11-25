@@ -56,6 +56,9 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
 
+        // Ensure that the data direction matches the one set by the target
+        bus.SetDir(!bus.GetIO());
+
         if (bus.GetREQ()) {
             try {
                 if (Dispatch(cdb, buffer, length)) {

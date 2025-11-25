@@ -219,13 +219,19 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        static_cast<void>(system("init 0"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+        system("init 0");
+#pragma GCC diagnostic pop
         s2p_logger.error("Pi shutdown failed");
         break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        static_cast<void>(system("init 6"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+        system("init 6");
+#pragma GCC diagnostic pop
         s2p_logger.error("Pi restart failed");
         break;
 

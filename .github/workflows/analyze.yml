@@ -10,7 +10,7 @@ on:
 
 jobs:
   code_analysis:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -57,7 +57,6 @@ jobs:
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
-            --define sonar.scm.provider=git \
             --define sonar.sourceEncoding=UTF-8 \
             --define sonar.cfamily.compile-commands=$BUILD_WRAPPER_OUT_DIR/compile_commands.json \
             --define sonar.cfamily.gcov.reportsPath=. \

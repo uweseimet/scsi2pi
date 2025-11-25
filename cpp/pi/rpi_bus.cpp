@@ -268,14 +268,10 @@ void RpiBus::SetSEL(bool state)
     SetControl(PIN_SEL, state);
 }
 
-void RpiBus::SetDir(bool out)
+void RpiBus::SetDir(bool io)
 {
     // Change the data input/output direction by IO signal
-    PinSetSignal(PIN_DTD, out ? DTD_OUT : DTD_IN);
-
-    if (!out) {
-        SetDAT(0);
-    }
+    PinSetSignal(PIN_DTD, io ? DTD_OUT : DTD_IN);
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)
