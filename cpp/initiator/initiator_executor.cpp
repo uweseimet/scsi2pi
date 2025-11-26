@@ -107,7 +107,7 @@ bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &l
         break;
 
     case BusPhase::DATA_OUT:
-        DataOut(buffer, length);
+        DataOut(buffer.subspan(0, length));
         break;
 
     case BusPhase::MSG_IN:
@@ -202,8 +202,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     }
 
     const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
-    const int sent_count = bus.InitiatorSendHandShake(cdb.data() + cdb_offset,
-        static_cast<int>(cdb.size()) - cdb_offset);
+    const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
     if (static_cast<int>(cdb.size()) < sent_count) {
         initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
     }
@@ -215,7 +214,7 @@ void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf = { };
 
-    if (bus.InitiatorReceiveHandShake(buf.data(), 1) != 1) {
+    if (bus.InitiatorReceiveHandShake(buf) != 1) {
         initiator_logger.error("STATUS phase failed");
     }
     else {
@@ -231,26 +230,25 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
 
     initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
 
-    byte_count = bus.InitiatorReceiveHandShake(buf.data(), length);
+    byte_count = bus.InitiatorReceiveHandShake(buf.subspan(0, length));
 
     length -= byte_count;
 }
 
-void InitiatorExecutor::DataOut(data_out_t buf, int &length)
+void InitiatorExecutor::DataOut(data_out_t buf)
 {
-    if (!length) {
+    if (buf.empty()) {
         throw PhaseException("No more data for DATA OUT phase");
     }
 
-    initiator_logger.debug("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length));
+    initiator_logger.debug("Sending {0} byte(s):\n{1}", buf.size(), formatter.FormatBytes(buf, buf.size()));
 
-    byte_count = bus.InitiatorSendHandShake(buf.data(), length);
-    if (byte_count != length) {
-        initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
+    byte_count = bus.InitiatorSendHandShake(buf);
+    if (byte_count != static_cast<int>(buf.size())) {
+        initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)",
+            byte_count, buf.size());
         throw PhaseException("DATA OUT phase failed");
     }
-
-    length -= byte_count;
 }
 
 void InitiatorExecutor::MsgIn()
@@ -287,7 +285,7 @@ void InitiatorExecutor::MsgOut()
     // IDENTIFY or MESSAGE REJECT
     buf[0] = static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message);
 
-    if (bus.InitiatorSendHandShake(buf.data(), buf.size()) != buf.size()) {
+    if (bus.InitiatorSendHandShake(buf) != static_cast<int>(buf.size())) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
             next_message == MessageCode::IDENTIFY ? "IDENTIFY" : "MESSAGE REJECT");
     }

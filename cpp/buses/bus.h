@@ -59,10 +59,10 @@ public:
 
     int CommandHandShake(span<uint8_t>);
     int InitiatorMsgInHandShake();
-    int TargetReceiveHandShake(uint8_t*, int);
-    int InitiatorReceiveHandShake(uint8_t*, int);
-    int TargetSendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
-    int InitiatorSendHandShake(const uint8_t*, int);
+    int TargetReceiveHandShake(span<uint8_t>);
+    int InitiatorReceiveHandShake(span<uint8_t>);
+    int TargetSendHandShake(span<const uint8_t>, int = SEND_NO_DELAY);
+    int InitiatorSendHandShake(span<const uint8_t>);
 
     virtual void Reset();
 

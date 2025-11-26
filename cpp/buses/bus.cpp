@@ -118,8 +118,10 @@ int Bus::InitiatorMsgInHandShake()
     return msg;
 }
 
-int Bus::TargetReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
+int Bus::TargetReceiveHandShake(span<uint8_t> buf)
 {
+    const auto count = static_cast<int>(buf.size());
+
     DisableIRQ();
 
     int bytes_received;
@@ -144,8 +146,10 @@ int Bus::TargetReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should 
 }
 
 // For DATA IN and STATUS
-int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
+int Bus::InitiatorReceiveHandShake(span<uint8_t> buf)
 {
+    const auto count = static_cast<int>(buf.size());
+
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
@@ -175,11 +179,13 @@ int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count) // NOSONAR This shou
 }
 
 #ifdef BUILD_SCDP
-int Bus::TargetSendHandShake(const uint8_t *buf, int count, int daynaport_delay_after_bytes) // NOSONAR This should not be a span, buf and count are unrelated
+int Bus::TargetSendHandShake(span<const uint8_t> buf, int daynaport_delay_after_bytes)
 #else
-int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
+int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
 #endif
 {
+    const auto count = static_cast<int>(buf.size());
+
     DisableIRQ();
 
     int bytes_sent;
@@ -216,8 +222,10 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
-int Bus::InitiatorSendHandShake(const uint8_t *buf, int count) // NOSONAR This should not be a span, buf and count are unrelated
+int Bus::InitiatorSendHandShake(span<const uint8_t> buf)
 {
+    const auto count = static_cast<int>(buf.size());
+
     DisableIRQ();
 
     const BusPhase phase = GetPhase();

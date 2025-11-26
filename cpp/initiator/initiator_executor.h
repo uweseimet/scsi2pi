@@ -60,7 +60,7 @@ private:
     void Command(span<uint8_t>);
     void Status();
     void DataIn(data_in_t, int&);
-    void DataOut(data_out_t, int&);
+    void DataOut(data_out_t);
     void MsgIn();
     void MsgOut();
 
