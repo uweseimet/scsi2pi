@@ -36,8 +36,6 @@ int Bus::CommandHandShake(span<uint8_t> buf)
 
     bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
-    WaitBusSettle();
-
     buf[0] = GetDAT();
 
     SetREQ(false);
@@ -58,8 +56,6 @@ int Bus::CommandHandShake(span<uint8_t> buf)
         SetREQ(true);
 
         ack = WaitHandshake(PIN_ACK_MASK, true);
-
-        WaitBusSettle();
 
         // Get the actual SCSI command
         buf[0] = GetDAT();
@@ -86,8 +82,6 @@ int Bus::CommandHandShake(span<uint8_t> buf)
 
         ack = WaitHandshake(PIN_ACK_MASK, true);
 
-        WaitBusSettle();
-
         buf[bytes_received] = GetDAT();
 
         SetREQ(false);
@@ -110,10 +104,8 @@ int Bus::InitiatorMsgInHandShake()
     }
 
     DisableIRQ();
-    WaitBusSettle();
-    EnableIRQ();
-
     const int msg = GetDAT();
+    EnableIRQ();
 
     SetACK(true);
 
@@ -138,8 +130,6 @@ int Bus::TargetReceiveHandShake(uint8_t *buf, int count) // NOSONAR This should 
         SetREQ(true);
 
         const bool ack = WaitHandshake(PIN_ACK_MASK, true);
-
-        WaitBusSettle();
 
         buf[bytes_received] = GetDAT();
 
@@ -168,8 +158,6 @@ int Bus::InitiatorReceiveHandShake(uint8_t *buf, int count) // NOSONAR This shou
         if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
-
-        WaitBusSettle();
 
         buf[bytes_received] = GetDAT();
 
@@ -312,16 +300,18 @@ void Bus::SetIO(bool state)
 }
 
 // Get input signal value (except for DP and DT0-DT7)
-inline bool Bus::GetControl(int pinMask) const
+inline bool Bus::GetControl(int pin_mask) const
 {
-    assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
+    assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 
     // Invert because of negative logic (internal processing uses positive logic)
-    return !(signals & pinMask);
+    return !(signals & pin_mask);
 }
 
 inline uint8_t Bus::GetDAT()
 {
+    WaitBusSettle();
+
     Acquire();
 
     return static_cast<uint8_t>(~(signals >> PIN_DT0));
