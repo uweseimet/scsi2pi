@@ -24,6 +24,7 @@ using namespace testing;
 
 class MockBus : public Bus
 {
+    FRIEND_TEST(BusTest, IsTarget);
 
 public:
 
@@ -35,7 +36,7 @@ public:
     MOCK_METHOD(void, Acquire, (), (override));
     MOCK_METHOD(void, SetControl, (int, bool), (override));
     MOCK_METHOD(bool, WaitHandshake, (int, bool), (override));
-    MOCK_METHOD(bool, WaitForSelection, (), (override));
+    MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitBusSettle, (), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));
     MOCK_METHOD(void, DisableIRQ, (), (override));
@@ -44,7 +45,7 @@ public:
 
 class MockInProcessBus : public InProcessBus
 {
-    FRIEND_TEST(InProcessBusTest, IsTarget);
+    FRIEND_TEST(InProcessBusTest, WaitForNotBusy);
 
 public:
 

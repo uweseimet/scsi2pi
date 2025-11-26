@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "buses/bus.h"
 
 TEST(BusTest, GetPhaseName)
 {
@@ -30,11 +29,12 @@ TEST(BusTest, Reset)
 
     bus.SetSignals(0x12345678U);
     EXPECT_EQ(0x12345678U, bus.GetSignals());
+    EXPECT_CALL(bus, SetDir);
     bus.Reset();
     EXPECT_EQ(0xffffffffU, bus.GetSignals());
 }
 
-TEST(BusTest, GetSetSignals)
+TEST(BusTest, Signals)
 {
     MockBus bus;
 
@@ -51,4 +51,14 @@ TEST(BusTest, GetDAT)
     bus.SetSignals(~0b00000000000000111111110000000000);
     EXPECT_CALL(bus, Acquire);
     EXPECT_EQ(0b11111111, bus.GetDAT());
+}
+
+TEST(BusTest, IsTarget)
+{
+    MockBus bus;
+
+    bus.Init(true);
+    EXPECT_TRUE(bus.IsTarget());
+    bus.Init(false);
+    EXPECT_FALSE(bus.IsTarget());
 }

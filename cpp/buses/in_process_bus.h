@@ -50,7 +50,7 @@ public:
 
     void SetControl(int, bool) override;
 
-    bool WaitForSelection() override;
+    uint8_t WaitForSelection() override;
 
     void WaitBusSettle() const override
     {

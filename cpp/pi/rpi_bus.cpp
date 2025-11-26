@@ -220,25 +220,32 @@ void RpiBus::Reset()
     PinSetSignal(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 }
 
-bool RpiBus::WaitForSelection()
+uint8_t RpiBus::WaitForSelection()
 {
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
         }
-        return false;
+        return 0;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
         if (errno != EINTR) {
             warn("Event read failed: {}", strerror(errno));
         }
-        return false;
+        return 0;
     }
 
-    Acquire();
+    if (WaitForNotBusy()) {
+        DisableIRQ();
+        WaitBusSettle();
+        EnableIRQ();
 
-    return true;
+        // Initiator and target ID
+        return GetDAT();
+    }
+
+    return 0;
 }
 
 void RpiBus::SetBSY(bool state)

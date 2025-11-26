@@ -76,7 +76,7 @@ bool ControllerFactory::SetScriptFile(const string &filename)
     return true;
 }
 
-ShutdownMode ControllerFactory::ProcessOnController(int ids) const
+ShutdownMode ControllerFactory::ProcessOnController(uint8_t ids) const
 {
     if (const auto &it = ranges::find_if(controllers, [&ids](const auto &c) {
         return (ids & (1 << c.first));

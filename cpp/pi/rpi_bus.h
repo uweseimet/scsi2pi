@@ -38,7 +38,7 @@ public:
     void Reset() override;
     void CleanUp() override;
 
-    bool WaitForSelection() override;
+    uint8_t WaitForSelection() override;
 
     // Bus signal acquisition
     void Acquire() override;

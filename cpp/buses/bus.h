@@ -39,7 +39,7 @@ public:
 
     virtual void Acquire() = 0;
 
-    virtual bool WaitForSelection() = 0;
+    virtual uint8_t WaitForSelection() = 0;
 
     virtual void SetBSY(bool) = 0;
 
@@ -166,6 +166,8 @@ protected:
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
+
+    bool WaitForNotBusy();
 
     bool IsTarget() const
     {

@@ -334,6 +334,26 @@ int Bus::HandshakeTimeoutError()
     return -1;
 }
 
+bool Bus::WaitForNotBusy()
+{
+    Acquire();
+
+    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
+    if (GetBSY()) {
+        const auto now = chrono::steady_clock::now();
+        while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3) {
+            Acquire();
+            if (!GetBSY()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
 // Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)
 // |I/O|C/D|MSG| Phase
 // | 0 | 0 | 0 | MESSAGE IN

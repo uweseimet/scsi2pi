@@ -39,7 +39,6 @@ private:
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
-    bool WaitForNotBusy() const;
 
     bool ExecuteCommand(CommandContext&);
 

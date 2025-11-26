@@ -61,13 +61,18 @@ void InProcessBus::SetControl(int pin, bool state)
     }
 }
 
-bool InProcessBus::WaitForSelection()
+uint8_t InProcessBus::WaitForSelection()
 {
     // Busy waiting cannot be avoided
     const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
     nanosleep(&ts, nullptr);
 
-    return true;
+    if (!WaitForNotBusy())
+    {
+        return 0;
+    }
+
+    return GetDAT();
 }
 
 DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &name, bool l) : bus(b), in_process_logger(

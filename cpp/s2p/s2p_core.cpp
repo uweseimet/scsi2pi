@@ -463,14 +463,13 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
 void S2p::ProcessScsiCommands()
 {
     while (service_thread.IsRunning()) {
-        // Only process the SCSI command if the bus is not busy and no other device responded
-        if (bus->WaitForSelection() && WaitForNotBusy()) {
+        if (const uint8_t ids = bus->WaitForSelection(); ids) {
             scoped_lock<mutex> lock(executor->GetExecutionLocker());
 
             // Process command on the responsible controller based on the current initiator and target ID
-            if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT()); shutdown_mode
+            if (const auto shutdown_mode = controller_factory.ProcessOnController(ids); shutdown_mode
                 != ShutdownMode::NONE) {
-                // When the bus is free SCSI2Pi or the Pi may be shut down.
+                // Only when the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);
             }
         }
@@ -495,22 +494,4 @@ bool S2p::ExecuteCommand(CommandContext &context)
     }
 
     return status;
-}
-
-bool S2p::WaitForNotBusy() const
-{
-    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
-    if (bus->GetBSY()) {
-        const auto now = chrono::steady_clock::now();
-        while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3) {
-            bus->Acquire();
-            if (!bus->GetBSY()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    return true;
 }

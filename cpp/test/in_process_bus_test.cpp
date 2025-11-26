@@ -8,16 +8,6 @@
 
 #include "mocks.h"
 
-TEST(InProcessBusTest, IsTarget)
-{
-    MockInProcessBus bus;
-
-    bus.Init(true);
-    EXPECT_TRUE(bus.IsTarget());
-    bus.Init(false);
-    EXPECT_FALSE(bus.IsTarget());
-}
-
 TEST(InProcessBusTest, BSY)
 {
     MockInProcessBus bus;
@@ -137,7 +127,7 @@ TEST(InProcessBusTest, Reset)
     EXPECT_FALSE(bus.GetControl(PIN_BSY_MASK));
 }
 
-TEST(InProcessBusTest, SetGetSignal)
+TEST(InProcessBusTest, Control)
 {
     MockInProcessBus bus;
 
@@ -177,11 +167,19 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     EXPECT_FALSE(bus.WaitHandshake(PIN_REQ_MASK, true));
 }
 
+TEST(InProcessBusTest, WaitForNotBusy)
+{
+    MockInProcessBus bus;
+
+    bus.SetBSY(false);
+    EXPECT_TRUE(bus.WaitForNotBusy());
+}
+
 TEST(InProcessBusTest, WaitForSelection)
 {
     MockInProcessBus bus;
 
-    EXPECT_TRUE(bus.WaitForSelection());
+    EXPECT_EQ(0, bus.WaitForSelection());
 }
 
 TEST(DelegatingProcessBusTest, Reset)
