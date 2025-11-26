@@ -57,11 +57,7 @@ void S2p::CleanUp()
 
     executor->DetachAll();
 
-    // TODO Check why there are rare cases where bus is NULL on a remote interface shutdown
-    // even though it is never set to NULL anywhere. This looks like a race condition.
-    if (bus) {
-        bus->CleanUp();
-    }
+    bus->CleanUp();
 }
 
 void S2p::ReadAccessToken(const path &filename)

@@ -52,7 +52,7 @@ public:
 
     uint8_t WaitForSelection() override;
 
-    void WaitBusSettle() const override
+    void WaitNanoSeconds(bool) const override
     {
         // Nothing to do
     }
@@ -100,11 +100,6 @@ public:
     void CleanUp() override
     {
         bus.CleanUp();
-    }
-
-    void Acquire() override
-    {
-        bus.Acquire();
     }
 
     bool WaitHandshake(int pin, bool state) override

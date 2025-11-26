@@ -49,7 +49,7 @@ public:
 
     void SetDAT(uint8_t) override;
 
-    void WaitBusSettle() const override;
+    void WaitNanoSeconds(bool) const override;
 
     bool IsRaspberryPi() const override
     {
@@ -86,7 +86,8 @@ private:
 
     PiType pi_type;
 
-    uint32_t timer_core_freq = 0;
+    uint32_t bus_settle_count = 0;
+    uint32_t daynaport_count = 0;
 
     volatile uint32_t *armt_addr = nullptr;
 
@@ -133,6 +134,8 @@ private:
     array<array<uint32_t, 256>, 3> tblDatMsk;
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
+
+    bool irq_disabled = false;
 
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };

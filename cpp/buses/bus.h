@@ -162,7 +162,7 @@ protected:
 
     Bus() = default;
 
-    virtual void WaitBusSettle() const = 0;
+    virtual void WaitNanoSeconds(bool) const = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
@@ -173,6 +173,11 @@ protected:
     {
         return target_mode;
     }
+
+    // The DaynaPort SCSI Link do a short delay in the middle of transfering
+    // a packet. This is the number of ns that will be delayed between the
+    // header and the actual data.
+    static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
 
 private:
 
@@ -191,9 +196,4 @@ private:
     static const array<BusPhase, 32> phases;
 
     static const array<string, 11> phase_names;
-
-    // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of ns that will be delayed between the
-    // header and the actual data.
-    static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
 };

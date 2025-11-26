@@ -79,8 +79,10 @@ bool RpiBus::Init(bool target)
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        timer_core_freq = maxclock[6] / 1'000'000;
+        const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         close(vcio_fd);
+        bus_settle_count = timer_core_freq * 400 / 1000;
+        daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
     }
     else {
         critical("Can't open /dev/vcio: {}", strerror(errno));
@@ -179,6 +181,10 @@ bool RpiBus::Init(bool target)
 
 void RpiBus::CleanUp()
 {
+    if (irq_disabled) {
+        EnableIRQ();
+    }
+
     // Release SEL signal interrupt
     close(selevreq.fd);
 
@@ -218,6 +224,9 @@ void RpiBus::Reset()
 
     // Set the initiator signal direction
     PinSetSignal(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
+
+    // Set data bus signal directions
+    SetDir(!IsTarget());
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -394,6 +403,8 @@ void RpiBus::DisableIRQ()
         assert(false);
         break;
     }
+
+    irq_disabled = true;
 }
 
 void RpiBus::EnableIRQ()
@@ -419,6 +430,8 @@ void RpiBus::EnableIRQ()
         assert(false);
         break;
     }
+
+    irq_disabled = false;
 }
 
 // Pin direction setting (input/output)
@@ -488,15 +501,14 @@ inline void RpiBus::Acquire()
     SetSignals(*level);
 }
 
-// Wait until the signal line stabilizes (400 ns bus settle delay).
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
-void RpiBus::WaitBusSettle() const
+// Furthermore, nanosleep() requires interrupts to be enabled.
+void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
-    if (const uint32_t diff = timer_core_freq * 400 / 1000; diff) {
-        const uint32_t start = armt_addr[ARMT_FREERUN];
-        while (armt_addr[ARMT_FREERUN] - start < diff) {
-            // Intentionally empty
-        }
+    // Either Daynaport delay or bus settle delay
+    const uint32_t count = armt_addr[ARMT_FREERUN] + (daynaport ? daynaport_count : bus_settle_count);
+    while (armt_addr[ARMT_FREERUN] < count) {
+        // Intentionally empty
     }
 }
 

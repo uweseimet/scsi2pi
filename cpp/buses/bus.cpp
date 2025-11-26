@@ -22,9 +22,6 @@ bool Bus::Init(bool target)
 
 void Bus::Reset()
 {
-    // Set data bus signal directions
-    SetDir(!target_mode);
-
     signals = 0xffffffff;
 }
 
@@ -189,10 +186,8 @@ int Bus::TargetSendHandShake(const uint8_t *buf, int count, int)
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
 #ifdef BUILD_SCDP
         if (bytes_sent == daynaport_delay_after_bytes) {
-            const timespec ts = { .tv_sec = 0, .tv_nsec = DAYNAPORT_SEND_DELAY_NS };
-            EnableIRQ();
-            nanosleep(&ts, nullptr);
-            DisableIRQ();
+            // Wait for a Daynaport delay
+            WaitNanoSeconds(true);
         }
 #endif
 
@@ -310,7 +305,8 @@ inline bool Bus::GetControl(int pin_mask) const
 
 inline uint8_t Bus::GetDAT()
 {
-    WaitBusSettle();
+    // Wait for a bus settle delay
+    WaitNanoSeconds(false);
 
     Acquire();
 
