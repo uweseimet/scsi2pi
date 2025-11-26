@@ -476,8 +476,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read data from bus
 inline void RpiBus::Acquire()
 {
-    // Invert because of negative logic (internal processing uses positive logic)
-    SetSignals(~(*level));
+    SetSignals(*level);
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).

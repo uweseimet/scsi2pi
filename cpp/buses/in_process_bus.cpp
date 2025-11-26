@@ -44,8 +44,8 @@ void InProcessBus::CleanUp()
 void InProcessBus::SetDAT(uint8_t dat)
 {
     uint32_t s = GetSignals();
-    s &= 0b1111111111111000000001111111111;
-    s |= static_cast<uint32_t>(static_cast<byte>(dat)) << PIN_DT0;
+    s |= 0b0000000000000111111110000000000;
+    s &= static_cast<uint32_t>(~static_cast<byte>(dat)) << PIN_DT0;
     SetSignals(s);
 }
 
@@ -55,9 +55,9 @@ void InProcessBus::SetControl(int pin, bool state)
 
     scoped_lock lock(write_locker);
     if (state) {
-        SetSignals(GetSignals() | (1 << pin));
-    } else {
         SetSignals(GetSignals() & ~(7 << pin));
+    } else {
+        SetSignals(GetSignals() | (1 << pin));
     }
 }
 

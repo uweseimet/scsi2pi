@@ -25,7 +25,7 @@ void Bus::Reset()
     // Set data bus signal directions
     SetDir(!target_mode);
 
-    signals = 0;
+    signals = 0xffffffff;
 }
 
 int Bus::CommandHandShake(span<uint8_t> buf)
@@ -314,8 +314,8 @@ BusPhase Bus::GetPhase()
         return BusPhase::BUS_FREE;
     }
 
-    // Get phase from bus signal lines
-    return phases[(signals & (PIN_MSG_MASK | PIN_CD_MASK | PIN_IO_MASK)) >> PIN_MSG];
+    // Get phase from bus signal lines I/O, C/D and MSG
+    return phases[(signals >> PIN_MSG) & 0b111];
 }
 
 void Bus::SetIO(bool state)
@@ -332,14 +332,15 @@ inline bool Bus::GetControl(int pinMask) const
 {
     assert(pinMask >= PIN_ATN_MASK && pinMask <= PIN_SEL_MASK);
 
-    return signals & pinMask;
+    // Invert because of negative logic (internal processing uses positive logic)
+    return !(signals & pinMask);
 }
 
 inline uint8_t Bus::GetDAT()
 {
     Acquire();
 
-    return static_cast<uint8_t>(signals >> PIN_DT0);
+    return static_cast<uint8_t>(~(signals >> PIN_DT0));
 }
 
 int Bus::HandshakeTimeoutError()
@@ -349,26 +350,25 @@ int Bus::HandshakeTimeoutError()
     return -1;
 }
 
-// Phase table with the phases based upon the I/O, C/D and MSG signals
+// Phase table with the phases based upon the I/O, C/D and MSG signals (negative logic)
 // |I/O|C/D|MSG| Phase
-// | 0 | 0 | 0 | DATA OUT
-// | 0 | 0 | 1 | RESERVED
-// | 0 | 1 | 0 | COMMAND
-// | 0 | 1 | 1 | MESSAGE OUT
-// | 1 | 0 | 0 | DATA IN
-// | 1 | 0 | 1 | RESERVED
-// | 1 | 1 | 0 | STATUS
-// | 1 | 1 | 1 | MESSAGE IN
-//
+// | 0 | 0 | 0 | MESSAGE IN
+// | 0 | 0 | 1 | STATUS
+// | 0 | 1 | 0 | RESERVED
+// | 0 | 1 | 1 | DATA IN
+// | 1 | 0 | 0 | MESSAGE OUT
+// | 1 | 0 | 1 | COMMAND
+// | 1 | 1 | 0 | RESERVED
+// | 1 | 1 | 1 | DATA OUT
 constexpr array<BusPhase, 8> Bus::phases = {
-    BusPhase::DATA_OUT,
-    BusPhase::RESERVED,
-    BusPhase::COMMAND,
-    BusPhase::MSG_OUT,
-    BusPhase::DATA_IN,
-    BusPhase::RESERVED,
+    BusPhase::MSG_IN,
     BusPhase::STATUS,
-    BusPhase::MSG_IN
+    BusPhase::RESERVED,
+    BusPhase::DATA_IN,
+    BusPhase::MSG_OUT,
+    BusPhase::COMMAND,
+    BusPhase::RESERVED,
+    BusPhase::DATA_OUT
 };
 
 const array<string, 11> Bus::phase_names = {

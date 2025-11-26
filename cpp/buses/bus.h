@@ -177,8 +177,8 @@ private:
 
     bool target_mode = true;
 
-    // All bus signals
-    uint32_t signals = 0;
+    // All bus signals, inverted logic
+    uint32_t signals = 0xffffffff;
 
     static const array<BusPhase, 8> phases;
 
