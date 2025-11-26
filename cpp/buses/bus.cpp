@@ -302,20 +302,12 @@ bool Bus::WaitHandshake(int pin, bool state)
     return false;
 }
 
-BusPhase Bus::GetPhase()
+inline BusPhase Bus::GetPhase()
 {
     Acquire();
 
-    if (GetSEL()) {
-        return BusPhase::SELECTION;
-    }
-
-    if (!GetBSY()) {
-        return BusPhase::BUS_FREE;
-    }
-
-    // Get phase from bus signal lines I/O, C/D and MSG
-    return phases[(signals >> PIN_MSG) & 0b111];
+    // Get phase from bus signal lines SEL, BSY, I/O, C/D and MSG
+    return phases[(signals >> PIN_MSG) & 0b11111];
 }
 
 void Bus::SetIO(bool state)
@@ -350,7 +342,7 @@ int Bus::HandshakeTimeoutError()
     return -1;
 }
 
-// Phase table with the phases based upon the I/O, C/D and MSG signals (negative logic)
+// Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)
 // |I/O|C/D|MSG| Phase
 // | 0 | 0 | 0 | MESSAGE IN
 // | 0 | 0 | 1 | STATUS
@@ -360,7 +352,23 @@ int Bus::HandshakeTimeoutError()
 // | 1 | 0 | 1 | COMMAND
 // | 1 | 1 | 0 | RESERVED
 // | 1 | 1 | 1 | DATA OUT
-constexpr array<BusPhase, 8> Bus::phases = {
+constexpr array<BusPhase, 32> Bus::phases = {
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
     BusPhase::MSG_IN,
     BusPhase::STATUS,
     BusPhase::RESERVED,
@@ -368,7 +376,15 @@ constexpr array<BusPhase, 8> Bus::phases = {
     BusPhase::MSG_OUT,
     BusPhase::COMMAND,
     BusPhase::RESERVED,
-    BusPhase::DATA_OUT
+    BusPhase::DATA_OUT,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE
 };
 
 const array<string, 11> Bus::phase_names = {

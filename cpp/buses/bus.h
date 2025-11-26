@@ -180,7 +180,7 @@ private:
     // All bus signals, inverted logic
     uint32_t signals = 0xffffffff;
 
-    static const array<BusPhase, 8> phases;
+    static const array<BusPhase, 32> phases;
 
     static const array<string, 11> phase_names;
 
