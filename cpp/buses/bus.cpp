@@ -226,17 +226,13 @@ int Bus::InitiatorSendHandShake(const uint8_t *buf, int count) // NOSONAR This s
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
         SetDAT(buf[bytes_sent]);
 
-        if (!WaitHandshake(PIN_REQ_MASK, true)) {
+        if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
 
         // Signal the last MESSAGE OUT byte
         if (phase == BusPhase::MSG_OUT && bytes_sent == count - 1) {
             SetATN(false);
-        }
-
-        if (!IsPhase(phase)) {
-            break;
         }
 
         SetACK(true);

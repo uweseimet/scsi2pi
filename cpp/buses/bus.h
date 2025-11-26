@@ -183,9 +183,10 @@ private:
 
     int HandshakeTimeoutError();
 
-    bool IsPhase(BusPhase phase)
+    bool IsPhase(BusPhase phase) const
     {
-        return GetPhase() == phase;
+        // The signals are still up to date
+        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
     }
 
     bool target_mode = true;
