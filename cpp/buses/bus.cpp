@@ -302,14 +302,6 @@ bool Bus::WaitHandshake(int pin, bool state)
     return false;
 }
 
-inline BusPhase Bus::GetPhase()
-{
-    Acquire();
-
-    // Get phase from bus signal lines SEL, BSY, I/O, C/D and MSG
-    return phases[(signals >> PIN_MSG) & 0b11111];
-}
-
 void Bus::SetIO(bool state)
 {
     assert(target_mode);
