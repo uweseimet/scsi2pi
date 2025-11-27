@@ -38,7 +38,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
 
     const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
 
-    if (!ValidateOperation(context, *device)) {
+    if (!device || !ValidateOperation(context, *device)) {
         return false;
     }
 
