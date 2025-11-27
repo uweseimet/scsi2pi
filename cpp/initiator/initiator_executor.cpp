@@ -253,6 +253,7 @@ void InitiatorExecutor::DataOut(data_out_t buf)
 
 void InitiatorExecutor::MsgIn()
 {
+    // The messages handled must match those in InitiatorMsgInHandShake()
     const int msg = bus.InitiatorMsgInHandShake();
     switch (msg) {
     case -1:

@@ -149,14 +149,16 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 // For DATA IN and STATUS
 int Bus::InitiatorReceiveHandShake(data_in_t buf)
 {
-    const auto count = static_cast<int>(buf.size());
+    auto count = static_cast<int>(buf.size());
 
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
 
-    int bytes_received;
-    for (bytes_received = 0; bytes_received < count; ++bytes_received) {
+    bool req = false;
+    int bytes_received = 0;
+
+    do {
         if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
@@ -165,14 +167,13 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
         SetACK(true);
 
-        const bool req = WaitHandshake(PIN_REQ_MASK, false);
+        req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
 
-        if (!req || !IsPhase(phase)) {
-            break;
-        }
-    }
+        ++bytes_received;
+        --count;
+    } while (count && req && IsPhase(phase));
 
     EnableIRQ();
 
@@ -225,37 +226,36 @@ int Bus::TargetSendHandShake(data_out_t buf, int)
 // For MESSAGE OUT, DATA OUT and COMMAND
 int Bus::InitiatorSendHandShake(data_out_t buf)
 {
-    const auto last = static_cast<int>(buf.size()) - 1;
-
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
 
+    // Position of the last message byte if in MESSAGE OUT phase
+    const int last_msg_out = phase == BusPhase::MSG_OUT ? static_cast<int>(buf.size()) - 1 : -1;
+
+    bool req = false;
     int bytes_sent = 0;
-    for (const auto b : buf) {
-        SetDAT(b);
+
+    do {
+        SetDAT(buf[bytes_sent]);
 
         if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
 
-        // Signal the last MESSAGE OUT byte
-        if (phase == BusPhase::MSG_OUT && bytes_sent == last) {
+        // Signal the last MESSAGE OUT byte when in MESSAGE OUT phase
+        if (bytes_sent == last_msg_out) {
             SetATN(false);
         }
 
         SetACK(true);
 
-        const bool req = WaitHandshake(PIN_REQ_MASK, false);
+        req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
 
         ++bytes_sent;
-
-        if (!req || !IsPhase(phase)) {
-            break;
-        }
-    }
+    } while (req && IsPhase(phase));
 
     EnableIRQ();
 
