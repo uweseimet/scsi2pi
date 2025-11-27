@@ -255,6 +255,7 @@ void InitiatorExecutor::MsgIn()
     const int msg = bus.MsgInHandShake();
     switch (msg) {
     case -1:
+    case static_cast<int>(MessageCode::MESSAGE_REJECT):
         initiator_logger.error("MESSAGE IN phase failed");
         break;
 

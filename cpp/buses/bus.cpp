@@ -113,8 +113,11 @@ int Bus::MsgInHandShake()
 
     SetACK(true);
 
-    // Request MESSAGE OUT phase for rejecting any unsupported message (only COMMAND COMPLETE is supported)
-    if (msg) {
+    // Request MESSAGE OUT phase for rejecting any unsupported message
+    if (msg != static_cast<int>(MessageCode::COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG)
+        && msg != static_cast<int>(MessageCode::MESSAGE_REJECT)) {
         SetATN(true);
     }
 
