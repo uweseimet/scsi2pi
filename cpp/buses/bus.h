@@ -181,7 +181,7 @@ protected:
 
 private:
 
-    int HandshakeTimeoutError();
+    int CommandHandshakeTimeout();
 
     bool IsPhase(BusPhase phase) const
     {
