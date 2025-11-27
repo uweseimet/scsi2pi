@@ -37,11 +37,13 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     }
 
     const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
-    if (!ValidateOperation(context, *device)) {
+
+    const PbOperation operation = context.GetCommand().operation();
+    if (operation != ATTACH && !ValidateOperation(context, *device)) {
         return false;
     }
 
-    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
+    switch (operation) {
     case ATTACH:
         return Attach(context, pb_device, dryRun);
 

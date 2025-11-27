@@ -184,12 +184,10 @@ int Bus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
 int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
 #endif
 {
-    const auto count = static_cast<int>(buf.size());
-
     DisableIRQ();
 
-    int bytes_sent;
-    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+    int bytes_sent = 0;
+    for (const auto b : buf) {
 #ifdef BUILD_SCDP
         if (bytes_sent == daynaport_delay_after_bytes) {
             // Wait for a Daynaport delay
@@ -197,7 +195,7 @@ int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
         }
 #endif
 
-        SetDAT(buf[bytes_sent]);
+        SetDAT(b);
 
         if (!WaitHandshake(PIN_ACK_MASK, false)) {
             return HandshakeTimeoutError();
@@ -208,6 +206,8 @@ int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
         const bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
         SetREQ(false);
+
+        ++bytes_sent;
 
         if (!ack) {
             break;
@@ -224,22 +224,22 @@ int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
 // For MESSAGE OUT, DATA OUT and COMMAND
 int Bus::InitiatorSendHandShake(data_out_t buf)
 {
-    const auto count = static_cast<int>(buf.size());
+    const auto last = static_cast<int>(buf.size()) - 1;
 
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
 
-    int bytes_sent;
-    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
-        SetDAT(buf[bytes_sent]);
+    int bytes_sent = 0;
+    for (const auto b : buf) {
+        SetDAT(b);
 
         if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
 
         // Signal the last MESSAGE OUT byte
-        if (phase == BusPhase::MSG_OUT && bytes_sent == count - 1) {
+        if (phase == BusPhase::MSG_OUT && bytes_sent == last) {
             SetATN(false);
         }
 
@@ -248,6 +248,8 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
         const bool req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
+
+        ++bytes_sent;
 
         if (!req || !IsPhase(phase)) {
             break;
