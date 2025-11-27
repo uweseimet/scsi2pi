@@ -57,12 +57,12 @@ public:
 
     virtual bool WaitHandshake(int, bool);
 
-    int CommandHandShake(span<uint8_t>);
+    int CommandHandShake(data_in_t);
     int InitiatorMsgInHandShake();
-    int TargetReceiveHandShake(span<uint8_t>);
-    int InitiatorReceiveHandShake(span<uint8_t>);
-    int TargetSendHandShake(span<const uint8_t>, int = SEND_NO_DELAY);
-    int InitiatorSendHandShake(span<const uint8_t>);
+    int TargetReceiveHandShake(data_in_t);
+    int InitiatorReceiveHandShake(data_in_t);
+    int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
+    int InitiatorSendHandShake(data_out_t);
 
     virtual void Reset();
 

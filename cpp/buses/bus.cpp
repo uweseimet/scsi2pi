@@ -25,7 +25,7 @@ void Bus::Reset()
     signals = 0xffffffff;
 }
 
-int Bus::CommandHandShake(span<uint8_t> buf)
+int Bus::CommandHandShake(data_in_t buf)
 {
     DisableIRQ();
 
@@ -118,7 +118,7 @@ int Bus::InitiatorMsgInHandShake()
     return msg;
 }
 
-int Bus::TargetReceiveHandShake(span<uint8_t> buf)
+int Bus::TargetReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -146,7 +146,7 @@ int Bus::TargetReceiveHandShake(span<uint8_t> buf)
 }
 
 // For DATA IN and STATUS
-int Bus::InitiatorReceiveHandShake(span<uint8_t> buf)
+int Bus::InitiatorReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -179,7 +179,7 @@ int Bus::InitiatorReceiveHandShake(span<uint8_t> buf)
 }
 
 #ifdef BUILD_SCDP
-int Bus::TargetSendHandShake(span<const uint8_t> buf, int daynaport_delay_after_bytes)
+int Bus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
 #else
 int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
 #endif
@@ -222,7 +222,7 @@ int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
-int Bus::InitiatorSendHandShake(span<const uint8_t> buf)
+int Bus::InitiatorSendHandShake(data_out_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 

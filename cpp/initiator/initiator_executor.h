@@ -59,7 +59,7 @@ private:
     bool Selection(bool) const;
     void Command(span<uint8_t>);
     void Status();
-    void DataIn(data_in_t, int&);
+    int DataIn(data_in_t);
     void DataOut(data_out_t);
     void MsgIn();
     void MsgOut();

@@ -103,11 +103,11 @@ bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &l
         break;
 
     case BusPhase::DATA_IN:
-        DataIn(buffer, length);
+        length = DataIn(buffer.first(length));
         break;
 
     case BusPhase::DATA_OUT:
-        DataOut(buffer.subspan(0, length));
+        DataOut(buffer.first(length));
         break;
 
     case BusPhase::MSG_IN:
@@ -222,17 +222,17 @@ void InitiatorExecutor::Status()
     }
 }
 
-void InitiatorExecutor::DataIn(data_in_t buf, int &length)
+int InitiatorExecutor::DataIn(data_in_t buf)
 {
-    if (!length) {
+    if (buf.empty()) {
         throw PhaseException("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
+    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", buf.size());
 
-    byte_count = bus.InitiatorReceiveHandShake(buf.subspan(0, length));
+    byte_count = bus.InitiatorReceiveHandShake(buf);
 
-    length -= byte_count;
+    return static_cast<int>(buf.size()) - byte_count;
 }
 
 void InitiatorExecutor::DataOut(data_out_t buf)
