@@ -100,14 +100,15 @@ int Bus::InitiatorMsgInHandShake()
         return -1;
     }
 
-    DisableIRQ();
     const int msg = GetDAT();
-    EnableIRQ();
 
     SetACK(true);
 
-    // Request MESSAGE OUT phase for rejecting any unsupported message (only COMMAND COMPLETE is supported)
-    if (msg) {
+    // Request MESSAGE OUT phase for rejecting any unsupported message
+    if (msg != static_cast<int>(MessageCode::COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG)
+        && msg != static_cast<int>(MessageCode::MESSAGE_REJECT)) {
         SetATN(true);
     }
 
@@ -181,7 +182,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 #ifdef BUILD_SCDP
 int Bus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
 #else
-int Bus::TargetSendHandShake(span<const uint8_t> buf,  int)
+int Bus::TargetSendHandShake(data_out_t buf, int)
 #endif
 {
     DisableIRQ();
