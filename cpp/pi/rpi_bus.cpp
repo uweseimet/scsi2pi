@@ -79,8 +79,10 @@ bool RpiBus::Init(bool target)
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        timer_core_freq = maxclock[6] / 1'000'000;
+        const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         close(vcio_fd);
+        bus_settle_count = timer_core_freq * 400 / 1000;
+        daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
     }
     else {
         critical("Can't open /dev/vcio: {}", strerror(errno));
@@ -204,6 +206,8 @@ void RpiBus::CleanUp()
 
 void RpiBus::Reset()
 {
+    Bus::Reset();
+
     // Turn off active signal
     SetControl(PIN_ACT, false);
 
@@ -230,9 +234,6 @@ void RpiBus::Reset()
         PIN_DT6, PIN_DT7, PIN_DP }) {
         SetMode(pin, IsTarget() ? IN : OUT);
     }
-
-    // Initialize all signals
-    signals = 0xffffffff;
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -321,7 +322,7 @@ inline uint8_t RpiBus::GetDAT()
 {
     Acquire();
 
-    return static_cast<uint8_t>(~(signals >> PIN_DT0));
+    return static_cast<uint8_t>(~(GetSignals() >> PIN_DT0));
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)
@@ -422,15 +423,6 @@ void RpiBus::SetMode(int pin, int mode)
     }
     gpio[index] = data;
     gpfsel[index] = data;
-}
-
-// Get input signal value
-inline bool RpiBus::GetSignal(int pin_mask) const
-{
-    assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
-
-    // Invert because of negative logic (internal processing is unified to positive logic)
-    return !(signals & pin_mask);
 }
 
 //---------------------------------------------------------------------------
@@ -582,18 +574,17 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read date byte from bus
 inline void RpiBus::Acquire()
 {
-    signals = *level;
+    SetSignals(*level);
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 void RpiBus::WaitBusSettle() const
 {
-    if (const uint32_t diff = timer_core_freq * 400 / 1000; diff) {
-        const uint32_t start = armt_addr[ARMT_FREERUN];
-        while (armt_addr[ARMT_FREERUN] - start < diff) {
-            // Intentionally empty
-        }
+    const uint32_t diff = bus_settle_count;
+    const uint32_t start = armt_addr[ARMT_FREERUN];
+    while (armt_addr[ARMT_FREERUN] - start < diff) {
+        // Intentionally empty
     }
 }
 

@@ -44,25 +44,19 @@ void InProcessBus::CleanUp()
 
 void InProcessBus::Reset()
 {
-    signals = 0xffffffff;
+    Bus::Reset();
 
     dat = 0;
-}
-
-bool InProcessBus::GetSignal(int pin_mask) const
-{
-    // Invert because of negative logic (internal processing uses positive logic)
-    return !(signals & pin_mask);
 }
 
 void InProcessBus::SetSignal(int pin, bool state)
 {
     scoped_lock lock(write_locker);
     if (state) {
-        signals &= ~(1 << pin);
+        SetSignals(GetSignals() & ~(1 << pin));
     }
     else {
-        signals |= 1 << pin;
+        SetSignals(GetSignals() | 1 << pin);
     }
 }
 

@@ -75,7 +75,6 @@ private:
     // Sets signal direction (in/out) depending on initiator/target mode
     void SetMode(int, int);
 
-    bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
 
     void DisableIRQ() override;
@@ -94,7 +93,8 @@ private:
 
     PiType pi_type;
 
-    uint32_t timer_core_freq = 0;
+    uint32_t bus_settle_count = 0;
+    uint32_t daynaport_count = 0;
 
     volatile uint32_t *armt_addr = nullptr;
 
@@ -133,9 +133,6 @@ private:
     // RAM copy of GPFSEL0-2  values (GPIO Function Select)
     // Reading the current data from the copy is faster than directly reading them from the ports
     array<uint32_t, 3> gpfsel;
-
-    // All bus signals, inverted
-    uint32_t signals = 0xffffff;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;

@@ -64,7 +64,6 @@ public:
         dat = d;
     }
 
-    bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
 
     uint8_t WaitForSelection() override;
@@ -99,8 +98,6 @@ private:
     mutex write_locker;
 
     atomic<uint8_t> dat = 0;
-
-    uint32_t signals = 0xffffffff;
 };
 
 class DelegatingInProcessBus : public InProcessBus

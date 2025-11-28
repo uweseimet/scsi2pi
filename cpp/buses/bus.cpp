@@ -20,6 +20,11 @@ bool Bus::Init(bool target)
     return true;
 }
 
+void Bus::Reset()
+{
+    signals = 0xffffffff;
+}
+
 int Bus::CommandHandShake(data_in_t buf)
 {
     DisableIRQ();
@@ -302,27 +307,27 @@ bool Bus::WaitHandshake(int pin, bool state)
     return false;
 }
 
+// Get input signal value (except for DP and DT0-DT7)
+inline bool Bus::GetSignal(int pin_mask) const
+{
+    assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
+
+    // Invert because of negative logic (internal processing uses positive logic)
+    return !(signals & pin_mask);
+}
+
+inline uint8_t Bus::GetDAT()
+{
+    Acquire();
+
+    return static_cast<uint8_t>(~(signals >> PIN_DT0));
+}
+
 int Bus::CommandHandshakeTimeout()
 {
     EnableIRQ();
 
     return -1;
-}
-
-BusPhase Bus::GetPhase()
-{
-    Acquire();
-
-    if (GetSEL()) {
-        return BusPhase::SELECTION;
-    }
-
-    if (!GetBSY()) {
-        return BusPhase::BUS_FREE;
-    }
-
-    // Get phase from bus signal lines
-    return phases[(GetMSG() ? 0b100 : 0b000) | (GetCD() ? 0b010 : 0b000) | (GetIO() ? 0b001 : 0b000)];
 }
 
 bool Bus::WaitForNotBusy()
@@ -345,27 +350,49 @@ bool Bus::WaitForNotBusy()
     return true;
 }
 
-// Phase table with the phases based upon the MSG, C/D and I/O signals
-//
-// |MSG|C/D|I/O| Phase
-// | 0 | 0 | 0 | DATA OUT
-// | 0 | 0 | 1 | DATA IN
-// | 0 | 1 | 0 | COMMAND
-// | 0 | 1 | 1 | STATUS
-// | 1 | 0 | 0 | RESERVED
-// | 1 | 0 | 1 | RESERVED
-// | 1 | 1 | 0 | MESSAGE OUT
-// | 1 | 1 | 1 | MESSAGE IN
-//
-constexpr array<BusPhase, 8> Bus::phases = {
-    BusPhase::DATA_OUT,
-    BusPhase::DATA_IN,
-    BusPhase::COMMAND,
+// Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)
+// |I/O|C/D|MSG| Phase
+// | 0 | 0 | 0 | MESSAGE IN
+// | 0 | 0 | 1 | STATUS
+// | 0 | 1 | 0 | RESERVED
+// | 0 | 1 | 1 | DATA IN
+// | 1 | 0 | 0 | MESSAGE OUT
+// | 1 | 0 | 1 | COMMAND
+// | 1 | 1 | 0 | RESERVED
+// | 1 | 1 | 1 | DATA OUT
+constexpr array<BusPhase, 32> Bus::phases = {
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::SELECTION,
+    BusPhase::MSG_IN,
     BusPhase::STATUS,
     BusPhase::RESERVED,
-    BusPhase::RESERVED,
+    BusPhase::DATA_IN,
     BusPhase::MSG_OUT,
-    BusPhase::MSG_IN
+    BusPhase::COMMAND,
+    BusPhase::RESERVED,
+    BusPhase::DATA_OUT,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE,
+    BusPhase::BUS_FREE
 };
 
 const array<string, 11> Bus::phase_names = {
