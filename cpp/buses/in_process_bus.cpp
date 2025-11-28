@@ -44,24 +44,25 @@ void InProcessBus::CleanUp()
 
 void InProcessBus::Reset()
 {
-    signals = 0;
+    signals = 0xffffffff;
 
     dat = 0;
 }
 
 bool InProcessBus::GetSignal(int pin_mask) const
 {
-    return signals & pin_mask;
+    // Invert because of negative logic (internal processing uses positive logic)
+    return !(signals & pin_mask);
 }
 
 void InProcessBus::SetSignal(int pin, bool state)
 {
     scoped_lock lock(write_locker);
     if (state) {
-        signals |= 1 << pin;
+        signals &= ~(1 << pin);
     }
     else {
-        signals &= ~(1 << pin);
+        signals |= 1 << pin;
     }
 }
 
@@ -99,7 +100,8 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 
     if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK
         && in_process_logger->level() == level::trace) {
-        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin_mask >> PIN_MSG), state ? "true" : "false");
+        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin_mask == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
+            state ? "true" : "false");
     }
 
     return state;

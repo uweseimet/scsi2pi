@@ -232,7 +232,7 @@ void RpiBus::Reset()
     }
 
     // Initialize all signals
-    signals = 0;
+    signals = 0xffffffff;
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -321,7 +321,7 @@ inline uint8_t RpiBus::GetDAT()
 {
     Acquire();
 
-    return static_cast<uint8_t>(signals >> PIN_DT0);
+    return static_cast<uint8_t>(~(signals >> PIN_DT0));
 }
 
 inline void RpiBus::SetDAT(uint8_t dat)
@@ -429,7 +429,8 @@ inline bool RpiBus::GetSignal(int pin_mask) const
 {
     assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 
-    return signals & pin_mask;
+    // Invert because of negative logic (internal processing is unified to positive logic)
+    return !(signals & pin_mask);
 }
 
 //---------------------------------------------------------------------------
@@ -581,8 +582,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 // Read date byte from bus
 inline void RpiBus::Acquire()
 {
-    // Invert because of negative logic (internal processing is unified to positive logic)
-    signals = ~(*level);
+    signals = *level;
 }
 
 // Wait until the signal line stabilizes (400 ns bus settle delay).

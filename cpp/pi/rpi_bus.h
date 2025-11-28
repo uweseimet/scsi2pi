@@ -134,8 +134,8 @@ private:
     // Reading the current data from the copy is faster than directly reading them from the ports
     array<uint32_t, 3> gpfsel;
 
-    // All bus signals
-    uint32_t signals = 0;
+    // All bus signals, inverted
+    uint32_t signals = 0xffffff;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;

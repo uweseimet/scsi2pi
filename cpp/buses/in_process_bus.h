@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <atomic>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -101,7 +100,7 @@ private:
 
     atomic<uint8_t> dat = 0;
 
-    uint32_t signals = 0;
+    uint32_t signals = 0xffffffff;
 };
 
 class DelegatingInProcessBus : public InProcessBus

@@ -179,7 +179,7 @@ TEST(InProcessBusTest, WaitForSelection)
 {
     MockInProcessBus bus;
 
-    EXPECT_EQ(0, bus.WaitForSelection());
+    EXPECT_EQ(0U, bus.WaitForSelection());
 }
 
 TEST(DelegatingProcessBusTest, Reset)
