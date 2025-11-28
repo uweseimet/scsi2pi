@@ -30,6 +30,7 @@ public:
 
     bool Init(bool) override;
     void CleanUp() override;
+    void Reset() override;
 
     void Acquire() override
     {
@@ -38,21 +39,38 @@ public:
 
     void SetBSY(bool state) override
     {
-        SetControl(PIN_BSY, state);
+        SetSignal(PIN_BSY, state);
     }
 
     void SetSEL(bool state) override
     {
-        SetControl(PIN_SEL, state);
+        SetSignal(PIN_SEL, state);
     }
 
-    void SetDAT(uint8_t) override;
+    bool GetIO() override
+    {
+        return GetSignal(PIN_IO);
+    }
+    void SetIO(bool state) override
+    {
+        SetSignal(PIN_IO, state);
+    }
 
-    void SetControl(int, bool) override;
+    uint8_t GetDAT() override
+    {
+        return dat;
+    }
+    void SetDAT(uint8_t d) override
+    {
+        dat = d;
+    }
+
+    bool GetSignal(int) const override;
+    void SetSignal(int, bool) override;
 
     uint8_t WaitForSelection() override;
 
-    void WaitNanoSeconds(bool) const override
+    void WaitBusSettle() const override
     {
         // Nothing to do
     }
@@ -74,17 +92,16 @@ private:
     }
     void EnableIRQ() override
     {
-        // Nothing to do
-    }
-
-    void SetDir(bool) override
-    {
-        // Nothing to do
+        // Nothing to do }
     }
 
     static inline atomic_bool target_enabled;
 
     mutex write_locker;
+
+    atomic<uint8_t> dat = 0;
+
+    array<bool, 28> signals = { };
 };
 
 class DelegatingInProcessBus : public InProcessBus
@@ -102,22 +119,27 @@ public:
         bus.CleanUp();
     }
 
-    bool WaitHandshake(int pin, bool state) override
+    void Acquire() override
     {
-        return bus.WaitHandshake(pin, state);
+        bus.Acquire();
+    }
+
+    bool WaitSignal(int pin, bool state) override
+    {
+        return bus.WaitSignal(pin, state);
     }
 
     uint8_t GetDAT() override
     {
         return bus.GetDAT();
     }
-    void SetDAT(uint8_t dat) override
+    void SetDAT(uint8_t d) override
     {
-        bus.SetDAT(dat);
+        bus.SetDAT(d);
     }
 
-    bool GetControl(int) const override;
-    void SetControl(int, bool) override;
+    bool GetSignal(int) const override;
+    void SetSignal(int, bool) override;
 
 private:
 

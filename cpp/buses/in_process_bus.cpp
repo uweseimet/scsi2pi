@@ -22,8 +22,9 @@ bool InProcessBus::Init(bool target)
         return true;
     }
 
-    // Wait for the in-process target up to 1 s
     const auto now = chrono::steady_clock::now();
+
+    // Wait for the target up to 1 s
     do {
         if (target_enabled) {
             return true;
@@ -41,24 +42,22 @@ void InProcessBus::CleanUp()
     }
 }
 
-void InProcessBus::SetDAT(uint8_t dat)
+void InProcessBus::Reset()
 {
-    uint32_t s = GetSignals();
-    s |= 0b0000000000000111111110000000000;
-    s &= static_cast<uint32_t>(~static_cast<byte>(dat)) << PIN_DT0;
-    SetSignals(s);
+    signals = { };
+
+    dat = 0;
 }
 
-void InProcessBus::SetControl(int pin, bool state)
+bool InProcessBus::GetSignal(int pin) const
 {
-    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+    return signals[pin];
+}
 
+void InProcessBus::SetSignal(int pin, bool state)
+{
     scoped_lock lock(write_locker);
-    if (state) {
-        SetSignals(GetSignals() & ~(7 << pin));
-    } else {
-        SetSignals(GetSignals() | (1 << pin));
-    }
+    signals[pin] = state;
 }
 
 uint8_t InProcessBus::WaitForSelection()
@@ -89,25 +88,24 @@ void DelegatingInProcessBus::Reset()
     bus.Reset();
 }
 
-bool DelegatingInProcessBus::GetControl(int pin) const
+bool DelegatingInProcessBus::GetSignal(int pin) const
 {
-    const bool state = bus.GetControl(pin);
+    const bool state = bus.GetSignal(pin);
 
-    if (log_signals && pin != PIN_ACK_MASK && pin != PIN_REQ_MASK && in_process_logger->level() == level::trace) {
-        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
-            state ? "true" : "false");
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
+        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
     return state;
 }
 
-void DelegatingInProcessBus::SetControl(int pin, bool state)
+void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
         in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
-    bus.SetControl(pin, state);
+    bus.SetSignal(pin, state);
 }
 
 string DelegatingInProcessBus::GetSignalName(int pin)

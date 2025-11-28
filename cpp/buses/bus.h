@@ -35,6 +35,7 @@ public:
     virtual ~Bus() = default;
 
     virtual bool Init(bool);
+    virtual void Reset() = 0;
     virtual void CleanUp() = 0;
 
     virtual void Acquire() = 0;
@@ -45,17 +46,18 @@ public:
 
     virtual void SetSEL(bool) = 0;
 
-    virtual uint8_t GetDAT();
+    virtual bool GetIO() = 0;
+    virtual void SetIO(bool) = 0;
+
+    virtual uint8_t GetDAT() = 0;
     virtual void SetDAT(uint8_t) = 0;
 
-    virtual bool GetControl(int) const;
-    virtual void SetControl(int, bool) = 0;
+    virtual bool GetSignal(int) const = 0;
+    virtual void SetSignal(int, bool) = 0;
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual void SetDir(bool) = 0;
-
-    virtual bool WaitHandshake(int, bool);
+    virtual bool WaitSignal(int, bool);
 
     int CommandHandShake(data_in_t);
     int InitiatorMsgInHandShake();
@@ -64,94 +66,77 @@ public:
     int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
     int InitiatorSendHandShake(data_out_t);
 
-    virtual void Reset();
-
-    uint32_t GetSignals() const
-    {
-        return signals;
-    }
-    void SetSignals(uint32_t s)
-    {
-        signals = s;
-    }
-
     bool GetBSY() const
     {
-        return GetControl(PIN_BSY_MASK);
+        return GetSignal(PIN_BSY);
     }
 
     bool GetSEL() const
     {
-        return GetControl(PIN_SEL_MASK);
+        return GetSignal(PIN_SEL);
     }
 
     bool GetREQ() const
     {
-        return GetControl(PIN_REQ_MASK);
+        return GetSignal(PIN_REQ);
     }
+
     void SetREQ(bool state)
     {
-        SetControl(PIN_REQ, state);
+        SetSignal(PIN_REQ, state);
     }
 
     bool GetATN() const
     {
-        return GetControl(PIN_ATN_MASK);
+        return GetSignal(PIN_ATN);
     }
+
     void SetATN(bool state)
     {
-        SetControl(PIN_ATN, state);
+        SetSignal(PIN_ATN, state);
     }
 
     bool GetACK() const
     {
-        return GetControl(PIN_ACK_MASK);
+        return GetSignal(PIN_ACK);
     }
+
     void SetACK(bool state)
     {
-        SetControl(PIN_ACK, state);
+        SetSignal(PIN_ACK, state);
     }
 
     bool GetRST() const
     {
-        return GetControl(PIN_RST_MASK);
+        return GetSignal(PIN_RST);
     }
+
     void SetRST(bool state)
     {
-        SetControl(PIN_RST, state);
+        SetSignal(PIN_RST, state);
     }
 
     bool GetMSG() const
     {
-        return GetControl(PIN_MSG_MASK);
+        return GetSignal(PIN_MSG);
     }
+
     void SetMSG(bool state)
     {
-        SetControl(PIN_MSG, state);
+        SetSignal(PIN_MSG, state);
     }
 
     bool GetCD() const
     {
-        return GetControl(PIN_CD_MASK);
+        return GetSignal(PIN_CD);
     }
+
     void SetCD(bool state)
     {
-        SetControl(PIN_CD, state);
+        SetSignal(PIN_CD, state);
     }
 
-    bool GetIO() const
-    {
-        return GetControl(PIN_IO_MASK);
-    }
-    void SetIO(bool);
-
-    BusPhase GetPhase()
-    {
-        Acquire();
-
-        // Get phase from bus signal lines SEL, BSY, I/O, C/D and MSG
-        return phases[(signals >> PIN_MSG) & 0b11111];
-    }
+    BusPhase GetPhase();
 
     static string GetPhaseName(BusPhase phase)
     {
@@ -162,7 +147,7 @@ protected:
 
     Bus() = default;
 
-    virtual void WaitNanoSeconds(bool) const = 0;
+    virtual void WaitBusSettle() const = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
@@ -174,27 +159,16 @@ protected:
         return target_mode;
     }
 
+private:
+
+    static const array<BusPhase, 8> phases;
+
+    static const array<string, 11> phase_names;
+
+    bool target_mode = true;
+
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
     static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
-
-private:
-
-    int CommandHandshakeTimeout();
-
-    bool IsPhase(BusPhase phase) const
-    {
-        // The signals are still up to date
-        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
-    }
-
-    bool target_mode = true;
-
-    // All bus signals, inverted logic
-    uint32_t signals = 0xffffffff;
-
-    static const array<BusPhase, 32> phases;
-
-    static const array<string, 11> phase_names;
 };

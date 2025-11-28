@@ -120,6 +120,7 @@ void Controller::Command()
                 RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
+                bus.SetRST(true);
                 RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             }
             return;

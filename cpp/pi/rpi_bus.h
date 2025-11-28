@@ -47,9 +47,13 @@ public:
 
     void SetSEL(bool) override;
 
+    bool GetIO() override;
+    void SetIO(bool) override;
+
+    uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
 
-    void WaitNanoSeconds(bool) const override;
+    void WaitBusSettle() const override;
 
     bool IsRaspberryPi() const override
     {
@@ -66,12 +70,16 @@ private:
 
     void CreateWorkTable();
 
-    void SetControl(int, bool) override;
+    void SetControl(int, bool);
+
+    // Sets signal direction (in/out) depending on initiator/target mode
+    void SetMode(int, int);
+
+    bool GetSignal(int) const override;
+    void SetSignal(int, bool) override;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
-
-    void SetDir(bool) override;
 
     // Set GPIO pin pull up/down resistor setting to PULLDOWN
     void ConfigurePullDown(int);
@@ -86,8 +94,7 @@ private:
 
     PiType pi_type;
 
-    uint32_t bus_settle_count = 0;
-    uint32_t daynaport_count = 0;
+    uint32_t timer_core_freq = 0;
 
     volatile uint32_t *armt_addr = nullptr;
 
@@ -126,6 +133,9 @@ private:
     // RAM copy of GPFSEL0-2  values (GPIO Function Select)
     // Reading the current data from the copy is faster than directly reading them from the ports
     array<uint32_t, 3> gpfsel;
+
+    // All bus signals
+    uint32_t signals = 0;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;
