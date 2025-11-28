@@ -49,7 +49,7 @@ public:
 
     bool GetIO() override
     {
-        return GetSignal(PIN_IO);
+        return GetSignal(PIN_IO_MASK);
     }
     void SetIO(bool state) override
     {
@@ -101,7 +101,7 @@ private:
 
     atomic<uint8_t> dat = 0;
 
-    array<bool, 28> signals = { };
+    uint32_t signals = 0;
 };
 
 class DelegatingInProcessBus : public InProcessBus

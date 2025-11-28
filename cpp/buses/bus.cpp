@@ -26,7 +26,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
     SetREQ(true);
 
-    bool ack = WaitHandshake(PIN_ACK, true);
+    bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
     WaitBusSettle();
 
@@ -34,7 +34,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
     SetREQ(false);
 
-    if (!ack || !WaitHandshake(PIN_ACK, false)) {
+    if (!ack || !WaitHandshake(PIN_ACK_MASK, false)) {
         return CommandHandshakeTimeout();
     }
 
@@ -48,7 +48,7 @@ int Bus::CommandHandShake(data_in_t buf)
     if (buf[0] == 0x1f) {
         SetREQ(true);
 
-        ack = WaitHandshake(PIN_ACK, true);
+        ack = WaitHandshake(PIN_ACK_MASK, true);
 
         WaitBusSettle();
 
@@ -57,7 +57,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
         SetREQ(false);
 
-        if (!ack || !WaitHandshake(PIN_ACK, false)) {
+        if (!ack || !WaitHandshake(PIN_ACK_MASK, false)) {
             return CommandHandshakeTimeout();
         }
     }
@@ -74,7 +74,7 @@ int Bus::CommandHandShake(data_in_t buf)
     for (bytes_received = 1; bytes_received < command_byte_count; ++bytes_received) {
         SetREQ(true);
 
-        ack = WaitHandshake(PIN_ACK, true);
+        ack = WaitHandshake(PIN_ACK_MASK, true);
 
         WaitBusSettle();
 
@@ -82,7 +82,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
         SetREQ(false);
 
-        if (!ack || !WaitHandshake(PIN_ACK, false)) {
+        if (!ack || !WaitHandshake(PIN_ACK_MASK, false)) {
             return CommandHandshakeTimeout();
         }
     }
@@ -94,7 +94,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
 int Bus::InitiatorMsgInHandShake()
 {
-    if (const BusPhase phase = GetPhase(); !WaitHandshake(PIN_REQ, true) || GetPhase() != phase) {
+    if (const BusPhase phase = GetPhase(); !WaitHandshake(PIN_REQ_MASK, true) || GetPhase() != phase) {
         return -1;
     }
 
@@ -112,7 +112,7 @@ int Bus::InitiatorMsgInHandShake()
         SetATN(true);
     }
 
-    WaitHandshake(PIN_REQ, false);
+    WaitHandshake(PIN_REQ_MASK, false);
 
     SetACK(false);
 
@@ -130,7 +130,7 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
         SetREQ(true);
 
-        const bool ack = WaitHandshake(PIN_ACK, true);
+        const bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
         WaitBusSettle();
 
@@ -138,7 +138,7 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 
         SetREQ(false);
 
-        if (!ack || !WaitHandshake(PIN_ACK, false)) {
+        if (!ack || !WaitHandshake(PIN_ACK_MASK, false)) {
             break;
         }
     }
@@ -159,7 +159,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
     int bytes_received;
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-        if (!WaitHandshake(PIN_REQ, true) || GetPhase() != phase) {
+        if (!WaitHandshake(PIN_REQ_MASK, true) || GetPhase() != phase) {
             break;
         }
 
@@ -169,7 +169,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
         SetACK(true);
 
-        const bool req = WaitHandshake(PIN_REQ, false);
+        const bool req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
 
@@ -205,14 +205,14 @@ int Bus::TargetSendHandShake(data_out_t buf, int)
 
         SetDAT(buf[bytes_sent]);
 
-        if (!WaitHandshake(PIN_ACK, false)) {
+        if (!WaitHandshake(PIN_ACK_MASK, false)) {
             EnableIRQ();
             return bytes_sent;
         }
 
         SetREQ(true);
 
-        const bool ack = WaitHandshake(PIN_ACK, true);
+        const bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
         SetREQ(false);
 
@@ -221,7 +221,7 @@ int Bus::TargetSendHandShake(data_out_t buf, int)
         }
     }
 
-    WaitHandshake(PIN_ACK, false);
+    WaitHandshake(PIN_ACK_MASK, false);
 
     EnableIRQ();
 
@@ -242,7 +242,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
         SetDAT(buf[bytes_sent]);
 
-        if (!WaitHandshake(PIN_REQ, true)) {
+        if (!WaitHandshake(PIN_REQ_MASK, true)) {
             break;
         }
 
@@ -257,7 +257,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
         SetACK(true);
 
-        const bool req = WaitHandshake(PIN_REQ, false);
+        const bool req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
 
@@ -273,7 +273,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
 bool Bus::WaitHandshake(int pin, bool state)
 {
-    assert(pin == PIN_REQ || pin == PIN_ACK);
+    assert(pin == PIN_REQ_MASK || pin == PIN_ACK_MASK);
 
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
@@ -296,7 +296,7 @@ bool Bus::WaitHandshake(int pin, bool state)
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    spdlog::trace("Timeout while waiting for {0} to become {1}", pin == PIN_ACK ? "ACK" : "REQ",
+    spdlog::trace("Timeout while waiting for {0} to become {1}", pin == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
 
     return false;

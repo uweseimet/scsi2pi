@@ -289,7 +289,7 @@ void RpiBus::SetSEL(bool state)
 
 bool RpiBus::GetIO()
 {
-    const bool state = GetSignal(PIN_IO);
+    const bool state = GetSignal(PIN_IO_MASK);
 
     if (!IsTarget()) {
         // Change the data input/output direction by IO signal
@@ -425,9 +425,11 @@ void RpiBus::SetMode(int pin, int mode)
 }
 
 // Get input signal value
-inline bool RpiBus::GetSignal(int pin) const
+inline bool RpiBus::GetSignal(int pin_mask) const
 {
-    return (signals >> pin) & 1;
+    assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
+
+    return signals & pin_mask;
 }
 
 //---------------------------------------------------------------------------

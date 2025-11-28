@@ -122,9 +122,9 @@ TEST(InProcessBusTest, Reset)
     MockInProcessBus bus;
 
     bus.SetSignal(PIN_BSY, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_BSY));
+    EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
     bus.ResetMock();
-    EXPECT_FALSE(bus.GetSignal(PIN_BSY));
+    EXPECT_FALSE(bus.GetSignal(PIN_BSY_MASK));
 }
 
 TEST(InProcessBusTest, SetGetSignal)
@@ -132,9 +132,9 @@ TEST(InProcessBusTest, SetGetSignal)
     MockInProcessBus bus;
 
     bus.SetSignal(PIN_REQ, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_REQ));
+    EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
     bus.SetSignal(PIN_REQ, false);
-    EXPECT_FALSE(bus.GetSignal(PIN_REQ));
+    EXPECT_FALSE(bus.GetSignal(PIN_REQ_MASK));
 }
 
 TEST(InProcessBusTest, WaitHandshakeACK)
@@ -142,14 +142,14 @@ TEST(InProcessBusTest, WaitHandshakeACK)
     MockInProcessBus bus;
 
     bus.SetSignal(PIN_ACK, true);
-    EXPECT_TRUE(bus.WaitHandshake(PIN_ACK, true));
+    EXPECT_TRUE(bus.WaitHandshake(PIN_ACK_MASK, true));
 
     bus.SetSignal(PIN_ACK, false);
-    EXPECT_TRUE(bus.WaitHandshake(PIN_ACK, false));
+    EXPECT_TRUE(bus.WaitHandshake(PIN_ACK_MASK, false));
 
     bus.SetSignal(PIN_RST, true);
     bus.SetSignal(PIN_ACK, false);
-    EXPECT_FALSE(bus.WaitHandshake(PIN_ACK, true));
+    EXPECT_FALSE(bus.WaitHandshake(PIN_ACK_MASK, true));
 }
 
 TEST(InProcessBusTest, WaitHandshakeREQ)
@@ -157,14 +157,14 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     MockInProcessBus bus;
 
     bus.SetSignal(PIN_REQ, true);
-    EXPECT_TRUE(bus.WaitHandshake(PIN_REQ, true));
+    EXPECT_TRUE(bus.WaitHandshake(PIN_REQ_MASK, true));
 
     bus.SetSignal(PIN_REQ, false);
-    EXPECT_TRUE(bus.WaitHandshake(PIN_REQ, false));
+    EXPECT_TRUE(bus.WaitHandshake(PIN_REQ_MASK, false));
 
     bus.SetSignal(PIN_RST, true);
     bus.SetSignal(PIN_REQ, false);
-    EXPECT_FALSE(bus.WaitHandshake(PIN_REQ, true));
+    EXPECT_FALSE(bus.WaitHandshake(PIN_REQ_MASK, true));
 }
 
 TEST(InProcessBusTest, WaitForNotBusy)
@@ -207,14 +207,14 @@ TEST(DelegatingProcessBusTest, SetGetSignal)
     DelegatingInProcessBus delegating_bus(bus, "", true);
 
     delegating_bus.SetSignal(PIN_ACK, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK));
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK_MASK));
     delegating_bus.SetSignal(PIN_ACK, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK));
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK_MASK));
 
     delegating_bus.SetSignal(PIN_IO, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO));
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO_MASK));
     delegating_bus.SetSignal(PIN_IO, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO));
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO_MASK));
 }
 
 TEST(DelegatingProcessBusTest, WaitHandshakeACK)
@@ -223,9 +223,9 @@ TEST(DelegatingProcessBusTest, WaitHandshakeACK)
     DelegatingInProcessBus delegating_bus(bus, "", false);
 
     bus.SetACK(true);
-    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_ACK, true));
+    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_ACK_MASK, true));
     bus.SetACK(false);
-    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_ACK, false));
+    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_ACK_MASK, false));
 }
 
 TEST(DelegatingProcessBusTest, WaitHandshakeREQ)
@@ -234,9 +234,9 @@ TEST(DelegatingProcessBusTest, WaitHandshakeREQ)
     DelegatingInProcessBus delegating_bus(bus, "", false);
 
     bus.SetREQ(true);
-    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ, true));
+    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ_MASK, true));
     bus.SetREQ(false);
-    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ, false));
+    EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ_MASK, false));
 }
 
 TEST(DelegatingProcessBusTest, DAT)
