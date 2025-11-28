@@ -57,7 +57,7 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual bool WaitSignal(int, bool);
+    virtual bool WaitHandshake(int, bool);
 
     int CommandHandShake(data_in_t);
     int InitiatorMsgInHandShake();
@@ -160,6 +160,8 @@ protected:
     }
 
 private:
+
+    int CommandHandshakeTimeout();
 
     static const array<BusPhase, 8> phases;
 

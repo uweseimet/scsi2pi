@@ -124,9 +124,9 @@ public:
         bus.Acquire();
     }
 
-    bool WaitSignal(int pin, bool state) override
+    bool WaitHandshake(int pin, bool state) override
     {
-        return bus.WaitSignal(pin, state);
+        return bus.WaitHandshake(pin, state);
     }
 
     uint8_t GetDAT() override
