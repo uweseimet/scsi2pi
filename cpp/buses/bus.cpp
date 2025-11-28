@@ -285,7 +285,8 @@ bool Bus::WaitSignal(int pin, bool state)
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    spdlog::trace("Timeout while waiting for ACK/REQ to change to {}", state ? "true" : "false");
+    spdlog::trace("Timeout while waiting for {0} to become {1}", pin == PIN_ACK ? "ACK" : "REQ",
+        state ? "true" : "false");
 
     return false;
 }
