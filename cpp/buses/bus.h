@@ -177,6 +177,12 @@ private:
 
     int CommandHandshakeTimeout();
 
+    bool IsPhase(BusPhase phase) const
+    {
+        // The signals are still up to date
+        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
+    }
+
     bool target_mode = true;
 
     // All bus signals

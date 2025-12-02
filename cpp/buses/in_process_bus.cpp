@@ -22,7 +22,7 @@ bool InProcessBus::Init(bool target)
         return true;
     }
 
-    // Wait for the target up to 1 s
+    // Wait for the in-process bus target up to 1 s
     const auto now = chrono::steady_clock::now();
     do {
         if (target_enabled) {
@@ -51,12 +51,14 @@ void InProcessBus::SetDAT(uint8_t dat)
 
 void InProcessBus::SetSignal(int pin, bool state)
 {
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
     scoped_lock lock(write_locker);
     if (state) {
-        SetSignals(GetSignals() & ~(1 << pin));
+        SetSignals(GetSignals() & ~(7 << pin));
     }
     else {
-        SetSignals(GetSignals() | 1 << pin);
+        SetSignals(GetSignals() | (1 << pin));
     }
 }
 

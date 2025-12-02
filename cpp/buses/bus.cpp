@@ -93,7 +93,7 @@ int Bus::CommandHandShake(data_in_t buf)
 
 int Bus::InitiatorMsgInHandShake()
 {
-    if (const BusPhase phase = GetPhase(); !WaitHandshake(PIN_REQ_MASK, true) || GetPhase() != phase) {
+    if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(BusPhase::MSG_IN)) {
         return -1;
     }
 
@@ -154,7 +154,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
     int bytes_received;
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
-        if (!WaitHandshake(PIN_REQ_MASK, true) || GetPhase() != phase) {
+        if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
 
@@ -166,7 +166,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
         SetACK(false);
 
-        if (!req || GetPhase() != phase) {
+        if (!req || !IsPhase(phase)) {
             break;
         }
     }
@@ -235,7 +235,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
         SetDAT(buf[bytes_sent]);
 
-        if (!WaitHandshake(PIN_REQ_MASK, true)) {
+        if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
             break;
         }
 
@@ -244,17 +244,13 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
             SetATN(false);
         }
 
-        if (GetPhase() != phase) {
-            break;
-        }
-
         SetACK(true);
 
         const bool req = WaitHandshake(PIN_REQ_MASK, false);
 
         SetACK(false);
 
-        if (!req || GetPhase() != phase) {
+        if (!req || !IsPhase(phase)) {
             break;
         }
     }

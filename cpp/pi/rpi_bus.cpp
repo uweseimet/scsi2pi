@@ -277,7 +277,6 @@ void RpiBus::SetBSY(bool state)
     SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
     if (!state) {
-        SetSignal(PIN_BSY, false);
         SetSignal(PIN_MSG, false);
         SetSignal(PIN_CD, false);
         SetSignal(PIN_REQ, false);
@@ -385,11 +384,11 @@ void RpiBus::CreateWorkTable()
             const int shift = (pin % 10) * 3;
 
             // Mask data (GPIO pin is an output pin)
-            tblDatMsk[index][i] &= ~(7 << shift);
+            tblDatMsk[index][i] &= ~(0b111 << shift);
 
             // Value (GPIO pin is set to 1)
             if (bits & 1) {
-                tblDatSet[index][i] |= (1 << shift);
+                tblDatSet[index][i] |= (0b001 << shift);
             }
 
             bits >>= 1;
@@ -404,24 +403,18 @@ void RpiBus::SetControl(int pin, bool state)
     PinSetSignal(pin, state);
 }
 
-//---------------------------------------------------------------------------
-//
-// Set output signal value
-//
-// Sets the output value. Used with:
-//   PIN_ENB, ACT, TAD, IND, DTD, BSY, SignalTable
-//
-//---------------------------------------------------------------------------
+// Set output signal value (except for DP and DT0-DT7)
 void RpiBus::SetSignal(int pin, bool state)
 {
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
     const int index = pin / 10;
-    assert(index <= 2);
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
-        data |= (1 << shift);
+        data |= (0b001 << shift);
     } else {
-        data &= ~(7 << shift);
+        data &= ~(0b111 << shift);
     }
     gpio[index] = data;
     gpfsel[index] = data;
