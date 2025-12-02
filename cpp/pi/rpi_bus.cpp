@@ -218,11 +218,11 @@ void RpiBus::Reset()
 
     // Set target signal to input for all modes
     SetControl(PIN_TAD, TAD_IN);
-    SetMode(PIN_BSY, IN);
-    SetMode(PIN_MSG, IN);
-    SetMode(PIN_CD, IN);
-    SetMode(PIN_REQ, IN);
-    SetMode(PIN_IO, IN);
+    SetSignal(PIN_BSY, false);
+    SetSignal(PIN_MSG, false);
+    SetSignal(PIN_CD, false);
+    SetSignal(PIN_REQ, false);
+    SetSignal(PIN_IO, false);
 
     // Set the initiator signal direction
     SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
@@ -230,9 +230,12 @@ void RpiBus::Reset()
     // Set data bus signal directions
     SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
 
-    for (const int pin : { PIN_SEL, PIN_ATN, PIN_ACK, PIN_RST, PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5,
-        PIN_DT6, PIN_DT7, PIN_DP }) {
-        SetMode(pin, IsTarget() ? IN : OUT);
+    // Set the initiator signal to input
+    if (IsTarget()) {
+        SetSignal(PIN_SEL, false);
+        SetSignal(PIN_ATN, false);
+        SetSignal(PIN_ACK, false);
+        SetSignal(PIN_RST, false);
     }
 }
 
@@ -273,11 +276,13 @@ void RpiBus::SetBSY(bool state)
     SetControl(PIN_ACT, state);
     SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
 
-    SetMode(PIN_BSY, state ? OUT : IN);
-    SetMode(PIN_MSG, state ? OUT : IN);
-    SetMode(PIN_CD, state ? OUT : IN);
-    SetMode(PIN_REQ, state ? OUT : IN);
-    SetMode(PIN_IO, state ? OUT : IN);
+    if (!state) {
+        SetSignal(PIN_BSY, false);
+        SetSignal(PIN_MSG, false);
+        SetSignal(PIN_CD, false);
+        SetSignal(PIN_REQ, false);
+        SetSignal(PIN_IO, false);
+    }
 }
 
 void RpiBus::SetSEL(bool state)
@@ -296,8 +301,10 @@ bool RpiBus::GetIO()
         // Change the data input/output direction by IO signal
         SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
 
-        for (const int pin : DATA_PINS) {
-            SetMode(pin, state ? IN : OUT);
+        if (state) {
+            for (const int pin : DATA_PINS) {
+                SetSignal(pin, false);
+            }
         }
     }
 
@@ -310,11 +317,13 @@ void RpiBus::SetIO(bool state)
 
     SetSignal(PIN_IO, state);
 
-    // Change the data input/output direction by IO signal
+// Change the data input/output direction by IO signal
     SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
 
-    for (int pin : DATA_PINS) {
-        SetMode(pin, state ? OUT : IN);
+    if (!state) {
+        for (int pin : DATA_PINS) {
+            SetSignal(pin, false);
+        }
     }
 }
 
@@ -393,33 +402,6 @@ void RpiBus::SetControl(int pin, bool state)
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
     PinSetSignal(pin, state);
-}
-
-//---------------------------------------------------------------------------
-//
-// Input/output mode setting
-//
-// Set direction fo pin (IN / OUT)
-//   Used with: TAD, BSY, MSG, CD, REQ, I/O, SEL, IND, ATN, ACK, RST, DT*
-//
-//---------------------------------------------------------------------------
-void RpiBus::SetMode(int pin, int mode)
-{
-    // Pins are implicitly set to OUT when applying the mask
-    if (mode == OUT) {
-        return;
-    }
-
-    const int index = pin / 10;
-    const int shift = (pin % 10) * 3;
-    assert(index <= 2);
-    uint32_t data = gpfsel[index];
-    data &= ~(7 << shift);
-    if (mode == OUT) {
-        data |= (1 << shift);
-    }
-    gpio[index] = data;
-    gpfsel[index] = data;
 }
 
 //---------------------------------------------------------------------------
@@ -503,14 +485,7 @@ void RpiBus::EnableIRQ()
     irq_disabled = false;
 }
 
-//---------------------------------------------------------------------------
-//
 // Pin direction setting (input/output)
-//
-// Used in Init() for ACT, TAD, IND, DTD, ENB to set direction (GPIO_OUTPUT vs GPIO_INPUT)
-// Also used on SignalTable
-// Only used in Init and Cleanup. Reset uses SetMode
-//---------------------------------------------------------------------------
 void RpiBus::PinConfig(int pin, int mode)
 {
 #ifdef BOARD_STANDARD

@@ -71,9 +71,6 @@ private:
 
     void SetControl(int, bool);
 
-    // Sets signal direction (in/out) depending on initiator/target mode
-    void SetMode(int, int);
-
     void SetSignal(int, bool) override;
 
     void DisableIRQ() override;
