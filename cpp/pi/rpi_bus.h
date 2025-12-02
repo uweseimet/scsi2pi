@@ -50,10 +50,9 @@ public:
     bool GetIO() override;
     void SetIO(bool) override;
 
-    uint8_t GetDAT() override;
     void SetDAT(uint8_t) override;
 
-    void WaitBusSettle() const override;
+    void WaitNanoSeconds(bool) const override;
 
     bool IsRaspberryPi() const override
     {

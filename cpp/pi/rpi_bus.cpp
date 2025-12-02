@@ -140,9 +140,9 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
     // GPIO Function Select (GPFSEL) registers copy
-    gpfsel[0] = gpio[GPIO_FSEL_0];
-    gpfsel[1] = gpio[GPIO_FSEL_1];
-    gpfsel[2] = gpio[GPIO_FSEL_2];
+    gpfsel[GPIO_FSEL_0] = gpio[GPIO_FSEL_0];
+    gpfsel[GPIO_FSEL_1] = gpio[GPIO_FSEL_1];
+    gpfsel[GPIO_FSEL_2] = gpio[GPIO_FSEL_2];
 
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
@@ -318,20 +318,13 @@ void RpiBus::SetIO(bool state)
     }
 }
 
-inline uint8_t RpiBus::GetDAT()
-{
-    Acquire();
-
-    return static_cast<uint8_t>(~(GetSignals() >> PIN_DT0));
-}
-
 inline void RpiBus::SetDAT(uint8_t dat)
 {
-    uint32_t fsel = gpfsel[1];
+    uint32_t fsel = gpfsel[GPIO_FSEL_1];
     // Mask for the DT0-DT7 and DP pins
     fsel &= 0b11111000000000000000000000000000;
     fsel |= tblDatSet[1][dat];
-    gpfsel[1] = fsel;
+    gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 }
 
@@ -348,8 +341,10 @@ void RpiBus::CreateWorkTable()
 {
     array<bool, 256> tblParity;
 
+    const auto tblSize = static_cast<uint32_t>(tblParity.size());
+
     // Create parity table
-    for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
+    for (uint32_t i = 0; i < tblSize; ++i) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
@@ -365,7 +360,7 @@ void RpiBus::CreateWorkTable()
         tbl.fill(-1);
     }
 
-        for (uint32_t i = 0; i < static_cast<uint32_t>(tblParity.size()); ++i) {
+    for (uint32_t i = 0; i < tblSize; ++i) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -395,6 +390,8 @@ void RpiBus::CreateWorkTable()
 
 void RpiBus::SetControl(int pin, bool state)
 {
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
     PinSetSignal(pin, state);
 }
 
@@ -456,6 +453,7 @@ void RpiBus::DisableIRQ()
         irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
         irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
         break;
+
     case PiType::PI_2:
     case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
@@ -571,19 +569,19 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
 
-// Read date byte from bus
+// Read data from bus
 inline void RpiBus::Acquire()
 {
     SetSignals(*level);
 }
 
-// Wait until the signal line stabilizes (400 ns bus settle delay).
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
-void RpiBus::WaitBusSettle() const
+// Furthermore, nanosleep() requires interrupts to be enabled.
+void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
-    const uint32_t diff = bus_settle_count;
-    const uint32_t start = armt_addr[ARMT_FREERUN];
-    while (armt_addr[ARMT_FREERUN] - start < diff) {
+    // Either Daynaport delay or bus settle delay
+    const uint32_t count = armt_addr[ARMT_FREERUN] + (daynaport ? daynaport_count : bus_settle_count);
+    while (armt_addr[ARMT_FREERUN] < count) {
         // Intentionally empty
     }
 }

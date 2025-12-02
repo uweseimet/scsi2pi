@@ -22,9 +22,8 @@ bool InProcessBus::Init(bool target)
         return true;
     }
 
-    const auto now = chrono::steady_clock::now();
-
     // Wait for the target up to 1 s
+    const auto now = chrono::steady_clock::now();
     do {
         if (target_enabled) {
             return true;
@@ -42,11 +41,12 @@ void InProcessBus::CleanUp()
     }
 }
 
-void InProcessBus::Reset()
+void InProcessBus::SetDAT(uint8_t dat)
 {
-    Bus::Reset();
-
-    dat = 0;
+    uint32_t s = GetSignals();
+    s |= 0b0000000000000111111110000000000;
+    s &= static_cast<uint32_t>(~static_cast<byte>(dat)) << PIN_DT0;
+    SetSignals(s);
 }
 
 void InProcessBus::SetSignal(int pin, bool state)

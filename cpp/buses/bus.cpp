@@ -33,8 +33,6 @@ int Bus::CommandHandShake(data_in_t buf)
 
     bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
-    WaitBusSettle();
-
     buf[0] = GetDAT();
 
     SetREQ(false);
@@ -54,8 +52,6 @@ int Bus::CommandHandShake(data_in_t buf)
         SetREQ(true);
 
         ack = WaitHandshake(PIN_ACK_MASK, true);
-
-        WaitBusSettle();
 
         // Get the actual SCSI command
         buf[0] = GetDAT();
@@ -81,8 +77,6 @@ int Bus::CommandHandShake(data_in_t buf)
 
         ack = WaitHandshake(PIN_ACK_MASK, true);
 
-        WaitBusSettle();
-
         buf[bytes_received] = GetDAT();
 
         SetREQ(false);
@@ -102,8 +96,6 @@ int Bus::InitiatorMsgInHandShake()
     if (const BusPhase phase = GetPhase(); !WaitHandshake(PIN_REQ_MASK, true) || GetPhase() != phase) {
         return -1;
     }
-
-    WaitBusSettle();
 
     const int msg = GetDAT();
 
@@ -137,8 +129,6 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 
         const bool ack = WaitHandshake(PIN_ACK_MASK, true);
 
-        WaitBusSettle();
-
         buf[bytes_received] = GetDAT();
 
         SetREQ(false);
@@ -168,8 +158,6 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
             break;
         }
 
-        WaitBusSettle();
-
         buf[bytes_received] = GetDAT();
 
         SetACK(true);
@@ -197,14 +185,14 @@ int Bus::TargetSendHandShake(data_out_t buf, int)
 {
     const auto count = static_cast<int>(buf.size());
 
+    DisableIRQ();
+
     int bytes_sent;
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
 #ifdef BUILD_SCDP
         if (bytes_sent == daynaport_delay_after_bytes) {
-            const timespec ts = { .tv_sec = 0, .tv_nsec = DAYNAPORT_SEND_DELAY_NS };
-            EnableIRQ();
-            nanosleep(&ts, nullptr);
-            DisableIRQ();
+            // Wait for a Daynaport delay
+            WaitNanoSeconds(true);
         }
 #endif
 
@@ -318,6 +306,9 @@ inline bool Bus::GetSignal(int pin_mask) const
 
 inline uint8_t Bus::GetDAT()
 {
+    // Wait for a bus settle delay
+    WaitNanoSeconds(false);
+
     Acquire();
 
     return static_cast<uint8_t>(~(signals >> PIN_DT0));

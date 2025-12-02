@@ -49,7 +49,7 @@ public:
     virtual bool GetIO() = 0;
     virtual void SetIO(bool) = 0;
 
-    virtual uint8_t GetDAT() = 0;
+    virtual uint8_t GetDAT();
     virtual void SetDAT(uint8_t) = 0;
 
     virtual bool GetSignal(int) const;
@@ -156,7 +156,7 @@ protected:
 
     Bus() = default;
 
-    virtual void WaitBusSettle() const = 0;
+    virtual void WaitNanoSeconds(bool) const = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
