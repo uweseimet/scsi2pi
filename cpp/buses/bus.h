@@ -20,11 +20,6 @@
 constexpr static int IN = 0;
 constexpr static int OUT = 1;
 
-// Constant declarations (Control signals)
-constexpr static int TAD_OUT = !TAD_IN;
-constexpr static int IND_OUT = !IND_IN;
-constexpr static int DTD_OUT = !DTD_IN;
-
 using namespace std;
 
 class Bus // NOSONAR The high number of convenience methods is justified
@@ -38,7 +33,7 @@ public:
     virtual void Reset();
     virtual void CleanUp() = 0;
 
-    virtual void Acquire() = 0;
+    virtual void Acquire() const = 0;
 
     virtual uint8_t WaitForSelection() = 0;
 
@@ -49,7 +44,7 @@ public:
     virtual bool GetIO() = 0;
     virtual void SetIO(bool) = 0;
 
-    virtual uint8_t GetDAT();
+    virtual uint8_t GetDAT() const;
     virtual void SetDAT(uint8_t) = 0;
 
     virtual bool GetSignal(int) const;
@@ -57,7 +52,7 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual bool WaitHandshake(int, bool);
+    virtual bool WaitHandshake(int, bool) const;
 
     int CommandHandShake(data_in_t);
     int InitiatorMsgInHandShake();
@@ -70,7 +65,7 @@ public:
     {
         return signals;
     }
-    void SetSignals(uint32_t s)
+    void SetSignals(uint32_t s) const
     {
         signals = s;
     }
@@ -139,7 +134,7 @@ public:
         SetSignal(PIN_CD, state);
     }
 
-    BusPhase GetPhase()
+    BusPhase GetPhase() const
     {
         Acquire();
 
@@ -161,7 +156,7 @@ protected:
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    bool WaitForNotBusy();
+    bool WaitForNotBusy() const;
 
     bool IsTarget() const
     {
@@ -185,8 +180,8 @@ private:
 
     bool target_mode = true;
 
-    // All bus signals
-    uint32_t signals = 0xffffffff;
+    // All bus signals, mutable because they represent external state
+    mutable uint32_t signals = 0xffffffff;
 
     static const array<BusPhase, 32> phases;
 

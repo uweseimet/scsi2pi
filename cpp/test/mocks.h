@@ -34,9 +34,9 @@ public:
     MOCK_METHOD(bool, GetIO, (), (override));
     MOCK_METHOD(void, SetIO, (bool), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (override));
-    MOCK_METHOD(void, Acquire, (), (override));
+    MOCK_METHOD(void, Acquire, (), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (override));
-    MOCK_METHOD(bool, WaitHandshake, (int, bool), (override));
+    MOCK_METHOD(bool, WaitHandshake, (int, bool), (const, override));
     MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));
     MOCK_METHOD(void, EnableIRQ, (), (override));
@@ -59,6 +59,16 @@ public:
     void ResetMock()
     {
         InProcessBus::Reset();
+    }
+};
+
+class MockDelegatingInProcessBus : public DelegatingInProcessBus
+{
+
+public:
+
+    explicit MockDelegatingInProcessBus(InProcessBus &b) : DelegatingInProcessBus(b, "", false)
+    {
     }
 };
 

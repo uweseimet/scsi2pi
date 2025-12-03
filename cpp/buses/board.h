@@ -50,17 +50,6 @@
 //
 //---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
-//
-// SCSI signal pin assignment setting
-//   GPIO pin mapping table for SCSI signals.
-//   PIN_DT0～PIN_SEL
-//
-//---------------------------------------------------------------------------
-
-constexpr static int ON = 1;
-constexpr static int OFF = 0;
-
 // Control signal pin assignment (-1 means no control)
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE
@@ -76,11 +65,6 @@ constexpr static int PIN_DTD = -1;
 #error Invalid connection type or none specified
 #endif
 
-// Control signal output logic
-constexpr static int IND_IN = OFF; // INITIATOR SIGNAL INPUT
-constexpr static int TAD_IN = OFF; // TARGET SIGNAL INPUT
-constexpr static int DTD_IN = ON; // DATA SIGNAL INPUT
-
 // SCSI signal pin assignment
 constexpr static int PIN_DT0 = 10;
 constexpr static int PIN_DT1 = 11;
@@ -94,6 +78,7 @@ constexpr static int PIN_DT7 = 17;
 // Data parity
 constexpr static int PIN_DP = 18;
 
+// Control signals
 constexpr static int PIN_ATN = 19;
 constexpr static int PIN_ATN_MASK = 1 << PIN_ATN;
 constexpr static int PIN_RST = 20;

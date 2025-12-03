@@ -136,7 +136,7 @@ bool RpiBus::Init(bool target)
     PinConfig(PIN_IND, GPIO_OUTPUT);
     PinConfig(PIN_DTD, GPIO_OUTPUT);
 
-    PinSetSignal(PIN_ENB, OFF);
+    PinSetSignal(PIN_ENB, false);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
     // GPIO Function Select (GPFSEL) registers copy
@@ -173,7 +173,7 @@ bool RpiBus::Init(bool target)
     CreateWorkTable();
 
     // Enable ENABLE in order to show the user that s2p is running
-    SetControl(PIN_ENB, ON);
+    SetControl(PIN_ENB, true);
 
     return true;
 }
@@ -219,13 +219,13 @@ void RpiBus::Reset()
     }
 
     // Set target signal to input for all modes
-    SetControl(PIN_TAD, TAD_IN);
+    SetControl(PIN_TAD, false);
 
     // Set the initiator signal direction
-    SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
+    SetControl(PIN_IND, !IsTarget());
 
     // Set data bus signal directions
-    SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
+    SetControl(PIN_DTD, IsTarget());
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -239,7 +239,7 @@ uint8_t RpiBus::WaitForSelection()
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
         if (errno != EINTR) {
-            warn("Event read failed: {}", strerror(errno));
+            warn("Reading event failed: {}", strerror(errno));
         }
         return 0;
     }
@@ -263,7 +263,7 @@ void RpiBus::SetBSY(bool state)
     SetSignal(PIN_BSY, state);
 
     SetControl(PIN_ACT, state);
-    SetControl(PIN_TAD, state ? TAD_OUT : TAD_IN);
+    SetControl(PIN_TAD, state);
 
     if (!state) {
         SetSignal(PIN_MSG, false);
@@ -286,14 +286,7 @@ bool RpiBus::GetIO()
     const bool state = GetSignal(PIN_IO_MASK);
 
     if (!IsTarget()) {
-        // Change the data input/output direction by IO signal
-        SetControl(PIN_DTD, state ? DTD_IN : DTD_OUT);
-
-        if (state) {
-            for (const int pin : DATA_PINS) {
-                SetSignal(pin, false);
-            }
-        }
+        SetDir(state);
     }
 
     return state;
@@ -305,10 +298,15 @@ void RpiBus::SetIO(bool state)
 
     SetSignal(PIN_IO, state);
 
-    // Change the data input/output direction by IO signal
-    SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
+    SetDir(!state);
+}
 
-    if (!state) {
+// Change the data input/output direction by IO signal
+void RpiBus::SetDir(bool io)
+{
+    SetControl(PIN_DTD, io);
+
+    if (io) {
         for (int pin : DATA_PINS) {
             SetSignal(pin, false);
         }
@@ -387,7 +385,7 @@ void RpiBus::CreateWorkTable()
 
 void RpiBus::SetControl(int pin, bool state)
 {
-    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+    assert(pin < PIN_DT0 || pin > PIN_DP);
 
     PinSetSignal(pin, state);
 }
@@ -395,8 +393,6 @@ void RpiBus::SetControl(int pin, bool state)
 // Set output signal value (except for DP and DT0-DT7)
 void RpiBus::SetSignal(int pin, bool state)
 {
-    assert(pin >= PIN_ATN && pin <= PIN_SEL);
-
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
@@ -527,7 +523,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive)
 }
 
 // Read data from bus
-inline void RpiBus::Acquire()
+inline void RpiBus::Acquire() const
 {
     SetSignals(*level);
 }

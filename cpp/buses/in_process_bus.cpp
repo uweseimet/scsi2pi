@@ -35,7 +35,7 @@ bool InProcessBus::Init(bool target)
 
 void InProcessBus::CleanUp()
 {
-    // Signal the client that s2p is ready
+    // Signal the in-process client that the in-process s2p is ready
     if (IsTarget()) {
         target_enabled = true;
     }
@@ -74,6 +74,13 @@ uint8_t InProcessBus::WaitForSelection()
     }
 
     return GetDAT();
+}
+
+void InProcessBus::WaitNanoSeconds(bool) const
+{
+    // Wait a bus settle delay
+    const timespec ts = { .tv_sec = 0, .tv_nsec = 400 };
+    nanosleep(&ts, nullptr);
 }
 
 DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &name, bool l) : bus(b), in_process_logger(

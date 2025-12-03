@@ -30,7 +30,7 @@ public:
     bool Init(bool) override;
     void CleanUp() override;
 
-    void Acquire() override
+    void Acquire() const override
     {
         // Nothing to do
     }
@@ -60,10 +60,7 @@ public:
 
     uint8_t WaitForSelection() override;
 
-    void WaitNanoSeconds(bool) const override
-    {
-        // Nothing to do
-    }
+    void WaitNanoSeconds(bool) const override;
 
     bool IsRaspberryPi() const override
     {
@@ -105,17 +102,17 @@ public:
         bus.CleanUp();
     }
 
-    void Acquire() override
+    void Acquire() const override
     {
         bus.Acquire();
     }
 
-    bool WaitHandshake(int pin, bool state) override
+    bool WaitHandshake(int pin, bool state) const override
     {
         return bus.WaitHandshake(pin, state);
     }
 
-    uint8_t GetDAT() override
+    uint8_t GetDAT() const override
     {
         return bus.GetDAT();
     }

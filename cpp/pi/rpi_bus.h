@@ -41,7 +41,7 @@ public:
     uint8_t WaitForSelection() override;
 
     // Bus signal acquisition
-    void Acquire() override;
+    void Acquire() const override;
 
     void SetBSY(bool) override;
 
@@ -72,6 +72,8 @@ private:
     void SetControl(int, bool);
 
     void SetSignal(int, bool) override;
+
+    void SetDir(bool);
 
     void DisableIRQ() override;
     void EnableIRQ() override;

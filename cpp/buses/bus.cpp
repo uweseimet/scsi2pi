@@ -260,17 +260,17 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     return bytes_sent;
 }
 
-bool Bus::WaitHandshake(int pin, bool state)
+bool Bus::WaitHandshake(int pin_mask, bool state) const
 {
-    assert(pin == PIN_REQ_MASK || pin == PIN_ACK_MASK);
+    assert(pin_mask == PIN_REQ_MASK || pin_mask == PIN_ACK_MASK);
 
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
-    if (GetSignal(pin) == state) {
+    if (GetSignal(pin_mask) == state) {
         return true;
     }
 
-    // Wait for REQ or ACK for up to 3 s
+    // Wait up to 3 s
     const auto now = chrono::steady_clock::now();
     do {
         if (GetRST()) {
@@ -280,12 +280,12 @@ bool Bus::WaitHandshake(int pin, bool state)
         }
 
         Acquire();
-        if (GetSignal(pin) == state) {
+        if (GetSignal(pin_mask) == state) {
             return true;
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    spdlog::trace("Timeout while waiting for {0} to become {1}", pin == PIN_ACK_MASK ? "ACK" : "REQ",
+    spdlog::trace("Timeout while waiting for {0} to become {1}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
 
     return false;
@@ -300,9 +300,9 @@ inline bool Bus::GetSignal(int pin_mask) const
     return !(signals & pin_mask);
 }
 
-inline uint8_t Bus::GetDAT()
+inline uint8_t Bus::GetDAT() const
 {
-    // Wait for a bus settle delay
+    // A bus settle delay
     WaitNanoSeconds(false);
 
     Acquire();
@@ -317,7 +317,7 @@ int Bus::CommandHandshakeTimeout()
     return -1;
 }
 
-bool Bus::WaitForNotBusy()
+bool Bus::WaitForNotBusy() const
 {
     Acquire();
 

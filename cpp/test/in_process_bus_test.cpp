@@ -189,7 +189,7 @@ TEST(InProcessBusTest, WaitForSelection)
 {
     MockInProcessBus bus;
 
-    EXPECT_EQ(0U, bus.WaitForSelection());
+    EXPECT_EQ(0, bus.WaitForSelection());
 }
 
 TEST(InProcessBusTest, IsRaspberryPi)
@@ -202,7 +202,7 @@ TEST(InProcessBusTest, IsRaspberryPi)
 TEST(DelegatingProcessBusTest, Reset)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     EXPECT_CALL(bus, Reset);
     delegating_bus.Reset();
@@ -211,7 +211,7 @@ TEST(DelegatingProcessBusTest, Reset)
 TEST(DelegatingProcessBusTest, Acquire)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     bus.SetDAT(0x45);
     bus.Acquire();
@@ -221,23 +221,23 @@ TEST(DelegatingProcessBusTest, Acquire)
 TEST(DelegatingProcessBusTest, SetGetSignal)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", true);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     delegating_bus.SetSignal(PIN_ACK, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK_MASK));
+    EXPECT_TRUE(bus.GetSignal(PIN_ACK_MASK));
     delegating_bus.SetSignal(PIN_ACK, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK_MASK));
+    EXPECT_FALSE(bus.GetSignal(PIN_ACK_MASK));
 
     delegating_bus.SetSignal(PIN_IO, true);
-    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO_MASK));
+    EXPECT_TRUE(bus.GetSignal(PIN_IO_MASK));
     delegating_bus.SetSignal(PIN_IO, false);
-    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO_MASK));
+    EXPECT_FALSE(bus.GetSignal(PIN_IO_MASK));
 }
 
 TEST(DelegatingProcessBusTest, WaitHandshakeACK)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     bus.SetACK(true);
     EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_ACK_MASK, true));
@@ -248,7 +248,7 @@ TEST(DelegatingProcessBusTest, WaitHandshakeACK)
 TEST(DelegatingProcessBusTest, WaitHandshakeREQ)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     bus.SetREQ(true);
     EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ_MASK, true));
@@ -256,20 +256,21 @@ TEST(DelegatingProcessBusTest, WaitHandshakeREQ)
     EXPECT_TRUE(delegating_bus.WaitHandshake(PIN_REQ_MASK, false));
 }
 
-TEST(DelegatingProcessBusTest, DAT)
+TEST(DelegatingProcessBusTest, SetGetDAT)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     delegating_bus.SetDAT(0x56);
-    EXPECT_EQ(0x56, delegating_bus.GetDAT());
     EXPECT_EQ(0x56, bus.GetDAT());
+    delegating_bus.SetDAT(0x65);
+    EXPECT_EQ(0x65, bus.GetDAT());
 }
 
 TEST(DelegatingProcessBusTest, CleanUp)
 {
     MockInProcessBus bus;
-    DelegatingInProcessBus delegating_bus(bus, "", false);
+    MockDelegatingInProcessBus delegating_bus(bus);
 
     EXPECT_CALL(bus, CleanUp);
     delegating_bus.CleanUp();
