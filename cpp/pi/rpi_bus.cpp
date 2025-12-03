@@ -211,32 +211,21 @@ void RpiBus::Reset()
     // Turn off active signal
     SetControl(PIN_ACT, false);
 
-    // Set all signals to off
+    // Set all control signals to off
     for (const int s : SIGNAL_TABLE) {
-        SetSignal(s, false);
+        if (s > PIN_DP) {
+            SetSignal(s, false);
+        }
     }
 
     // Set target signal to input for all modes
     SetControl(PIN_TAD, TAD_IN);
-    SetSignal(PIN_BSY, false);
-    SetSignal(PIN_MSG, false);
-    SetSignal(PIN_CD, false);
-    SetSignal(PIN_REQ, false);
-    SetSignal(PIN_IO, false);
 
     // Set the initiator signal direction
     SetControl(PIN_IND, IsTarget() ? IND_IN : IND_OUT);
 
     // Set data bus signal directions
     SetControl(PIN_DTD, IsTarget() ? DTD_IN : DTD_OUT);
-
-    // Set the initiator signal to input
-    if (IsTarget()) {
-        SetSignal(PIN_SEL, false);
-        SetSignal(PIN_ATN, false);
-        SetSignal(PIN_ACK, false);
-        SetSignal(PIN_RST, false);
-    }
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -316,7 +305,7 @@ void RpiBus::SetIO(bool state)
 
     SetSignal(PIN_IO, state);
 
-// Change the data input/output direction by IO signal
+    // Change the data input/output direction by IO signal
     SetControl(PIN_DTD, state ? DTD_OUT : DTD_IN);
 
     if (!state) {

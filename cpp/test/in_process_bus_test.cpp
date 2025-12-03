@@ -8,6 +8,16 @@
 
 #include "mocks.h"
 
+TEST(InProcessBusTest, Init)
+{
+    MockInProcessBus bus;
+
+    bus.Init(true);
+    EXPECT_TRUE(bus.IsTarget());
+
+    // Testing initiator mode would case a delay
+}
+
 TEST(InProcessBusTest, BSY)
 {
     MockInProcessBus bus;
@@ -180,6 +190,13 @@ TEST(InProcessBusTest, WaitForSelection)
     MockInProcessBus bus;
 
     EXPECT_EQ(0U, bus.WaitForSelection());
+}
+
+TEST(InProcessBusTest, IsRaspberryPi)
+{
+    MockInProcessBus bus;
+
+    EXPECT_FALSE(bus.IsRaspberryPi());
 }
 
 TEST(DelegatingProcessBusTest, Reset)

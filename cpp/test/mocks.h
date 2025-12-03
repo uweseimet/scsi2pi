@@ -46,6 +46,7 @@ public:
 
 class MockInProcessBus : public InProcessBus
 {
+    FRIEND_TEST(InProcessBusTest, Init);
     FRIEND_TEST(InProcessBusTest, WaitForNotBusy);
 
 public:
