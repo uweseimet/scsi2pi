@@ -316,7 +316,7 @@ tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
     return {static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f), static_cast<Asc>(buf[12]), buf[13]};
 }
 
-void InitiatorExecutor::ResetBus()
+void InitiatorExecutor::ResetBus() const
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us

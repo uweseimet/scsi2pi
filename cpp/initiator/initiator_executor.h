@@ -39,7 +39,7 @@ public:
 
     tuple<SenseKey, Asc, int> GetSenseData();
 
-    void ResetBus();
+    void ResetBus() const;
 
     int GetByteCount() const
     {

@@ -30,32 +30,32 @@ public:
     virtual ~Bus() = default;
 
     virtual bool Init(bool);
-    virtual void Reset();
+    virtual void Reset() const;
     virtual void CleanUp() = 0;
 
     virtual void Acquire() const = 0;
 
     virtual uint8_t WaitForSelection() = 0;
 
-    virtual void SetBSY(bool) = 0;
+    virtual void SetBSY(bool) const = 0;
 
-    virtual void SetSEL(bool) = 0;
+    virtual void SetSEL(bool) const = 0;
 
-    virtual bool GetIO() = 0;
-    virtual void SetIO(bool) = 0;
+    virtual bool GetIO() const = 0;
+    virtual void SetIO(bool) const = 0;
 
     virtual uint8_t GetDAT() const;
-    virtual void SetDAT(uint8_t) = 0;
+    virtual void SetDAT(uint8_t) const = 0;
 
     virtual bool GetSignal(int) const;
-    virtual void SetSignal(int, bool) = 0;
+    virtual void SetSignal(int, bool) const = 0;
 
     virtual bool IsRaspberryPi() const = 0;
 
     virtual bool WaitHandshake(int, bool) const;
 
     int CommandHandShake(data_in_t);
-    int InitiatorMsgInHandShake();
+    int InitiatorMsgInHandShake() const;
     int TargetReceiveHandShake(data_in_t);
     int InitiatorReceiveHandShake(data_in_t);
     int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
@@ -84,7 +84,7 @@ public:
     {
         return GetSignal(PIN_REQ_MASK);
     }
-    void SetREQ(bool state)
+    void SetREQ(bool state) const
     {
         SetSignal(PIN_REQ, state);
     }
@@ -93,7 +93,7 @@ public:
     {
         return GetSignal(PIN_ATN_MASK);
     }
-    void SetATN(bool state)
+    void SetATN(bool state) const
     {
         SetSignal(PIN_ATN, state);
     }
@@ -102,7 +102,7 @@ public:
     {
         return GetSignal(PIN_ACK_MASK);
     }
-    void SetACK(bool state)
+    void SetACK(bool state) const
     {
         SetSignal(PIN_ACK, state);
     }
@@ -111,7 +111,7 @@ public:
     {
         return GetSignal(PIN_RST_MASK);
     }
-    void SetRST(bool state)
+    void SetRST(bool state) const
     {
         SetSignal(PIN_RST, state);
     }
@@ -120,7 +120,7 @@ public:
     {
         return GetSignal(PIN_MSG_MASK);
     }
-    void SetMSG(bool state)
+    void SetMSG(bool state) const
     {
         SetSignal(PIN_MSG, state);
     }
@@ -129,7 +129,7 @@ public:
     {
         return GetSignal(PIN_CD_MASK);
     }
-    void SetCD(bool state)
+    void SetCD(bool state) const
     {
         SetSignal(PIN_CD, state);
     }
@@ -180,7 +180,7 @@ private:
 
     bool target_mode = true;
 
-    // All bus signals, mutable because they represent external state
+    // The current bus signals, mutable because they represent external state
     mutable uint32_t signals = 0xffffffff;
 
     static const array<BusPhase, 32> phases;

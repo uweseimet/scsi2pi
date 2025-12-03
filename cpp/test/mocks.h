@@ -29,13 +29,13 @@ class MockBus : public Bus
 public:
 
     MOCK_METHOD(void, CleanUp, (), (override));
-    MOCK_METHOD(void, SetBSY, (bool), (override));
-    MOCK_METHOD(void, SetSEL, (bool), (override));
-    MOCK_METHOD(bool, GetIO, (), (override));
-    MOCK_METHOD(void, SetIO, (bool), (override));
-    MOCK_METHOD(void, SetDAT, (uint8_t), (override));
+    MOCK_METHOD(void, SetBSY, (bool), (const, override));
+    MOCK_METHOD(void, SetSEL, (bool), (const, override));
+    MOCK_METHOD(bool, GetIO, (), (const, override));
+    MOCK_METHOD(void, SetIO, (bool), (const, override));
+    MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
     MOCK_METHOD(void, Acquire, (), (const, override));
-    MOCK_METHOD(void, SetSignal, (int, bool), (override));
+    MOCK_METHOD(void, SetSignal, (int, bool), (const, override));
     MOCK_METHOD(bool, WaitHandshake, (int, bool), (const, override));
     MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));
@@ -52,7 +52,7 @@ class MockInProcessBus : public InProcessBus
 public:
 
     MOCK_METHOD(void, CleanUp, (), (override));
-    MOCK_METHOD(void, Reset, (), (override));
+    MOCK_METHOD(void, Reset, (), (const, override));
 
     using InProcessBus::InProcessBus;
 

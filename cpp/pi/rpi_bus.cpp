@@ -204,7 +204,7 @@ void RpiBus::CleanUp()
     SetSignalDriveStrength(3);
 }
 
-void RpiBus::Reset()
+void RpiBus::Reset() const
 {
     Bus::Reset();
 
@@ -258,7 +258,7 @@ uint8_t RpiBus::WaitForSelection()
     return 0;
 }
 
-void RpiBus::SetBSY(bool state)
+void RpiBus::SetBSY(bool state) const
 {
     SetSignal(PIN_BSY, state);
 
@@ -273,7 +273,7 @@ void RpiBus::SetBSY(bool state)
     }
 }
 
-void RpiBus::SetSEL(bool state)
+void RpiBus::SetSEL(bool state) const
 {
     assert(!IsTarget());
 
@@ -281,7 +281,7 @@ void RpiBus::SetSEL(bool state)
     SetSignal(PIN_SEL, state);
 }
 
-bool RpiBus::GetIO()
+bool RpiBus::GetIO() const
 {
     const bool state = GetSignal(PIN_IO_MASK);
 
@@ -292,7 +292,7 @@ bool RpiBus::GetIO()
     return state;
 }
 
-void RpiBus::SetIO(bool state)
+void RpiBus::SetIO(bool state) const
 {
     assert(IsTarget());
 
@@ -302,7 +302,7 @@ void RpiBus::SetIO(bool state)
 }
 
 // Change the data input/output direction by IO signal
-void RpiBus::SetDir(bool io)
+void RpiBus::SetDir(bool io) const
 {
     SetControl(PIN_DTD, io);
 
@@ -313,7 +313,7 @@ void RpiBus::SetDir(bool io)
     }
 }
 
-inline void RpiBus::SetDAT(uint8_t dat)
+inline void RpiBus::SetDAT(uint8_t dat) const
 {
     uint32_t fsel = gpfsel[GPIO_FSEL_1];
     // Mask for the DT0-DT7 and DP pins
@@ -323,7 +323,7 @@ inline void RpiBus::SetDAT(uint8_t dat)
     gpio[GPIO_FSEL_1] = fsel;
 }
 
-void RpiBus::InitializeSignals()
+void RpiBus::InitializeSignals() const
 {
     for (const int s : SIGNAL_TABLE) {
         PinSetSignal(s, false);
@@ -383,7 +383,7 @@ void RpiBus::CreateWorkTable()
     }
 }
 
-void RpiBus::SetControl(int pin, bool state)
+void RpiBus::SetControl(int pin, bool state) const
 {
     assert(pin < PIN_DT0 || pin > PIN_DP);
 
@@ -391,8 +391,10 @@ void RpiBus::SetControl(int pin, bool state)
 }
 
 // Set output signal value (except for DP and DT0-DT7)
-void RpiBus::SetSignal(int pin, bool state)
+void RpiBus::SetSignal(int pin, bool state) const
 {
+    assert(pin < PIN_DT0 || pin > PIN_DP);
+
     const int index = pin / 10;
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
@@ -401,6 +403,7 @@ void RpiBus::SetSignal(int pin, bool state)
     } else {
         data &= ~(0b111 << shift);
     }
+
     gpio[index] = data;
     gpfsel[index] = data;
 }
@@ -464,7 +467,7 @@ void RpiBus::EnableIRQ()
 }
 
 // Pin direction setting (input/output)
-void RpiBus::PinConfig(int pin, int mode)
+void RpiBus::PinConfig(int pin, int mode) const
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
@@ -477,7 +480,7 @@ void RpiBus::PinConfig(int pin, int mode)
     gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
 }
 
-void RpiBus::ConfigurePullDown(int pin)
+void RpiBus::ConfigurePullDown(int pin) const
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
@@ -505,7 +508,7 @@ void RpiBus::ConfigurePullDown(int pin)
 }
 
 // Set output pin
-void RpiBus::PinSetSignal(int pin, bool state)
+void RpiBus::PinSetSignal(int pin, bool state) const
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
@@ -516,7 +519,7 @@ void RpiBus::PinSetSignal(int pin, bool state)
     gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
 }
 
-void RpiBus::SetSignalDriveStrength(uint32_t drive)
+void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 {
     const uint32_t data = pads[PAD_0_27];
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;

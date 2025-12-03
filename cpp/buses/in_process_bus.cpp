@@ -41,7 +41,7 @@ void InProcessBus::CleanUp()
     }
 }
 
-void InProcessBus::SetDAT(uint8_t dat)
+void InProcessBus::SetDAT(uint8_t dat) const
 {
     uint32_t s = GetSignals();
     s |= 0b0000000000000111111110000000000;
@@ -49,7 +49,7 @@ void InProcessBus::SetDAT(uint8_t dat)
     SetSignals(s);
 }
 
-void InProcessBus::SetSignal(int pin, bool state)
+void InProcessBus::SetSignal(int pin, bool state) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
@@ -90,7 +90,7 @@ DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &na
     in_process_logger->set_pattern("[%^%l%$] [%n] %v");
 }
 
-void DelegatingInProcessBus::Reset()
+void DelegatingInProcessBus::Reset() const
 {
     in_process_logger->trace("Resetting bus");
 
@@ -110,7 +110,7 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
     return state;
 }
 
-void DelegatingInProcessBus::SetSignal(int pin, bool state)
+void DelegatingInProcessBus::SetSignal(int pin, bool state) const
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
         in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");

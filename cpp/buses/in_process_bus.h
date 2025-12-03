@@ -35,28 +35,28 @@ public:
         // Nothing to do
     }
 
-    void SetBSY(bool state) override
+    void SetBSY(bool state) const override
     {
         SetSignal(PIN_BSY, state);
     }
 
-    void SetSEL(bool state) override
+    void SetSEL(bool state) const override
     {
         SetSignal(PIN_SEL, state);
     }
 
-    bool GetIO() override
+    bool GetIO() const override
     {
         return GetSignal(PIN_IO_MASK);
     }
-    void SetIO(bool state) override
+    void SetIO(bool state) const override
     {
         SetSignal(PIN_IO, state);
     }
 
-    void SetDAT(uint8_t) override;
+    void SetDAT(uint8_t) const override;
 
-    void SetSignal(int, bool) override;
+    void SetSignal(int, bool) const override;
 
     uint8_t WaitForSelection() override;
 
@@ -84,7 +84,7 @@ private:
 
     static inline atomic_bool target_enabled;
 
-    mutex write_locker;
+    mutable mutex write_locker;
 };
 
 class DelegatingInProcessBus : public InProcessBus
@@ -95,7 +95,7 @@ public:
     DelegatingInProcessBus(InProcessBus&, const string&, bool);
     ~DelegatingInProcessBus() override = default;
 
-    void Reset() override;
+    void Reset() const override;
 
     void CleanUp() override
     {
@@ -116,13 +116,13 @@ public:
     {
         return bus.GetDAT();
     }
-    void SetDAT(uint8_t dat) override
+    void SetDAT(uint8_t dat) const override
     {
         bus.SetDAT(dat);
     }
 
     bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    void SetSignal(int, bool) const override;
 
 private:
 

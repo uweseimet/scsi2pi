@@ -20,7 +20,7 @@ bool Bus::Init(bool target)
     return true;
 }
 
-void Bus::Reset()
+void Bus::Reset() const
 {
     signals = 0xffffffff;
 }
@@ -91,7 +91,7 @@ int Bus::CommandHandShake(data_in_t buf)
     return bytes_received;
 }
 
-int Bus::InitiatorMsgInHandShake()
+int Bus::InitiatorMsgInHandShake() const
 {
     if (!WaitHandshake(PIN_REQ_MASK, true) || !IsPhase(BusPhase::MSG_IN)) {
         return -1;

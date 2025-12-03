@@ -35,7 +35,7 @@ public:
 
     bool Init(bool) override;
 
-    void Reset() override;
+    void Reset() const override;
     void CleanUp() override;
 
     uint8_t WaitForSelection() override;
@@ -43,14 +43,14 @@ public:
     // Bus signal acquisition
     void Acquire() const override;
 
-    void SetBSY(bool) override;
+    void SetBSY(bool) const override;
 
-    void SetSEL(bool) override;
+    void SetSEL(bool) const override;
 
-    bool GetIO() override;
-    void SetIO(bool) override;
+    bool GetIO() const override;
+    void SetIO(bool) const override;
 
-    void SetDAT(uint8_t) override;
+    void SetDAT(uint8_t) const override;
 
     void WaitNanoSeconds(bool) const override;
 
@@ -65,29 +65,29 @@ public:
 
 private:
 
-    void InitializeSignals();
+    void InitializeSignals() const;
 
     void CreateWorkTable();
 
-    void SetControl(int, bool);
+    void SetControl(int, bool) const;
 
-    void SetSignal(int, bool) override;
+    void SetSignal(int, bool) const override;
 
-    void SetDir(bool);
+    void SetDir(bool) const;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
 
     // Set GPIO pin pull up/down resistor setting to PULLDOWN
-    void ConfigurePullDown(int);
+    void ConfigurePullDown(int) const;
 
-    //GPIO pin direction setting
-    void PinConfig(int, int);
+    // GPIO pin direction setting
+    void PinConfig(int, int) const;
 
-    void PinSetSignal(int, bool);
+    void PinSetSignal(int, bool) const;
 
     // Set GPIO drive strength
-    void SetSignalDriveStrength(uint32_t);
+    void SetSignalDriveStrength(uint32_t) const;
 
     PiType pi_type;
 
@@ -128,9 +128,9 @@ private:
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;
 
-    // RAM copy of GPFSEL0-2  values (GPIO Function Select)
-    // Reading the current data from the copy is faster than directly reading them from the ports
-    array<uint32_t, 3> gpfsel;
+    // RAM copy of GPFSEL0-2  values (GPIO Function Select), mutable because these values are external state.
+    // Reading the current data from the copy is faster than directly reading them from the ports.
+    mutable array<uint32_t, 3> gpfsel;
 
     // GPIO input level
     volatile uint32_t *level = nullptr;
