@@ -89,7 +89,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type;
+    PiType pi_type = PiType::UNKNOWN;
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
@@ -130,13 +130,13 @@ private:
 
     // RAM copy of GPFSEL0-2  values (GPIO Function Select), mutable because these values are external state.
     // Reading the current data from the copy is faster than directly reading them from the ports.
-    mutable array<uint32_t, 3> gpfsel;
+    mutable array<uint32_t, 3> gpfsel = { };
 
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
     // Data mask table
-    array<array<uint32_t, 256>, 3> tblDatMsk;
+    array<array<uint32_t, 256>, 3> tblDatMsk = { };
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
 

@@ -22,7 +22,7 @@ constexpr static int OUT = 1;
 
 using namespace std;
 
-class Bus // NOSONAR The high number of convenience methods is justified
+class Bus // NOSONAR The high number of simple convenience methods is justified
 {
 
 public:
@@ -36,13 +36,6 @@ public:
     virtual void Acquire() const = 0;
 
     virtual uint8_t WaitForSelection() = 0;
-
-    virtual void SetBSY(bool) const = 0;
-
-    virtual void SetSEL(bool) const = 0;
-
-    virtual bool GetIO() const = 0;
-    virtual void SetIO(bool) const = 0;
 
     virtual uint8_t GetDAT() const;
     virtual void SetDAT(uint8_t) const = 0;
@@ -74,10 +67,24 @@ public:
     {
         return GetSignal(PIN_BSY_MASK);
     }
+    virtual void SetBSY(bool state) const
+    {
+        SetSignal(PIN_BSY, state);
+    }
 
     bool GetSEL() const
     {
         return GetSignal(PIN_SEL_MASK);
+    }
+    virtual void SetSEL(bool state) const;
+
+    virtual bool GetIO() const
+    {
+        return GetSignal(PIN_IO_MASK);
+    }
+    virtual void SetIO(bool state) const
+    {
+        SetSignal(PIN_IO, state);
     }
 
     bool GetREQ() const

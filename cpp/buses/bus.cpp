@@ -291,6 +291,11 @@ bool Bus::WaitHandshake(int pin_mask, bool state) const
     return false;
 }
 
+void Bus::SetSEL(bool state) const
+{
+    SetSignal(PIN_SEL, state);
+}
+
 // Get input signal value (except for DP and DT0-DT7)
 inline bool Bus::GetSignal(int pin_mask) const
 {

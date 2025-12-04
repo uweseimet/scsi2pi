@@ -35,25 +35,6 @@ public:
         // Nothing to do
     }
 
-    void SetBSY(bool state) const override
-    {
-        SetSignal(PIN_BSY, state);
-    }
-
-    void SetSEL(bool state) const override
-    {
-        SetSignal(PIN_SEL, state);
-    }
-
-    bool GetIO() const override
-    {
-        return GetSignal(PIN_IO_MASK);
-    }
-    void SetIO(bool state) const override
-    {
-        SetSignal(PIN_IO, state);
-    }
-
     void SetDAT(uint8_t) const override;
 
     void SetSignal(int, bool) const override;

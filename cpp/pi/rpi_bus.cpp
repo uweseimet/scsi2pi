@@ -19,7 +19,9 @@ using namespace spdlog;
 
 bool RpiBus::Init(bool target)
 {
-    Bus::Init(target);
+    if (!Bus::Init(target)) {
+        return false;
+    }
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -75,12 +77,12 @@ bool RpiBus::Init(bool target)
     // Clock id
     //  0x000000004: CORE
 
-    // Get the core frequency
+    // Get the core frequency and calculate the bus settle and Daynaport delays
     const array<uint32_t, 32> maxclock = { 32, 0, 0x00030004, 8, 0, 4, 0, 0 };
     if (const int vcio_fd = open("/dev/vcio", O_RDONLY); vcio_fd != -1) {
         ioctl(vcio_fd, _IOWR(100, 0, char*), maxclock.data());
-        const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         close(vcio_fd);
+        const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         bus_settle_count = timer_core_freq * 400 / 1000;
         daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
     }
@@ -109,14 +111,15 @@ bool RpiBus::Init(bool target)
 
     // Map GIC interrupt priority mask register
     if (pi_type == PiType::PI_4) {
-        gicc_mpr = static_cast<uint32_t*>(mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR));
-        if (gicc_mpr == MAP_FAILED) {
-            critical("Can't map GIC: {}", strerror(errno));
+        void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
+        if (addr == MAP_FAILED) {
             close(fd);
+            critical("Can't map GIC: {}", strerror(errno));
             return false;
         }
+
         // MPR has offset 1
-        ++gicc_mpr;
+        gicc_mpr = static_cast<uint32_t*>(addr) + 1;
     }
 
     close(fd);
@@ -260,7 +263,7 @@ uint8_t RpiBus::WaitForSelection()
 
 void RpiBus::SetBSY(bool state) const
 {
-    SetSignal(PIN_BSY, state);
+    Bus::SetBSY(state);
 
     SetControl(PIN_ACT, state);
     SetControl(PIN_TAD, state);
@@ -277,13 +280,14 @@ void RpiBus::SetSEL(bool state) const
 {
     assert(!IsTarget());
 
+    Bus::SetSEL(state);
+
     SetControl(PIN_ACT, state);
-    SetSignal(PIN_SEL, state);
 }
 
 bool RpiBus::GetIO() const
 {
-    const bool state = GetSignal(PIN_IO_MASK);
+    const bool state = Bus::GetIO();
 
     if (!IsTarget()) {
         SetDir(state);
@@ -296,7 +300,7 @@ void RpiBus::SetIO(bool state) const
 {
     assert(IsTarget());
 
-    SetSignal(PIN_IO, state);
+    Bus::SetIO(state);
 
     SetDir(!state);
 }
@@ -393,9 +397,8 @@ void RpiBus::SetControl(int pin, bool state) const
 // Set output signal value (except for DP and DT0-DT7)
 void RpiBus::SetSignal(int pin, bool state) const
 {
-    assert(pin < PIN_DT0 || pin > PIN_DP);
-
     const int index = pin / 10;
+    assert(index <= 2);
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
