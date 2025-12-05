@@ -226,6 +226,8 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 
+    DisableIRQ();
+
     const BusPhase phase = GetPhase();
 
     // Position of the last message byte if in MESSAGE OUT phase
@@ -291,9 +293,13 @@ bool Bus::WaitHandshake(int pin_mask, bool state) const
     return false;
 }
 
-void Bus::SetSEL(bool state) const
+void Bus::SetIO(bool state) const
 {
-    SetSignal(PIN_SEL, state);
+    assert(target_mode);
+
+    SetSignal(PIN_IO, state);
+
+    SetDir(state);
 }
 
 // Get input signal value (except for DP and DT0-DT7)

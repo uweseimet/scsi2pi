@@ -176,7 +176,7 @@ bool RpiBus::Init(bool target)
     CreateWorkTable();
 
     // Enable ENABLE in order to show the user that s2p is running
-    SetControl(PIN_ENB, true);
+    PinSetSignal(PIN_ENB, true);
 
     return true;
 }
@@ -212,7 +212,7 @@ void RpiBus::Reset() const
     Bus::Reset();
 
     // Turn off active signal
-    SetControl(PIN_ACT, false);
+    PinSetSignal(PIN_ACT, false);
 
     // Set all control signals to off
     for (const int s : SIGNAL_TABLE) {
@@ -222,13 +222,13 @@ void RpiBus::Reset() const
     }
 
     // Set target signal to input for all modes
-    SetControl(PIN_TAD, false);
+    PinSetSignal(PIN_TAD, false);
 
     // Set the initiator signal direction
-    SetControl(PIN_IND, !IsTarget());
+    PinSetSignal(PIN_IND, !IsTarget());
 
     // Set data bus signal directions
-    SetControl(PIN_DTD, IsTarget());
+    PinSetSignal(PIN_DTD, IsTarget());
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -265,8 +265,8 @@ void RpiBus::SetBSY(bool state) const
 {
     Bus::SetBSY(state);
 
-    SetControl(PIN_ACT, state);
-    SetControl(PIN_TAD, state);
+    PinSetSignal(PIN_ACT, state);
+    PinSetSignal(PIN_TAD, state);
 
     if (!state) {
         SetSignal(PIN_MSG, false);
@@ -282,39 +282,13 @@ void RpiBus::SetSEL(bool state) const
 
     Bus::SetSEL(state);
 
-    SetControl(PIN_ACT, state);
+    PinSetSignal(PIN_ACT, state);
 }
 
-bool RpiBus::GetIO() const
+void RpiBus::SetDir(bool in) const
 {
-    const bool state = Bus::GetIO();
-
-    if (!IsTarget()) {
-        SetDir(state);
-    }
-
-    return state;
-}
-
-void RpiBus::SetIO(bool state) const
-{
-    assert(IsTarget());
-
-    Bus::SetIO(state);
-
-    SetDir(!state);
-}
-
-// Change the data input/output direction by IO signal
-void RpiBus::SetDir(bool io) const
-{
-    SetControl(PIN_DTD, io);
-
-    if (io) {
-        for (int pin : DATA_PINS) {
-            SetSignal(pin, false);
-        }
-    }
+    // Change the data input/output direction by IO signal
+    PinSetSignal(PIN_DTD, !in);
 }
 
 inline void RpiBus::SetDAT(uint8_t dat) const
@@ -343,7 +317,7 @@ void RpiBus::CreateWorkTable()
     const auto tblSize = static_cast<uint32_t>(tblParity.size());
 
     // Create parity table
-    for (uint32_t i = 0; i < tblSize; ++i) {
+        for (uint32_t i = 0; i < tblSize; ++i) {
         uint32_t bits = i;
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
@@ -359,7 +333,7 @@ void RpiBus::CreateWorkTable()
         tbl.fill(-1);
     }
 
-    for (uint32_t i = 0; i < tblSize; ++i) {
+        for (uint32_t i = 0; i < tblSize; ++i) {
         // Bit string for inspection
         uint32_t bits = i;
 
@@ -385,13 +359,6 @@ void RpiBus::CreateWorkTable()
             bits >>= 1;
         }
     }
-}
-
-void RpiBus::SetControl(int pin, bool state) const
-{
-    assert(pin < PIN_DT0 || pin > PIN_DP);
-
-    PinSetSignal(pin, state);
 }
 
 // Set output signal value (except for DP and DT0-DT7)

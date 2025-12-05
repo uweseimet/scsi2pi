@@ -19,6 +19,7 @@ using namespace initiator_util;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
+    // TODO Try to get rid of bus reset
     bus.Reset();
 
     status_code = 0xff;
@@ -55,6 +56,9 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     auto now = steady_clock::now();
     while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
+
+        // Ensure that the data direction matches the one set by the target
+        bus.SetDir(!bus.GetIO());
 
         if (bus.GetREQ()) {
             try {

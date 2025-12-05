@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -59,6 +60,11 @@ private:
         // Nothing to do
     }
     void EnableIRQ() override
+    {
+        // Nothing to do
+    }
+
+    void SetDir(bool) const override
     {
         // Nothing to do
     }

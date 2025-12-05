@@ -55,10 +55,9 @@ void InProcessBus::SetSignal(int pin, bool state) const
 
     scoped_lock lock(write_locker);
     if (state) {
-        SetSignals(GetSignals() & ~(7 << pin));
-    }
-    else {
-        SetSignals(GetSignals() | (1 << pin));
+        SetSignals(GetSignals() & ~(0b111 << pin));
+    } else {
+        SetSignals(GetSignals() | (0b001 << pin));
     }
 }
 
@@ -101,8 +100,7 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 {
     const bool state = bus.GetSignal(pin_mask);
 
-    if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK
-        && in_process_logger->level() == level::trace) {
+    if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK && in_process_logger->level() == level::trace) {
         in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin_mask == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
             state ? "true" : "false");
     }

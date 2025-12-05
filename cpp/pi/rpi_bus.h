@@ -47,9 +47,6 @@ public:
 
     void SetSEL(bool) const override;
 
-    bool GetIO() const override;
-    void SetIO(bool) const override;
-
     void SetDAT(uint8_t) const override;
 
     void WaitNanoSeconds(bool) const override;
@@ -69,14 +66,12 @@ private:
 
     void CreateWorkTable();
 
-    void SetControl(int, bool) const;
-
     void SetSignal(int, bool) const override;
-
-    void SetDir(bool) const;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
+
+    void SetDir(bool) const override;
 
     // Set GPIO pin pull up/down resistor setting to PULLDOWN
     void ConfigurePullDown(int) const;

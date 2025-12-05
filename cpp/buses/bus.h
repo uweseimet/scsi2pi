@@ -45,6 +45,8 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
+    virtual void SetDir(bool) const = 0;
+
     virtual bool WaitHandshake(int, bool) const;
 
     int CommandHandShake(data_in_t);
@@ -76,15 +78,9 @@ public:
     {
         return GetSignal(PIN_SEL_MASK);
     }
-    virtual void SetSEL(bool state) const;
-
-    virtual bool GetIO() const
+    virtual void SetSEL(bool state) const
     {
-        return GetSignal(PIN_IO_MASK);
-    }
-    virtual void SetIO(bool state) const
-    {
-        SetSignal(PIN_IO, state);
+        SetSignal(PIN_SEL, state);
     }
 
     bool GetREQ() const
@@ -140,6 +136,12 @@ public:
     {
         SetSignal(PIN_CD, state);
     }
+
+    bool GetIO() const
+    {
+        return GetSignal(PIN_IO_MASK);
+    }
+    void SetIO(bool) const;
 
     BusPhase GetPhase() const
     {
