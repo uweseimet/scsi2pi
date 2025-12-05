@@ -247,18 +247,7 @@ uint8_t RpiBus::WaitForSelection()
         return 0;
     }
 
-    if (WaitForNotBusy()) {
-        DisableIRQ();
-
-        // Initiator and target ID
-        const uint8_t ids = GetDAT();
-
-        EnableIRQ();
-
-        return ids;
-    }
-
-    return 0;
+    return GetSelection();
 }
 
 void RpiBus::SetBSY(bool state) const

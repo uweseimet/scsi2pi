@@ -177,18 +177,19 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     EXPECT_FALSE(bus.WaitHandshake(PIN_REQ_MASK, true));
 }
 
-TEST(InProcessBusTest, WaitForNotBusy)
+TEST(InProcessBusTest, GetSelection)
 {
     MockInProcessBus bus;
 
     bus.SetBSY(false);
-    EXPECT_TRUE(bus.WaitForNotBusy());
+    EXPECT_EQ(0, bus.GetSelection());
 }
 
 TEST(InProcessBusTest, WaitForSelection)
 {
     MockInProcessBus bus;
 
+    bus.SetBSY(false);
     EXPECT_EQ(0, bus.WaitForSelection());
 }
 

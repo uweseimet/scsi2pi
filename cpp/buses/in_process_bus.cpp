@@ -67,12 +67,7 @@ uint8_t InProcessBus::WaitForSelection()
     const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
     nanosleep(&ts, nullptr);
 
-    if (!WaitForNotBusy())
-    {
-        return 0;
-    }
-
-    return GetDAT();
+    return GetSelection();
 }
 
 void InProcessBus::WaitNanoSeconds(bool) const

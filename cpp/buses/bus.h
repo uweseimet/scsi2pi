@@ -165,7 +165,7 @@ protected:
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    bool WaitForNotBusy() const;
+    uint8_t GetSelection() const;
 
     bool IsTarget() const
     {

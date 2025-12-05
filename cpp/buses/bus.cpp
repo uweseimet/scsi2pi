@@ -311,6 +311,21 @@ inline bool Bus::GetSignal(int pin_mask) const
     return !(signals & pin_mask);
 }
 
+uint8_t Bus::GetSelection() const
+{
+    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
+    const auto now = chrono::steady_clock::now();
+    do {
+        Acquire();
+        if (!GetBSY()) {
+            // Initiator and target ID
+            return GetDAT();
+        }
+    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
+
+    return 0;
+}
+
 inline uint8_t Bus::GetDAT() const
 {
     // A bus settle delay
@@ -326,26 +341,6 @@ int Bus::CommandHandshakeTimeout()
     EnableIRQ();
 
     return -1;
-}
-
-bool Bus::WaitForNotBusy() const
-{
-    Acquire();
-
-    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
-    if (GetBSY()) {
-        const auto now = chrono::steady_clock::now();
-        while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3) {
-            Acquire();
-            if (!GetBSY()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    return true;
 }
 
 // Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)
