@@ -293,6 +293,18 @@ bool Bus::WaitHandshake(int pin_mask, bool state) const
     return false;
 }
 
+void Bus::SetBSY(bool state) const
+{
+    SetSignal(PIN_BSY, state);
+
+    if (!state) {
+        SetSignal(PIN_MSG, false);
+        SetSignal(PIN_CD, false);
+        SetSignal(PIN_REQ, false);
+        SetSignal(PIN_IO, false);
+    }
+}
+
 void Bus::SetIO(bool state) const
 {
     assert(target_mode);

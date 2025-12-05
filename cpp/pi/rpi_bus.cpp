@@ -214,11 +214,9 @@ void RpiBus::Reset() const
     // Turn off active signal
     PinSetSignal(PIN_ACT, false);
 
-    // Set all control signals to off
+    // Set all signals to off
     for (const int s : SIGNAL_TABLE) {
-        if (s > PIN_DP) {
-            SetSignal(s, false);
-        }
+        SetSignal(s, false);
     }
 
     // Set target signal to input for all modes
@@ -256,13 +254,6 @@ void RpiBus::SetBSY(bool state) const
 
     PinSetSignal(PIN_ACT, state);
     PinSetSignal(PIN_TAD, state);
-
-    if (!state) {
-        SetSignal(PIN_MSG, false);
-        SetSignal(PIN_CD, false);
-        SetSignal(PIN_REQ, false);
-        SetSignal(PIN_IO, false);
-    }
 }
 
 void RpiBus::SetSEL(bool state) const

@@ -55,7 +55,11 @@ void S2p::CleanUp()
         service_thread.Stop();
     }
 
-    executor->DetachAll();
+    PbCommand command;
+    PbResult result;
+    command.set_operation(DETACH_ALL);
+    CommandContext context(command, *s2p_logger);
+    dispatcher->DispatchCommand(context, result);
 
     bus->CleanUp();
 }
@@ -389,8 +393,9 @@ void S2p::AttachInitialDevices(PbCommand &command)
         command.set_operation(ATTACH);
 
         CommandContext context(command, *s2p_logger);
+        PbResult result;
         context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
-        if (!executor->ProcessCmd(context)) {
+        if (!dispatcher->DispatchCommand(context, result)) {
             throw ParserException("Can't attach devices");
         }
 

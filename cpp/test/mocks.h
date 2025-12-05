@@ -497,16 +497,3 @@ public:
         StorageDevice::SetReady(b);
     }
 };
-
-class MockCommandExecutor : public CommandExecutor
-{
-
-public:
-
-    MOCK_METHOD(bool, Start, (shared_ptr<PrimaryDevice>, bool), (const));
-    MOCK_METHOD(bool, Stop, (shared_ptr<PrimaryDevice>, bool), (const));
-
-    MockCommandExecutor(Bus &b, ControllerFactory &f) : CommandExecutor(b, f, *default_logger())
-    {
-    }
-};

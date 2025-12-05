@@ -41,25 +41,17 @@ public:
     }
     ~CommandExecutor() = default;
 
-    // TODO At least some of these methods and of the protected methods should be private.
-    // Currently they are called by the unit tests.
-
     const auto& GetReservedIds() const
     {
         return reserved_ids;
     }
 
+    // TODO At least some of these methods and of the protected methods should be private.
+    // Currently they are called by the unit tests.
+
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
-    bool Start(PrimaryDevice&) const;
-    bool Stop(PrimaryDevice&) const;
-    bool Eject(PrimaryDevice&) const;
-    bool Protect(PrimaryDevice&) const;
-    bool Unprotect(PrimaryDevice&) const;
-    bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
-    bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
-    void DetachAll() const;
     string SetReservedIds(const string&);
 #ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
@@ -83,6 +75,15 @@ protected:
     bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
 
 private:
+
+    bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
+    bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
+    void DetachAll() const;
+    bool Start(PrimaryDevice&) const;
+    bool Stop(PrimaryDevice&) const;
+    bool Eject(PrimaryDevice&) const;
+    bool Protect(PrimaryDevice&) const;
+    bool Unprotect(PrimaryDevice&) const;
 
     static string GetTypeString(const Device&);
     static string GetIdentifier(const Device&);

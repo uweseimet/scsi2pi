@@ -41,7 +41,6 @@ public:
     virtual void SetDAT(uint8_t) const = 0;
 
     virtual bool GetSignal(int) const;
-    virtual void SetSignal(int, bool) const = 0;
 
     virtual bool IsRaspberryPi() const = 0;
 
@@ -69,10 +68,7 @@ public:
     {
         return GetSignal(PIN_BSY_MASK);
     }
-    virtual void SetBSY(bool state) const
-    {
-        SetSignal(PIN_BSY, state);
-    }
+    virtual void SetBSY(bool state) const;
 
     bool GetSEL() const
     {
@@ -159,6 +155,8 @@ public:
 protected:
 
     Bus() = default;
+
+    virtual void SetSignal(int, bool) const = 0;
 
     virtual void WaitNanoSeconds(bool) const = 0;
 

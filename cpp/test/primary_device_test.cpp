@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -212,17 +212,15 @@ TEST(PrimaryDeviceTest, ModeSelect)
 TEST(PrimaryDeviceTest, ModeSense6)
 {
     MockPrimaryDevice device(0);
-    vector<uint8_t> buf;
 
-    EXPECT_EQ(0, device.ModeSense6( { }, buf));
+    EXPECT_EQ(0, device.ModeSense6( { }, { }));
 }
 
 TEST(PrimaryDeviceTest, ModeSense10)
 {
     MockPrimaryDevice device(0);
-    vector<uint8_t> buf;
 
-    EXPECT_EQ(0, device.ModeSense10( { }, buf));
+    EXPECT_EQ(0, device.ModeSense10( { }, { }));
 }
 
 TEST(PrimaryDeviceTest, SetUpModePages)
