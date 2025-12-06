@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
         s2p->Run(target_args, true, log_signals);
     });
 
-    if (client == "s2pctl") {
+    if (client == "s2pctl" || client == "s2pexec") {
         // Ensure that s2p is listening on its socket
         sleep(1);
 
