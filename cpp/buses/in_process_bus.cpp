@@ -97,7 +97,7 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
     if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
-        in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
+        in_process_logger->trace("Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
     }
 
     bus.SetSignal(pin, state);
