@@ -43,10 +43,10 @@ void InProcessBus::CleanUp()
 
 void InProcessBus::SetDAT(uint8_t dat) const
 {
-    uint32_t s = GetSignals();
-    s |= 0b0000000000000111111110000000000;
-    s &= static_cast<uint32_t>(~static_cast<byte>(dat)) << PIN_DT0;
-    SetSignals(s);
+    uint32_t s = ~GetSignals();
+    s &= 0b11111111111111000000001111111111;
+    s |= static_cast<uint32_t>(static_cast<byte>(dat)) << PIN_DT0;
+    SetSignals(~s);
 }
 
 void InProcessBus::SetSignal(int pin, bool state) const
@@ -55,9 +55,9 @@ void InProcessBus::SetSignal(int pin, bool state) const
 
     scoped_lock lock(write_locker);
     if (state) {
-        SetSignals(GetSignals() & ~(0b111 << pin));
+        SetSignals(GetSignals() & ~(1 << pin));
     } else {
-        SetSignals(GetSignals() | (0b001 << pin));
+        SetSignals(GetSignals() | (1 << pin));
     }
 }
 
@@ -81,7 +81,7 @@ DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &na
     CreateLogger(name)), log_signals(l)
 {
     // Log without timestamps
-    in_process_logger->set_pattern("[%^%l%$] [%n] %v");
+    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
 void DelegatingInProcessBus::Reset() const
@@ -95,9 +95,10 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 {
     const bool state = bus.GetSignal(pin_mask);
 
-    if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK) {
-        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin_mask == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
-            state ? "true" : "false");
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin_mask); !name.empty()) {
+            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
+        }
     }
 
     return state;
@@ -105,15 +106,25 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 
 void DelegatingInProcessBus::SetSignal(int pin, bool state) const
 {
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
-        in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin); !name.empty()) {
+            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
+        }
     }
 
     bus.SetSignal(pin, state);
 }
 
+void DelegatingInProcessBus::LogSignal(const string &msg) const
+{
+    if (msg != last_log_msg) {
+        in_process_logger->trace(msg);
+        last_log_msg = msg;
+    }
+}
+
 string DelegatingInProcessBus::GetSignalName(int pin)
 {
-    const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "????";
+    const auto &it = SIGNALS_TO_LOG.find(pin);
+    return it != SIGNALS_TO_LOG.end() ? it->second : "";
 }

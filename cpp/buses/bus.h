@@ -139,12 +139,18 @@ public:
     }
     void SetIO(bool) const;
 
-    BusPhase GetPhase() const
+    virtual BusPhase GetPhase() const
     {
         Acquire();
 
         // Get phase from bus signal lines SEL, BSY, I/O, C/D and MSG
         return phases[(signals >> PIN_MSG) & 0b11111];
+    }
+
+    virtual bool IsPhase(BusPhase phase) const
+    {
+        // The signals are still up to date
+        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
     }
 
     static string GetPhaseName(BusPhase phase)
@@ -178,12 +184,6 @@ protected:
 private:
 
     int CommandHandshakeTimeout();
-
-    bool IsPhase(BusPhase phase) const
-    {
-        // The signals are still up to date
-        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
-    }
 
     bool target_mode = true;
 
