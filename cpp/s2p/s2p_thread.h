@@ -38,11 +38,7 @@ private:
 
     callback exec;
 
-#ifndef __APPLE__
     jthread service_thread;
-#else
-    thread service_thread;
-#endif
 
     S2pServer server;
 

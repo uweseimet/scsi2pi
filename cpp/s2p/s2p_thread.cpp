@@ -24,11 +24,7 @@ void S2pThread::Start()
 {
     assert(server.IsRunning());
 
-#ifndef __APPLE__
     service_thread = jthread([this]() {Execute();});
-#else
-    service_thread = thread([this]() {Execute();});
-#endif
 }
 
 // This method might be called twice when pressing Ctrl-C, because of the installed handlers
@@ -44,7 +40,7 @@ bool S2pThread::IsRunning() const
 
 void S2pThread::Execute() const
 {
-    // On Pis with 4 cores, avoid context switches in this thread
+    // On Pis with 4 cores, avoid context switches for this thread
 #ifdef __linux__
     cpu_set_t mask;
     CPU_ZERO(&mask);
