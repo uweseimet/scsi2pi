@@ -48,7 +48,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
+    switch (operation) {
     case DETACH:
         return Detach(context, *device, dryRun);
 
