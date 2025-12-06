@@ -73,7 +73,7 @@ DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &na
     CreateLogger(name)), log_signals(l)
 {
     // Log without timestamps
-    in_process_logger->set_pattern("[%^%l%$] [%n] %v");
+    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
 void DelegatingInProcessBus::Reset()
