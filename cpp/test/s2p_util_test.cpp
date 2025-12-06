@@ -64,6 +64,11 @@ TEST(S2pUtilTest, GetExtensionLowerCase)
     EXPECT_EQ("ext", GetExtensionLowerCase("test.1.EXT"));
 }
 
+TEST(S2pUtilTest, GetLocale)
+{
+    EXPECT_LE(2, GetLocale().size());
+}
+
 TEST(S2pUtilTest, ParseIdAndLun)
 {
     int id = -1;
@@ -159,6 +164,23 @@ TEST(S2pUtilTest, GetScsiLevel)
     EXPECT_EQ("SPC-4", GetScsiLevel(6));
     EXPECT_EQ("SPC-5", GetScsiLevel(7));
     EXPECT_EQ("SPC-6", GetScsiLevel(8));
+}
+
+TEST(S2pUtilTest, GetStatusString)
+{
+    EXPECT_NE(string::npos, GetStatusString(0x00).find("GOOD"));
+    EXPECT_NE(string::npos, GetStatusString(0x02).find("CHECK CONDITION"));
+    EXPECT_NE(string::npos, GetStatusString(0x04).find("CONDITION MET"));
+    EXPECT_NE(string::npos, GetStatusString(0x08).find("BUSY"));
+    EXPECT_NE(string::npos, GetStatusString(0x10).find("INTERMEDIATE"));
+    EXPECT_NE(string::npos, GetStatusString(0x14).find("INTERMEDIATE-CONDITION MET"));
+    EXPECT_NE(string::npos, GetStatusString(0x18).find("RESERVATION CONFLICT"));
+    EXPECT_NE(string::npos, GetStatusString(0x22).find("COMMAND TERMINATED"));
+    EXPECT_NE(string::npos, GetStatusString(0x28).find("QUEUE FULL"));
+    EXPECT_NE(string::npos, GetStatusString(0x30).find("ACA ACTIVE"));
+    EXPECT_NE(string::npos, GetStatusString(0x40).find("TASK ABORTED"));
+    EXPECT_NE(string::npos, GetStatusString(0xfe).find("unknown"));
+    EXPECT_NE(string::npos, GetStatusString(0xff).find("respond"));
 }
 
 TEST(S2pUtilTest, GetHexBytes)

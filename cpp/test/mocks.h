@@ -64,7 +64,7 @@ class MockDelegatingInProcessBus : public DelegatingInProcessBus
 
 public:
 
-    explicit MockDelegatingInProcessBus(InProcessBus &b) : DelegatingInProcessBus(b, "", false)
+    MockDelegatingInProcessBus(InProcessBus &b, bool l = false) : DelegatingInProcessBus(b, "", l)
     {
     }
 };

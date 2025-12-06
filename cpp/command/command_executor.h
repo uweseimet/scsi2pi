@@ -56,7 +56,6 @@ public:
 #ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
 #endif
-    bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
@@ -70,10 +69,6 @@ public:
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
     static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
 
-protected:
-
-    bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
-
 private:
 
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
@@ -85,10 +80,15 @@ private:
     bool Protect(PrimaryDevice&) const;
     bool Unprotect(PrimaryDevice&) const;
 
+    bool EnsureLun0(const CommandContext&) const;
+
+    bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
+
+    void DisplayDeviceInfo(const PrimaryDevice&) const;
+
     static string GetTypeString(const Device&);
     static string GetIdentifier(const Device&);
 
-    void DisplayDeviceInfo(const PrimaryDevice&) const;
     static bool CheckForReservedFile(const CommandContext&, const string&);
     static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 

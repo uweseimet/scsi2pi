@@ -95,7 +95,7 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 {
     const bool state = bus.GetSignal(pin_mask);
 
-    if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK && in_process_logger->level() == level::trace) {
+    if (log_signals && pin_mask != PIN_ACK_MASK && pin_mask != PIN_REQ_MASK) {
         in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin_mask == PIN_ACK_MASK ? PIN_ACK : PIN_REQ),
             state ? "true" : "false");
     }
@@ -105,7 +105,7 @@ bool DelegatingInProcessBus::GetSignal(int pin_mask) const
 
 void DelegatingInProcessBus::SetSignal(int pin, bool state) const
 {
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
         in_process_logger->trace(" Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
     }
 

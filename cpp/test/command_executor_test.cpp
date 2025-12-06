@@ -46,7 +46,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     command.set_operation(ATTACH);
     CommandContext context_attach(command, *default_logger());
     EXPECT_FALSE(executor.ProcessDeviceCmd(context_attach, definition, true))
-    << "Operation for unknown device type must fail";
+        << "Operation for unknown device type must fail";
 
     const auto device1 = make_shared<MockPrimaryDevice>(LUN);
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
@@ -55,7 +55,7 @@ TEST(CommandExecutorTest, ProcessDeviceCmd)
     command.set_operation(INSERT);
     CommandContext context_insert1(command, *default_logger());
     EXPECT_FALSE(executor.ProcessDeviceCmd(context_insert1, definition, true))
-    << "Operation unsupported by device must fail";
+        << "Operation unsupported by device must fail";
     controller_factory.DeleteAllControllers();
     definition.set_type(SCRM);
 
@@ -309,27 +309,29 @@ TEST(CommandExecutorTest, Detach)
     ControllerFactory controller_factory;
     MockBus bus;
     CommandExecutor executor(bus, controller_factory, *default_logger());
-    PbDeviceDefinition definition1;
-    PbDeviceDefinition definition2;
-    PbCommand command;
-    command.set_operation(DETACH);
-    CommandContext context(command, *default_logger());
+    PbCommand command1;
+    PbCommand command2;
+    command1.set_operation(DETACH);
+    command2.set_operation(DETACH);
+    auto *definition1 = command1.add_devices();
+    definition1->set_id(ID);
+    definition1->set_unit(LUN0);
+    auto *definition2 = command2.add_devices();
+    definition2->set_id(ID);
+    definition2->set_unit(LUNx);
+    CommandContext context1(command1, *default_logger());
+    CommandContext context2(command2, *default_logger());
 
     const auto device1 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUN0, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
     const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, LUNx, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device2));
 
-    definition1.set_id(ID);
-    definition1.set_unit(LUN0);
-    definition2.set_id(ID);
-    definition2.set_unit(LUNx);
-
     const auto d1 = controller_factory.GetDeviceForIdAndLun(ID, LUN0);
-    EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition1, false)) << "LUNs > 0 must be detached first";
+    EXPECT_FALSE(executor.ProcessCmd(context1)) << "LUNs > 0 must be detached first";
     const auto d2 = controller_factory.GetDeviceForIdAndLun(ID, LUNx);
-    EXPECT_TRUE(executor.ProcessDeviceCmd(context, definition2, false));
-    EXPECT_TRUE(executor.ProcessDeviceCmd(context, definition1, false));
+    EXPECT_TRUE(executor.ProcessCmd(context2));
+    EXPECT_TRUE(executor.ProcessCmd(context1));
     EXPECT_TRUE(controller_factory.GetAllDevices().empty());
 }
 
@@ -425,26 +427,6 @@ TEST(CommandExecutorTest, PrintCommand)
     EXPECT_NE(s.find("operation="), string::npos);
     EXPECT_NE(s.find("key1=value1"), string::npos);
     EXPECT_NE(s.find("key2=value2"), string::npos);
-}
-
-TEST(CommandExecutorTest, EnsureLun0)
-{
-    ControllerFactory controller_factory;
-    MockBus bus;
-    CommandExecutor executor(bus, controller_factory, *default_logger());
-    PbCommand command;
-    CommandContext context(command, *default_logger());
-
-    auto *device1 = command.add_devices();
-    device1->set_unit(0);
-    EXPECT_TRUE(executor.EnsureLun0(context, command));
-
-    device1->set_unit(1);
-    EXPECT_FALSE(executor.EnsureLun0(context, command));
-
-    const auto device2 = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
-    EXPECT_TRUE(controller_factory.AttachToController(bus, 0, device2));
-    EXPECT_TRUE(executor.EnsureLun0(context, command));
 }
 
 TEST(CommandExecutorTest, CreateDevice)

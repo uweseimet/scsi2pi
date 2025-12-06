@@ -217,21 +217,28 @@ TEST(DelegatingProcessBusTest, Acquire)
     bus.SetDAT(0x45);
     bus.Acquire();
     EXPECT_EQ(0x45U, delegating_bus.GetDAT());
+    bus.SetDAT(0x54);
+    bus.Acquire();
+    EXPECT_EQ(0x54U, delegating_bus.GetDAT());
 }
 
 TEST(DelegatingProcessBusTest, SetGetSignal)
 {
     MockInProcessBus bus;
-    MockDelegatingInProcessBus delegating_bus(bus);
+    MockDelegatingInProcessBus delegating_bus(bus, true);
 
     delegating_bus.SetSignal(PIN_ACK, true);
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_ACK_MASK));
     EXPECT_TRUE(bus.GetSignal(PIN_ACK_MASK));
     delegating_bus.SetSignal(PIN_ACK, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_ACK_MASK));
     EXPECT_FALSE(bus.GetSignal(PIN_ACK_MASK));
 
     delegating_bus.SetSignal(PIN_IO, true);
     EXPECT_TRUE(bus.GetSignal(PIN_IO_MASK));
+    EXPECT_TRUE(delegating_bus.GetSignal(PIN_IO_MASK));
     delegating_bus.SetSignal(PIN_IO, false);
+    EXPECT_FALSE(delegating_bus.GetSignal(PIN_IO_MASK));
     EXPECT_FALSE(bus.GetSignal(PIN_IO_MASK));
 }
 
@@ -263,8 +270,10 @@ TEST(DelegatingProcessBusTest, SetGetDAT)
     MockDelegatingInProcessBus delegating_bus(bus);
 
     delegating_bus.SetDAT(0x56);
+    EXPECT_EQ(0x56, delegating_bus.GetDAT());
     EXPECT_EQ(0x56, bus.GetDAT());
     delegating_bus.SetDAT(0x65);
+    EXPECT_EQ(0x65, delegating_bus.GetDAT());
     EXPECT_EQ(0x65, bus.GetDAT());
 }
 
@@ -275,4 +284,12 @@ TEST(DelegatingProcessBusTest, CleanUp)
 
     EXPECT_CALL(bus, CleanUp);
     delegating_bus.CleanUp();
+}
+
+TEST(DelegatingProcessBusTest, IsRaspberryPi)
+{
+    MockInProcessBus bus;
+    MockDelegatingInProcessBus delegating_bus(bus);
+
+    EXPECT_FALSE(delegating_bus.IsRaspberryPi());
 }
