@@ -36,17 +36,19 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
-
     const PbOperation operation = context.GetCommand().operation();
-    if (operation != ATTACH && !ValidateOperation(context, *device)) {
+
+    // ATTACH does not require an existing device
+    if (operation == ATTACH) {
+        return Attach(context, pb_device, dryRun);
+    }
+
+    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
+    if (!ValidateOperation(context, *device)) {
         return false;
     }
 
-    switch (operation) {
-    case ATTACH:
-        return Attach(context, pb_device, dryRun);
-
+    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
     case DETACH:
         return Detach(context, *device, dryRun);
 
