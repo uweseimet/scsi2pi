@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
         s2p->Run(target_args, true, log_signals);
     });
 
-    if (client == "s2pctl" || client == "s2pexec") {
+    if (client == "s2pctl") {
         // Ensure that s2p is listening on its socket
         sleep(1);
 
@@ -137,6 +137,9 @@ int main(int argc, char *argv[])
         s2pdump->Run(client_args, true);
     }
     else if (client == "s2pexec") {
+        // Ensure that s2p is listening on its socket
+        sleep(1);
+
         auto s2pexec = make_unique<S2pExec>();
         s2pexec->Run(client_args, true);
     }
