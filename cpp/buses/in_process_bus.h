@@ -143,6 +143,8 @@ public:
 
 private:
 
+    void Log(const string&) const;
+
     static string GetSignalName(int);
 
     InProcessBus &bus;
@@ -150,6 +152,9 @@ private:
     shared_ptr<spdlog::logger> in_process_logger;
 
     bool log_signals = true;
+
+    // For de-duplicating the signal logging
+    mutable string last_log_msg;
 
     inline static const unordered_map<int, const char*> SIGNALS = {
         { PIN_BSY, "BSY" },

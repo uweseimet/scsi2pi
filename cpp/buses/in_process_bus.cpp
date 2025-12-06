@@ -87,8 +87,8 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 {
     const bool state = bus.GetSignal(pin);
 
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
-        in_process_logger->trace("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false");
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
+        Log(fmt::format("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false"));
     }
 
     return state;
@@ -96,11 +96,19 @@ bool DelegatingInProcessBus::GetSignal(int pin) const
 
 void DelegatingInProcessBus::SetSignal(int pin, bool state)
 {
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ && in_process_logger->level() == level::trace) {
-        in_process_logger->trace("Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false");
+    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
+        Log(fmt::format("Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false"));
     }
 
     bus.SetSignal(pin, state);
+}
+
+void DelegatingInProcessBus::Log(const string &msg) const
+{
+    if (msg != last_log_msg) {
+        in_process_logger->trace(msg);
+        last_log_msg = msg;
+    }
 }
 
 string DelegatingInProcessBus::GetSignalName(int pin)
