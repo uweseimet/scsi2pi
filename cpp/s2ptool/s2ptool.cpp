@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
         add_arg(target_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
-#ifndef __APPLE__
+#ifndef __FreeBSD__
     auto s2p_thread = jthread([&target_args, log_signals]() {
 #else
         auto s2p_thread = thread([&target_args, log_signals]() {

@@ -39,12 +39,12 @@ endif
 
 ifeq ("$(shell uname -s)", "FreeBSD")
 	AR = $(CROSS_COMPILE)ar
-	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
+	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
 	AR = $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter
 endif
 
 ifeq ("$(shell uname -s)", "Darwin")

@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include "command/command_localizer.h"
 
-TEST(CinnabdLocalizer, Localize)
+TEST(CommandLocalizer, Localize)
 {
     CommandLocalizer command_localizer;
 

@@ -64,6 +64,11 @@ TEST(S2pUtilTest, GetExtensionLowerCase)
     EXPECT_EQ("ext", GetExtensionLowerCase("test.1.EXT"));
 }
 
+TEST(S2pUtilTest, GetLocale)
+{
+    EXPECT_LE(2U, GetLocale().size());
+}
+
 TEST(S2pUtilTest, ParseIdAndLun)
 {
     int id = -1;

@@ -24,7 +24,7 @@ void S2pThread::Start()
 {
     assert(server.IsRunning());
 
-#ifndef __APPLE__
+#ifndef __FreeBSD__
     service_thread = jthread([this]() {Execute();});
 #else
     service_thread = thread([this]() {Execute();});
