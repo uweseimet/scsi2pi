@@ -229,6 +229,7 @@ TEST(CommandDispatcherTest, SetWithoutTypes)
     CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
 
+    EXPECT_TRUE(dispatcher.SetWithoutTypes(""));
     EXPECT_FALSE(dispatcher.SetWithoutTypes("xyz"));
     EXPECT_TRUE(dispatcher.SetWithoutTypes("SCHD"));
 }
