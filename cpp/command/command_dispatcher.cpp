@@ -63,12 +63,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
-        GetDeviceTypesInfo(*result.mutable_device_types_info());
+        GetDeviceTypesInfo(*result.mutable_device_types_info(), without_types);
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
         GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
-            executor.GetReservedIds(), s2p_logger);
+            executor.GetReservedIds(), without_types, s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -283,4 +283,17 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     }
 
     return true;
+}
+
+bool CommandDispatcher::SetWithoutTypes(const string &types)
+{
+    return ranges::all_of(Split(types, ','), [this](const auto &t) {
+        if(const auto type = ParseDeviceType(t); type != UNDEFINED) {
+            without_types.emplace(type);
+            return true;
+        }
+
+        return false;
+    }
+    );
 }

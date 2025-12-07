@@ -66,7 +66,7 @@ TEST(S2pUtilTest, GetExtensionLowerCase)
 
 TEST(S2pUtilTest, GetLocale)
 {
-    EXPECT_LE(2, GetLocale().size());
+    EXPECT_LE(2U, GetLocale().size());
 }
 
 TEST(S2pUtilTest, ParseIdAndLun)

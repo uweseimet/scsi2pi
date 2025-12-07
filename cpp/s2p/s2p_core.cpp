@@ -278,6 +278,11 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
             s2p_logger->info("Generating script file '" + script_file + "'");
         }
 
+        if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
+            without_types)) {
+            throw ParserException("Invalid device types list: '" + without_types + "'");
+        }
+
         const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
         port = ParseAsUnsignedInt(p);
         if (port <= 0 || port > 65535) {

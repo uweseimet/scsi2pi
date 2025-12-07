@@ -163,6 +163,8 @@ void s2p_parser::Banner(bool usage)
             << "  --token-file/-P FILE        Access token file.\n"
             << "  --port/-p PORT              s2p server port, default is 6868.\n"
             << "  --ignore-conf               Ignore /etc/s2p.conf configuration file.\n"
+            << "  --without-types/-w TYPES    Do not report the listed device types in the API\n"
+            << "                              (for PiSCSI web UI compatibility).\n"
             << "  --version/-v                Display the program version.\n"
             << "  --help/-h                   Display this help.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
@@ -208,6 +210,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "script-file", required_argument, nullptr, 's' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
+        { "without-types", required_argument, nullptr, 'w' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -238,7 +241,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:F:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -283,6 +286,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 't':
             type = ToLower(optarg);
+            continue;
+
+        case 'w':
+            properties[PropertyHandler::WITHOUT_TYPES] = optarg;
             continue;
 
         case OPT_IGNORE_CONF:

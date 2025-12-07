@@ -24,7 +24,11 @@ void S2pThread::Start()
 {
     assert(server.IsRunning());
 
+#ifndef __FreeBSD__
     service_thread = jthread([this]() {Execute();});
+#else
+    service_thread = thread([this]() {Execute();});
+#endif
 }
 
 // This method might be called twice when pressing Ctrl-C, because of the installed handlers

@@ -38,7 +38,11 @@ private:
 
     callback exec;
 
+#ifndef __FreeBSD__
     jthread service_thread;
+#else
+    thread service_thread;
+#endif
 
     S2pServer server;
 

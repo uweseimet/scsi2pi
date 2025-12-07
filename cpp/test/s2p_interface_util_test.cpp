@@ -42,6 +42,7 @@ TEST(S2pInterfaceUtilTest, ParseDeviceType)
     EXPECT_EQ(SCTP, ParseDeviceType("t"));
 
     EXPECT_EQ(UNDEFINED, ParseDeviceType(""));
+    EXPECT_EQ(UNDEFINED, ParseDeviceType("sc"));
     EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
 }
 
