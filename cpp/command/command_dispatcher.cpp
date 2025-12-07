@@ -288,7 +288,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 bool CommandDispatcher::SetWithoutTypes(const string &types)
 {
     return ranges::all_of(Split(types, ','), [this](const auto &t) {
-        if(const auto type = ParseDeviceType(t); type != UNDEFINED) {
+        if(const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
             without_types.emplace(type);
             return true;
         }
