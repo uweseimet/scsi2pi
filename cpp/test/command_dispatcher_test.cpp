@@ -221,3 +221,14 @@ TEST(CommandDispatcherTest, SetLogLevel)
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0:0"));
 }
+
+TEST(CommandDispatcherTest, SetWithoutTypes)
+{
+    ControllerFactory controller_factory;
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
+    CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
+
+    EXPECT_FALSE(dispatcher.SetWithoutTypes("xyz"));
+    EXPECT_TRUE(dispatcher.SetWithoutTypes("SCHD"));
+}
