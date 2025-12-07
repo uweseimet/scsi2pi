@@ -240,15 +240,19 @@ bool HasOperation(const set<string, less<>> &operations, PbOperation operation)
 
 }
 
-void command_response::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info)
+void command_response::GetDeviceTypesInfo(PbDeviceTypesInfo &device_types_info,
+    const unordered_set<PbDeviceType> &without_types)
 {
     int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
-        // Only report device types supported by the factory
-        if (const auto device = DeviceFactory::GetInstance().CreateDevice(static_cast<PbDeviceType>(ordinal), 0, ""); device) {
-            auto *type_properties = device_types_info.add_properties();
-            type_properties->set_type(device->GetType());
-            GetDeviceProperties(device, *type_properties->mutable_properties());
+        if (const auto type = static_cast<PbDeviceType>(ordinal); ranges::find(without_types, type)
+            == without_types.end()) {
+            // Only report device types supported by the factory
+            if (const auto device = DeviceFactory::GetInstance().CreateDevice(type, 0, ""); device) {
+                auto *type_properties = device_types_info.add_properties();
+                type_properties->set_type(device->GetType());
+                GetDeviceProperties(device, *type_properties->mutable_properties());
+            }
         }
 
         ++ordinal;
@@ -335,7 +339,7 @@ void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevi
 
 void command_response::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
     const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
-    logger &logger)
+    const unordered_set<PbDeviceType> &without_types, logger &logger)
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
     set<string, less<>> operations;
@@ -356,7 +360,7 @@ void command_response::GetServerInfo(PbServerInfo &server_info, const PbCommand 
     }
 
     if (HasOperation(operations, PbOperation::DEVICE_TYPES_INFO)) {
-        GetDeviceTypesInfo(*server_info.mutable_device_types_info());
+        GetDeviceTypesInfo(*server_info.mutable_device_types_info(), without_types);
     }
 
     if (HasOperation(operations, PbOperation::DEFAULT_IMAGE_FILES_INFO)) {

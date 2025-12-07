@@ -36,6 +36,7 @@ public:
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
     static constexpr const char *TOKEN_FILE = "token_file";
+    static constexpr const char *WITHOUT_TYPES = "without_types";
 
     // Device-specific property keys
     static constexpr const char *DEVICE = "device.";

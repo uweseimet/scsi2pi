@@ -9,16 +9,14 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
+#include "generated/s2p_interface.pb.h"
 
 class CommandContext;
 class CommandExecutor;
 class ControllerFactory;
-namespace s2p_interface
-{
-class PbResult;
-}
 
 using namespace std;
 using namespace spdlog;
@@ -41,6 +39,8 @@ public:
 
     bool SetLogLevel(const string&);
 
+    bool SetWithoutTypes(const string&);
+
 private:
 
     bool ExecuteWithLock(const CommandContext&);
@@ -52,4 +52,6 @@ private:
     ControllerFactory &controller_factory;
 
     logger &s2p_logger;
+
+    unordered_set<PbDeviceType> without_types;
 };

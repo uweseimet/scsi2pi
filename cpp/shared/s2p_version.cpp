@@ -9,6 +9,6 @@
 #include "s2p_version.h"
 
 const int s2p_major_version = 6;
-const int s2p_minor_version = 0;
-const int s2p_revision = 4;
+const int s2p_minor_version = 1;
+const int s2p_revision = 0;
 const std::string s2p_suffix = "-devel";
