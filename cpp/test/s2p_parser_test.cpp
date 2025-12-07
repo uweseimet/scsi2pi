@@ -67,6 +67,11 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("image_folder", properties[PropertyHandler::IMAGE_FOLDER]);
 
+    SetUpArgs(args, "-w", "SCSG,SCTP");
+    properties = ParseArguments(args, ignore_conf);
+    EXPECT_EQ(1UL, properties.size());
+    EXPECT_EQ("SCSG,SCTP", properties[PropertyHandler::WITHOUT_TYPES]);
+
     SetUpArgs(args, "-L", "log_level");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());

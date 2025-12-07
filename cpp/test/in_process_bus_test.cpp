@@ -127,6 +127,52 @@ TEST(InProcessBusTest, Acquire)
     EXPECT_EQ(0x12U, bus.GetDAT());
 }
 
+TEST(InProcessBusTest, BusPhases)
+{
+    MockInProcessBus bus;
+
+    EXPECT_EQ(BusPhase::BUS_FREE, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::BUS_FREE));
+
+    bus.SetBSY(true);
+
+    bus.SetIO(true);
+    bus.SetCD(true);
+    bus.SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_IN, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_IN));
+
+    bus.SetIO(true);
+    bus.SetCD(true);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::STATUS, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::STATUS));
+
+    bus.SetIO(true);
+    bus.SetCD(false);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_IN, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_IN));
+
+    bus.SetIO(false);
+    bus.SetCD(true);
+    bus.SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_OUT, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_OUT));
+
+    bus.SetIO(false);
+    bus.SetCD(true);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::COMMAND, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::COMMAND));
+
+    bus.SetIO(false);
+    bus.SetCD(false);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_OUT, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_OUT));
+}
+
 TEST(InProcessBusTest, Reset)
 {
     MockInProcessBus bus;
@@ -220,6 +266,53 @@ TEST(DelegatingProcessBusTest, Acquire)
     bus.SetDAT(0x54);
     bus.Acquire();
     EXPECT_EQ(0x54U, delegating_bus.GetDAT());
+}
+
+TEST(DelegatingProcessBusTest, BusPhases)
+{
+    MockInProcessBus bus;
+    MockDelegatingInProcessBus delegating_bus(bus);
+
+    EXPECT_EQ(BusPhase::BUS_FREE, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::BUS_FREE));
+
+    bus.SetBSY(true);
+
+    bus.SetIO(true);
+    bus.SetCD(true);
+    bus.SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_IN, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::MSG_IN));
+
+    bus.SetIO(true);
+    bus.SetCD(true);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::STATUS, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::STATUS));
+
+    bus.SetIO(true);
+    bus.SetCD(false);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_IN, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::DATA_IN));
+
+    bus.SetIO(false);
+    bus.SetCD(true);
+    bus.SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_OUT, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::MSG_OUT));
+
+    bus.SetIO(false);
+    bus.SetCD(true);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::COMMAND, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::COMMAND));
+
+    bus.SetIO(false);
+    bus.SetCD(false);
+    bus.SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_OUT, delegating_bus.GetPhase());
+    EXPECT_TRUE(delegating_bus.IsPhase(BusPhase::DATA_OUT));
 }
 
 TEST(DelegatingProcessBusTest, SetGetSignal)

@@ -62,3 +62,39 @@ TEST(BusTest, IsTarget)
     bus.Init(false);
     EXPECT_FALSE(bus.IsTarget());
 }
+
+TEST(BusTest, TargetReceiveHandShake)
+{
+    MockBus bus;
+
+    EXPECT_CALL(bus, EnableIRQ).Times(1);
+    EXPECT_CALL(bus, DisableIRQ).Times(1);
+    EXPECT_EQ(0, bus.TargetReceiveHandShake( { }));
+}
+
+TEST(BusTest, InitiatorReceiveHandShake)
+{
+    MockBus bus;
+
+    EXPECT_CALL(bus, EnableIRQ).Times(1);
+    EXPECT_CALL(bus, DisableIRQ).Times(1);
+    EXPECT_EQ(0, bus.InitiatorReceiveHandShake( { }));
+}
+
+TEST(BusTest, TargetSendHandShake)
+{
+    MockBus bus;
+
+    EXPECT_CALL(bus, EnableIRQ).Times(1);
+    EXPECT_CALL(bus, DisableIRQ).Times(1);
+    EXPECT_EQ(0, bus.TargetSendHandShake( { }));
+}
+
+TEST(BusTest, InitiatorSendHandShake)
+{
+    MockBus bus;
+
+    EXPECT_CALL(bus, EnableIRQ).Times(1);
+    EXPECT_CALL(bus, DisableIRQ).Times(1);
+    EXPECT_EQ(0, bus.InitiatorSendHandShake( { }));
+}
