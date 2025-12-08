@@ -74,7 +74,7 @@ private:
         // Nothing to do
     }
 
-    static inline atomic_bool target_enabled;
+    static inline atomic_bool target_ready;
 
     mutable mutex write_locker;
 };

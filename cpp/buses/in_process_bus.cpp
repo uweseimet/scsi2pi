@@ -25,7 +25,7 @@ bool InProcessBus::Init(bool target)
     // Wait for the in-process bus target up to 1 s
     const auto now = chrono::steady_clock::now();
     do {
-        if (target_enabled) {
+        if (target_ready) {
             return true;
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
@@ -35,10 +35,8 @@ bool InProcessBus::Init(bool target)
 
 void InProcessBus::Ready()
 {
-    assert(IsTarget());
-
     // Signal the in-process bus client that the in-process s2p is ready
-    target_enabled = true;
+    target_ready = true;
 }
 
 void InProcessBus::SetDAT(uint8_t dat) const

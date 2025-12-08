@@ -221,6 +221,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     service_thread.Start();
 
+    // Explicitly signalling that the bus is ready is in particular important for the in-process bus
     bus->Ready();
 
     ProcessScsiCommands();

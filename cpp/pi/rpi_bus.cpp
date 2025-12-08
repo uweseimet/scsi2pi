@@ -175,6 +175,8 @@ bool RpiBus::Init(bool target)
 
     CreateWorkTable();
 
+    Ready();
+
     return true;
 }
 
