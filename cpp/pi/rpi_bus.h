@@ -86,6 +86,8 @@ private:
 
     PiType pi_type = PiType::UNKNOWN;
 
+    bool target_mode = true;
+
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
 

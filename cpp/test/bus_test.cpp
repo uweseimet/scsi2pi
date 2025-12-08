@@ -53,16 +53,6 @@ TEST(BusTest, GetDAT)
     EXPECT_EQ(0b11111111, bus.GetDAT());
 }
 
-TEST(BusTest, IsTarget)
-{
-    MockBus bus;
-
-    bus.Init(true);
-    EXPECT_TRUE(bus.IsTarget());
-    bus.Init(false);
-    EXPECT_FALSE(bus.IsTarget());
-}
-
 TEST(BusTest, CommandHandShake)
 {
     MockBus bus;

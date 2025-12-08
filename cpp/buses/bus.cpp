@@ -13,13 +13,6 @@
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 
-bool Bus::Init(bool target)
-{
-    target_mode = target;
-
-    return true;
-}
-
 void Bus::Reset() const
 {
     signals = 0xffffffff;
@@ -278,8 +271,7 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
     const auto now = chrono::steady_clock::now();
     do {
         if (GetRST()) {
-            spdlog::warn("{0} received RST signal during {1} phase, aborting", target_mode ? "Target" : "Initiator",
-                GetPhaseName(GetPhase()));
+            spdlog::warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
             return false;
         }
 
@@ -309,8 +301,6 @@ void Bus::SetBSY(bool state) const
 
 void Bus::SetIO(bool state) const
 {
-    assert(target_mode);
-
     SetSignal(PIN_IO, state);
 
     SetDir(state);

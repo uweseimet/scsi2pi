@@ -29,7 +29,7 @@ public:
 
     virtual ~Bus() = default;
 
-    virtual bool Init(bool);
+    virtual bool Init(bool) = 0;
     virtual void Ready() = 0;
     virtual void Reset() const;
     virtual void CleanUp() = 0;
@@ -172,11 +172,6 @@ protected:
 
     uint8_t GetSelection() const;
 
-    bool IsTarget() const
-    {
-        return target_mode;
-    }
-
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
@@ -185,8 +180,6 @@ protected:
 private:
 
     int CommandHandshakeTimeout();
-
-    bool target_mode = true;
 
     // The current bus signals, mutable because they represent external state
     mutable uint32_t signals = 0xffffffff;

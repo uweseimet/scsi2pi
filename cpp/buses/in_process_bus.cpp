@@ -14,10 +14,6 @@ using namespace s2p_util;
 
 bool InProcessBus::Init(bool target)
 {
-    if (!Bus::Init(target)) {
-        return false;
-    }
-
     if (target) {
         return true;
     }

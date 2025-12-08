@@ -19,9 +19,7 @@ using namespace spdlog;
 
 bool RpiBus::Init(bool target)
 {
-    if (!Bus::Init(target)) {
-        return false;
-    }
+    target_mode = target;
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -228,10 +226,10 @@ void RpiBus::Reset() const
     PinSetSignal(PIN_TAD, false);
 
     // Set the initiator signal direction
-    PinSetSignal(PIN_IND, !IsTarget());
+    PinSetSignal(PIN_IND, !target_mode);
 
     // Set data bus signal directions
-    PinSetSignal(PIN_DTD, IsTarget());
+    PinSetSignal(PIN_DTD, target_mode);
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -263,7 +261,7 @@ void RpiBus::SetBSY(bool state) const
 
 void RpiBus::SetSEL(bool state) const
 {
-    assert(!IsTarget());
+    assert(!target_mode);
 
     Bus::SetSEL(state);
 

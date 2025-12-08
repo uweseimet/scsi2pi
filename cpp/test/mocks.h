@@ -28,6 +28,7 @@ class MockBus : public Bus
 
 public:
 
+    MOCK_METHOD(bool, Init, (bool), (override));
     MOCK_METHOD(void, Ready, (), (override));
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
