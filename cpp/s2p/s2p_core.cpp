@@ -221,10 +221,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     service_thread.Start();
 
-    // Signal the in-process client that s2p is ready
-    if (in_process) {
-        bus->CleanUp();
-    }
+    bus->Ready();
 
     ProcessScsiCommands();
 

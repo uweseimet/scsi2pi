@@ -30,6 +30,7 @@ public:
     virtual ~Bus() = default;
 
     virtual bool Init(bool);
+    virtual void Ready() = 0;
     virtual void Reset() const;
     virtual void CleanUp() = 0;
 
@@ -46,7 +47,7 @@ public:
 
     virtual void SetDir(bool) const = 0;
 
-    virtual bool WaitHandshake(int, bool) const;
+    virtual bool WaitHandShake(int, bool) const;
 
     int CommandHandShake(data_in_t);
     int InitiatorMsgInHandShake() const;

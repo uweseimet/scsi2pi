@@ -29,7 +29,12 @@ public:
     }
 
     bool Init(bool) override;
-    void CleanUp() override;
+    void Ready() override;
+
+    void CleanUp() override
+    {
+        // Nothing to do
+    }
 
     void Acquire() const override
     {
@@ -94,9 +99,9 @@ public:
         bus.Acquire();
     }
 
-    bool WaitHandshake(int pin, bool state) const override
+    bool WaitHandShake(int pin, bool state) const override
     {
-        return bus.WaitHandshake(pin, state);
+        return bus.WaitHandShake(pin, state);
     }
 
     uint8_t GetDAT() const override

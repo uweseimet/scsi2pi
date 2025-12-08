@@ -63,6 +63,17 @@ TEST(BusTest, IsTarget)
     EXPECT_FALSE(bus.IsTarget());
 }
 
+TEST(BusTest, CommandHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, EnableIRQ).Times(1);
+    EXPECT_CALL(bus, DisableIRQ).Times(1);
+    EXPECT_CALL(bus, WaitHandShake).Times(1);
+    EXPECT_EQ(-1, bus.CommandHandShake(buf));
+}
+
 TEST(BusTest, TargetReceiveHandShake)
 {
     MockBus bus;

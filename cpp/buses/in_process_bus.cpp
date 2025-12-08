@@ -33,12 +33,12 @@ bool InProcessBus::Init(bool target)
     return false;
 }
 
-void InProcessBus::CleanUp()
+void InProcessBus::Ready()
 {
-    // Signal the in-process client that the in-process s2p is ready
-    if (IsTarget()) {
-        target_enabled = true;
-    }
+    assert(IsTarget());
+
+    // Signal the in-process bus client that the in-process s2p is ready
+    target_enabled = true;
 }
 
 void InProcessBus::SetDAT(uint8_t dat) const
