@@ -114,6 +114,8 @@ TEST(ControllerFactoryTest, SetLogLevel)
     const auto device2 = device_factory.CreateDevice(SCHS, LUN2, "");
     controller_factory.AttachToController(bus, ID, device2);
 
+    controller_factory.SetLogLevel(ID, LUN1, level::level_enum::off);
+    controller_factory.SetLogLevel(ID, LUN2, level::level_enum::off);
     EXPECT_EQ(level::level_enum::off, device1->GetLogger().level());
     EXPECT_EQ(level::level_enum::off, device2->GetLogger().level());
 
