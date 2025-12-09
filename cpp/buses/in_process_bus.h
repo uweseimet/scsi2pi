@@ -10,7 +10,6 @@
 
 #include <atomic>
 #include <memory>
-#include <mutex>
 #include <unordered_map>
 #include <spdlog/spdlog.h>
 #include "bus.h"
@@ -23,13 +22,8 @@ public:
     InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
 
+    bool Init(bool) override;
     void Reset() const override;
-
-    bool Init(bool) override
-    {
-        // Nothing to do
-        return true;
-    }
 
     void CleanUp() override
     {
@@ -81,8 +75,6 @@ private:
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;
-
-    mutable mutex write_locker;
 
     inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY, "BSY" },

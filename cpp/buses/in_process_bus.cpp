@@ -18,13 +18,20 @@ InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(Creat
     in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
+bool InProcessBus::Init(bool)
+{
+    // Call super class to avoid logging
+    Bus::Reset();
+
+    return true;
+}
+
 void InProcessBus::Reset() const
 {
     in_process_logger->trace("Resetting bus");
 
     Bus::Reset();
 }
-
 
 void InProcessBus::SetDAT(uint8_t dat) const
 {
@@ -57,7 +64,6 @@ void InProcessBus::SetSignal(int pin, bool state) const
         }
     }
 
-    scoped_lock lock(write_locker);
     if (state) {
         SetSignals(GetSignals() & ~(1 << pin));
     } else {

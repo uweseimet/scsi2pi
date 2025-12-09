@@ -40,6 +40,11 @@ public:
     MOCK_METHOD(void, EnableIRQ, (), (override));
     MOCK_METHOD(void, DisableIRQ, (), (override));
     MOCK_METHOD(bool, IsRaspberryPi, (), (const, override));
+
+    MockBus()
+    {
+        SetSignals(0xffffffff);
+    }
 };
 
 class MockInProcessBus : public InProcessBus

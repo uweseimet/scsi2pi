@@ -31,7 +31,6 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
     }
 
     if (bus->Init(target)) {
-        bus->Reset();
         return bus;
     }
 
