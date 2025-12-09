@@ -20,16 +20,16 @@ class InProcessBus : public Bus
 
 public:
 
+    InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
 
-    static InProcessBus& GetInstance()
-    {
-        static InProcessBus instance; // NOSONAR instance cannot be inlined
-        return instance;
-    }
+    void Reset() const override;
 
-    bool Init(bool) override;
-    void Ready() override;
+    bool Init(bool) override
+    {
+        // Nothing to do
+        return true;
+    }
 
     void CleanUp() override
     {
@@ -43,6 +43,7 @@ public:
 
     void SetDAT(uint8_t) const override;
 
+    bool GetSignal(int) const override;
     void SetSignal(int, bool) const override;
 
     uint8_t WaitForSelection() override;
@@ -54,11 +55,11 @@ public:
         return false;
     }
 
-protected:
-
-    InProcessBus() = default;
-
 private:
+
+    void LogSignal(const string&) const;
+
+    static string GetSignalName(int);
 
     void DisableIRQ() override
     {
@@ -74,72 +75,14 @@ private:
         // Nothing to do
     }
 
-    static inline atomic_bool target_ready;
-
-    mutable mutex write_locker;
-};
-
-class DelegatingInProcessBus : public InProcessBus
-{
-
-public:
-
-    DelegatingInProcessBus(InProcessBus&, const string&, bool);
-    ~DelegatingInProcessBus() override = default;
-
-    void Reset() const override;
-
-    void CleanUp() override
-    {
-        bus.CleanUp();
-    }
-
-    void Acquire() const override
-    {
-        bus.Acquire();
-    }
-
-    bool WaitHandShake(int pin, bool state) const override
-    {
-        return bus.WaitHandShake(pin, state);
-    }
-
-    uint8_t GetDAT() const override
-    {
-        return bus.GetDAT();
-    }
-    void SetDAT(uint8_t dat) const override
-    {
-        bus.SetDAT(dat);
-    }
-
-    BusPhase GetPhase() const override
-    {
-        return bus.GetPhase();
-    }
-
-    bool IsPhase(BusPhase phase) const override
-    {
-        return bus.IsPhase(phase);
-    }
-
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) const override;
-
-private:
-
-    void LogSignal(const string&) const;
-
-    static string GetSignalName(int);
-
-    InProcessBus &bus;
-
     shared_ptr<spdlog::logger> in_process_logger;
 
     bool log_signals = true;
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;
+
+    mutable mutex write_locker;
 
     inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY, "BSY" },

@@ -84,8 +84,6 @@ bool S2pProto::Init(bool in_process)
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
 
-    bus->Ready();
-
     return true;
 }
 

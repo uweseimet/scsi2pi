@@ -29,7 +29,6 @@ class MockBus : public Bus
 public:
 
     MOCK_METHOD(bool, Init, (bool), (override));
-    MOCK_METHOD(void, Ready, (), (override));
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
     MOCK_METHOD(void, Acquire, (), (const, override));
@@ -53,21 +52,14 @@ public:
     MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, Reset, (), (const, override));
 
-    using InProcessBus::InProcessBus;
+    MockInProcessBus() : InProcessBus("", false)
+    {
+        SetSignals(0xffffffff);
+    }
 
     void ResetMock()
     {
         InProcessBus::Reset();
-    }
-};
-
-class MockDelegatingInProcessBus : public DelegatingInProcessBus
-{
-
-public:
-
-    MockDelegatingInProcessBus(InProcessBus &b, bool l = false) : DelegatingInProcessBus(b, "", l)
-    {
     }
 };
 

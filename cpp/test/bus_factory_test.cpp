@@ -15,7 +15,5 @@ TEST(BusFactoryTest, CreateBus)
 {
     auto bus = CreateBus(true, true, "", false);
     EXPECT_NE(nullptr, bus);
-    // Avoid a delay by signalling the initiator that the target is ready
-    bus->Ready();
     EXPECT_NE(nullptr, CreateBus(false, true, "", false));
 }

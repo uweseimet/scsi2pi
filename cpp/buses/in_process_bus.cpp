@@ -12,28 +12,19 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-bool InProcessBus::Init(bool target)
+InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(CreateLogger(name)), log_signals(l)
 {
-    if (target) {
-        return true;
-    }
-
-    // Wait for the in-process bus target up to 1 s
-    const auto now = chrono::steady_clock::now();
-    do {
-        if (target_ready) {
-            return true;
-        }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
-
-    return false;
+    // Log without timestamps
+    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
-void InProcessBus::Ready()
+void InProcessBus::Reset() const
 {
-    // Signal the in-process bus client that the in-process s2p is ready
-    target_ready = true;
+    in_process_logger->trace("Resetting bus");
+
+    Bus::Reset();
 }
+
 
 void InProcessBus::SetDAT(uint8_t dat) const
 {
@@ -43,9 +34,28 @@ void InProcessBus::SetDAT(uint8_t dat) const
     SetSignals(~s);
 }
 
+bool InProcessBus::GetSignal(int pin_mask) const
+{
+    const bool state = Bus::GetSignal(pin_mask);
+
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin_mask); !name.empty()) {
+            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
+        }
+    }
+
+    return state;
+}
+
 void InProcessBus::SetSignal(int pin, bool state) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin); !name.empty()) {
+            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
+        }
+    }
 
     scoped_lock lock(write_locker);
     if (state) {
@@ -53,6 +63,8 @@ void InProcessBus::SetSignal(int pin, bool state) const
     } else {
         SetSignals(GetSignals() | (1 << pin));
     }
+
+
 }
 
 uint8_t InProcessBus::WaitForSelection()
@@ -71,45 +83,7 @@ void InProcessBus::WaitNanoSeconds(bool) const
     nanosleep(&ts, nullptr);
 }
 
-DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &name, bool l) : bus(b), in_process_logger(
-    CreateLogger(name)), log_signals(l)
-{
-    // Log without timestamps
-    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
-}
-
-void DelegatingInProcessBus::Reset() const
-{
-    in_process_logger->trace("Resetting bus");
-
-    bus.Reset();
-}
-
-bool DelegatingInProcessBus::GetSignal(int pin_mask) const
-{
-    const bool state = bus.GetSignal(pin_mask);
-
-    if (log_signals) {
-        if (const string &name = GetSignalName(pin_mask); !name.empty()) {
-            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
-        }
-    }
-
-    return state;
-}
-
-void DelegatingInProcessBus::SetSignal(int pin, bool state) const
-{
-    if (log_signals) {
-        if (const string &name = GetSignalName(pin); !name.empty()) {
-            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
-        }
-    }
-
-    bus.SetSignal(pin, state);
-}
-
-void DelegatingInProcessBus::LogSignal(const string &msg) const
+void InProcessBus::LogSignal(const string &msg) const
 {
     if (msg != last_log_msg) {
         in_process_logger->trace(msg);
@@ -117,7 +91,7 @@ void DelegatingInProcessBus::LogSignal(const string &msg) const
     }
 }
 
-string DelegatingInProcessBus::GetSignalName(int pin)
+string InProcessBus::GetSignalName(int pin)
 {
     const auto &it = SIGNALS_TO_LOG.find(pin);
     return it != SIGNALS_TO_LOG.end() ? it->second : "";

@@ -26,6 +26,8 @@ public:
 
     int Run(span<char*>, bool = false, bool = false);
 
+    bool Ready() const;
+
 private:
 
     bool InitBus(bool, bool);
@@ -47,6 +49,8 @@ private:
     static bool CheckActive(const property_map&, const string&);
 
     static void TerminationHandler(int);
+
+    bool ready = false;
 
     string access_token;
 

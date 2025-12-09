@@ -30,7 +30,6 @@ public:
     virtual ~Bus() = default;
 
     virtual bool Init(bool) = 0;
-    virtual void Ready() = 0;
     virtual void Reset() const;
     virtual void CleanUp() = 0;
 
@@ -181,8 +180,8 @@ private:
 
     int CommandHandshakeTimeout();
 
-    // The current bus signals, mutable because they represent external state
-    mutable uint32_t signals = 0xffffffff;
+    // The current bus signals, static because there is exactly one set of bus signals
+    inline static uint32_t signals = 0xffffffff;
 
     static const array<BusPhase, 32> phases;
 
