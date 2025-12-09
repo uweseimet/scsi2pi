@@ -47,27 +47,6 @@ public:
     }
 };
 
-class MockInProcessBus : public InProcessBus
-{
-    FRIEND_TEST(InProcessBusTest, Init);
-    FRIEND_TEST(InProcessBusTest, GetSelection);
-
-public:
-
-    MOCK_METHOD(void, CleanUp, (), (override));
-    MOCK_METHOD(void, Reset, (), (const, override));
-
-    MockInProcessBus() : InProcessBus("", false)
-    {
-        SetSignals(0xffffffff);
-    }
-
-    void ResetMock()
-    {
-        InProcessBus::Reset();
-    }
-};
-
 class MockPhaseHandler : public PhaseHandler
 {
     FRIEND_TEST(PhaseHandlerTest, Phases);

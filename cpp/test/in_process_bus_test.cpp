@@ -10,7 +10,7 @@
 
 TEST(InProcessBusTest, BSY)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetBSY(true);
     EXPECT_TRUE(bus.GetBSY());
@@ -20,7 +20,7 @@ TEST(InProcessBusTest, BSY)
 
 TEST(InProcessBusTest, SEL)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetSEL(true);
     EXPECT_TRUE(bus.GetSEL());
@@ -30,7 +30,7 @@ TEST(InProcessBusTest, SEL)
 
 TEST(InProcessBusTest, ATN)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetATN(true);
     EXPECT_TRUE(bus.GetATN());
@@ -40,7 +40,7 @@ TEST(InProcessBusTest, ATN)
 
 TEST(InProcessBusTest, ACK)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetACK(true);
     EXPECT_TRUE(bus.GetACK());
@@ -50,7 +50,7 @@ TEST(InProcessBusTest, ACK)
 
 TEST(InProcessBusTest, REQ)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetREQ(true);
     EXPECT_TRUE(bus.GetREQ());
@@ -60,7 +60,7 @@ TEST(InProcessBusTest, REQ)
 
 TEST(InProcessBusTest, RST)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetRST(true);
     EXPECT_TRUE(bus.GetRST());
@@ -70,7 +70,7 @@ TEST(InProcessBusTest, RST)
 
 TEST(InProcessBusTest, MSG)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetMSG(true);
     EXPECT_TRUE(bus.GetMSG());
@@ -80,7 +80,7 @@ TEST(InProcessBusTest, MSG)
 
 TEST(InProcessBusTest, CD)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetCD(true);
     EXPECT_TRUE(bus.GetCD());
@@ -90,7 +90,7 @@ TEST(InProcessBusTest, CD)
 
 TEST(InProcessBusTest, IO)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetIO(true);
     EXPECT_TRUE(bus.GetIO());
@@ -100,7 +100,7 @@ TEST(InProcessBusTest, IO)
 
 TEST(InProcessBusTest, DAT)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetDAT(0xae);
     EXPECT_EQ(0xae, bus.GetDAT());
@@ -110,7 +110,7 @@ TEST(InProcessBusTest, DAT)
 
 TEST(InProcessBusTest, Acquire)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetDAT(0x12);
     bus.Acquire();
@@ -119,7 +119,7 @@ TEST(InProcessBusTest, Acquire)
 
 TEST(InProcessBusTest, BusPhases)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     EXPECT_EQ(BusPhase::BUS_FREE, bus.GetPhase());
     EXPECT_TRUE(bus.IsPhase(BusPhase::BUS_FREE));
@@ -165,17 +165,17 @@ TEST(InProcessBusTest, BusPhases)
 
 TEST(InProcessBusTest, Reset)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetSignal(PIN_BSY, true);
     EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
-    bus.ResetMock();
+    bus.Reset();
     EXPECT_FALSE(bus.GetSignal(PIN_BSY_MASK));
 }
 
 TEST(InProcessBusTest, SetGetSignal)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
@@ -185,7 +185,7 @@ TEST(InProcessBusTest, SetGetSignal)
 
 TEST(InProcessBusTest, WaitHandshakeACK)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_ACK_MASK, true));
@@ -200,7 +200,7 @@ TEST(InProcessBusTest, WaitHandshakeACK)
 
 TEST(InProcessBusTest, WaitHandshakeREQ)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_REQ_MASK, true));
@@ -213,18 +213,9 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     EXPECT_FALSE(bus.WaitHandShake(PIN_REQ_MASK, true));
 }
 
-TEST(InProcessBusTest, GetSelection)
-{
-    MockInProcessBus bus;
-
-    bus.SetDAT(0x00);
-    bus.SetBSY(false);
-    EXPECT_EQ(0x00, bus.GetSelection());
-}
-
 TEST(InProcessBusTest, WaitForSelection)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     bus.SetDAT(0x40);
     bus.SetBSY(false);
@@ -233,7 +224,7 @@ TEST(InProcessBusTest, WaitForSelection)
 
 TEST(InProcessBusTest, IsRaspberryPi)
 {
-    MockInProcessBus bus;
+    InProcessBus bus("", false);
 
     EXPECT_FALSE(bus.IsRaspberryPi());
 }

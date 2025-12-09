@@ -15,7 +15,7 @@
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
-class InProcessBus : public Bus
+class InProcessBus final : public Bus
 {
 
 public:
