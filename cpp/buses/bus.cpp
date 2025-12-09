@@ -18,7 +18,7 @@ void Bus::Reset() const
     signals = 0xffffffff;
 }
 
-int Bus::CommandHandShake(data_in_t buf)
+int Bus::TargetCommandHandShake(data_in_t buf)
 {
     assert(!buf.empty());
 

@@ -43,6 +43,8 @@ string S2pExecExecutor::Init(int id, const string &name, bool in_process)
         }
 
         initiator_executor = make_unique<InitiatorExecutor>(*bus, id, s2pexec_logger);
+
+        bus->Ready();
     }
 
     is_sg = false;

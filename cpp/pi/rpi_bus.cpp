@@ -173,14 +173,12 @@ bool RpiBus::Init(bool target)
 
     CreateWorkTable();
 
-    Ready();
-
     return true;
 }
 
 void RpiBus::Ready()
 {
-    // Enable ENABLE in order to show the user that s2p is running
+    // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
 }
 

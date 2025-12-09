@@ -113,7 +113,7 @@ void Controller::Command()
 
         auto &buf = GetBuffer();
 
-        const int actual_count = bus.CommandHandShake(buf);
+        const int actual_count = bus.TargetCommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
