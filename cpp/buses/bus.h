@@ -2,8 +2,6 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -16,10 +14,6 @@
 #include "shared/s2p_defs.h"
 #include "board.h"
 
-// Constant declarations (SCSI)
-constexpr static int IN = 0;
-constexpr static int OUT = 1;
-
 using namespace std;
 
 class Bus // NOSONAR The high number of simple convenience methods is justified
@@ -29,7 +23,8 @@ public:
 
     virtual ~Bus() = default;
 
-    virtual bool Init(bool) = 0;
+    bool Init(bool);
+    virtual bool SetUp(bool) = 0;
     virtual void Reset() const;
     virtual void CleanUp() = 0;
 
@@ -37,7 +32,7 @@ public:
 
     virtual uint8_t WaitForSelection() = 0;
 
-    virtual uint8_t GetDAT() const;
+    uint8_t GetDAT() const;
     virtual void SetDAT(uint8_t) const = 0;
 
     virtual bool GetSignal(int) const;

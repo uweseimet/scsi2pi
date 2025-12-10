@@ -13,6 +13,17 @@
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 
+bool Bus::Init(bool target)
+{
+    if (!SetUp(target)) {
+        return false;
+    }
+
+    Reset();
+
+    return true;
+}
+
 void Bus::Reset() const
 {
     signals = 0xffffffff;

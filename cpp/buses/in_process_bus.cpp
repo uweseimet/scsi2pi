@@ -18,26 +18,11 @@ InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(Creat
     in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
-bool InProcessBus::Init(bool)
-{
-    // Call super class to avoid logging
-    Bus::Reset();
-
-    return true;
-}
-
 void InProcessBus::Reset() const
 {
     in_process_logger->trace("Resetting bus");
 
     Bus::Reset();
-}
-
-uint8_t InProcessBus::GetDAT() const
-{
-    scoped_lock lock(signal_lock);
-
-    return Bus::GetDAT();
 }
 
 void InProcessBus::SetDAT(uint8_t dat) const
@@ -69,35 +54,29 @@ void InProcessBus::SetSignal(int pin, bool state) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
+    scoped_lock lock(signal_lock);
+
     if (log_signals) {
         if (const string &name = GetSignalName(pin); !name.empty()) {
             LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
         }
     }
 
-    scoped_lock lock(signal_lock);
-
     if (state) {
         SetSignals(GetSignals() & ~(1 << pin));
     } else {
         SetSignals(GetSignals() | (1 << pin));
     }
-
-
 }
 
 uint8_t InProcessBus::WaitForSelection()
 {
-    // Busy waiting cannot be avoided
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
-    nanosleep(&ts, nullptr);
-
     return GetSelection();
 }
 
 void InProcessBus::WaitNanoSeconds(bool) const
 {
-    // Wait a bus settle delay
+    // A bus settle delay
     const timespec ts = { .tv_sec = 0, .tv_nsec = 400 };
     nanosleep(&ts, nullptr);
 }

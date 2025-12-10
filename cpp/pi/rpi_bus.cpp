@@ -17,7 +17,7 @@
 
 using namespace spdlog;
 
-bool RpiBus::Init(bool target)
+bool RpiBus::SetUp(bool target)
 {
     target_mode = target;
 
@@ -175,8 +175,6 @@ bool RpiBus::Init(bool target)
 
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
-
-    Reset();
 
     return true;
 }

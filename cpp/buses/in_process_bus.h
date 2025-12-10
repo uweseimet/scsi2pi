@@ -9,9 +9,9 @@
 #pragma once
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include <memory>
-#include <unordered_map>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
@@ -23,8 +23,13 @@ public:
     InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
 
-    bool Init(bool) override;
     void Reset() const override;
+
+    bool SetUp(bool) override
+    {
+        // Nothing to do
+        return true;
+    }
 
     void CleanUp() override
     {
@@ -36,7 +41,6 @@ public:
         // Nothing to do
     }
 
-    uint8_t GetDAT() const override;
     void SetDAT(uint8_t) const override;
 
     bool GetSignal(int) const override;
@@ -78,9 +82,11 @@ private:
     // For de-duplicating the signal logging
     mutable string last_log_msg;
 
+    // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;
 
-    inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
+    // TODO Why does an unordered_map often cause a segfault when calling SIGNALS_TO_LOG.find()?
+    inline static const map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY, "BSY" },
         { PIN_BSY_MASK, "BSY" },
         { PIN_SEL, "SEL" },

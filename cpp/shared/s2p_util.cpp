@@ -347,7 +347,8 @@ shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 {
     auto l = spdlog::get(name);
     if (!l) {
-        l = stdout_color_st(name);
+        // The in-process bus requires a thread safe logger
+        l = stdout_color_mt(name);
     }
 
     return l;
