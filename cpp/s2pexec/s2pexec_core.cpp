@@ -72,14 +72,14 @@ void S2pExec::Banner(bool header, bool usage)
     }
 }
 
-bool S2pExec::Init(bool in_process)
+bool S2pExec::Init(bool in_process, bool log_signals)
 {
     if (!executor) {
         executor = make_unique<S2pExecExecutor>(*s2pexec_logger);
     }
 
     if (!use_sg) {
-        if (const string &error = executor->Init(initiator_id, APP_NAME, in_process); !error.empty()) {
+        if (const string &error = executor->Init(initiator_id, APP_NAME, in_process, log_signals); !error.empty()) {
             cerr << "Error: " << error << '\n';
             return false;
         }
@@ -102,7 +102,7 @@ bool S2pExec::Init(bool in_process)
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args, bool in_process)
+bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals)
 {
     const vector<option> options = {
         { "buffer-size", required_argument, nullptr, 'b' },
@@ -272,7 +272,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     }
 
     if (!is_initialized && (!device_file.empty() || !target.empty())) {
-        is_initialized = Init(in_process);
+        is_initialized = Init(in_process, log_signals);
         if (!is_initialized) {
             return false;
         }
@@ -344,7 +344,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process)
     return true;
 }
 
-void S2pExec::RunInteractive(bool in_process)
+void S2pExec::RunInteractive(bool in_process, bool log_signals)
 {
     if (isatty(STDIN_FILENO)) {
         Banner(true, false);
@@ -382,7 +382,7 @@ void S2pExec::RunInteractive(bool in_process)
         }
 
         try {
-            if (!ParseArguments(interactive_args, in_process)) {
+            if (!ParseArguments(interactive_args, in_process, log_signals)) {
                 continue;
             }
         }
@@ -399,17 +399,17 @@ void S2pExec::RunInteractive(bool in_process)
     CleanUp();
 }
 
-int S2pExec::Run(span<char*> args, bool in_process)
+int S2pExec::Run(span<char*> args, bool in_process, bool log_signals)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
     if (args.size() < 2 || in_process) {
-        RunInteractive(in_process);
+        RunInteractive(in_process, log_signals);
         return EXIT_SUCCESS;
     }
 
     try {
-        if (!ParseArguments(args, in_process)) {
+        if (!ParseArguments(args, in_process, log_signals)) {
             return -1;
         }
         else if (version || help) {

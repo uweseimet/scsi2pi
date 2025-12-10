@@ -144,15 +144,15 @@ int main(int argc, char *argv[])
     }
     else if (client == "s2pdump") {
         auto s2pdump = make_unique<S2pDump>();
-        s2pdump->Run(client_args, true);
+        s2pdump->Run(client_args, true, log_signals);
     }
     else if (client == "s2pexec") {
         auto s2pexec = make_unique<S2pExec>();
-        s2pexec->Run(client_args, true);
+        s2pexec->Run(client_args, true, log_signals);
     }
     else if (client == "s2pproto") {
         auto s22proto = make_unique<S2pProto>();
-        s22proto->Run(client_args, true);
+        s22proto->Run(client_args, true, log_signals);
     }
     else {
         assert(false);

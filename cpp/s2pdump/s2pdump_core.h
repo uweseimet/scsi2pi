@@ -28,7 +28,7 @@ class S2pDump
 
 public:
 
-    int Run(span<char*>, bool);
+    int Run(span<char*>, bool, bool = false);
 
     using ScsiDeviceInfo = struct {
         bool removable;
@@ -44,7 +44,7 @@ public:
 private:
 
     void Banner(bool) const;
-    bool Init(bool);
+    bool Init(bool, bool);
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
     string ReadWrite(fstream&, int, uint32_t, int, int);

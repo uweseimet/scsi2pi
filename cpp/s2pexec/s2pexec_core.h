@@ -23,15 +23,15 @@ class S2pExec
 
 public:
 
-    int Run(span<char*>, bool);
+    int Run(span<char*>, bool, bool = false);
 
 private:
 
     static void Banner(bool, bool);
 
-    bool Init(bool);
-    bool ParseArguments(span<char*>, bool);
-    void RunInteractive(bool);
+    bool Init(bool, bool);
+    bool ParseArguments(span<char*>, bool, bool);
+    void RunInteractive(bool, bool);
     int Run();
 
     tuple<SenseKey, Asc, int> ExecuteCommand();
