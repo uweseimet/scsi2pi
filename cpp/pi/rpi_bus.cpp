@@ -149,6 +149,7 @@ bool RpiBus::SetUp(bool target)
         return false;
     }
 
+#ifdef __linux__
     // Event request setting
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
@@ -167,6 +168,7 @@ bool RpiBus::SetUp(bool target)
     ev.events = EPOLLIN | EPOLLPRI;
     ev.data.fd = selevreq.fd;
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev);
+#endif
 
     CreateWorkTable();
 
@@ -184,8 +186,10 @@ bool RpiBus::SetUp(bool target)
 
 void RpiBus::CleanUp()
 {
+#ifdef __linux__
     // Release SEL signal interrupt
     close(selevreq.fd);
+#endif
 
     // Set control signals
     PinSetSignal(PIN_ENB, false);
@@ -222,6 +226,7 @@ void RpiBus::Reset() const
 
 uint8_t RpiBus::WaitForSelection()
 {
+#ifdef __linux__
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
@@ -237,6 +242,9 @@ uint8_t RpiBus::WaitForSelection()
     }
 
     return GetSelection();
+#else
+    return 0;
+#endif
 }
 
 void RpiBus::SetBSY(bool state) const

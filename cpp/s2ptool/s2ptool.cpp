@@ -117,11 +117,7 @@ int main(int argc, char *argv[])
     }
 
     const auto s2p = make_shared<S2p>();
-#ifndef __FreeBSD__
     auto s2p_thread = jthread([&target_args, log_signals, s2p]() {
-#else
-    auto s2p_thread = thread([&target_args, log_signals, s2p]() {
-#endif
         s2p->Run(target_args, true, log_signals);
     });
 

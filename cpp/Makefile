@@ -172,11 +172,11 @@ PROTO_API := ../api/s2p_interface.proto
 
 SRC_API = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_adapter)
 ifdef IS_LINUX
-SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_*.cpp)
-SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
+SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_adapter.cpp)
 endif
+SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
 SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
 SRC_SHARED_INITIATOR := $(wildcard $(DIR_SHARED_INITIATOR)/*.cpp)

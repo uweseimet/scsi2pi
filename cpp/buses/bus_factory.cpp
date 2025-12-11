@@ -8,9 +8,7 @@
 
 #include "bus_factory.h"
 #include "in_process_bus.h"
-#ifdef __linux__
 #include "pi/rpi_bus.h"
-#endif
 
 using namespace spdlog;
 
@@ -21,11 +19,9 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
     if (in_process) {
         bus = make_unique<InProcessBus>(identifier, log_signals);
     }
-#ifdef __linux__
     else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
         bus = make_unique<RpiBus>();
     }
-#endif
     else {
         bus = make_unique<InProcessBus>(identifier, false);
     }
