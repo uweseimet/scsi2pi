@@ -348,8 +348,13 @@ shared_ptr<logger> s2p_util::CreateLogger(const string &name)
     auto l = spdlog::get(name);
     if (!l) {
         // The in-process bus requires a thread safe logger
-        l = stdout_color_mt(name);
+        l = stdout_color_st(name);
     }
 
     return l;
+}
+
+void s2p_util::Sleep(const timespec &ns)
+{
+    nanosleep(&ns, nullptr);
 }

@@ -31,7 +31,7 @@ void InProcessBus::SetDAT(uint8_t dat) const
 
     uint32_t s = ~GetSignals();
     s &= 0b11111111111111000000001111111111;
-    s |= static_cast<uint32_t>(static_cast<byte>(dat)) << PIN_DT0;
+    s |= static_cast<uint32_t>(dat) << PIN_DT0;
     SetSignals(~s);
 }
 
@@ -72,13 +72,6 @@ void InProcessBus::SetSignal(int pin, bool state) const
 uint8_t InProcessBus::WaitForSelection()
 {
     return GetSelection();
-}
-
-void InProcessBus::WaitNanoSeconds(bool) const
-{
-    // A bus settle delay
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 400 };
-    nanosleep(&ts, nullptr);
 }
 
 void InProcessBus::LogSignal(const string &msg) const

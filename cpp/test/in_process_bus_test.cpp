@@ -10,7 +10,7 @@
 
 TEST(InProcessBusTest, BSY)
 {
-    InProcessBus bus("", false);
+    InProcessBus bus("", true);
 
     bus.SetBSY(true);
     EXPECT_TRUE(bus.GetBSY());
@@ -20,7 +20,7 @@ TEST(InProcessBusTest, BSY)
 
 TEST(InProcessBusTest, SEL)
 {
-    InProcessBus bus("", false);
+    InProcessBus bus("", true);
 
     bus.SetSEL(true);
     EXPECT_TRUE(bus.GetSEL());
@@ -30,7 +30,7 @@ TEST(InProcessBusTest, SEL)
 
 TEST(InProcessBusTest, ATN)
 {
-    InProcessBus bus("", false);
+    InProcessBus bus("", true);
 
     bus.SetATN(true);
     EXPECT_TRUE(bus.GetATN());
@@ -40,7 +40,7 @@ TEST(InProcessBusTest, ATN)
 
 TEST(InProcessBusTest, ACK)
 {
-    InProcessBus bus("", false);
+    InProcessBus bus("", true);
 
     bus.SetACK(true);
     EXPECT_TRUE(bus.GetACK());
@@ -50,7 +50,7 @@ TEST(InProcessBusTest, ACK)
 
 TEST(InProcessBusTest, REQ)
 {
-    InProcessBus bus("", false);
+    InProcessBus bus("", true);
 
     bus.SetREQ(true);
     EXPECT_TRUE(bus.GetREQ());
@@ -161,6 +161,19 @@ TEST(InProcessBusTest, BusPhases)
     bus.SetMSG(false);
     EXPECT_EQ(BusPhase::DATA_OUT, bus.GetPhase());
     EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_OUT));
+}
+
+TEST(InProcessBusTest, Init)
+{
+    InProcessBus bus("", false);
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_TRUE(bus.Init(false));
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_TRUE(bus.Init(true));
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
 }
 
 TEST(InProcessBusTest, Reset)

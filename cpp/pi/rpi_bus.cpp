@@ -14,8 +14,10 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <spdlog/spdlog.h>
+#include "shared/s2p_util.h"
 
 using namespace spdlog;
+using namespace s2p_util;
 
 bool RpiBus::SetUp(bool target)
 {
@@ -181,10 +183,6 @@ bool RpiBus::SetUp(bool target)
 
 void RpiBus::CleanUp()
 {
-    if (irq_disabled) {
-        EnableIRQ();
-    }
-
     // Release SEL signal interrupt
     close(selevreq.fd);
 
@@ -265,7 +263,7 @@ void RpiBus::SetSEL(bool state) const
 
 void RpiBus::SetDir(bool in) const
 {
-    // Change the data input/output direction by IO signal
+    // Change the data input/output direction according to the IO signal
     PinSetSignal(PIN_DTD, !in);
 }
 
@@ -383,8 +381,6 @@ void RpiBus::DisableIRQ()
         assert(false);
         break;
     }
-
-    irq_disabled = true;
 }
 
 void RpiBus::EnableIRQ()
@@ -410,8 +406,6 @@ void RpiBus::EnableIRQ()
         assert(false);
         break;
     }
-
-    irq_disabled = false;
 }
 
 // Pin direction setting (input/output)
@@ -447,9 +441,9 @@ void RpiBus::ConfigurePullDown(int pin) const
         constexpr timespec ts = { .tv_sec = 0, .tv_nsec = 2'000 };
 
         gpio[GPIO_PUD] = 0;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_CLK_0] = 1 << pin;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
     }
@@ -490,22 +484,13 @@ void RpiBus::WaitNanoSeconds(bool daynaport) const
     }
 }
 
-RpiBus::PiType RpiBus::CheckForPi()
+RpiBus::PiType RpiBus::GetPiType(const string &device_file)
 {
-    ifstream in("/proc/device-tree/model");
-    if (!in) {
-        warn("This platform is not a Raspberry Pi, functionality is limited");
-        return RpiBus::PiType::UNKNOWN;
-    }
-
+    ifstream in(device_file);
     stringstream s;
     s << in.rdbuf();
+    const string &model = s.str();
 
-    return GetPiType(s.str());
-}
-
-RpiBus::PiType RpiBus::GetPiType(const string &model)
-{
     if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
         warn("This platform is not a Raspberry Pi, functionality is limited");
         return RpiBus::PiType::UNKNOWN;

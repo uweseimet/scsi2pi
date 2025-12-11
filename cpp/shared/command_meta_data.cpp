@@ -31,7 +31,7 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 12, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false });
     }
 
-    // This explicit mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
+    // This mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
     // and some others typically used with the SCSG device
     AddCommand(ScsiCommand::TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::REZERO, 6, "REZERO/REWIND", { 0, 0, 0, 0, false });

@@ -55,9 +55,7 @@ public:
         return true;
     }
 
-    static PiType CheckForPi();
-
-    static PiType GetPiType(const string&);
+    static PiType GetPiType(const string& = "/proc/device-tree/model");
 
 private:
 
@@ -83,7 +81,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type = PiType::UNKNOWN;
+    PiType pi_type;
 
     bool target_mode = true;
 
@@ -135,8 +133,6 @@ private:
     array<array<uint32_t, 256>, 3> tblDatMsk = { };
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
-
-    bool irq_disabled = false;
 
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };

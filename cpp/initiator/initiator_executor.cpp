@@ -27,7 +27,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     const auto cmd = static_cast<ScsiCommand>(cdb[0]);
 
-    auto command_name = string(CommandMetaData::GetInstance().GetCommandName(cmd));
+    auto command_name = CommandMetaData::GetInstance().GetCommandName(cmd);
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
@@ -160,7 +160,7 @@ bool InitiatorExecutor::Arbitration() const
     return true;
 }
 
-bool InitiatorExecutor::Selection(bool explicit_lun) const
+bool InitiatorExecutor::Selection(bool identify) const
 {
     initiator_logger.trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
 
@@ -169,7 +169,7 @@ bool InitiatorExecutor::Selection(bool explicit_lun) const
 
     bus.SetSEL(true);
 
-    if (!sasi && !explicit_lun) {
+    if (!sasi && !identify) {
         // Request MESSAGE OUT for IDENTIFY
         bus.SetATN(true);
 
@@ -228,7 +228,7 @@ int InitiatorExecutor::DataIn(data_in_t buf)
         throw PhaseException("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", buf.size());
+    initiator_logger.trace("Receiving up to {} byte(s) in DATA IN phase", buf.size());
 
     byte_count = bus.InitiatorReceiveHandShake(buf);
 
@@ -323,8 +323,7 @@ void InitiatorExecutor::ResetBus() const
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
-    nanosleep(&ts, nullptr);
+    Sleep( { .tv_sec = 0, .tv_nsec = 50'000 });
     bus.Reset();
 }
 
@@ -366,4 +365,3 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
     target_lun = lun;
     sasi = s;
 }
-

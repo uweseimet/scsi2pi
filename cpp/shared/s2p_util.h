@@ -80,6 +80,8 @@ int HexToDec(char);
 
 string Trim(const string&);
 
+void Sleep(const timespec&);
+
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
 static constexpr array<const char*, 16> SENSE_KEYS = {

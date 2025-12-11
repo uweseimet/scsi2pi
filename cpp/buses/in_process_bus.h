@@ -8,10 +8,9 @@
 
 #pragma once
 
-#include <atomic>
 #include <map>
-#include <mutex>
 #include <memory>
+#include <mutex>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
@@ -48,7 +47,10 @@ public:
 
     uint8_t WaitForSelection() override;
 
-    void WaitNanoSeconds(bool) const override;
+    void WaitNanoSeconds(bool) const override
+    {
+        // Nothing to do
+    }
 
     bool IsRaspberryPi() const override
     {
@@ -58,8 +60,6 @@ public:
 private:
 
     void LogSignal(const string&) const;
-
-    static string GetSignalName(int);
 
     void DisableIRQ() override
     {
@@ -74,6 +74,8 @@ private:
     {
         // Nothing to do
     }
+
+    static string GetSignalName(int);
 
     shared_ptr<spdlog::logger> in_process_logger;
 

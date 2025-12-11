@@ -22,7 +22,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
         bus = make_unique<InProcessBus>(identifier, log_signals);
     }
 #ifdef __linux__
-    else if (const auto pi_type = RpiBus::CheckForPi(); pi_type != RpiBus::PiType::UNKNOWN) {
+    else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
         bus = make_unique<RpiBus>(pi_type);
     }
 #endif
