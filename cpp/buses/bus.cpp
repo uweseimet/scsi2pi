@@ -341,16 +341,6 @@ uint8_t Bus::GetSelection() const
     return 0;
 }
 
-inline uint8_t Bus::GetDAT() const
-{
-    // A bus settle delay
-    WaitNanoSeconds(false);
-
-    Acquire();
-
-    return static_cast<uint8_t>(~(signals >> PIN_DT0));
-}
-
 int Bus::CommandHandshakeTimeout()
 {
     EnableIRQ();

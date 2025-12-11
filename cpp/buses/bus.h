@@ -32,7 +32,6 @@ public:
 
     virtual uint8_t WaitForSelection() = 0;
 
-    uint8_t GetDAT() const;
     virtual void SetDAT(uint8_t) const = 0;
 
     virtual bool GetSignal(int) const;
@@ -49,6 +48,16 @@ public:
     int InitiatorMsgInHandShake() const;
     int InitiatorReceiveHandShake(data_in_t);
     int InitiatorSendHandShake(data_out_t);
+
+    uint8_t GetDAT() const
+    {
+        // A bus settle delay
+        WaitNanoSeconds(false);
+
+        Acquire();
+
+        return static_cast<uint8_t>(~(signals >> PIN_DT0));
+    }
 
     uint32_t GetSignals() const
     {
