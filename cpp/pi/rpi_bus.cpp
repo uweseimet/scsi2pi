@@ -19,10 +19,13 @@
 using namespace spdlog;
 using namespace s2p_util;
 
+RpiBus::RpiBus()
+{
+    pi_type = GetPiType();
+}
+
 bool RpiBus::SetUp(bool target)
 {
-    target_mode = target;
-
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         critical("Root permissions are required");
@@ -30,8 +33,6 @@ bool RpiBus::SetUp(bool target)
     }
 
     off_t base_addr = 0;
-    uint32_t gpio_offset = GPIO_OFFSET;
-    uint32_t pads_offset = PADS_OFFSET;
     switch (pi_type) {
     case RpiBus::PiType::PI_1:
         base_addr = 0x20000000;
@@ -44,12 +45,6 @@ bool RpiBus::SetUp(bool target)
 
     case RpiBus::PiType::PI_4:
         base_addr = 0xfe000000;
-        break;
-
-    case RpiBus::PiType::PI_5:
-        base_addr = 0x1f00000000;
-        gpio_offset = GPIO_OFFSET_RP1;
-        pads_offset = PADS_OFFSET_RP1;
         break;
 
     default:
@@ -97,11 +92,11 @@ bool RpiBus::SetUp(bool target)
     armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
-    gpio = map + gpio_offset / sizeof(uint32_t);
+    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = map + pads_offset / sizeof(uint32_t);
+    pads = map + PADS_OFFSET / sizeof(uint32_t);
 
     // Interrupt controller (Pi 1)
     irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
@@ -175,6 +170,12 @@ bool RpiBus::SetUp(bool target)
 
     CreateWorkTable();
 
+    // Set the initiator signal direction
+    PinSetSignal(PIN_IND, !target);
+
+    // Set data bus signal directions
+    PinSetSignal(PIN_DTD, target);
+
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
 
@@ -217,12 +218,6 @@ void RpiBus::Reset() const
 
     // Set target signal to input for all modes
     PinSetSignal(PIN_TAD, false);
-
-    // Set the initiator signal direction
-    PinSetSignal(PIN_IND, !target_mode);
-
-    // Set data bus signal directions
-    PinSetSignal(PIN_DTD, target_mode);
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -254,8 +249,6 @@ void RpiBus::SetBSY(bool state) const
 
 void RpiBus::SetSEL(bool state) const
 {
-    assert(!target_mode);
-
     Bus::SetSEL(state);
 
     PinSetSignal(PIN_ACT, state);

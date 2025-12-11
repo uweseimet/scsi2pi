@@ -24,9 +24,18 @@ public:
     virtual ~Bus() = default;
 
     bool Init(bool);
-    virtual bool SetUp(bool) = 0;
     virtual void Reset() const;
-    virtual void CleanUp() = 0;
+
+    virtual bool SetUp(bool)
+    {
+        // Nothing to do
+        return true;
+    }
+
+    virtual void CleanUp()
+    {
+        // Nothing to do
+    }
 
     virtual void Acquire() const = 0;
 

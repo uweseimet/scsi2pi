@@ -24,17 +24,6 @@ public:
 
     void Reset() const override;
 
-    bool SetUp(bool) override
-    {
-        // Nothing to do
-        return true;
-    }
-
-    void CleanUp() override
-    {
-        // Nothing to do
-    }
-
     void Acquire() const override
     {
         // Nothing to do

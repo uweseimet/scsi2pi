@@ -24,13 +24,10 @@ public:
         PI_1 = 1,
         PI_2 = 2,
         PI_3 = 3,
-        PI_4 = 4,
-        PI_5 = 5
+        PI_4 = 4
     };
 
-    explicit RpiBus(PiType type) : pi_type(type)
-    {
-    }
+    RpiBus();
     ~RpiBus() override = default;
 
     bool SetUp(bool) override;
@@ -81,9 +78,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type;
-
-    bool target_mode = true;
+    PiType pi_type = PiType::UNKNOWN;
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
