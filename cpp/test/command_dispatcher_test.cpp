@@ -16,9 +16,9 @@ using namespace s2p_interface_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {
-    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(bus, controller_factory);
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     PbResult result;
 
@@ -213,9 +213,9 @@ TEST(CommandDispatcherTest, DispatchCommand)
 
 TEST(CommandDispatcherTest, SetLogLevel)
 {
-    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(bus, controller_factory);
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     EXPECT_FALSE(dispatcher.SetLogLevel("abc"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));

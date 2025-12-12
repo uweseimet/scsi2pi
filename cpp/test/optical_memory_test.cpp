@@ -126,8 +126,11 @@ TEST(OpticalMemoryTest, ModeSelect)
     MockOpticalMemory mo(0);
     vector<uint8_t> buf(32);
 
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
+    // PF (vendor-specific parameter format) not set must not fail but be ignored
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16, 0));
+
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // Page 3 (Format device page)
     buf[4] = 0x03;
