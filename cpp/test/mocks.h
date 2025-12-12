@@ -24,7 +24,6 @@ using namespace testing;
 
 class MockBus : public Bus
 {
-    FRIEND_TEST(BusTest, IsTarget);
 
 public:
 
@@ -63,8 +62,6 @@ public:
 
     using PhaseHandler::PhaseHandler;
 };
-
-inline static const auto mock_bus = make_shared<MockBus>();
 
 class MockAbstractController : public AbstractController // NOSONAR Having many methods cannot be avoided
 {

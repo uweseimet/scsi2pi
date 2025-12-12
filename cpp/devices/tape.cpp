@@ -299,17 +299,14 @@ void Tape::Open()
 {
     assert(!IsReady());
 
-    // Block size and number of blocks
-    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw IoException(fmt::format("Invalid block size: {}", GetConfiguredBlockSize()));
-    }
-
     if (const int append = ParseAsUnsignedInt(GetParam(APPEND)); append == -1) {
         throw ParserException(fmt::format("Invalid maximum file size: '{}'", GetParam(APPEND)));
     }
     else {
         max_file_size = append;
     }
+
+    SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
 
     if (max_file_size && max_file_size < GetBlockSize()) {
         throw IoException(

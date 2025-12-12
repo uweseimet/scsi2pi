@@ -23,6 +23,16 @@ TEST(BusTest, GetPhaseName)
     EXPECT_EQ("????", Bus::GetPhaseName(BusPhase::RESERVED));
 }
 
+TEST(BusTest, Init)
+{
+    MockBus bus;
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_EQ(0x12345678U, bus.GetSignals());
+    bus.Init(true);
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
+}
+
 TEST(BusTest, Reset)
 {
     MockBus bus;
@@ -70,38 +80,50 @@ TEST(BusTest, TargetCommandHandShake)
 TEST(BusTest, TargetReceiveHandShake)
 {
     MockBus bus;
+    array<uint8_t, 1> buf = { };
 
+    EXPECT_CALL(bus, SetSignal).Times(2);
+    EXPECT_CALL(bus, Acquire);
     EXPECT_CALL(bus, EnableIRQ);
     EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_EQ(0, bus.TargetReceiveHandShake( { }));
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_CALL(bus, WaitNanoSeconds);
+    EXPECT_EQ(0, bus.TargetReceiveHandShake(buf));
 }
 
 TEST(BusTest, InitiatorReceiveHandShake)
 {
     MockBus bus;
+    array<uint8_t, 1> buf = { };
 
     EXPECT_CALL(bus, Acquire);
     EXPECT_CALL(bus, EnableIRQ);
     EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_EQ(0, bus.InitiatorReceiveHandShake( { }));
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_EQ(0, bus.InitiatorReceiveHandShake(buf));
 }
 
 TEST(BusTest, TargetSendHandShake)
 {
     MockBus bus;
+    array<uint8_t, 1> buf = { };
 
+    EXPECT_CALL(bus, SetDAT);
     EXPECT_CALL(bus, EnableIRQ);
     EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_EQ(0, bus.TargetSendHandShake( { }));
+    EXPECT_EQ(0, bus.TargetSendHandShake(buf));
 }
 
 TEST(BusTest, InitiatorSendHandShake)
 {
     MockBus bus;
+    array<uint8_t, 1> buf = { };
 
+    EXPECT_CALL(bus, SetDAT);
     EXPECT_CALL(bus, Acquire);
     EXPECT_CALL(bus, EnableIRQ);
     EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_EQ(0, bus.InitiatorSendHandShake( { }));
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_EQ(0, bus.InitiatorSendHandShake(buf));
 }

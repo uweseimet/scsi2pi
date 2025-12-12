@@ -11,7 +11,6 @@
 #include <filesystem>
 #include <iostream>
 #include <pwd.h>
-#include <time.h>
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "s2p_version.h"

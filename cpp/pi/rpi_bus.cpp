@@ -367,7 +367,9 @@ void RpiBus::DisableIRQ()
     case PiType::PI_2:
     case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
+#ifdef __linux__
         tint_core = sched_getcpu() + QA7_CORE0_TINTC;
+#endif
         tint_ctl = qa7_regs[tint_core];
         qa7_regs[tint_core] = 0;
         break;

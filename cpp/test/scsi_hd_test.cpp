@@ -264,8 +264,11 @@ TEST(ScsiHdTest, ModeSelect)
 
     hd.SetBlockSize(512);
 
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
+    // PF (vendor-specific parameter format) not set must not fail but be ignored
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
+
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // Page 0
     EXPECT_THROW(hd.ModeSelect(cdb, buf, 16, 0), ScsiException);
