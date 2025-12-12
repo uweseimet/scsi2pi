@@ -352,3 +352,8 @@ shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 
     return l;
 }
+
+void s2p_util::Sleep(const timespec &ns)
+{
+    nanosleep(&ns, nullptr);
+}

@@ -67,11 +67,6 @@ private:
     bool WaitForFree() const;
     bool WaitForBusy() const;
 
-    void Sleep(const timespec &ns) const
-    {
-        nanosleep(&ns, nullptr);
-    }
-
     Bus &bus;
 
     S2pFormatter formatter;

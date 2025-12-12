@@ -14,8 +14,10 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <spdlog/spdlog.h>
+#include "shared/s2p_util.h"
 
 using namespace spdlog;
+using namespace s2p_util;
 
 RpiBus::RpiBus()
 {
@@ -547,9 +549,9 @@ void RpiBus::PullConfig(int pin, int mode)
 
         pin &= 0x1f;
         gpio[GPIO_PUD] = mode & 0x3;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_CLK_0] = 1 << pin;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
     }
