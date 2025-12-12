@@ -6,6 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
+#ifdef __linux__
+
 #include <fstream>
 #include <gtest/gtest.h>
 #include "pi/rpi_bus.h"
@@ -60,3 +62,5 @@ TEST(RpiBusTest, IsRaspberryPi)
 
     EXPECT_TRUE(bus.IsRaspberryPi());
 }
+
+#endif
