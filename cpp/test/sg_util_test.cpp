@@ -60,7 +60,7 @@ TEST(SgUtilTest, UpdateStartBlock)
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
     UpdateStartBlock(cdb, 255);
-    EXPECT_EQ(0U, GetInt24(cdb, 1));
+    EXPECT_EQ(0, GetInt24(cdb, 1));
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
     UpdateStartBlock(cdb, 0x123456);

@@ -129,6 +129,9 @@ int main(int argc, char *argv[])
         s2pctl->Run(client_args);
     }
     else if (client == "s2pdump") {
+        // Ensure that s2p is listening on its socket
+        sleep(1);
+
         auto s2pdump = make_unique<S2pDump>();
         s2pdump->Run(client_args, true);
     }

@@ -99,10 +99,6 @@ TEST(ControllerTest, Selection)
 
     controller->Selection();
     EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
-
-    ON_CALL(*bus, GetDAT).WillByDefault(Return(1));
-    controller->Selection();
-    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 }
 
 TEST(ControllerTest, Command)

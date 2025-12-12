@@ -55,7 +55,11 @@ void S2p::CleanUp()
         service_thread.Stop();
     }
 
-    executor->DetachAll();
+    PbCommand command;
+    PbResult result;
+    command.set_operation(DETACH_ALL);
+    CommandContext context(command, *s2p_logger);
+    dispatcher->DispatchCommand(context, result);
 
     // TODO Check why there are rare cases where bus is NULL on a remote interface shutdown
     // even though it is never set to NULL anywhere. This looks like a race condition.
