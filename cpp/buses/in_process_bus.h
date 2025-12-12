@@ -20,13 +20,8 @@ class InProcessBus : public Bus
 
 public:
 
+    InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
-
-    static InProcessBus& GetInstance()
-    {
-        static InProcessBus instance; // NOSONAR instance cannot be inlined
-        return instance;
-    }
 
     bool Init(bool) override;
     void CleanUp() override;
@@ -80,11 +75,9 @@ public:
         return false;
     }
 
-protected:
-
-    InProcessBus() = default;
-
 private:
+
+    void LogSignal(const string&) const;
 
     void DisableIRQ() override
     {
@@ -95,59 +88,15 @@ private:
         // Nothing to do }
     }
 
+    static string GetSignalName(int);
+
     static inline atomic_bool target_enabled;
 
     mutex write_locker;
 
-    atomic<uint8_t> dat = 0;
+    inline static atomic<uint8_t> dat = 0;
 
-    array<bool, 28> signals = { };
-};
-
-class DelegatingInProcessBus : public InProcessBus
-{
-
-public:
-
-    DelegatingInProcessBus(InProcessBus&, const string&, bool);
-    ~DelegatingInProcessBus() override = default;
-
-    void Reset() override;
-
-    void CleanUp() override
-    {
-        bus.CleanUp();
-    }
-
-    uint32_t Acquire() override
-    {
-        return bus.Acquire();
-    }
-
-    bool WaitSignal(int pin, bool state) override
-    {
-        return bus.WaitSignal(pin, state);
-    }
-
-    uint8_t GetDAT() override
-    {
-        return bus.GetDAT();
-    }
-    void SetDAT(uint8_t d) override
-    {
-        bus.SetDAT(d);
-    }
-
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
-
-private:
-
-    void Log(const string&) const;
-
-    static string GetSignalName(int);
-
-    InProcessBus &bus;
+    inline static array<bool, 28> signals = { };
 
     shared_ptr<spdlog::logger> in_process_logger;
 
@@ -156,15 +105,17 @@ private:
     // For de-duplicating the signal logging
     mutable string last_log_msg;
 
-    inline static const unordered_map<int, const char*> SIGNALS = {
+    // To prevent competing signal changes and overlapping logs
+    inline static mutex signal_lock;
+
+    // TODO Why does an unordered_map often cause a segfault when calling SIGNALS_TO_LOG.find()?
+    inline static const map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY, "BSY" },
         { PIN_SEL, "SEL" },
         { PIN_ATN, "ATN" },
-        { PIN_ACK, "ACK" },
         { PIN_RST, "RST" },
         { PIN_MSG, "MSG" },
         { PIN_CD, "CD" },
-        { PIN_IO, "IO" },
-        { PIN_REQ, "REQ" }
+        { PIN_IO, "IO" }
     };
 };

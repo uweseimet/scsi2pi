@@ -47,23 +47,6 @@ public:
     MOCK_METHOD(bool, IsRaspberryPi, (), (const, override));
 };
 
-class MockInProcessBus : public InProcessBus
-{
-    FRIEND_TEST(InProcessBusTest, IsTarget);
-
-public:
-
-    MOCK_METHOD(void, CleanUp, (), (override));
-    MOCK_METHOD(void, Reset, (), (override));
-
-    using InProcessBus::InProcessBus;
-
-    void ResetMock()
-    {
-        InProcessBus::Reset();
-    }
-};
-
 class MockPhaseHandler : public PhaseHandler
 {
     FRIEND_TEST(PhaseHandlerTest, Phases);

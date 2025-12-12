@@ -12,6 +12,12 @@
 using namespace spdlog;
 using namespace s2p_util;
 
+InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(CreateLogger(name)), log_signals(l)
+{
+    // Log without timestamps
+    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
+}
+
 bool InProcessBus::Init(bool target)
 {
     if (!Bus::Init(target)) {
@@ -67,52 +73,4 @@ bool InProcessBus::WaitForSelection()
     nanosleep(&ts, nullptr);
 
     return true;
-}
-
-DelegatingInProcessBus::DelegatingInProcessBus(InProcessBus &b, const string &name, bool l) : bus(b), in_process_logger(
-    CreateLogger(name)), log_signals(l)
-{
-    // Log without timestamps
-    in_process_logger->set_pattern("[%^%l%$] [%n] %v");
-}
-
-void DelegatingInProcessBus::Reset()
-{
-    in_process_logger->trace("Resetting bus");
-
-    bus.Reset();
-}
-
-bool DelegatingInProcessBus::GetSignal(int pin) const
-{
-    const bool state = bus.GetSignal(pin);
-
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
-        Log(fmt::format("Getting {0}: {1}", GetSignalName(pin), state ? "true" : "false"));
-    }
-
-    return state;
-}
-
-void DelegatingInProcessBus::SetSignal(int pin, bool state)
-{
-    if (log_signals && pin != PIN_ACK && pin != PIN_REQ) {
-        Log(fmt::format("Setting {0} to {1}", GetSignalName(pin), state ? "true" : "false"));
-    }
-
-    bus.SetSignal(pin, state);
-}
-
-void DelegatingInProcessBus::Log(const string &msg) const
-{
-    if (msg != last_log_msg) {
-        in_process_logger->trace(msg);
-        last_log_msg = msg;
-    }
-}
-
-string DelegatingInProcessBus::GetSignalName(int pin)
-{
-    const auto &it = SIGNALS.find(pin);
-    return it != SIGNALS.end() ? it->second : "????";
 }

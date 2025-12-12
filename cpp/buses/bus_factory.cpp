@@ -19,7 +19,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
     unique_ptr<Bus> bus;
 
     if (in_process) {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::GetInstance(), identifier, log_signals);
+        bus = make_unique<InProcessBus>(identifier, log_signals);
     }
 #ifdef __linux__
     else if (const auto pi_type = RpiBus::CheckForPi(); pi_type != RpiBus::PiType::UNKNOWN) {
@@ -27,7 +27,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
     }
 #endif
     else {
-        bus = make_unique<DelegatingInProcessBus>(InProcessBus::GetInstance(), identifier, false);
+        bus = make_unique<InProcessBus>(identifier, false);
     }
 
     if (bus->Init(target)) {
