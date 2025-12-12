@@ -24,8 +24,7 @@ public:
         PI_1 = 1,
         PI_2 = 2,
         PI_3 = 3,
-        PI_4 = 4,
-        PI_5 = 5
+        PI_4 = 4
     };
 
     explicit RpiBus(PiType type) : pi_type(type)

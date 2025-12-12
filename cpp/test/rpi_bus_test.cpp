@@ -22,3 +22,10 @@ TEST(RpiBusTest, GetPiType)
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType(""));
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType("abc"));
 }
+
+TEST(RpiBusTest, IsRaspberryPi)
+{
+    RpiBus bus(RpiBus::PiType::UNKNOWN);
+
+    EXPECT_TRUE(bus.IsRaspberryPi());
+}

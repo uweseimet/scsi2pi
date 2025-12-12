@@ -28,8 +28,6 @@ bool RpiBus::Init(bool target)
     }
 
     off_t base_addr = 0;
-    uint32_t gpio_offset = GPIO_OFFSET;
-    uint32_t pads_offset = PADS_OFFSET;
     switch (pi_type) {
     case RpiBus::PiType::PI_1:
         base_addr = 0x20000000;
@@ -42,12 +40,6 @@ bool RpiBus::Init(bool target)
 
     case RpiBus::PiType::PI_4:
         base_addr = 0xfe000000;
-        break;
-
-    case RpiBus::PiType::PI_5:
-        base_addr = 0x1f00000000;
-        gpio_offset = GPIO_OFFSET_RP1;
-        pads_offset = PADS_OFFSET_RP1;
         break;
 
     default:
@@ -93,11 +85,11 @@ bool RpiBus::Init(bool target)
     armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
-    gpio = map + gpio_offset / sizeof(uint32_t);
+    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = map + pads_offset / sizeof(uint32_t);
+    pads = map + PADS_OFFSET / sizeof(uint32_t);
 
     // Interrupt controller (Pi 1)
     irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
