@@ -17,6 +17,11 @@
 
 using namespace spdlog;
 
+RpiBus::RpiBus()
+{
+    pi_type = GetPiType();
+}
+
 bool RpiBus::Init(bool target)
 {
     Bus::Init(target);
@@ -591,22 +596,13 @@ void RpiBus::WaitBusSettle() const
     }
 }
 
-RpiBus::PiType RpiBus::CheckForPi()
+RpiBus::PiType RpiBus::GetPiType(const string &device_file)
 {
-    ifstream in("/proc/device-tree/model");
-    if (!in) {
-        warn("This platform is not a Raspberry Pi, functionality is limited");
-        return RpiBus::PiType::UNKNOWN;
-    }
-
+    ifstream in(device_file);
     stringstream s;
     s << in.rdbuf();
+    const string &model = s.str();
 
-    return GetPiType(s.str());
-}
-
-RpiBus::PiType RpiBus::GetPiType(const string &model)
-{
     if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
         warn("This platform is not a Raspberry Pi, functionality is limited");
         return RpiBus::PiType::UNKNOWN;
