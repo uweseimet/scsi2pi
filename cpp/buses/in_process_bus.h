@@ -32,7 +32,8 @@ public:
 
     uint32_t Acquire() override
     {
-        return dat;
+        // Nothing to do
+        return 0;
     }
 
     void SetBSY(bool state) override
@@ -54,14 +55,8 @@ public:
         SetSignal(PIN_IO, state);
     }
 
-    uint8_t GetDAT() override
-    {
-        return dat;
-    }
-    void SetDAT(uint8_t d) override
-    {
-        dat = d;
-    }
+    uint8_t GetDAT() override;
+    void SetDAT(uint8_t d) override;
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) override;
@@ -94,8 +89,6 @@ private:
     static string GetSignalName(int);
 
     static inline atomic_bool target_enabled;
-
-    inline static atomic<uint8_t> dat = 0;
 
     inline static uint32_t signals = 0;
 

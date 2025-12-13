@@ -108,14 +108,6 @@ TEST(InProcessBusTest, DAT)
     EXPECT_EQ(0x21, bus.GetDAT());
 }
 
-TEST(InProcessBusTest, Acquire)
-{
-    InProcessBus bus("", false);
-
-    bus.SetDAT(0x12);
-    EXPECT_EQ(0x12U, bus.Acquire());
-}
-
 TEST(InProcessBusTest, BusPhases)
 {
     InProcessBus bus("", false);
