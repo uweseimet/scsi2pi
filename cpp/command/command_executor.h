@@ -52,6 +52,7 @@ public:
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
+    void DetachAll() const;
     string SetReservedIds(const string&);
 #ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
@@ -73,7 +74,6 @@ private:
 
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
-    void DetachAll() const;
     bool Start(PrimaryDevice&) const;
     bool Stop(PrimaryDevice&) const;
     bool Eject(PrimaryDevice&) const;
