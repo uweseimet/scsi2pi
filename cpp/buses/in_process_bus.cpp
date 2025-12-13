@@ -27,14 +27,14 @@ void InProcessBus::Reset()
 
 uint8_t InProcessBus::GetDAT()
 {
-    scoped_lock lock(signal_lock);
+    scoped_lock<mutex> lock(signal_lock);
 
     return static_cast<uint8_t>(signals >> PIN_DT0);
 }
 
 void InProcessBus::SetDAT(uint8_t dat)
 {
-    scoped_lock lock(signal_lock);
+    scoped_lock<mutex> lock(signal_lock);
 
     signals &= 0b11111111111111000000001111111111;
     signals |= static_cast<uint32_t>(dat) << PIN_DT0;
@@ -44,7 +44,7 @@ bool InProcessBus::GetSignal(int pin) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
-    scoped_lock lock(signal_lock);
+    scoped_lock<mutex> lock(signal_lock);
 
     const bool state = signals & (1 << pin);
 
@@ -61,7 +61,7 @@ void InProcessBus::SetSignal(int pin, bool state)
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
-    scoped_lock lock(signal_lock);
+    scoped_lock<mutex> lock(signal_lock);
 
     if (log_signals) {
         if (const string &name = GetSignalName(pin); !name.empty()) {
