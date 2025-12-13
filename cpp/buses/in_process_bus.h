@@ -23,8 +23,11 @@ public:
     InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
 
-    bool Init(bool) override;
-    void CleanUp() override;
+    void CleanUp() override
+    {
+        // Nothing to do;
+    }
+
     void Reset() override;
 
     uint32_t Acquire() override
@@ -92,11 +95,9 @@ private:
 
     static inline atomic_bool target_enabled;
 
-    mutex write_locker;
-
     inline static atomic<uint8_t> dat = 0;
 
-    inline static array<bool, 28> signals = { };
+    inline static uint32_t signals = 0;
 
     shared_ptr<spdlog::logger> in_process_logger;
 

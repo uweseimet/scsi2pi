@@ -24,7 +24,7 @@ public:
     }
 
     string Init(const string&);
-    string Init(int, const string&, bool);
+    string Init(int, const string&, bool, bool);
     void CleanUp();
 
     void ResetBus();

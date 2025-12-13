@@ -18,59 +18,68 @@ InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(Creat
     in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
-bool InProcessBus::Init(bool target)
-{
-    if (!Bus::Init(target)) {
-        return false;
-    }
-
-    if (target) {
-        return true;
-    }
-
-    const auto now = chrono::steady_clock::now();
-
-    // Wait for the target up to 1 s
-    do {
-        if (target_enabled) {
-            return true;
-        }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
-
-    return false;
-}
-
-void InProcessBus::CleanUp()
-{
-    // Signal the client that s2p is ready
-    if (IsTarget()) {
-        target_enabled = true;
-    }
-}
-
 void InProcessBus::Reset()
 {
-    signals = { };
+    in_process_logger->trace("Resetting bus");
 
+    signals = 0;
     dat = 0;
 }
 
 bool InProcessBus::GetSignal(int pin) const
 {
-    return signals[pin];
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
+    scoped_lock lock(signal_lock);
+
+    const bool state = signals & (1 << pin);
+
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin); !name.empty()) {
+            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
+        }
+    }
+
+    return state;
 }
 
 void InProcessBus::SetSignal(int pin, bool state)
 {
-    scoped_lock lock(write_locker);
-    signals[pin] = state;
+    assert(pin >= PIN_ATN && pin <= PIN_SEL);
+
+    scoped_lock lock(signal_lock);
+
+    if (log_signals) {
+        if (const string &name = GetSignalName(pin); !name.empty()) {
+            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
+        }
+    }
+
+    if (state) {
+        signals |= (1 << pin);
+    }
+    else {
+        signals &= ~(1 << pin);
+    }
 }
 
 bool InProcessBus::WaitForSelection()
 {
-    // Busy waiting cannot be avoided
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 10'000'000 };
-    nanosleep(&ts, nullptr);
+    Sleep( { .tv_sec = 0, .tv_nsec = 10'000'000 });
 
     return true;
+}
+
+void InProcessBus::LogSignal(const string &msg) const
+{
+    if (msg != last_log_msg) {
+        in_process_logger->trace(msg);
+        last_log_msg = msg;
+    }
+}
+
+string InProcessBus::GetSignalName(int pin)
+{
+    const auto &it = SIGNALS_TO_LOG.find(pin);
+    return it != SIGNALS_TO_LOG.end() ? it->second : "";
 }

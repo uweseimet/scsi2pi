@@ -116,35 +116,39 @@ int main(int argc, char *argv[])
         add_arg(target_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
-    auto s2p_thread = jthread([&target_args, log_signals]() {
-        auto s2p = make_unique<S2p>();
+    const auto s2p = make_shared<S2p>();
+    auto s2p_thread = jthread([&target_args, log_signals, s2p]() {
         s2p->Run(target_args, true, log_signals);
     });
 
-    if (client == "s2pctl") {
-        // Ensure that s2p is listening on its socket
-        sleep(1);
+    // Wait for the in-process bus target up to 1 s
+    const auto now = chrono::steady_clock::now();
+    do {
+        if (s2p->Ready()) {
+            break;
+        }
+    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
 
+    if (!s2p->Ready()) {
+        cerr << "Error starting in-process s2p\n";
+        exit(EXIT_FAILURE);
+    }
+
+    if (client == "s2pctl") {
         auto s2pctl = make_unique<S2pCtl>();
         s2pctl->Run(client_args);
     }
     else if (client == "s2pdump") {
-        // Ensure that s2p is listening on its socket
-        sleep(1);
-
         auto s2pdump = make_unique<S2pDump>();
-        s2pdump->Run(client_args, true);
+        s2pdump->Run(client_args, true, log_signals);
     }
     else if (client == "s2pexec") {
-        // Ensure that s2p is listening on its socket
-        sleep(1);
-
         auto s2pexec = make_unique<S2pExec>();
-        s2pexec->Run(client_args, true);
+        s2pexec->Run(client_args, true, log_signals);
     }
     else if (client == "s2pproto") {
         auto s22proto = make_unique<S2pProto>();
-        s22proto->Run(client_args, true);
+        s22proto->Run(client_args, true, log_signals);
     }
     else {
         assert(false);

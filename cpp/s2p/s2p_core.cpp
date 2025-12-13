@@ -230,9 +230,16 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         bus->CleanUp();
     }
 
+    ready = true;
+
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+bool S2p::Ready() const
+{
+    return ready;
 }
 
 bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore_conf)
