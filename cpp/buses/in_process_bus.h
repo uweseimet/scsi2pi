@@ -88,8 +88,6 @@ private:
 
     static string GetSignalName(int);
 
-    static inline atomic_bool target_enabled;
-
     inline static uint32_t signals = 0;
 
     shared_ptr<spdlog::logger> in_process_logger;
