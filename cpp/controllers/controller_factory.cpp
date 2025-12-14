@@ -56,10 +56,11 @@ bool ControllerFactory::DeleteAllControllers()
         return false;
     }
 
-    for (auto it = controllers.cbegin(); it != controllers.cend();) {
-        (*it).second->CleanUp();
-        controllers.erase(it++);
+    for (const auto& [_, controller] : controllers) {
+        controller->CleanUp();
     }
+
+    controllers.clear();
 
     return true;
 }
