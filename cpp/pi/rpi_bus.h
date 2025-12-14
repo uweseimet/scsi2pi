@@ -114,7 +114,7 @@ private:
 #ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
-    #endif
+#endif
 
     int epoll_fd = 0;
 

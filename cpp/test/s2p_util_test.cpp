@@ -7,7 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
+#include <fstream>
+#include <unistd.h>
 #include "shared/s2p_exceptions.h"
+#include "test_shared.h"
 
 using namespace s2p_util;
 
@@ -242,4 +245,25 @@ TEST(S2pUtilTest, CreateLogger)
     const auto l = CreateLogger("test");
     EXPECT_NE(nullptr, l);
     EXPECT_EQ(l, CreateLogger("test"));
+}
+
+TEST(S2pUtilTest, GetLine)
+{
+    const string &filename = testing::CreateTempName();
+    ofstream out(filename);
+    out << "abc\n";
+    out << "# comment\n";
+    out << " def \n";
+    out << "\n";
+    out << "xyz\\\n";
+    out << "123\n";
+    out << "exit\n";
+    out << "zzz";
+    out.close();
+
+    ifstream in(filename);
+
+    EXPECT_EQ("abc", GetLine("", in));
+    EXPECT_EQ("def", GetLine("", in));
+    EXPECT_EQ("xyz123", GetLine("", in));
 }
