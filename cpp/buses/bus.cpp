@@ -113,8 +113,11 @@ int Bus::MsgInHandShake()
 
     SetACK(true);
 
-    // Request MESSAGE OUT phase for rejecting any unsupported message (only COMMAND COMPLETE is supported)
-    if (msg) {
+    // Request MESSAGE OUT phase for rejecting any unsupported message
+    if (msg != static_cast<int>(MessageCode::COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE)
+        && msg != static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG)
+        && msg != static_cast<int>(MessageCode::MESSAGE_REJECT)) {
         SetATN(true);
     }
 
@@ -282,7 +285,8 @@ bool Bus::WaitSignal(int pin, bool state)
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    spdlog::trace("Timeout while waiting for ACK/REQ to change to {}", state ? "true" : "false");
+    spdlog::trace("Timeout while waiting for {0} to become {1}", pin == PIN_ACK ? "ACK" : "REQ",
+        state ? "true" : "false");
 
     return false;
 }

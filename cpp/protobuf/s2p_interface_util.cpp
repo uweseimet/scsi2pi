@@ -18,9 +18,13 @@ PbDeviceType s2p_interface_util::ParseDeviceType(const string &value)
         return type;
     }
 
-    // Handle convenience device types (shortcuts)
-    const auto &it = DEVICE_TYPES.find(tolower(value[0]));
-    return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
+    // Handle convenience one-letter device types (shortcuts)
+    if (value.size() == 1) {
+        const auto &it = DEVICE_TYPES.find(tolower(value[0]));
+        return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
+    }
+
+    return UNDEFINED;
 }
 
 PbCachingMode s2p_interface_util::ParseCachingMode(const string &value)

@@ -146,11 +146,12 @@ bool SgAdapter::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> cdb)
 
 void SgAdapter::GetBlockSize()
 {
-    vector<uint8_t> buf(8);
     vector<uint8_t> cdb(10);
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
 
     try {
+        vector<uint8_t> buf(8);
+
         if (!SendCommandInternal(cdb, buf, static_cast<int>(buf.size()), 1, false)) {
             block_size = GetInt32(buf, 4);
             assert(block_size);

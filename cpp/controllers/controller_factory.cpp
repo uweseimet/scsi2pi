@@ -56,10 +56,11 @@ bool ControllerFactory::DeleteAllControllers()
         return false;
     }
 
-    for (auto it = controllers.cbegin(); it != controllers.cend();) {
-        (*it).second->CleanUp();
-        controllers.erase(it++);
+    for (const auto& [_, controller] : controllers) {
+        controller->CleanUp();
     }
+
+    controllers.clear();
 
     return true;
 }
@@ -76,7 +77,7 @@ bool ControllerFactory::SetScriptFile(const string &filename)
     return true;
 }
 
-ShutdownMode ControllerFactory::ProcessOnController(int ids) const
+ShutdownMode ControllerFactory::ProcessOnController(uint8_t ids) const
 {
     if (const auto &it = ranges::find_if(controllers, [&ids](const auto &c) {
         return (ids & (1 << c.first));

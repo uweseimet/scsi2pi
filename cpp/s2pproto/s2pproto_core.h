@@ -19,13 +19,13 @@ class S2pProto
 
 public:
 
-    int Run(span<char*>, bool);
+    int Run(span<char*>, bool, bool = false);
 
 private:
 
     static void Banner(bool);
 
-    bool Init(bool);
+    bool Init(bool, bool);
     bool ParseArguments(span<char*>);
     int GenerateOutput(const string&, const string&);
 

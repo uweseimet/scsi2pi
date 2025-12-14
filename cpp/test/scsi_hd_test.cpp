@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -94,6 +94,7 @@ TEST(ScsiHdTest, GetProductData)
     MockScsiHd hd_kb(0, false);
     MockScsiHd hd_mb(0, false);
     MockScsiHd hd_gb(0, false);
+    MockScsiHd hd_tb(0, false);
 
     const path &filename = CreateTempFile(1);
     hd_kb.SetFilename(filename.string());
@@ -115,6 +116,12 @@ TEST(ScsiHdTest, GetProductData)
     hd_gb.FinalizeSetup();
     s = hd_gb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("10 GiB"));
+    hd_tb.SetFilename(filename.string());
+    hd_tb.SetBlockSize(1024);
+    hd_tb.SetBlockCount(10'737'418'240);
+    hd_tb.FinalizeSetup();
+    s = hd_tb.GetProductData().product;
+    EXPECT_NE(string::npos, s.find("10 TiB"));
 }
 
 TEST(ScsiHdTest, FinalizeSetup)
@@ -257,8 +264,11 @@ TEST(ScsiHdTest, ModeSelect)
 
     hd.SetBlockSize(512);
 
-    // PF (vendor-specific parameter format) must not fail but be ignored
-    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
+    // PF (vendor-specific parameter format) not set must not fail but be ignored
+    auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16, 0));
+
+    cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
     // Page 0
     EXPECT_THROW(hd.ModeSelect(cdb, buf, 16, 0), ScsiException);

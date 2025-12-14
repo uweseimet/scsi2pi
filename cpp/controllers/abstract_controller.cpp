@@ -111,7 +111,7 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
         while (!(ids_without_target & (1 << initiator_id))) {
             ++initiator_id;
         }
-        LogTrace("++++ Starting processing for initiator ID " + to_string(initiator_id));
+        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
     }
     else {
         initiator_id = UNKNOWN_INITIATOR_ID;

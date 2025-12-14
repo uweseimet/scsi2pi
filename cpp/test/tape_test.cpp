@@ -34,7 +34,7 @@ static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, ui
 
 static void CheckMetaData(istream &file, const SimhMetaData &expected)
 {
-    array<uint8_t, META_DATA_SIZE> data;
+    array<uint8_t, META_DATA_SIZE> data = { };
     file.read((char*)data.data(), data.size());
     SimhMetaData meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
@@ -142,6 +142,9 @@ TEST(TapeTest, ValidateFile)
     tape.SetBlockCount(1);
     EXPECT_THROW(tape.ValidateFile(), IoException)<< "Missing filename";
 
+    tape.SetFilename("/non_existing_file");
+    EXPECT_THROW(tape.ValidateFile(), IoException)<< "Missing file";
+
     const auto &filename = CreateTempFile(1);
     tape.SetFilename(filename.string());
     EXPECT_NO_THROW(tape.ValidateFile());
@@ -150,13 +153,24 @@ TEST(TapeTest, ValidateFile)
 TEST(TapeTest, Open)
 {
     Tape tape(0);
-    tape.SetParams( { });
 
-    EXPECT_THROW(tape.Open(), IoException);
+    param_map params;
+    params["append"] = "xyz";
+    tape.SetParams(params);
+    EXPECT_THROW(tape.Open(), ParserException);
+
+    params["append"] = "1";
+    tape.SetParams(params);
+    EXPECT_THROW(tape.Open(), IoException)<< "Maximum file size is smaller than block size";
+
+    tape.SetParams( { });
+    EXPECT_THROW(tape.Open(), IoException)<< "Missing file";
 
     const auto &filename = CreateTempFile(4096);
     tape.SetFilename(filename.string());
     EXPECT_NO_THROW(tape.Open());
+
+    tape.CleanUp();
 }
 
 TEST(TapeTest, Unload)

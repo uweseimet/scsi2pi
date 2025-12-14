@@ -303,7 +303,7 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     device->ReserveFile();
 
     const auto &reserved_files = StorageDevice::GetReservedFiles();
-    const int count = reserved_files.size();
+    const size_t count = reserved_files.size();
     EXPECT_FALSE(reserved_files.empty());
     EXPECT_TRUE(reserved_files.contains("filename"));
 

@@ -388,7 +388,7 @@ int Disk::ReadData(data_in_t buf)
 
     CheckReady();
 
-    if (!cache->ReadSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
+    if (!cache->ReadSectors(buf, next_sector, sector_transfer_count)) {
         throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
     }
 
@@ -421,7 +421,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     }
 
     if ((command != ScsiCommand::VERIFY_10 && command != ScsiCommand::VERIFY_16)
-        && !cache->WriteSectors(buf, static_cast<uint32_t>(next_sector), sector_transfer_count)) {
+        && !cache->WriteSectors(buf, next_sector, sector_transfer_count)) {
         throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_FAULT);
     }
 

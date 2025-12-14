@@ -25,10 +25,12 @@ public:
 
     bool IsRunning() const
     {
-        return server_socket != -1;
+        return running;
     }
 
 private:
 
     int server_socket = -1;
+
+    bool running = false;
 };

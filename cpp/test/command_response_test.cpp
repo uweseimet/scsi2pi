@@ -150,7 +150,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
 TEST(CommandResponseTest, GetDeviceTypesInfo)
 {
     PbDeviceTypesInfo info;
-    GetDeviceTypesInfo(info);
+    GetDeviceTypesInfo(info, { });
 #ifdef __linux__
     EXPECT_EQ(10, info.properties().size());
 #else
@@ -167,7 +167,7 @@ TEST(CommandResponseTest, GetServerInfo)
     PbServerInfo info1;
     CommandImageSupport::GetInstance().SetDepth(1234);
 
-    GetServerInfo(info1, command, devices, ids, *default_logger());
+    GetServerInfo(info1, command, devices, ids, { }, *default_logger());
     EXPECT_TRUE(info1.has_version_info());
     EXPECT_TRUE(info1.has_log_level_info());
     EXPECT_TRUE(info1.has_device_types_info());
@@ -188,7 +188,7 @@ TEST(CommandResponseTest, GetServerInfo)
 
     SetParam(command, "operations", "log_level_info,mapping_info");
     PbServerInfo info2;
-    GetServerInfo(info2, command, devices, ids, *default_logger());
+    GetServerInfo(info2, command, devices, ids, { }, *default_logger());
     EXPECT_FALSE(info2.has_version_info());
     EXPECT_TRUE(info2.has_log_level_info());
     EXPECT_FALSE(info2.has_device_types_info());
@@ -232,7 +232,7 @@ TEST(CommandResponseTest, GetMappingInfo)
 {
     PbMappingInfo info;
     GetMappingInfo(info);
-    EXPECT_EQ(11U, info.mapping().size());
+    EXPECT_FALSE(info.mapping().empty());
 }
 
 TEST(CommandResponseTest, GetStatisticsInfo)

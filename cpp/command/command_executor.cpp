@@ -36,16 +36,19 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return false;
     }
 
-    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
+    const PbOperation operation = context.GetCommand().operation();
 
+    // ATTACH does not require an existing device
+    if (operation == ATTACH) {
+        return Attach(context, pb_device, dryRun);
+    }
+
+    const auto device = controller_factory.GetDeviceForIdAndLun(pb_device.id(), pb_device.unit());
     if (!ValidateOperation(context, *device)) {
         return false;
     }
 
-    switch (const PbOperation operation = context.GetCommand().operation(); operation) {
-    case ATTACH:
-        return Attach(context, pb_device, dryRun);
-
+    switch (operation) {
     case DETACH:
         return Detach(context, *device, dryRun);
 
@@ -77,7 +80,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
 {
     const PbCommand &command = context.GetCommand();
-    const PbOperation &operation = command.operation();
+    const PbOperation operation = command.operation();
 
     // Handle commands that are not device-specific
     switch (operation) {
@@ -105,17 +108,23 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         break;
     }
 
+#ifdef BUILD_STORAGE_DEVICE
     // Remember the list of reserved files during the dry run
     const auto &reserved_files = StorageDevice::GetReservedFiles();
+#endif
+
     const bool isDryRunError = ranges::find_if_not(command.devices(), [this, &context](const auto &device)
         {   return ProcessDeviceCmd(context, device, true);}) != command.devices().end();
+
+#ifdef BUILD_STORAGE_DEVICE
     StorageDevice::SetReservedFiles(reserved_files);
+#endif
 
     if (isDryRunError) {
         return false;
     }
 
-    if (!EnsureLun0(context, command)) {
+    if (!EnsureLun0(context)) {
         return false;
     }
 
@@ -597,13 +606,13 @@ string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDef
     return s.str();
 }
 
-bool CommandExecutor::EnsureLun0(const CommandContext &context, const PbCommand &command) const
+bool CommandExecutor::EnsureLun0(const CommandContext &context) const
 {
     // Mapping of available LUNs (bit vector) to device IDs
     unordered_map<int32_t, int32_t> luns;
 
     // Collect LUN bit vectors of new devices
-    for (const auto &device : command.devices()) {
+    for (const auto &device : context.GetCommand().devices()) {
         luns[device.id()] |= 1 << device.unit();
     }
 
@@ -637,7 +646,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
-    // SCDP must be attached only once
+    // SCDP can be attached only once
     if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
             if (d->GetType() == device->GetType()) {

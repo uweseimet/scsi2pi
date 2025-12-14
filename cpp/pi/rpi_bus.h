@@ -24,13 +24,10 @@ public:
         PI_1 = 1,
         PI_2 = 2,
         PI_3 = 3,
-        PI_4 = 4,
-        PI_5 = 5
+        PI_4 = 4
     };
 
-    explicit RpiBus(PiType type) : pi_type(type)
-    {
-    }
+    RpiBus();
     ~RpiBus() override = default;
 
     bool Init(bool) override;
@@ -60,9 +57,7 @@ public:
         return true;
     }
 
-    static PiType CheckForPi();
-
-    static PiType GetPiType(const string&);
+    static PiType GetPiType(const string& = "/proc/device-tree/model");
 
 private:
 
@@ -92,7 +87,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t);
 
-    PiType pi_type;
+    PiType pi_type = PiType::UNKNOWN;
 
     uint32_t timer_core_freq = 0;
 

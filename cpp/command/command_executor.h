@@ -41,30 +41,22 @@ public:
     }
     ~CommandExecutor() = default;
 
-    // TODO At least some of these methods and of the protected methods should be private.
-    // Currently they are called by the unit tests.
-
     const auto& GetReservedIds() const
     {
         return reserved_ids;
     }
 
+    // TODO At least some of these methods and of the protected methods should be private.
+    // Currently they are called by the unit tests.
+
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
-    bool Start(PrimaryDevice&) const;
-    bool Stop(PrimaryDevice&) const;
-    bool Eject(PrimaryDevice&) const;
-    bool Protect(PrimaryDevice&) const;
-    bool Unprotect(PrimaryDevice&) const;
-    bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
-    bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
     void DetachAll() const;
     string SetReservedIds(const string&);
 #ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
 #endif
-    bool EnsureLun0(const CommandContext&, const PbCommand&) const;
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
@@ -78,16 +70,25 @@ public:
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
     static bool SetProductData(const CommandContext&, const PbDeviceDefinition&, PrimaryDevice&);
 
-protected:
+private:
+
+    bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
+    bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
+    bool Start(PrimaryDevice&) const;
+    bool Stop(PrimaryDevice&) const;
+    bool Eject(PrimaryDevice&) const;
+    bool Protect(PrimaryDevice&) const;
+    bool Unprotect(PrimaryDevice&) const;
+
+    bool EnsureLun0(const CommandContext&) const;
 
     bool SetScsiLevel(const CommandContext&, PrimaryDevice&, int) const;
 
-private:
+    void DisplayDeviceInfo(const PrimaryDevice&) const;
 
     static string GetTypeString(const Device&);
     static string GetIdentifier(const Device&);
 
-    void DisplayDeviceInfo(const PrimaryDevice&) const;
     static bool CheckForReservedFile(const CommandContext&, const string&);
     static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 

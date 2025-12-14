@@ -27,10 +27,10 @@ void GetImageFilesInfo(PbImageFilesInfo&, const string&, const string&, logger&)
 void GetReservedIds(PbReservedIdsInfo&, const unordered_set<int>&);
 void GetDevices(const unordered_set<shared_ptr<PrimaryDevice>>&, PbServerInfo&);
 void GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&);
-void GetDeviceTypesInfo(PbDeviceTypesInfo&);
+void GetDeviceTypesInfo(PbDeviceTypesInfo&, const unordered_set<PbDeviceType>&);
 void GetVersionInfo(PbVersionInfo&);
 void GetServerInfo(PbServerInfo&, const PbCommand&, const unordered_set<shared_ptr<PrimaryDevice>>&,
-    const unordered_set<int>&, logger&);
+    const unordered_set<int>&, const unordered_set<PbDeviceType>&, logger&);
 void GetNetworkInterfacesInfo(PbNetworkInterfacesInfo&);
 void GetMappingInfo(PbMappingInfo&);
 void GetLogLevelInfo(PbLogLevelInfo&);

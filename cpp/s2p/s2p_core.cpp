@@ -57,11 +57,7 @@ void S2p::CleanUp()
 
     executor->DetachAll();
 
-    // TODO Check why there are rare cases where bus is NULL on a remote interface shutdown
-    // even though it is never set to NULL anywhere. This looks like a race condition.
-    if (bus) {
-        bus->CleanUp();
-    }
+    bus->CleanUp();
 }
 
 void S2p::ReadAccessToken(const path &filename)
@@ -226,9 +222,16 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         bus->CleanUp();
     }
 
+    ready = true;
+
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+bool S2p::Ready() const
+{
+    return ready;
 }
 
 bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore_conf)
@@ -276,6 +279,11 @@ bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore
                 throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
             }
             s2p_logger->info("Generating script file '" + script_file + "'");
+        }
+
+        if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
+            without_types)) {
+            throw ParserException("Invalid device types list: '" + without_types + "'");
         }
 
         const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
@@ -393,8 +401,9 @@ void S2p::AttachInitialDevices(PbCommand &command)
         command.set_operation(ATTACH);
 
         CommandContext context(command, *s2p_logger);
+        PbResult result;
         context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
-        if (!executor->ProcessCmd(context)) {
+        if (!dispatcher->DispatchCommand(context, result)) {
             throw ParserException("Can't attach devices");
         }
 

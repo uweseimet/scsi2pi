@@ -37,13 +37,13 @@ private:
         uint32_t serial;
     };
 
-    shared_ptr<DiskTrack> AssignTrack(int);
-    shared_ptr<DiskTrack> GetTrack(uint32_t);
-    bool Load(int index, int track, shared_ptr<DiskTrack>);
+    shared_ptr<DiskTrack> AssignTrack(int64_t);
+    shared_ptr<DiskTrack> GetTrack(uint64_t);
+    bool Load(int index, int64_t track, shared_ptr<DiskTrack>);
     void UpdateSerial();
 
     // Number of tracks to cache
-    static constexpr int CACHE_MAX = 16;
+    static constexpr int64_t CACHE_MAX = 16;
 
     array<CacheData, CACHE_MAX> cache = { };
 
@@ -55,7 +55,7 @@ private:
     // Sector size shift  (8 = 256, 9 = 512, 10 = 1024, 11 = 2048, 12 = 4096)
     int shift_count = 8;
 
-    int blocks;
+    int64_t blocks;
 
     uint64_t read_error_count = 0;
     uint64_t write_error_count = 0;

@@ -14,8 +14,15 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <spdlog/spdlog.h>
+#include "shared/s2p_util.h"
 
 using namespace spdlog;
+using namespace s2p_util;
+
+RpiBus::RpiBus()
+{
+    pi_type = GetPiType();
+}
 
 bool RpiBus::Init(bool target)
 {
@@ -28,8 +35,6 @@ bool RpiBus::Init(bool target)
     }
 
     off_t base_addr = 0;
-    uint32_t gpio_offset = GPIO_OFFSET;
-    uint32_t pads_offset = PADS_OFFSET;
     switch (pi_type) {
     case RpiBus::PiType::PI_1:
         base_addr = 0x20000000;
@@ -42,12 +47,6 @@ bool RpiBus::Init(bool target)
 
     case RpiBus::PiType::PI_4:
         base_addr = 0xfe000000;
-        break;
-
-    case RpiBus::PiType::PI_5:
-        base_addr = 0x1f00000000;
-        gpio_offset = GPIO_OFFSET_RP1;
-        pads_offset = PADS_OFFSET_RP1;
         break;
 
     default:
@@ -93,11 +92,11 @@ bool RpiBus::Init(bool target)
     armt_addr[ARMT_CTRL] = 0x00000282;
 
     // GPIO
-    gpio = map + gpio_offset / sizeof(uint32_t);
+    gpio = map + GPIO_OFFSET / sizeof(uint32_t);
     level = &gpio[GPIO_LEV_0];
 
     // PADS
-    pads = map + pads_offset / sizeof(uint32_t);
+    pads = map + PADS_OFFSET / sizeof(uint32_t);
 
     // Interrupt controller (Pi 1)
     irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
@@ -550,9 +549,9 @@ void RpiBus::PullConfig(int pin, int mode)
 
         pin &= 0x1f;
         gpio[GPIO_PUD] = mode & 0x3;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_CLK_0] = 1 << pin;
-        nanosleep(&ts, nullptr);
+        Sleep(ts);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
     }
@@ -599,22 +598,13 @@ void RpiBus::WaitBusSettle() const
     }
 }
 
-RpiBus::PiType RpiBus::CheckForPi()
+RpiBus::PiType RpiBus::GetPiType(const string &device_file)
 {
-    ifstream in("/proc/device-tree/model");
-    if (!in) {
-        warn("This platform is not a Raspberry Pi, functionality is limited");
-        return RpiBus::PiType::UNKNOWN;
-    }
-
+    ifstream in(device_file);
     stringstream s;
     s << in.rdbuf();
+    const string &model = s.str();
 
-    return GetPiType(s.str());
-}
-
-RpiBus::PiType RpiBus::GetPiType(const string &model)
-{
     if (!model.starts_with("Raspberry Pi ") || model.size() < 13) {
         warn("This platform is not a Raspberry Pi, functionality is limited");
         return RpiBus::PiType::UNKNOWN;

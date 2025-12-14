@@ -30,10 +30,10 @@ string S2pExecExecutor::Init(const string &device)
 #endif
 }
 
-string S2pExecExecutor::Init(int id, const string &name, bool in_process)
+string S2pExecExecutor::Init(int id, const string &name, bool in_process, bool log_signals)
 {
     if (!bus) {
-        bus = bus_factory::CreateBus(false, in_process, name, false);
+        bus = bus_factory::CreateBus(false, in_process, name, log_signals);
         if (!bus) {
             return "Can't initialize bus";
         }

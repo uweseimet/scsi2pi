@@ -85,9 +85,9 @@ void S2pDump::Banner(bool header) const
         << "  --help/-H                          Display this help.\n";
 }
 
-bool S2pDump::Init(bool in_process)
+bool S2pDump::Init(bool in_process, bool log_signals)
 {
-    bus = bus_factory::CreateBus(false, in_process, APP_NAME, false);
+    bus = bus_factory::CreateBus(false, in_process, APP_NAME, log_signals);
     if (!bus) {
         return false;
     }
@@ -356,7 +356,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     return true;
 }
 
-int S2pDump::Run(span<char*> args, bool in_process)
+int S2pDump::Run(span<char*> args, bool in_process, bool log_signals)
 {
     if (args.size() < 2) {
         Banner(true);
@@ -371,7 +371,7 @@ int S2pDump::Run(span<char*> args, bool in_process)
         }
 
         if (device_file.empty()) {
-            if (!Init(in_process)) {
+            if (!Init(in_process, log_signals)) {
                 throw ParserException("Can't initialize bus");
             }
 

@@ -158,7 +158,7 @@ bool InitiatorExecutor::Arbitration() const
     return true;
 }
 
-bool InitiatorExecutor::Selection(bool explicit_lun) const
+bool InitiatorExecutor::Selection(bool identify) const
 {
     initiator_logger.trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
 
@@ -167,7 +167,7 @@ bool InitiatorExecutor::Selection(bool explicit_lun) const
 
     bus.SetSEL(true);
 
-    if (!sasi && !explicit_lun) {
+    if (!sasi && !identify) {
         // Request MESSAGE OUT for IDENTIFY
         bus.SetATN(true);
 
@@ -226,7 +226,7 @@ void InitiatorExecutor::DataIn(data_in_t buf, int &length)
         throw PhaseException("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Receiving up to {0} byte(s) in DATA IN phase", length);
+    initiator_logger.trace("Receiving up to {} byte(s) in DATA IN phase", length);
 
     byte_count = bus.ReceiveHandShake(buf.data(), length);
 
@@ -255,6 +255,7 @@ void InitiatorExecutor::MsgIn()
     const int msg = bus.MsgInHandShake();
     switch (msg) {
     case -1:
+    case static_cast<int>(MessageCode::MESSAGE_REJECT):
         initiator_logger.error("MESSAGE IN phase failed");
         break;
 
@@ -320,8 +321,7 @@ void InitiatorExecutor::ResetBus()
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us
-    const timespec ts = { .tv_sec = 0, .tv_nsec = 50'000 };
-    nanosleep(&ts, nullptr);
+    Sleep( { .tv_sec = 0, .tv_nsec = 50'000 });
     bus.Reset();
 }
 

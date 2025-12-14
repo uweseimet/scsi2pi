@@ -16,9 +16,9 @@ using namespace s2p_interface_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {
-    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(bus, controller_factory);
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     PbResult result;
 
@@ -47,12 +47,24 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_devices_info(command_devices_info, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_devices_info, result));
 
-    PbCommand command_device_types_info;
-    command_device_types_info.set_operation(DEVICE_TYPES_INFO);
-    CommandContext context_device_types_info(command_device_types_info, *default_logger());
-    EXPECT_TRUE(dispatcher.DispatchCommand(context_device_types_info, result));
-    const auto &device_types_info = result.device_types_info();
-    EXPECT_NE(0, device_types_info.properties().size());
+    PbCommand command_device_types_info1;
+    command_device_types_info1.set_operation(DEVICE_TYPES_INFO);
+    CommandContext context_device_types_info1(command_device_types_info1, *default_logger());
+    EXPECT_TRUE(dispatcher.DispatchCommand(context_device_types_info1, result));
+    auto device_types_info = result.device_types_info();
+    const int count1 = device_types_info.properties().size();
+    EXPECT_NE(0, count1);
+
+    PbResult result2;
+    PbCommand command_device_types_info2;
+    command_device_types_info2.set_operation(DEVICE_TYPES_INFO);
+    CommandContext context_device_types_info2(command_device_types_info2, *default_logger());
+    dispatcher.SetWithoutTypes( { "SCHD,  SCCD" });
+    EXPECT_TRUE(dispatcher.DispatchCommand(context_device_types_info2, result2));
+    device_types_info = result2.device_types_info();
+    const int count2 = device_types_info.properties().size();
+    EXPECT_NE(0, count2);
+    EXPECT_EQ(count1, count2 + 2);
 
     PbCommand command_server_info;
     command_server_info.set_operation(SERVER_INFO);
@@ -201,11 +213,23 @@ TEST(CommandDispatcherTest, DispatchCommand)
 
 TEST(CommandDispatcherTest, SetLogLevel)
 {
-    MockBus bus;
     ControllerFactory controller_factory;
-    MockCommandExecutor executor(bus, controller_factory);
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
     EXPECT_FALSE(dispatcher.SetLogLevel("abc"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0:0"));
+}
+
+TEST(CommandDispatcherTest, SetWithoutTypes)
+{
+    ControllerFactory controller_factory;
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
+    CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
+
+    EXPECT_TRUE(dispatcher.SetWithoutTypes(""));
+    EXPECT_FALSE(dispatcher.SetWithoutTypes("xyz"));
+    EXPECT_TRUE(dispatcher.SetWithoutTypes("SCHD"));
 }
