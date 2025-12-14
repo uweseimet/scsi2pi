@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
@@ -41,6 +42,11 @@ public:
 
     bool SetWithoutTypes(const string&);
 
+    mutex& GetDispatchLock()
+    {
+        return dispatch_lock;
+    }
+
 private:
 
     bool ExecuteWithLock(const CommandContext&);
@@ -50,6 +56,8 @@ private:
     CommandExecutor &executor;
 
     ControllerFactory &controller_factory;
+
+    mutex dispatch_lock;
 
     logger &s2p_logger;
 

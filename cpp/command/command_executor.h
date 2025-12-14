@@ -9,7 +9,6 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
@@ -52,6 +51,7 @@ public:
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
     bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
+    void DetachAll() const;
     string SetReservedIds(const string&);
 #ifdef BUILD_STORAGE_DEVICE
     bool ValidateImageFile(const CommandContext&, StorageDevice&, const string&) const;
@@ -59,11 +59,6 @@ public:
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
-
-    mutex& GetExecutionLocker()
-    {
-        return execution_locker;
-    }
 
     static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
@@ -73,7 +68,6 @@ private:
 
     bool Attach(const CommandContext&, const PbDeviceDefinition&, bool);
     bool Detach(const CommandContext&, PrimaryDevice&, bool) const;
-    void DetachAll() const;
     bool Start(PrimaryDevice&) const;
     bool Stop(PrimaryDevice&) const;
     bool Eject(PrimaryDevice&) const;
@@ -97,8 +91,6 @@ private:
     ControllerFactory &controller_factory;
 
     logger &s2p_logger;
-
-    mutex execution_locker;
 
     unordered_set<int> reserved_ids;
 };

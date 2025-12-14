@@ -236,6 +236,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     string block_size;
     string caching_mode;
     bool blue_scsi_mode = false;
+    int exit_status = -1;
 
     property_map properties;
 
@@ -269,7 +270,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'h':
             Banner(true);
-            exit(EXIT_SUCCESS);
+            exit_status = EXIT_SUCCESS;
             break;
 
         case 'i':
@@ -310,7 +311,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         default:
             Banner(true);
-            exit(EXIT_FAILURE);
+            exit_status = EXIT_FAILURE;
             break;
         }
 
@@ -331,6 +332,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         }
 
         id_lun.clear();
+    }
+
+    if (exit_status != -1) {
+        exit(exit_status);
     }
 
     return properties;

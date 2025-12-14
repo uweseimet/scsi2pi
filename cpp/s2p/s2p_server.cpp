@@ -16,6 +16,7 @@
 
 string S2pServer::Init(int port)
 {
+    assert(!running);
     assert(server_socket == -1);
     assert(port > 0 && port <= 65535);
 
@@ -44,17 +45,17 @@ string S2pServer::Init(int port)
         return "Can't listen on server socket: " + string(strerror(errno));
     }
 
+    running = true;
+
     return "";
 }
 
 void S2pServer::CleanUp()
 {
-    if (server_socket != -1) {
-        shutdown(server_socket, SHUT_RD);
-        close(server_socket);
+    shutdown(server_socket, SHUT_RD);
+    close(server_socket);
 
-        server_socket = -1;
-    }
+    running = false;
 }
 
 int S2pServer::Accept() const

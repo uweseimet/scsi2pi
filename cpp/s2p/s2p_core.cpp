@@ -55,11 +55,7 @@ void S2p::CleanUp()
         service_thread.Stop();
     }
 
-    PbCommand command;
-    PbResult result;
-    command.set_operation(DETACH_ALL);
-    CommandContext context(command, *s2p_logger);
-    dispatcher->DispatchCommand(context, result);
+    executor->DetachAll();
 
     bus->CleanUp();
 }
@@ -472,7 +468,7 @@ void S2p::ProcessScsiCommands()
 {
     while (service_thread.IsRunning()) {
         if (const uint8_t ids = bus->WaitForSelection(); ids) {
-            scoped_lock<mutex> lock(executor->GetExecutionLocker());
+            scoped_lock<mutex> lock(dispatcher->GetDispatchLock());
 
             // Process command on the responsible controller based on the current initiator and target ID
             if (const auto shutdown_mode = controller_factory.ProcessOnController(ids); shutdown_mode

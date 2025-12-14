@@ -306,6 +306,7 @@ void Tape::Open()
         max_file_size = append;
     }
 
+    // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
 
     if (max_file_size && max_file_size < GetBlockSize()) {

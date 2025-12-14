@@ -160,7 +160,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
 bool CommandDispatcher::ExecuteWithLock(const CommandContext &context)
 {
-    scoped_lock<mutex> lock(executor.GetExecutionLocker());
+    scoped_lock<mutex> lock(dispatch_lock);
     return executor.ProcessCmd(context);
 }
 
