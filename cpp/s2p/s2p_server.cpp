@@ -49,12 +49,8 @@ string S2pServer::Init(int port)
 
 void S2pServer::CleanUp()
 {
-    if (server_socket != -1) {
-        shutdown(server_socket, SHUT_RD);
-        close(server_socket);
-
-        server_socket = -1;
-    }
+    shutdown(server_socket, SHUT_RD);
+    close(server_socket);
 }
 
 int S2pServer::Accept() const
