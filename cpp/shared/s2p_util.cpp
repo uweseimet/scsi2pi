@@ -9,7 +9,6 @@
 #include "s2p_util.h"
 #include <cassert>
 #include <filesystem>
-#include <iostream>
 #include <pwd.h>
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -113,7 +112,7 @@ string s2p_util::GetLocale()
     return locale;
 }
 
-string s2p_util::GetLine(const string &prompt)
+string s2p_util::GetLine(const string &prompt, istream &in)
 {
     string input;
     string line;
@@ -122,7 +121,7 @@ string s2p_util::GetLine(const string &prompt)
             cout << prompt << ">";
         }
 
-        getline(cin, line);
+        getline(in, line);
         line = Trim(line);
 
         if (const auto comment = line.find_first_of('#'); comment != string::npos) {

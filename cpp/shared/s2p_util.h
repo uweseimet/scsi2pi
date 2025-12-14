@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <unordered_map>
@@ -61,7 +62,7 @@ string ToUpper(const string&);
 string ToLower(const string&);
 string GetExtensionLowerCase(string_view);
 string GetLocale();
-string GetLine(const string&);
+string GetLine(const string&, istream& = cin);
 int ParseAsUnsignedInt(const string&);
 string ParseIdAndLun(const string&, int&, int&);
 string Banner(string_view);
