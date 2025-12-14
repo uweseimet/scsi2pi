@@ -122,21 +122,18 @@ string s2p_util::GetLine(const string &prompt, istream &in)
         }
 
         getline(in, line);
-        line = Trim(line);
 
         if (const auto comment = line.find_first_of('#'); comment != string::npos) {
             line.resize(comment);
         }
+
+        line = Trim(line);
 
         if (cin.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
             }
             return "";
-        }
-
-        if (line.starts_with('#')) {
-            continue;
         }
 
         if (!line.empty() && !line.ends_with('\\')) {
