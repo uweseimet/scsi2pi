@@ -64,12 +64,12 @@ TEST(SgUtilTest, UpdateStartBlock)
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
     UpdateStartBlock(cdb, 0x123456);
-    EXPECT_EQ(0x123456U, GetInt24(cdb, 1));
+    EXPECT_EQ(0x123456, GetInt24(cdb, 1));
     SetInt24(cdb, 1, 0);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_6);
     UpdateStartBlock(cdb, 0x654321);
-    EXPECT_EQ(0x654321U, GetInt24(cdb, 1));
+    EXPECT_EQ(0x654321, GetInt24(cdb, 1));
     SetInt24(cdb, 1, 0);
 
     cdb.resize(10);
@@ -81,12 +81,12 @@ TEST(SgUtilTest, UpdateStartBlock)
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_10);
     UpdateStartBlock(cdb, 0x87654321);
-    EXPECT_EQ(0x87654321U, GetInt32(cdb, 2));
+    EXPECT_EQ(0x87654321, GetInt32(cdb, 2));
     SetInt32(cdb, 2, 0);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_10);
     UpdateStartBlock(cdb, 0x87654321);
-    EXPECT_EQ(0x87654321U, GetInt32(cdb, 2));
+    EXPECT_EQ(0x87654321, GetInt32(cdb, 2));
     SetInt32(cdb, 2, 0);
 
     cdb.resize(16);
@@ -128,24 +128,24 @@ TEST(SgUtilTest, SetBlockCount)
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_10);
     SetBlockCount(cdb, 12345);
-    EXPECT_EQ(12345U, GetInt16(cdb, 7));
+    EXPECT_EQ(12345, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_10);
     SetBlockCount(cdb, 54321);
-    EXPECT_EQ(54321U, GetInt16(cdb, 7));
+    EXPECT_EQ(54321, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_10);
     SetBlockCount(cdb, 12345);
-    EXPECT_EQ(12345U, GetInt16(cdb, 7));
+    EXPECT_EQ(12345, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
     cdb.resize(12);
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CD);
     SetBlockCount(cdb, 12345);
-    EXPECT_EQ(12345U, GetInt24(cdb, 6));
+    EXPECT_EQ(12345, GetInt24(cdb, 6));
     SetInt24(cdb, 6, 0);
 
     cdb.resize(16);
@@ -171,5 +171,5 @@ TEST(SgUtilTest, SetInt24)
     vector<uint8_t> buf(4);
 
     SetInt24(buf, 1, 0x123456);
-    EXPECT_EQ(0x123456U, GetInt24(buf, 1));
+    EXPECT_EQ(0x123456, GetInt24(buf, 1));
 }

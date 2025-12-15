@@ -44,7 +44,7 @@ endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
 	AR = $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ifeq ("$(shell uname -s)", "Darwin")
@@ -264,9 +264,8 @@ SRC_S2PSIMH := $(wildcard s2psimh/*.cpp)
 
 SRC_S2PFORMAT := $(wildcard s2pformat/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_util_test.cpp | grep -v scsi_generic_test.cpp)
+SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v scsi_generic_test.cpp)
 ifdef IS_LINUX
-SRC_S2P_TEST += test/sg_util_test.cpp
 SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 

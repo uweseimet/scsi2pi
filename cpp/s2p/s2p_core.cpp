@@ -217,6 +217,14 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     service_thread.Start();
 
+    // On Pis with 4 cores, avoid context switches for this thread, which executes the SCSI commands
+#ifdef __linux__
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(3, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
+
     ready = true;
 
     ProcessScsiCommands();
