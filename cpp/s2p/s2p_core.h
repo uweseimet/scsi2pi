@@ -28,10 +28,11 @@ public:
 
     bool Ready() const;
 
+    void CleanUp();
+
 private:
 
     bool InitBus(bool, bool);
-    void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     bool ParseProperties(const property_map&, int&, bool);

@@ -9,9 +9,9 @@
 #pragma once
 
 #include <atomic>
-#include <map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
@@ -100,8 +100,7 @@ private:
     // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;
 
-    // TODO Why does an unordered_map often cause a segfault when calling SIGNALS_TO_LOG.find()?
-    inline static const map<int, const char*> SIGNALS_TO_LOG = {
+    inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY, "BSY" },
         { PIN_SEL, "SEL" },
         { PIN_ATN, "ATN" },

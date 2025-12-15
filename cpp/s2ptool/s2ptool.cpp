@@ -155,5 +155,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    s2p->CleanUp();
+
     exit(EXIT_SUCCESS);
 }
