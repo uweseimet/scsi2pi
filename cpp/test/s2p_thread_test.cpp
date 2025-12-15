@@ -92,8 +92,8 @@ TEST(S2pThreadTest, Execute)
     PbCommand command;
     PbResult result;
 
-    SendCommand(command, result);
     command.set_operation(PbOperation::NO_OPERATION);
+    SendCommand(command, result);
     EXPECT_TRUE(result.status()) << "Command should have been successful";
 
     command.set_operation(PbOperation::EJECT);
