@@ -78,12 +78,8 @@ TEST(S2pThreadTest, Execute)
 
     S2pThread service_thread;
     service_thread.Init(9999, [](const CommandContext &context) {
-        if (context.GetCommand().operation() != PbOperation::NO_OPERATION) {
-            throw IoException("error");
-        }
-
         PbResult result;
-        result.set_status(true);
+        result.set_status(context.GetCommand().operation() == PbOperation::NO_OPERATION);
         return context.WriteResult(result);
     }, default_logger());
 
@@ -94,11 +90,11 @@ TEST(S2pThreadTest, Execute)
 
     command.set_operation(PbOperation::NO_OPERATION);
     SendCommand(command, result);
-    EXPECT_TRUE(result.status()) << "Command should have been successful";
+    EXPECT_TRUE(result.status()) << "Command should have succeeded";
 
     command.set_operation(PbOperation::EJECT);
     SendCommand(command, result);
-    EXPECT_FALSE(result.status()) << "Exception should have been raised";
+    EXPECT_FALSE(result.status()) << "Command should have failed";
 
     service_thread.Stop();
 }
