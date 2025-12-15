@@ -57,7 +57,7 @@ void InProcessBus::SetSignal(int pin, bool state) const
     scoped_lock<mutex> lock(signal_lock);
 
     if (log_signals) {
-        if (const string &name = GetSignalName(pin); !name.empty()) {
+        if (const string &name = GetSignalName(1 << pin); !name.empty()) {
             LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
         }
     }
@@ -82,8 +82,8 @@ void InProcessBus::LogSignal(const string &msg) const
     }
 }
 
-string InProcessBus::GetSignalName(int pin)
+string InProcessBus::GetSignalName(int pin_mask)
 {
-    const auto &it = SIGNALS_TO_LOG.find(pin);
+    const auto &it = SIGNALS_TO_LOG.find(pin_mask);
     return it != SIGNALS_TO_LOG.end() ? it->second : "";
 }

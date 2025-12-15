@@ -252,6 +252,7 @@ TEST(S2pUtilTest, GetLine)
     const string &filename = testing::CreateTempName();
     ofstream out(filename);
     out << "abc\n";
+    out << "123 #comment\n";
     out << "# comment\n";
     out << " def \n";
     out << "\n";
@@ -264,6 +265,7 @@ TEST(S2pUtilTest, GetLine)
     ifstream in(filename);
 
     EXPECT_EQ("abc", GetLine("", in));
+    EXPECT_EQ("123", GetLine("", in));
     EXPECT_EQ("def", GetLine("", in));
     EXPECT_EQ("xyz123", GetLine("", in));
 }
