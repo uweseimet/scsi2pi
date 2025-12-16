@@ -222,9 +222,23 @@ TEST(CommandDispatcherTest, SetLogLevel)
     MockBus bus;
     CommandExecutor executor(bus, controller_factory, *default_logger());
     CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
+
+    const auto level = default_logger()->level();
+
     EXPECT_FALSE(dispatcher.SetLogLevel("abc"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0"));
     EXPECT_FALSE(dispatcher.SetLogLevel("abc:0:0"));
+
+    EXPECT_TRUE(dispatcher.SetLogLevel("off"));
+    EXPECT_EQ(level::level_enum::off, default_logger()->level());
+
+    EXPECT_TRUE(dispatcher.SetLogLevel("warning:0"));
+    EXPECT_EQ(level::level_enum::warn, default_logger()->level());
+
+    EXPECT_TRUE(dispatcher.SetLogLevel("info:1:1"));
+    EXPECT_EQ(level::level_enum::info, default_logger()->level());
+
+    default_logger()->set_level(level);
 }
 
 TEST(CommandDispatcherTest, SetWithoutTypes)
