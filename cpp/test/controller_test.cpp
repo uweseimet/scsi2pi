@@ -40,8 +40,8 @@ TEST(ControllerTest, Process)
 
 TEST(ControllerTest, GetInitiatorId)
 {
-    const int TARGET_ID = 0;
-    const int INITIATOR_ID = 2;
+    const int TARGET_ID = 1;
+    const int INITIATOR_ID = 6;
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
@@ -89,14 +89,8 @@ TEST(ControllerTest, Selection)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
     auto controller = make_shared<MockController>(bus, 0);
-    auto device = make_shared<MockPrimaryDevice>(0);
 
-    controller->AddDevice(device);
-
-    controller->SetPhase(BusPhase::SELECTION);
-    controller->Selection();
-    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
-
+    EXPECT_CALL(*bus, SetBSY).Times(1);
     controller->Selection();
     EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 }
