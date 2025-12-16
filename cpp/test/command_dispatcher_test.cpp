@@ -209,6 +209,11 @@ TEST(CommandDispatcherTest, DispatchCommand)
     command_reserve_ids.set_operation(RESERVE_IDS);
     CommandContext context_reserve_ids(command_reserve_ids, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_reserve_ids, result));
+
+    PbCommand command_detach;
+    command_detach.set_operation(DETACH);
+    CommandContext context_detach(command_detach, *default_logger());
+    EXPECT_TRUE(dispatcher.DispatchCommand(context_detach, result));
 }
 
 TEST(CommandDispatcherTest, SetLogLevel)
