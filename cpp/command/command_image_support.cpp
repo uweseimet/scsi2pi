@@ -34,7 +34,7 @@ string CommandImageSupport::GetFullName(const string &filename) const
     return default_folder + "/" + filename;
 }
 
-bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename) const
+bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
 {
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
         // Checking for existence first prevents an error if the top-level folder is a softlink
@@ -315,7 +315,8 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
 }
 #pragma GCC diagnostic pop
 
-bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from, string &to) const
+bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from,
+    string &to) const
 {
     from = GetParam(context.GetCommand(), "from");
     if (from.empty()) {

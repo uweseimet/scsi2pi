@@ -52,12 +52,12 @@ private:
 
     bool CheckDepth(string_view) const;
     string GetFullName(const string&) const;
-    bool CreateImageFolder(const CommandContext&, string_view) const;
     bool ValidateParams(const CommandContext&, const string&, string&, string&) const;
 
     static bool IsReservedFile(const CommandContext&, const string&, const string&);
     static bool IsValidSrcFilename(string_view);
     static bool IsValidDstFilename(string_view);
+    static bool CreateImageFolder(const CommandContext&, string_view);
     static bool ChangeOwner(const CommandContext&, const path&, bool);
 
     int depth = 1;

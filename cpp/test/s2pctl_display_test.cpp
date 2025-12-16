@@ -133,7 +133,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
     int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
         PbDeviceType type = UNDEFINED;
-        PbDeviceType_Parse(PbDeviceType_Name((PbDeviceType)ordinal), &type);
+        PbDeviceType_Parse(PbDeviceType_Name(static_cast<PbDeviceType>(ordinal)), &type);
 
         auto *type_properties = info.add_properties();
         type_properties->set_type(type);

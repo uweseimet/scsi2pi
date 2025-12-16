@@ -64,11 +64,7 @@ void AbstractController::SetTransferSize(int length, int size)
 void AbstractController::UpdateTransferLength(int length)
 {
     remaining_length -= length;
-
     assert(remaining_length >= 0);
-    if (remaining_length < 0) {
-        remaining_length = 0;
-    }
 
     if (remaining_length < chunk_size) {
         chunk_size = remaining_length;

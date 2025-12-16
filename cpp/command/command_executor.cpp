@@ -453,7 +453,7 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
     if (device.IsReadOnly()) {
         msg += "read-only ";
     }
-    else if (device.IsProtectable() && device.IsProtected()) {
+    if (device.IsProtectable() && device.IsProtected()) {
         msg += "protected ";
     }
     msg += GetIdentifier(device) + ", " + device.GetIdentifier();
