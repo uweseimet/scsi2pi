@@ -233,10 +233,10 @@ TEST(CommandDispatcherTest, SetLogLevel)
     EXPECT_EQ(level::level_enum::off, default_logger()->level());
 
     EXPECT_TRUE(dispatcher.SetLogLevel("warning:0"));
-    EXPECT_EQ(level::level_enum::off, default_logger()->level());
+    EXPECT_EQ(level::level_enum::warn, default_logger()->level());
 
     EXPECT_TRUE(dispatcher.SetLogLevel("info:1:1"));
-    EXPECT_EQ(level::level_enum::off, default_logger()->level());
+    EXPECT_EQ(level::level_enum::info, default_logger()->level());
 
     default_logger()->set_level(level);
 }

@@ -267,6 +267,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
         return false;
     }
 
+    s2p_logger.set_level(l);
     controller_factory.SetLogLevel(id, lun, l);
 
     if (id != -1) {
@@ -279,7 +280,6 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
     }
     else {
         s2p_logger.info("Set log level to '{}'", level);
-        s2p_logger.set_level(l);
     }
 
     return true;
