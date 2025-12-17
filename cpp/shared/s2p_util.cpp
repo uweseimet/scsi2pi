@@ -129,7 +129,7 @@ string s2p_util::GetLine(const string &prompt, istream &in)
 
         line = Trim(line);
 
-        if (cin.fail() || line == "exit" || line == "quit") {
+        if (in.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
             }
