@@ -29,19 +29,14 @@ void SetDeviceProperty(property_map &properties, const string &key, const string
     }
 }
 
-string ParseNumber(const string &s)
+string_view ParseNumber(string_view s)
 {
-    string result;
-    size_t i = -1;
-    while (s.size() > ++i) {
-        if (!isdigit(s[i])) {
-            break;
-        }
-
-        result += s[i];
+    size_t i = 0;
+    while (i < s.size() && isdigit(s[i])) {
+        ++i;
     }
 
-    return result;
+    return s.substr(0, i);
 }
 
 string ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
@@ -59,7 +54,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
     const string &specifier = index == string::npos ? filename : filename.substr(0, index);
     const auto &components = Split(specifier, '_');
 
-    const string &type_id_lun = components[0];
+    string_view type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
         throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
     }
@@ -76,7 +71,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
         device_key = fmt::format("{0}{1}{2}.", PropertyHandler::DEVICE, id, lun);
     }
 
-    const string &type = type_id_lun.substr(0, 2);
+    string_view type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
@@ -85,8 +80,8 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
 
     string block_size = "512";
     if (components.size() > 1) {
-        if (const string b = ParseNumber(components[1]); !b.empty()) {
-            block_size = b;
+        if (string_view b = ParseNumber(components[1]); !b.empty()) {
+            block_size = string(b);
         }
         // When there is no block_size number after the "_" separator the string is the product data
         else {
@@ -109,19 +104,19 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string arg : initial_args) {
-        const size_t start_of_ids = arg.find_first_of("0123456789");
-        const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
+    for (const string &arg : initial_args) {
+        string arg_str(arg);
+        string arg_lower = ToLower(arg_str);
 
-        const string &arg_lower = ToLower(arg);
         if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
             args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
-            if (!ids.empty()) {
-                args.emplace_back(strdup(ids.c_str()));
+
+            const size_t ids = arg_str.find_first_of("0123456789");
+            if (ids != string::npos) {
+                args.emplace_back(strdup(arg_str.substr(ids).c_str()));
             }
-        }
-        else {
-            args.emplace_back(strdup(arg.c_str()));
+        } else {
+            args.emplace_back(strdup(arg_str.c_str()));
         }
     }
 
@@ -320,6 +315,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
+        id_lun.clear();
 
         SetDeviceProperty(properties, device_key, PropertyHandler::BLOCK_SIZE, block_size);
         SetDeviceProperty(properties, device_key, PropertyHandler::CACHING_MODE, caching_mode);
@@ -330,8 +326,6 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         if (!params.empty()) {
             properties[device_key + PropertyHandler::PARAMS] = params;
         }
-
-        id_lun.clear();
     }
 
     if (exit_status != -1) {

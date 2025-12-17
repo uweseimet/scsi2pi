@@ -99,7 +99,7 @@ using namespace s2p_interface_util;
 
 HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
-    PrimaryDevice::SetProductData( { "", "Host Services", "" }, true);
+    SetProductData( { "", "Host Services", "" }, true);
     SetScsiLevel(ScsiLevel::SPC_3);
     SetReady(true);
 }

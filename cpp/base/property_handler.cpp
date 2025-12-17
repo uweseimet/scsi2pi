@@ -62,10 +62,6 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
 
     string property;
     while (getline(property_file, property)) {
-        if (property_file.fail()) {
-            throw ParserException(fmt::format("Error reading from property file '{}'", filename));
-        }
-
         if (!property.empty() && !property.starts_with("#")) {
             const vector<string> kv = Split(property, '=', 2);
             if (kv.size() < 2) {
@@ -74,6 +70,10 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
 
             properties[kv[0]] = kv[1];
         }
+    }
+
+    if (property_file.fail() && !property_file.eof()) {
+        throw ParserException(fmt::format("Error reading from property file '{}'", filename));
     }
 }
 
@@ -130,11 +130,8 @@ bool PropertyHandler::Persist() const
     ofstream out(CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {
         out << key << "=" << value << "\n";
-        if (out.fail()) {
-            return false;
-        }
     }
 
-    return true;
+    return out.good();
 }
 

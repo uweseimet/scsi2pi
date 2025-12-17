@@ -194,26 +194,33 @@ SRC_DISK = \
 
 ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD = \
-	$(DIR_DEVICES)/scsi_hd.cpp
+	$(DIR_DEVICES)/scsi_hd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCHD += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCMO),1)
 SRC_SCMO = \
-	$(DIR_DEVICES)/optical_memory.cpp
+	$(DIR_DEVICES)/optical_memory.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCMO += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCCD),1)
 SRC_SCCD = \
-	$(DIR_DEVICES)/scsi_cd.cpp
+	$(DIR_DEVICES)/scsi_cd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCTP),1)
 SRC_SCTP = \
 	$(DIR_DEVICES)/tape.cpp \
-	$(DIR_DEVICES)/storage_device.cpp
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 endif
 
 ifeq ($(ENABLE_SCDP),1)
@@ -240,7 +247,9 @@ endif
 
 ifeq ($(ENABLE_SAHD),1)
 SRC_SAHD = \
-	$(DIR_DEVICES)/sasi_hd.cpp
+	$(DIR_DEVICES)/sasi_hd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SAHD += $(SRC_DISK)
 endif
 

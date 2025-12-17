@@ -26,9 +26,5 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const strin
         bus = make_unique<InProcessBus>(identifier, false);
     }
 
-    if (bus->Init(target)) {
-        return bus;
-    }
-
-    return nullptr;
+    return bus->Init(target) ? std::move(bus) : nullptr;
 }

@@ -56,7 +56,7 @@ int DiskCache::ReadSectors(data_in_t buf, uint64_t sector, uint32_t count)
         return 0;
     }
 
-    shared_ptr<DiskTrack> disktrk = GetTrack(sector);
+    auto disktrk = GetTrack(sector);
     if (!disktrk) {
         return 0;
     }
@@ -72,7 +72,7 @@ int DiskCache::WriteSectors(data_out_t buf, uint64_t sector, uint32_t count)
         return 0;
     }
 
-    shared_ptr<DiskTrack> disktrk = GetTrack(sector);
+    auto disktrk = GetTrack(sector);
     if (!disktrk) {
         return 0;
     }
@@ -100,18 +100,14 @@ shared_ptr<DiskTrack> DiskCache::AssignTrack(int64_t track)
         }
     }
 
-    // Find the cache entry with the smallest serial number, i.e. the oldest entry and save this track
+    // Find the cache entry with the smallest serial number, i.e. the oldest entry and save this track, then
+    // load/overwrite this track
     if (auto c = ranges::min_element(cache,
         [](const CacheData &d1, const CacheData &d2) {return d1.serial < d2.serial;})
-        - cache.begin(); cache[c].disktrk->Save(sec_path, cache_miss_write_count)) {
-        // Delete this track
-        auto disktrk = std::move(cache[c].disktrk);
-
-        if (Load(static_cast<int>(c), track, disktrk)) {
-            // Successful loading
-            cache[c].serial = serial;
-            return cache[c].disktrk;
-        }
+        - cache.begin(); cache[c].disktrk->Save(sec_path, cache_miss_write_count) &&
+        Load(static_cast<int>(c), track, std::move(cache[c].disktrk))) {
+        cache[c].serial = serial;
+        return cache[c].disktrk;
     }
 
     // Save or load failed
@@ -125,17 +121,13 @@ bool DiskCache::Load(int index, int64_t track, shared_ptr<DiskTrack> disktrk)
     assert(!cache[index].disktrk);
 
     // Get the number of sectors on this track
-    int64_t sectors = blocks - (track << 8);
+    const int64_t sectors = min(blocks - (track << 8), 0x100L);
     assert(sectors > 0);
-    if (sectors > 0x100) {
-        sectors = 0x100;
-    }
 
     if (!disktrk) {
         disktrk = make_shared<DiskTrack>();
     }
 
-    // sectors <= 0x100
     disktrk->Init(track, shift_count, static_cast<int>(sectors));
 
     // Try loading

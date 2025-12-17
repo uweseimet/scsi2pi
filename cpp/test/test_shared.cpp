@@ -95,7 +95,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    const auto device = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, filename);
+    const auto device = DeviceFactory::GetInstance().CreateDevice(type, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());

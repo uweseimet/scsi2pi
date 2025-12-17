@@ -38,7 +38,7 @@ struct StringHash
     }
 };
 
-string Join(const auto &collection, const char *separator = ", ")
+string Join(const auto &collection, const string &separator = ", ")
 {
     // Using a stream (and not a string) is required in order to correctly convert the element data
     ostringstream s;
@@ -58,8 +58,8 @@ string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
-string ToUpper(const string&);
-string ToLower(const string&);
+string ToUpper(string_view);
+string ToLower(string_view);
 string GetExtensionLowerCase(string_view);
 string GetLocale();
 string GetLine(const string&, istream& = cin);
@@ -79,7 +79,7 @@ string FormatSenseData(SenseKey, Asc, int = 0);
 vector<byte> HexToBytes(const string&);
 int HexToDec(char);
 
-string Trim(const string&);
+string_view Trim(string_view);
 
 void Sleep(const timespec&);
 

@@ -127,31 +127,31 @@ int PrimaryDevice::GetId() const
 
 string PrimaryDevice::SetProductData(const ProductData &data, bool force)
 {
-    if (const string &vendor = Trim(data.vendor); !vendor.empty()) {
+    if (string_view vendor = Trim(data.vendor); !vendor.empty()) {
         if (vendor.length() > 8) {
-            return "Vendor '" + vendor + "' must have between 1 and 8 characters";
+            return "Vendor '" + data.vendor + "' must have between 1 and 8 characters";
         }
 
-        product_data.vendor = vendor;
+        product_data.vendor = string(vendor);
     }
 
-    if (const string &product = Trim(data.product); !product.empty()) {
+    if (string_view product = Trim(data.product); !product.empty()) {
         if (product.length() > 16) {
-            return "Product '" + product + "' must have between 1 and 16 characters";
+            return "Product '" + data.product + "' must have between 1 and 16 characters";
         }
 
         // Changing existing vital product data is not SCSI compliant
         if (product_data.product.empty() || force) {
-            product_data.product = product;
+            product_data.product = string(product);
         }
     }
 
-    if (const string &revision = Trim(data.revision); !revision.empty()) {
+    if (string_view revision = Trim(data.revision); !revision.empty()) {
         if (revision.length() > 4) {
-            return "Revision '" + revision + "' must have between 1 and 4 characters";
+            return "Revision '" + data.revision + "' must have between 1 and 4 characters";
         }
 
-        product_data.revision = revision;
+        product_data.revision = string(revision);
     }
 
     return "";

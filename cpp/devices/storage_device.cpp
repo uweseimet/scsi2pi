@@ -300,7 +300,6 @@ void StorageDevice::ValidateFile()
 {
     GetFileSize();
 
-    // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {
         // Permanently write-protected
         SetReadOnly(true);

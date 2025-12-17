@@ -43,10 +43,8 @@ string s2p_util::GetHomeDir()
 
 pair<int, int> s2p_util::GetUidAndGid()
 {
-    int uid = getuid();
-    if (const char *sudo_user = getenv("SUDO_UID"); sudo_user) {
-        uid = stoi(sudo_user);
-    }
+    const char *sudo_user = getenv("SUDO_UID");
+    const int uid = sudo_user ? stoi(sudo_user) : getuid();
 
     passwd pwd = { };
     passwd *p_pwd;
@@ -80,23 +78,23 @@ vector<string> s2p_util::Split(const string &s, char separator, int limit)
     return result;
 }
 
-string s2p_util::ToUpper(const string &s)
+string s2p_util::ToUpper(string_view s)
 {
-    string result;
-    ranges::transform(s, back_inserter(result), ::toupper);
+    string result(s.begin(), s.end());
+    ranges::transform(result, result.begin(), ::toupper);
     return result;
 }
 
-string s2p_util::ToLower(const string &s)
+string s2p_util::ToLower(string_view s)
 {
-    string result;
-    ranges::transform(s, back_inserter(result), ::tolower);
+    string result(s.begin(), s.end());
+    ranges::transform(result, result.begin(), ::tolower);
     return result;
 }
 
 string s2p_util::GetExtensionLowerCase(string_view filename)
 {
-    const string &ext = ToLower(filesystem::path(filename).extension().string());
+    const string &ext = ToLower(path(filename).extension().string());
 
     // Remove the leading dot
     return ext.empty() ? "" : ext.substr(1);
@@ -123,13 +121,13 @@ string s2p_util::GetLine(const string &prompt, istream &in)
 
         getline(in, line);
 
-        if (const auto comment = line.find_first_of('#'); comment != string::npos) {
+        if (const auto comment = line.find('#'); comment != string::npos) {
             line.resize(comment);
         }
 
         line = Trim(line);
 
-        if (cin.fail() || line == "exit" || line == "quit") {
+        if (in.fail() || line == "exit" || line == "quit") {
             if (line.empty() && isatty(STDIN_FILENO)) {
                 cout << "\n";
             }
@@ -146,7 +144,7 @@ string s2p_util::GetLine(const string &prompt, istream &in)
 
 int s2p_util::ParseAsUnsignedInt(const string &value)
 {
-    if (value.find_first_not_of(" 0123456789 ") != string::npos) {
+    if (value.find_first_not_of(" 0123456789") != string::npos) {
         return -1;
     }
 
@@ -172,14 +170,14 @@ string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
 
     if (const auto &components = Split(id_spec, COMPONENT_SEPARATOR, 2); !components.empty()) {
         id = ParseAsUnsignedInt(components[0]);
-        if (id == -1 || id > 7) {
+        if (id < 0 || id > 7) {
             id = -1;
             return "Invalid device ID: '" + components[0] + "' (0-7)";
         }
 
-        if (components.size() >= 2) {
+        if (components.size() > 1) {
             lun = ParseAsUnsignedInt(components[1]);
-            if (lun == -1 || lun >= 32) {
+            if (lun < 0 || lun >= 32) {
                 id = -1;
                 lun = -1;
                 return "Invalid LUN (0-31)";
@@ -329,14 +327,14 @@ int s2p_util::HexToDec(char c)
     return -1;
 }
 
-string s2p_util::Trim(const string &s) // NOSONAR string_view does not compile
+string_view s2p_util::Trim(string_view s)
 {
-    const size_t first = s.find_first_not_of(" \r");
-    if (first == string::npos) {
-        return "";
+    if (const auto first = s.find_first_not_of(" \r"); first != string::npos) {
+        const auto last = s.find_last_not_of(" \r");
+        return s.substr(first, last - first + 1);
     }
-    const size_t last = s.find_last_not_of(" \r");
-    return s.substr(first, (last - first + 1));
+
+    return "";
 }
 
 shared_ptr<logger> s2p_util::CreateLogger(const string &name)

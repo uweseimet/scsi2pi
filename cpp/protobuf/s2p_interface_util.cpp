@@ -12,7 +12,7 @@
 
 using namespace s2p_util;
 
-PbDeviceType s2p_interface_util::ParseDeviceType(const string &value)
+PbDeviceType s2p_interface_util::ParseDeviceType(string_view value)
 {
     if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
         return type;
