@@ -253,10 +253,12 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
+#ifdef BUILD_DISK
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
             disk->SetCachingMode(caching_mode);
         }
+#endif
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
@@ -668,6 +670,8 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice 
     return true;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
     int block_size) const
 {
@@ -690,6 +694,7 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
     return false;
 #endif
 }
+#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {
