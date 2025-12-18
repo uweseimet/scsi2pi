@@ -121,8 +121,11 @@ bool DiskCache::Load(int index, int64_t track, shared_ptr<DiskTrack> disktrk)
     assert(!cache[index].disktrk);
 
     // Get the number of sectors on this track
-    const int64_t sectors = min(blocks - (track << 8), 0x100L);
+    int64_t sectors = blocks - (track << 8);
     assert(sectors > 0);
+    if (sectors > 0x100) {
+        sectors = 0x100;
+    }
 
     if (!disktrk) {
         disktrk = make_shared<DiskTrack>();
