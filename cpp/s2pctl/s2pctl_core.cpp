@@ -26,61 +26,62 @@ void S2pCtl::Banner(bool usage) const
 
     if (usage) {
         cout << "Usage: s2pctl [options]\n"
-            << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
-            << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
-            << "  --command/-c COMMAND           Command (attach|detach|insert|eject|protect\n"
-            << "                                 |unprotect).\n"
-            << "  --type/-t TYPE                 Optional device type\n"
-            << "                                 (schd|scrm|sccd|scmo|scdp|sclp|schs|sahd).\n"
+            << "  --binary-protobuf FILENAME     Do not send command to s2p\n"
+            << "                                 but write it to a protobuf binary file.\n"
             << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
-            << "  --name/-n PRODUCT_DATA         Optional product data for SCSI INQUIRY command\n"
-            << "                                 (VENDOR:PRODUCT:REVISION).\n"
-            << "  --file/-f FILE|PARAMS          Image file path or device-specific parameters.\n"
-            << "  --image-folder/-F FOLDER       Default location for image files,\n"
-            << "                                 default is '~/images'.\n"
-            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|error|\n"
-            << "                                 critical|off), default is 'info'.\n"
-            << "  --help/-h                      Display this help.\n"
-            << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
-            << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
-            << "  --reserve-ids/-r IDS           Comma-separated list of IDs to reserve.\n"
+            << "  --command/-c COMMAND           Command (attach|detach|insert|eject|protect\n"
+            << "                                 |unprotect).\n"
+            << "  --copy/-x CURRENT:NEW          Copy an image file.\n"
             << "  --create/-C FILENAME:SIZE      Create an empty image file.\n"
             << "  --delete/-d FILENAME           Delete an image file.\n"
-            << "  --binary-protobuf FILENAME     Do not send command to s2p\n"
-            << "                                 but write it to a protobuf binary file.\n"
+            << "  --detach-all/-D                Detach all devices.\n"
+            << "  --file/-f FILE|PARAMS          Image file path or device-specific parameters.\n"
+            << "  --help/-h                      Display this help.\n"
+            << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
+            << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
+            << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
+            << "  --image-folder/-F FOLDER       Default location for image files,\n"
+            << "                                 default is '~/images'.\n"
             << "  --json-protobuf FILENAME       Do not send command to s2p\n"
             << "                                 but write it to a protobuf JSON file.\n"
-            << "  --text-protobuf FILENAME       Do not send command to s2p\n"
-            << "                                 but write it to a protobuf text file.\n"
-            << "  --rename/-R CURRENT:NEW        Rename an image file.\n"
-            << "  --copy/-x CURRENT:NEW          Copy an image file.\n"
-            << "  --locale LOCALE                Default locale (language)\n"
-            << "                                 for client-facing messages.\n"
-            << "  --list-images/-e               List images files in the default image folder.\n"
-            << "  --list-image-info/-E FILENAME  Display image file information.\n"
-            << "  --detach-all/-D                Detach all devices.\n"
-            << "  --list-reserved-ids/-I         List reserved device IDs.\n"
             << "  --list-devices/-l              Display device list.\n"
             << "  --list-device-types/-T         List available device types.\n"
             << "  --list-extensions              List supported file extensions\n"
             << "                                 and the device types they map to.\n"
+            << "  --list-images/-e               List images files in the default image folder.\n"
+            << "  --list-image-info/-E FILENAME  Display image file information.\n"
             << "  --list-interfaces/-N           List network interfaces that are up.\n"
-            << "  --list-operations/-o           List available remote interface operations.\n"
-            << "  --list-properties/-P           List the current s2p properties.\n"
             << "  --list-log-levels              List the available s2p log levels\n"
             << "                                 and the current log level.\n"
-            << "  --prompt                       Prompt for the access token in case\n"
-            << "                                 s2p requires authentication.\n"
-            << "  --list-settings/-s             List s2p settings.\n"
+            << "  --list-operations/-o           List available remote interface operations.\n"
+            << "  --list-properties/-P           List the current s2p properties.\n"
+            << "  --list-reserved-ids/-I         List reserved device IDs.\n"
             << "  --list-statistics/-S           List s2p statistics.\n"
+            << "  --list-settings/-s             List s2p settings.\n"
+            << "  --locale LOCALE                Default locale (language)\n"
+            << "                                 for client-facing messages.\n"
+            << "  --log-level/-L LOG_LEVEL       Log level (trace|debug|info|warning|error|\n"
+            << "                                 critical|off), default is 'info'.\n"
+            << "  --name/-n VENDOR:PRODUCT:REV   Optional device name for SCSI INQUIRY command\n"
+            << "                                 (VENDOR:PRODUCT:REVISION).\n"
             << "  --persist                      Save the current configuration to\n"
             << "                                 /etc/s2p.conf.\n"
-            << "  --version/-v                   Display the program version.\n"
+            << "  --port/-p PORT                 s2p port to connect to, default is 6868.\n"
+            << "  --prompt                       Prompt for the access token in case\n"
+            << "                                 s2p requires authentication.\n"
+            << "  --rename/-R CURRENT:NEW        Rename an image file.\n"
+            << "  --reserved-ids/-r IDS          Comma-separated list of IDs to reserve.\n"
+            << "  --scsi-level SCSI_LEVEL        The optional SCSI level, default is SCSI-2.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
-            << "  --shut-down/-X                 Shut down s2p.\n";
+            << "  --shut-down/-X                 Shut down s2p.\n"
+            << "  --text-protobuf FILENAME       Do not send command to s2p\n"
+            << "                                 but write it to a protobuf text file.\n"
+            << "  --type/-t DEVICE_TYPE          Optional device type\n"
+            << "                                 (sahd|sccd|scdp|schd|schs|sclp|scmo|scrm|scsg|sctp).\n"
+            << "  --version/-v                   Display the s2pctl version.\n";
     }
 }
 
@@ -138,9 +139,8 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
     const int OPT_PERSIST = 10;
 
     const vector<option> options = {
-        { "prompt", no_argument, nullptr, OPT_PROMPT },
-        { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "block-size", required_argument, nullptr, 'b' },
+        { "binary-protobuf", required_argument, nullptr, OPT_BINARY_PROTOBUF },
         { "caching-mode", required_argument, nullptr, 'm' },
         { "command", required_argument, nullptr, 'c' },
         { "copy", required_argument, nullptr, 'x' },
@@ -170,8 +170,9 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
         { "name", required_argument, nullptr, 'n' },
         { "persist", no_argument, nullptr, OPT_PERSIST },
         { "port", required_argument, nullptr, 'p' },
+        { "prompt", no_argument, nullptr, OPT_PROMPT },
         { "rename", required_argument, nullptr, 'R' },
-        { "reserve-ids", optional_argument, nullptr, 'r' },
+        { "reserved-ids", optional_argument, nullptr, 'r' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "server-version", no_argument, nullptr, 'V' },
         { "shut-down", no_argument, nullptr, 'X' },
