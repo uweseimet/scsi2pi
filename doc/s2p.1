@@ -3,29 +3,29 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
-[\fB\--type/-t\fR \fITYPE\fR]
-[\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
-[\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
-[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
-[\fB\--reserved-ids/-r\fR \fIIDS\fR]
+[\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
+[\fB\--help/-h\fR]
+[\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
+[\fB\--ignore-conf/-I\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
-[\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
-[\fB\--property/-c\fR \fIKEY=VALUE\fR]
-[\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
-[\fB\--ignore-conf\fR]
+[\fB\--locale,-z\fR \fILOCALE\fR]
 [\fB\--log-level/-L\fR \fILEVEL[:ID:[LUN]]\fR]
 [\fB\--log-limit\fR \fLIMIT\fR]
 [\fB\--log-pattern/-l\fR \f_PATTERN\fR]
-[\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
-[\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
+[\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
-[\fB\--locale,-z\fR \fILOCALE\fR]
-[\fB\--without-types,-w\fR \fITYPES\fR]
+[\fB\--property/-c\fR \fIKEY=VALUE\fR]
+[\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
+[\fB\--reserved-ids/-r\fR \fIIDS\fR]
+[\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
+[\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
+[\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
+[\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
+[\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
-[\fB\--help/-h\fR]
+[\fB\--without-types/-w\fR \fITYPES\fR]
 .SH DESCRIPTION
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
@@ -54,83 +54,83 @@ To quit s2p press Control-C. If it is running in the background, you can kill it
 
 .SH OPTIONS
 .TP
+.BR --block-size/-b\fI " " \fIBLOCK_SIZE
+The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
+s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
+.TP
 .BR --blue-scsi-mode/-B\fI " " \fI
 Enable BlueSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI parsing rules.
 This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP
-.BR --id/-i \fI " "\fIn[:u] " " \fIFILE
-n is the SCSI/SASI ID (0-7). u (0-31) is the optional LUN (logical unit). The default LUN is 0.
+.BR --caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default is PiSCSI compatible caching.
+.TP
+.BR --help/-h\fI " " \fI
+Display this help.
+.TP
+.BR --id/-i \fI " "\fIID[:LUN] " " \fIFILE
+ID is the SCSI/SASI ID (0-7). LUN (0-31 for SCSI, 0-1 for SASI) is the optional LUN (logical unit). The default LUN is 0.
 .IP
 FILE is the name of the image file to use for the SCSI/SASI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
-.BR --type/-t\fI " " \fITYPE
-The optional case-insensitive device type (SAHD, SCHD, SCRM, SCCD, SCMO, SCDP, SCLP, SCTP, SCSG, SCHS). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
-.TP
-.BR --scsi-level\fI " " \fITYPE
-The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
-Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
-This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might required older SCSI levels.
-.TP
-.BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
-Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
-.TP
-.BR --block-size/-b\fI " " \fIBLOCK_SIZE
-The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
-s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
-.TP
-.BR --caching-mode/-m\fI " " \fICACHING_MODE
-Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
-.TP
-.BR --reserved-ids/-r\fI " " \fIIDS
-An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
+.BR --ignore-conf\fI " " \fI
+Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
 The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images' except for the root user. In this case, for backward compatibility with PiSCSI the default is '/home/pi/images'.
 .TP
-.BR --scan-depth/-R\fI " " \fISCAN_DEPTH
-Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
+.BR --locale/-z\fI " " \fILOCALE
+Overrides the default locale (language) for client-facing error messages. A client can override this setting.
 .TP
-.BR --property-\fI " " \fIKEY=VALUE
+.BR --log-level/-L\fI " " \fILEVEL[:ID:[LUN]]
+The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
+.TP
+.BR --log-limit/\fI " " \fILIMIT
+Limits the number of data bytes being logged, default is 128 bytes.
+.TP
+.BR --log-pattern/-l\fI " " \fIPATTERN
+The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
+.TP
+.BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
+Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+.TP
+.BR --port/-p\fI " " \fIPORT
+The s2p client service port, default is 6868.
+.TP
+.BR --property-/-c\fI " " \fIKEY=VALUE
 Set the s2p configuration property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
 .BR --property-files/-C\fI " " \fIPROPERTY_FILES
 An optional comma-separated list of property files with s2p configuration data. The default global property file is /etc/s2p.conf. This file is parsed first.
 Explicitly specified property files override the previously defined properties.
 .TP
-.BR --ignore-conf\fI " " \fI
-Ignore any properties in the /etc/s2p.conf configuration file.
+.BR --reserved-ids/-r\fI " " \fIIDS
+An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
-.BR --log-level/-L\fI " " \fILEVEL[:ID:[LUN]]
-The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
-.TP
-.BR --log-pattern/-l\fI " " \fIPATTERN
-The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
-.TP
-.BR --log-limit/\fI " " \fILIMIT
-Limits the number of data bytes being logged, default is 128 bytes.
+.BR --scan-depth/-R\fI " " \fISCAN_DEPTH
+Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR --script-file/-s\fI " " \fISCRIPT_FILE
 Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
 .TP
+.BR --scsi-level\fI " " \fILEVEL
+The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
+Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
+This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might required older SCSI levels.
+.TP
 .BR --token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
 .TP
-.BR --port/-p\fI " " \fIPORT
-The s2p client service port, default is 6868.
-.TP
-.BR --locale/-z\fI " " \fILOCALE
-Overrides the default locale (language) for client-facing error messages. A client can override this setting.
-.TP
-.BR --without-types/-w\fI " " \fITYPES
-Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the PiSCSI web UI. DEVICE_TYPES usually is SCTP,SCSG.
+.BR --type/-t\fI " " \fIDEVICE_TYPE
+The optional case-insensitive device type (SAHD, SCCD, SCDP, SCHD, SCHS, SCLP, SCMO, SCRM, SCSG, SCTP). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
 .TP
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
 .TP
-.BR --help/-h\fI " " \fI
-Displays a help page.
+.BR --without-types/-w\fI " " \fITYPES
+Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the PiSCSI web UI. DEVICE_TYPES usually is SCTP,SCSG.
 
 .SH EXAMPLES
 Launch s2p with no devices attached:

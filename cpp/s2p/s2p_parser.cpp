@@ -137,36 +137,37 @@ void s2p_parser::Banner(bool usage)
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --id/-i ID[:LUN]            SCSI/SASI target device ID (0-7) and LUN (0-7),\n"
-            << "                              default LUN is 0.\n"
-            << "  --type/-t TYPE              Device type.\n"
-            << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
-            << "                              default is device-specific and usually SCSI-2.\n"
-            << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
-            << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional default block size, a multiple of 4.\n"
-            << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
-            << "                              |linux-optimized), default currently is PiSCSI\n"
-            << "                              compatible caching.\n"
-            << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
-            << "  --reserved-ids/-r [IDS]     List of IDs to reserve.\n"
-            << "  --image-folder/-F FOLDER    Default folder with image files.\n"
-            << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
-            << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
-            << "  --property-files/-C         List of configuration property files.\n"
-            << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
-            << "                              critical|off), default is 'info'.\n"
-            << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
-            << "  --log-limit LIMIT           The number of data bytes being logged,\n"
-            << "                              default is 128 bytes.\n"
-            << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
-            << "  --token-file/-P FILE        Access token file.\n"
-            << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --ignore-conf               Ignore /etc/s2p.conf configuration file.\n"
-            << "  --without-types/-w TYPES    Do not report the listed device types in the API\n"
-            << "                              (for PiSCSI web UI compatibility).\n"
-            << "  --version/-v                Display the program version.\n"
-            << "  --help/-h                   Display this help.\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
+            << "  --blue-scsi-mode/-B            Enable BlueSCSI filename compatibility mode.\n"
+            << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
+            << "                                 |linux-optimized), default is PiSCSI\n"
+            << "                                 compatible caching.\n"
+            << "  --help/-h                      Display this help.\n"
+            << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
+            << "                                 for SCSI, 0-1 for SASI), default LUN is 0.\n"
+            << "  --ignore-conf/-I               Ignore /etc/s2p.conf configuration file.\n"
+            << "  --image-folder/-F FOLDER       Default folder with image files.\n"
+            << "  --locale/-z LOCALE             The locale for client-facing error messages.\n"
+            << "  --log-level/-L LEVEL[:ID:LUN]  Log level (trace|debug|info|warning|error|\n"
+            << "                                 critical|off), default is 'info'.\n"
+            << "  --log-limit LIMIT              The number of data bytes being logged,\n"
+            << "                                 default is 128 bytes.\n"
+            << "  --log-pattern/-l PATTERN       The spdlog pattern to use for logging.\n"
+            << "  --name/-n VENDOR:PRODUCT:REV   Optional device name for SCSI INQUIRY command,\n"
+            << "                                 format is VENDOR:PRODUCT:REVISION.\n"
+            << "  --port/-p PORT                 s2p server port, default is 6868.\n"
+            << "  --property/-c KEY=VALUE        Sets a configuration property.\n"
+            << "  --property-files/-C            List of configuration property files.\n"
+            << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
+            << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
+            << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
+            << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
+            << "                                 default is device-specific and usually SCSI-2.\n"
+            << "  --token-file/-P FILE           Access token file.\n"
+            << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
+            << "  --version/-v                   Display the s2p version.\n"
+            << "  --without-types/-w TYPES       Do not report the listed device types in the\n"
+            << "                                 API (for PiSCSI web UI compatibility).\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
             << "    hd1: HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -185,7 +186,6 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 {
     const int OPT_SCSI_LEVEL = 2;
     const int OPT_LOG_LIMIT = 3;
-    const int OPT_IGNORE_CONF = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
@@ -193,7 +193,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "caching-mode", required_argument, nullptr, 'm' },
         { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'h' },
-        { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
+        { "ignore-conf", no_argument, nullptr, 'I' },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-pattern", required_argument, nullptr, 'l' },
@@ -241,7 +241,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -292,7 +292,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             properties[PropertyHandler::WITHOUT_TYPES] = optarg;
             continue;
 
-        case OPT_IGNORE_CONF:
+        case 'I':
             ignore_conf = true;
             continue;
 
@@ -315,10 +315,17 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         }
 
         string device_key = id_lun.empty() ? "" : fmt::format("{0}{1}.", PropertyHandler::DEVICE, id_lun);
-        const string &params = optarg;
+
+        string params;
+        if (optarg) {
+            params = optarg;
+        }
+
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
+
+        id_lun.clear();
 
         SetDeviceProperty(properties, device_key, PropertyHandler::BLOCK_SIZE, block_size);
         SetDeviceProperty(properties, device_key, PropertyHandler::CACHING_MODE, caching_mode);
