@@ -74,7 +74,7 @@ void S2pCtl::Banner(bool usage) const
             << "                                 s2p requires authentication.\n"
             << "  --rename/-R CURRENT:NEW        Rename an image file.\n"
             << "  --reserved-ids/-r IDS          Comma-separated list of IDs to reserve.\n"
-            << "  --scsi-level SCSI_LEVEL        The optional SCSI level, default is SCSI-2.\n"
+            << "  --scsi-level SCSI_LEVEL        The optional SCSI level.\n"
             << "  --server-version/-V            Display the s2p server version.\n"
             << "  --shut-down/-X                 Shut down s2p.\n"
             << "  --text-protobuf FILENAME       Do not send command to s2p\n"
