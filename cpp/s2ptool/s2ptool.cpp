@@ -27,10 +27,10 @@ void usage()
         << "                      s2pexec|s2pproto), default is s2pexec.\n"
         << "  --client-args/-a    Arguments to run the client tool with,\n"
         << "                      optional for s2pctl and s2pexec.\n"
+        << "  --help/-h           Display this help.\n"
+        << "  --log-signals/-l    On log level 'trace' also log bus signals.\n"
         << "  --s2p-args/-s       Arguments to run s2p with.\n"
-        << "  --log-signals/-l    On log level trace also log bus signals.\n"
-        << "  --version/-v        Display the program version.\n"
-        << "  --help/-h           Display this help.\n";
+        << "  --version/-v        Display the s2ptool version.\n";
 }
 
 void add_arg(vector<char*> &args, const string &arg)

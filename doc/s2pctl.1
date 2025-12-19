@@ -3,45 +3,45 @@
 s2pctl \- SCSI2Pi Server Controller Tool
 .SH SYNOPSIS
 .B scsictl
-[\fB\--id/i\fR \fIID[:LUN]\fR] |
-[\fB\--list-extensions\fR] |
-[\fB\--list-images/-e\fR] |
-[\fB\--list-operations/-o\fR] |
-[\fB\--help/-h\fR] |
-[\fB\--version/-v\fR] |
-[\fB\--server-version/-V\fR] |
-[\fB\--detach-all-D\fR] |
-[\fB\--list-interfaces/-N\fR] |
-[\fB\--list-reserved-ids/-I\fR] |
-[\fB\--list-devices/-l\fR] |
-[\fB\--list-log-levels\fR] |
-[\fB\--list-properties/-P\fR] |
-[\fB\--list-statistics/-S\fR] |
-[\fB\--list-device-types/-T\fR] |
-[\fB\--shut-down/-X\fR] |
-[\fB\--prompt\fR] |
-[\fB\--text-protobuf\fR] |
 [\fB\--binary-protobuf\fR \fIFILENAME\fR] |
-[\fB\--json-protobuf\fR \fIFILENAME\fR] |
-[\fB\--delete/-d\fR \fIFILENAME\fR] |
-[\fB\--create/-C\fR \fIFILENAME:FILESIZE\fR] |
-[\fB\--list-image-info/-E\fR \fIFILENAME\fR] |
-[\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR] |
-[\fB\--rename/-R\fR \fICURRENT_NAME:NEW_NAME\fR] |
-[\fB\--cmd/-c\fR \fICOMMAND\fR] |
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR] |
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR] |
-[\fB\--file/f\fR \fIFILE|PARAM\fR] |
-[\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
-[\fB\--host/-H\fR \fIHOST\fR] |
-[\fB\--name/-n\fR \fINAME\fR \fIVENDOR:NAME_REVISION\fR] |
-[\fB\--port/-p\fR \fIPORT\fR] |
-[\fB\--reserved-ids/-r\fR \fIIDS\fR] |
-[\fB\--list-settings/-s\fR \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]\fR] |
-[\fB\--type/-t\fR \fITYPE\fR] |
+[\fB\--command/-c\fR \fICOMMAND\fR] |
 [\fB\--copy/-x\fR \fICURRENT_NAME:NEW_NAME\fR] |
-[\fB\--persist\fR]
+[\fB\--create/-C\fR \fIFILENAME:FILESIZE\fR] |
+[\fB\--delete/-d\fR \fIFILENAME\fR] |
+[\fB\--detach-all-D\fR] |
+[\fB\--file/f\fR \fIFILE|PARAM\fR] |
+[\fB\--help/-h\fR] |
+[\fB\--host/-H\fR \fIHOST\fR] |
+[\fB\--id/i\fR \fIID[:LUN]\fR] |
+[\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR] |
+[\fB\--json-protobuf\fR \fIFILENAME\fR] |
+[\fB\--list-devices/-l\fR] |
+[\fB\--list-device-types/-T\fR] |
+[\fB\--list-extensions\fR] |
+[\fB\--list-images/-e\fR] |
+[\fB\--list-image-info/-E\fR \fIFILENAME\fR] |
+[\fB\--list-interfaces/-N\fR] |
+[\fB\--list-log-levels\fR] |
+[\fB\--list-operations/-o\fR] |
+[\fB\--list-properties/-P\fR] |
+[\fB\--list-reserved-ids/-I\fR] |
+[\fB\--list-statistics/-S\fR] |
+[\fB\--list-settings/-s\fR \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]\fR] |
 [\fB\--locale\fR \fILOCALE\fR]
+[\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
+[\fB\--name/-n\fR \fINAME\fR \fIVENDOR:PRODUCT:REVISION\fR] |
+[\fB\--persist\fR]
+[\fB\--port/-p\fR \fIPORT\fR] |
+[\fB\--prompt\fR] |
+[\fB\--rename/-R\fR \fICURRENT_NAME:NEW_NAME\fR] |
+[\fB\--reserved-ids/-r\fR \fIIDS\fR] |
+[\fB\--server-version/-V\fR] |
+[\fB\--shut-down/-X\fR] |
+[\fB\--text-protobuf\fR] \fFILENAME\fR] |
+[\fB\--type/-t\fR \fIDEVICE_TYPE\fR] |
+[\fB\--version/-v\fR] |
 .SH DESCRIPTION
 .B s2pctl
 sends commands to s2p in order to apply configuration changes at runtime or to check a device status.
@@ -53,106 +53,16 @@ In interactive mode the host and port settings are preserved between command inv
 
 .SH OPTIONS
 .TP
-.BR --id/-i\fI " " \fIID[:LUN]
-The SCSI or SASI ID and optional LUN that you want to control. (0-7:0-31 for SCSI, 0-7:0-1 for SASI.)
-.TP
-.BR --create/-C\fI " "\fIFILENAME:FILESIZE
-Create an image file in the default image folder with the specified name and size in bytes.
-.TP
-.BR --detach-all/-D\fI
-Detach all devices.
-.TP
-.BR --list-image-info/-E\fI " " \fIFILENAME
-Display image file information.
-.TP
-.BR --image-folder/-F\fI " "\fIIMAGE_FOLDER
-Set the default image folder.
-.TP
-.BR --list-reserved-ids/-I\fI
-Display reserved device IDs.
-.TP
-.BR --log-level/-L\fI " "\fILOG_LEVEL[:ID[:LUN]]
-Set the s2p log level (trace, debug, info, warning, error, critical, off).
-.TP
-.BR --host/-H\fI " " \fIHOST
-The s2p host to connect to, default is 'localhost'.
-.TP
-.BR --list-interfaces/-N\fI
-Lists all network interfaces that are up and available for setting up a DaynaPort emulation.
-.TP
-.BR --list-log-levels\fI
-Display the available s2p log levels and the current log level.
-.TP
-.BR --prompt\fI
-Prompt for the access token in case s2p requires authentication.
-.TP
-.BR --list-devices/-l\fI
-List all of the devices that are currently being emulated, as well as their current status.
-.TP
-.BR --list-extensions\fI
-List all supported file extensions and the device types they map to.
-.TP
-.BR --list-images/-e\fI
-List all images files in the default image folder.
-.TP
-.BR --list-operations/-o\fI
-List available remote interface operations.
-.TP
-.BR --rename/-R\fI " "\fICURRENT_NAME:NEW_NAME
-Rename an image file in the default image folder.
-.TP
-.BR --port/-p\fI " " \fIPORT
-The s2p port to connect to, default is 6868.
-.TP
-.BR --list-properties/-P\fI " " \fIPORT
-Display the current s2p properties. The resulting output can directly be used for property files, e.g. for /etc/s2p.conf when running s2p as a system service.
-.TP
-.BR --reserved-ids/-r\fI " " \fIIDS
-Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
-.TP
-.BR --list-settings/-s\fI " " \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]
-Display all s2p settings. Filenames are optionally filtered by folder and file patterns.
-OPERATIONS is an optional comma-seperated list of server operations to take into account, in order to limit the amount of output. 
-.TP
-.BR --list-statistics/-S\fI " " \fI
-Display s2p statistics.
-.TP
-.BR --list-device-types/-T\fI " " \fI
-Display available device types and their properties.
-.TP
-.BR --help/-h\fI " " \fI
-Display usage information.
-.TP
-.BR --version/-v\fI " " \fI
-Display the s2pctl version.
-.TP
-.BR --server-version/-V\fI " " \fI
-Display the s2p server version.
-.TP
-.BR --shut-down/-X\fI " " \fI
-Shut down the s2p process.
-.TP
-.BR --delete/-d\fI " "\fIFILENAME
-Delete an image file in the default image folder.
-.TP
-.BR --copy/-x\fI " "\fICURRENT_NAME:NEW_NAME
-Copy an image file in the default image folder.
-.TP
 .BR --binary-protobuf\fI " "\fIFILENAME
 Do not send the command to s2p but write it to a protobuf binary file.
 .TP
-.BR --json-protobuf\fI " "\fIFILENAME
-Do not send the command to s2p but write it to a protobuf JSON file.
+.BR --block-size/-b\fI " " \fIBLOCK_SIZE
+The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
+s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
-.BR --text-protobuf\fI " "\fIFILENAME
-Do not send the command to s2p but write it to a protobuf text format file.
+.BR --caching-mode/-m\fI " " \fICACHING_MODE
+Caching mode (piscsi|write-through|linux|linux-optimized), default is PiSCSI compatible caching.
 .TP
-.BR --persist\fI " " \fI
-Write the current configuration to /etc/s2p.conf. The old configuration, if any, is saved to /etc/s2p.conf.old.
-.TP
-.BR --locale\fI " "\fILOCALE
-Overrides the default locale (language) for client-facing error messages.
-.TP 
 .BR --command/-c\fI " " \fICOMMAND
 Command is the operation being requested. Options are:
    a(ttach): Attach device
@@ -163,41 +73,128 @@ Command is the operation being requested. Options are:
    u(nprotect): Remove write protection from the medium (not for CD-ROMs, which are always read-only)
 .IP
 eject, protect and unprotect are idempotent.
-.TP 
-.BR --block-size/-b\fI " " \fIBLOCK_SIZE
-The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
-s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
-.BR --caching-mode/-m\fI " " \fICACHING_MODE
-Caching mode (piscsi|write-through|linux|linux-optimized), default currently is PiSCSI compatible caching.
+.BR --copy/-x\fI " "\fICURRENT_NAME:NEW_NAME
+Copy an image file in the default image folder.
+.TP
+.BR --create/-C\fI " "\fIFILENAME:FILESIZE
+Create an image file in the default image folder with the specified name and size in bytes.
+.TP
+.BR --delete/-d\fI " "\fIFILENAME
+Delete an image file in the default image folder.
+.TP
+.BR --detach-all/-D\fI
+Detach all devices.
 .TP
 .BR --file/-f\fI " " \fIFILE|PARAMS
 Device-specific: Either a path to a disk image file, or parameters for a non-disk device. See the s2p(1) man page for permitted file types.
-.TP 
-.BR --type/-t\fI " " \fITYPE
-Specifies the device type. This type overrides the type derived from the file extension of the specified image. See the s2p(1) man page for the available device types. For some types there are shortcuts (only the first letter is required):
-   sahd: SASI hard drive
-   schd: SCSI hard drive
-   scrm: SCSI removable media drive
-   sccd: CD-ROM drive
-   scmo: Magneto-optical disk
-   scdp: DaynaPort network adapter
-   sclp: SCSI printer
-   sctp: SCSI tape drive (streamer)
-   scsg: SCSI-to-USBb bridge
-   schs: Host services device
-.TP 
+.TP
+.BR --help/-h\fI " " \fI
+Display this help.
+.TP
+.BR --host/-H\fI " " \fIHOST
+The s2p host to connect to, default is 'localhost'.
+.TP
+.BR --id/-i\fI " " \fIID[:LUN]
+The SCSI or SASI ID and optional LUN that you want to control. (0-7:0-31 for SCSI, 0-7:0-1 for SASI.)
+.TP
+.BR --image-folder/-F\fI " "\fIIMAGE_FOLDER
+Set the default image folder.
+.TP
+.BR --json-protobuf\fI " "\fIFILENAME
+Do not send the command to s2p but write it to a protobuf JSON file.
+.TP
+.BR --list-devices/-l\fI
+List all of the devices that are currently being emulated, as well as their current status.
+.TP
+.BR --list-device-types/-T\fI " " \fI
+Display available device types and their properties.
+.TP
+.BR --list-extensions\fI
+List all supported file extensions and the device types they map to.
+.TP
+.BR --list-images/-e\fI
+List all images files in the default image folder.
+.TP
+.BR --list-image-info/-E\fI " " \fIFILENAME
+Display image file information.
+.TP
+.BR --list-interfaces/-N\fI
+Lists all network interfaces that are up and available for setting up a DaynaPort emulation.
+.TP
+.BR --list-log-levels\fI
+Display the available s2p log levels and the current log level.
+.TP
+.BR --list-operations/-o\fI
+List available remote interface operations.
+.TP
+.BR --list-properties/-P\fI " " \fIPORT
+Display the current s2p properties. The resulting output can directly be used for property files, e.g. for /etc/s2p.conf when running s2p as a system service.
+.TP
+.BR --list-reserved-ids/-I\fI
+Display reserved device IDs.
+.TP
+.BR --list-statistics/-S\fI " " \fI
+Display s2p statistics.
+.TP
+.BR --list-settings/-s\fI " " \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]
+Display all s2p settings. Filenames are optionally filtered by folder and file patterns.
+OPERATIONS is an optional comma-seperated list of server operations to take into account, in order to limit the amount of output.
+.TP
+.BR --locale\fI " "\fILOCALE
+Overrides the default locale (language) for client-facing error messages.
+.TP
+.BR --log-level/-L\fI " "\fILOG_LEVEL[:ID[:LUN]]
+Set the s2p log level (trace, debug, info, warning, error, critical, off).
+.TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
 The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
 The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
-.TP 
+.TP
+.BR --persist\fI " " \fI
+Write the current configuration to /etc/s2p.conf. The old configuration, if any, is saved to /etc/s2p.conf.old.
+.TP
+.BR --port/-p\fI " " \fIPORT
+The s2p port to connect to, default is 6868.
+.TP
+.BR --prompt\fI
+Prompt for the access token in case s2p requires authentication.
+.TP
+.BR --rename/-R\fI " "\fICURRENT_NAME:NEW_NAME
+Rename an image file in the default image folder.
+.TP
+.BR --reserved-ids/-r\fI " " \fIIDS
+Comma-separated list of IDs to reserve. Pass an empty list in order to not reserve anything.
+.TP
 .BR --scsi-level\fI " " \fISCSI_LEVEL
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
 Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file.
 In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
-.TP 
-.BR -u\fI " " \fIUNIT
-Logical unit number (0-31 for SCSI, 0-1 for SASI). The LUN defaults to 0. This option is used when there are multiple SCSI/SASI devices for the same SCSI ID.
+.TP
+.BR --server-version/-V\fI " " \fI
+Display the s2p server version.
+.TP
+.BR --shut-down/-X\fI " " \fI
+Shut down s2p.
+.TP
+.BR --text-protobuf\fI " "\fIFILENAME
+Do not send the command to s2p but write it to a protobuf text format file.
+.TP
+.BR --type/-t\fI " " \fIDEVICE_TYPE
+Specifies the device type. This type overrides the type derived from the file extension of the specified image. See the s2p(1) man page for the available device types. For some types there are shortcuts (only the first letter is required):
+   sahd: SASI hard drive
+   sccd: CD-ROM drive
+   schd: SCSI hard drive
+   schs: Host services device
+   scdp: DaynaPort network adapter
+   sclp: SCSI printer
+   scmo: Magneto-optical disk
+   scrm: SCSI removable media drive
+   scsg: SCSI-to-USBb bridge
+   sctp: SCSI tape drive (streamer)
+.TP
+.BR --version/-v\fI " " \fI
+Display the s2pctl version.
 
 .SH EXAMPLES
 Display the completer remote service information.

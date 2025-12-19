@@ -3,24 +3,24 @@
 s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 .SH SYNOPSIS
 .B s2pdump
-[\fB\--scsi-id/-i\fR \fIID[:LUN]\fR]
-[\fB\--sasi-id/-h\fR \fIID[:LUN]\fR]
+[\fB\--all-luns/-a\fR]
 [\fB\--board-id/-B\fR \fIBOARD_ID\fR]
-[\fB\--image-file/-f\fR \fIIMAGE_FILE\fR]
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
+[\fB\--help/-H\fR]
+[\fB\--image-file/-f\fR \fIIMAGE_FILE\fR]
 [\fB\--inquiry/-I\fR] \fID[:LUN]\fR
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
-[\fB\--retries/-R\fR \fIRETRIES\fR]
-[\fB\--scsi-scan/-s\fR]
-[\fB\--sasi-scan/-t\fR]
-[\fB\--start-sector/-S\fR \fISTART\fR]
-[\fB\--sector-count/-C\fR \fICOUNT\fR]
-[\fB\--sasi-capacity/-c\fR \fICAPACITY\fR]
-[\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
-[\fB\--all-luns/-a\fR]
 [\fB\--restore/-r\fR]
+[\fB\--retries/-R\fR \fIRETRIES\fR]
+[\fB\--sasi-capacity/-c\fR \fICAPACITY\fR]
+[\fB\--sasi-id/-h\fR \fIID[:LUN]\fR]
+[\fB\--sasi-scan/-t\fR]
+[\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
 [\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
-[\fB\--help/-H\fR]
+[\fB\--scsi-id/-i\fR \fIID[:LUN]\fR]
+[\fB\--scsi-scan/-s\fR]
+[\fB\--sector-count/-C\fR \fICOUNT\fR]
+[\fB\--start-sector/-S\fR \fISTART\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pdump
@@ -30,9 +30,9 @@ When using devices managed by the Linux SG driver, s2pdump can be used on any Li
 When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
 When used with a tape drive, the data are dumped in a SIMH-compatible format.
 
-In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable. 
+In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable.
  Restoring a tape drive expects a SIMH-compatible file.
- 
+
 .SH NOTES
 
 .B s2pdump
@@ -42,20 +42,21 @@ Usually in order to use the generated drive image with SCSI2Pi, it should be mov
 
 .SH OPTIONS
 .TP
-.BR --scsi-id/-i\fI " "\fIID[:LUN]
-ID and optional LUN (0-31) of the SCSI target drive.
-.TP
-.BR --sasi-id/-h\fI " "\fIID[:LUN]
-ID and optional LUN (0-1) of the SASI target drive.
+.BR --all-luns/-a\fI
+Check all LUNs during bus scan. The default is to scan LUN 0 only.
+If the target device supports the REPORT LUNS SCSI command s2pdump uses this command to optimize the scan.
 .TP
 .BR --board-id/-B\fI " "\fIBOARD_ID
 SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device. Not relevant for SASI.
 .TP
-.BR --image-file/-f\fI " "\fIIMAGE_FILE
-Path of the source/destination image file.
-.TP
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 The transfer buffer size in bytes. The default size is 1 MiB, the minimum size is 64 KiB.
+.TP
+.BR --help/-H\fI
+Display this help.
+.TP
+.BR --image-file/-f\fI " "\fIIMAGE_FILE
+Path of the source/destination image file.
 .TP
 .BR --inquiry/-I\fI " "\fIID[:LUN]
 Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with property files, e.g. /etc/s2p.conf.
@@ -63,39 +64,38 @@ Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with 
 .BR --log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'warning'.
 .TP
+.BR --restore/-r\fI
+Run in restore mode. The default is dump mode.
+.TP
 .BR --retries/-R\fI " " \fIRETRIES
 Set the number of retries when dumping/restoring a disk drive, default is 0.
-.TP
-.BR --scsi-scan/-s\fI
-Scan the bus for SCSI devices and display their properties.
-.TP
-.BR --sasi-scan/-t\fI
-Scan the bus for SASI devices and display their properties.
-.TP
-.BR --start-sector/-S\fI "  " \fISTART
-Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.
-.TP
-.BR --sector-count/-C\fI "  " \fICOUNT
-Only for hard drives, not for tape drives: sector count for the dump/restore operation, the default is the drive capacity.
 .TP
 .BR --sasi-capacity/-c\fI " "\fISASI_CAPACITY
 The capacity of the SASI hard drive in sectors. This parameter only has a meaning for SASI drives.
 .TP
+.BR --sasi-id/-h\fI " "\fIID[:LUN]
+ID and optional LUN (0-1) of the SASI target drive.
+.TP
+.BR --sasi-scan/-t\fI
+Scan the bus for SASI devices and display their properties.
+.TP
 .BR --sasi-sector-size/-z\fI " "\fISASI_SECTOR_SIZE
 The sector size of the SASI hard drive in sectors (256, 512, x1024) in bytes. This parameter only has a meaning for SASI drives.
-.TP
-.BR --all-luns/-a\fI
-Check all LUNs during bus scan. The default is to scan LUN 0 only.
-If the target device supports the REPORT LUNS SCSI command s2pdump uses this command to optimize the scan.
-.TP
-.BR --restore/-r\fI
-Run in restore mode. The default is dump mode.
 .TP
 .BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
 Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 .TP
-.BR --help/-H\fI
-Display a help text.
+.BR --scsi-id/-i\fI " "\fIID[:LUN]
+ID and optional LUN (0-31) of the SCSI target drive.
+.TP
+.BR --scsi-scan/-s\fI
+Scan the bus for SCSI devices and display their properties.
+.TP
+.BR --sector-count/-C\fI "  " \fICOUNT
+Only for hard drives, not for tape drives: sector count for the dump/restore operation, the default is the drive capacity.
+.TP
+.BR --start-sector/-S\fI "  " \fISTART
+Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.
 .TP
 .BR --version/-v\fI
 Display the s2pdump version.
@@ -111,5 +111,5 @@ Launch s2pdump to restore/upload a drive image from the local file system to SCS
 
 .SH SEE ALSO
 s2p(1), s2pctl(1), s2pexec(1), s2pformat(1), s2pproto(1), s2psimh(1), s2ptool(1)
- 
+
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

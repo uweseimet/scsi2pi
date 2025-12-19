@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,10 +29,10 @@ void S2pFormat::Banner(bool header) const
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
+        << "  --help/-H             Display this help.\n"
         << "  --log-level/-L LEVEL  Log level (trace|debug|info|warning|error|\n"
         << "                        critical|off), default is 'info'.\n"
-        << "  --version/-v          Display the program version.\n"
-        << "  --help/-H             Display this help.\n";
+        << "  --version/-v          Display the s2pformat version.\n";
 }
 
 bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
