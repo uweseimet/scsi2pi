@@ -48,21 +48,21 @@ void S2pProto::Banner(bool header)
     }
 
     cout << "Usage: " + APP_NAME + " [options]\n"
-        << "  --scsi-target/-i ID:[LUN] SCSI target device ID (0-7) and LUN (0-31),\n"
-        << "                            default LUN is 0.\n"
-        << "  --board-id/-B BOARD_ID    Board (initiator) ID (0-7), default is 7.\n"
-        << "  --log-level/-L LOG_LEVEL  Log level (trace|debug|info|warning|error|\n"
-        << "                            critical|off), default is 'info'.\n"
-        << "  --input-file/-f FILE      Protobuf data input file,\n"
-        << "                            by default in JSON format.\n"
-        << "  --output-file/-F FILE     Protobuf data output file,\n"
-        << "                            by default in JSON format.\n"
-        << "  --binary-input            Input file has protobuf binary format.\n"
-        << "  --binary-output           Generate protobuf binary format file.\n"
-        << "  --text-input              Input file has protobuf text format.\n"
-        << "  --text-output             Generate protobuf text format file.\n"
-        << "  --version/-v              Display the program version.\n"
-        << "  --help/-h                 Display this help.\n";
+        << "  --binary-input             Input file has protobuf binary format.\n"
+        << "  --binary-output            Generate protobuf binary format file.\n"
+        << "  --board-id/-B BOARD_ID     Board (initiator) ID (0-7), default is 7.\n"
+        << "  --help/-h                  Display this help.\n"
+        << "  --input-file/-f FILE       Protobuf data input file,\n"
+        << "                             by default in JSON format.\n"
+        << "  --log-level/-L LOG_LEVEL   Log level (trace|debug|info|warning|error|\n"
+        << "                             critical|off), default is 'info'.\n"
+        << "  --output-file/-F FILE      Protobuf data output file,\n"
+        << "                             by default in JSON format.\n"
+        << "  --scsi-target/-i ID:[LUN]  SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                             default LUN is 0.\n"
+        << "  --text-input               Input file has protobuf text format.\n"
+        << "  --text-output              Generate protobuf text format file.\n"
+        << "  --version/-v               Display the s2pproto version.\n";
 }
 
 bool S2pProto::Init(bool in_process, bool log_signals)
