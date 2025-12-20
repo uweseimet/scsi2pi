@@ -139,7 +139,7 @@ void Disk::CleanUp()
 void Disk::ValidateFile()
 {
     if (!GetBlockCount()) {
-        throw IoException("Device has 0 sectors");
+        throw IoException("Drive has 0 sectors");
     }
 
     StorageDevice::ValidateFile();

@@ -38,7 +38,7 @@ void add_arg(vector<char*> &args, const string &arg)
     args.emplace_back(strdup(arg.c_str()));
 }
 
-int main(int argc, char *argv[])
+int run(int argc, char *argv[])
 {
     const vector<option> options = {
         { "client", required_argument, nullptr, 'c' },
@@ -69,8 +69,7 @@ int main(int argc, char *argv[])
 
         case 'h':
             usage();
-            exit(EXIT_SUCCESS);
-            break;
+            return EXIT_SUCCESS;
 
         case 'l':
             log_signals = true;
@@ -82,26 +81,25 @@ int main(int argc, char *argv[])
 
         case 'v':
             cout << GetVersionString() << '\n';
-            exit(EXIT_SUCCESS);
-            break;
+            return EXIT_SUCCESS;
 
         default:
             usage();
-            exit(EXIT_FAILURE);
-            break;
+
+            return EXIT_FAILURE;
         }
     }
 
     if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
         cerr << "Invalid in-process test tool client: '" << client
             << "', client must be s2pctl, s2pdump, s2pexec or s2pproto\n";
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     // s2pctl and s2pexec do not require arguments because they support an interactive mode
     if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
         cerr << "Test client '" << client << "' requires arguments\n";
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     vector<char*> client_args;
@@ -131,7 +129,7 @@ int main(int argc, char *argv[])
 
     if (!s2p->Ready()) {
         cerr << "Error starting in-process s2p\n";
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     if (client == "s2pctl") {
@@ -152,10 +150,21 @@ int main(int argc, char *argv[])
     }
     else {
         assert(false);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     s2p->CleanUp();
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
+}
+
+int main(int argc, char *argv[])
+{
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    const int status = run(argc, argv);
+
+    google::protobuf::ShutdownProtobufLibrary();
+
+    return status;
 }

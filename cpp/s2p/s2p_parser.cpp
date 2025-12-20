@@ -104,7 +104,7 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     //   -hd|-HD -> -h
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
-    for (const string &arg : initial_args) {
+    for (const string arg : initial_args) {
         string arg_str(arg);
         string arg_lower = ToLower(arg_str);
 

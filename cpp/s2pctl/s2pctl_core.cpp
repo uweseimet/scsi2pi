@@ -87,8 +87,6 @@ void S2pCtl::Banner(bool usage) const
 
 int S2pCtl::Run(const vector<char*> &args)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
     return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
 

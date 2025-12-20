@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,6 +12,8 @@
 
 int main(int argc, char*[])
 {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
     const bool disable_logging = argc <= 1;
 
     // If any argument is provided the log level is set to trace
@@ -31,6 +33,8 @@ int main(int argc, char*[])
     if (fd != -1) {
         close(fd);
     }
+
+    google::protobuf::ShutdownProtobufLibrary();
 
     return result;
 }

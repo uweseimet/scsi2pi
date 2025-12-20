@@ -110,8 +110,6 @@ void S2p::TerminationHandler(int)
 
 int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
     // The --version/-v option shall result in no other action except displaying the version
     if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v") || !strcmp(arg, "--version");})
         != args.end()) {
