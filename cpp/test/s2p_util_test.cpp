@@ -48,6 +48,7 @@ TEST(S2pUtilTest, Split)
 
     v = Split("", ':', 1);
     EXPECT_EQ(1U, v.size());
+    EXPECT_EQ("", v[0]);
 }
 
 TEST(S2pUtilTest, ToUpper)
