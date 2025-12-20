@@ -51,11 +51,11 @@ bool S2p::InitBus(bool in_process, bool log_signals)
 
 void S2p::CleanUp()
 {
+    executor->DetachAll();
+
     if (service_thread.IsRunning()) {
         service_thread.Stop();
     }
-
-    executor->DetachAll();
 
     bus->CleanUp();
 }
