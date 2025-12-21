@@ -28,7 +28,7 @@ public:
 
     bool Ready() const;
 
-    void CleanUp();
+    void CleanUp(const string& = "");
 
 private:
 
@@ -42,6 +42,8 @@ private:
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
+
+    void DisplayAttachedDevices() const;
 
     bool ExecuteCommand(CommandContext&);
 

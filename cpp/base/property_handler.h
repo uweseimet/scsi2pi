@@ -60,7 +60,7 @@ public:
     const property_map& GetUnknownProperties() const;
     const string& RemoveProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
-    void RemoveProperties(const string&);
+    void RemoveProperties(string_view);
 
     bool Persist() const;
 

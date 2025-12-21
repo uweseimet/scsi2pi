@@ -78,13 +78,6 @@ CommandLocalizer::CommandLocalizer()
     Add(LocalizationKey::ERROR_RESERVED_ID, "es", "El ID de dispositivo %1 está reservado");
     Add(LocalizationKey::ERROR_RESERVED_ID, "zh", "设备 ID %1 已保留");
 
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "en", "Command for non-existing ID %1");
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "de", "Kommando für nicht existente ID %1");
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "sv", "Kommando för id %1 som ej existerar");
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "fr", "Commande pour ID %1 non-existant");
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "es", "Comando para ID %1 no existente");
-    Add(LocalizationKey::ERROR_NON_EXISTING_DEVICE, "zh", "不存在的 ID %1 的指令");
-
     Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "en", "Command for non-existing ID %1, unit %2");
     Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "de", "Kommando für nicht existente ID %1, Einheit %2");
     Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "sv", "Kommando för id %1, enhetsnummer %2 som ej existerar");
@@ -262,12 +255,12 @@ CommandLocalizer::CommandLocalizer()
     Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "es", "%1 operación denegada, %2 no está listo");
     Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "zh", "%1 操作被拒绝,%2 还没有准备好");
 
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "en", "There can only be a single %1 device");
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "de", "Es kann nur ein einziges %1-Gerät geben");
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "sv", "Det kan bara finnas en enda %1-enhet");
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "fr", "Il ne peut y avoir qu'un seul périphérique %1");
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "es", "Sólo puede haber un único dispositivo %1");
-    Add(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, "zh", "只能有一个%1设备");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "en", "There can only be a single SCDP device");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "de", "Es kann nur ein einziges SCDP-Gerät geben");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "sv", "Det kan bara finnas en enda SCDP-enhet");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "fr", "Il ne peut y avoir qu'un seul périphérique SCDP");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "es", "Sólo puede haber un único dispositivo SCDP");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "zh", "只能有一个SCDP设备");
 
     Add(LocalizationKey::ERROR_PERSIST, "en", "Couldn't save '/etc/s2p.conf'");
     Add(LocalizationKey::ERROR_PERSIST, "de", "'/etc/s2p.conf' konnte nicht gespeichert werden");

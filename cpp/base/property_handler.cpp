@@ -116,7 +116,7 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
     unknown_properties[key] = value;
 }
 
-void PropertyHandler::RemoveProperties(const string &filter)
+void PropertyHandler::RemoveProperties(string_view filter)
 {
     erase_if(unknown_properties, [&filter](auto &kv) {return kv.first.starts_with(filter);});
 }

@@ -146,7 +146,7 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(ScsiCommand cmd) co
     return cdb_meta_data[static_cast<int>(cmd)];
 }
 
-string CommandMetaData::LogCdb(span<const uint8_t> cdb, const string &type) const
+string CommandMetaData::LogCdb(span<const uint8_t> cdb, string_view type) const
 {
     ostringstream msg;
 

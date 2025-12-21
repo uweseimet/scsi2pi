@@ -152,16 +152,10 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     default:
         // The remaining commands may only be executed when the target is idle, which is ensured by the lock
-        return ExecuteWithLock(context) ? HandleDeviceListChange(context) : false;
+        return executor.ProcessCmd(context) ? HandleDeviceListChange(context) : false;
     }
 
     return true;
-}
-
-bool CommandDispatcher::ExecuteWithLock(const CommandContext &context)
-{
-    scoped_lock<mutex> lock(dispatch_lock);
-    return executor.ProcessCmd(context);
 }
 
 bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
@@ -39,6 +40,11 @@ public:
     {
     }
     ~CommandExecutor() = default;
+
+    mutex& GetDispatchLock()
+    {
+        return dispatch_lock;
+    }
 
     const auto& GetReservedIds() const
     {
@@ -91,6 +97,9 @@ private:
     ControllerFactory &controller_factory;
 
     logger &s2p_logger;
+
+    // To avoid conflicts between SCSI command execution and external API calls
+    mutex dispatch_lock;
 
     unordered_set<int> reserved_ids;
 };

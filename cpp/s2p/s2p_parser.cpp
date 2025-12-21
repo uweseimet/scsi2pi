@@ -106,7 +106,7 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     vector<char*> args;
     for (const string arg : initial_args) {
         string arg_str(arg);
-        string arg_lower = ToLower(arg_str);
+        const string &arg_lower = ToLower(arg_str);
 
         if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
             args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
@@ -310,12 +310,12 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             break;
         }
 
-        string device_key = id_lun.empty() ? "" : fmt::format("{0}{1}.", PropertyHandler::DEVICE, id_lun);
-
         string params;
         if (optarg) {
             params = optarg;
         }
+
+        string device_key = id_lun.empty() ? "" : fmt::format("{0}{1}.", PropertyHandler::DEVICE, id_lun);
 
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);

@@ -21,9 +21,7 @@
 #include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
-#ifdef BUILD_SCHS
 #include "devices/host_services.h"
-#endif
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
@@ -49,15 +47,21 @@ bool S2p::InitBus(bool in_process, bool log_signals)
     return true;
 }
 
-void S2p::CleanUp()
+void S2p::CleanUp(const string &error)
 {
-    executor->DetachAll();
+    if (!error.empty()) {
+        cerr << "Error: " << error << '\n';
+    }
 
     if (service_thread.IsRunning()) {
+        executor->DetachAll();
+
         service_thread.Stop();
     }
 
-    bus->CleanUp();
+    if (bus) {
+        bus->CleanUp();
+    }
 }
 
 void S2p::ReadAccessToken(const path &filename)
@@ -118,7 +122,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (!InitBus(in_process, log_signals)) {
-        cerr << "Error: Can't initialize bus\n";
+        CleanUp("Can't initialize bus");
         return EXIT_FAILURE;
     }
 
@@ -131,7 +135,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         properties = ParseArguments(args, ignore_conf);
     }
     catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
+        CleanUp(e.what());
         return EXIT_FAILURE;
     }
 
@@ -141,14 +145,14 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (const string &error = MapExtensions(); !error.empty()) {
-        cerr << "Error: " << error << '\n';
+        CleanUp(error);
         return EXIT_FAILURE;
     }
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
         if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
-            cerr << "Error: Invalid log limit '" << log_limit << "'\n";
+            CleanUp("Invalid log limit '" + log_limit + "'");
             return EXIT_FAILURE;
         }
         else {
@@ -158,8 +162,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
-            cerr << "Error: " << error << '\n';
-            CleanUp();
+            CleanUp(error);
             return EXIT_FAILURE;
         }
     }
@@ -171,8 +174,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
     }, s2p_logger); !error.empty()) {
-        cerr << "Error: " << error << '\n';
-        CleanUp();
+        CleanUp(error);
         return EXIT_FAILURE;
     }
 
@@ -180,32 +182,19 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         CreateDevices();
     }
     catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
-        CleanUp();
+        CleanUp(e.what());
         return EXIT_FAILURE;
     }
 
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
         if (!key.starts_with(PropertyHandler::DEVICE)) {
-            cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
-                << PropertyHandler::CONFIGURATION << '\n';
-            CleanUp();
+            CleanUp("Invalid global property \"" + key + "\", check your command line and "
+                + PropertyHandler::CONFIGURATION);
             return EXIT_FAILURE;
         }
     }
 
-    // Display and log the device list
-    PbServerInfo server_info;
-    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
-    const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
-        server_info.devices_info().devices().cend() };
-    const string device_list = ListDevices(devices);
-    LogDevices(device_list);
-
-    // Show the device list only once, either the console or the log
-    if (get_level() > level::info) {
-        cout << device_list << flush;
-    }
+    DisplayAttachedDevices();
 
     if (!in_process && !bus->IsRaspberryPi()) {
         cout << "No RaSCSI/PiSCSI board support available, functionality is limited\n" << flush;
@@ -215,19 +204,25 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     service_thread.Start();
 
-    // On Pis with 4 cores, avoid context switches for this thread, which executes the SCSI commands
-#ifdef __linux__
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
-    CPU_SET(3, &mask);
-    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-#endif
-
-    ready = true;
-
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+void S2p::DisplayAttachedDevices() const
+{
+    // Display and log the device list
+    PbServerInfo server_info;
+    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
+    const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
+        server_info.devices_info().devices().cend() };
+    const string &device_list = ListDevices(devices);
+    LogDevices(device_list);
+
+    // Show the device list only once, either on the console or in the log
+    if (get_level() > level::info) {
+        cout << device_list << flush;
+    }
 }
 
 bool S2p::Ready() const
@@ -472,9 +467,19 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
 
 void S2p::ProcessScsiCommands()
 {
+    // On Pis with several cores, avoid context switches for this thread, which executes the SCSI commands
+#ifdef __linux__
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(3, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
+
+    ready = true;
+
     while (service_thread.IsRunning()) {
         if (const uint8_t ids = bus->WaitForSelection(); ids) {
-            scoped_lock<mutex> lock(dispatcher->GetDispatchLock());
+            scoped_lock lock(executor->GetDispatchLock());
 
             // Process command on the responsible controller based on the current initiator and target ID
             if (const auto shutdown_mode = controller_factory.ProcessOnController(ids); shutdown_mode
@@ -500,6 +505,7 @@ bool S2p::ExecuteCommand(CommandContext &context)
     const bool status = dispatcher->DispatchCommand(context, result);
     if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
+        google::protobuf::ShutdownProtobufLibrary();
         exit(EXIT_SUCCESS);
     }
 

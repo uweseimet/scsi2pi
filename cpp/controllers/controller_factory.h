@@ -31,7 +31,6 @@ public:
     bool DeleteController(const AbstractController&);
     bool DeleteAllControllers();
     ShutdownMode ProcessOnController(uint8_t) const;
-    bool HasController(int) const;
 
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;

@@ -82,6 +82,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     const PbCommand &command = context.GetCommand();
     const PbOperation operation = command.operation();
 
+    scoped_lock lock(dispatch_lock);
+
     // Handle commands that are not device-specific
     switch (operation) {
     case DETACH_ALL:
@@ -465,29 +467,29 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
 
 string CommandExecutor::SetReservedIds(const string &ids)
 {
-    set<int> ids_to_reserve;
+    unordered_set<int> ids_to_reserve;
     stringstream ss(ids);
     string id;
     while (getline(ss, id, ',')) {
         const int res_id = ParseAsUnsignedInt(id);
         if (res_id == -1 || res_id > 7) {
-            return "Invalid ID " + id;
+            return "Invalid ID '" + id + "'";
         }
 
-        if (controller_factory.HasController(res_id)) {
+        if (controller_factory.GetDeviceForIdAndLun(res_id, 0)) {
             return "ID " + id + " is currently in use";
         }
 
         ids_to_reserve.insert(res_id);
     }
 
-    reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
+    reserved_ids = std::move(ids_to_reserve);
 
-    if (ids_to_reserve.empty()) {
-        s2p_logger.info("Cleared reserved ID(s)");
+    if (reserved_ids.empty()) {
+        s2p_logger.info("Cleared reserved IDs");
     }
     else {
-        s2p_logger.info("Reserved ID(s) set to {}", Join(ids_to_reserve));
+        s2p_logger.info("Reserved IDs set to {}", Join(reserved_ids));
     }
 
     return "";
@@ -651,8 +653,8 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     // SCDP can be attached only once
     if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
-            if (d->GetType() == device->GetType()) {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));
+            if (d->GetType() == SCDP) {
+                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_SCDP);
                 return nullptr;
             }
         }
@@ -741,10 +743,6 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
     // For all commands except ATTACH the device and LUN must exist
     if (context.GetCommand().operation() == ATTACH) {
         return true;
-    }
-
-    if (!controller_factory.HasController(id)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
     }
 
     if (!controller_factory.GetDeviceForIdAndLun(id, lun)) {

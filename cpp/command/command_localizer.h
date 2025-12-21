@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ enum class LocalizationKey
     ERROR_OPERATION_DENIED_REMOVABLE,
     ERROR_OPERATION_DENIED_PROTECTABLE,
     ERROR_OPERATION_DENIED_READY,
-    ERROR_UNIQUE_DEVICE_TYPE,
+    ERROR_UNIQUE_SCDP,
     ERROR_PERSIST
 };
 

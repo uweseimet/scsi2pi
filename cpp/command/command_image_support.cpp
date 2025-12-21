@@ -9,9 +9,7 @@
 #include "command_image_support.h"
 #include <fstream>
 #include "command_context.h"
-#ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
-#endif
 #include "protobuf/s2p_interface_util.h"
 
 using namespace s2p_interface_util;

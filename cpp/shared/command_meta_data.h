@@ -29,9 +29,9 @@ public:
         bool has_data_out;
     };
 
-    static CommandMetaData& GetInstance()
+    static const CommandMetaData& GetInstance()
     {
-        static CommandMetaData instance; // NOSONAR instance cannot be inlined
+        static const CommandMetaData instance; // NOSONAR instance cannot be inlined
         return instance;
     }
 
@@ -47,7 +47,7 @@ public:
         return command_names[static_cast<int>(cmd)];
     }
 
-    string LogCdb(span<const uint8_t>, const string&) const;
+    string LogCdb(span<const uint8_t>, string_view) const;
 
 private:
 

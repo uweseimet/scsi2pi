@@ -141,8 +141,7 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
 
 string testing::CreateTempName()
 {
-    error_code error;
-    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path(error).string()); // NOSONAR Publicly writable directory is safe here
+    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path().string()); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> testing::OpenTempFile(const string &extension)
@@ -192,17 +191,19 @@ string testing::ReadTempFileToString(const string &filename)
 void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
     string filenames;
-    auto [fd1, filename1] = OpenTempFile();
+    const auto& [fd1, filename1] = OpenTempFile();
     filenames = filename1;
-    (void)write(fd1, properties1.data(), properties1.size());
+    write(fd1, properties1.data(), properties1.size());
     close(fd1);
+
     if (!properties2.empty()) {
-        auto [fd2, filename2] = OpenTempFile();
+        const auto& [fd2, filename2] = OpenTempFile();
         filenames += ",";
         filenames += filename2;
-        (void)write(fd2, properties2.data(), properties2.size());
+        write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
+
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
 }
 

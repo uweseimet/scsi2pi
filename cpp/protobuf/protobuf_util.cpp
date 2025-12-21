@@ -58,12 +58,8 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     size_t offset = 0;
     while (offset < buf.size()) {
         const auto len = read(fd, &buf.data()[offset], buf.size() - offset);
-        if (len == -1) {
-            return -1;
-        }
-
-        if (!len) {
-            break;
+        if (len <= 0) {
+            return !len ? offset : -1;
         }
 
         offset += len;
@@ -82,10 +78,6 @@ size_t protobuf_util::WriteBytes(int fd, span<uint8_t> buf)
         }
 
         offset += len;
-
-        if (offset == buf.size()) {
-            break;
-        }
     }
 
     return offset;
