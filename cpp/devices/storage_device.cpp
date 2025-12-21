@@ -121,7 +121,7 @@ bool StorageDevice::Eject(bool force)
     return status;
 }
 
-void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
+void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 {
     // The page data are optional
     if (!length) {

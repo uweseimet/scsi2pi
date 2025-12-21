@@ -96,7 +96,7 @@ public:
     // For DATA OUT phase, except for MODE SELECT
     virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int, int);
+    virtual void ModeSelect(cdb_t, data_out_t, int);
 
     virtual void FlushCache()
     {

@@ -206,7 +206,7 @@ TEST(PrimaryDeviceTest, ModeSelect)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_THROW(device.ModeSelect( { }, { }, 0, 0), ScsiException);
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0), ScsiException);
 }
 
 TEST(PrimaryDeviceTest, ModeSense6)

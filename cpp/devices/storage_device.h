@@ -127,7 +127,7 @@ protected:
         blocks = b;
     }
 
-    void ModeSelect(cdb_t, data_out_t, int, int) override;
+    void ModeSelect(cdb_t, data_out_t, int) override;
     pair<int, int> EvaluateBlockDescriptors(ScsiCommand, data_out_t, int);
     virtual uint32_t VerifyBlockSizeChange(uint32_t, bool);
     bool SetBlockSize(uint32_t);

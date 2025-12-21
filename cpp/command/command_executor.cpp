@@ -650,7 +650,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
-    // SCDP can be attached only once
+    // SCDP may be attached only once
     if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
             if (d->GetType() == SCDP) {

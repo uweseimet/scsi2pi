@@ -415,7 +415,7 @@ void PrimaryDevice::DiscardReservation()
     reserving_initiator = NOT_RESERVED;
 }
 
-void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int, int)
+void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int)
 {
     // There is no default implementation of MODE SELECT
     throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);

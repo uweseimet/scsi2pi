@@ -112,9 +112,9 @@ vector<uint8_t> ScsiCd::InquiryInternal() const
     return HandleInquiry(DeviceType::CD_DVD, true);
 }
 
-void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset, int length)
+void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset)
 {
-    Disk::ModeSelect(cdb, buf, offset, length);
+    Disk::ModeSelect(cdb, buf, offset);
 
     CreateDataTrack();
 }
