@@ -60,10 +60,10 @@ TEST(DaynaportTest, InquiryInternal)
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     controller->SetCdbByte(4, 255);
-    EXPECT_EQ(36, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+    EXPECT_EQ(36U, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
 
     controller->SetCdbByte(4, 37);
-    EXPECT_EQ(37, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+    EXPECT_EQ(37U, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
 }
 
 TEST(DaynaportTest, TestUnitReady)

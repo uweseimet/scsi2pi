@@ -280,17 +280,17 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st6->set_key("error2");
     st6->set_value(5);
     s = DisplayStatisticsInfo(info);
-    const int id3_lun3 = s.find("3:3");
+    const auto id3_lun3 = s.find("3:3");
     EXPECT_NE(string::npos, id3_lun3);
-    const int id4_lun0 = s.find("4:0");
+    const auto id4_lun0 = s.find("4:0");
     EXPECT_NE(string::npos, id4_lun0);
-    const int id4_lun4 = s.find("4:4");
+    const auto id4_lun4 = s.find("4:4");
     EXPECT_NE(string::npos, id4_lun4);
     EXPECT_LT(id3_lun3, id4_lun0);
     EXPECT_LT(id4_lun0, id4_lun4);
-    const int error1 = s.find("error1");
+    const auto error1 = s.find("error1");
     EXPECT_NE(string::npos, error1);
-    const int error2 = s.find("error2");
+    const auto error2 = s.find("error2");
     EXPECT_NE(string::npos, error2);
     EXPECT_LT(error1, error2);
 }

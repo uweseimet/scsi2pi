@@ -157,7 +157,6 @@ void Printer::SynchronizeBuffer()
 int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
-        assert(false);
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 

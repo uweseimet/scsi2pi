@@ -139,8 +139,11 @@ TEST(PrinterTest, WriteData)
 {
     auto [controller, PRINTER] = CreateDevice(SCLP);
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     controller->SetTransferSize(4, 4);
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::CLOSE_TRACK_SESSION));
+    EXPECT_THROW(PRINTER->WriteData(controller->GetCdb(), controller->GetBuffer(), 4), ScsiException);
+
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     EXPECT_NO_THROW(PRINTER->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
 }
 

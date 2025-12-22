@@ -7,6 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "command/command_dispatcher.h"
+#include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
@@ -241,4 +243,16 @@ TEST(HostServicesTest, WriteData)
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
+}
+
+TEST(HostServicesTest, SetDispatcher)
+{
+    ControllerFactory controller_factory;
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
+    auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
+
+    auto [controller, services] = CreateDevice(SCHS);
+    dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
 }
