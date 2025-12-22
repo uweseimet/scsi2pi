@@ -33,30 +33,11 @@ void ScsiHd::FinalizeSetup()
 
     // For non-removable media drives set the default product name based on the drive capacity
     if (!IsRemovable()) {
-        uint64_t capacity = GetBlockCount() * GetBlockSize();
-        string unit;
+        const uint64_t capacity = GetBlockCount() * GetBlockSize();
 
-        // 10,000,000 MiB and more
-        if (capacity >= 10'737'418'240'000) {
-            capacity /= 1'099'511'627'776;
-            unit = "T";
-        }
-        // 10,000 MiB and more
-        else if (capacity >= 10'485'760'000) {
-            capacity /= 1'073'741'824;
-            unit = "G";
-        }
-        // 1 MiB and more
-        else if (capacity >= 1'048'576) {
-            capacity /= 1'048'576;
-            unit = "M";
-        }
-        else {
-            capacity /= 1024;
-            unit = "K";
-        }
+        const auto *unit = ranges::find_if(UNITS, [capacity](const Unit &u) {return capacity >= u.threshold;});
 
-        SetProductData( { "", fmt::format("SCSI HD {0} {1}iB", capacity, unit), "" }, false);
+        SetProductData( { "", fmt::format("SCSI HD {0} {1}iB", capacity / unit->divisor, unit->abbr), "" }, false);
     }
 }
 

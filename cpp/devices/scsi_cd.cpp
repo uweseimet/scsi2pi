@@ -167,24 +167,23 @@ int ScsiCd::ReadData(data_in_t buf)
 
 void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)
 {
-    // 75 and 75*60 get the remainder
-    uint32_t m = lba / (75 * 60);
-    uint32_t s = lba % (75 * 60);
-    const uint32_t f = s % 75;
-    s /= 75;
+    uint32_t minutes = lba / (75 * 60);
+    uint32_t seconds = (lba / 75) % 60;
+    const uint32_t frames = lba % 75;
 
-    // The base point is M=0, S=2, F=0
-    s += 2;
-    if (s >= 60) {
-        s -= 60;
-        ++m;
+    // The base point is minutes=0, seconds=2, frames=0
+    seconds += 2;
+    if (seconds >= 60) {
+        seconds -= 60;
+        ++minutes;
     }
 
-    assert(m < 0x100);
-    assert(s < 60);
-    assert(f < 75);
+    assert(minutes < 0x100);
+    assert(seconds < 60);
+    assert(frames < 75);
+
     msf[0] = 0x00;
-    msf[1] = static_cast<uint8_t>(m);
-    msf[2] = static_cast<uint8_t>(s);
-    msf[3] = static_cast<uint8_t>(f);
+    msf[1] = static_cast<uint8_t>(minutes);
+    msf[2] = static_cast<uint8_t>(seconds);
+    msf[3] = static_cast<uint8_t>(frames);
 }

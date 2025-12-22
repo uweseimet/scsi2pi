@@ -126,9 +126,18 @@ protected:
     void UpdateTransferLength(int);
     void UpdateOffsetAndLength();
 
-    void LogTrace(const string&) const;
-    void LogDebug(const string&) const;
-    void LogWarn(const string&) const;
+    void LogTrace(const string &s) const
+    {
+        controller_logger->trace(s);
+    }
+    void LogDebug(const string &s) const
+    {
+        controller_logger->debug(s);
+    }
+    void LogWarn(const string &s) const
+    {
+        controller_logger->warn(s);
+    }
 
 private:
 

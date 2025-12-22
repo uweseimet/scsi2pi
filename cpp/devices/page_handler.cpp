@@ -117,7 +117,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         }
 
         const int page_code = ParseAsUnsignedInt(key_components[1]);
-        if (page_code == -1 || page_code > 0x3e) {
+        if (page_code < 0 || page_code > 0x3e) {
             warn("Ignored invalid page code in mode page property '{}'", key);
             continue;
         }

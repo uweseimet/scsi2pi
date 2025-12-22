@@ -36,4 +36,18 @@ private:
     void AddDrivePage(map<int, vector<byte>>&, bool) const;
     void AddNotchPage(map<int, vector<byte>>&, bool) const;
     void AddDecVendorPage(map<int, vector<byte>>&, bool) const;
+
+    struct Unit
+    {
+        uint64_t threshold;
+        uint64_t divisor;
+        char abbr;
+    };
+
+    inline static constexpr array<Unit, 4> UNITS = { {
+        { 10'737'418'240'000, 1'099'511'627'776, 'T' },
+        { 10'485'760'000, 1'073'741'824, 'G' },
+        { 1'048'576, 1'048'576, 'M' },
+        { 0, 1014, 'K' }
+    } };
 };

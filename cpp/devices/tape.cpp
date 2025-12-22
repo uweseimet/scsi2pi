@@ -490,9 +490,13 @@ void Tape::Space6()
     switch (const auto code = static_cast<ObjectType>(GetCdbByte(1) & 0x07); code) {
     case ObjectType::BLOCK:
     case ObjectType::FILEMARK:
-        if (const int32_t count = GetSignedInt24(GetController()->GetCdb(), 2); count) {
-            FindNextObject(code, count, false);
+        {
+        const int count = GetCdbInt24(2);
+        if (count) {
+            // The count is signed
+            FindNextObject(code, count >= 0x800000 ? count - 0x1000000 : count, false);
         }
+    }
         break;
 
     case ObjectType::END_OF_DATA:
@@ -845,7 +849,7 @@ uint32_t Tape::GetByteCount()
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const int length = GetInt24(GetController()->GetCdb(), expl ? 12 : 2);
+    const int length = GetCdbInt24(expl ? 12 : 2);
     const int32_t count = fixed ? length * GetBlockSize() : length;
 
     LogTrace(fmt::format("Current position: {0}, requested byte count: {1}", tape_position, count));
@@ -1017,12 +1021,6 @@ void Tape::CheckForWriteError()
     }
 
     file.flush();
-}
-
-int32_t Tape::GetSignedInt24(cdb_t buf, int offset)
-{
-    const int value = GetInt24(buf, offset);
-    return value >= 0x800000 ? value - 0x1000000 : value;
 }
 
 vector<PbStatistics> Tape::GetStatistics() const

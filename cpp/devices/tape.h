@@ -114,8 +114,6 @@ private:
     static void AddDataCompressionPage(map<int, vector<byte>>&);
     static void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool);
 
-    static int32_t GetSignedInt24(cdb_t, int);
-
     fstream file;
 
     SimhMetaData current_meta_data = { };

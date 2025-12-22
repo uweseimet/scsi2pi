@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -66,14 +66,13 @@ TEST(DaynaportTest, TestUnitReady)
 
 TEST(DaynaportTest, WriteData)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-    vector<int> cdb(6);
+    auto [_, daynaport] = CreateDevice(SCDP);
+    array<int, 6> cdb = { };
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::SEND_MESSAGE_6));
+    cdb[0] = static_cast<int>(ScsiCommand::SEND_MESSAGE_6);
     // Unknown data format must be ignored
-    controller->SetCdbByte(5, 0xff);
-    vector<uint8_t> buf(0);
-    EXPECT_NO_THROW(daynaport->WriteData(controller->GetCdb(), buf, 0, 0));
+    cdb[5] = 0xff;
+    EXPECT_NO_THROW(daynaport->WriteData(cdb, { }, 0, 0));
 }
 
 TEST(DaynaportTest, GetMessage6)
