@@ -218,6 +218,8 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_EQ(string::npos, s.find("error"));
 
     auto *st1 = info.add_statistics();
+    st1->set_id(1);
+    st1->set_unit(1);
     st1->set_category(PbStatisticsCategory::CATEGORY_INFO);
     st1->set_key("info");
     st1->set_value(1);
@@ -230,6 +232,8 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_EQ(string::npos, s.find("warning"));
     EXPECT_EQ(string::npos, s.find("error"));
     auto *st2 = info.add_statistics();
+    st2->set_id(2);
+    st2->set_unit(2);
     st2->set_category(PbStatisticsCategory::CATEGORY_WARNING);
     st2->set_key("warning");
     st2->set_value(2);
@@ -242,6 +246,8 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_NE(string::npos, s.find("warning"));
     EXPECT_EQ(string::npos, s.find("error"));
     auto *st3 = info.add_statistics();
+    st3->set_id(3);
+    st3->set_unit(3);
     st3->set_category(PbStatisticsCategory::CATEGORY_ERROR);
     st3->set_key("error");
     st3->set_value(3);
@@ -253,6 +259,27 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     EXPECT_NE(string::npos, s.find("info"));
     EXPECT_NE(string::npos, s.find("warning"));
     EXPECT_NE(string::npos, s.find("error"));
+    auto *st4 = info.add_statistics();
+    st4->set_id(4);
+    st4->set_unit(4);
+    st4->set_category(PbStatisticsCategory::CATEGORY_ERROR);
+    st4->set_key("error");
+    st4->set_value(4);
+    auto *st5 = info.add_statistics();
+    st5->set_id(4);
+    st5->set_unit(0);
+    st5->set_category(PbStatisticsCategory::CATEGORY_ERROR);
+    st5->set_key("error");
+    st5->set_value(5);
+    s = DisplayStatisticsInfo(info);
+    const int id3_lun3 = s.find("3:3");
+    EXPECT_NE(string::npos, id3_lun3);
+    const int id4_lun0 = s.find("4:0");
+    EXPECT_NE(string::npos, id4_lun0);
+    const int id4_lun4 = s.find("4:4");
+    EXPECT_NE(string::npos, id4_lun4);
+    EXPECT_LT(id3_lun3, id4_lun0);
+    EXPECT_LT(id4_lun0, id4_lun4);
 }
 
 TEST(S2pCtlDisplayTest, DisplayImageFile)
