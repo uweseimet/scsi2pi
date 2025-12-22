@@ -187,6 +187,14 @@ TEST(S2pUtilTest, GetStatusString)
     EXPECT_NE(string::npos, GetStatusString(0xff).find("respond"));
 }
 
+TEST(S2pUtilTest, FormatSenseData)
+{
+    EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), COMMAND PHASE ERROR (ASC $4a), ASCQ $00", FormatSenseData(
+        SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR, 0x00));
+    EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), ASC $ff, ASCQ $ff", FormatSenseData(
+        SenseKey::ABORTED_COMMAND, static_cast<Asc>(0xff), 0xff));
+}
+
 TEST(S2pUtilTest, GetHexBytes)
 {
     auto bytes = HexToBytes("");
