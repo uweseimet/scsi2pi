@@ -127,3 +127,20 @@ TEST(ControllerFactoryTest, SetLogLevel)
     EXPECT_EQ(level::level_enum::off, device1->GetLogger().level());
     EXPECT_EQ(level::level_enum::err, device2->GetLogger().level());
 }
+
+TEST(ControllerFactoryTest, SetFormatLimit)
+{
+    MockBus bus;
+    ControllerFactory controller_factory;
+    const DeviceFactory &device_factory = DeviceFactory::GetInstance();
+    const array<const uint8_t, 2> bytes = { 0x01, 0x02 };
+
+    const auto device1 = device_factory.CreateDevice(SCHS, 0, "");
+    controller_factory.AttachToController(bus, 0, device1);
+    EXPECT_EQ("01:02", device1->GetController()->FormatBytes(bytes, bytes.size()).substr(10, 5));
+
+    controller_factory.SetFormatLimit(1);
+    const auto device2 = device_factory.CreateDevice(SCHS, 0, "");
+    controller_factory.AttachToController(bus, 1, device2);
+    EXPECT_EQ("01   ", device2->GetController()->FormatBytes(bytes, bytes.size()).substr(10, 5));
+}
