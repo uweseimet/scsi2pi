@@ -191,17 +191,13 @@ int DaynaPort::GetMessage(data_in_t buf)
 //             XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
-    const auto command = static_cast<ScsiCommand>(cdb[0]);
-    assert(command == ScsiCommand::SEND_MESSAGE_6);
-    if (command != ScsiCommand::SEND_MESSAGE_6) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
-    }
+    assert(static_cast<ScsiCommand>(cdb[0]) == ScsiCommand::SEND_MESSAGE_6);
 
     int data_length = 0;
-    if (const int data_format = GetCdbByte(5); data_format == 0x00) {
-        data_length = GetCdbInt16(3);
+    if (const int data_format = cdb[5]; data_format == 0x00) {
+        data_length = GetInt16(cdb, 3);
         tap.Send(buf);
         byte_write_count += data_length;
     }

@@ -521,7 +521,7 @@ bool Controller::TransferFromHost(int length)
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
         else {
-            transferred_length = device->WriteData(GetCdb(), GetBuffer(), GetOffset(), length);
+            transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
         }
     }
     catch (const ScsiException &e) {

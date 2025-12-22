@@ -221,12 +221,12 @@ TEST(StorageDeviceTest, ConfiguredBlockSize)
     EXPECT_EQ(512U, device.GetConfiguredBlockSize());
 }
 
-TEST(StorageDeviceTest, SetBlockSize)
+TEST(StorageDeviceTest, SetGetBlockSize)
 {
     MockStorageDevice device;
 
-    EXPECT_TRUE(device.SetBlockSize(512));
-    EXPECT_FALSE(device.SetBlockSize(520));
+    device.SetBlockSize(4096);
+    EXPECT_EQ(4096U, device.GetBlockSize());
 }
 
 TEST(StorageDeviceTest, ValidateBlockSize)

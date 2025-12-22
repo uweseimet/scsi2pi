@@ -270,8 +270,13 @@ TEST(ScsiHdTest, ModeSelect)
 
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
-    // Page 0
-    EXPECT_THROW(hd.ModeSelect(cdb, buf, 16), ScsiException);
+    // There is no standard page 0
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 16);}, Throws<ScsiException>(AllOf(
+        Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+        Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
+
+    // Length 0 is ignored
+    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
@@ -288,6 +293,11 @@ TEST(ScsiHdTest, ModeSelect)
     // Page length
     buf[9] = 0x0a;
     EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+
+    // Invalid length (must be greater than 1)
+    EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 1);}, Throws<ScsiException>(AllOf(
+         Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+         Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))));
 }
 
 TEST(ScsiHdTest, ModeSelect6_Single)
@@ -555,4 +565,3 @@ TEST(ScsiHdTest, Open)
     hd.Open();
     EXPECT_EQ(4U, hd.GetBlockCount());
 }
-

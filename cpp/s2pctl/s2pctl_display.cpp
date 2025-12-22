@@ -86,10 +86,6 @@ string DisplayDefaultParameters(const PbDeviceProperties &properties)
 
 string DisplayBlockSizes(const PbDeviceProperties &properties)
 {
-    if (!properties.block_sizes_size()) {
-        return "";
-    }
-
     ostringstream s;
 
     const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
@@ -115,7 +111,7 @@ string DisplayPermittedValues(const PbOperationParameter &parameter)
 
 string DisplayParameters(const PbOperationMetaData &meta_data)
 {
-    vector < PbOperationParameter > sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
+    vector<PbOperationParameter> sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
     ranges::sort(sorted_parameters, [](const auto &a, const auto &b) {return a.name() < b.name();});
 
     ostringstream s;

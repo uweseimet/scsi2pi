@@ -272,7 +272,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);

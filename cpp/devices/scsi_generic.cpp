@@ -139,7 +139,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
     return ReadWriteData(buf, GetController()->GetChunkSize());
 }
 
-int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int, int length)
+int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, send the command when all paramaeters are available
     if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT

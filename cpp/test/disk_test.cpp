@@ -331,7 +331,7 @@ TEST(DiskTest, Write6)
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_6));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(4, 2);
     Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -364,7 +364,7 @@ TEST(DiskTest, Write10)
     controller->SetCdbByte(8, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_10));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(8, 2);
     Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -397,7 +397,7 @@ TEST(DiskTest, Write16)
     controller->SetCdbByte(13, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_16));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(13, 2);
     Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -715,7 +715,7 @@ TEST(DiskTest, WriteData)
 {
     MockDisk disk;
 
-    EXPECT_THAT([&] {disk.WriteData( {}, {}, 0, 0);}, Throws<ScsiException>(AllOf(
+    EXPECT_THAT([&] {disk.WriteData( {}, {}, 0);}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
                 Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }

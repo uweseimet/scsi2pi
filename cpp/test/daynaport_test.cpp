@@ -55,6 +55,17 @@ TEST(DaynaportTest, Inquiry)
     TestShared::Inquiry(SCDP, DeviceType::PROCESSOR, ScsiLevel::SCSI_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
+TEST(DaynaportTest, InquiryInternal)
+{
+    auto [controller, daynaport] = CreateDevice(SCDP);
+
+    controller->SetCdbByte(4, 255);
+    EXPECT_EQ(36, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+
+    controller->SetCdbByte(4, 37);
+    EXPECT_EQ(37, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+}
+
 TEST(DaynaportTest, TestUnitReady)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
@@ -68,11 +79,19 @@ TEST(DaynaportTest, WriteData)
 {
     auto [_, daynaport] = CreateDevice(SCDP);
     array<int, 6> cdb = { };
+    const array<const uint8_t, 5> buf = { };
 
     cdb[0] = static_cast<int>(ScsiCommand::SEND_MESSAGE_6);
+
+    cdb[5] = 0x00;
+    EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
+
+    cdb[5] = 0x80;
+    EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
+
     // Unknown data format must be ignored
     cdb[5] = 0xff;
-    EXPECT_NO_THROW(daynaport->WriteData(cdb, { }, 0, 0));
+    EXPECT_EQ(123, daynaport->WriteData(cdb, buf, 123));
 }
 
 TEST(DaynaportTest, GetMessage6)

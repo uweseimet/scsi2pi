@@ -269,15 +269,11 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-bool StorageDevice::SetBlockSize(uint32_t size)
+void StorageDevice::SetBlockSize(uint32_t size)
 {
-    if (!supported_block_sizes.contains(size) && configured_block_size != size) {
-        return false;
-    }
+    assert(supported_block_sizes.contains(size) || configured_block_size == size);
 
     block_size = size;
-
-    return true;
 }
 
 bool StorageDevice::SetConfiguredBlockSize(uint32_t size)

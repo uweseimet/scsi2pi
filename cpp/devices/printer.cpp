@@ -154,7 +154,7 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
         assert(false);

@@ -45,10 +45,9 @@ void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    // Sector size (default 512 bytes) and number of sectors
-    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw IoException("Invalid sector size");
-    }
+    // This call cannot fail, the method argument is always valid
+    SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
+
     SetBlockCount(GetFileSize() / GetBlockSize());
 
     FinalizeSetup();

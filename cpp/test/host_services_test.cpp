@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -230,15 +230,15 @@ TEST(HostServicesTest, SetUpModePages)
 TEST(HostServicesTest, WriteData)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    array<uint8_t, 1> buf = { };
+    const array<const uint8_t, 1> buf = { };
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::TEST_UNIT_READY));
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf,0, 0), ScsiException)<< "Illegal command";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "Illegal command";
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
-    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0, 0));
+    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0));
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0,0), ScsiException)<< "protobuf data are invalid";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
 }
