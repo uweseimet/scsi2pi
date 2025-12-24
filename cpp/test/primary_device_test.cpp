@@ -295,10 +295,10 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SPC_3);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
-    EXPECT_EQ(DeviceType::PROCESSOR, (DeviceType )controller->GetBuffer()[0]);
+    EXPECT_EQ(DeviceType::PROCESSOR, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
-    EXPECT_EQ(ScsiLevel::SPC_3, (ScsiLevel)controller->GetBuffer()[2]) << "Wrong SCSI level";
-    EXPECT_EQ(ScsiLevel::SCSI_2, (ScsiLevel)controller->GetBuffer()[3]) << "Wrong response level";
+    EXPECT_EQ(ScsiLevel::SPC_3, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
+    EXPECT_EQ(ScsiLevel::SCSI_2, static_cast<ScsiLevel>(controller->GetBuffer()[3])) << "Wrong response level";
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     // ALLOCATION LENGTH
@@ -310,10 +310,10 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
-    EXPECT_EQ(DeviceType::DIRECT_ACCESS, (DeviceType )controller->GetBuffer()[0]);
+    EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
-    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, (ScsiLevel)controller->GetBuffer()[2]) << "Wrong SCSI level";
-    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, (ScsiLevel)controller->GetBuffer()[3]) << "Wrong response level";
+    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
+    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, static_cast<ScsiLevel>(controller->GetBuffer()[3])) << "Wrong response level";
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     controller->SetCdbByte(1, 0x01);

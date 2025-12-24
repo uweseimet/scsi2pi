@@ -77,7 +77,7 @@ TEST(DaynaportTest, TestUnitReady)
 
 TEST(DaynaportTest, WriteData)
 {
-    auto [_, daynaport] = CreateDevice(SCDP);
+    auto [controller, daynaport] = CreateDevice(SCDP);
     array<int, 6> cdb = { };
     const array<const uint8_t, 5> buf = { };
 

@@ -225,7 +225,7 @@ int Tape::ReadData(data_in_t buf)
         fmt::format("Reading {0} data byte(s) from position {1}, record length is {2}", length, tape_position, record_length));
 
     file.seekg(tape_position);
-    file.read((char*)buf.data(), length);
+    file.read(reinterpret_cast<char*>(buf.data()), length);
     CheckForReadError();
 
     remaining_count -= length;
@@ -236,7 +236,7 @@ int Tape::ReadData(data_in_t buf)
         // Trailing length
         array<uint8_t, META_DATA_SIZE> data;
         file.seekg(tape_position);
-        file.read((char*)data.data(), data.size());
+        file.read(reinterpret_cast<char*>(data.data()), data.size());
         CheckForReadError();
 
         if (const int trailing_length = FromLittleEndian(data).value; static_cast<int>(record_length)
@@ -270,7 +270,7 @@ int Tape::WriteData(cdb_t, data_out_t buf, int chunk_size)
     CheckForOverflow(length);
 
     file.seekp(tape_position);
-    file.write((const char*)buf.data(), length);
+    file.write(reinterpret_cast<const char*>(buf.data()), length);
     CheckForWriteError();
 
     remaining_count -= length;
@@ -875,7 +875,7 @@ void Tape::Erase()
     while (remaining >= 4) {
         const uint64_t chunk = min(remaining, static_cast<uint64_t>(buf.size())); // NOSONAR Cast is required for armv6
 
-        file.write((const char*)buf.data(), chunk);
+        file.write(reinterpret_cast<const char*>(buf.data()), chunk);
         CheckForWriteError();
 
         remaining -= chunk;
@@ -944,7 +944,7 @@ int Tape::WriteSimhMetaData(SimhClass cls, uint32_t value)
 
     CheckForOverflow(tape_position + META_DATA_SIZE);
 
-    file.write((const char*)ToLittleEndian( { cls, value }).data(), META_DATA_SIZE);
+    file.write(reinterpret_cast<const char*>(ToLittleEndian( { cls, value }).data()), META_DATA_SIZE);
     CheckForWriteError();
 
     return META_DATA_SIZE;

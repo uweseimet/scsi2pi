@@ -185,7 +185,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 
     LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
 
-    out.write((const char*)buf.data(), length);
+    out.write(reinterpret_cast<const char*>(buf.data()), length);
     CheckForFileError();
 
     return l;

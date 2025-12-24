@@ -665,7 +665,7 @@ TEST(DiskTest, AddAppleVendorPage)
 
     disk.AddAppleVendorPage(pages, false);
     vendor_page = pages[48];
-    EXPECT_STREQ("APPLE COMPUTER, INC   ", (const char* )&vendor_page[2]);
+    EXPECT_STREQ("APPLE COMPUTER, INC   ", reinterpret_cast<const char*>(&vendor_page[2]));
 }
 
 TEST(DiskTest, ModeSense6)

@@ -90,7 +90,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     } else {
         product_data = ident;
     }
-    EXPECT_EQ(product_data, string((const char* )buffer.data() + 8, 28));
+    EXPECT_EQ(product_data, string(reinterpret_cast<const char*>(buffer.data()) + 8, 28));
 }
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)

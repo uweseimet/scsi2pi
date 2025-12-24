@@ -416,7 +416,7 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
     cmd.SerializeToArray(data.data(), static_cast<int>(data.size()));
 
     ofstream out(filename, ios::binary);
-    out.write((const char*)data.data(), data.size());
+    out.write(reinterpret_cast<const char*>(data.data()), data.size());
     if (out.fail()) {
         throw IoException("Error: Can't create protobuf binary file '" + filename + "'");
     }

@@ -548,7 +548,7 @@ string S2pExec::ReadData()
     else {
         const size_t size = file_size(filename);
         buffer.resize(size);
-        in.read((char*)buffer.data(), size);
+        in.read(reinterpret_cast<char*>(buffer.data()), size);
     }
 
     return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
@@ -571,7 +571,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
         }
 
         hex += "\n";
-        out.write(text ? hex.data() : (const char*)data.data(), hex.size());
+        out.write(text ? hex.data() : reinterpret_cast<const char*>(data.data()), hex.size());
         if (out.fail()) {
             return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
         }

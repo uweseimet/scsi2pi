@@ -50,7 +50,9 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
         throw IoException("Invalid message data: " + string(strerror(errno)));
     }
 
-    message.ParseFromArray(data_buf.data(), size);
+    if (!message.ParseFromArray(data_buf.data(), size)) {
+        throw IoException("Can't parse protobuf message");
+    }
 }
 
 size_t protobuf_util::ReadBytes(int fd, span<byte> buf)

@@ -38,7 +38,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     auto [fd1, filename1] = OpenTempFile();
     // Data size -1
     buf = { byte { 0xff }, byte { 0xff }, byte { 0xff }, byte { 0xff } };
-    EXPECT_EQ((ssize_t )buf.size(), write(fd1, buf.data(), buf.size()));
+    EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd1, buf.data(), buf.size()));
     close(fd1);
     fd1 = open(filename1.c_str(), O_RDONLY);
     ASSERT_NE(-1, fd1);
@@ -47,7 +47,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     auto [fd2, filename2] = OpenTempFile();
     // Data size 2
     buf = { byte { 0x02 }, byte { 0x00 }, byte { 0x00 }, byte { 0x00 } };
-    EXPECT_EQ((ssize_t )buf.size(), write(fd2, buf.data(), buf.size()));
+    EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd2, buf.data(), buf.size()));
     close(fd2);
     fd2 = open(filename2.c_str(), O_RDONLY);
     EXPECT_NE(-1, fd2);

@@ -16,9 +16,7 @@ static void CheckPosition(const AbstractController &controller, shared_ptr<Prima
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, ScsiCommand::READ_POSITION);
 
-    if (position != GetInt32(controller.GetBuffer(), 4) || position != GetInt32(controller.GetBuffer(), 8)) {
-        EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4));
-    }
+    assert(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
 }
 
 static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
@@ -35,12 +33,12 @@ static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, ui
 static void CheckMetaData(istream &file, const SimhMetaData &expected)
 {
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.read((char*)data.data(), data.size());
+    file.read(reinterpret_cast<char*>(data.data()), data.size());
     SimhMetaData meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
     file.seekg(Pad(expected.value), ios::cur);
-    file.read((char*)data.data(), data.size());
+    file.read(reinterpret_cast<char*>(data.data()), data.size());
     meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
@@ -61,10 +59,10 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
 {
     assert(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
 
-    file.write((const char*)leading.data(), leading.size());
+    file.write(reinterpret_cast<const char*>(leading.data()), leading.size());
     file.seekp(length, ios::cur);
     if (!trailing.empty()) {
-        file.write((const char*)trailing.data(), trailing.size());
+        file.write(reinterpret_cast<const char*>(trailing.data()), trailing.size());
     }
 }
 

@@ -299,7 +299,7 @@ int S2pSimh::Add()
 
         if (binary) {
             input_data.resize(filesize);
-            data_file.read((char*)input_data.data(), input_data.size());
+            data_file.read(reinterpret_cast<char*>(input_data.data()), input_data.size());
         }
         else {
             string line;
@@ -333,7 +333,7 @@ int S2pSimh::Add()
 
     for (const auto &object : meta_data) {
         const auto &data = ToLittleEndian(object);
-        simh_file.write((const char*)data.data(), data.size());
+        simh_file.write(reinterpret_cast<const char*>(data.data()), data.size());
         if (simh_file.bad()) {
             cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
             return EXIT_FAILURE;
@@ -346,7 +346,7 @@ int S2pSimh::Add()
                     cerr << "Error: Not enough record data in '" << data_filename << "'\n";
                     return EXIT_FAILURE;
                 }
-                simh_file.write((const char*)input_data.data() + data_index, length);
+                simh_file.write(reinterpret_cast<const char*>(input_data.data()) + data_index, length);
                 data_index += length;
             }
             else {
@@ -357,7 +357,7 @@ int S2pSimh::Add()
                 simh_file << '\0';
             }
 
-            simh_file.write((const char*)data.data(), data.size());
+            simh_file.write(reinterpret_cast<const char*>(data.data()), data.size());
 
             if (simh_file.bad()) {
                 cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
@@ -407,7 +407,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta)
 
     array<uint8_t, META_DATA_SIZE> data = { };
     simh_file.seekg(position);
-    simh_file.read((char*)data.data(), data.size());
+    simh_file.read(reinterpret_cast<char*>(data.data()), data.size());
     if (simh_file.bad()) {
         return false;
     }
@@ -452,7 +452,7 @@ bool S2pSimh::ReadRecord(span<uint8_t> buf)
         return false;
     }
 
-    simh_file.read((char*)buf.data(), buf.size());
+    simh_file.read(reinterpret_cast<char*>(buf.data()), buf.size());
 
     return simh_file.good();
 }

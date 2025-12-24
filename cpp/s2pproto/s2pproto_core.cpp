@@ -273,7 +273,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     case ProtobufFormat::BINARY: {
         vector<uint8_t> data(result.ByteSizeLong());
         result.SerializeToArray(data.data(), data.size());
-        out.write((const char*)data.data(), data.size());
+        out.write(reinterpret_cast<const char*>(data.data()), data.size());
         break;
     }
 

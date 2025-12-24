@@ -44,7 +44,7 @@ int LinuxCache::Read(data_in_t buf, uint64_t start, int length)
     assert(length);
 
     file.seekg(sector_size * start);
-    file.read((char*)buf.data(), length);
+    file.read(reinterpret_cast<char*>(buf.data()), length);
     if (file.fail()) {
         file.clear();
         ++read_error_count;
@@ -59,7 +59,7 @@ int LinuxCache::Write(data_out_t buf, uint64_t start, int length)
     assert(length);
 
     file.seekp(sector_size * start);
-    file.write((const char*)buf.data(), length);
+    file.write(reinterpret_cast<const char*>(buf.data()), length);
     if (file.fail()) {
         file.clear();
         ++write_error_count;

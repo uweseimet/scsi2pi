@@ -47,6 +47,12 @@ ifeq ("$(shell uname -s)", "NetBSD")
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
+ifeq ("$(shell uname -s)", "OpenBSD")
+	AR = $(CROSS_COMPILE)ar
+	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter
+	LDFLAGS += -L/usr/local/lib
+endif
+
 ifeq ("$(shell uname -s)", "Darwin")
 	AR = $(CROSS_COMPILE)ar
 	CXXFLAGS += -Wno-unused-parameter

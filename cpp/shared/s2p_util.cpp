@@ -340,11 +340,7 @@ string_view s2p_util::Trim(string_view s)
 shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 {
     auto l = spdlog::get(name);
-    if (!l) {
-        l = stdout_color_st(name);
-    }
-
-    return l;
+    return l ? l : stdout_color_st(name);
 }
 
 void s2p_util::Sleep(const timespec &ns)

@@ -349,11 +349,7 @@ bool CommandImageSupport::ValidateParams(const CommandContext &context, const st
         return false;
     }
 
-    if (!CreateImageFolder(context, to)) {
-        return false;
-    }
-
-    return true;
+    return CreateImageFolder(context, to);
 }
 
 bool CommandImageSupport::IsValidSrcFilename(string_view filename)

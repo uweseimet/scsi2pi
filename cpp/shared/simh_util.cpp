@@ -12,7 +12,7 @@
 bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 {
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.read((char*)data.data(), data.size());
+    file.read(reinterpret_cast<char*>(data.data()), data.size());
 
     if (file.good()) {
         meta_data = FromLittleEndian(data);
@@ -56,7 +56,7 @@ uint32_t simh_util::Pad(int length)
 bool simh_util::WriteFilemark(ostream &file)
 {
     const array<uint8_t, 4> &filemark = { 0, 0, 0, 0 };
-    file.write((const char*)filemark.data(), filemark.size());
+    file.write(reinterpret_cast<const char*>(filemark.data()), filemark.size());
     return file.good();
 }
 
@@ -65,9 +65,9 @@ bool simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int lengt
     const array<uint8_t, 4> good_data = { static_cast<uint8_t>(length & 0xff),
         static_cast<uint8_t>((length >> 8) & 0xff), static_cast<uint8_t>((length >> 16) & 0xff),
         static_cast<uint8_t>((length >> 24) & 0xff) };
-    file.write((const char*)good_data.data(), good_data.size());
-    file.write((const char*)data.data(), length);
-    file.write((const char*)good_data.data(), good_data.size());
+    file.write(reinterpret_cast<const char*>(good_data.data()), good_data.size());
+    file.write(reinterpret_cast<const char*>(data.data()), length);
+    file.write(reinterpret_cast<const char*>(good_data.data()), good_data.size());
     return file.good();
 }
 

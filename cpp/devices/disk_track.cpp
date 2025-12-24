@@ -70,7 +70,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     offset <<= shift_count;
 
     in.seekg(offset);
-    in.read((char*)buffer, size);
+    in.read(reinterpret_cast<char*>(buffer), size);
     return in.good();
 }
 
@@ -110,7 +110,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
             }
 
             out.seekp(offset + (i << shift_count));
-            out.write((const char*)buffer + (i << shift_count), total);
+            out.write(reinterpret_cast<const char*>(buffer) + (i << shift_count), total);
             if (out.fail()) {
                 return false;
             }
@@ -140,7 +140,7 @@ int DiskTrack::ReadSector(data_in_t buf, int sector) const
 
     const int size = 1 << shift_count;
 
-    memcpy(buf.data(), buffer + ((off_t)sector << shift_count), size);
+    memcpy(buf.data(), buffer + (static_cast<off_t>(sector) << shift_count), size);
 
     return size;
 }

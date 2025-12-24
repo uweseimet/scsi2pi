@@ -23,7 +23,7 @@
 #pragma once
 
 #include <array>
-#ifndef __NetBSD__
+#if !defined(__NetBSD__) && !defined(__OpenBSD__)
 #include <net/ethernet.h>
 #endif
 #include "base/primary_device.h"
