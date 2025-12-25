@@ -22,9 +22,9 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Disk::Disk(PbDeviceType type, int lun, bool supports_mode_select, bool supports_save_parameters,
+Disk::Disk(PbDeviceType z, int l, bool supports_mode_select, bool supports_save_parameters,
     const set<uint32_t> &s)
-: StorageDevice(type, lun, supports_mode_select, supports_save_parameters, s)
+: StorageDevice(z, l, supports_mode_select, supports_save_parameters, s)
 {
     SetStoppable(true);
 }

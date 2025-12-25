@@ -128,10 +128,9 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     }
 }
 
-vector<uint8_t> ScsiGeneric::InquiryInternal() const
+__attribute__((noreturn)) vector<uint8_t> ScsiGeneric::InquiryInternal() const
 {
     assert(false);
-    return {};
 }
 
 int ScsiGeneric::ReadData(data_in_t buf)

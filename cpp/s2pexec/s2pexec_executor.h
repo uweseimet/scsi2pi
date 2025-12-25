@@ -12,9 +12,7 @@
 #include "initiator/initiator_executor.h"
 #include "shared/sg_adapter.h"
 
-using namespace std;
-
-class S2pExecExecutor
+class S2pExecExecutor final
 {
 
 public:

@@ -14,8 +14,6 @@
 #include "base/primary_device.h"
 #include "page_handler.h"
 
-using namespace std;
-
 class StorageDevice : public PrimaryDevice
 {
 

@@ -16,10 +16,7 @@
 
 class SgAdapter;
 
-using namespace std;
-using namespace spdlog;
-
-class SgExecutor : public S2pDumpExecutor
+class SgExecutor final : public S2pDumpExecutor
 {
 
 public:

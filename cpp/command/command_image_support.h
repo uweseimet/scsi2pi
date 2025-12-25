@@ -15,7 +15,7 @@ using namespace filesystem;
 
 class CommandContext;
 
-class CommandImageSupport
+class CommandImageSupport final
 {
 
 public:

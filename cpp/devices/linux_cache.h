@@ -11,7 +11,7 @@
 #include <fstream>
 #include "cache.h"
 
-class LinuxCache : public Cache
+class LinuxCache final : public Cache
 {
 
 public:

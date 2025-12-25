@@ -15,10 +15,7 @@
 #include "initiator/initiator_executor.h"
 #include "s2pdump_executor.h"
 
-using namespace std;
-using namespace spdlog;
-
-class BoardExecutor : public S2pDumpExecutor
+class BoardExecutor final : public S2pDumpExecutor
 {
 
 public:

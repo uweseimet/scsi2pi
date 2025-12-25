@@ -13,7 +13,7 @@
 
 using namespace spdlog;
 
-class SgAdapter
+class SgAdapter final
 {
 
 public:

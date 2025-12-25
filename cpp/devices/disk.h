@@ -16,8 +16,6 @@
 #include <tuple>
 #include "storage_device.h"
 
-using namespace std;
-
 class Cache;
 
 class Disk : public StorageDevice

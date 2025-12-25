@@ -17,9 +17,7 @@
 #include <vector>
 #include "shared/s2p_defs.h"
 
-using namespace std;
-
-class DiskTrack
+class DiskTrack final
 {
 
 public:

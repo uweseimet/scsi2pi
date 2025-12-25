@@ -16,7 +16,7 @@
 
 DiskTrack::~DiskTrack()
 {
-    free(buffer); // NOSONAR free() must be used here due to posix_memalign
+    free(buffer); // NOSONAR free() must be used here due to aligned_alloc
 }
 
 void DiskTrack::Init(int64_t track, int size, int sectors)
@@ -45,10 +45,9 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 
     // Allocate or reallocate the buffer
     if (!buffer || buffer_size != size) {
-        free(buffer); // NOSONAR free() must be used here due to posix_memalign
-        buffer = nullptr;
-
-        if (posix_memalign((void**)&buffer, 512, (size + 511) & ~511)) {
+        free(buffer); // NOSONAR free() must be used here due to aligned_alloc
+        buffer = static_cast<uint8_t*>(aligned_alloc(512, (size + 511) & ~511));
+        if (!buffer) {
             return false;
         }
 

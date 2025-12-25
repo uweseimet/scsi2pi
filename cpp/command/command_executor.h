@@ -30,7 +30,7 @@ using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 
-class CommandExecutor
+class CommandExecutor final
 {
 
 public:

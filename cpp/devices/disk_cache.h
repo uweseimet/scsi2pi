@@ -15,7 +15,7 @@
 
 class DiskTrack;
 
-class DiskCache : public Cache
+class DiskCache final : public Cache
 {
 
 public:

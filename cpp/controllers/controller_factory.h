@@ -20,9 +20,7 @@ class AbstractController;
 class PrimaryDevice;
 class ScriptGenerator;
 
-using namespace std;
-
-class ControllerFactory
+class ControllerFactory final
 {
 
 public:

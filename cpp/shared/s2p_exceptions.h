@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include "s2p_util.h"
 
-class ParserException : public runtime_error
+class ParserException final : public runtime_error
 {
     using runtime_error::runtime_error;
 };

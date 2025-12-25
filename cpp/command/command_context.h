@@ -8,15 +8,13 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include "command_localizer.h"
 #include "generated/s2p_interface.pb.h"
 
-using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 
-class CommandContext
+class CommandContext final
 {
 
 public:

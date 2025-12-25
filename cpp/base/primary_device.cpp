@@ -320,11 +320,11 @@ void PrimaryDevice::CheckReady()
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType type, bool is_removable) const
+vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType device_type, bool is_removable) const
 {
     vector<uint8_t> buf(0x1f + 5);
 
-    buf[0] = static_cast<uint8_t>(type);
+    buf[0] = static_cast<uint8_t>(device_type);
     buf[1] = is_removable ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= ScsiLevel::SCSI_2 ?

@@ -18,10 +18,7 @@
 static constexpr int ETH_FRAME_LEN = 1514;
 #endif
 
-using namespace std;
-using namespace spdlog;
-
-class TapDriver
+class TapDriver final
 {
 
 public:

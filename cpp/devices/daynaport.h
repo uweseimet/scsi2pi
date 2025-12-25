@@ -29,7 +29,7 @@
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice
+class DaynaPort final : public PrimaryDevice
 {
 
 public:

@@ -16,7 +16,7 @@
 
 using namespace std;
 
-class CommandMetaData
+class CommandMetaData final
 {
 
 public:

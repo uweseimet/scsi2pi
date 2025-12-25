@@ -39,10 +39,9 @@ void SasiHd::Inquiry()
     DataInPhase(buf.size());
 }
 
-vector<uint8_t> SasiHd::InquiryInternal() const
+__attribute__((noreturn)) vector<uint8_t> SasiHd::InquiryInternal() const
 {
     assert(false);
-    return {};
 }
 
 void SasiHd::RequestSense()

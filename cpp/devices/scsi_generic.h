@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class ScsiGeneric : public PrimaryDevice
+class ScsiGeneric final : public PrimaryDevice
 {
 
 public:

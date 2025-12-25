@@ -12,7 +12,6 @@
 #include "shared/simh_util.h"
 #include "storage_device.h"
 
-using namespace std;
 using namespace simh_util;
 
 class Tape : public StorageDevice

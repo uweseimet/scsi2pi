@@ -10,13 +10,12 @@
 
 #include <map>
 #include <string>
-#include <vector>
 
 using namespace std;
 
 using property_map = map<string, string, less<>>;
 
-class PropertyHandler
+class PropertyHandler final
 {
 
 public:

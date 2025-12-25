@@ -19,7 +19,7 @@ using namespace filesystem;
 
 class CommandDispatcher;
 
-class S2p
+class S2p final
 {
 
 public:
@@ -35,7 +35,7 @@ private:
     bool InitBus(bool, bool);
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
-    bool ParseProperties(const property_map&, int&, bool);
+    int ParseProperties(const property_map&, bool);
     void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;

@@ -14,8 +14,6 @@
 #include "shared/s2p_defs.h"
 #include "board.h"
 
-using namespace std;
-
 class Bus // NOSONAR The high number of simple convenience methods is justified
 {
 

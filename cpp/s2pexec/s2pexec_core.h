@@ -12,9 +12,7 @@
 #include "shared/s2p_formatter.h"
 #include "s2pexec_executor.h"
 
-using namespace std;
-
-class S2pExec
+class S2pExec final
 {
     class ExecutionException : public runtime_error
     {

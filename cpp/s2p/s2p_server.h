@@ -12,7 +12,7 @@
 
 using namespace std;
 
-class S2pServer
+class S2pServer final
 {
 
 public:

@@ -15,7 +15,7 @@
 
 using namespace std;
 
-class S2pFormatter
+class S2pFormatter final
 {
 
 public:

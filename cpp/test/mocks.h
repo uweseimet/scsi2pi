@@ -215,9 +215,7 @@ public:
 
     const S2pFormatter formatter;
 
-    MOCK_METHOD(void, Reset, (), (override));
     MOCK_METHOD(void, Status, (), (override));
-    MOCK_METHOD(void, Execute, (), ());
 
     using Controller::Controller;
     MockController(shared_ptr<Bus> b, int t) : Controller(*b, t, nullptr, formatter)
@@ -372,18 +370,6 @@ public:
     ~MockDisk() override = default;
 };
 
-class MockSasiHd : public SasiHd
-{
-
-public:
-
-    explicit MockSasiHd(int l) : SasiHd(l)
-    {
-        SetCachingMode(PbCachingMode::PISCSI);
-    }
-    ~MockSasiHd() override = default;
-};
-
 class MockScsiHd : public ScsiHd
 {
     FRIEND_TEST(DiskTest, ConfiguredSectorSize);
@@ -459,15 +445,11 @@ class MockTape : public Tape
     FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
+    FRIEND_TEST(TapeTest, ReadPosition);
 
 public:
 
     MockTape() : Tape(0)
     {
-    }
-
-    void SetReady(bool b)
-    {
-        StorageDevice::SetReady(b);
     }
 };

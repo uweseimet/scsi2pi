@@ -11,8 +11,6 @@
 #include <regex>
 #include "shared/s2p_util.h"
 
-using namespace std;
-
 enum class LocalizationKey
 {
     ERROR_AUTHENTICATION,

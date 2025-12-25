@@ -16,10 +16,9 @@
 
 class Bus;
 
-using namespace std;
 using namespace spdlog;
 
-class InitiatorExecutor
+class InitiatorExecutor final
 {
     class PhaseException : public runtime_error
     {

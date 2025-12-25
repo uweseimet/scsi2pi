@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class Printer : public PrimaryDevice
+class Printer final : public PrimaryDevice
 {
 
 public:

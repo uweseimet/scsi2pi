@@ -22,10 +22,9 @@
 
 class CommandContext;
 
-using namespace std;
 using namespace spdlog;
 
-class S2pThread
+class S2pThread final
 {
     using callback = function<bool(CommandContext&)>;
 

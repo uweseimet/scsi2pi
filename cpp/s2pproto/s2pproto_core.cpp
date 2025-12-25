@@ -75,11 +75,10 @@ bool S2pProto::Init(bool in_process, bool log_signals)
     executor = make_unique<S2pProtoExecutor>(*bus, initiator_id, *default_logger());
 
     instance = this;
+
     // Signal handler for cleaning up
-    struct sigaction termination_handler;
+    struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
-    sigemptyset(&termination_handler.sa_mask);
-    termination_handler.sa_flags = 0;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);

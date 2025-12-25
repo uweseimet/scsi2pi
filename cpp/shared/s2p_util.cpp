@@ -97,7 +97,7 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
     const string &ext = ToLower(path(filename).extension().string());
 
     // Remove the leading dot
-    return ext.empty() ? "" : ext.substr(1);
+    return ext.empty() ? ext : ext.substr(1);
 }
 
 string s2p_util::GetLocale()

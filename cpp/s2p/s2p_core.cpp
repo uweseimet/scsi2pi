@@ -139,8 +139,12 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    int port;
-    if (!ParseProperties(properties, port, ignore_conf)) {
+    int port = 0;
+    try {
+        port = ParseProperties(properties, ignore_conf);
+    }
+    catch (const ParserException &e) {
+        cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 
@@ -230,70 +234,65 @@ bool S2p::Ready() const
     return ready;
 }
 
-bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore_conf)
+int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 {
     const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
-    try {
-        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
-            ignore_conf);
 
-        if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
-            s2p_logger->set_pattern(log_pattern);
-            spdlog::set_pattern(log_pattern);
-            controller_factory.SetLogPattern(log_pattern);
-        }
+    property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
+        ignore_conf);
 
-        // This sets the global level only, there are no attached devices yet
-        log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
-        if (!dispatcher->SetLogLevel(log_level)) {
-            throw ParserException("Invalid log level: '" + log_level + "'");
-        }
-
-        // Log the properties (on trace level) *after* the log level has been set
-        LogProperties();
-
-        if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
-                throw ParserException(error);
-            }
-            else {
-                s2p_logger->info("Default image folder set to '{}'", image_folder);
-            }
-        }
-
-        if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
-            if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
-                throw ParserException("Invalid image file scan depth: " + scan_depth);
-            }
-            else {
-                CommandImageSupport::GetInstance().SetDepth(depth);
-            }
-        }
-
-        if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
-            if (!controller_factory.SetScriptFile(script_file)) {
-                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
-            }
-            s2p_logger->info("Generating script file '" + script_file + "'");
-        }
-
-        if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
-            without_types)) {
-            throw ParserException("Invalid device types list: '" + without_types + "'");
-        }
-
-        const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
-        port = ParseAsUnsignedInt(p);
-        if (port <= 0 || port > 65535) {
-            throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
-        }
-    }
-    catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
-        return false;
+    if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+        s2p_logger->set_pattern(log_pattern);
+        spdlog::set_pattern(log_pattern);
+        controller_factory.SetLogPattern(log_pattern);
     }
 
-    return true;
+    // This sets the global level only, there are no attached devices yet
+    log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
+    if (!dispatcher->SetLogLevel(log_level)) {
+        throw ParserException("Invalid log level: '" + log_level + "'");
+    }
+
+    // Log the properties (on trace level) *after* the log level has been set
+    LogProperties();
+
+    if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
+            throw ParserException(error);
+        }
+        else {
+            s2p_logger->info("Default image folder set to '{}'", image_folder);
+        }
+    }
+
+    if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
+        if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
+            throw ParserException("Invalid image file scan depth: " + scan_depth);
+        }
+        else {
+            CommandImageSupport::GetInstance().SetDepth(depth);
+        }
+    }
+
+    if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
+        if (!controller_factory.SetScriptFile(script_file)) {
+            throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
+        }
+        s2p_logger->info("Generating script file '" + script_file + "'");
+    }
+
+    if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
+        without_types)) {
+        throw ParserException("Invalid device types list: '" + without_types + "'");
+    }
+
+    const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
+    const int port = ParseAsUnsignedInt(p);
+    if (port <= 0 || port > 65535) {
+        throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
+    }
+
+    return port;
 }
 
 void S2p::SetUpEnvironment()
@@ -301,10 +300,8 @@ void S2p::SetUpEnvironment()
     instance = this;
 
     // Signal handler to detach all devices on a KILL or TERM signal
-    struct sigaction termination_handler;
+    struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
-    sigemptyset(&termination_handler.sa_mask);
-    termination_handler.sa_flags = 0;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);

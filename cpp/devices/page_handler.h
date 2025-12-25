@@ -14,7 +14,7 @@
 
 class PrimaryDevice;
 
-class PageHandler
+class PageHandler final
 {
 
 public:
