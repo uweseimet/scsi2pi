@@ -390,7 +390,6 @@ public:
 
 class MockScsiHd : public ScsiHd
 {
-    FRIEND_TEST(DiskTest, ConfiguredSectorSize);
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
     FRIEND_TEST(ScsiHdTest, FinalizeSetup);
     FRIEND_TEST(ScsiHdTest, GetProductData);
