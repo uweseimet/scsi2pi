@@ -136,6 +136,20 @@ void Disk::CleanUp()
     StorageDevice::CleanUp();
 }
 
+void Disk::FinalizeSetup(string_view type)
+{
+    ValidateFile();
+
+    // For non-removable media drives set the default product name based on the drive capacity
+    if (!IsRemovable()) {
+        const uint64_t capacity = GetBlockCount() * GetBlockSize();
+
+        const auto *unit = ranges::find_if(UNITS, [capacity](const Unit &u) {return capacity >= u.threshold;});
+
+        SetProductData( { "", fmt::format("{0} {1} {2}iB", type, capacity / unit->divisor, unit->abbr), "" }, false);
+    }
+}
+
 void Disk::ValidateFile()
 {
     if (!GetBlockCount()) {

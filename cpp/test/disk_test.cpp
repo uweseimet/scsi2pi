@@ -38,6 +38,14 @@ TEST(DiskTest, Dispatch)
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
+TEST(DiskTest, FinalizeSetup)
+{
+    MockDisk disk;
+
+    disk.SetBlockSize(1024);
+    EXPECT_THROW(disk.FinalizeSetup(""), IoException)<< "Device has 0 blocks";
+}
+
 TEST(DiskTest, ValidateFile)
 {
     NiceMock<MockDisk> disk;

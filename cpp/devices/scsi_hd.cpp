@@ -27,20 +27,6 @@ ScsiHd::ScsiHd(int l, bool r, bool apple, bool scsi1, const set<uint32_t> &secto
     SetRemovable(r);
 }
 
-void ScsiHd::FinalizeSetup()
-{
-    ValidateFile();
-
-    // For non-removable media drives set the default product name based on the drive capacity
-    if (!IsRemovable()) {
-        const uint64_t capacity = GetBlockCount() * GetBlockSize();
-
-        const auto *unit = ranges::find_if(UNITS, [capacity](const Unit &u) {return capacity >= u.threshold;});
-
-        SetProductData( { "", fmt::format("SCSI HD {0} {1}iB", capacity / unit->divisor, unit->abbr), "" }, false);
-    }
-}
-
 void ScsiHd::Open()
 {
     assert(!IsReady());
@@ -50,7 +36,7 @@ void ScsiHd::Open()
 
     SetBlockCount(GetFileSize() / GetBlockSize());
 
-    FinalizeSetup();
+    FinalizeSetup("SCSI HD");
 }
 
 vector<uint8_t> ScsiHd::InquiryInternal() const

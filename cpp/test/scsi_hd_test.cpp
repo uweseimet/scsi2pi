@@ -100,80 +100,28 @@ TEST(ScsiHdTest, GetProductData)
     hd_kb.SetFilename(filename.string());
     hd_kb.SetBlockSize(1024);
     hd_kb.SetBlockCount(1);
-    hd_kb.FinalizeSetup();
+    hd_kb.FinalizeSetup("SCSI HD");
     string s = hd_kb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 KiB"));
 
     hd_mb.SetFilename(filename.string());
     hd_mb.SetBlockSize(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
-    hd_mb.FinalizeSetup();
+    hd_mb.FinalizeSetup("SCSI HD");
     s = hd_mb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("1 MiB"));
     hd_gb.SetFilename(filename.string());
     hd_gb.SetBlockSize(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
-    hd_gb.FinalizeSetup();
+    hd_gb.FinalizeSetup("SCSI HD");
     s = hd_gb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("10 GiB"));
     hd_tb.SetFilename(filename.string());
     hd_tb.SetBlockSize(1024);
     hd_tb.SetBlockCount(10'737'418'240);
-    hd_tb.FinalizeSetup();
+    hd_tb.FinalizeSetup("SCSI HD");
     s = hd_tb.GetProductData().product;
     EXPECT_NE(string::npos, s.find("10 TiB"));
-}
-
-TEST(ScsiHdTest, FinalizeSetup)
-{
-    MockScsiHd hd(0, false);
-
-    hd.SetBlockSize(1024);
-    EXPECT_THROW(hd.FinalizeSetup(), IoException)<< "Device has 0 blocks";
-}
-
-TEST(ScsiHdTest, GetBlockSizes)
-{
-    MockScsiHd hd(0, false);
-
-    const auto &sizes = hd.GetSupportedBlockSizes();
-    EXPECT_EQ(4U, sizes.size());
-
-    EXPECT_TRUE(sizes.contains(512));
-    EXPECT_TRUE(sizes.contains(1024));
-    EXPECT_TRUE(sizes.contains(2048));
-    EXPECT_TRUE(sizes.contains(4096));
-}
-
-TEST(ScsiHdTest, ConfiguredBlockSize)
-{
-    MockScsiHd hd(0, false);
-
-    EXPECT_TRUE(hd.SetConfiguredBlockSize(512));
-    EXPECT_EQ(512U, hd.GetConfiguredBlockSize());
-
-    EXPECT_TRUE(hd.SetConfiguredBlockSize(4));
-    EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
-
-    EXPECT_FALSE(hd.SetConfiguredBlockSize(1234));
-    EXPECT_EQ(4U, hd.GetConfiguredBlockSize());
-}
-
-TEST(ScsiHdTest, ValidateBlockSize)
-{
-    MockScsiHd hd(0, false);
-    EXPECT_FALSE(hd.ValidateBlockSize(0));
-    EXPECT_TRUE(hd.ValidateBlockSize(4));
-    EXPECT_FALSE(hd.ValidateBlockSize(7));
-    EXPECT_TRUE(hd.ValidateBlockSize(512));
-    EXPECT_TRUE(hd.ValidateBlockSize(131072));
-
-    MockScsiHd rm(0, true);
-    EXPECT_FALSE(rm.ValidateBlockSize(0));
-    EXPECT_FALSE(rm.ValidateBlockSize(4));
-    EXPECT_FALSE(rm.ValidateBlockSize(7));
-    EXPECT_TRUE(hd.ValidateBlockSize(512));
-    EXPECT_FALSE(rm.ValidateBlockSize(131072));
 }
 
 TEST(ScsiHdTest, SetUpModePages)

@@ -138,7 +138,12 @@ string s2p_interface_util::ListDevices(const vector<PbDevice> &devices)
     }
 
     vector<PbDevice> sorted_devices(devices);
-    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
+    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {
+        if (a.id() != b.id()) {
+            return a.id() < b.id();
+        }
+        return a.unit() < b.unit();
+    });
 
     string s = "+--------+------+-------------------------------------------\n"
         "| ID:LUN | Type | Image File/Device File/Description\n"

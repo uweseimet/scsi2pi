@@ -49,7 +49,7 @@ enum class LocalizationKey
     ERROR_PERSIST
 };
 
-class CommandLocalizer
+class CommandLocalizer final
 {
 
 public:

@@ -24,9 +24,9 @@ void SasiHd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256);
 
-    SetBlockCount(static_cast<uint32_t>(GetFileSize() / GetBlockSize()));
+    SetBlockCount(GetFileSize() / GetBlockSize());
 
-    ValidateFile();
+    FinalizeSetup("SASI HD");
 }
 
 void SasiHd::Inquiry()
@@ -41,7 +41,8 @@ void SasiHd::Inquiry()
 
 __attribute__((noreturn)) vector<uint8_t> SasiHd::InquiryInternal() const
 {
-    assert(false);
+    // Won't ever be executed
+    throw ScsiException(SenseKey::ABORTED_COMMAND);
 }
 
 void SasiHd::RequestSense()

@@ -74,88 +74,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
     FRIEND_TEST(AbstractControllerTest, Offset);
-    FRIEND_TEST(ControllerTest, Selection);
-    FRIEND_TEST(PrimaryDeviceTest, CheckReservation);
-    FRIEND_TEST(PrimaryDeviceTest, Inquiry);
-    FRIEND_TEST(PrimaryDeviceTest, TestUnitReady);
-    FRIEND_TEST(PrimaryDeviceTest, RequestSense);
-    FRIEND_TEST(PrimaryDeviceTest, SendDiagnostic);
-    FRIEND_TEST(PrimaryDeviceTest, ReportLuns);
-    FRIEND_TEST(StorageDeviceTest, PreventAllowMediumRemoval);
-    FRIEND_TEST(StorageDeviceTest, StartStopUnit);
-    FRIEND_TEST(StorageDeviceTest, ModeSense6);
-    FRIEND_TEST(StorageDeviceTest, ModeSense10);
-    FRIEND_TEST(DiskTest, Dispatch);
-    FRIEND_TEST(DiskTest, Rezero);
-    FRIEND_TEST(DiskTest, FormatUnit);
-    FRIEND_TEST(DiskTest, ReassignBlocks);
-    FRIEND_TEST(DiskTest, Seek6);
-    FRIEND_TEST(DiskTest, Seek10);
-    FRIEND_TEST(DiskTest, Read6);
-    FRIEND_TEST(DiskTest, Read10);
-    FRIEND_TEST(DiskTest, Read16);
-    FRIEND_TEST(DiskTest, Write6);
-    FRIEND_TEST(DiskTest, Write10);
-    FRIEND_TEST(DiskTest, Write16);
-    FRIEND_TEST(DiskTest, Verify10);
-    FRIEND_TEST(DiskTest, Verify16);
-    FRIEND_TEST(DiskTest, ReadCapacity10);
-    FRIEND_TEST(DiskTest, ReadCapacity16);
-    FRIEND_TEST(DiskTest, ReadFormatCapacities);
-    FRIEND_TEST(DiskTest, ReadLong10);
-    FRIEND_TEST(DiskTest, ReadLong16);
-    FRIEND_TEST(DiskTest, WriteLong10);
-    FRIEND_TEST(DiskTest, WriteLong16);
-    FRIEND_TEST(DiskTest, SynchronizeCache);
-    FRIEND_TEST(DiskTest, ReadDefectData);
-    FRIEND_TEST(DiskTest, ModeSense6);
-    FRIEND_TEST(DiskTest, ModeSense10);
-    FRIEND_TEST(ScsiHdTest, ModeSense6);
-    FRIEND_TEST(ScsiHdTest, ModeSense10);
-    FRIEND_TEST(ScsiCdTest, ReadToc);
-    FRIEND_TEST(DaynaportTest, WriteData);
-    FRIEND_TEST(DaynaportTest, GetMessage6);
-    FRIEND_TEST(DaynaportTest, SendMessage6);
-    FRIEND_TEST(DaynaportTest, TestRetrieveStats);
-    FRIEND_TEST(DaynaportTest, SetInterfaceMode);
-    FRIEND_TEST(DaynaportTest, SetMcastAddr);
-    FRIEND_TEST(DaynaportTest, EnableInterface);
-    FRIEND_TEST(DaynaportTest, DisableInterface);
-    FRIEND_TEST(HostServicesTest, StartStopUnit);
-    FRIEND_TEST(HostServicesTest, ExecuteOperation);
-    FRIEND_TEST(HostServicesTest, ReceiveOperationResults);
-    FRIEND_TEST(HostServicesTest, WriteData);
-    FRIEND_TEST(HostServicesTest, ModeSense6);
-    FRIEND_TEST(HostServicesTest, ModeSense10);
-    FRIEND_TEST(HostServicesTest, SetUpModePages);
-    FRIEND_TEST(PrinterTest, Print);
-    FRIEND_TEST(PrinterTest, SynchronizeBuffer);
-    FRIEND_TEST(PrinterTest, WriteData);
-    FRIEND_TEST(SasiHdTest, Inquiry);
-    FRIEND_TEST(SasiHdTest, RequestSense);
-    FRIEND_TEST(TapeTest, Read6);
-    FRIEND_TEST(TapeTest, Read6_BlockSizeMismatch);
-    FRIEND_TEST(TapeTest, Read16);
-    FRIEND_TEST(TapeTest, Write6);
-    FRIEND_TEST(TapeTest, Write16);
-    FRIEND_TEST(TapeTest, Erase6_simh);
-    FRIEND_TEST(TapeTest, Erase6_tar);
-    FRIEND_TEST(TapeTest, Rewind);
-    FRIEND_TEST(TapeTest, Space6_simh);
-    FRIEND_TEST(TapeTest, Space6_tar);
-    FRIEND_TEST(TapeTest, WriteFileMarks6_tar);
-    FRIEND_TEST(TapeTest, WriteFileMarks6_simh);
-    FRIEND_TEST(TapeTest, WriteFileMarks16_tar);
-    FRIEND_TEST(TapeTest, WriteFileMarks16_simh);
-    FRIEND_TEST(TapeTest, FormatMedium_simh);
-    FRIEND_TEST(TapeTest, FormatMedium_tar);
-    FRIEND_TEST(TapeTest, Locate10_simh);
-    FRIEND_TEST(TapeTest, Locate10_tar);
-    FRIEND_TEST(TapeTest, Locate16_simh);
-    FRIEND_TEST(TapeTest, Locate16_tar);
-    FRIEND_TEST(TapeTest, ReadPosition);
-    FRIEND_TEST(TapeTest, ModeSense6);
-    FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
     const S2pFormatter formatter;
@@ -208,8 +126,6 @@ class MockController : public Controller
     FRIEND_TEST(ControllerTest, DataOut);
     FRIEND_TEST(ControllerTest, Error);
     FRIEND_TEST(ControllerTest, RequestSense);
-    FRIEND_TEST(PrimaryDeviceTest, RequestSense);
-    FRIEND_TEST(TapeTest, Write6);
 
 public:
 
@@ -325,6 +241,7 @@ public:
 class MockDisk : public Disk
 {
     FRIEND_TEST(DiskTest, Dispatch);
+    FRIEND_TEST(DiskTest, FinalizeSetup);
     FRIEND_TEST(DiskTest, ValidateFile);
     FRIEND_TEST(DiskTest, Rezero);
     FRIEND_TEST(DiskTest, FormatUnit);
@@ -372,9 +289,7 @@ public:
 
 class MockScsiHd : public ScsiHd
 {
-    FRIEND_TEST(DiskTest, ConfiguredSectorSize);
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
-    FRIEND_TEST(ScsiHdTest, FinalizeSetup);
     FRIEND_TEST(ScsiHdTest, GetProductData);
     FRIEND_TEST(ScsiHdTest, SetUpModePages);
     FRIEND_TEST(ScsiHdTest, GetSectorSizes);

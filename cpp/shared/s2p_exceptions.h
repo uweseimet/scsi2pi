@@ -16,12 +16,12 @@ class ParserException final : public runtime_error
     using runtime_error::runtime_error;
 };
 
-class IoException : public runtime_error
+class IoException final : public runtime_error
 {
     using runtime_error::runtime_error;
 };
 
-class ScsiException : public runtime_error
+class ScsiException final : public runtime_error
 {
     SenseKey sense_key;
     Asc asc;

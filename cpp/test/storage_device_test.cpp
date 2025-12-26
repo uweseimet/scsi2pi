@@ -339,6 +339,19 @@ TEST(StorageDeviceTest, BlockCount)
     EXPECT_EQ(0x1234567887654321U, device.GetBlockCount());
 }
 
+TEST(StorageDeviceTest, GetSupportedBlockSizes)
+{
+    MockStorageDevice device;
+
+    const auto &sizes = device.GetSupportedBlockSizes();
+    EXPECT_EQ(5U, sizes.size());
+    EXPECT_TRUE(sizes.contains(256));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
+}
+
 TEST(StorageDeviceTest, ChangeBlockSize)
 {
     MockStorageDevice device;
