@@ -177,6 +177,7 @@ class MockPrimaryDevice : public PrimaryDevice
 
 public:
 
+    MOCK_METHOD(string, SetUp, (), (override));
     MOCK_METHOD(string, GetIdentifier, (), (const, override));
     MOCK_METHOD(int, WriteData, (cdb_t, data_out_t, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
@@ -186,11 +187,6 @@ public:
     {
     }
     ~MockPrimaryDevice() override = default;
-
-    string SetUp() override
-    {
-        return "";
-    }
 };
 
 class MockStorageDevice : public StorageDevice
