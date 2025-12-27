@@ -83,12 +83,10 @@ TEST(ScsiCdTest, Open)
 
     EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 
-    path filename = CreateTempFile(2047);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2047).string());
     EXPECT_THROW(cd.Open(), IoException)<< "ISO CD-ROM image file size is too small";
 
-    filename = CreateTempFile(2 * 2048);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2 * 2048).string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
 }
