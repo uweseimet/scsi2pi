@@ -9,8 +9,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "buses/in_process_bus.h"
-#include "command/command_executor.h"
+#include "buses/bus.h"
 #include "controllers/controller.h"
 #include "devices/optical_memory.h"
 #include "devices/sasi_hd.h"

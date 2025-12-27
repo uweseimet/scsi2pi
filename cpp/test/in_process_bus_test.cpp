@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "buses/in_process_bus.h"
 
 TEST(InProcessBusTest, BSY)
 {

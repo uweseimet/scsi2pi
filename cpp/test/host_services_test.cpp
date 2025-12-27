@@ -8,6 +8,7 @@
 
 #include "mocks.h"
 #include "command/command_dispatcher.h"
+#include "command/command_executor.h"
 #include "controllers/controller_factory.h"
 #include "devices/host_services.h"
 #include "shared/s2p_exceptions.h"
