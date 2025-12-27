@@ -122,7 +122,7 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
     try {
         device->Dispatch(cmd);
         if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
-            spdlog::critical("Sense Key: {0}, ASC: {1}", static_cast<int>(sense_key), static_cast<int>(asc));
+            spdlog::critical("Sense Key: ${0:02x}, ASC: ${1:02x}", static_cast<int>(sense_key), static_cast<int>(asc));
             FAIL() << msg;
         }
     }
