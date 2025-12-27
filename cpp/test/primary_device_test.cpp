@@ -441,6 +441,8 @@ TEST(PrimaryDeviceTest, ReportLuns)
     auto controller = make_shared<MockAbstractController>(0);
     auto device1 = make_shared<MockPrimaryDevice>(LUN1);
     auto device2 = make_shared<MockPrimaryDevice>(LUN2);
+    EXPECT_CALL(*device1, SetUp);
+    EXPECT_CALL(*device2, SetUp);
     EXPECT_EQ("", device1->Init());
     EXPECT_EQ("", device2->Init());
 
@@ -481,6 +483,7 @@ TEST(PrimaryDeviceTest, Init)
 {
     MockPrimaryDevice device(0);
 
+    EXPECT_CALL(device, SetUp);
     EXPECT_EQ("", device.Init()) << "Initialization of primary device must not fail";
 }
 
