@@ -26,8 +26,6 @@ public:
     void ModeSelect(cdb_t, data_out_t, int) override;
     int ReadData(data_in_t) override;
 
-protected:
-
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:

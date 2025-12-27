@@ -24,8 +24,6 @@ public:
 
     bool ValidateBlockSize(uint32_t) const override;
 
-protected:
-
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:

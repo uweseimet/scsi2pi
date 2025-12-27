@@ -170,7 +170,6 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, ModeSense6);
     FRIEND_TEST(PrimaryDeviceTest, ModeSense10);
-    FRIEND_TEST(PrimaryDeviceTest, SetUpModePages);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
@@ -283,7 +282,6 @@ class MockScsiHd : public ScsiHd
 {
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
     FRIEND_TEST(ScsiHdTest, GetProductData);
-    FRIEND_TEST(ScsiHdTest, SetUpModePages);
     FRIEND_TEST(ScsiHdTest, GetSectorSizes);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
@@ -311,7 +309,6 @@ public:
 class MockScsiCd : public ScsiCd
 {
     FRIEND_TEST(ScsiCdTest, GetSectorSizes);
-    FRIEND_TEST(ScsiCdTest, SetUpModePages);
     FRIEND_TEST(ScsiCdTest, ReadToc);
 
 public:
@@ -325,7 +322,6 @@ public:
 class MockOpticalMemory : public OpticalMemory
 {
     FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
-    FRIEND_TEST(OpticalMemoryTest, SetUpModePages);
     FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
@@ -343,7 +339,6 @@ class MockTape : public Tape
     FRIEND_TEST(TapeTest, Unload);
     FRIEND_TEST(TapeTest, ModeSense6);
     FRIEND_TEST(TapeTest, ModeSense10);
-    FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
     FRIEND_TEST(TapeTest, ReadPosition);
 
