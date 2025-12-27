@@ -44,7 +44,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     const uint64_t size = sector_count << shift_count;
 
     // Allocate or reallocate the buffer
-    if (!buffer || buffer_size != size) {
+    if (buffer_size != size) {
         free(buffer); // NOSONAR free() must be used here due to aligned_alloc
         buffer = static_cast<uint8_t*>(aligned_alloc(512, (size + 511) & ~511));
         if (!buffer) {
@@ -54,8 +54,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
         buffer_size = size;
     }
 
-    modified_flags.resize(sector_count);
-    ranges::fill(modified_flags, 0);
+    modified_flags.assign(sector_count, 0);
     is_initialized = true;
     is_modified = false;
 
