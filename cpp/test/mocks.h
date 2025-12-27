@@ -280,7 +280,6 @@ public:
 
 class MockScsiHd : public ScsiHd
 {
-    FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
     FRIEND_TEST(ScsiHdTest, GetProductData);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
