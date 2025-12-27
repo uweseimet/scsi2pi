@@ -282,7 +282,6 @@ class MockScsiHd : public ScsiHd
 {
     FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
     FRIEND_TEST(ScsiHdTest, GetProductData);
-    FRIEND_TEST(ScsiHdTest, GetSectorSizes);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSelect);
@@ -308,7 +307,6 @@ public:
 
 class MockScsiCd : public ScsiCd
 {
-    FRIEND_TEST(ScsiCdTest, GetSectorSizes);
     FRIEND_TEST(ScsiCdTest, ReadToc);
 
 public:
