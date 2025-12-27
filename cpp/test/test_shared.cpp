@@ -35,7 +35,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
         cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
     }
@@ -45,7 +45,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
-    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return to_integer<uint8_t>(b);});
     return parameters;
 }
 
