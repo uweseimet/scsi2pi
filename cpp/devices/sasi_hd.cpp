@@ -10,7 +10,7 @@
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 
-SasiHd::SasiHd(int lun, const set<uint32_t> &sector_sizes) : Disk(SAHD, lun, false, false, sector_sizes)
+SasiHd::SasiHd(int l, const set<uint32_t> &sector_sizes) : Disk(SAHD, l, false, false, sector_sizes)
 {
     SetProductData( { "", "SASI HD", "" }, true);
     SetScsiLevel(ScsiLevel::NONE);
