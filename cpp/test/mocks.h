@@ -319,7 +319,6 @@ public:
 
 class MockOpticalMemory : public OpticalMemory
 {
-    FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
     FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
