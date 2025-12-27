@@ -194,7 +194,6 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
-    FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
     FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);

@@ -496,8 +496,6 @@ string CommandExecutor::SetReservedIds(const string &ids)
 }
 
 #ifdef BUILD_STORAGE_DEVICE
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &device,
     const string &filename) const
 {
@@ -511,7 +509,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     string effective_filename = filename;
 
-    if (!StorageDevice::FileExists(filename)) {
+    if (!exists(filename)) {
         // If the file does not exist search for it in the default image folder
         effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
 
@@ -533,7 +531,6 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     return true;
 }
-#pragma GCC diagnostic pop
 #endif
 
 #pragma GCC diagnostic push

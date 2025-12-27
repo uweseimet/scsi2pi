@@ -336,11 +336,6 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
     return {-1, -1};
 }
 
-bool StorageDevice::FileExists(string_view file)
-{
-    return exists(path(file));
-}
-
 bool StorageDevice::IsReadOnlyFile() const
 {
     return access(filename.c_str(), W_OK);

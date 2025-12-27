@@ -312,12 +312,6 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     EXPECT_TRUE(reserved_files.contains("filename"));
 }
 
-TEST(StorageDeviceTest, FileExists)
-{
-    EXPECT_FALSE(StorageDevice::FileExists("/non_existing_file"));
-    EXPECT_TRUE(StorageDevice::FileExists("/dev/null"));
-}
-
 TEST(StorageDeviceTest, GetFileSize)
 {
     MockStorageDevice device;
