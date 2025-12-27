@@ -39,8 +39,6 @@ public:
         dispatcher = d;
     }
 
-protected:
-
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:

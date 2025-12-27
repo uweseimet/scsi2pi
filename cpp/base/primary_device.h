@@ -103,6 +103,11 @@ public:
         // Devices with a cache have to override this method
     }
 
+    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
+    {
+        // Nothing to do in base class
+    }
+
     // Devices providing statistics have to override this method
     virtual vector<PbStatistics> GetStatistics() const
     {
@@ -134,10 +139,6 @@ protected:
     {
         // Nothing to do in base class
         return 0;
-    }
-    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
-    {
-        // Nothing to do in base class
     }
 
     void SetFilemark();
