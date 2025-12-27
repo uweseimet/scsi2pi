@@ -190,9 +190,8 @@ string testing::ReadTempFileToString(const string &filename)
 
 void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
-    string filenames;
     const auto& [fd1, filename1] = OpenTempFile();
-    filenames = filename1;
+    string filenames = filename1;
     write(fd1, properties1.data(), properties1.size());
     close(fd1);
 
