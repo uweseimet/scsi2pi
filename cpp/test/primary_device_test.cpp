@@ -16,6 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(id);
     auto device = make_shared<MockPrimaryDevice>(0);
+    EXPECT_CALL(*device, SetUp);
     EXPECT_EQ("", device->Init());
     EXPECT_TRUE(controller->AddDevice(device));
 
