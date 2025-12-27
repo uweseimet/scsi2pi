@@ -69,7 +69,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     friend class testing::TestShared;
 
     FRIEND_TEST(AbstractControllerTest, Reset);
-    FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, Message);
     FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
