@@ -59,13 +59,12 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     is_modified = false;
 
     ifstream in(path, ios::binary);
-    if (in.fail()) {
+    if (!in) {
         return false;
     }
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = track_number << 8;
-    offset <<= shift_count;
+    const off_t offset = (track_number << 8) << shift_count;
 
     in.seekg(offset);
     in.read(reinterpret_cast<char*>(buffer), size);
