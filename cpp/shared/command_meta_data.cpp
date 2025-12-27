@@ -6,10 +6,10 @@
 //
 //---------------------------------------------------------------------------
 
+#include "command_meta_data.h"
 #include <cassert>
 #include <sstream>
 #include <spdlog/spdlog.h>
-#include "command_meta_data.h"
 
 using namespace spdlog;
 

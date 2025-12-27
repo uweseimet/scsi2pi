@@ -6,8 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include "page_handler.h"
+#include <spdlog/spdlog.h>
 #include "base/primary_device.h"
 #include "base/property_handler.h"
 #include "controllers/abstract_controller.h"
