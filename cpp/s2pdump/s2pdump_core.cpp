@@ -672,33 +672,28 @@ string S2pDump::DumpRestoreTape(fstream &file)
 
 string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
+    auto readWrite = [&]() {
+        int r = 0;
+        while (r <= retries) {
+            if(s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore)) {
+                return true;
+            }
+            ++r;
+        }
+        return false;
+    };
+
     if (restore) {
         file.read(reinterpret_cast<char*>(buffer.data()), bytes);
         if (file.fail()) {
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
-        int r = 0;
-        while (r <= retries) {
-            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-                break;
-            }
-
-            ++r;
+        if (!readWrite()) {
+            return "Can't write to device";
         }
-
-        return "Can't write to device";
     } else {
-        int r = 0;
-        while (r <= retries) {
-            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-                break;
-            }
-
-            ++r;
-        }
-
-        if (r > retries) {
+        if (!readWrite()) {
             return "Can't read from device";
         }
 

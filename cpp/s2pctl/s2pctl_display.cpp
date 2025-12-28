@@ -69,16 +69,12 @@ string DisplayDefaultParameters(const PbDeviceProperties &properties)
             sorted_params.insert(key + "=" + value);
         }
 
-        string p;
-
-        for (const auto &param : sorted_params) {
-            if (!p.empty()) {
-                p += "\n                            ";
+        for (auto it = sorted_params.cbegin(); it != sorted_params.cend(); ++it) {
+            if (it != sorted_params.cbegin()) {
+                s << "\n                            ";
             }
-            p += param;
+            s << *it;
         }
-
-        s << p;
     }
 
     return s.str();
@@ -271,7 +267,6 @@ string s2pctl_display::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_ty
     }
 
     ostringstream s;
-
     s << "Supported device types and their properties:\n";
 
     vector<PbDeviceTypeProperties> sorted_properties(device_types_info.properties().cbegin(),

@@ -166,16 +166,23 @@ TEST(S2pInterfaceUtilTest, ListDevices)
     EXPECT_FALSE(ListDevices(devices).empty());
 
     PbDevice device;
+    device.set_id(1);
+    device.set_type(SCHS);
+    devices.emplace_back(device);
+    device.set_id(0);
     device.set_type(SCHD);
     devices.emplace_back(device);
     device.set_type(SCDP);
-    devices.emplace_back(device);
-    device.set_type(SCHS);
     devices.emplace_back(device);
     device.set_type(SCLP);
     devices.emplace_back(device);
     const string device_list = ListDevices(devices);
     EXPECT_FALSE(device_list.empty());
+    EXPECT_NE(string::npos, device_list.find("SCHS"));
+    EXPECT_NE(string::npos, device_list.find("SCHD"));
+    EXPECT_NE(string::npos, device_list.find("SCDP"));
+    EXPECT_NE(string::npos, device_list.find("SCLP"));
+    EXPECT_LT(device_list.find("SCLP"), device_list.find("SCHS"));
 }
 
 TEST(S2pInterfaceUtilTest, SetProductData)

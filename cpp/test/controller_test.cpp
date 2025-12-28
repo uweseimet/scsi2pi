@@ -90,7 +90,7 @@ TEST(ControllerTest, Selection)
     auto bus = make_shared<NiceMock<MockBus>>();
     auto controller = make_shared<MockController>(bus, 0);
 
-    EXPECT_CALL(*bus, SetBSY).Times(1);
+    EXPECT_CALL(*bus, SetBSY);
     controller->Selection();
     EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
 }

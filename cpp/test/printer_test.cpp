@@ -76,7 +76,7 @@ TEST(PrinterTest, ReserveUnit)
 {
     auto [controller, PRINTER] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status).Times(1);
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::RESERVE_RESERVE_ELEMENT_6));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
@@ -85,7 +85,7 @@ TEST(PrinterTest, ReleaseUnit)
 {
     auto [controller, PRINTER] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, Status).Times(1);
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }

@@ -132,4 +132,3 @@ bool PropertyHandler::Persist() const
 
     return out.good();
 }
-
