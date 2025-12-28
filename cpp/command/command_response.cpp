@@ -434,11 +434,7 @@ void command_response::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
             auto *s = statistics_info.add_statistics();
-            s->set_id(statistics.id());
-            s->set_unit(statistics.unit());
-            s->set_category(statistics.category());
-            s->set_key(statistics.key());
-            s->set_value(statistics.value());
+            *s = statistics;
         }
     }
 }

@@ -550,12 +550,11 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() };
-
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());
 
-    if (!params.empty()) {
+    // Use a sorted map
+    if (const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() }; !params.empty()) {
         s << ", command parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : params) {

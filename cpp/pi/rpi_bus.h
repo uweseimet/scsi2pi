@@ -29,7 +29,9 @@ public:
         PI_4 = 4
     };
 
-    RpiBus();
+    RpiBus() : pi_type(GetPiType())
+    {
+    }
     ~RpiBus() override = default;
 
     bool SetUp(bool) override;
@@ -60,7 +62,7 @@ private:
 
     void InitializeSignals() const;
 
-    void CreateWorkTable();
+    void CreateWorkTables();
 
     void SetSignal(int, bool) const override;
 

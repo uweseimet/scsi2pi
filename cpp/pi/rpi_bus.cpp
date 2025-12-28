@@ -19,11 +19,6 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-RpiBus::RpiBus()
-{
-    pi_type = GetPiType();
-}
-
 bool RpiBus::SetUp(bool target)
 {
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -157,20 +152,29 @@ bool RpiBus::SetUp(bool target)
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        critical("Can't register event request. If s2p is running (e.g. as a service), shut it down first.");
         close(fd);
+        critical("Can't register event request. If s2p is running (e.g. as a service), shut it down first.");
         return false;
     }
     close(fd);
 
     epoll_fd = epoll_create(1);
+    if (epoll_fd == -1) {
+        critical("Can't create epoll instance");
+        return false;
+    }
+
     epoll_event ev = { };
     ev.events = EPOLLIN | EPOLLPRI;
     ev.data.fd = selevreq.fd;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev);
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev) == -1) {
+        close(epoll_fd);
+        critical("Can't add file descriptor to epoll");
+        return false;
+    }
 #endif
 
-    CreateWorkTable();
+    CreateWorkTables();
 
     // Set the initiator signal direction
     PinSetSignal(PIN_IND, !target);
@@ -287,22 +291,18 @@ void RpiBus::InitializeSignals() const
     }
 }
 
-void RpiBus::CreateWorkTable()
+void RpiBus::CreateWorkTables()
 {
-    array<bool, 256> tblParity;
-
-    const auto tblSize = static_cast<uint32_t>(tblParity.size());
+    array<uint8_t, 256> tblParity;
 
     // Create parity table
-        for (uint32_t i = 0; i < tblSize; ++i) {
-        uint32_t bits = i;
+    for (uint32_t i = 0; i < tblParity.size(); ++i) {
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
-            parity ^= bits & 1;
-            bits >>= 1;
+            parity ^= (i >> j) & 1;
         }
-        parity = ~parity;
-        tblParity[i] = parity & 1;
+
+        tblParity[i] = !parity;
     }
 
     // Mask data defaults
@@ -310,14 +310,9 @@ void RpiBus::CreateWorkTable()
         tbl.fill(-1);
     }
 
-        for (uint32_t i = 0; i < tblSize; ++i) {
+    for (uint32_t i = 0; i < tblParity.size(); ++i) {
         // Bit string for inspection
-        uint32_t bits = i;
-
-        // Get parity
-        if (tblParity[i]) {
-            bits |= (1 << 8);
-        }
+        uint32_t bits = i | (static_cast<uint32_t>(static_cast<byte>(tblParity[i]) << 8));
 
         // Bit check
         for (const int pin : DATA_PINS) {
@@ -329,9 +324,7 @@ void RpiBus::CreateWorkTable()
             tblDatMsk[index][i] &= ~(0b111 << shift);
 
             // Value (GPIO pin is set to 1)
-            if (bits & 1) {
-                tblDatSet[index][i] |= (0b001 << shift);
-            }
+            tblDatSet[index][i] |= (bits & 0b001) << shift;
 
             bits >>= 1;
         }

@@ -20,13 +20,6 @@
 class DiskTrack final
 {
 
-public:
-
-    DiskTrack() = default;
-    ~DiskTrack() = default;
-    DiskTrack(DiskTrack&) = delete;
-    DiskTrack& operator=(const DiskTrack&) = delete;
-
 private:
 
     friend class DiskCache;

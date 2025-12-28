@@ -29,7 +29,6 @@ void DiskTrack::Init(int64_t track, int size, int sectors)
 bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 {
     if (is_initialized) {
-        assert(buffer);
         return true;
     }
 
@@ -68,8 +67,6 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     if (!is_initialized || !is_modified) {
         return true;
     }
-
-    assert(buffer);
 
     ++cache_miss_write_count;
 
@@ -125,8 +122,6 @@ int DiskTrack::ReadSector(data_in_t buf, int sector) const
         return 0;
     }
 
-    assert(buffer);
-
     const int size = 1 << shift_count;
 
     memcpy(buf.data(), buffer + (static_cast<off_t>(sector) << shift_count), size);
@@ -141,8 +136,6 @@ int DiskTrack::WriteSector(data_out_t buf, int sector)
     if (!is_initialized || sector >= sector_count) {
         return 0;
     }
-
-    assert(buffer);
 
     const int offset = sector << shift_count;
     const int size = 1 << shift_count;
