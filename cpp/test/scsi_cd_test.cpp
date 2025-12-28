@@ -83,12 +83,10 @@ TEST(ScsiCdTest, Open)
 
     EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 
-    path filename = CreateTempFile(2047);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2047).string());
     EXPECT_THROW(cd.Open(), IoException)<< "ISO CD-ROM image file size is too small";
 
-    filename = CreateTempFile(2 * 2048);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2 * 2048).string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
 }
@@ -103,15 +101,13 @@ TEST(ScsiCdTest, ReadToc)
 
     Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT, "Drive is not ready");
 
-    cd->SetReady(true);
-
-    controller.SetCdbByte(6, 2);
-    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Invalid track number");
+    cd->SetBlockSize(2048);
+    cd->SetBlockCount(1);
+    cd->SetFilename(CreateTempFile(2048).string());
+    cd->ValidateFile();
 
     controller.SetCdbByte(6, 1);
-    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Invalid track number");
+    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB, "Invalid track number");
 
     controller.SetCdbByte(6, 0);
     EXPECT_CALL(controller, DataIn).Times(2);

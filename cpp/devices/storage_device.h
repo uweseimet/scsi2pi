@@ -85,8 +85,6 @@ public:
     bool ReserveFile() const;
     void UnreserveFile();
 
-    static bool FileExists(string_view);
-
     void SetMediumChanged(bool b)
     {
         medium_changed = b;

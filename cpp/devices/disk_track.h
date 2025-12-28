@@ -23,7 +23,7 @@ class DiskTrack final
 public:
 
     DiskTrack() = default;
-    ~DiskTrack();
+    ~DiskTrack() = default;
     DiskTrack(DiskTrack&) = delete;
     DiskTrack& operator=(const DiskTrack&) = delete;
 
@@ -51,9 +51,9 @@ private:
     // < 256
     int sector_count = 0;
 
-    uint8_t *buffer = nullptr;
+    vector<uint8_t> unaligned_buffer;
 
-    uint64_t buffer_size = 0;
+    uint8_t *buffer = nullptr;
 
     bool is_initialized = false;
 

@@ -179,7 +179,7 @@ TEST(ControllerTest, RequestSense)
 {
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
-    auto device = make_shared<MockPrimaryDevice>(0);
+    auto device = make_shared<NiceMock<MockPrimaryDevice>>(0);
     EXPECT_EQ("", device->Init());
 
     controller.AddDevice(device);

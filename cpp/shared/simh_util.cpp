@@ -2,12 +2,12 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include "simh_util.h"
+#include <cassert>
 
 bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 {

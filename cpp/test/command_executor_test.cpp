@@ -9,6 +9,7 @@
 #include "mocks.h"
 #include "base/device_factory.h"
 #include "command/command_context.h"
+#include "command/command_executor.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/s2p_interface_util.h"

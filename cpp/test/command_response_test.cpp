@@ -11,6 +11,7 @@
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
+#include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_version.h"
 
@@ -108,7 +109,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(result1.status());
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
-    auto device1 = make_shared<MockHostServices>(LUN1);
+    auto device1 = make_shared<HostServices>(LUN1);
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
 
     GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);

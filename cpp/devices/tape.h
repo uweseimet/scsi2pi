@@ -48,13 +48,13 @@ public:
         return 0;
     }
 
+    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
+
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
 
     void ValidateFile() override;
-
-    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
     uint32_t VerifyBlockSizeChange(uint32_t, bool) override;
 

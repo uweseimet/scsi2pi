@@ -35,7 +35,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
         cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
     }
@@ -45,7 +45,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
-    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return to_integer<uint8_t>(b);});
     return parameters;
 }
 
@@ -146,10 +146,12 @@ string testing::CreateTempName()
 
 pair<int, path> testing::OpenTempFile(const string &extension)
 {
-    char *f = strdup(CreateTempName().c_str());
-    const int fd = mkstemp(f);
-    const path filename = f;
-    free(f); // NOSONAR Required because of mkstemp
+    const string name = CreateTempName();
+    vector<char> f(name.begin(), name.end());
+    f.push_back('\0');
+
+    const int fd = mkstemp(f.data());
+    const path filename = f.data();
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
 
     path effective_name = filename;
@@ -190,9 +192,8 @@ string testing::ReadTempFileToString(const string &filename)
 
 void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
-    string filenames;
     const auto& [fd1, filename1] = OpenTempFile();
-    filenames = filename1;
+    string filenames = filename1;
     write(fd1, properties1.data(), properties1.size());
     close(fd1);
 

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <vector>
 #include "shared/s2p_defs.h"
 

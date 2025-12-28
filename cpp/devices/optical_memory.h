@@ -24,8 +24,6 @@ public:
 
     vector<uint8_t> InquiryInternal() const override;
 
-protected:
-
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:

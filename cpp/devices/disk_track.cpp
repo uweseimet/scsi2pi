@@ -14,11 +14,6 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 
-DiskTrack::~DiskTrack()
-{
-    free(buffer); // NOSONAR free() must be used here due to aligned_alloc
-}
-
 void DiskTrack::Init(int64_t track, int size, int sectors)
 {
     assert(track >= 0);
@@ -33,7 +28,6 @@ void DiskTrack::Init(int64_t track, int size, int sectors)
 
 bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 {
-    // Not needed if already loaded
     if (is_initialized) {
         assert(buffer);
         return true;
@@ -42,31 +36,27 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
     ++cache_miss_read_count;
 
     const uint64_t size = sector_count << shift_count;
+    if (unaligned_buffer.size() != size + 512) {
+        unaligned_buffer.resize(size + 512);
 
-    // Allocate or reallocate the buffer
-    if (!buffer || buffer_size != size) {
-        free(buffer); // NOSONAR free() must be used here due to aligned_alloc
-        buffer = static_cast<uint8_t*>(aligned_alloc(512, (size + 511) & ~511));
-        if (!buffer) {
-            return false;
-        }
-
-        buffer_size = size;
+        // Align the buffer to 512 bytes
+        // TODO Does this alignment makes sense for memory cards?
+        void *p = unaligned_buffer.data();
+        size_t s = unaligned_buffer.size();
+        buffer = reinterpret_cast<uint8_t*>(align(512, size, p, s));
     }
 
-    modified_flags.resize(sector_count);
-    ranges::fill(modified_flags, 0);
+    modified_flags.assign(sector_count, 0);
     is_initialized = true;
     is_modified = false;
 
     ifstream in(path, ios::binary);
-    if (in.fail()) {
+    if (!in) {
         return false;
     }
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = track_number << 8;
-    offset <<= shift_count;
+    const off_t offset = (track_number << 8) << shift_count;
 
     in.seekg(offset);
     in.read(reinterpret_cast<char*>(buffer), size);

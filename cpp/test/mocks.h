@@ -9,10 +9,8 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "buses/in_process_bus.h"
-#include "command/command_executor.h"
+#include "buses/bus.h"
 #include "controllers/controller.h"
-#include "devices/host_services.h"
 #include "devices/optical_memory.h"
 #include "devices/sasi_hd.h"
 #include "devices/scsi_cd.h"
@@ -69,7 +67,6 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     friend class testing::TestShared;
 
     FRIEND_TEST(AbstractControllerTest, Reset);
-    FRIEND_TEST(AbstractControllerTest, DeviceLunLifeCycle);
     FRIEND_TEST(AbstractControllerTest, Message);
     FRIEND_TEST(AbstractControllerTest, Lengths);
     FRIEND_TEST(AbstractControllerTest, UpdateOffsetAndLength);
@@ -172,26 +169,20 @@ class MockPrimaryDevice : public PrimaryDevice
     FRIEND_TEST(PrimaryDeviceTest, Inquiry);
     FRIEND_TEST(PrimaryDeviceTest, ModeSense6);
     FRIEND_TEST(PrimaryDeviceTest, ModeSense10);
-    FRIEND_TEST(PrimaryDeviceTest, SetUpModePages);
     FRIEND_TEST(ControllerTest, RequestSense);
     FRIEND_TEST(CommandExecutorTest, ValidateOperation);
 
 public:
 
+    MOCK_METHOD(string, SetUp, (), (override));
     MOCK_METHOD(string, GetIdentifier, (), (const, override));
     MOCK_METHOD(int, WriteData, (cdb_t, data_out_t, int), (override));
     MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
-    MOCK_METHOD(void, FlushCache, (), (override));
 
     explicit MockPrimaryDevice(int l) : PrimaryDevice(UNDEFINED, l)
     {
     }
     ~MockPrimaryDevice() override = default;
-
-    string SetUp() override
-    {
-        return "";
-    }
 };
 
 class MockStorageDevice : public StorageDevice
@@ -200,7 +191,6 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
-    FRIEND_TEST(StorageDeviceTest, FileExists);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
     FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
@@ -289,10 +279,7 @@ public:
 
 class MockScsiHd : public ScsiHd
 {
-    FRIEND_TEST(ScsiHdTest, SupportsSaveParameters);
     FRIEND_TEST(ScsiHdTest, GetProductData);
-    FRIEND_TEST(ScsiHdTest, SetUpModePages);
-    FRIEND_TEST(ScsiHdTest, GetSectorSizes);
     FRIEND_TEST(ScsiHdTest, ModeSense6);
     FRIEND_TEST(ScsiHdTest, ModeSense10);
     FRIEND_TEST(ScsiHdTest, ModeSelect);
@@ -318,8 +305,6 @@ public:
 
 class MockScsiCd : public ScsiCd
 {
-    FRIEND_TEST(ScsiCdTest, GetSectorSizes);
-    FRIEND_TEST(ScsiCdTest, SetUpModePages);
     FRIEND_TEST(ScsiCdTest, ReadToc);
 
 public:
@@ -332,8 +317,6 @@ public:
 
 class MockOpticalMemory : public OpticalMemory
 {
-    FRIEND_TEST(OpticalMemoryTest, SupportsSaveParameters);
-    FRIEND_TEST(OpticalMemoryTest, SetUpModePages);
     FRIEND_TEST(OpticalMemoryTest, AddVendorPages);
     FRIEND_TEST(OpticalMemoryTest, ModeSelect);
 
@@ -345,20 +328,12 @@ public:
     }
 };
 
-class MockHostServices : public HostServices
-{
-    FRIEND_TEST(HostServicesTest, SetUpModePages);
-
-    using HostServices::HostServices;
-};
-
 class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, Unload);
     FRIEND_TEST(TapeTest, ModeSense6);
     FRIEND_TEST(TapeTest, ModeSense10);
-    FRIEND_TEST(TapeTest, SetUpModePages);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
     FRIEND_TEST(TapeTest, ReadPosition);
 

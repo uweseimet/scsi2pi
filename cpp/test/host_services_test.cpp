@@ -8,7 +8,9 @@
 
 #include "mocks.h"
 #include "command/command_dispatcher.h"
+#include "command/command_executor.h"
 #include "controllers/controller_factory.h"
+#include "devices/host_services.h"
 #include "shared/s2p_exceptions.h"
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
@@ -216,7 +218,7 @@ TEST(HostServicesTest, ModeSense10)
 
 TEST(HostServicesTest, SetUpModePages)
 {
-    MockHostServices services(0);
+    HostServices services(0);
     map<int, vector<byte>> pages;
 
     // Non changeable

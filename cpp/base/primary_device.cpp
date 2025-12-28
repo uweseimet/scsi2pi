@@ -243,10 +243,10 @@ void PrimaryDevice::ReportLuns() const
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;
-    for (int lun = 0; lun < 32; ++lun) {
-        if (controller->GetDeviceForLun(lun)) {
+    for (int l = 0; l < 32; ++l) {
+        if (controller->GetDeviceForLun(l)) {
             size += 8;
-            buf[size + 7] = static_cast<uint8_t>(lun);
+            buf[size + 7] = static_cast<uint8_t>(l);
         }
     }
 
