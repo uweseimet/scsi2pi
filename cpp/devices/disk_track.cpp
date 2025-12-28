@@ -42,9 +42,7 @@ bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
         // Align the buffer to 512 bytes
         void *p = unaligned_buffer.data();
         size_t s = unaligned_buffer.size();
-        align(512, size, p, s);
-
-        buffer = reinterpret_cast<uint8_t*>(unaligned_buffer.data());
+        buffer = reinterpret_cast<uint8_t*>(align(512, size, p, s));
     }
 
     modified_flags.assign(sector_count, 0);
