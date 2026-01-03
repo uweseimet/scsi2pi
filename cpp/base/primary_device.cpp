@@ -283,7 +283,7 @@ void PrimaryDevice::RequestSense()
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
-    controller->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(buf.data()), length));
+    controller->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(buf.data()), length)); // NOSONAR byte cannot be used here
 
     ResetStatus();
 
