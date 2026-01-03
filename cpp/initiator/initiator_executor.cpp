@@ -78,7 +78,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         initiator_logger.error("Timeout");
     }
 
-    if (enable_log) {
+    if (enable_log && status_code) {
         initiator_logger.warn(GetStatusString(status_code));
     }
 
