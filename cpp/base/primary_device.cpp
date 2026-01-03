@@ -219,7 +219,7 @@ void PrimaryDevice::Inquiry()
 
     const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
 
-    controller->CopyToBuffer(buf.data(), allocation_length);
+    controller->CopyToBuffer(span(buf.data(), allocation_length));
 
     // Report if the device does not support the requested LUN
     if (!controller->GetDeviceForLun(controller->GetEffectiveLun())) {
@@ -283,7 +283,7 @@ void PrimaryDevice::RequestSense()
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
-    controller->CopyToBuffer(buf.data(), length);
+    controller->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(buf.data()), length));
 
     ResetStatus();
 

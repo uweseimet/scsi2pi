@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -77,11 +77,11 @@ void AbstractController::UpdateOffsetAndLength()
     current_length = 0;
 }
 
-void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
+void AbstractController::CopyToBuffer(span<const uint8_t> buf)
 {
-    SetCurrentLength(static_cast<int>(size));
+    SetCurrentLength(static_cast<int>(buf.size()));
 
-    memcpy(buffer.data(), src, size);
+    memcpy(buffer.data(), buf.data(), buf.size());
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const

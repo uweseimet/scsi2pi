@@ -195,7 +195,7 @@ void HostServices::ReceiveOperationResults()
     execution_results.erase(GetController()->GetInitiatorId());
 
     const int length = min(GetCdbInt16(7), static_cast<int>(data.size()));
-    GetController()->CopyToBuffer(data.data(), length);
+    GetController()->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(data.data()), length));
 
     DataInPhase(length);
 }

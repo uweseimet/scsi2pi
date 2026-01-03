@@ -32,7 +32,7 @@ void SasiHd::Inquiry()
     // Byte 0 = 0: Direct access device
 
     const array<const uint8_t, 2> buf = { };
-    GetController()->CopyToBuffer(buf.data(), buf.size());
+    GetController()->CopyToBuffer(buf);
 
     DataInPhase(buf.size());
 }
@@ -47,7 +47,7 @@ void SasiHd::RequestSense()
 
     // Non-extended format
     const array<const uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
-    GetController()->CopyToBuffer(buf.data(), allocation_length);
+    GetController()->CopyToBuffer(span(buf.data(), allocation_length));
 
     DataInPhase(allocation_length);
 }
