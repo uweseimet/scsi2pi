@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,15 +15,6 @@ using namespace memory_util;
 
 OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, true, { 512, 1024, 2048, 4096 })
 {
-    // 128 MB, 512 bytes per sector, 248826 sectors
-    geometries[512 * 248826] = { 512, 248826 };
-    // 230 MB, 512 bytes per block, 446325 sectors
-    geometries[512 * 446325] = { 512, 446325 };
-    // 540 MB, 512 bytes per sector, 1041500 sectors
-    geometries[512 * 1041500] = { 512, 1041500 };
-    // 640 MB, 20248 bytes per sector, 310352 sectors
-    geometries[2048 * 310352] = { 2048, 310352 };
-
     SetProductData( { "", "SCSI MO", "" }, true);
     SetScsiLevel(ScsiLevel::SCSI_2);
     SetProtectable(true);
@@ -34,8 +25,14 @@ void OpticalMemory::Open()
 {
     assert(!IsReady());
 
-    // For some capacities there are hard-coded, well-defined sector sizes and block counts
-    if (const off_t size = GetFileSize(); !SetGeometryForCapacity(size)) {
+    const off_t size = GetFileSize();
+
+    // For some capacities there are hard-coded, well-defined sector sizes and sector counts
+    if (const auto &geometry = GEOMETRIES.find(size); geometry != GEOMETRIES.end()) {
+        SetBlockSize(geometry->second.first);
+        SetBlockCount(geometry->second.second);
+    }
+    else {
         // This call cannot fail, the method argument is always valid
         SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
 
@@ -51,7 +48,7 @@ void OpticalMemory::Open()
 
 vector<uint8_t> OpticalMemory::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::OPTICAL_MEMORY, true);
+    return HandleInquiry(DeviceType::OPTICAL_MEMORY);
 }
 
 void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
@@ -163,16 +160,4 @@ void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable
     pages[32] = buf;
 
     return;
-}
-
-bool OpticalMemory::SetGeometryForCapacity(uint64_t capacity)
-{
-    if (const auto &geometry = geometries.find(capacity); geometry != geometries.end()) {
-        SetBlockSize(geometry->second.first);
-        SetBlockCount(geometry->second.second);
-
-        return true;
-    }
-
-    return false;
 }

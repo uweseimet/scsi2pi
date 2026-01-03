@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 // The SCTP device is a SCSI-2 sequential access device with some SSC-5 command extensions.
 //
@@ -369,7 +369,7 @@ param_map Tape::GetDefaultParams() const
 
 vector<uint8_t> Tape::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::SEQUENTIAL_ACCESS, true);
+    return HandleInquiry(DeviceType::SEQUENTIAL_ACCESS);
 }
 
 bool Tape::ValidateBlockSize(uint32_t size) const

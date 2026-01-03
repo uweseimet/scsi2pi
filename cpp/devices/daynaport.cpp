@@ -5,7 +5,7 @@
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2020 akuker
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -90,7 +90,7 @@ void DaynaPort::CleanUp()
 
 vector<uint8_t> DaynaPort::InquiryInternal() const
 {
-    vector<uint8_t> buf = HandleInquiry(DeviceType::PROCESSOR, false);
+    vector<uint8_t> buf = HandleInquiry(DeviceType::PROCESSOR);
 
     if (GetCdbByte(4) == 37) {
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -280,7 +280,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::PROCESSOR, false);
+        return d->HandleInquiry(DeviceType::PROCESSOR);
     });
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
@@ -304,8 +304,9 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
+    d->SetRemovable(true);
     ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::DIRECT_ACCESS, true);
+        return d->HandleInquiry(DeviceType::DIRECT_ACCESS);
     });
     EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);

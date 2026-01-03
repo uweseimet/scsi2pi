@@ -7,7 +7,7 @@
 //
 // XMi:
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 

@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -545,8 +545,8 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     if (new_size != GetBlockSize()) {
         StorageDevice::ChangeBlockSize(new_size);
 
-        FlushCache();
         if (cache) {
+            FlushCache();
             SetUpCache();
         }
     }

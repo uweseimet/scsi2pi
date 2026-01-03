@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -122,7 +122,7 @@ protected:
 
     void AddCommand(ScsiCommand, const command&);
 
-    vector<uint8_t> HandleInquiry(DeviceType, bool) const;
+    vector<uint8_t> HandleInquiry(DeviceType) const;
     virtual vector<uint8_t> InquiryInternal() const = 0;
     void CheckReady();
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -126,7 +126,7 @@ string HostServices::SetUp()
 
 vector<uint8_t> HostServices::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::PROCESSOR, false);
+    return HandleInquiry(DeviceType::PROCESSOR);
 }
 
 void HostServices::StartStopUnit() const

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -320,12 +320,12 @@ void PrimaryDevice::CheckReady()
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType device_type, bool is_removable) const
+vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType device_type) const
 {
     vector<uint8_t> buf(0x1f + 5);
 
     buf[0] = static_cast<uint8_t>(device_type);
-    buf[1] = is_removable ? 0x80 : 0x00;
+    buf[1] = IsRemovable() ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= ScsiLevel::SCSI_2 ?
             static_cast<uint8_t>(ScsiLevel::SCSI_2) : static_cast<uint8_t>(ScsiLevel::SCSI_1_CCS);

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ void ScsiHd::Open()
 
 vector<uint8_t> ScsiHd::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::DIRECT_ACCESS, IsRemovable());
+    return HandleInquiry(DeviceType::DIRECT_ACCESS);
 }
 
 bool ScsiHd::ValidateBlockSize(uint32_t size) const

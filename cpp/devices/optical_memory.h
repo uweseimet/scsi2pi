@@ -2,15 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include "disk.h"
-
-using Geometry = pair<uint32_t, uint32_t>;
 
 class OpticalMemory : public Disk
 {
@@ -31,8 +29,14 @@ private:
     void AddOptionPage(map<int, vector<byte>>&) const;
     void AddVendorPage(map<int, vector<byte>>&, bool) const;
 
-    bool SetGeometryForCapacity(uint64_t);
-
-    // The mapping of supported capacities to block sizes and block counts, empty if there is no capacity restriction
-    unordered_map<uint64_t, Geometry> geometries;
+    // Mapping of some typical real device capacities to sector sizes and sector counts
+    inline static const unordered_map<uint64_t, const pair<uint32_t, uint32_t>> GEOMETRIES = {
+        // 128 MiB, 512 bytes per sector, 248826 sectors
+        { 512 * 248826, { 512, 248826 } },
+        // 230 MiB, 512 bytes per sector, 446325 sectors
+        { 512 * 446325, { 512, 446325 } },
+        // 540 MiB, 512 bytes per sector, 1041500 sectors
+        { 512 * 1041500, { 512, 1041500 } },
+        // 640 MiB, 20248 bytes per sector, 310352 sectors
+        { 2048 * 310352, { 2048, 310352 } } };
 };

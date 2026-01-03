@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ void ScsiCd::ReadToc()
 
 vector<uint8_t> ScsiCd::InquiryInternal() const
 {
-    return HandleInquiry(DeviceType::CD_DVD, true);
+    return HandleInquiry(DeviceType::CD_DVD);
 }
 
 void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset)

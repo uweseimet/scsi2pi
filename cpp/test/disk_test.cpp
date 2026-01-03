@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -761,9 +761,9 @@ TEST(DiskTest, ChangeBlockSize)
 {
     MockDisk disk;
 
-    disk.SetBlockSize(1024);
     disk.SetBlockCount(10);
-    EXPECT_CALL(disk, FlushCache);
+    disk.SetBlockSize(1024);
+    EXPECT_EQ(1024U, disk.GetBlockSize());
     disk.ChangeBlockSize(512);
     EXPECT_EQ(512U, disk.GetBlockSize());
 }
