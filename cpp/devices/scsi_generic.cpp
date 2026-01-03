@@ -128,12 +128,6 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     }
 }
 
-__attribute__((noreturn)) vector<uint8_t> ScsiGeneric::InquiryInternal() const
-{
-    // Won't ever be executed
-    throw ScsiException(SenseKey::ABORTED_COMMAND);
-}
-
 int ScsiGeneric::ReadData(data_in_t buf)
 {
     return ReadWriteData(span(buf.data(), GetController()->GetChunkSize()));

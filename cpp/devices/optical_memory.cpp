@@ -46,11 +46,6 @@ void OpticalMemory::Open()
     }
 }
 
-vector<uint8_t> OpticalMemory::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::OPTICAL_MEMORY);
-}
-
 void OpticalMemory::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const
 {
     Disk::SetUpModePages(pages, page, changeable);

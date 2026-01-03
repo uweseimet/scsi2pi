@@ -33,8 +33,6 @@ public:
 
     void Dispatch(ScsiCommand) override;
 
-    vector<uint8_t> InquiryInternal() const override;
-
     int ReadData(data_in_t) override;
     int WriteData(cdb_t, data_out_t, int) override;
 

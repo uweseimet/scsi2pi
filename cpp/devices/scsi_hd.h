@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,8 +19,6 @@ public:
     ~ScsiHd() override = default;
 
     void Open() override;
-
-    vector<uint8_t> InquiryInternal() const override;
 
     bool ValidateBlockSize(uint32_t) const override;
 

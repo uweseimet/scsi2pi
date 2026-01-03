@@ -92,11 +92,6 @@ param_map Printer::GetDefaultParams() const
     };
 }
 
-vector<uint8_t> Printer::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::PRINTER);
-}
-
 void Printer::Print()
 {
     const uint32_t length = GetCdbInt24(2);

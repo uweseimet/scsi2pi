@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -115,7 +115,7 @@ enum PbOperation {
     //   "folder_pattern": Optional filter, only folder names containing the case-insensitive pattern are returned
     //   "file_pattern": Optional filter, only filenames containing the case-insensitive pattern are returned
     DEFAULT_IMAGE_FILES_INFO = 14;
-    
+
     // Get information on an image file (not necessarily in the default image folder).
     // Parameters:
     //   "file": The filename. Either an absolute path or a path relative to the default image folder.
@@ -127,10 +127,10 @@ enum PbOperation {
     // Get the names of the available network interfaces (PbNetworkInterfacesInfo)
     // Only lists interfaces that are up.
     NETWORK_INTERFACES_INFO = 17;
-    
+
     // Get the mapping of extensions to device types (PbMappingInfo)
     MAPPING_INFO = 18;
-    
+
     // Get the list of reserved device IDs (PbReservedIdsInfo)
     RESERVED_IDS_INFO = 19;
 
@@ -148,7 +148,7 @@ enum PbOperation {
     // Parameters:
     //   "ids": A comma-separated list of IDs to reserve, or an empty string in order not to reserve any ID.
     RESERVE_IDS = 22;
-    
+
     // Shut down the s2p process or shut down/reboot the Pi
     // Parameters:
     //   "mode": The shutdown mode, one of
@@ -183,7 +183,7 @@ enum PbOperation {
     //   "read_only": Optional, "true" (case-insensitive) in order to create a read-only file
     // The destination filename must not yet exist.
     COPY_IMAGE = 27;
-    
+
     // Write-protect an image file.
     // Parameters:
     //  "file": The filename, relative to the default image folder
@@ -206,7 +206,7 @@ enum PbOperation {
 
     // Get properties (PbPropertiesInfo)
     PROPERTIES_INFO = 100;
-    
+
     // Persist configuration in /etc/s2p.conf
     PERSIST_CONFIGURATION = 101;
 }
@@ -289,7 +289,7 @@ message PbDeviceProperties {
     // The SCSI level, 0 if not explicitly set
     int32 scsi_level = 100;
     // The caching mode for this device
-    PbCachingMode caching_mode = 101;   
+    PbCachingMode caching_mode = 101;
 }
 
 // The status of a device, only meaningful if the respective feature is supported

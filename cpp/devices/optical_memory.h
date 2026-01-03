@@ -20,8 +20,6 @@ public:
 
     void Open() override;
 
-    vector<uint8_t> InquiryInternal() const override;
-
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
 private:

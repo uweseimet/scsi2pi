@@ -39,11 +39,6 @@ void ScsiHd::Open()
     FinalizeSetup("SCSI HD");
 }
 
-vector<uint8_t> ScsiHd::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::DIRECT_ACCESS);
-}
-
 bool ScsiHd::ValidateBlockSize(uint32_t size) const
 {
     // Non-removable hard drives support multiples of 4

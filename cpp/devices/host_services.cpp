@@ -124,11 +124,6 @@ string HostServices::SetUp()
     return "";
 }
 
-vector<uint8_t> HostServices::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::PROCESSOR);
-}
-
 void HostServices::StartStopUnit() const
 {
     const bool load = GetCdbByte(4) & 0x02;

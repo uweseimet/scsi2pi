@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,12 +37,6 @@ void SasiHd::Inquiry()
     GetController()->CopyToBuffer(buf.data(), buf.size());
 
     DataInPhase(buf.size());
-}
-
-__attribute__((noreturn)) vector<uint8_t> SasiHd::InquiryInternal() const
-{
-    // Won't ever be executed
-    throw ScsiException(SenseKey::ABORTED_COMMAND);
 }
 
 void SasiHd::RequestSense()

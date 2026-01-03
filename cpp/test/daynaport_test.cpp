@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -55,15 +55,15 @@ TEST(DaynaportTest, Inquiry)
     TestShared::Inquiry(SCDP, DeviceType::PROCESSOR, ScsiLevel::SCSI_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
-TEST(DaynaportTest, InquiryInternal)
+TEST(DaynaportTest, HandleInquiry)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
 
     controller->SetCdbByte(4, 255);
-    EXPECT_EQ(36U, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+    EXPECT_EQ(36U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
 
     controller->SetCdbByte(4, 37);
-    EXPECT_EQ(37U, dynamic_pointer_cast<DaynaPort>(daynaport)->InquiryInternal().size());
+    EXPECT_EQ(37U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
 }
 
 TEST(DaynaportTest, TestUnitReady)

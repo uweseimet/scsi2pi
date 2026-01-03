@@ -106,11 +106,6 @@ void ScsiCd::ReadToc()
     DataInPhase(length);
 }
 
-vector<uint8_t> ScsiCd::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::CD_DVD);
-}
-
 void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset)
 {
     Disk::ModeSelect(cdb, buf, offset);

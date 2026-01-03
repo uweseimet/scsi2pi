@@ -215,7 +215,7 @@ void PrimaryDevice::Inquiry()
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const auto &buf = InquiryInternal();
+    const auto &buf = HandleInquiry();
 
     const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
 
@@ -320,11 +320,13 @@ void PrimaryDevice::CheckReady()
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType device_type) const
+vector<uint8_t> PrimaryDevice::HandleInquiry() const
 {
     vector<uint8_t> buf(0x1f + 5);
 
-    buf[0] = static_cast<uint8_t>(device_type);
+    const auto device_type = DEVICE_TYPE_MAPPING.find(GetType());
+    buf[0] = static_cast<uint8_t>(
+        device_type != DEVICE_TYPE_MAPPING.end() ? device_type->second : DeviceType::DIRECT_ACCESS);
     buf[1] = IsRemovable() ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= ScsiLevel::SCSI_2 ?

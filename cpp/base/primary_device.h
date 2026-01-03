@@ -122,8 +122,7 @@ protected:
 
     void AddCommand(ScsiCommand, const command&);
 
-    vector<uint8_t> HandleInquiry(DeviceType) const;
-    virtual vector<uint8_t> InquiryInternal() const = 0;
+    virtual vector<uint8_t> HandleInquiry() const;
     void CheckReady();
 
     virtual void Inquiry();
@@ -190,4 +189,14 @@ private:
     int delay_after_bytes = SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
+
+    // Mappings of non-DIRECT ACCESS types (SCSG has a special handling)
+    static inline const unordered_map<PbDeviceType, DeviceType> DEVICE_TYPE_MAPPING = {
+        { SCMO, DeviceType::OPTICAL_MEMORY },
+        { SCCD, DeviceType::CD_DVD },
+        { SCDP, DeviceType::PROCESSOR },
+        { SCHS, DeviceType::PROCESSOR },
+        { SCLP, DeviceType::PRINTER },
+        { SCTP, DeviceType::SEQUENTIAL_ACCESS }
+    };
 };

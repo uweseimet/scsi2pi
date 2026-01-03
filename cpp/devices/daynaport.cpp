@@ -88,9 +88,9 @@ void DaynaPort::CleanUp()
     tap.CleanUp(GetLogger());
 }
 
-vector<uint8_t> DaynaPort::InquiryInternal() const
+vector<uint8_t> DaynaPort::HandleInquiry() const
 {
-    vector<uint8_t> buf = HandleInquiry(DeviceType::PROCESSOR);
+    vector<uint8_t> buf = PrimaryDevice::HandleInquiry();
 
     if (GetCdbByte(4) == 37) {
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,7 +22,6 @@ public:
 
     void Open() override;
 
-    vector<uint8_t> InquiryInternal() const override;
     void ModeSelect(cdb_t, data_out_t, int) override;
     int ReadData(data_in_t) override;
 

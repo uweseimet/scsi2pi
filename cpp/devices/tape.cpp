@@ -367,11 +367,6 @@ param_map Tape::GetDefaultParams() const
     };
 }
 
-vector<uint8_t> Tape::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::SEQUENTIAL_ACCESS);
-}
-
 bool Tape::ValidateBlockSize(uint32_t size) const
 {
     // Tape drives support multiples of 4

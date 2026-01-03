@@ -279,10 +279,6 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::PROCESSOR);
-    });
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
@@ -292,11 +288,10 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_FALSE(controller->AddDevice(make_shared<MockPrimaryDevice>(0))) << "Duplicate LUN was not rejected";
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SPC_3);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
-    EXPECT_EQ(DeviceType::PROCESSOR, static_cast<DeviceType>(controller->GetBuffer()[0]));
+    EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
     EXPECT_EQ(ScsiLevel::SPC_3, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
     EXPECT_EQ(ScsiLevel::SCSI_2, static_cast<ScsiLevel>(controller->GetBuffer()[3])) << "Wrong response level";
@@ -305,10 +300,6 @@ TEST(PrimaryDeviceTest, Inquiry)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     d->SetRemovable(true);
-    ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::DIRECT_ACCESS);
-    });
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
@@ -332,7 +323,6 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(2, 0);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 1);
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";

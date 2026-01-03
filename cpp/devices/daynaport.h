@@ -5,7 +5,7 @@
 // Copyright (C) 2020 akuker
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -49,7 +49,7 @@ public:
         return tap.GetDefaultParams();
     }
 
-    vector<uint8_t> InquiryInternal() const override;
+    vector<uint8_t> HandleInquiry() const override;
     int WriteData(cdb_t, data_out_t, int) override;
 
     void GetMessage6();

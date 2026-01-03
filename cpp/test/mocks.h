@@ -177,7 +177,6 @@ public:
     MOCK_METHOD(string, SetUp, (), (override));
     MOCK_METHOD(string, GetIdentifier, (), (const, override));
     MOCK_METHOD(int, WriteData, (cdb_t, data_out_t, int), (override));
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
 
     explicit MockPrimaryDevice(int l) : PrimaryDevice(UNDEFINED, l)
     {
@@ -206,7 +205,6 @@ class MockStorageDevice : public StorageDevice
 public:
 
     MOCK_METHOD(int, WriteData, (cdb_t, data_out_t, int), (override));
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, Open, (), (override));
 
     MockStorageDevice() : StorageDevice(UNDEFINED, 0, false, false, { 256, 512, 1024, 2048, 4096 })
@@ -265,7 +263,6 @@ class MockDisk : public Disk
 
 public:
 
-    MOCK_METHOD(vector<uint8_t>, InquiryInternal, (), (const, override));
     MOCK_METHOD(void, FlushCache, (), (override));
     MOCK_METHOD(void, Open, (), (override));
 
