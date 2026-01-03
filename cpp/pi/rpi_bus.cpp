@@ -19,12 +19,11 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-bool RpiBus::SetUp(bool target)
+string RpiBus::SetUp(bool target)
 {
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
-        critical("Root permissions are required");
-        return false;
+        return "Root permissions are required";
     }
 
     off_t base_addr = 0;
@@ -50,9 +49,8 @@ bool RpiBus::SetUp(bool target)
     // Map peripheral region memory
     auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_addr));
     if (map == MAP_FAILED) {
-        critical("Can't map memory: {}", strerror(errno));
         close(fd);
-        return false;
+        return "Can't map memory: " + string(strerror(errno));
     }
 
     // RPI Mailbox property interface
@@ -77,8 +75,8 @@ bool RpiBus::SetUp(bool target)
         daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
     }
     else {
-        critical("Can't open /dev/vcio: {}", strerror(errno));
-        return false;
+        close(fd);
+        return "Can't open /dev/vcio: " + string(strerror(errno));
     }
 
     armt_addr = map + ARMT_OFFSET / sizeof(uint32_t);
@@ -104,8 +102,7 @@ bool RpiBus::SetUp(bool target)
         void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
         if (addr == MAP_FAILED) {
             close(fd);
-            critical("Can't map GIC: {}", strerror(errno));
-            return false;
+            return "Can't map GIC: " + string(strerror(errno));
         }
 
         // MPR has offset 1
@@ -140,8 +137,7 @@ bool RpiBus::SetUp(bool target)
     // Initialize SEL signal interrupt
     fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
-        critical("Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.");
-        return false;
+        return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
     }
 
 #ifdef __linux__
@@ -153,15 +149,13 @@ bool RpiBus::SetUp(bool target)
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
         close(fd);
-        critical("Can't register event request. If s2p is running (e.g. as a service), shut it down first.");
-        return false;
+        return "Can't register event request. If s2p is running (e.g. as a service), shut it down first.";
     }
     close(fd);
 
     epoll_fd = epoll_create(1);
     if (epoll_fd == -1) {
-        critical("Can't create epoll instance");
-        return false;
+        return "Can't create epoll instance";
     }
 
     epoll_event ev = { };
@@ -169,8 +163,7 @@ bool RpiBus::SetUp(bool target)
     ev.data.fd = selevreq.fd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev) == -1) {
         close(epoll_fd);
-        critical("Can't add file descriptor to epoll");
-        return false;
+        return "Can't add file descriptor to epoll";
     }
 #endif
 
@@ -185,7 +178,7 @@ bool RpiBus::SetUp(bool target)
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
 
-    return true;
+    return "";
 }
 
 void RpiBus::CleanUp()
@@ -274,9 +267,8 @@ void RpiBus::SetDir(bool in) const
 
 inline void RpiBus::SetDAT(uint8_t dat) const
 {
-    uint32_t fsel = gpfsel[GPIO_FSEL_1];
     // Mask for the DT0-DT7 and DP pins
-    fsel &= 0b11111000000000000000000000000000;
+    uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
     fsel |= tblDatSet[1][dat];
     gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
@@ -414,8 +406,8 @@ void RpiBus::PinConfig(int pin, int mode) const
 #endif
 
     const int index = pin / 10;
-    const uint32_t mask = ~(7 << ((pin % 10) * 3));
-    gpio[index] = (gpio[index] & mask) | ((mode & 0x7) << ((pin % 10) * 3));
+    const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
+    gpio[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
 }
 
 void RpiBus::ConfigurePullDown(int pin) const

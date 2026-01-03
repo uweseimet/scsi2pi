@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ void S2pSimh::Banner(bool help)
 {
     cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SIMH .tap File Tool)\n"
         << "Version " << GetVersionString() << "\n"
-        << "Copyright (C) 2024-2025 Uwe Seimet\n";
+        << "Copyright (C) 2024-2026 Uwe Seimet\n";
 
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"

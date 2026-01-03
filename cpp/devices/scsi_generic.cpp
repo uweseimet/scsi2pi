@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 // Implementation of a generic SCSI device, using the Linux SG driver
 //
@@ -136,7 +136,7 @@ __attribute__((noreturn)) vector<uint8_t> ScsiGeneric::InquiryInternal() const
 
 int ScsiGeneric::ReadData(data_in_t buf)
 {
-    return ReadWriteData(buf, GetController()->GetChunkSize());
+    return ReadWriteData(span(buf.data(), GetController()->GetChunkSize()));
 }
 
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
@@ -157,13 +157,12 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
         }
     }
 
-    return ReadWriteData(span(const_cast<uint8_t*>(buf.data()), buf.size()), length); // NOSONAR Cast is required for SG driver API
+    return ReadWriteData(span(const_cast<uint8_t*>(buf.data()), length)); // NOSONAR Cast is required for SG driver API
 }
 
-int ScsiGeneric::ReadWriteData(span<uint8_t> buf, int chunk_size)
+int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 {
-    int length = remaining_count < chunk_size ? remaining_count : chunk_size;
-    length = length < MAX_TRANSFER_LENGTH ? length : MAX_TRANSFER_LENGTH;
+    const int length = min(min(remaining_count, static_cast<int>(buf.size())), MAX_TRANSFER_LENGTH);
     SetBlockCount(local_cdb, length / block_size);
 
     sg_io_hdr io_hdr = { };
@@ -280,11 +279,9 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
         size = GetInt32(buf, 8);
     }
 
-    if (block_size != size) {
+    if (size && block_size != size) {
         LogTrace(fmt::format("Updating internal block size to {} bytes", size));
-        if (size) {
-            block_size = size;
-        }
+        block_size = size;
     }
 }
 
@@ -295,13 +292,10 @@ string ScsiGeneric::GetDeviceData()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb.resize(6);
-    fill_n(local_cdb.begin(), local_cdb.size(), 0);
-    local_cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
-    local_cdb[4] = static_cast<uint8_t>(byte_count);
+    local_cdb = { static_cast<uint8_t>(ScsiCommand::INQUIRY), 0, 0, 0, static_cast<uint8_t>(byte_count), 0 };
 
     try {
-        ReadWriteData(buf, byte_count);
+        ReadWriteData(span(buf.data(), byte_count));
     }
     catch (const ScsiException &e) {
         return e.what();
@@ -323,13 +317,11 @@ void ScsiGeneric::GetBlockSize()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb.resize(10);
-    fill_n(local_cdb.begin(), local_cdb.size(), 0);
-    local_cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
+    local_cdb = { static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10), 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     try {
         // Trigger a block size update
-        ReadWriteData(buf, byte_count);
+        ReadWriteData(span(buf.data(), byte_count));
     }
     catch (const ScsiException&) { // NOSONAR The exception details do not matter, this might not be a block device
         // Fall through

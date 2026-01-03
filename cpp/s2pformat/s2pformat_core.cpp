@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ void S2pFormat::Banner(bool header) const
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Format Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2024-2025 Uwe Seimet\n";
+            << "Copyright (C) 2024-2026 Uwe Seimet\n";
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
@@ -195,13 +195,12 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
 
     string input;
     getline(cin, input);
-    n = 0;
     try {
         n = stoi(input);
     }
     catch (const invalid_argument&) // NOSONAR The exception details do not matter
     {
-        // Fall through
+        return 0;
     }
 
     if (n <= 0 || n > static_cast<int>(descriptors.size())) {

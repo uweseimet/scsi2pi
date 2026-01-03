@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         initiator_logger.error("Timeout");
     }
 
-    if (enable_log) {
+    if (enable_log && status_code) {
         initiator_logger.warn(GetStatusString(status_code));
     }
 

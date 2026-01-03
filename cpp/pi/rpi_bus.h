@@ -29,12 +29,7 @@ public:
         PI_4 = 4
     };
 
-    RpiBus() : pi_type(GetPiType())
-    {
-    }
-    ~RpiBus() override = default;
-
-    bool SetUp(bool) override;
+    string SetUp(bool) override;
     void Reset() const override;
     void CleanUp() override;
 
@@ -82,7 +77,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type = PiType::UNKNOWN;
+    PiType pi_type = GetPiType();
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
@@ -172,4 +167,6 @@ private:
     constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
     constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
+
+    constexpr static uint32_t DATA_MASK = 0b11111000000000000000000000000000;
 };

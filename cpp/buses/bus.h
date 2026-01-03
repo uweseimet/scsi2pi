@@ -24,10 +24,10 @@ public:
     bool Init(bool);
     virtual void Reset() const;
 
-    virtual bool SetUp(bool)
+    virtual string SetUp(bool)
     {
         // Nothing to do
-        return true;
+        return "";
     }
 
     virtual void CleanUp()

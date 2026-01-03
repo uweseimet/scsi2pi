@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ void S2pExec::Banner(bool header, bool usage)
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2025 Uwe Seimet\n";
+            << "Copyright (C) 2023-2026 Uwe Seimet\n";
     }
 
     if (usage) {

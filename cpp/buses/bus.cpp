@@ -13,9 +13,12 @@
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 
+using namespace spdlog;
+
 bool Bus::Init(bool target)
 {
-    if (!SetUp(target)) {
+    if (const string &error = SetUp(target); !error.empty()) {
+        critical(error);
         return false;
     }
 
@@ -282,7 +285,7 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
     const auto now = chrono::steady_clock::now();
     do {
         if (GetRST()) {
-            spdlog::warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
+            warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
             return false;
         }
 
@@ -292,7 +295,7 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    spdlog::trace("Timeout while waiting for {0} to become {1}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
+    trace("Timeout while waiting for {0} to become {1}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
 
     return false;

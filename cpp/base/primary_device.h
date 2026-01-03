@@ -17,7 +17,7 @@
 
 class AbstractController;
 
-class PrimaryDevice : public Device
+class PrimaryDevice : public Device // NOSONAR The number of fields and methods is justified, the complexity is low
 {
     friend class AbstractController;
     friend class PageHandler;
