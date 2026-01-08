@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -84,6 +84,26 @@ string_view Trim(string_view);
 void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
+
+inline const char* to_const_char_ptr(span<const uint8_t> bytes)
+{
+    return reinterpret_cast<const char *>(bytes.data());
+}
+
+inline char* to_char_ptr(span<uint8_t> bytes)
+{
+    return reinterpret_cast<char*>(bytes.data());
+}
+
+inline const char* to_const_char_ptr(span<byte> bytes)
+{
+    return reinterpret_cast<const char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+}
+
+inline char* to_char_ptr(span<byte> bytes)
+{
+    return reinterpret_cast<char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+}
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

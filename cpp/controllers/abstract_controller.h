@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ public:
     bool RemoveDevice(PrimaryDevice&);
     ShutdownMode ProcessOnController(int);
 
-    void CopyToBuffer(const void*, size_t);
+    void CopyToBuffer(span<const uint8_t>);
     auto& GetBuffer() const
     {
         return buffer;

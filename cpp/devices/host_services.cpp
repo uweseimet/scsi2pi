@@ -96,6 +96,7 @@ using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace s2p_interface_util;
+using namespace s2p_util;
 
 HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
@@ -195,7 +196,7 @@ void HostServices::ReceiveOperationResults()
     execution_results.erase(GetController()->GetInitiatorId());
 
     const int length = min(GetCdbInt16(7), static_cast<int>(data.size()));
-    GetController()->CopyToBuffer(data.data(), length);
+    GetController()->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(data.data()), length));
 
     DataInPhase(length);
 }
@@ -288,7 +289,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
         break;
 
     case ProtobufFormat::JSON:
-        if (string c(reinterpret_cast<const char*>(buf.data()), length); !JsonStringToMessage(c, &cmd).ok()) {
+        if (string c(to_const_char_ptr(buf), length); !JsonStringToMessage(c, &cmd).ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;

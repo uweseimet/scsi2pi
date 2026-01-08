@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,6 +10,7 @@
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 static void CheckPosition(const AbstractController &controller, shared_ptr<PrimaryDevice> tape, uint32_t position)
 {
@@ -33,12 +34,12 @@ static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, ui
 static void CheckMetaData(istream &file, const SimhMetaData &expected)
 {
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.read(reinterpret_cast<char*>(data.data()), data.size());
+    file.read(to_char_ptr(data), data.size());
     SimhMetaData meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
     file.seekg(Pad(expected.value), ios::cur);
-    file.read(reinterpret_cast<char*>(data.data()), data.size());
+    file.read(to_char_ptr(data), data.size());
     meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
@@ -59,10 +60,10 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
 {
     assert(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
 
-    file.write(reinterpret_cast<const char*>(leading.data()), leading.size());
+    file.write(to_const_char_ptr(leading), leading.size());
     file.seekp(length, ios::cur);
     if (!trailing.empty()) {
-        file.write(reinterpret_cast<const char*>(trailing.data()), trailing.size());
+        file.write(to_const_char_ptr(trailing), trailing.size());
     }
 }
 

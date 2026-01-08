@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ void S2pDump::Banner(bool header) const
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2025 Uwe Seimet\n";
+            << "Copyright (C) 2023-2026 Uwe Seimet\n";
     }
 
     cout << "Usage: " + APP_NAME + " [options]\n"
@@ -80,8 +80,8 @@ void S2pDump::Banner(bool header) const
         << "                                     default LUN is 0.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
         << "  --sector-count/-C COUNT            Hard drive sector count,\n"
-        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
         << "                                     default is the capacity.\n"
+        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
         << "  --version/-v                       Display the s2pdump version.\n";
 }
 
@@ -684,7 +684,7 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
     };
 
     if (restore) {
-        file.read(reinterpret_cast<char*>(buffer.data()), bytes);
+        file.read(to_char_ptr(buffer), bytes);
         if (file.fail()) {
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
@@ -697,7 +697,7 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
             return "Can't read from device";
         }
 
-        file.write(reinterpret_cast<const char*>(buffer.data()), bytes);
+        file.write(to_const_char_ptr(buffer), bytes);
         if (file.fail()) {
             return "Can't write to file '" + filename + "': " + strerror(errno);
         }
@@ -716,7 +716,7 @@ void S2pDump::DumpTape(ostream &file)
 
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
-            file.write(reinterpret_cast<const char*>(bad_data.data()), bad_data.size());
+            file.write(to_const_char_ptr(bad_data), bad_data.size());
             if (file.bad()) {
                 throw IoException("Can't write SIMH bad data record");
             }
@@ -779,7 +779,7 @@ void S2pDump::RestoreTape(istream &file)
 
             buffer.resize(meta_data.value);
 
-            file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+            file.read(to_char_ptr(buffer), buffer.size());
             if (file.bad()) {
                 throw IoException("Can't read SIMH data record");
             }

@@ -36,6 +36,7 @@
 
 using namespace filesystem;
 using namespace memory_util;
+using namespace s2p_util;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
@@ -180,7 +181,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 
     LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
 
-    out.write(reinterpret_cast<const char*>(buf.data()), length);
+    out.write(to_const_char_ptr(buf), length);
     CheckForFileError();
 
     return l;

@@ -20,8 +20,8 @@
 
 using namespace google::protobuf;
 using namespace google::protobuf::util;
-using namespace s2p_util;
 using namespace initiator_util;
+using namespace s2p_util;
 
 void S2pProto::CleanUp() const
 {
@@ -272,7 +272,7 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     case ProtobufFormat::BINARY: {
         vector<uint8_t> data(result.ByteSizeLong());
         result.SerializeToArray(data.data(), data.size());
-        out.write(reinterpret_cast<const char*>(data.data()), data.size());
+        out.write(to_const_char_ptr(data), data.size());
         break;
     }
 
