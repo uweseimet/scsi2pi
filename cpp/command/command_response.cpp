@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -224,7 +224,7 @@ set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices
             id_sets.clear();
 
             result.set_status(false);
-            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
+            result.set_msg(fmt::format("No device for {}:{}", device.id(), device.unit()));
 
             break;
         }

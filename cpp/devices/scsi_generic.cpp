@@ -192,7 +192,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     }
 
     if (write && GetController() && GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Transferring {0} byte(s) to SG driver{1}", length,
+        LogTrace(fmt::format("Transferring {} byte(s) to SG driver{}", length,
             length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : ""));
     }
 
@@ -205,7 +205,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     const int transferred_length = length - io_hdr.resid;
 
     if (!write && GetController() && GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Transferred {0} byte(s) from SG driver{1}", transferred_length,
+        LogTrace(fmt::format("Transferred {} byte(s) from SG driver{}", transferred_length,
             transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : ""));
     }
 
@@ -228,7 +228,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     }
 
     if (GetController()) {
-        LogTrace(fmt::format("{0} byte(s) transferred, {1} byte(s) remaining", transferred_length, remaining_count));
+        LogTrace(fmt::format("{} byte(s) transferred, {} byte(s) remaining", transferred_length, remaining_count));
     }
 
     return transferred_length;
@@ -238,7 +238,7 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 {
     if (status == -1) {
         if (GetController()) {
-            LogError(fmt::format("Transfer of {0} byte(s) failed: {1}", buf.size(), strerror(errno)));
+            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(), strerror(errno)));
         }
 
         throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);

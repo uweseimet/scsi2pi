@@ -35,7 +35,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     // Only report byte count mismatch for non-linked commands
     if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
-        initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
+        initiator_logger.warn("CDB has {} byte(s), command {} requires {} bytes", cdb.size(), command_name, count);
     }
 
     initiator_logger.debug(CommandMetaData::GetInstance().LogCdb(cdb, "Initiator"));
@@ -162,7 +162,7 @@ bool InitiatorExecutor::Arbitration() const
 
 bool InitiatorExecutor::Selection(bool identify) const
 {
-    initiator_logger.trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
+    initiator_logger.trace("Selection of target {} with initiator ID {}", target_id, initiator_id);
 
     // There is no initiator ID with SASI
     bus.SetDAT(static_cast<uint8_t>((sasi ? 0 : 1 << initiator_id) + (1 << target_id)));
@@ -241,11 +241,11 @@ void InitiatorExecutor::DataOut(data_out_t buf)
         throw PhaseException("No more data for DATA OUT phase");
     }
 
-    initiator_logger.debug("Sending {0} byte(s):\n{1}", buf.size(), formatter.FormatBytes(buf, buf.size()));
+    initiator_logger.debug("Sending {} byte(s):\n{}", buf.size(), formatter.FormatBytes(buf, buf.size()));
 
     byte_count = bus.InitiatorSendHandShake(buf);
     if (byte_count != static_cast<int>(buf.size())) {
-        initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)",
+        initiator_logger.error("Initiator sent {} byte(s) in DATA OUT phase, expected size was {} byte(s)",
             byte_count, buf.size());
         throw PhaseException("DATA OUT phase failed");
     }

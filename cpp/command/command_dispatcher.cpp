@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -266,10 +266,10 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 
     if (id != -1) {
         if (lun == -1) {
-            s2p_logger.info("Set log level for device {0} to '{1}'", id, level);
+            s2p_logger.info("Set log level for device {} to '{}'", id, level);
         }
         else {
-            s2p_logger.info("Set log level for device {0}:{1} to '{2}'", id, lun, level);
+            s2p_logger.info("Set log level for device {}:{} to '{}'", id, lun, level);
         }
     }
     else {

@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -295,7 +295,7 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         }
     } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
 
-    trace("Timeout while waiting for {0} to become {1}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
+    trace("Timeout while waiting for {} to become {}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
 
     return false;

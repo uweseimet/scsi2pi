@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -68,7 +68,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
             lun = ParseNumber(type_id_lun.substr(3));
         }
         lun = !lun.empty() && lun != "0" ? ":" + lun : "";
-        device_key = fmt::format("{0}{1}{2}.", PropertyHandler::DEVICE, id, lun);
+        device_key = fmt::format("{}{}{}.", PropertyHandler::DEVICE, id, lun);
     }
 
     string_view type = type_id_lun.substr(0, 2);
@@ -315,7 +315,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             params = optarg;
         }
 
-        string device_key = id_lun.empty() ? "" : fmt::format("{0}{1}.", PropertyHandler::DEVICE, id_lun);
+        string device_key = id_lun.empty() ? "" : fmt::format("{}{}.", PropertyHandler::DEVICE, id_lun);
 
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);

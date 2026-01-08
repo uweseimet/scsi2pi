@@ -22,7 +22,7 @@ using namespace memory_util;
 string s2p_util::GetVersionString()
 {
     const string &revision = s2p_revision <= 0 ? "" : "." + to_string(s2p_revision);
-    return fmt::format("{0}.{1}{2}{3}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
+    return fmt::format("{}.{}{}{}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
 }
 
 string s2p_util::GetHomeDir()
@@ -190,15 +190,12 @@ string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
 
 string s2p_util::Banner(string_view app)
 {
-    stringstream s;
-
-    s << "SCSI/SASI Device Emulator and SCSI Tools SCSI2Pi " << app << "\n"
-        << "Version " << GetVersionString() << "\n"
-        << "Copyright (C) 2016-2020 GIMONS\n"
-        << "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
-        << "Copyright (C) 2021-2026 Uwe Seimet\n";
-
-    return s.str();
+    return fmt::format("SCSI/SASI Device Emulator and SCSI Tools SCSI2Pi {}\n"
+            "Version {}\n"
+            "Copyright (C) 2016-2020 GIMONS\n"
+            "Copyright (C) 2020-2023 Contributors to the PiSCSI project\n"
+            "Copyright (C) 2021-2026 Uwe Seimet\n",
+        app, GetVersionString());
 }
 
 tuple<string, string, string> s2p_util::GetInquiryProductData(span<const uint8_t> data)
@@ -241,7 +238,7 @@ string s2p_util::GetScsiLevel(int scsi_level)
 string s2p_util::GetStatusString(int status_code)
 {
     if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
-        return fmt::format("Device reported {0} (status code ${1:02x})", it->second, status_code);
+        return fmt::format("Device reported {} (status code ${:02x})", it->second, status_code);
     }
     else if (status_code != 0xff) {
         return fmt::format("Device reported an unknown status (status code ${:02x})", status_code);
@@ -262,7 +259,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
         return s;
     }
 
-    return s + fmt::format(", EOM: {0}, ILI: {1}, INFORMATION: {2}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
+    return s + fmt::format(", EOM: {}, ILI: {}, INFORMATION: {}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
         static_cast<int>(GetInt32(sense_data, 3)));
 }
 
@@ -270,13 +267,13 @@ string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, int ascq)
 {
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-        s_asc = fmt::format("{0} (ASC ${1:02x}), ASCQ ${2:02x}", it_asc->second, static_cast<int>(asc), ascq);
+        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, static_cast<int>(asc), ascq);
     }
     else {
-        s_asc = fmt::format("ASC ${0:02x}, ASCQ ${1:02x}", static_cast<int>(asc), ascq);
+        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", static_cast<int>(asc), ascq);
     }
 
-    return fmt::format("{0} (Sense Key ${1:02x}), {2}", SENSE_KEYS[static_cast<int>(sense_key)],
+    return fmt::format("{} (Sense Key ${:02x}), {}", SENSE_KEYS[static_cast<int>(sense_key)],
         static_cast<int>(sense_key), s_asc);
 }
 

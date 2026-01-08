@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -336,7 +336,7 @@ void S2p::LogProperties() const
 {
     s2p_logger->trace("Effective startup properties:");
     for (const auto& [k, v] : property_handler.GetProperties()) {
-        s2p_logger->trace("  {0}={1}", k, v);
+        s2p_logger->trace("  {}={}", k, v);
     }
 }
 

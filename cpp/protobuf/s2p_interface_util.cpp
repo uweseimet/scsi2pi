@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ string s2p_interface_util::ListDevices(const vector<PbDevice> &devices)
         "+--------+------+-------------------------------------------\n";
 
     for (const auto &device : sorted_devices) {
-        s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
+        s += fmt::format("|  {}:{:<2}  | {} | {}{}\n", device.id(), device.unit(),
             PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
                 " (READ-ONLY)" : "");

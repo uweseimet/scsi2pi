@@ -956,7 +956,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
         const int page_length = page_code ? buf[offset] : length - offset;
 
-        cout << fmt::format("{0}mode_page.{1}={2:02x}", id_and_lun, page_code & 0x3f, page_code);
+        cout << fmt::format("{}mode_page.{}={:02x}", id_and_lun, page_code & 0x3f, page_code);
 
         if (page_code) {
             cout << fmt::format(":{:02x}", page_length);

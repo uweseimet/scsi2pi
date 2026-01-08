@@ -146,7 +146,7 @@ void Disk::FinalizeSetup(string_view type)
 
         const auto *unit = ranges::find_if(UNITS, [capacity](const Unit &u) {return capacity >= u.threshold;});
 
-        SetProductData( { "", fmt::format("{0} {1} {2}iB", type, capacity / unit->divisor, unit->abbr), "" }, false);
+        SetProductData( { "", fmt::format("{} {} {}iB", type, capacity / unit->divisor, unit->abbr), "" }, false);
     }
 }
 
@@ -533,7 +533,7 @@ uint64_t Disk::ValidateBlockAddress(AccessMode mode)
 
     if (sector >= GetBlockCount()) {
         LogTrace(
-            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}", GetBlockCount(), sector));
+            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}", GetBlockCount(), sector));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
@@ -581,12 +581,12 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
         }
     }
 
-    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {0}, sector count: {1}", start, count));
+    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
 
     // Check capacity
     if (const uint64_t capacity = GetBlockCount(); !capacity || start + count > capacity) {
         LogTrace(
-            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
+            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                 start, count));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }

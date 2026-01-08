@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -219,7 +219,7 @@ string s2pctl_display::DisplayVersionInfo(const PbVersionInfo &version_info)
             version += "PiSCSI";
         }
 
-        version += fmt::format(" {0:02x}.{1:02x}", version_info.major_version(), version_info.minor_version());
+        version += fmt::format(" {:02x}.{:02x}", version_info.major_version(), version_info.minor_version());
 
         if (version_info.patch_version() > 0) {
             version += fmt::format(".{}", version_info.patch_version());
@@ -229,7 +229,7 @@ string s2pctl_display::DisplayVersionInfo(const PbVersionInfo &version_info)
         }
     }
     else {
-        version += fmt::format(" {0}.{1}", version_info.major_version(), version_info.minor_version());
+        version += fmt::format(" {}.{}", version_info.major_version(), version_info.minor_version());
         if (version_info.patch_version() > 0) {
             version += fmt::format(".{}", version_info.patch_version());
         }

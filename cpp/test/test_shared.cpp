@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ string testing::CreateImageFile(StorageDevice &device, size_t size, const string
 
 string testing::TestShared::GetVersion()
 {
-    return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
+    return fmt::format("{:02}{}{}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
@@ -86,7 +86,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     EXPECT_EQ(additional_length, buffer[4]);
     string product_data;
     if (ident.size() == 24) {
-        product_data = fmt::format("{0}{1:02}{2}{3}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
+        product_data = fmt::format("{}{:02}{}{}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
     } else {
         product_data = ident;
     }

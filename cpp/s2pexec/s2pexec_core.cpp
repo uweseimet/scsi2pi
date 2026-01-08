@@ -497,7 +497,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
             throw ExecutionException(GetStatusString(status_code));
         }
         else {
-            throw ExecutionException(fmt::format("Can't execute command {0} (${1:2x})",
+            throw ExecutionException(fmt::format("Can't execute command {} (${:2x})",
                 CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
         }
     }
@@ -532,7 +532,7 @@ string S2pExec::ReadData()
 
     ifstream in(filename, text ? ios::in : ios::in | ios::binary);
     if (!in) {
-        return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
+        return fmt::format("Can't open input file '{}': {}", filename, strerror(errno));
     }
 
     if (text) {
@@ -550,7 +550,7 @@ string S2pExec::ReadData()
         in.read(to_char_ptr(buffer), size);
     }
 
-    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
+    return in.fail() ? fmt::format("Can't read from file '{}': {}", filename, strerror(errno)) : "";
 }
 
 string S2pExec::WriteData(span<const uint8_t> data)
@@ -566,13 +566,13 @@ string S2pExec::WriteData(span<const uint8_t> data)
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
         if (!out) {
-            return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
+            return fmt::format("Can't open output file '{}': {}", filename, strerror(errno));
         }
 
         hex += "\n";
         out.write(text ? hex.data() : to_const_char_ptr(data), hex.size());
         if (out.fail()) {
-            return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
+            return fmt::format("Can't write to file '{}': {}", filename, strerror(errno));
         }
     }
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -209,7 +209,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    context.GetLogger().info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Renamed/Moved image file '{}' to '{}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -234,7 +234,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        context.GetLogger().info("Copied image file symlink '{0}' to '{1}'", from, to);
+        context.GetLogger().info("Copied image file symlink '{}' to '{}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -252,7 +252,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    context.GetLogger().info("Copied image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Copied image file '{}' to '{}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -303,7 +303,7 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
     if (id != -1) {
         return context.ReturnErrorStatus(
-            fmt::format("Can't {0} image file '{1}', it is currently being used by device {2}:{3}", op, file, id, lun));
+            fmt::format("Can't {} image file '{}', it is currently being used by device {}:{}", op, file, id, lun));
     }
 
     return true;

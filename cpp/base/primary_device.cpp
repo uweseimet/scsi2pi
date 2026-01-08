@@ -64,7 +64,7 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }
@@ -376,7 +376,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[13] = static_cast<byte>(eom);
     }
 
-    LogTrace(fmt::format("Status {0}: {1}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
+    LogTrace(fmt::format("Status {}: {}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
 
     return buf;
 }

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -170,9 +170,9 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
     if (device.Eject(true)) {
         // Remove both potential properties, with and without LUN
         PropertyHandler::GetInstance().RemoveProperties(
-            fmt::format("{0}{1}:{2}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
+            fmt::format("{}{}:{}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
         PropertyHandler::GetInstance().RemoveProperties(
-            fmt::format("{0}{1}.params", PropertyHandler::DEVICE, device.GetId()));
+            fmt::format("{}{}.params", PropertyHandler::DEVICE, device.GetId()));
     }
     else {
         s2p_logger.warn("Ejecting {} failed", GetIdentifier(device));
@@ -266,7 +266,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         if (!device->IsRemovable() && filename.empty()) {
             // GetIdentifier() cannot be used here because the device ID has not yet been set
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
-                fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
+                fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
         }
 
         if (!ValidateImageFile(context, *static_pointer_cast<StorageDevice>(device), filename)) {
@@ -289,7 +289,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     if (const string &error = device->Init(); !error.empty()) {
         s2p_logger.error(error);
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
+            fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
     }
 
     // Set the final data (they may have been overriden during the initialization of SCSG)
@@ -395,8 +395,8 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // Remove both potential identifiers
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, id, lun));
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}.", PropertyHandler::DEVICE, id));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}:{}.", PropertyHandler::DEVICE, id, lun));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}.", PropertyHandler::DEVICE, id));
 
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
@@ -420,7 +420,7 @@ void CommandExecutor::DetachAll() const
 
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
-    const string &identifier = fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
+    const string &identifier = fmt::format("{}{}:{}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
     PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
@@ -540,7 +540,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
-            fmt::format("{0}:{1}", id, lun));
+            fmt::format("{}:{}", id, lun));
     }
 #endif
 
@@ -763,5 +763,5 @@ string CommandExecutor::GetTypeString(const Device &device)
 
 string CommandExecutor::GetIdentifier(const Device &device)
 {
-    return fmt::format("{0} {1}:{2}", GetTypeString(device), device.GetId(), device.GetLun());
+    return fmt::format("{} {}:{}", GetTypeString(device), device.GetId(), device.GetLun());
 }

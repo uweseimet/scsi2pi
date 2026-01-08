@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,10 +13,12 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include "generated/s2p_interface.pb.h"
+#include "shared/s2p_util.h"
 
 using namespace filesystem;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
+using namespace s2p_util;
 
 string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_format, PbResult &result)
 {
@@ -30,7 +32,7 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     case ProtobufFormat::BINARY:
         length = file_size(filename);
         buffer.resize(length);
-        in.read((char*)buffer.data(), length);
+        in.read(to_char_ptr(buffer), length);
         break;
 
     case ProtobufFormat::JSON:

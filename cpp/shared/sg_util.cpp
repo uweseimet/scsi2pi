@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -27,14 +27,14 @@ int sg_util::OpenDevice(const string &device)
 
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
-        throw IoException(fmt::format("Can't open '{0}': {1}", device, strerror(errno)));
+        throw IoException(fmt::format("Can't open '{}': {}", device, strerror(errno)));
     }
 
 #ifdef __linux__
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
         throw IoException(
-            fmt::format("'{0}' is not supported by the Linux SG driver: {1}", device, strerror(errno)));
+            fmt::format("'{}' is not supported by the Linux SG driver: {}", device, strerror(errno)));
     }
 #endif
 

@@ -100,7 +100,7 @@ void Printer::Print()
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError(fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
+        LogError(fmt::format("Transfer buffer overflow: Buffer size is {} bytes, {} byte(s) expected",
             GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
@@ -132,7 +132,7 @@ void Printer::SynchronizeBuffer()
     cmd.replace(file_position, 2, filename);
 
     error_code error;
-    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s) using print command '{2}'", filename,
+    LogTrace(fmt::format("Printing file '{}' with {} byte(s) using print command '{}'", filename,
         file_size(path(filename), error), cmd));
 
     if (system(cmd.c_str())) {
@@ -167,7 +167,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
+            LogError(fmt::format("Can't create printer output file for pattern '{}': {}", filename, strerror(errno)));
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
@@ -179,7 +179,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         CheckForFileError();
     }
 
-    LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
+    LogTrace(fmt::format("Appending {} byte(s) to printer output file '{}'", length, filename));
 
     out.write(to_const_char_ptr(buf), length);
     CheckForFileError();

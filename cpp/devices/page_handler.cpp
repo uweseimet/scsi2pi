@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
             page_data = HexToBytes(value);
         }
         catch (const out_of_range&) {
-            warn("Ignored invalid mode page definition for page {0}: {1}", page_code, value);
+            warn("Ignored invalid mode page definition for page {}: {}", page_code, value);
             continue;
         }
 
@@ -141,16 +141,16 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
             if (page_code && (page_code != to_integer<int>(page_data[0] & byte { 0x3f }))) {
-                warn("Ignored mode page definition with inconsistent page code {0}: {1}", page_code, page_data[0]);
+                warn("Ignored mode page definition with inconsistent page code {}: {}", page_code, page_data[0]);
                 continue;
             }
 
             if (page_code && static_cast<byte>(page_data.size() - 2) != page_data[1]) {
-                warn("Ignored mode page definition with wrong page size {0}: {1}", page_code, page_data[1]);
+                warn("Ignored mode page definition with wrong page size {}: {}", page_code, page_data[1]);
                 continue;
             }
 
-            trace("Adding/replacing mode page {0}: {1}", page_code, value);
+            trace("Adding/replacing mode page {}: {}", page_code, value);
         }
 
         pages[page_code] = page_data;

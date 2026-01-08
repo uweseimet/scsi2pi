@@ -51,7 +51,7 @@ public:
 
     string GetPaddedName() const
     {
-        return fmt::format("{0:8}{1:16}{2:4}", product_data.vendor, product_data.product, product_data.revision);
+        return fmt::format("{:8}{:16}{:4}", product_data.vendor, product_data.product, product_data.revision);
     }
 
     ScsiLevel GetScsiLevel() const
@@ -166,7 +166,7 @@ private:
     vector<byte> HandleRequestSense() const;
 
     ProductData product_data = ProductData(
-        { "SCSI2Pi", "", fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
+        { "SCSI2Pi", "", fmt::format("{:02}{:1}{:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
     ScsiLevel level = ScsiLevel::NONE;
     ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;

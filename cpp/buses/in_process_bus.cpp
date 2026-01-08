@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ bool InProcessBus::GetSignal(int pin_mask) const
 
     if (log_signals) {
         if (const string &name = GetSignalName(pin_mask); !name.empty()) {
-            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
+            LogSignal(fmt::format("Getting {}: {}", name, state ? "true" : "false"));
         }
     }
 
@@ -58,7 +58,7 @@ void InProcessBus::SetSignal(int pin, bool state) const
 
     if (log_signals) {
         if (const string &name = GetSignalName(1 << pin); !name.empty()) {
-            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
+            LogSignal(fmt::format("Setting {} to {}", name, state ? "true" : "false"));
         }
     }
 
