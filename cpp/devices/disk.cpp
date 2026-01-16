@@ -560,7 +560,8 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
     uint32_t count;
 
     if (mode == RW6 || mode == SEEK6) {
-        start = GetCdbInt24(1);
+        // Mask LUN bits
+        start = GetCdbInt24(1) & 0x1fffff;
 
         count = GetCdbByte(4);
         if (!count) {

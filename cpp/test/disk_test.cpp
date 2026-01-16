@@ -254,6 +254,8 @@ TEST(DiskTest, Read6)
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
+    // LUN bits must not affect sector number
+    controller->SetCdbByte(1, 0x07 << 5);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_6));
 
