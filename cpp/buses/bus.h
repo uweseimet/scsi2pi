@@ -2,8 +2,6 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -16,178 +14,155 @@
 #include "shared/s2p_defs.h"
 #include "board.h"
 
-//---------------------------------------------------------------------------
-//
-// Control signal pin assignment setting
-//  GPIO pin mapping table for control signals.
-//
-//  Control signal:
-//   PIN_ACT
-//     Signal that indicates the status of processing SCSI command.
-//   PIN_ENB
-//     Signal that indicates the valid signal from start to finish.
-//   PIN_TAD
-//     Signal that indicates the input/output direction of the target signal (BSY,IO,CD,MSG,REG).
-//   PIN_IND
-//     Signal that indicates the input/output direction of the initiator signal (SEL, ATN, RST, ACK).
-//   PIN_DTD
-//     Signal that indicates the input/output direction of the data lines (DT0...DT7,DP).
-//
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-//
-// Control signal output logic
-//   0V:FALSE  3.3V:TRUE
-//
-//   ACT_ON
-//     PIN_ACT signal
-//   ENB_ON
-//     PIN_ENB signal
-//   TAD_IN
-//     PIN_TAD This is the logic when inputting.
-//   IND_IN
-//     PIN_ENB This is the logic when inputting.
-//    DTD_IN
-//     PIN_ENB This is the logic when inputting.
-//
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-//
-// SCSI signal pin assignment setting
-//   GPIO pin mapping table for SCSI signals.
-//   PIN_DT0～PIN_SEL
-//
-//---------------------------------------------------------------------------
-
-// Constant declarations (GPIO)
-constexpr static int GPIO_INPUT = 0;
-constexpr static int GPIO_OUTPUT = 1;
-constexpr static int GPIO_PULLNONE = 0;
-constexpr static int GPIO_PULLDOWN = 1;
-
-// Constant declarations (SCSI)
-constexpr static int IN = GPIO_INPUT;
-constexpr static int OUT = GPIO_OUTPUT;
-
-// Constant declarations (Control signals)
-constexpr static int ACT_OFF = !ACT_ON;
-constexpr static int ENB_OFF = !ENB_ON;
-constexpr static int TAD_OUT = !TAD_IN;
-constexpr static int IND_OUT = !IND_IN;
-constexpr static int DTD_OUT = !DTD_IN;
-
-using namespace std;
-
-class Bus // NOSONAR The high number of convenience methods is justified
+class Bus // NOSONAR The high number of simple convenience methods is justified
 {
 
 public:
 
     virtual ~Bus() = default;
 
-    virtual bool Init(bool);
-    virtual void Reset() = 0;
-    virtual void CleanUp() = 0;
+    bool Init(bool);
+    virtual void Reset() const;
 
-    virtual uint32_t Acquire() = 0;
+    virtual string SetUp(bool)
+    {
+        // Nothing to do
+        return "";
+    }
 
-    virtual bool WaitForSelection() = 0;
+    virtual void CleanUp()
+    {
+        // Nothing to do
+    }
 
-    virtual void SetBSY(bool) = 0;
+    virtual void Acquire() const = 0;
 
-    virtual void SetSEL(bool) = 0;
+    virtual uint8_t WaitForSelection() = 0;
 
-    virtual bool GetIO() = 0;
-    virtual void SetIO(bool) = 0;
+    virtual void SetDAT(uint8_t) const = 0;
 
-    virtual uint8_t GetDAT() = 0;
-    virtual void SetDAT(uint8_t) = 0;
-
-    virtual bool GetSignal(int) const = 0;
-    virtual void SetSignal(int, bool) = 0;
+    virtual bool GetSignal(int) const;
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual bool WaitSignal(int, bool);
+    virtual void SetDir(bool) const = 0;
 
-    int CommandHandShake(span<uint8_t>);
-    int MsgInHandShake();
-    int ReceiveHandShake(uint8_t*, int);
-    int SendHandShake(const uint8_t*, int, int = SEND_NO_DELAY);
+    virtual bool WaitHandShake(int, bool) const;
+
+    int TargetCommandHandShake(data_in_t);
+    int TargetReceiveHandShake(data_in_t);
+    int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
+    int InitiatorMsgInHandShake() const;
+    int InitiatorReceiveHandShake(data_in_t);
+    int InitiatorSendHandShake(data_out_t);
+
+    uint8_t GetDAT() const
+    {
+        // A bus settle delay
+        WaitNanoSeconds(false);
+
+        Acquire();
+
+        return static_cast<uint8_t>(~(signals >> PIN_DT0));
+    }
+
+    uint32_t GetSignals() const
+    {
+        return signals;
+    }
+    void SetSignals(uint32_t s) const
+    {
+        signals = s;
+    }
 
     bool GetBSY() const
     {
-        return GetSignal(PIN_BSY);
+        return GetSignal(PIN_BSY_MASK);
     }
+    virtual void SetBSY(bool state) const;
 
     bool GetSEL() const
     {
-        return GetSignal(PIN_SEL);
+        return GetSignal(PIN_SEL_MASK);
+    }
+    virtual void SetSEL(bool state) const
+    {
+        SetSignal(PIN_SEL, state);
     }
 
     bool GetREQ() const
     {
-        return GetSignal(PIN_REQ);
+        return GetSignal(PIN_REQ_MASK);
     }
-
-    void SetREQ(bool state)
+    void SetREQ(bool state) const
     {
         SetSignal(PIN_REQ, state);
     }
 
     bool GetATN() const
     {
-        return GetSignal(PIN_ATN);
+        return GetSignal(PIN_ATN_MASK);
     }
-
-    void SetATN(bool state)
+    void SetATN(bool state) const
     {
         SetSignal(PIN_ATN, state);
     }
 
     bool GetACK() const
     {
-        return GetSignal(PIN_ACK);
+        return GetSignal(PIN_ACK_MASK);
     }
-
-    void SetACK(bool state)
+    void SetACK(bool state) const
     {
         SetSignal(PIN_ACK, state);
     }
 
     bool GetRST() const
     {
-        return GetSignal(PIN_RST);
+        return GetSignal(PIN_RST_MASK);
     }
-
-    void SetRST(bool state)
+    void SetRST(bool state) const
     {
         SetSignal(PIN_RST, state);
     }
 
     bool GetMSG() const
     {
-        return GetSignal(PIN_MSG);
+        return GetSignal(PIN_MSG_MASK);
     }
-
-    void SetMSG(bool state)
+    void SetMSG(bool state) const
     {
         SetSignal(PIN_MSG, state);
     }
 
     bool GetCD() const
     {
-        return GetSignal(PIN_CD);
+        return GetSignal(PIN_CD_MASK);
     }
-
-    void SetCD(bool state)
+    void SetCD(bool state) const
     {
         SetSignal(PIN_CD, state);
     }
 
-    BusPhase GetPhase();
+    bool GetIO() const
+    {
+        return GetSignal(PIN_IO_MASK);
+    }
+    void SetIO(bool) const;
+
+    virtual BusPhase GetPhase() const
+    {
+        Acquire();
+
+        // Get phase from bus signal lines SEL, BSY, I/O, C/D and MSG
+        return phases[(signals >> PIN_MSG) & 0b11111];
+    }
+
+    virtual bool IsPhase(BusPhase phase) const
+    {
+        // The signals are still up to date
+        return phases[(signals >> PIN_MSG) & 0b11111] == phase;
+    }
 
     static string GetPhaseName(BusPhase phase)
     {
@@ -198,26 +173,28 @@ protected:
 
     Bus() = default;
 
-    virtual void WaitBusSettle() const = 0;
+    virtual void SetSignal(int, bool) const = 0;
+
+    virtual void WaitNanoSeconds(bool) const = 0;
 
     virtual void EnableIRQ() = 0;
     virtual void DisableIRQ() = 0;
 
-    bool IsTarget() const
-    {
-        return target_mode;
-    }
-
-private:
-
-    static const array<BusPhase, 8> phases;
-
-    static const array<string, 11> phase_names;
-
-    bool target_mode = true;
+    uint8_t GetSelection() const;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
     // a packet. This is the number of ns that will be delayed between the
     // header and the actual data.
-    static constexpr int DAYNAPORT_SEND_DELAY_NS = 100'000;
+    constexpr static int DAYNAPORT_SEND_DELAY_NS = 100'000;
+
+private:
+
+    int CommandHandshakeTimeout();
+
+    // The current bus signals, static because there is exactly one set of bus signals
+    inline static uint32_t signals = 0xffffffff;
+
+    static const array<BusPhase, 32> phases;
+
+    static const array<string, 11> phase_names;
 };

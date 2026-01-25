@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -52,37 +52,37 @@ void S2pDump::Banner(bool header) const
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2025 Uwe Seimet\n";
+            << "Copyright (C) 2023-2026 Uwe Seimet\n";
     }
 
     cout << "Usage: " + APP_NAME + " [options]\n"
-        << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
-        << "                                     default LUN is 0.\n"
-        << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
-        << "                                     default LUN is 0.\n"
-        << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
-        << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
-        << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
-        << "                                     default is 1 MiB.\n"
-        << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
-        << "                                     error|critical|off), default is 'warning'.\n"
-        << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
-        << "                                     device properties for property files.\n"
-        << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
-        << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
-        << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
-        << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
-        << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
-        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
-        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
-        << "                                     default is the capacity.\n"
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
+        << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
+        << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
+        << "                                     default is 1 MiB.\n"
+        << "  --help/-H                          Display this help.\n"
+        << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
+        << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
+        << "                                     device properties for property files.\n"
+        << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
+        << "                                     error|critical|off), default is 'warning'.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
+        << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
+        << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
+        << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
+        << "                                     default LUN is 0.\n"
+        << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
+        << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
         << "  --scsi-generic/-g DEVICE_FILE      Use the Linux SG driver instead of a\n"
         << "                                     RaSCSI/PiSCSI board.\n"
-        << "  --version/-v                       Display the program version.\n"
-        << "  --help/-H                          Display this help.\n";
+        << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
+        << "                                     default LUN is 0.\n"
+        << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "                                     default is the capacity.\n"
+        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
+        << "  --version/-v                       Display the s2pdump version.\n";
 }
 
 bool S2pDump::Init(bool in_process, bool log_signals)
@@ -93,11 +93,10 @@ bool S2pDump::Init(bool in_process, bool log_signals)
     }
 
     instance = this;
+
     // Signal handler for cleaning up
-    struct sigaction termination_handler;
+    struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
-    sigemptyset(&termination_handler.sa_mask);
-    termination_handler.sa_flags = 0;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
@@ -109,23 +108,23 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 {
     const vector<option> options = {
         { "all-luns", no_argument, nullptr, 'a' },
-        { "buffer-size", required_argument, nullptr, 'b' },
         { "board-id", required_argument, nullptr, 'B' },
+        { "buffer-size", required_argument, nullptr, 'b' },
         { "help", no_argument, nullptr, 'H' },
-        { "sasi-capacity", required_argument, nullptr, 'c' },
-        { "sector-count", required_argument, nullptr, 'C' },
-        { "sasi-id", required_argument, nullptr, 'h' },
-        { "scsi-id", required_argument, nullptr, 'i' },
-        { "scsi-generic", required_argument, nullptr, 'g' },
-        { "inquiry", no_argument, nullptr, 'I' },
         { "image-file", required_argument, nullptr, 'f' },
+        { "inquiry", no_argument, nullptr, 'I' },
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
-        { "scsi-scan", no_argument, nullptr, 's' },
-        { "start-sector", required_argument, nullptr, 'S' },
+        { "sasi-capacity", required_argument, nullptr, 'c' },
+        { "sasi-id", required_argument, nullptr, 'h' },
         { "sasi-scan", no_argument, nullptr, 't' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
+        { "scsi-generic", required_argument, nullptr, 'g' },
+        { "scsi-id", required_argument, nullptr, 'i' },
+        { "scsi-scan", no_argument, nullptr, 's' },
+        { "sector-count", required_argument, nullptr, 'C' },
+        { "start-sector", required_argument, nullptr, 'S' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -673,37 +672,32 @@ string S2pDump::DumpRestoreTape(fstream &file)
 
 string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
+    auto readWrite = [&]() {
+        int r = 0;
+        while (r <= retries) {
+            if(s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore)) {
+                return true;
+            }
+            ++r;
+        }
+        return false;
+    };
+
     if (restore) {
-        file.read(reinterpret_cast<char*>(buffer.data()), bytes);
+        file.read(to_char_ptr(buffer), bytes);
         if (file.fail()) {
             return "Can't read from file '" + filename + "': " + strerror(errno);
         }
 
-        int r = 0;
-        while (r <= retries) {
-            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, true)) {
-                break;
-            }
-
-            ++r;
+        if (!readWrite()) {
+            return "Can't write to device";
         }
-
-        return "Can't write to device";
     } else {
-        int r = 0;
-        while (r <= retries) {
-            if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, false)) {
-                break;
-            }
-
-            ++r;
-        }
-
-        if (r > retries) {
+        if (!readWrite()) {
             return "Can't read from device";
         }
 
-        file.write(reinterpret_cast<const char*>(buffer.data()), bytes);
+        file.write(to_const_char_ptr(buffer), bytes);
         if (file.fail()) {
             return "Can't write to file '" + filename + "': " + strerror(errno);
         }
@@ -722,7 +716,7 @@ void S2pDump::DumpTape(ostream &file)
 
         if (length == BoardExecutor::BAD_BLOCK) {
             const array<uint8_t, 4> bad_data = { 0x00, 0x00, 0x00, 0x80 };
-            file.write(reinterpret_cast<const char*>(bad_data.data()), bad_data.size());
+            file.write(to_const_char_ptr(bad_data), bad_data.size());
             if (file.bad()) {
                 throw IoException("Can't write SIMH bad data record");
             }
@@ -785,7 +779,7 @@ void S2pDump::RestoreTape(istream &file)
 
             buffer.resize(meta_data.value);
 
-            file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+            file.read(to_char_ptr(buffer), buffer.size());
             if (file.bad()) {
                 throw IoException("Can't read SIMH data record");
             }
@@ -962,7 +956,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
         const int page_length = page_code ? buf[offset] : length - offset;
 
-        cout << fmt::format("{0}mode_page.{1}={2:02x}", id_and_lun, page_code & 0x3f, page_code);
+        cout << fmt::format("{}mode_page.{}={:02x}", id_and_lun, page_code & 0x3f, page_code);
 
         if (page_code) {
             cout << fmt::format(":{:02x}", page_length);

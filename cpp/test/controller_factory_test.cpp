@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -27,16 +27,13 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     device = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_TRUE(controller_factory.HasController(ID1));
     EXPECT_NE(nullptr, device->GetController());
     EXPECT_EQ(1U, device->GetController()->GetLunCount());
-    EXPECT_FALSE(controller_factory.HasController(0));
     EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
     EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
 
     device = device_factory.CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_TRUE(controller_factory.HasController(ID1));
     EXPECT_NE(nullptr, device->GetController());
     EXPECT_EQ(2U, device->GetController()->GetLunCount());
     EXPECT_TRUE(controller_factory.DeleteController(*device->GetController()));
@@ -45,11 +42,8 @@ TEST(ControllerFactoryTest, LifeCycle)
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID2, disk));
     EXPECT_CALL(*disk, FlushCache);
     controller_factory.DeleteAllControllers();
-    EXPECT_FALSE(controller_factory.HasController(ID1));
     EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_FALSE(controller_factory.HasController(ID2));
     EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID2, LUN1));
-    EXPECT_FALSE(controller_factory.HasController(ID1));
 }
 
 TEST(ControllerFactoryTest, AttachToController)
@@ -126,4 +120,21 @@ TEST(ControllerFactoryTest, SetLogLevel)
     controller_factory.SetLogLevel(ID, LUN2, level::level_enum::err);
     EXPECT_EQ(level::level_enum::off, device1->GetLogger().level());
     EXPECT_EQ(level::level_enum::err, device2->GetLogger().level());
+}
+
+TEST(ControllerFactoryTest, SetFormatLimit)
+{
+    MockBus bus;
+    ControllerFactory controller_factory;
+    const DeviceFactory &device_factory = DeviceFactory::GetInstance();
+    const array<const uint8_t, 2> bytes = { 0x01, 0x02 };
+
+    const auto device1 = device_factory.CreateDevice(SCHS, 0, "");
+    controller_factory.AttachToController(bus, 0, device1);
+    EXPECT_EQ("01:02", device1->GetController()->FormatBytes(bytes, bytes.size()).substr(10, 5));
+
+    controller_factory.SetFormatLimit(1);
+    const auto device2 = device_factory.CreateDevice(SCHS, 0, "");
+    controller_factory.AttachToController(bus, 1, device2);
+    EXPECT_EQ("01   ", device2->GetController()->FormatBytes(bytes, bytes.size()).substr(10, 5));
 }

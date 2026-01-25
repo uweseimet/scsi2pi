@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // Implementation of a SCSI printer (see SCSI-2 specification for a command description)
 //
@@ -36,10 +36,11 @@
 
 using namespace filesystem;
 using namespace memory_util;
+using namespace s2p_util;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
-    PrimaryDevice::SetProductData( { "", "SCSI PRINTER", "" }, true);
+    SetProductData( { "", "SCSI PRINTER", "" }, true);
     SetScsiLevel(ScsiLevel::SCSI_2);
     SupportsParams(true);
     SetReady(true);
@@ -92,11 +93,6 @@ param_map Printer::GetDefaultParams() const
     };
 }
 
-vector<uint8_t> Printer::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::PRINTER, false);
-}
-
 void Printer::Print()
 {
     const uint32_t length = GetCdbInt24(2);
@@ -104,7 +100,7 @@ void Printer::Print()
     LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError(fmt::format("Transfer buffer overflow: Buffer size is {0} bytes, {1} byte(s) expected",
+        LogError(fmt::format("Transfer buffer overflow: Buffer size is {} bytes, {} byte(s) expected",
             GetController()->GetBuffer().size(), length));
 
         ++print_error_count;
@@ -136,7 +132,7 @@ void Printer::SynchronizeBuffer()
     cmd.replace(file_position, 2, filename);
 
     error_code error;
-    LogTrace(fmt::format("Printing file '{0}' with {1} byte(s) using print command '{2}'", filename,
+    LogTrace(fmt::format("Printing file '{}' with {} byte(s) using print command '{}'", filename,
         file_size(path(filename), error), cmd));
 
     if (system(cmd.c_str())) {
@@ -154,10 +150,9 @@ void Printer::SynchronizeBuffer()
     StatusPhase();
 }
 
-int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
-        assert(false);
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 
@@ -172,7 +167,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError(fmt::format("Can't create printer output file for pattern '{0}': {1}", filename, strerror(errno)));
+            LogError(fmt::format("Can't create printer output file for pattern '{}': {}", filename, strerror(errno)));
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
@@ -184,9 +179,9 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         CheckForFileError();
     }
 
-    LogTrace(fmt::format("Appending {0} byte(s) to printer output file '{1}'", length, filename));
+    LogTrace(fmt::format("Appending {} byte(s) to printer output file '{}'", length, filename));
 
-    out.write((const char*)buf.data(), length);
+    out.write(to_const_char_ptr(buf), length);
     CheckForFileError();
 
     return l;

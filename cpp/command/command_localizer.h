@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,8 +10,6 @@
 
 #include <regex>
 #include "shared/s2p_util.h"
-
-using namespace std;
 
 enum class LocalizationKey
 {
@@ -24,7 +22,6 @@ enum class LocalizationKey
     ERROR_IMAGE_IN_USE,
     ERROR_IMAGE_FILE_INFO,
     ERROR_RESERVED_ID,
-    ERROR_NON_EXISTING_DEVICE,
     ERROR_NON_EXISTING_UNIT,
     ERROR_UNKNOWN_DEVICE_TYPE,
     ERROR_MISSING_DEVICE_TYPE,
@@ -48,11 +45,11 @@ enum class LocalizationKey
     ERROR_OPERATION_DENIED_REMOVABLE,
     ERROR_OPERATION_DENIED_PROTECTABLE,
     ERROR_OPERATION_DENIED_READY,
-    ERROR_UNIQUE_DEVICE_TYPE,
+    ERROR_UNIQUE_SCDP,
     ERROR_PERSIST
 };
 
-class CommandLocalizer
+class CommandLocalizer final
 {
 
 public:

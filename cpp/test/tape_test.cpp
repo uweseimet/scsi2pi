@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,15 +10,14 @@
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 static void CheckPosition(const AbstractController &controller, shared_ptr<PrimaryDevice> tape, uint32_t position)
 {
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, ScsiCommand::READ_POSITION);
 
-    if (position != GetInt32(controller.GetBuffer(), 4) || position != GetInt32(controller.GetBuffer(), 8)) {
-        EXPECT_EQ(position, GetInt32(controller.GetBuffer(), 4));
-    }
+    assert(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
 }
 
 static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
@@ -35,12 +34,12 @@ static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, ui
 static void CheckMetaData(istream &file, const SimhMetaData &expected)
 {
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     SimhMetaData meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
     file.seekg(Pad(expected.value), ios::cur);
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     meta_data = FromLittleEndian(data);
     EXPECT_EQ(expected.cls, meta_data.cls);
     EXPECT_EQ(expected.value, meta_data.value);
@@ -61,10 +60,10 @@ void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0,
 {
     assert(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
 
-    file.write((const char*)leading.data(), leading.size());
+    file.write(to_const_char_ptr(leading), leading.size());
     file.seekp(length, ios::cur);
     if (!trailing.empty()) {
-        file.write((const char*)trailing.data(), trailing.size());
+        file.write(to_const_char_ptr(trailing), trailing.size());
     }
 }
 
@@ -439,7 +438,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 2);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 2));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 2));
     CheckMetaData(file, { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 2 });
     CheckPositions(tape, 10, 1);
 
@@ -451,7 +450,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x00);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 1));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 1));
     CheckMetaData(file, { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 1 });
     CheckPositions(tape, 10, 1);
 
@@ -464,7 +463,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(3, 2);
     controller->SetCdbByte(4, 0);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
     CheckMetaData(file, { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 512 });
     CheckPositions(tape, 520, 1);
 
@@ -476,7 +475,7 @@ TEST(TapeTest, Write6)
     controller->SetCdbByte(1, 0x01);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_6));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
     CheckMetaData(file, { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 512 });
     CheckPositions(tape, 520, 1);
 }
@@ -512,7 +511,7 @@ TEST(TapeTest, Write16)
     controller->SetCdbByte(11, 2);
     controller->SetCdbByte(14, 1);
     EXPECT_NO_THROW(Dispatch(tape, ScsiCommand::WRITE_16));
-    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(tape->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
     file.seekg(1040);
     CheckMetaData(file, { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 512 });
     CheckPositions(tape, 1560, 3);

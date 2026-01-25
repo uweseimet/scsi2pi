@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // A device implementing mandatory SCSI primary commands, to be used for subclassing
 //
@@ -17,7 +17,7 @@
 
 class AbstractController;
 
-class PrimaryDevice : public Device
+class PrimaryDevice : public Device // NOSONAR The number of fields and methods is justified, the complexity is low
 {
     friend class AbstractController;
     friend class PageHandler;
@@ -51,7 +51,7 @@ public:
 
     string GetPaddedName() const
     {
-        return fmt::format("{0:8}{1:16}{2:4}", product_data.vendor, product_data.product, product_data.revision);
+        return fmt::format("{:8}{:16}{:4}", product_data.vendor, product_data.product, product_data.revision);
     }
 
     ScsiLevel GetScsiLevel() const
@@ -94,13 +94,18 @@ public:
     }
 
     // For DATA OUT phase, except for MODE SELECT
-    virtual int WriteData(cdb_t, data_out_t, int, int) = 0;
+    virtual int WriteData(cdb_t, data_out_t, int) = 0;
 
-    virtual void ModeSelect(cdb_t, data_out_t, int, int);
+    virtual void ModeSelect(cdb_t, data_out_t, int);
 
     virtual void FlushCache()
     {
         // Devices with a cache have to override this method
+    }
+
+    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
+    {
+        // Nothing to do in base class
     }
 
     // Devices providing statistics have to override this method
@@ -117,8 +122,7 @@ protected:
 
     void AddCommand(ScsiCommand, const command&);
 
-    vector<uint8_t> HandleInquiry(DeviceType, bool) const;
-    virtual vector<uint8_t> InquiryInternal() const = 0;
+    virtual vector<uint8_t> HandleInquiry() const;
     void CheckReady();
 
     virtual void Inquiry();
@@ -134,10 +138,6 @@ protected:
     {
         // Nothing to do in base class
         return 0;
-    }
-    virtual void SetUpModePages(map<int, vector<byte>>&, int, bool) const
-    {
-        // Nothing to do in base class
     }
 
     void SetFilemark();
@@ -166,7 +166,7 @@ private:
     vector<byte> HandleRequestSense() const;
 
     ProductData product_data = ProductData(
-        { "SCSI2Pi", "", fmt::format("{0:02}{1:1}{2:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
+        { "SCSI2Pi", "", fmt::format("{:02}{:1}{:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
     ScsiLevel level = ScsiLevel::NONE;
     ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;
@@ -189,4 +189,14 @@ private:
     int delay_after_bytes = SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
+
+    // Mappings of non-DIRECT ACCESS types (SCSG has a special handling)
+    static inline const unordered_map<PbDeviceType, DeviceType> DEVICE_TYPE_MAPPING = {
+        { SCMO, DeviceType::OPTICAL_MEMORY },
+        { SCCD, DeviceType::CD_DVD },
+        { SCDP, DeviceType::PROCESSOR },
+        { SCHS, DeviceType::PROCESSOR },
+        { SCLP, DeviceType::PRINTER },
+        { SCTP, DeviceType::SEQUENTIAL_ACCESS }
+    };
 };

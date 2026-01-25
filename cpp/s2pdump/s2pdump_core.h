@@ -19,11 +19,10 @@
 class S2pDumpExecutor;
 class SgAdapter;
 
-using namespace std;
 using namespace chrono;
 using namespace spdlog;
 
-class S2pDump
+class S2pDump final
 {
 
 public:

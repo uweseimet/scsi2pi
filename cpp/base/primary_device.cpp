@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<int>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {0} (${1:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
+        LogDebug(fmt::format("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
                 static_cast<int>(cmd)));
         command();
     }
@@ -127,31 +127,31 @@ int PrimaryDevice::GetId() const
 
 string PrimaryDevice::SetProductData(const ProductData &data, bool force)
 {
-    if (const string &vendor = Trim(data.vendor); !vendor.empty()) {
+    if (string_view vendor = Trim(data.vendor); !vendor.empty()) {
         if (vendor.length() > 8) {
-            return "Vendor '" + vendor + "' must have between 1 and 8 characters";
+            return "Vendor '" + data.vendor + "' must have between 1 and 8 characters";
         }
 
-        product_data.vendor = vendor;
+        product_data.vendor = string(vendor);
     }
 
-    if (const string &product = Trim(data.product); !product.empty()) {
+    if (string_view product = Trim(data.product); !product.empty()) {
         if (product.length() > 16) {
-            return "Product '" + product + "' must have between 1 and 16 characters";
+            return "Product '" + data.product + "' must have between 1 and 16 characters";
         }
 
         // Changing existing vital product data is not SCSI compliant
         if (product_data.product.empty() || force) {
-            product_data.product = product;
+            product_data.product = string(product);
         }
     }
 
-    if (const string &revision = Trim(data.revision); !revision.empty()) {
+    if (string_view revision = Trim(data.revision); !revision.empty()) {
         if (revision.length() > 4) {
-            return "Revision '" + revision + "' must have between 1 and 4 characters";
+            return "Revision '" + data.revision + "' must have between 1 and 4 characters";
         }
 
-        product_data.revision = revision;
+        product_data.revision = string(revision);
     }
 
     return "";
@@ -215,11 +215,11 @@ void PrimaryDevice::Inquiry()
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const auto &buf = InquiryInternal();
+    const auto &buf = HandleInquiry();
 
     const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
 
-    controller->CopyToBuffer(buf.data(), allocation_length);
+    controller->CopyToBuffer(span(buf.data(), allocation_length));
 
     // Report if the device does not support the requested LUN
     if (!controller->GetDeviceForLun(controller->GetEffectiveLun())) {
@@ -243,10 +243,10 @@ void PrimaryDevice::ReportLuns() const
     fill_n(buf.begin(), min(buf.size(), static_cast<size_t>(allocation_length)), 0);
 
     uint32_t size = 0;
-    for (int lun = 0; lun < 32; ++lun) {
-        if (controller->GetDeviceForLun(lun)) {
+    for (int l = 0; l < 32; ++l) {
+        if (controller->GetDeviceForLun(l)) {
             size += 8;
-            buf[size + 7] = static_cast<uint8_t>(lun);
+            buf[size + 7] = static_cast<uint8_t>(l);
         }
     }
 
@@ -283,7 +283,7 @@ void PrimaryDevice::RequestSense()
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
-    controller->CopyToBuffer(buf.data(), length);
+    controller->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(buf.data()), length)); // NOSONAR byte cannot be used here
 
     ResetStatus();
 
@@ -320,12 +320,14 @@ void PrimaryDevice::CheckReady()
     }
 }
 
-vector<uint8_t> PrimaryDevice::HandleInquiry(DeviceType type, bool is_removable) const
+vector<uint8_t> PrimaryDevice::HandleInquiry() const
 {
     vector<uint8_t> buf(0x1f + 5);
 
-    buf[0] = static_cast<uint8_t>(type);
-    buf[1] = is_removable ? 0x80 : 0x00;
+    const auto device_type = DEVICE_TYPE_MAPPING.find(GetType());
+    buf[0] = static_cast<uint8_t>(
+        device_type != DEVICE_TYPE_MAPPING.end() ? device_type->second : DeviceType::DIRECT_ACCESS);
+    buf[1] = IsRemovable() ? 0x80 : 0x00;
     buf[2] = static_cast<uint8_t>(level);
     buf[3] = level >= ScsiLevel::SCSI_2 ?
             static_cast<uint8_t>(ScsiLevel::SCSI_2) : static_cast<uint8_t>(ScsiLevel::SCSI_1_CCS);
@@ -374,7 +376,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[13] = static_cast<byte>(eom);
     }
 
-    LogTrace(fmt::format("Status {0}: {1}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
+    LogTrace(fmt::format("Status {}: {}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
 
     return buf;
 }
@@ -415,7 +417,7 @@ void PrimaryDevice::DiscardReservation()
     reserving_initiator = NOT_RESERVED;
 }
 
-void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int, int)
+void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int)
 {
     // There is no default implementation of MODE SELECT
     throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);

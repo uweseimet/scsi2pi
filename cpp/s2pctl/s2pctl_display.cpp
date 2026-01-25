@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -69,16 +69,12 @@ string DisplayDefaultParameters(const PbDeviceProperties &properties)
             sorted_params.insert(key + "=" + value);
         }
 
-        string p;
-
-        for (const auto &param : sorted_params) {
-            if (!p.empty()) {
-                p += "\n                            ";
+        for (auto it = sorted_params.cbegin(); it != sorted_params.cend(); ++it) {
+            if (it != sorted_params.cbegin()) {
+                s << "\n                            ";
             }
-            p += param;
+            s << *it;
         }
-
-        s << p;
     }
 
     return s.str();
@@ -86,10 +82,6 @@ string DisplayDefaultParameters(const PbDeviceProperties &properties)
 
 string DisplayBlockSizes(const PbDeviceProperties &properties)
 {
-    if (!properties.block_sizes_size()) {
-        return "";
-    }
-
     ostringstream s;
 
     const set<uint32_t> sorted_sizes(properties.block_sizes().cbegin(), properties.block_sizes().cend());
@@ -115,7 +107,7 @@ string DisplayPermittedValues(const PbOperationParameter &parameter)
 
 string DisplayParameters(const PbOperationMetaData &meta_data)
 {
-    vector < PbOperationParameter > sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
+    vector<PbOperationParameter> sorted_parameters(meta_data.parameters().cbegin(), meta_data.parameters().cend());
     ranges::sort(sorted_parameters, [](const auto &a, const auto &b) {return a.name() < b.name();});
 
     ostringstream s;
@@ -227,7 +219,7 @@ string s2pctl_display::DisplayVersionInfo(const PbVersionInfo &version_info)
             version += "PiSCSI";
         }
 
-        version += fmt::format(" {0:02x}.{1:02x}", version_info.major_version(), version_info.minor_version());
+        version += fmt::format(" {:02x}.{:02x}", version_info.major_version(), version_info.minor_version());
 
         if (version_info.patch_version() > 0) {
             version += fmt::format(".{}", version_info.patch_version());
@@ -237,7 +229,7 @@ string s2pctl_display::DisplayVersionInfo(const PbVersionInfo &version_info)
         }
     }
     else {
-        version += fmt::format(" {0}.{1}", version_info.major_version(), version_info.minor_version());
+        version += fmt::format(" {}.{}", version_info.major_version(), version_info.minor_version());
         if (version_info.patch_version() > 0) {
             version += fmt::format(".{}", version_info.patch_version());
         }
@@ -275,7 +267,6 @@ string s2pctl_display::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_ty
     }
 
     ostringstream s;
-
     s << "Supported device types and their properties:\n";
 
     vector<PbDeviceTypeProperties> sorted_properties(device_types_info.properties().cbegin(),

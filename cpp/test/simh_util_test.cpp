@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,6 +10,7 @@
 #include "shared/simh_util.h"
 #include "test_shared.h"
 
+using namespace s2p_util;
 using namespace simh_util;
 using namespace testing;
 
@@ -17,12 +18,13 @@ TEST(SimhUtilTest, ReadMetaData)
 {
     fstream file;
     file.open(CreateTempFile(), ios::in | ios::out | ios::binary);
-    file.write((const char*)ToLittleEndian( { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 0 }).data(), META_DATA_SIZE);
-    file.write((const char*)ToLittleEndian( { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 0x1234567 }).data(),
+    file.write(to_const_char_ptr(ToLittleEndian( { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 0 })),
+        META_DATA_SIZE);
+    file.write(to_const_char_ptr(ToLittleEndian( { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, 0x1234567 })),
         META_DATA_SIZE);
     // end-of-data
-    file.write((const char*)ToLittleEndian( { SimhClass::PRIVATE_MARKER, 0b011 }).data(), META_DATA_SIZE);
-    file.write((const char*)ToLittleEndian( { SimhClass::RESERVERD_MARKER, 0 }).data(), META_DATA_SIZE);
+    file.write(to_const_char_ptr(ToLittleEndian( { SimhClass::PRIVATE_MARKER, 0b011 })), META_DATA_SIZE);
+    file.write(to_const_char_ptr(ToLittleEndian( { SimhClass::RESERVERD_MARKER, 0 })), META_DATA_SIZE);
     file.flush();
 
     file.seekg(0);
@@ -89,7 +91,7 @@ TEST(SimhUtilTest, WriteFilemark)
     EXPECT_EQ(4U, file_size(filename));
     array<uint8_t, 4> data;
     file.seekg(0);
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     EXPECT_EQ(SimhClass::TAPE_MARK_GOOD_DATA_RECORD, FromLittleEndian(data).cls);
     EXPECT_EQ(0U, FromLittleEndian(data).value);
 }
@@ -106,11 +108,11 @@ TEST(SimhUtilTest, WriteGoodData)
     EXPECT_EQ(16U, file_size(filename));
     file.seekg(0);
     data.resize(4);
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     EXPECT_EQ(SimhClass::TAPE_MARK_GOOD_DATA_RECORD, FromLittleEndian(data).cls);
     EXPECT_EQ(8U, FromLittleEndian(data).value);
     data.resize(8);
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     EXPECT_EQ(0x01, data[0]);
     EXPECT_EQ(0x02, data[1]);
     EXPECT_EQ(0x03, data[2]);
@@ -120,7 +122,7 @@ TEST(SimhUtilTest, WriteGoodData)
     EXPECT_EQ(0x07, data[6]);
     EXPECT_EQ(0x08, data[7]);
     data.resize(4);
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
     EXPECT_EQ(SimhClass::TAPE_MARK_GOOD_DATA_RECORD, FromLittleEndian(data).cls);
     EXPECT_EQ(8U, FromLittleEndian(data).value);
 }

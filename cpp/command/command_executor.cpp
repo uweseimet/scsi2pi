@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -81,6 +81,8 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
 {
     const PbCommand &command = context.GetCommand();
     const PbOperation operation = command.operation();
+
+    scoped_lock lock(dispatch_lock);
 
     // Handle commands that are not device-specific
     switch (operation) {
@@ -168,9 +170,9 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
     if (device.Eject(true)) {
         // Remove both potential properties, with and without LUN
         PropertyHandler::GetInstance().RemoveProperties(
-            fmt::format("{0}{1}:{2}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
+            fmt::format("{}{}:{}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
         PropertyHandler::GetInstance().RemoveProperties(
-            fmt::format("{0}{1}.params", PropertyHandler::DEVICE, device.GetId()));
+            fmt::format("{}{}.params", PropertyHandler::DEVICE, device.GetId()));
     }
     else {
         s2p_logger.warn("Ejecting {} failed", GetIdentifier(device));
@@ -253,16 +255,18 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
 
+#ifdef BUILD_DISK
         // The caching mode must be set before the file is accessed
         if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
             disk->SetCachingMode(caching_mode);
         }
+#endif
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {
             // GetIdentifier() cannot be used here because the device ID has not yet been set
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME,
-                fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
+                fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
         }
 
         if (!ValidateImageFile(context, *static_pointer_cast<StorageDevice>(device), filename)) {
@@ -285,7 +289,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     if (const string &error = device->Init(); !error.empty()) {
         s2p_logger.error(error);
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
-            fmt::format("{0} {1}:{2}", GetTypeString(*device), id, lun));
+            fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
     }
 
     // Set the final data (they may have been overriden during the initialization of SCSG)
@@ -391,8 +395,8 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         }
 
         // Remove both potential identifiers
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, id, lun));
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{0}{1}.", PropertyHandler::DEVICE, id));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}:{}.", PropertyHandler::DEVICE, id, lun));
+        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}.", PropertyHandler::DEVICE, id));
 
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
@@ -416,7 +420,7 @@ void CommandExecutor::DetachAll() const
 
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
-    const string &identifier = fmt::format("{0}{1}:{2}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
+    const string &identifier = fmt::format("{}{}:{}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
     PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
@@ -453,7 +457,7 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
     if (device.IsReadOnly()) {
         msg += "read-only ";
     }
-    else if (device.IsProtectable() && device.IsProtected()) {
+    if (device.IsProtectable() && device.IsProtected()) {
         msg += "protected ";
     }
     msg += GetIdentifier(device) + ", " + device.GetIdentifier();
@@ -463,37 +467,35 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
 
 string CommandExecutor::SetReservedIds(const string &ids)
 {
-    set<int> ids_to_reserve;
+    unordered_set<int> ids_to_reserve;
     stringstream ss(ids);
     string id;
     while (getline(ss, id, ',')) {
         const int res_id = ParseAsUnsignedInt(id);
         if (res_id == -1 || res_id > 7) {
-            return "Invalid ID " + id;
+            return "Invalid ID '" + id + "'";
         }
 
-        if (controller_factory.HasController(res_id)) {
+        if (controller_factory.GetDeviceForIdAndLun(res_id, 0)) {
             return "ID " + id + " is currently in use";
         }
 
         ids_to_reserve.insert(res_id);
     }
 
-    reserved_ids = { ids_to_reserve.cbegin(), ids_to_reserve.cend() };
+    reserved_ids = std::move(ids_to_reserve);
 
-    if (ids_to_reserve.empty()) {
-        s2p_logger.info("Cleared reserved ID(s)");
+    if (reserved_ids.empty()) {
+        s2p_logger.info("Cleared reserved IDs");
     }
     else {
-        s2p_logger.info("Reserved ID(s) set to {}", Join(ids_to_reserve));
+        s2p_logger.info("Reserved IDs set to {}", Join(reserved_ids));
     }
 
     return "";
 }
 
 #ifdef BUILD_STORAGE_DEVICE
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &device,
     const string &filename) const
 {
@@ -507,7 +509,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     string effective_filename = filename;
 
-    if (!StorageDevice::FileExists(filename)) {
+    if (!exists(filename)) {
         // If the file does not exist search for it in the default image folder
         effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
 
@@ -529,7 +531,6 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     return true;
 }
-#pragma GCC diagnostic pop
 #endif
 
 #pragma GCC diagnostic push
@@ -539,7 +540,7 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
-            fmt::format("{0}:{1}", id, lun));
+            fmt::format("{}:{}", id, lun));
     }
 #endif
 
@@ -549,12 +550,11 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() };
-
     ostringstream s;
     s << "operation=" << PbOperation_Name(command.operation());
 
-    if (!params.empty()) {
+    // Use a sorted map
+    if (const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() }; !params.empty()) {
         s << ", command parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : params) {
@@ -646,11 +646,11 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
-    // SCDP can be attached only once
+    // SCDP may be attached only once
     if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
-            if (d->GetType() == device->GetType()) {
-                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_DEVICE_TYPE, GetTypeString(*device));
+            if (d->GetType() == SCDP) {
+                context.ReturnLocalizedError(LocalizationKey::ERROR_UNIQUE_SCDP);
                 return nullptr;
             }
         }
@@ -668,6 +668,8 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice 
     return true;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
     int block_size) const
 {
@@ -690,6 +692,7 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<Pri
     return false;
 #endif
 }
+#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {
@@ -738,10 +741,6 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
         return true;
     }
 
-    if (!controller_factory.HasController(id)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_DEVICE, to_string(id));
-    }
-
     if (!controller_factory.GetDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
     }
@@ -764,5 +763,5 @@ string CommandExecutor::GetTypeString(const Device &device)
 
 string CommandExecutor::GetIdentifier(const Device &device)
 {
-    return fmt::format("{0} {1}:{2}", GetTypeString(device), device.GetId(), device.GetLun());
+    return fmt::format("{} {}:{}", GetTypeString(device), device.GetId(), device.GetLun());
 }

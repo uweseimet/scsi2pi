@@ -11,9 +11,7 @@
 #include <fstream>
 #include "shared/s2p_defs.h"
 
-using namespace std;
-
-class ScriptGenerator
+class ScriptGenerator final
 {
 
 public:

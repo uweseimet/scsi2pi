@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,19 +29,14 @@ void SetDeviceProperty(property_map &properties, const string &key, const string
     }
 }
 
-string ParseNumber(const string &s)
+string_view ParseNumber(string_view s)
 {
-    string result;
-    size_t i = -1;
-    while (s.size() > ++i) {
-        if (!isdigit(s[i])) {
-            break;
-        }
-
-        result += s[i];
+    size_t i = 0;
+    while (i < s.size() && isdigit(s[i])) {
+        ++i;
     }
 
-    return result;
+    return s.substr(0, i);
 }
 
 string ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
@@ -59,7 +54,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
     const string &specifier = index == string::npos ? filename : filename.substr(0, index);
     const auto &components = Split(specifier, '_');
 
-    const string &type_id_lun = components[0];
+    string_view type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
         throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
     }
@@ -73,10 +68,10 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
             lun = ParseNumber(type_id_lun.substr(3));
         }
         lun = !lun.empty() && lun != "0" ? ":" + lun : "";
-        device_key = fmt::format("{0}{1}{2}.", PropertyHandler::DEVICE, id, lun);
+        device_key = fmt::format("{}{}{}.", PropertyHandler::DEVICE, id, lun);
     }
 
-    const string &type = type_id_lun.substr(0, 2);
+    string_view type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
         throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
@@ -85,8 +80,8 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
 
     string block_size = "512";
     if (components.size() > 1) {
-        if (const string b = ParseNumber(components[1]); !b.empty()) {
-            block_size = b;
+        if (string_view b = ParseNumber(components[1]); !b.empty()) {
+            block_size = string(b);
         }
         // When there is no block_size number after the "_" separator the string is the product data
         else {
@@ -110,18 +105,18 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     //   -idn:u|-hdn:u -> -i|-h n:u
     vector<char*> args;
     for (const string arg : initial_args) {
-        const size_t start_of_ids = arg.find_first_of("0123456789");
-        const string &ids = (start_of_ids != string::npos) ? arg.substr(start_of_ids) : "";
+        string arg_str(arg);
+        const string &arg_lower = ToLower(arg_str);
 
-        const string &arg_lower = ToLower(arg);
         if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
             args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
-            if (!ids.empty()) {
-                args.emplace_back(strdup(ids.c_str()));
+
+            const size_t ids = arg_str.find_first_of("0123456789");
+            if (ids != string::npos) {
+                args.emplace_back(strdup(arg_str.substr(ids).c_str()));
             }
-        }
-        else {
-            args.emplace_back(strdup(arg.c_str()));
+        } else {
+            args.emplace_back(strdup(arg_str.c_str()));
         }
     }
 
@@ -137,36 +132,37 @@ void s2p_parser::Banner(bool usage)
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --id/-i ID[:LUN]            SCSI/SASI target device ID (0-7) and LUN (0-7),\n"
-            << "                              default LUN is 0.\n"
-            << "  --type/-t TYPE              Device type.\n"
-            << "  --scsi-level LEVEL          Optional SCSI standard level (1-8),\n"
-            << "                              default is device-specific and usually SCSI-2.\n"
-            << "  --name/-n PRODUCT_NAME      Optional product name for SCSI INQUIRY command,\n"
-            << "                              format is VENDOR:PRODUCT:REVISION.\n"
-            << "  --block-size/-b BLOCK_SIZE  Optional default block size, a multiple of 4.\n"
-            << "  --caching-mode/-m MODE      Caching mode (piscsi|write-through|linux\n"
-            << "                              |linux-optimized), default currently is PiSCSI\n"
-            << "                              compatible caching.\n"
-            << "  --blue-scsi-mode/-B         Enable BlueSCSI filename compatibility mode.\n"
-            << "  --reserved-ids/-r [IDS]     List of IDs to reserve.\n"
-            << "  --image-folder/-F FOLDER    Default folder with image files.\n"
-            << "  --scan-depth/-R DEPTH       Scan depth for image file folder.\n"
-            << "  --property/-c KEY=VALUE     Sets a configuration property.\n"
-            << "  --property-files/-C         List of configuration property files.\n"
-            << "  --log-level/-L LEVEL        Log level (trace|debug|info|warning|error|\n"
-            << "                              critical|off), default is 'info'.\n"
-            << "  --log-pattern/-l PATTERN    The spdlog pattern to use for logging.\n"
-            << "  --log-limit LIMIT           The number of data bytes being logged,\n"
-            << "                              default is 128 bytes.\n"
-            << "  --script-file/-s FILE       File to write s2pexec command script to.\n"
-            << "  --token-file/-P FILE        Access token file.\n"
-            << "  --port/-p PORT              s2p server port, default is 6868.\n"
-            << "  --ignore-conf               Ignore /etc/s2p.conf configuration file.\n"
-            << "  --without-types/-w TYPES    Do not report the listed device types in the API\n"
-            << "                              (for PiSCSI web UI compatibility).\n"
-            << "  --version/-v                Display the program version.\n"
-            << "  --help/-h                   Display this help.\n"
+            << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
+            << "  --blue-scsi-mode/-B            Enable BlueSCSI filename compatibility mode.\n"
+            << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
+            << "                                 |linux-optimized), default is PiSCSI\n"
+            << "                                 compatible caching.\n"
+            << "  --help/-h                      Display this help.\n"
+            << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
+            << "                                 for SCSI, 0-1 for SASI), default LUN is 0.\n"
+            << "  --ignore-conf/-I               Ignore /etc/s2p.conf configuration file.\n"
+            << "  --image-folder/-F FOLDER       Default folder with image files.\n"
+            << "  --locale/-z LOCALE             The locale for client-facing error messages.\n"
+            << "  --log-level/-L LEVEL[:ID:LUN]  Log level (trace|debug|info|warning|error|\n"
+            << "                                 critical|off), default is 'info'.\n"
+            << "  --log-limit LIMIT              The number of data bytes being logged,\n"
+            << "                                 default is 128 bytes.\n"
+            << "  --log-pattern/-l PATTERN       The spdlog pattern to use for logging.\n"
+            << "  --name/-n VENDOR:PRODUCT:REV   Optional device name for SCSI INQUIRY command,\n"
+            << "                                 format is VENDOR:PRODUCT:REVISION.\n"
+            << "  --port/-p PORT                 s2p server port, default is 6868.\n"
+            << "  --property/-c KEY=VALUE        Sets a configuration property.\n"
+            << "  --property-files/-C            List of configuration property files.\n"
+            << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
+            << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
+            << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
+            << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
+            << "                                 default is device-specific and usually SCSI-2.\n"
+            << "  --token-file/-P FILE           Access token file.\n"
+            << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
+            << "  --version/-v                   Display the s2p version.\n"
+            << "  --without-types/-w TYPES       Do not report the listed device types in the\n"
+            << "                                 API (for PiSCSI web UI compatibility).\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n"
             << "    hd1: HD image (Non-removable SCSI-1-CCS HD image)\n"
@@ -185,29 +181,28 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 {
     const int OPT_SCSI_LEVEL = 2;
     const int OPT_LOG_LIMIT = 3;
-    const int OPT_IGNORE_CONF = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
-        { "image-folder", required_argument, nullptr, 'F' },
         { "help", no_argument, nullptr, 'h' },
-        { "ignore-conf", no_argument, nullptr, OPT_IGNORE_CONF },
+        { "id", required_argument, nullptr, 'i' },
+        { "ignore-conf", no_argument, nullptr, 'I' },
+        { "image-folder", required_argument, nullptr, 'F' },
         { "locale", required_argument, nullptr, 'z' },
         { "log-level", required_argument, nullptr, 'L' },
-        { "log-pattern", required_argument, nullptr, 'l' },
         { "log-limit", required_argument, nullptr, OPT_LOG_LIMIT },
+        { "log-pattern", required_argument, nullptr, 'l' },
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", optional_argument, nullptr, 'r' },
         { "scan-depth", required_argument, nullptr, 'R' },
-        { "-id", required_argument, nullptr, 'i' },
+        { "script-file", required_argument, nullptr, 's' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
-        { "script-file", required_argument, nullptr, 's' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { "without-types", required_argument, nullptr, 'w' },
@@ -236,12 +231,13 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     string block_size;
     string caching_mode;
     bool blue_scsi_mode = false;
+    int exit_status = -1;
 
     property_map properties;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:F:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
@@ -269,7 +265,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'h':
             Banner(true);
-            exit(EXIT_SUCCESS);
+            exit_status = EXIT_SUCCESS;
             break;
 
         case 'i':
@@ -292,7 +288,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             properties[PropertyHandler::WITHOUT_TYPES] = optarg;
             continue;
 
-        case OPT_IGNORE_CONF:
+        case 'I':
             ignore_conf = true;
             continue;
 
@@ -310,15 +306,22 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         default:
             Banner(true);
-            exit(EXIT_FAILURE);
+            exit_status = EXIT_FAILURE;
             break;
         }
 
-        string device_key = id_lun.empty() ? "" : fmt::format("{0}{1}.", PropertyHandler::DEVICE, id_lun);
-        const string &params = optarg;
+        string params;
+        if (optarg) {
+            params = optarg;
+        }
+
+        string device_key = id_lun.empty() ? "" : fmt::format("{}{}.", PropertyHandler::DEVICE, id_lun);
+
         if (blue_scsi_mode && !params.empty()) {
             device_key = ParseBlueScsiFilename(properties, device_key, params);
         }
+
+        id_lun.clear();
 
         SetDeviceProperty(properties, device_key, PropertyHandler::BLOCK_SIZE, block_size);
         SetDeviceProperty(properties, device_key, PropertyHandler::CACHING_MODE, caching_mode);
@@ -329,8 +332,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         if (!params.empty()) {
             properties[device_key + PropertyHandler::PARAMS] = params;
         }
+    }
 
-        id_lun.clear();
+    if (exit_status != -1) {
+        exit(exit_status);
     }
 
     return properties;

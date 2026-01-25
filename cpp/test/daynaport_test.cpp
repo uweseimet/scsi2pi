@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -55,6 +55,17 @@ TEST(DaynaportTest, Inquiry)
     TestShared::Inquiry(SCDP, DeviceType::PROCESSOR, ScsiLevel::SCSI_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
+TEST(DaynaportTest, HandleInquiry)
+{
+    auto [controller, daynaport] = CreateDevice(SCDP);
+
+    controller->SetCdbByte(4, 255);
+    EXPECT_EQ(36U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
+
+    controller->SetCdbByte(4, 37);
+    EXPECT_EQ(37U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
+}
+
 TEST(DaynaportTest, TestUnitReady)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
@@ -67,13 +78,20 @@ TEST(DaynaportTest, TestUnitReady)
 TEST(DaynaportTest, WriteData)
 {
     auto [controller, daynaport] = CreateDevice(SCDP);
-    vector<int> cdb(6);
+    array<int, 6> cdb = { };
+    const array<const uint8_t, 5> buf = { };
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::SEND_MESSAGE_6));
+    cdb[0] = static_cast<int>(ScsiCommand::SEND_MESSAGE_6);
+
+    cdb[5] = 0x00;
+    EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
+
+    cdb[5] = 0x80;
+    EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
+
     // Unknown data format must be ignored
-    controller->SetCdbByte(5, 0xff);
-    vector<uint8_t> buf(0);
-    EXPECT_NO_THROW(daynaport->WriteData(controller->GetCdb(), buf, 0, 0));
+    cdb[5] = 0xff;
+    EXPECT_EQ(123, daynaport->WriteData(cdb, buf, 123));
 }
 
 TEST(DaynaportTest, GetMessage6)

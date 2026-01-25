@@ -128,7 +128,7 @@ TEST(OpticalMemoryTest, ModeSelect)
 
     // PF (vendor-specific parameter format) not set must not fail but be ignored
     auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16, 0));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
 
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
@@ -136,13 +136,13 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[4] = 0x03;
     // Page length
     buf[5] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28, 0), ScsiException)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 28), ScsiException)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16, 0));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
     buf[4] = 0;
     buf[5] = 0;
 
@@ -152,13 +152,13 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[8] = 0x04;
     // Page length
     buf[9] = 0x16;
-    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32, 0), ScsiException)<< "Page 3 is not supported";
+    EXPECT_THROW(mo.ModeSelect(cdb, buf, 32), ScsiException)<< "Page 3 is not supported";
 
     // Page 1 (Read-write error recovery page)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20, 0));
+    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
 }
 
 TEST(OpticalMemoryTest, Open)

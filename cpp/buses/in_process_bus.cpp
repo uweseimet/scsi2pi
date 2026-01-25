@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,70 +18,60 @@ InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(Creat
     in_process_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
-void InProcessBus::Reset()
+void InProcessBus::Reset() const
 {
     in_process_logger->trace("Resetting bus");
 
-    signals = 0;
+    Bus::Reset();
 }
 
-uint8_t InProcessBus::GetDAT()
+void InProcessBus::SetDAT(uint8_t dat) const
 {
-    scoped_lock<mutex> lock(signal_lock);
+    scoped_lock lock(signal_lock);
 
-    return static_cast<uint8_t>(signals >> PIN_DT0);
+    uint32_t s = ~GetSignals();
+    s &= 0b11111111111111000000001111111111;
+    s |= static_cast<uint32_t>(dat) << PIN_DT0;
+    SetSignals(~s);
 }
 
-void InProcessBus::SetDAT(uint8_t dat)
+bool InProcessBus::GetSignal(int pin_mask) const
 {
-    scoped_lock<mutex> lock(signal_lock);
+    scoped_lock lock(signal_lock);
 
-    signals &= 0b11111111111111000000001111111111;
-    signals |= static_cast<uint32_t>(dat) << PIN_DT0;
-}
-
-bool InProcessBus::GetSignal(int pin) const
-{
-    assert(pin >= PIN_ATN && pin <= PIN_SEL);
-
-    scoped_lock<mutex> lock(signal_lock);
-
-    const bool state = signals & (1 << pin);
+    const bool state = Bus::GetSignal(pin_mask);
 
     if (log_signals) {
-        if (const string &name = GetSignalName(pin); !name.empty()) {
-            LogSignal(fmt::format("Getting {0}: {1}", name, state ? "true" : "false"));
+        if (const string &name = GetSignalName(pin_mask); !name.empty()) {
+            LogSignal(fmt::format("Getting {}: {}", name, state ? "true" : "false"));
         }
     }
 
     return state;
 }
 
-void InProcessBus::SetSignal(int pin, bool state)
+void InProcessBus::SetSignal(int pin, bool state) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
-    scoped_lock<mutex> lock(signal_lock);
+    scoped_lock lock(signal_lock);
 
     if (log_signals) {
-        if (const string &name = GetSignalName(pin); !name.empty()) {
-            LogSignal(fmt::format("Setting {0} to {1}", name, state ? "true" : "false"));
+        if (const string &name = GetSignalName(1 << pin); !name.empty()) {
+            LogSignal(fmt::format("Setting {} to {}", name, state ? "true" : "false"));
         }
     }
 
     if (state) {
-        signals |= (1 << pin);
-    }
-    else {
-        signals &= ~(1 << pin);
+        SetSignals(GetSignals() & ~(1 << pin));
+    } else {
+        SetSignals(GetSignals() | (1 << pin));
     }
 }
 
-bool InProcessBus::WaitForSelection()
+uint8_t InProcessBus::WaitForSelection()
 {
-    Sleep( { .tv_sec = 0, .tv_nsec = 10'000'000 });
-
-    return true;
+    return GetSelection();
 }
 
 void InProcessBus::LogSignal(const string &msg) const
@@ -92,8 +82,8 @@ void InProcessBus::LogSignal(const string &msg) const
     }
 }
 
-string InProcessBus::GetSignalName(int pin)
+string InProcessBus::GetSignalName(int pin_mask)
 {
-    const auto &it = SIGNALS_TO_LOG.find(pin);
+    const auto &it = SIGNALS_TO_LOG.find(pin_mask);
     return it != SIGNALS_TO_LOG.end() ? it->second : "";
 }

@@ -30,7 +30,7 @@ using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 
-class CommandExecutor
+class CommandExecutor final
 {
 
 public:
@@ -40,6 +40,11 @@ public:
     {
     }
     ~CommandExecutor() = default;
+
+    mutex& GetDispatchLock()
+    {
+        return dispatch_lock;
+    }
 
     const auto& GetReservedIds() const
     {
@@ -60,11 +65,6 @@ public:
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
-
-    mutex& GetExecutionLocker()
-    {
-        return execution_locker;
-    }
 
     static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);
@@ -98,7 +98,8 @@ private:
 
     logger &s2p_logger;
 
-    mutex execution_locker;
+    // To avoid conflicts between SCSI command execution and external API calls
+    mutex dispatch_lock;
 
     unordered_set<int> reserved_ids;
 };

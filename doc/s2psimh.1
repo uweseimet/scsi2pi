@@ -5,11 +5,11 @@ s2psimh \- SCSI2Pi SIMH .tap File Tool
 .B s2psimh
 [\fB\--add/-a\fR \fICLASS1:VALUE1,...\fR]
 [\fB\--binary-data/-b\fR \fIDATA_FILE\fR]
-[\fB\--hex-data/-x\fR \fIDATA_FILE\fR]
 [\fB\--dump/-d\fR]
+[\fB\--help/-h\fR]
+[\fB\--hex-data/-x\fR \fIDATA_FILE\fR]
 [\fB\--limit/-l\fR \fILIMIT\fR]
 [\fB\--truncate/-t\fR]
-[\fB\--help/-h\fR]
 [\fB\--version/-v\fR]
 <SIMH_TAP_FILE>
 .SH DESCRIPTION
@@ -29,20 +29,20 @@ Add objects.
 .BR --binary-data/-b/\fI " " \fIDATA_FILE
 An optional binary file to read the record data from. If neither a binary nor a hexadecimal text file is specified, the data record contents are undefined.
 .TP
-.BR --hex-data/-x/\fI " " \fIDATA_FILE
-An optional file to read the record data from. If neither a hexadecimal text file or a binary file specified, the data record contents are undefined.
-.TP
 .BR --dump/-d\fI
 Dump data record contents.
+.TP
+.BR --help/-h\fI
+Display this help.
+.TP
+.BR --hex-data/-x/\fI " " \fIDATA_FILE
+An optional file to read the record data from. If neither a hexadecimal text file or a binary file specified, the data record contents are undefined.
 .TP
 .BR --limit/-l\fI " " \fILIMIT
 Limit dump size to LIMIT bytes.
 .TP
 .BR --truncate/-t\fI
 Truncate file before adding objects.
-.TP
-.BR --help/-h\fI
-Display a help text.
 .TP
 .BR --version/-v\fI
 Display the s2psimh version.
@@ -52,5 +52,5 @@ Display the s2psimh version.
 
 .SH SEE ALSO
 s2p(1), s2pctl(1), s2pdump(1), s2pexec(1), s2pformat(1), s2pproto(1), s2ptool(1)
- 
+
 Also see <https://www.scsi2pi.net> and <https://github.com/uweseimet/scsi2pi>.

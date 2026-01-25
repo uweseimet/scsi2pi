@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,9 +11,7 @@
 #include <vector>
 #include "shared/sg_adapter.h"
 
-using namespace std;
-
-class S2pFormat
+class S2pFormat final
 {
 
 public:

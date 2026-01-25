@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
-    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return static_cast<int>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
         cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
     }
@@ -45,7 +45,7 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
 vector<uint8_t> testing::CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
-    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return static_cast<uint8_t>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return to_integer<uint8_t>(b);});
     return parameters;
 }
 
@@ -59,7 +59,7 @@ string testing::CreateImageFile(StorageDevice &device, size_t size, const string
 
 string testing::TestShared::GetVersion()
 {
-    return fmt::format("{0:02}{1}{2}", s2p_major_version, s2p_minor_version, s2p_revision);
+    return fmt::format("{:02}{}{}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
 void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
@@ -86,16 +86,16 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     EXPECT_EQ(additional_length, buffer[4]);
     string product_data;
     if (ident.size() == 24) {
-        product_data = fmt::format("{0}{1:02}{2}{3}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
+        product_data = fmt::format("{}{:02}{}{}", ident, s2p_major_version, s2p_minor_version, s2p_revision);
     } else {
         product_data = ident;
     }
-    EXPECT_EQ(product_data, string((const char* )buffer.data() + 8, 28));
+    EXPECT_EQ(product_data, string(reinterpret_cast<const char*>(buffer.data()) + 8, 28));
 }
 
 void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
-    const auto device = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, filename);
+    const auto device = DeviceFactory::GetInstance().CreateDevice(type, 0, filename);
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
@@ -141,16 +141,17 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
 
 string testing::CreateTempName()
 {
-    error_code error;
-    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path(error).string()); // NOSONAR Publicly writable directory is safe here
+    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path().string()); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> testing::OpenTempFile(const string &extension)
 {
-    char *f = strdup(CreateTempName().c_str());
-    const int fd = mkstemp(f);
-    const path filename = f;
-    free(f); // NOSONAR Required because of mkstemp
+    const string name = CreateTempName();
+    vector<char> f(name.begin(), name.end());
+    f.push_back('\0');
+
+    const int fd = mkstemp(f.data());
+    const path filename = f.data();
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
 
     path effective_name = filename;
@@ -191,18 +192,19 @@ string testing::ReadTempFileToString(const string &filename)
 
 void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
-    string filenames;
-    auto [fd1, filename1] = OpenTempFile();
-    filenames = filename1;
-    (void)write(fd1, properties1.data(), properties1.size());
+    const auto& [fd1, filename1] = OpenTempFile();
+    string filenames = filename1;
+    write(fd1, properties1.data(), properties1.size());
     close(fd1);
+
     if (!properties2.empty()) {
-        auto [fd2, filename2] = OpenTempFile();
+        const auto& [fd2, filename2] = OpenTempFile();
         filenames += ",";
         filenames += filename2;
-        (void)write(fd2, properties2.data(), properties2.size());
+        write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }
+
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
 }
 

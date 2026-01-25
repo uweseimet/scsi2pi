@@ -2,17 +2,20 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <cassert>
 #include "simh_util.h"
+#include <cassert>
+#include "shared/s2p_util.h"
+
+using namespace s2p_util;
 
 bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 {
     array<uint8_t, META_DATA_SIZE> data = { };
-    file.read((char*)data.data(), data.size());
+    file.read(to_char_ptr(data), data.size());
 
     if (file.good()) {
         meta_data = FromLittleEndian(data);
@@ -56,7 +59,7 @@ uint32_t simh_util::Pad(int length)
 bool simh_util::WriteFilemark(ostream &file)
 {
     const array<uint8_t, 4> &filemark = { 0, 0, 0, 0 };
-    file.write((const char*)filemark.data(), filemark.size());
+    file.write(to_const_char_ptr(filemark), filemark.size());
     return file.good();
 }
 
@@ -65,9 +68,9 @@ bool simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int lengt
     const array<uint8_t, 4> good_data = { static_cast<uint8_t>(length & 0xff),
         static_cast<uint8_t>((length >> 8) & 0xff), static_cast<uint8_t>((length >> 16) & 0xff),
         static_cast<uint8_t>((length >> 24) & 0xff) };
-    file.write((const char*)good_data.data(), good_data.size());
-    file.write((const char*)data.data(), length);
-    file.write((const char*)good_data.data(), good_data.size());
+    file.write(to_const_char_ptr(good_data), good_data.size());
+    file.write(to_const_char_ptr(data), length);
+    file.write(to_const_char_ptr(good_data), good_data.size());
     return file.good();
 }
 

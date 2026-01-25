@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,64 +18,25 @@ ScsiHd::ScsiHd(int l, bool r, bool apple, bool scsi1, const set<uint32_t> &secto
     // Some Apple tools require a particular drive identification.
     // Except for the vendor string .hda is the same as .hds.
     if (apple) {
-        Disk::SetProductData( { "QUANTUM", "FIREBALL", "" }, true);
+        SetProductData( { "QUANTUM", "FIREBALL", "" }, true);
     } else if (r) {
-        Disk::SetProductData( { "", "SCSI HD (SCRM)", "" }, true);
+        SetProductData( { "", "SCSI HD (SCRM)", "" }, true);
     }
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetProtectable(true);
     SetRemovable(r);
 }
 
-void ScsiHd::FinalizeSetup()
-{
-    ValidateFile();
-
-    // For non-removable media drives set the default product name based on the drive capacity
-    if (!IsRemovable()) {
-        uint64_t capacity = GetBlockCount() * GetBlockSize();
-        string unit;
-
-        // 10,000,000 MiB and more
-        if (capacity >= 10'737'418'240'000) {
-            capacity /= 1'099'511'627'776;
-            unit = "T";
-        }
-        // 10,000 MiB and more
-        else if (capacity >= 10'485'760'000) {
-            capacity /= 1'073'741'824;
-            unit = "G";
-        }
-        // 1 MiB and more
-        else if (capacity >= 1'048'576) {
-            capacity /= 1'048'576;
-            unit = "M";
-        }
-        else {
-            capacity /= 1024;
-            unit = "K";
-        }
-
-        SetProductData( { "", fmt::format("SCSI HD {0} {1}iB", capacity, unit), "" }, false);
-    }
-}
-
 void ScsiHd::Open()
 {
     assert(!IsReady());
 
-    // Sector size (default 512 bytes) and number of sectors
-    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512)) {
-        throw IoException("Invalid sector size");
-    }
+    // This call cannot fail, the method argument is always valid
+    SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
+
     SetBlockCount(GetFileSize() / GetBlockSize());
 
-    FinalizeSetup();
-}
-
-vector<uint8_t> ScsiHd::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::DIRECT_ACCESS, IsRemovable());
+    FinalizeSetup("SCSI HD");
 }
 
 bool ScsiHd::ValidateBlockSize(uint32_t size) const

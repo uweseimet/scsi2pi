@@ -5,7 +5,7 @@
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2020 akuker
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -36,7 +36,7 @@ using namespace s2p_util;
 DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
 {
     // These data are required by the DaynaPort drivers
-    PrimaryDevice::SetProductData( { "Dayna", "SCSI/Link", "1.4a" }, true);
+    SetProductData( { "Dayna", "SCSI/Link", "1.4a" }, true);
     SetScsiLevel(ScsiLevel::SCSI_2);
     SupportsParams(true);
     SetReady(true);
@@ -88,9 +88,9 @@ void DaynaPort::CleanUp()
     tap.CleanUp(GetLogger());
 }
 
-vector<uint8_t> DaynaPort::InquiryInternal() const
+vector<uint8_t> DaynaPort::HandleInquiry() const
 {
-    vector<uint8_t> buf = HandleInquiry(DeviceType::PROCESSOR, false);
+    vector<uint8_t> buf = PrimaryDevice::HandleInquiry();
 
     if (GetCdbByte(4) == 37) {
         // The Daynaport driver for the Mac expects 37 bytes: Increase additional length and
@@ -154,7 +154,7 @@ int DaynaPort::GetMessage(data_in_t buf)
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (GetLogger().level() == level::trace) {
-        LogTrace(fmt::format("Received {0} byte(s) of network data:\n{1}", rx_packet_size,
+        LogTrace(fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size,
             GetController()->FormatBytes(buf, rx_packet_size)));
     }
 
@@ -191,17 +191,13 @@ int DaynaPort::GetMessage(data_in_t buf)
 //             XX XX ... is the actual packet
 //
 //---------------------------------------------------------------------------
-int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
-    const auto command = static_cast<ScsiCommand>(cdb[0]);
-    assert(command == ScsiCommand::SEND_MESSAGE_6);
-    if (command != ScsiCommand::SEND_MESSAGE_6) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND);
-    }
+    assert(static_cast<ScsiCommand>(cdb[0]) == ScsiCommand::SEND_MESSAGE_6);
 
     int data_length = 0;
-    if (const int data_format = GetCdbByte(5); data_format == 0x00) {
-        data_length = GetCdbInt16(3);
+    if (const int data_format = cdb[5]; data_format == 0x00) {
+        data_length = GetInt16(cdb, 3);
         tap.Send(buf);
         byte_write_count += data_length;
     }
@@ -218,7 +214,7 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int, int l)
     if (buf.size() && GetLogger().level() == level::trace) {
         vector<uint8_t> data;
         ranges::copy(buf, back_inserter(data));
-        LogTrace(fmt::format("Sent {0} byte(s) of network data:\n{1}", data_length,
+        LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length,
             GetController()->FormatBytes(data, data_length)));
     }
 
@@ -257,7 +253,7 @@ void DaynaPort::RetrieveStats() const
         buf.data()[5] = mac[5];
     }
 
-    LogDebug(fmt::format("The DaynaPort MAC address is {0:02x}:{1:02x}:{2:02x}:{3:02x}:{4:02x}:{5:02x}",
+    LogDebug(fmt::format("The DaynaPort MAC address is {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
         buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
 
     const int length = min(static_cast<int>(sizeof(SCSI_LINK_STATS)), GetCdbInt16(3));

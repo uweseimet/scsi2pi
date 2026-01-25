@@ -18,11 +18,10 @@ class CommandContext;
 class CommandExecutor;
 class ControllerFactory;
 
-using namespace std;
 using namespace spdlog;
 using namespace s2p_interface;
 
-class CommandDispatcher
+class CommandDispatcher final
 {
 
 public:
@@ -43,7 +42,6 @@ public:
 
 private:
 
-    bool ExecuteWithLock(const CommandContext&);
     bool HandleDeviceListChange(const CommandContext&) const;
     bool ShutDown(const CommandContext&) const;
 

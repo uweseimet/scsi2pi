@@ -20,7 +20,7 @@ class PbResult;
 
 using namespace s2p_interface;
 
-class S2pProtoExecutor
+class S2pProtoExecutor final
 {
 
 public:

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ void Device::SetParams(const param_map &set_params)
             params[key] = value;
         }
         else {
-            device_logger->warn("{0} ignored unknown parameter '{1}={2}'", PbDeviceType_Name(type), key, value);
+            device_logger->warn("{} ignored unknown parameter '{}={}'", PbDeviceType_Name(type), key, value);
         }
     }
 }
@@ -83,7 +83,7 @@ bool Device::Eject(bool force)
 
 void Device::CreateLogger()
 {
-    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {0}:{1})", GetId(), lun));
+    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {}:{})", GetId(), lun));
 }
 
 logger& Device::GetLogger() const

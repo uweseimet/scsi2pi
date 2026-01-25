@@ -15,7 +15,7 @@ using namespace s2p_interface;
 
 struct sockaddr_in;
 
-class S2pCtlCommands
+class S2pCtlCommands final
 {
 
 public:

@@ -6,9 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
+#include "script_generator.h"
 #include <cassert>
 #include <iomanip>
-#include "script_generator.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
@@ -51,12 +51,7 @@ void ScriptGenerator::AddData(span<const uint8_t> data)
 
     for (size_t i = 0; i < data.size(); ++i) {
         if (i) {
-            if (!(i % 16)) {
-                file << "\\\n";
-            }
-            else {
-                file << ':';
-            }
+            file << (i % 16 == 0 ? "\\\n" : ":");
         }
         file << setfill('0') << setw(2) << static_cast<int>(data[i]);
     }

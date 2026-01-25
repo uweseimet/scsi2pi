@@ -7,7 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
+#include <fstream>
+#include <unistd.h>
 #include "shared/s2p_exceptions.h"
+#include "test_shared.h"
 
 using namespace s2p_util;
 
@@ -45,6 +48,7 @@ TEST(S2pUtilTest, Split)
 
     v = Split("", ':', 1);
     EXPECT_EQ(1U, v.size());
+    EXPECT_EQ("", v[0]);
 }
 
 TEST(S2pUtilTest, ToUpper)
@@ -183,6 +187,14 @@ TEST(S2pUtilTest, GetStatusString)
     EXPECT_NE(string::npos, GetStatusString(0xff).find("respond"));
 }
 
+TEST(S2pUtilTest, FormatSenseData)
+{
+    EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), COMMAND PHASE ERROR (ASC $4a), ASCQ $00", FormatSenseData(
+        SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR, 0x00));
+    EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), ASC $ff, ASCQ $ff", FormatSenseData(
+        SenseKey::ABORTED_COMMAND, static_cast<Asc>(0xff), 0xff));
+}
+
 TEST(S2pUtilTest, GetHexBytes)
 {
     auto bytes = HexToBytes("");
@@ -242,4 +254,27 @@ TEST(S2pUtilTest, CreateLogger)
     const auto l = CreateLogger("test");
     EXPECT_NE(nullptr, l);
     EXPECT_EQ(l, CreateLogger("test"));
+}
+
+TEST(S2pUtilTest, GetLine)
+{
+    const string &filename = testing::CreateTempName();
+    ofstream out(filename);
+    out << "abc\n";
+    out << "123 #comment\n";
+    out << "# comment\n";
+    out << " def \n";
+    out << "\n";
+    out << "xyz\\\n";
+    out << "123\n";
+    out << "exit\n";
+    out << "zzz";
+    out.close();
+
+    ifstream in(filename);
+
+    EXPECT_EQ("abc", GetLine("", in));
+    EXPECT_EQ("123", GetLine("", in));
+    EXPECT_EQ("def", GetLine("", in));
+    EXPECT_EQ("xyz123", GetLine("", in));
 }

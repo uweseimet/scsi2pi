@@ -44,7 +44,13 @@ endif
 
 ifeq ("$(shell uname -s)", "NetBSD")
 	AR = $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
+endif
+
+ifeq ("$(shell uname -s)", "OpenBSD")
+	AR = $(CROSS_COMPILE)ar
+	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter
+	LDFLAGS += -L/usr/local/lib
 endif
 
 ifeq ("$(shell uname -s)", "Darwin")
@@ -172,11 +178,11 @@ PROTO_API := ../api/s2p_interface.proto
 
 SRC_API = $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_)
+SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_adapter)
 ifdef IS_LINUX
-SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_*.cpp)
-SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
+SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_adapter.cpp)
 endif
+SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
 SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
 SRC_SHARED_INITIATOR := $(wildcard $(DIR_SHARED_INITIATOR)/*.cpp)
@@ -194,26 +200,33 @@ SRC_DISK = \
 
 ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD = \
-	$(DIR_DEVICES)/scsi_hd.cpp
+	$(DIR_DEVICES)/scsi_hd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCHD += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCMO),1)
 SRC_SCMO = \
-	$(DIR_DEVICES)/optical_memory.cpp
+	$(DIR_DEVICES)/optical_memory.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCMO += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCCD),1)
 SRC_SCCD = \
-	$(DIR_DEVICES)/scsi_cd.cpp
+	$(DIR_DEVICES)/scsi_cd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SCCD += $(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCTP),1)
 SRC_SCTP = \
 	$(DIR_DEVICES)/tape.cpp \
-	$(DIR_DEVICES)/storage_device.cpp
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 endif
 
 ifeq ($(ENABLE_SCDP),1)
@@ -240,7 +253,9 @@ endif
 
 ifeq ($(ENABLE_SAHD),1)
 SRC_SAHD = \
-	$(DIR_DEVICES)/sasi_hd.cpp
+	$(DIR_DEVICES)/sasi_hd.cpp \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
 SRC_SAHD += $(SRC_DISK)
 endif
 
@@ -264,9 +279,8 @@ SRC_S2PSIMH := $(wildcard s2psimh/*.cpp)
 
 SRC_S2PFORMAT := $(wildcard s2pformat/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v sg_util_test.cpp | grep -v scsi_generic_test.cpp)
+SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v scsi_generic_test.cpp)
 ifdef IS_LINUX
-SRC_S2P_TEST += test/sg_util_test.cpp
 SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 

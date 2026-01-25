@@ -13,7 +13,7 @@
 
 using namespace spdlog;
 
-class SgAdapter
+class SgAdapter final
 {
 
 public:
@@ -44,7 +44,7 @@ private:
 
     logger &sg_logger;
 
-    CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
+    const CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
 
     int fd = -1;
 

@@ -45,7 +45,7 @@ TEST(SasiHdTest, RequestSense)
 
 TEST(SasiHdTest, GetBlockSizes)
 {
-    MockSasiHd hd(0);
+    SasiHd hd(0);
 
     const auto &sizes = hd.GetSupportedBlockSizes();
     EXPECT_EQ(3U, sizes.size());
@@ -56,7 +56,8 @@ TEST(SasiHdTest, GetBlockSizes)
 
 TEST(SasiHdTest, Open)
 {
-    MockSasiHd hd(0);
+    SasiHd hd(0);
+    hd.SetCachingMode(PbCachingMode::PISCSI);
 
     EXPECT_THROW(hd.Open(), IoException)<< "Missing filename";
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 #include "disk.h"
 
-class SasiHd : public Disk
+class SasiHd final : public Disk
 {
 
 public:
@@ -21,6 +21,5 @@ public:
     void Open() override;
 
     void Inquiry() override;
-    vector<uint8_t> InquiryInternal() const override;
     void RequestSense() override;
 };

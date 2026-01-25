@@ -2,12 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "linux_cache.h"
 #include "base/device.h"
+
+using namespace s2p_util;
 
 bool LinuxCache::Init()
 {
@@ -44,7 +46,7 @@ int LinuxCache::Read(data_in_t buf, uint64_t start, int length)
     assert(length);
 
     file.seekg(sector_size * start);
-    file.read((char*)buf.data(), length);
+    file.read(to_char_ptr(buf), length);
     if (file.fail()) {
         file.clear();
         ++read_error_count;
@@ -59,7 +61,7 @@ int LinuxCache::Write(data_out_t buf, uint64_t start, int length)
     assert(length);
 
     file.seekp(sector_size * start);
-    file.write((const char*)buf.data(), length);
+    file.write(to_const_char_ptr(buf), length);
     if (file.fail()) {
         file.clear();
         ++write_error_count;

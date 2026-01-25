@@ -16,7 +16,7 @@
 using namespace std;
 using namespace s2p_interface;
 
-class S2pCtl
+class S2pCtl final
 {
 
 public:

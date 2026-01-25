@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,7 +12,6 @@
 #include "shared/simh_util.h"
 #include "storage_device.h"
 
-using namespace std;
 using namespace simh_util;
 
 class Tape : public StorageDevice
@@ -30,13 +29,11 @@ public:
 
     bool Eject(bool) override;
 
-    int WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int) override;
 
     int ReadData(data_in_t) override;
 
     void Open() override;
-
-    vector<uint8_t> InquiryInternal() const override;
 
     bool ValidateBlockSize(uint32_t) const override;
 
@@ -49,13 +46,13 @@ public:
         return 0;
     }
 
+    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
+
     vector<PbStatistics> GetStatistics() const override;
 
 protected:
 
     void ValidateFile() override;
-
-    void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
     uint32_t VerifyBlockSizeChange(uint32_t, bool) override;
 
@@ -113,8 +110,6 @@ private:
     static void AddMediumPartitionPage(map<int, vector<byte>>&, bool);
     static void AddDataCompressionPage(map<int, vector<byte>>&);
     static void AddDeviceConfigurationPage(map<int, vector<byte>>&, bool);
-
-    static int32_t GetSignedInt24(cdb_t, int);
 
     fstream file;
 

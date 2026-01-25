@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -224,7 +224,7 @@ set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices
             id_sets.clear();
 
             result.set_status(false);
-            result.set_msg(fmt::format("No device for {0}:{1}", device.id(), device.unit()));
+            result.set_msg(fmt::format("No device for {}:{}", device.id(), device.unit()));
 
             break;
         }
@@ -325,7 +325,7 @@ void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevi
     }
 
     for (const auto& [i, l] : id_sets) {
-        // Work-around for old compilers that have issues with directly referencing id/lun in the lambda below
+        // Work-around for old compilers that have issues with referencing i/l in the lambda below
         const int id = i;
         const int lun = l;
         if (const auto &it = ranges::find_if(devices,
@@ -434,11 +434,7 @@ void command_response::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
             auto *s = statistics_info.add_statistics();
-            s->set_id(statistics.id());
-            s->set_unit(statistics.unit());
-            s->set_category(statistics.category());
-            s->set_key(statistics.key());
-            s->set_value(statistics.value());
+            *s = statistics;
         }
     }
 }

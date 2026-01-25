@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,8 +17,8 @@
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
-using namespace s2p_util;
 using namespace initiator_util;
+using namespace s2p_util;
 
 void S2pExec::CleanUp() const
 {
@@ -39,36 +39,36 @@ void S2pExec::Banner(bool header, bool usage)
     if (header) {
         cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Command Execution Tool)\n"
             << "Version " << GetVersionString() << "\n"
-            << "Copyright (C) 2023-2025 Uwe Seimet\n";
+            << "Copyright (C) 2023-2026 Uwe Seimet\n";
     }
 
     if (usage) {
         cout << "Usage: " + APP_NAME + " [options]\n"
-            << "  --scsi-target/-i ID:[LUN]      SCSI target device ID (0-7) and LUN (0-31),\n"
-            << "                                 default LUN is 0.\n"
-            << "  --sasi-target/-h ID:[LUN]      SASI target device ID (0-7) and LUN (0-1),\n"
-            << "                                 default LUN is 0.\n"
+            << "  --binary-input-file/-f FILE    Binary input file with data to send.\n"
+            << "  --binary-output-file/-F FILE   Binary output file for data received.\n"
             << "  --board-id/-B BOARD_ID         Board (initiator) ID (0-7), default is 7.\n"
+            << "  --buffer-size/-b SIZE          Buffer size for received data,\n"
+            << "                                 default is 131072 bytes.\n"
             << "  --cdb/-c CDB[:CDB:...]         Command blocks to send in hexadecimal format.\n"
             << "  --data/-d DATA                 Data to send with the command in hexadecimal\n"
             << "                                 format. @ denotes a filename, e.g. @data.txt.\n"
-            << "  --buffer-size/-b SIZE          Buffer size for received data,\n"
-            << "                                 default is 131072 bytes.\n"
+            << "  --help/-H                      Display this help.\n"
+            << "  --hex-only/-x                  Do not display/save the offset and ASCII data.\n"
+            << "  --hex-output-file/-T FILE      Hexadecimal text output file for data received.\n"
             << "  --log-level/-L LEVEL           Log level (trace|debug|info|warning|error|\n"
             << "                                 critical|off), default is 'info'.\n"
             << "  --log-limit/-l LIMIT           The number of data bytes being logged,\n"
             << "                                 0 means no limit. Default is 128.\n"
-            << "  --binary-input-file/-f FILE    Binary input file with data to send.\n"
-            << "  --binary-output-file/-F FILE   Binary output file for data received.\n"
-            << "  --hex-output-file/-T FILE      Hexadecimal text output file for data received.\n"
-            << "  --timeout/-t TIMEOUT           The command timeout in seconds, default is 3 s.\n"
             << "  --request-sense/-R             Automatically send REQUEST SENSE on error.\n"
             << "  --reset-bus/-r                 Reset the bus.\n"
-            << "  --hex-only/-x                  Do not display/save the offset and ASCII data.\n"
+            << "  --sasi-target/-h ID:[LUN]      SASI target device ID (0-7) and LUN (0-1),\n"
+            << "                                 default LUN is 0.\n"
             << "  --scsi-generic/-g DEVICE_FILE  Use the Linux SG driver instead of a\n"
             << "                                 RaSCSI/PiSCSI board.\n"
-            << "  --version/-v                   Display the program version.\n"
-            << "  --help/-H                      Display this help.\n";
+            << "  --scsi-target/-i ID:[LUN]      SCSI target device ID (0-7) and LUN (0-31),\n"
+            << "                                 default LUN is 0.\n"
+            << "  --timeout/-t TIMEOUT           The command timeout in seconds, default is 3 s.\n"
+            << "  --version/-v                   Display the s2pexec version.\n";
     }
 }
 
@@ -85,11 +85,10 @@ bool S2pExec::Init(bool in_process, bool log_signals)
         }
 
         instance = this;
+
         // Signal handler for cleaning up
-        struct sigaction termination_handler;
+        struct sigaction termination_handler = { };
         termination_handler.sa_handler = TerminationHandler;
-        sigemptyset(&termination_handler.sa_mask);
-        termination_handler.sa_flags = 0;
         sigaction(SIGINT, &termination_handler, nullptr);
         sigaction(SIGTERM, &termination_handler, nullptr);
         signal(SIGPIPE, SIG_IGN);
@@ -105,18 +104,18 @@ bool S2pExec::Init(bool in_process, bool log_signals)
 bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals)
 {
     const vector<option> options = {
-        { "buffer-size", required_argument, nullptr, 'b' },
-        { "board-id", required_argument, nullptr, 'B' },
         { "binary-input-file", required_argument, nullptr, 'f' },
         { "binary-output-file", required_argument, nullptr, 'F' },
+        { "board-id", required_argument, nullptr, 'B' },
+        { "buffer-size", required_argument, nullptr, 'b' },
         { "cdb", required_argument, nullptr, 'c' },
         { "data", required_argument, nullptr, 'd' },
         { "help", no_argument, nullptr, 'H' },
         { "hex-only", no_argument, nullptr, 'x' },
         { "hex-output-file", required_argument, nullptr, 'T' },
-        { "request-sense", no_argument, nullptr, 'R' },
         { "log-level", required_argument, nullptr, 'L' },
         { "log-limit/-l", required_argument, nullptr, 'l' },
+        { "request-sense", no_argument, nullptr, 'R' },
         { "reset-bus", no_argument, nullptr, 'r' },
         { "scsi-generic", required_argument, nullptr, 'g' },
         { "scsi-target", required_argument, nullptr, 'i' },
@@ -498,7 +497,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
             throw ExecutionException(GetStatusString(status_code));
         }
         else {
-            throw ExecutionException(fmt::format("Can't execute command {0} (${1:2x})",
+            throw ExecutionException(fmt::format("Can't execute command {} (${:2x})",
                 CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
         }
     }
@@ -533,7 +532,7 @@ string S2pExec::ReadData()
 
     ifstream in(filename, text ? ios::in : ios::in | ios::binary);
     if (!in) {
-        return fmt::format("Can't open input file '{0}': {1}", filename, strerror(errno));
+        return fmt::format("Can't open input file '{}': {}", filename, strerror(errno));
     }
 
     if (text) {
@@ -548,10 +547,10 @@ string S2pExec::ReadData()
     else {
         const size_t size = file_size(filename);
         buffer.resize(size);
-        in.read((char*)buffer.data(), size);
+        in.read(to_char_ptr(buffer), size);
     }
 
-    return in.fail() ? fmt::format("Can't read from file '{0}': {1}", filename, strerror(errno)) : "";
+    return in.fail() ? fmt::format("Can't read from file '{}': {}", filename, strerror(errno)) : "";
 }
 
 string S2pExec::WriteData(span<const uint8_t> data)
@@ -567,13 +566,13 @@ string S2pExec::WriteData(span<const uint8_t> data)
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
         if (!out) {
-            return fmt::format("Can't open output file '{0}': {1}", filename, strerror(errno));
+            return fmt::format("Can't open output file '{}': {}", filename, strerror(errno));
         }
 
         hex += "\n";
-        out.write(text ? hex.data() : (const char*)data.data(), hex.size());
+        out.write(text ? hex.data() : to_const_char_ptr(data), hex.size());
         if (out.fail()) {
-            return fmt::format("Can't write to file '{0}': {1}", filename, strerror(errno));
+            return fmt::format("Can't write to file '{}': {}", filename, strerror(errno));
         }
     }
 

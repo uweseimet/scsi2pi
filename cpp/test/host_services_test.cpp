@@ -2,11 +2,15 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "command/command_dispatcher.h"
+#include "command/command_executor.h"
+#include "controllers/controller_factory.h"
+#include "devices/host_services.h"
 #include "shared/s2p_exceptions.h"
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
@@ -214,7 +218,7 @@ TEST(HostServicesTest, ModeSense10)
 
 TEST(HostServicesTest, SetUpModePages)
 {
-    MockHostServices services(0);
+    HostServices services(0);
     map<int, vector<byte>> pages;
 
     // Non changeable
@@ -230,15 +234,27 @@ TEST(HostServicesTest, SetUpModePages)
 TEST(HostServicesTest, WriteData)
 {
     auto [controller, services] = CreateDevice(SCHS);
-    array<uint8_t, 1> buf = { };
+    const array<const uint8_t, 1> buf = { };
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::TEST_UNIT_READY));
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf,0, 0), ScsiException)<< "Illegal command";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "Illegal command";
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
-    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0, 0));
+    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0));
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
-    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0,0), ScsiException)<< "protobuf data are invalid";
+    EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
+}
+
+TEST(HostServicesTest, SetDispatcher)
+{
+    ControllerFactory controller_factory;
+    MockBus bus;
+    CommandExecutor executor(bus, controller_factory, *default_logger());
+    auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
+
+    auto [controller, services] = CreateDevice(SCHS);
+    dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
+    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
 }

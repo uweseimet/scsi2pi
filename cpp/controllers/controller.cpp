@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -113,7 +113,7 @@ void Controller::Command()
 
         auto &buf = GetBuffer();
 
-        const int actual_count = bus.CommandHandShake(buf);
+        const int actual_count = bus.TargetCommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
@@ -144,7 +144,7 @@ void Controller::Command()
         }
 
         if (actual_count != command_bytes_count) {
-            LogWarn(fmt::format("Received {0} byte(s) in COMMAND phase for command ${1:02x}, {2} required",
+            LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
                 command_bytes_count, GetCdb()[0], actual_count));
             bus.SetRST(true);
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
@@ -215,7 +215,7 @@ void Controller::Status()
         return;
     }
 
-    LogTrace(fmt::format("STATUS phase, status is {0} (status code ${1:02x})", STATUS_MAPPING.at(GetStatus()),
+    LogTrace(fmt::format("STATUS phase, status is {} (status code ${:02x})", STATUS_MAPPING.at(GetStatus()),
         static_cast<int>(GetStatus())));
 
     SetPhase(BusPhase::STATUS);
@@ -358,16 +358,16 @@ void Controller::Send()
     if (const auto length = GetCurrentLength(); length) {
         if (GetLogger().level() == level::trace && IsDataIn()) {
             const string &bytes = FormatBytes(GetBuffer(), length);
-            LogTrace(fmt::format("Sending {0} byte(s) at offset {1} in DATA IN phase{2}{3}", length, GetOffset(),
+            LogTrace(fmt::format("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
                 bytes.empty() ? "" : ":\n", bytes));
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
-        if (const int l = bus.SendHandShake(GetBuffer().data() + GetOffset(), length,
+        if (const int l = bus.TargetSendHandShake(span(GetBuffer().data() + GetOffset(), length),
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
-            LogWarn(fmt::format("Sent {0} byte(s), {1} required", l, length));
+            LogWarn(fmt::format("Sent {} byte(s), {} required", l, length));
             bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
@@ -425,11 +425,12 @@ void Controller::Receive()
 
     if (const auto curr_length = GetCurrentLength(); curr_length) {
         if (!IsMsgOut()) {
-            LogTrace(fmt::format("Receiving {0} byte(s) at offset {1}", curr_length, GetOffset()));
+            LogTrace(fmt::format("Receiving {} byte(s) at offset {}", curr_length, GetOffset()));
         }
 
-        if (const int l = bus.ReceiveHandShake(GetBuffer().data() + GetOffset(), curr_length); l != curr_length) {
-            LogWarn(fmt::format("Received {0} byte(s), {1} required", l, curr_length));
+        if (const int l = bus.TargetReceiveHandShake(span(GetBuffer().data() + GetOffset(), curr_length)); l
+            != curr_length) {
+            LogWarn(fmt::format("Received {} byte(s), {} required", l, curr_length));
             bus.SetRST(true);
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
@@ -437,8 +438,8 @@ void Controller::Receive()
 
         if (GetLogger().level() == level::trace && IsDataOut()) {
             const string &bytes = FormatBytes(GetBuffer(), curr_length);
-            LogTrace(
-                fmt::format("Received {0} byte(s) in DATA OUT phase{1}{2}", curr_length, bytes.empty() ? "" : ":\n", bytes));
+            LogTrace(fmt::format("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n",
+                bytes));
         }
 
         if (IsDataOut() && script_generator) {
@@ -515,13 +516,12 @@ bool Controller::TransferFromHost(int length)
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
-        // TODO Try to remove these special cases (MODE SELECT case and SCSG case)
         if ((cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
-            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset(), 0);
+            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
         else {
-            transferred_length = device->WriteData(GetCdb(), GetBuffer(), GetOffset(), length);
+            transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
         }
     }
     catch (const ScsiException &e) {

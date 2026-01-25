@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -96,10 +96,11 @@ using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace s2p_interface_util;
+using namespace s2p_util;
 
 HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
-    PrimaryDevice::SetProductData( { "", "Host Services", "" }, true);
+    SetProductData( { "", "Host Services", "" }, true);
     SetScsiLevel(ScsiLevel::SPC_3);
     SetReady(true);
 }
@@ -122,11 +123,6 @@ string HostServices::SetUp()
     page_handler = make_unique<PageHandler>(*this, false, false);
 
     return "";
-}
-
-vector<uint8_t> HostServices::InquiryInternal() const
-{
-    return HandleInquiry(DeviceType::PROCESSOR, false);
 }
 
 void HostServices::StartStopUnit() const
@@ -200,7 +196,7 @@ void HostServices::ReceiveOperationResults()
     execution_results.erase(GetController()->GetInitiatorId());
 
     const int length = min(GetCdbInt16(7), static_cast<int>(data.size()));
-    GetController()->CopyToBuffer(data.data(), length);
+    GetController()->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(data.data()), length));
 
     DataInPhase(length);
 }
@@ -272,7 +268,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     }
 }
 
-int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
@@ -293,13 +289,13 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int, int l)
         break;
 
     case ProtobufFormat::JSON:
-        if (string c((const char*)buf.data(), length); !JsonStringToMessage(c, &cmd).ok()) {
+        if (string c(to_const_char_ptr(buf), length); !JsonStringToMessage(c, &cmd).ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
 
     case ProtobufFormat::TEXT:
-        if (string c((const char*)buf.data(), length); !TextFormat::ParseFromString(c, &cmd)) {
+        if (string c(reinterpret_cast<const char*>(buf.data()), length); !TextFormat::ParseFromString(c, &cmd)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;

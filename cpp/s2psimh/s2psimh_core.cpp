@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,18 +22,18 @@ void S2pSimh::Banner(bool help)
 {
     cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SIMH .tap File Tool)\n"
         << "Version " << GetVersionString() << "\n"
-        << "Copyright (C) 2024-2025 Uwe Seimet\n";
+        << "Copyright (C) 2024-2026 Uwe Seimet\n";
 
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
             << "  --add/-a CLASS1:VALUE1,...    Add objects.\n"
             << "  --binary-data/-b DATA_FILE    Optional binary file to read the record data from.\n"
-            << "  --hex-data/-x DATA_FILE       Optional text file to read the record data from.\n"
             << "  --dump/-d                     Dump data record contents.\n"
+            << "  --help/-h                     Display this help.\n"
+            << "  --hex-data/-x DATA_FILE       Optional text file to read the record data from.\n"
             << "  --limit/-l LIMIT              Limit dump size to LIMIT bytes.\n"
             << "  --truncate/-t                 Truncate file before adding objects.\n"
-            << "  --version/-v                  Display the program version.\n"
-            << "  --help/-h                     Display this help.\n";
+            << "  --version/-v                  Display the s2psimh version.\n";
     }
 }
 
@@ -42,11 +42,11 @@ bool S2pSimh::ParseArguments(span<char*> args)
     const vector<option> options = {
         { "add", required_argument, nullptr, 'a' },
         { "binary-data", required_argument, nullptr, 'b' },
-        { "hex-data", required_argument, nullptr, 'x' },
         { "dump", no_argument, nullptr, 'd' },
+        { "help", no_argument, nullptr, 'h' },
+        { "hex-data", required_argument, nullptr, 'x' },
         { "limit", required_argument, nullptr, 'l' },
         { "truncate", no_argument, nullptr, 't' },
-        { "help", no_argument, nullptr, 'h' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -299,7 +299,7 @@ int S2pSimh::Add()
 
         if (binary) {
             input_data.resize(filesize);
-            data_file.read((char*)input_data.data(), input_data.size());
+            data_file.read(to_char_ptr(input_data), input_data.size());
         }
         else {
             string line;
@@ -333,7 +333,7 @@ int S2pSimh::Add()
 
     for (const auto &object : meta_data) {
         const auto &data = ToLittleEndian(object);
-        simh_file.write((const char*)data.data(), data.size());
+        simh_file.write(to_const_char_ptr(data), data.size());
         if (simh_file.bad()) {
             cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
             return EXIT_FAILURE;
@@ -346,7 +346,7 @@ int S2pSimh::Add()
                     cerr << "Error: Not enough record data in '" << data_filename << "'\n";
                     return EXIT_FAILURE;
                 }
-                simh_file.write((const char*)input_data.data() + data_index, length);
+                simh_file.write(to_const_char_ptr(input_data) + data_index, length);
                 data_index += length;
             }
             else {
@@ -357,7 +357,7 @@ int S2pSimh::Add()
                 simh_file << '\0';
             }
 
-            simh_file.write((const char*)data.data(), data.size());
+            simh_file.write(to_const_char_ptr(data), data.size());
 
             if (simh_file.bad()) {
                 cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
@@ -407,7 +407,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta)
 
     array<uint8_t, META_DATA_SIZE> data = { };
     simh_file.seekg(position);
-    simh_file.read((char*)data.data(), data.size());
+    simh_file.read(to_char_ptr(data), data.size());
     if (simh_file.bad()) {
         return false;
     }
@@ -452,7 +452,7 @@ bool S2pSimh::ReadRecord(span<uint8_t> buf)
         return false;
     }
 
-    simh_file.read((char*)buf.data(), buf.size());
+    simh_file.read(to_char_ptr(buf), buf.size());
 
     return simh_file.good();
 }

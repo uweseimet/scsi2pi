@@ -5,7 +5,7 @@
 // Copyright (C) 2020 akuker
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 // This design is derived from the SLINKCMD.TXT file, as well as David Kuder's
 // Tiny SCSI Emulator
@@ -23,13 +23,13 @@
 #pragma once
 
 #include <array>
-#ifndef __NetBSD__
+#if !defined(__NetBSD__) && !defined(__OpenBSD__)
 #include <net/ethernet.h>
 #endif
 #include "base/primary_device.h"
 #include "tap_driver.h"
 
-class DaynaPort : public PrimaryDevice
+class DaynaPort final : public PrimaryDevice
 {
 
 public:
@@ -49,8 +49,8 @@ public:
         return tap.GetDefaultParams();
     }
 
-    vector<uint8_t> InquiryInternal() const override;
-    int WriteData(cdb_t, data_out_t, int, int) override;
+    vector<uint8_t> HandleInquiry() const override;
+    int WriteData(cdb_t, data_out_t, int) override;
 
     void GetMessage6();
     void SendMessage6() const;

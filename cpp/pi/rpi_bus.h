@@ -9,8 +9,10 @@
 
 #pragma once
 
+#ifdef __linux__
 #include <linux/gpio.h>
 #include <sys/epoll.h>
+#endif
 #include "buses/bus.h"
 
 class RpiBus final : public Bus
@@ -27,30 +29,22 @@ public:
         PI_4 = 4
     };
 
-    RpiBus();
-    ~RpiBus() override = default;
-
-    bool Init(bool) override;
-
-    void Reset() override;
+    string SetUp(bool) override;
+    void Reset() const override;
     void CleanUp() override;
 
-    bool WaitForSelection() override;
+    uint8_t WaitForSelection() override;
 
     // Bus signal acquisition
-    uint32_t Acquire() override;
+    void Acquire() const override;
 
-    void SetBSY(bool) override;
+    void SetBSY(bool) const override;
 
-    void SetSEL(bool) override;
+    void SetSEL(bool) const override;
 
-    bool GetIO() override;
-    void SetIO(bool) override;
+    void SetDAT(uint8_t) const override;
 
-    uint8_t GetDAT() override;
-    void SetDAT(uint8_t) override;
-
-    void WaitBusSettle() const override;
+    void WaitNanoSeconds(bool) const override;
 
     bool IsRaspberryPi() const override
     {
@@ -61,35 +55,32 @@ public:
 
 private:
 
-    void InitializeSignals(int);
+    void InitializeSignals() const;
 
-    void CreateWorkTable();
+    void CreateWorkTables();
 
-    void SetControl(int, bool);
-
-    // Sets signal direction (in/out) depending on initiator/target mode
-    void SetMode(int, int);
-
-    bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    void SetSignal(int, bool) const override;
 
     void DisableIRQ() override;
     void EnableIRQ() override;
 
-    //GPIO pin pull up/down resistor setting
-    void PullConfig(int, int);
+    void SetDir(bool) const override;
 
-    //GPIO pin direction setting
-    void PinConfig(int, int);
+    // Set GPIO pin pull up/down resistor setting to PULLDOWN
+    void ConfigurePullDown(int) const;
 
-    void PinSetSignal(int, bool);
+    // GPIO pin direction setting
+    void PinConfig(int, int) const;
+
+    void PinSetSignal(int, bool) const;
 
     // Set GPIO drive strength
-    void SetSignalDriveStrength(uint32_t);
+    void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type = PiType::UNKNOWN;
+    PiType pi_type = GetPiType();
 
-    uint32_t timer_core_freq = 0;
+    uint32_t bus_settle_count = 0;
+    uint32_t daynaport_count = 0;
 
     volatile uint32_t *armt_addr = nullptr;
 
@@ -117,26 +108,25 @@ private:
     // GIC priority setting
     uint32_t gicc_pmr_saved = 0;
 
+#ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
+#endif
 
     int epoll_fd = 0;
 
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;
 
-    // RAM copy of GPFSEL0-2  values (GPIO Function Select)
-    // Reading the current data from the copy is faster than directly reading them from the ports
-    array<uint32_t, 3> gpfsel;
-
-    // All bus signals
-    uint32_t signals = 0;
+    // RAM copy of GPFSEL0-2  values (GPIO Function Select), mutable because these values are external state.
+    // Reading the current data from the copy is faster than directly reading them from the ports.
+    mutable array<uint32_t, 3> gpfsel = { };
 
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
     // Data mask table
-    array<array<uint32_t, 256>, 3> tblDatMsk;
+    array<array<uint32_t, 256>, 3> tblDatMsk = { };
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
 
@@ -150,6 +140,9 @@ private:
     constexpr static int ARMT_FREERUN = 8;
 
     constexpr static uint32_t ARMT_OFFSET = 0x0000B400;
+
+    constexpr static int GPIO_INPUT = 0;
+    constexpr static int GPIO_OUTPUT = 1;
 
     constexpr static int GPIO_FSEL_0 = 0;
     constexpr static int GPIO_FSEL_1 = 1;
@@ -174,4 +167,6 @@ private:
     constexpr static uint32_t QA7_OFFSET = 0x01000000;
 
     constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
+
+    constexpr static uint32_t DATA_MASK = 0b11111000000000000000000000000000;
 };

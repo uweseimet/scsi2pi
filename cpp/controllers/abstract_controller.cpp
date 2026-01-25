@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -64,11 +64,7 @@ void AbstractController::SetTransferSize(int length, int size)
 void AbstractController::UpdateTransferLength(int length)
 {
     remaining_length -= length;
-
     assert(remaining_length >= 0);
-    if (remaining_length < 0) {
-        remaining_length = 0;
-    }
 
     if (remaining_length < chunk_size) {
         chunk_size = remaining_length;
@@ -81,19 +77,20 @@ void AbstractController::UpdateOffsetAndLength()
     current_length = 0;
 }
 
-void AbstractController::CopyToBuffer(const void *src, size_t size) // NOSONAR Any kind of source data is permitted
+void AbstractController::CopyToBuffer(span<const uint8_t> buf)
 {
-    SetCurrentLength(static_cast<int>(size));
+    SetCurrentLength(static_cast<int>(buf.size()));
 
-    memcpy(buffer.data(), src, size);
+    memcpy(buffer.data(), buf.data(), buf.size());
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
 {
     unordered_set<shared_ptr<PrimaryDevice>> devices;
 
-    // "luns | views:values" is not supported by the bullseye compiler
-    ranges::transform(luns, inserter(devices, devices.begin()), [](const auto &l) {return l.second;});
+    for (const auto& [_, device] : luns) {
+        devices.insert(device);
+    }
 
     return devices;
 }
@@ -132,7 +129,7 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
         return false;
     }
 
-    luns[lun] = device;
+    luns.try_emplace(lun, device);
 
     device->SetController(this);
 
@@ -144,19 +141,4 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
     device.CleanUp();
 
     return luns.erase(device.GetLun()) == 1;
-}
-
-void AbstractController::LogTrace(const string &s) const
-{
-    controller_logger->trace(s);
-}
-
-void AbstractController::LogDebug(const string &s) const
-{
-    controller_logger->debug(s);
-}
-
-void AbstractController::LogWarn(const string &s) const
-{
-    controller_logger->warn(s);
 }

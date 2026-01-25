@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // Host Services with support for realtime clock, shutdown and command execution
 //
@@ -30,16 +30,12 @@ public:
         return "Host Services";
     }
 
-    vector<uint8_t> InquiryInternal() const override;
-
-    int WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int) override;
 
     void SetDispatcher(shared_ptr<CommandDispatcher> d)
     {
         dispatcher = d;
     }
-
-protected:
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 

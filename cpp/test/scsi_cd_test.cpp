@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -83,12 +83,10 @@ TEST(ScsiCdTest, Open)
 
     EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 
-    path filename = CreateTempFile(2047);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2047).string());
     EXPECT_THROW(cd.Open(), IoException)<< "ISO CD-ROM image file size is too small";
 
-    filename = CreateTempFile(2 * 2048);
-    cd.SetFilename(filename.string());
+    cd.SetFilename(CreateTempFile(2 * 2048).string());
     cd.Open();
     EXPECT_EQ(2U, cd.GetBlockCount());
 }
@@ -103,17 +101,18 @@ TEST(ScsiCdTest, ReadToc)
 
     Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT, "Drive is not ready");
 
-    cd->SetReady(true);
-
-    controller.SetCdbByte(6, 2);
-    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Invalid track number");
+    cd->SetBlockSize(2048);
+    cd->SetBlockCount(1);
+    cd->SetFilename(CreateTempFile(2048).string());
+    cd->ValidateFile();
 
     controller.SetCdbByte(6, 1);
-    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
-        "Invalid track number");
+    Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB, "Invalid track number");
 
     controller.SetCdbByte(6, 0);
+    EXPECT_CALL(controller, DataIn);
+    EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
+    controller.SetCdbByte(1, 0x02);
     EXPECT_CALL(controller, DataIn);
     EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
 }
@@ -123,4 +122,11 @@ TEST(ScsiCdTest, ReadData)
     ScsiCd cd(0, false);
 
     EXPECT_THROW(cd.ReadData( {}), ScsiException)<< "Drive is not ready";
+}
+
+TEST(ScsiCdTest, ModeSelect)
+{
+    ScsiCd cd(0, false);
+
+    EXPECT_NO_THROW(cd.ModeSelect( { }, { }, 0));
 }

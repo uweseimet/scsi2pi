@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,6 +16,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockPrimaryDevice>> CreatePr
 {
     auto controller = make_shared<NiceMock<MockAbstractController>>(id);
     auto device = make_shared<MockPrimaryDevice>(0);
+    EXPECT_CALL(*device, SetUp);
     EXPECT_EQ("", device->Init());
     EXPECT_TRUE(controller->AddDevice(device));
 
@@ -206,7 +207,7 @@ TEST(PrimaryDeviceTest, ModeSelect)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_THROW(device.ModeSelect( { }, { }, 0, 0), ScsiException);
+    EXPECT_THROW(device.ModeSelect( { }, { }, 0), ScsiException);
 }
 
 TEST(PrimaryDeviceTest, ModeSense6)
@@ -278,10 +279,6 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::PROCESSOR, false);
-    });
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
@@ -291,29 +288,25 @@ TEST(PrimaryDeviceTest, Inquiry)
     EXPECT_FALSE(controller->AddDevice(make_shared<MockPrimaryDevice>(0))) << "Duplicate LUN was not rejected";
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SPC_3);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
-    EXPECT_EQ(DeviceType::PROCESSOR, (DeviceType )controller->GetBuffer()[0]);
+    EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
-    EXPECT_EQ(ScsiLevel::SPC_3, (ScsiLevel)controller->GetBuffer()[2]) << "Wrong SCSI level";
-    EXPECT_EQ(ScsiLevel::SCSI_2, (ScsiLevel)controller->GetBuffer()[3]) << "Wrong response level";
+    EXPECT_EQ(ScsiLevel::SPC_3, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
+    EXPECT_EQ(ScsiLevel::SCSI_2, static_cast<ScsiLevel>(controller->GetBuffer()[3])) << "Wrong response level";
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    ON_CALL(*d, InquiryInternal()).WillByDefault([&d]() {
-        return d->HandleInquiry(DeviceType::DIRECT_ACCESS, true);
-    });
-    EXPECT_CALL(*device, InquiryInternal);
+    d->SetRemovable(true);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
-    EXPECT_EQ(DeviceType::DIRECT_ACCESS, (DeviceType )controller->GetBuffer()[0]);
+    EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
-    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, (ScsiLevel)controller->GetBuffer()[2]) << "Wrong SCSI level";
-    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, (ScsiLevel)controller->GetBuffer()[3]) << "Wrong response level";
+    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
+    EXPECT_EQ(ScsiLevel::SCSI_1_CCS, static_cast<ScsiLevel>(controller->GetBuffer()[3])) << "Wrong response level";
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
 
     controller->SetCdbByte(1, 0x01);
@@ -330,7 +323,6 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(2, 0);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 1);
-    EXPECT_CALL(*device, InquiryInternal);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::INQUIRY));
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
@@ -440,6 +432,8 @@ TEST(PrimaryDeviceTest, ReportLuns)
     auto controller = make_shared<MockAbstractController>(0);
     auto device1 = make_shared<MockPrimaryDevice>(LUN1);
     auto device2 = make_shared<MockPrimaryDevice>(LUN2);
+    EXPECT_CALL(*device1, SetUp);
+    EXPECT_CALL(*device2, SetUp);
     EXPECT_EQ("", device1->Init());
     EXPECT_EQ("", device2->Init());
 
@@ -480,6 +474,7 @@ TEST(PrimaryDeviceTest, Init)
 {
     MockPrimaryDevice device(0);
 
+    EXPECT_CALL(device, SetUp);
     EXPECT_EQ("", device.Init()) << "Initialization of primary device must not fail";
 }
 

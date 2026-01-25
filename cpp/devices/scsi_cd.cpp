@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ using namespace memory_util;
 
 ScsiCd::ScsiCd(int l, bool scsi1) : Disk(SCCD, l, true, false, { 512, 2048 })
 {
-    Disk::SetProductData( { "", "SCSI CD-ROM", "" }, true);
+    SetProductData( { "", "SCSI CD-ROM", "" }, true);
     SetScsiLevel(scsi1 ? ScsiLevel::SCSI_1_CCS : ScsiLevel::SCSI_2);
     SetProtectable(false);
     SetReadOnly(true);
@@ -39,10 +39,9 @@ void ScsiCd::Open()
 
     track_initialized = false;
 
-    // Default sector size is 2048 bytes
-    if (!SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048)) {
-        throw IoException("Invalid sector size");
-    }
+    // This call cannot fail, the method argument is always valid
+    SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048);
+
     SetBlockCount(GetFileSize() / GetBlockSize());
 
     ValidateFile();
@@ -107,14 +106,9 @@ void ScsiCd::ReadToc()
     DataInPhase(length);
 }
 
-vector<uint8_t> ScsiCd::InquiryInternal() const
+void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset)
 {
-    return HandleInquiry(DeviceType::CD_DVD, true);
-}
-
-void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset, int length)
-{
-    Disk::ModeSelect(cdb, buf, offset, length);
+    Disk::ModeSelect(cdb, buf, offset);
 
     CreateDataTrack();
 }
@@ -167,24 +161,23 @@ int ScsiCd::ReadData(data_in_t buf)
 
 void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)
 {
-    // 75 and 75*60 get the remainder
-    uint32_t m = lba / (75 * 60);
-    uint32_t s = lba % (75 * 60);
-    const uint32_t f = s % 75;
-    s /= 75;
+    uint32_t minutes = lba / (75 * 60);
+    uint32_t seconds = (lba / 75) % 60;
+    const uint32_t frames = lba % 75;
 
-    // The base point is M=0, S=2, F=0
-    s += 2;
-    if (s >= 60) {
-        s -= 60;
-        ++m;
+    // The base point is minutes=0, seconds=2, frames=0
+    seconds += 2;
+    if (seconds >= 60) {
+        seconds -= 60;
+        ++minutes;
     }
 
-    assert(m < 0x100);
-    assert(s < 60);
-    assert(f < 75);
+    assert(minutes < 0x100);
+    assert(seconds < 60);
+    assert(frames < 75);
+
     msf[0] = 0x00;
-    msf[1] = static_cast<uint8_t>(m);
-    msf[2] = static_cast<uint8_t>(s);
-    msf[3] = static_cast<uint8_t>(f);
+    msf[1] = static_cast<uint8_t>(minutes);
+    msf[2] = static_cast<uint8_t>(seconds);
+    msf[3] = static_cast<uint8_t>(frames);
 }

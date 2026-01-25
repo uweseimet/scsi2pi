@@ -8,7 +8,7 @@
 // XM6i
 //   Copyright (C) 2010-2015 isaki@NetBSD.org
 //   Copyright (C) 2010 Y.Sugahara
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,9 +22,9 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-Disk::Disk(PbDeviceType type, int lun, bool supports_mode_select, bool supports_save_parameters,
+Disk::Disk(PbDeviceType z, int l, bool supports_mode_select, bool supports_save_parameters,
     const set<uint32_t> &s)
-: StorageDevice(type, lun, supports_mode_select, supports_save_parameters, s)
+: StorageDevice(z, l, supports_mode_select, supports_save_parameters, s)
 {
     SetStoppable(true);
 }
@@ -136,10 +136,24 @@ void Disk::CleanUp()
     StorageDevice::CleanUp();
 }
 
+void Disk::FinalizeSetup(string_view type)
+{
+    ValidateFile();
+
+    // For non-removable media drives set the default product name based on the drive capacity
+    if (!IsRemovable()) {
+        const uint64_t capacity = GetBlockCount() * GetBlockSize();
+
+        const auto *unit = ranges::find_if(UNITS, [capacity](const Unit &u) {return capacity >= u.threshold;});
+
+        SetProductData( { "", fmt::format("{} {} {}iB", type, capacity / unit->divisor, unit->abbr), "" }, false);
+    }
+}
+
 void Disk::ValidateFile()
 {
     if (!GetBlockCount()) {
-        throw IoException("Device has 0 sectors");
+        throw IoException("Drive has 0 sectors");
     }
 
     StorageDevice::ValidateFile();
@@ -399,7 +413,7 @@ int Disk::ReadData(data_in_t buf)
     return GetBlockSize() * sector_transfer_count;
 }
 
-int Disk::WriteData(cdb_t cdb, data_out_t buf, int, int l)
+int Disk::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     assert(next_sector + sector_transfer_count <= GetBlockCount());
 
@@ -519,7 +533,7 @@ uint64_t Disk::ValidateBlockAddress(AccessMode mode)
 
     if (sector >= GetBlockCount()) {
         LogTrace(
-            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}", GetBlockCount(), sector));
+            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}", GetBlockCount(), sector));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
@@ -531,8 +545,8 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     if (new_size != GetBlockSize()) {
         StorageDevice::ChangeBlockSize(new_size);
 
-        FlushCache();
         if (cache) {
+            FlushCache();
             SetUpCache();
         }
     }
@@ -546,7 +560,8 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
     uint32_t count;
 
     if (mode == RW6 || mode == SEEK6) {
-        start = GetCdbInt24(1);
+        // Mask LUN bits
+        start = GetCdbInt24(1) & 0x1fffff;
 
         count = GetCdbByte(4);
         if (!count) {
@@ -567,12 +582,12 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
         }
     }
 
-    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {0}, sector count: {1}", start, count));
+    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
 
     // Check capacity
     if (const uint64_t capacity = GetBlockCount(); !capacity || start + count > capacity) {
         LogTrace(
-            fmt::format("Capacity of {0} sector(s) exceeded: Trying to access sector {1}, sector count {2}", capacity,
+            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                 start, count));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }

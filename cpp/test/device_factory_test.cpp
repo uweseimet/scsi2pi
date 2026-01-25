@@ -27,7 +27,7 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCLP, factory.CreateDevice(SCLP, 0, "")->GetType());
     EXPECT_EQ(SCHS, factory.CreateDevice(SCHS, 0, "")->GetType());
-#ifdef BUILD_SCSG
+#ifdef __linux__
     EXPECT_EQ(SCSG, factory.CreateDevice(SCSG, 0, "")->GetType());
 #endif
     EXPECT_EQ(SCTP, factory.CreateDevice(SCTP, 0, "")->GetType());
@@ -54,9 +54,7 @@ TEST(DeviceFactoryTest, GetTypeForFile)
     EXPECT_EQ(factory.GetTypeForFile("daynaport"), SCDP);
     EXPECT_EQ(factory.GetTypeForFile("printer"), SCLP);
     EXPECT_EQ(factory.GetTypeForFile("services"), SCHS);
-#ifdef BUILD_SCSG
     EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
-#endif
     EXPECT_EQ(factory.GetTypeForFile("unknown"), UNDEFINED);
     EXPECT_EQ(factory.GetTypeForFile("test.iso.suffix"), UNDEFINED);
 }

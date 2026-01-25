@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -105,7 +105,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         }
     }
     else {
-        logger.trace(">ip addr add {0} brd + dev {1}", inet, BRIDGE_INTERFACE_NAME);
+        logger.trace(">ip addr add {} brd + dev {}", inet, BRIDGE_INTERFACE_NAME);
         if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME, logger); !error.empty()) {
             return cleanUp(error);
         }
@@ -131,7 +131,7 @@ void TapDriver::CleanUp(logger &logger) const
         } else {
             logger.trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
             if (const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
-                logger.warn("Removing {0} from {1} failed: {2}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
+                logger.warn("Removing {} from {} failed: {}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
                 logger.warn("You may need to manually remove the TAP device");
             }
 
@@ -164,7 +164,7 @@ string TapDriver::CreateBridge(int bridge_fd, int ip_fd, logger &logger)
 {
     // Check if the bridge has already been created manually by checking whether there is a MAC address for it
     if (GetMacAddress(BRIDGE_NAME).empty()) {
-        logger.info("Creating {0} for interface {1}", BRIDGE_NAME, bridge_interface);
+        logger.info("Creating {} for interface {}", BRIDGE_NAME, bridge_interface);
 
         if (const string &error = AddBridge(bridge_fd, logger); !error.empty()) {
             return error;
@@ -243,7 +243,7 @@ string TapDriver::AddBridge(int fd, logger &logger) const
         return "Can't ioctl SIOCBRADDBR";
     }
 
-    logger.trace(">brctl addif {0} {1}", BRIDGE_NAME, bridge_interface);
+    logger.trace(">brctl addif {} {}", BRIDGE_NAME, bridge_interface);
     if (const string &error = BrSetIf(fd, bridge_interface, true); !error.empty()) {
         return error;
     }
@@ -307,12 +307,12 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
     ifreq ifr;
     ifr.ifr_ifindex = if_nametoindex(interface.c_str());
     if (!ifr.ifr_ifindex) {
-        return fmt::format("Can't if_nametoindex {0}: {1}", interface, strerror(errno));
+        return fmt::format("Can't if_nametoindex {}: {}", interface, strerror(errno));
     }
 
     strncpy(ifr.ifr_name, BRIDGE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
-        return fmt::format("Can't ioctl {0}: {1}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
+        return fmt::format("Can't ioctl {}: {}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
     }
 #endif
 

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -36,6 +36,14 @@ TEST(DiskTest, Dispatch)
     disk->SetMediumChanged(true);
     Dispatch(disk, ScsiCommand::TEST_UNIT_READY, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
     EXPECT_FALSE(disk->IsMediumChanged());
+}
+
+TEST(DiskTest, FinalizeSetup)
+{
+    MockDisk disk;
+
+    disk.SetBlockSize(1024);
+    EXPECT_THROW(disk.FinalizeSetup(""), IoException)<< "Device has 0 blocks";
 }
 
 TEST(DiskTest, ValidateFile)
@@ -246,6 +254,8 @@ TEST(DiskTest, Read6)
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
 
+    // LUN bits must not affect sector number
+    controller->SetCdbByte(1, 0x07 << 5);
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::READ_6));
 
@@ -331,7 +341,7 @@ TEST(DiskTest, Write6)
     controller->SetCdbByte(4, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_6));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(4, 2);
     Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -364,7 +374,7 @@ TEST(DiskTest, Write10)
     controller->SetCdbByte(8, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_10));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(8, 2);
     Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -397,7 +407,7 @@ TEST(DiskTest, Write16)
     controller->SetCdbByte(13, 1);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::WRITE_16));
     EXPECT_EQ(512, controller->GetRemainingLength());
-    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 0, 512));
+    EXPECT_NO_THROW(disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512));
 
     controller->SetCdbByte(13, 2);
     Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
@@ -665,7 +675,7 @@ TEST(DiskTest, AddAppleVendorPage)
 
     disk.AddAppleVendorPage(pages, false);
     vendor_page = pages[48];
-    EXPECT_STREQ("APPLE COMPUTER, INC   ", (const char* )&vendor_page[2]);
+    EXPECT_STREQ("APPLE COMPUTER, INC   ", reinterpret_cast<const char*>(&vendor_page[2]));
 }
 
 TEST(DiskTest, ModeSense6)
@@ -715,7 +725,7 @@ TEST(DiskTest, WriteData)
 {
     MockDisk disk;
 
-    EXPECT_THAT([&] {disk.WriteData( {}, {}, 0, 0);}, Throws<ScsiException>(AllOf(
+    EXPECT_THAT([&] {disk.WriteData( {}, {}, 0);}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
                 Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
 }
@@ -753,9 +763,9 @@ TEST(DiskTest, ChangeBlockSize)
 {
     MockDisk disk;
 
-    disk.SetBlockSize(1024);
     disk.SetBlockCount(10);
-    EXPECT_CALL(disk, FlushCache);
+    disk.SetBlockSize(1024);
+    EXPECT_EQ(1024U, disk.GetBlockSize());
     disk.ChangeBlockSize(512);
     EXPECT_EQ(512U, disk.GetBlockSize());
 }

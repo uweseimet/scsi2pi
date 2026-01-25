@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -121,7 +121,7 @@ bool StorageDevice::Eject(bool force)
     return status;
 }
 
-void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length, int)
+void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 {
     // The page data are optional
     if (!length) {
@@ -246,7 +246,7 @@ uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temp
         }
         else {
             LogWarn(fmt::format(
-                "Block size change from {0} to {1} bytes requested. Configure the block size in the s2p settings.",
+                "Block size change from {} to {} bytes requested. Configure the block size in the s2p settings.",
                 GetBlockSize(), requested_size));
         }
     }
@@ -265,19 +265,15 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
         block_size = new_size;
         blocks = current_size * blocks / block_size;
 
-        LogTrace(fmt::format("Changed block size from {0} to {1} bytes", current_size, block_size));
+        LogTrace(fmt::format("Changed block size from {} to {} bytes", current_size, block_size));
     }
 }
 
-bool StorageDevice::SetBlockSize(uint32_t size)
+void StorageDevice::SetBlockSize(uint32_t size)
 {
-    if (!supported_block_sizes.contains(size) && configured_block_size != size) {
-        return false;
-    }
+    assert(supported_block_sizes.contains(size) || configured_block_size == size);
 
     block_size = size;
-
-    return true;
 }
 
 bool StorageDevice::SetConfiguredBlockSize(uint32_t size)
@@ -300,7 +296,6 @@ void StorageDevice::ValidateFile()
 {
     GetFileSize();
 
-    // TODO Check for duplicate handling of these properties (-> CommandExecutor)
     if (IsReadOnlyFile()) {
         // Permanently write-protected
         SetReadOnly(true);
@@ -339,11 +334,6 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
     }
 
     return {-1, -1};
-}
-
-bool StorageDevice::FileExists(string_view file)
-{
-    return exists(path(file));
 }
 
 bool StorageDevice::IsReadOnlyFile() const

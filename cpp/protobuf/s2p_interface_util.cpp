@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@
 
 using namespace s2p_util;
 
-PbDeviceType s2p_interface_util::ParseDeviceType(const string &value)
+PbDeviceType s2p_interface_util::ParseDeviceType(string_view value)
 {
     if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
         return type;
@@ -68,23 +68,16 @@ string s2p_interface_util::SetCommandParams(PbCommand &command, const string &pa
         return SetFromGenericParams(command, params);
     }
 
-    switch (const auto &components = Split(params, COMPONENT_SEPARATOR, 3); components.size()) {
-    case 3:
+    const auto &components = Split(params, COMPONENT_SEPARATOR, 3);
+    if (components.size() == 3) {
         SetParam(command, "operations", components[2]);
-        [[fallthrough]];
-
-    case 2:
+    }
+    if (components.size() >= 2) {
         SetParam(command, "file_pattern", components[1]);
         SetParam(command, "folder_pattern", components[0]);
-        break;
-
-    case 1:
+    }
+    else if (components.size() == 1) {
         SetParam(command, "file_pattern", components[0]);
-        break;
-
-    default:
-        assert(false);
-        break;
     }
 
     return "";
@@ -108,21 +101,14 @@ string s2p_interface_util::SetFromGenericParams(PbCommand &command, const string
 void s2p_interface_util::SetProductData(PbDeviceDefinition &device, const string &data)
 {
     const auto &components = Split(data, COMPONENT_SEPARATOR, 3);
-    switch (components.size()) {
-    case 3:
+    if (components.size() >= 3) {
         device.set_revision(components[2]);
-        [[fallthrough]];
-
-    case 2:
+    }
+    if (components.size() >= 2) {
         device.set_product(components[1]);
-        [[fallthrough]];
-
-    case 1:
+    }
+    if (components.size() >= 1) {
         device.set_vendor(components[0]);
-        break;
-
-    default:
-        break;
     }
 }
 
@@ -152,14 +138,19 @@ string s2p_interface_util::ListDevices(const vector<PbDevice> &devices)
     }
 
     vector<PbDevice> sorted_devices(devices);
-    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
+    ranges::sort(sorted_devices, [](const auto &a, const auto &b) {
+        if (a.id() != b.id()) {
+            return a.id() < b.id();
+        }
+        return a.unit() < b.unit();
+    });
 
     string s = "+--------+------+-------------------------------------------\n"
         "| ID:LUN | Type | Image File/Device File/Description\n"
         "+--------+------+-------------------------------------------\n";
 
     for (const auto &device : sorted_devices) {
-        s += fmt::format("|  {0}:{1:<2}  | {2} | {3}{4}\n", device.id(), device.unit(),
+        s += fmt::format("|  {}:{:<2}  | {} | {}{}\n", device.id(), device.unit(),
             PbDeviceType_Name(device.type()), device.file().name(),
             !device.status().removed() && (device.properties().read_only() || device.status().protected_()) ?
                 " (READ-ONLY)" : "");

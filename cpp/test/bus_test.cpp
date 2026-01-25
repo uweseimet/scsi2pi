@@ -2,12 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include <gtest/gtest.h>
-#include "buses/bus.h"
+#include "mocks.h"
 
 TEST(BusTest, GetPhaseName)
 {
@@ -22,4 +21,109 @@ TEST(BusTest, GetPhaseName)
     EXPECT_EQ("MESSAGE IN", Bus::GetPhaseName(BusPhase::MSG_IN));
     EXPECT_EQ("MESSAGE OUT", Bus::GetPhaseName(BusPhase::MSG_OUT));
     EXPECT_EQ("????", Bus::GetPhaseName(BusPhase::RESERVED));
+}
+
+TEST(BusTest, Init)
+{
+    MockBus bus;
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_EQ(0x12345678U, bus.GetSignals());
+    bus.Init(true);
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
+}
+
+TEST(BusTest, Reset)
+{
+    MockBus bus;
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_EQ(0x12345678U, bus.GetSignals());
+    bus.Reset();
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
+}
+
+TEST(BusTest, Signals)
+{
+    MockBus bus;
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_EQ(0x12345678U, bus.GetSignals());
+    bus.SetSignals(0x87654321U);
+    EXPECT_EQ(0x87654321U, bus.GetSignals());
+}
+
+TEST(BusTest, GetDAT)
+{
+    MockBus bus;
+
+    bus.SetSignals(~0b00000000000000111111110000000000);
+    EXPECT_CALL(bus, WaitNanoSeconds(false));
+    EXPECT_CALL(bus, Acquire);
+    EXPECT_EQ(0b11111111, bus.GetDAT());
+}
+
+TEST(BusTest, TargetCommandHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, SetSignal).Times(2);
+    EXPECT_CALL(bus, Acquire);
+    EXPECT_CALL(bus, EnableIRQ);
+    EXPECT_CALL(bus, DisableIRQ);
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_CALL(bus, WaitNanoSeconds);
+    EXPECT_EQ(-1, bus.TargetCommandHandShake(buf));
+}
+
+TEST(BusTest, TargetReceiveHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, SetSignal).Times(2);
+    EXPECT_CALL(bus, Acquire);
+    EXPECT_CALL(bus, EnableIRQ);
+    EXPECT_CALL(bus, DisableIRQ);
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_CALL(bus, WaitNanoSeconds);
+    EXPECT_EQ(0, bus.TargetReceiveHandShake(buf));
+}
+
+TEST(BusTest, InitiatorReceiveHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, Acquire);
+    EXPECT_CALL(bus, EnableIRQ);
+    EXPECT_CALL(bus, DisableIRQ);
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_EQ(0, bus.InitiatorReceiveHandShake(buf));
+}
+
+TEST(BusTest, TargetSendHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, SetDAT);
+    EXPECT_CALL(bus, EnableIRQ);
+    EXPECT_CALL(bus, DisableIRQ);
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_EQ(0, bus.TargetSendHandShake(buf));
+}
+
+TEST(BusTest, InitiatorSendHandShake)
+{
+    MockBus bus;
+    array<uint8_t, 1> buf = { };
+
+    EXPECT_CALL(bus, SetDAT);
+    EXPECT_CALL(bus, Acquire);
+    EXPECT_CALL(bus, EnableIRQ);
+    EXPECT_CALL(bus, DisableIRQ);
+    EXPECT_CALL(bus, WaitHandShake);
+    EXPECT_EQ(0, bus.InitiatorSendHandShake(buf));
 }

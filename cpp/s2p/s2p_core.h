@@ -19,7 +19,7 @@ using namespace filesystem;
 
 class CommandDispatcher;
 
-class S2p
+class S2p final
 {
 
 public:
@@ -28,20 +28,22 @@ public:
 
     bool Ready() const;
 
+    void CleanUp(const string& = "");
+
 private:
 
     bool InitBus(bool, bool);
-    void CleanUp();
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
-    bool ParseProperties(const property_map&, int&, bool);
+    int ParseProperties(const property_map&, bool);
     void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
-    bool WaitForNotBusy() const;
+
+    void DisplayAttachedDevices() const;
 
     bool ExecuteCommand(CommandContext&);
 

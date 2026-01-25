@@ -2,16 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "command_image_support.h"
 #include <fstream>
 #include "command_context.h"
-#ifdef BUILD_STORAGE_DEVICE
 #include "devices/storage_device.h"
-#endif
 #include "protobuf/s2p_interface_util.h"
 
 using namespace s2p_interface_util;
@@ -34,7 +32,7 @@ string CommandImageSupport::GetFullName(const string &filename) const
     return default_folder + "/" + filename;
 }
 
-bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename) const
+bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
 {
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
         // Checking for existence first prevents an error if the top-level folder is a softlink
@@ -211,7 +209,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't rename/move image file '" + from + "': " + e.what());
     }
 
-    context.GetLogger().info("Renamed/Moved image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Renamed/Moved image file '{}' to '{}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -236,7 +234,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
             return context.ReturnErrorStatus("Can't copy image file symlink '" + from + "': " + e.what());
         }
 
-        context.GetLogger().info("Copied image file symlink '{0}' to '{1}'", from, to);
+        context.GetLogger().info("Copied image file symlink '{}' to '{}'", from, to);
 
         return context.ReturnSuccessStatus();
     }
@@ -254,7 +252,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't copy image file '" + from + "': " + e.what());
     }
 
-    context.GetLogger().info("Copied image file '{0}' to '{1}'", from, to);
+    context.GetLogger().info("Copied image file '{}' to '{}'", from, to);
 
     return context.ReturnSuccessStatus();
 }
@@ -305,7 +303,7 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
     if (id != -1) {
         return context.ReturnErrorStatus(
-            fmt::format("Can't {0} image file '{1}', it is currently being used by device {2}:{3}", op, file, id, lun));
+            fmt::format("Can't {} image file '{}', it is currently being used by device {}:{}", op, file, id, lun));
     }
 
     return true;
@@ -315,7 +313,8 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
 }
 #pragma GCC diagnostic pop
 
-bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from, string &to) const
+bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from,
+    string &to) const
 {
     from = GetParam(context.GetCommand(), "from");
     if (from.empty()) {
@@ -350,11 +349,7 @@ bool CommandImageSupport::ValidateParams(const CommandContext &context, const st
         return false;
     }
 
-    if (!CreateImageFolder(context, to)) {
-        return false;
-    }
-
-    return true;
+    return CreateImageFolder(context, to);
 }
 
 bool CommandImageSupport::IsValidSrcFilename(string_view filename)

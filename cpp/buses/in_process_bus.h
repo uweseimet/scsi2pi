@@ -8,14 +8,13 @@
 
 #pragma once
 
-#include <atomic>
-#include <map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
-class InProcessBus : public Bus
+class InProcessBus final : public Bus
 {
 
 public:
@@ -23,47 +22,21 @@ public:
     InProcessBus(const string&, bool);
     ~InProcessBus() override = default;
 
-    void CleanUp() override
-    {
-        // Nothing to do;
-    }
+    void Reset() const override;
 
-    void Reset() override;
-
-    uint32_t Acquire() override
+    void Acquire() const override
     {
         // Nothing to do
-        return 0;
     }
 
-    void SetBSY(bool state) override
-    {
-        SetSignal(PIN_BSY, state);
-    }
-
-    void SetSEL(bool state) override
-    {
-        SetSignal(PIN_SEL, state);
-    }
-
-    bool GetIO() override
-    {
-        return GetSignal(PIN_IO);
-    }
-    void SetIO(bool state) override
-    {
-        SetSignal(PIN_IO, state);
-    }
-
-    uint8_t GetDAT() override;
-    void SetDAT(uint8_t d) override;
+    void SetDAT(uint8_t) const override;
 
     bool GetSignal(int) const override;
-    void SetSignal(int, bool) override;
+    void SetSignal(int, bool) const override;
 
-    bool WaitForSelection() override;
+    uint8_t WaitForSelection() override;
 
-    void WaitBusSettle() const override
+    void WaitNanoSeconds(bool) const override
     {
         // Nothing to do
     }
@@ -83,12 +56,15 @@ private:
     }
     void EnableIRQ() override
     {
-        // Nothing to do }
+        // Nothing to do
+    }
+
+    void SetDir(bool) const override
+    {
+        // Nothing to do
     }
 
     static string GetSignalName(int);
-
-    inline static uint32_t signals = 0;
 
     shared_ptr<spdlog::logger> in_process_logger;
 
@@ -100,14 +76,13 @@ private:
     // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;
 
-    // TODO Why does an unordered_map often cause a segfault when calling SIGNALS_TO_LOG.find()?
-    inline static const map<int, const char*> SIGNALS_TO_LOG = {
-        { PIN_BSY, "BSY" },
-        { PIN_SEL, "SEL" },
-        { PIN_ATN, "ATN" },
-        { PIN_RST, "RST" },
-        { PIN_MSG, "MSG" },
-        { PIN_CD, "CD" },
-        { PIN_IO, "IO" }
+    inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
+        { PIN_BSY_MASK, "BSY" },
+        { PIN_SEL_MASK, "SEL" },
+        { PIN_ATN_MASK, "ATN" },
+        { PIN_RST_MASK, "RST" },
+        { PIN_MSG_MASK, "MSG" },
+        { PIN_CD_MASK, "CD" },
+        { PIN_IO_MASK, "IO" }
     };
 };

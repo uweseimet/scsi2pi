@@ -14,11 +14,6 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
 
-DiskTrack::~DiskTrack()
-{
-    free(buffer); // NOSONAR free() must be used here due to posix_memalign
-}
-
 void DiskTrack::Init(int64_t track, int size, int sectors)
 {
     assert(track >= 0);
@@ -33,44 +28,37 @@ void DiskTrack::Init(int64_t track, int size, int sectors)
 
 bool DiskTrack::Load(const string &path, uint64_t &cache_miss_read_count)
 {
-    // Not needed if already loaded
     if (is_initialized) {
-        assert(buffer);
         return true;
     }
 
     ++cache_miss_read_count;
 
     const uint64_t size = sector_count << shift_count;
+    if (unaligned_buffer.size() != size + 512) {
+        unaligned_buffer.resize(size + 512);
 
-    // Allocate or reallocate the buffer
-    if (!buffer || buffer_size != size) {
-        free(buffer); // NOSONAR free() must be used here due to posix_memalign
-        buffer = nullptr;
-
-        if (posix_memalign((void**)&buffer, 512, (size + 511) & ~511)) {
-            return false;
-        }
-
-        buffer_size = size;
+        // Align the buffer to 512 bytes
+        // TODO Does this alignment makes sense for memory cards?
+        void *p = unaligned_buffer.data();
+        size_t s = unaligned_buffer.size();
+        buffer = reinterpret_cast<uint8_t*>(align(512, size, p, s));
     }
 
-    modified_flags.resize(sector_count);
-    ranges::fill(modified_flags, 0);
+    modified_flags.assign(sector_count, 0);
     is_initialized = true;
     is_modified = false;
 
     ifstream in(path, ios::binary);
-    if (in.fail()) {
+    if (!in) {
         return false;
     }
 
     // Calculate offset (previous tracks are considered to hold 256 sectors)
-    off_t offset = track_number << 8;
-    offset <<= shift_count;
+    const off_t offset = (track_number << 8) << shift_count;
 
     in.seekg(offset);
-    in.read((char*)buffer, size);
+    in.read(reinterpret_cast<char*>(buffer), size);
     return in.good();
 }
 
@@ -79,8 +67,6 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     if (!is_initialized || !is_modified) {
         return true;
     }
-
-    assert(buffer);
 
     ++cache_miss_write_count;
 
@@ -110,7 +96,7 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
             }
 
             out.seekp(offset + (i << shift_count));
-            out.write((const char*)buffer + (i << shift_count), total);
+            out.write(reinterpret_cast<const char*>(buffer) + (i << shift_count), total);
             if (out.fail()) {
                 return false;
             }
@@ -136,11 +122,9 @@ int DiskTrack::ReadSector(data_in_t buf, int sector) const
         return 0;
     }
 
-    assert(buffer);
-
     const int size = 1 << shift_count;
 
-    memcpy(buf.data(), buffer + ((off_t)sector << shift_count), size);
+    memcpy(buf.data(), buffer + (static_cast<off_t>(sector) << shift_count), size);
 
     return size;
 }
@@ -152,8 +136,6 @@ int DiskTrack::WriteSector(data_out_t buf, int sector)
     if (!is_initialized || sector >= sector_count) {
         return 0;
     }
-
-    assert(buffer);
 
     const int offset = sector << shift_count;
     const int size = 1 << shift_count;

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <unordered_map>
@@ -37,7 +38,7 @@ struct StringHash
     }
 };
 
-string Join(const auto &collection, const char *separator = ", ")
+string Join(const auto &collection, const string &separator = ", ")
 {
     // Using a stream (and not a string) is required in order to correctly convert the element data
     ostringstream s;
@@ -57,11 +58,11 @@ string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
-string ToUpper(const string&);
-string ToLower(const string&);
+string ToUpper(string_view);
+string ToLower(string_view);
 string GetExtensionLowerCase(string_view);
 string GetLocale();
-string GetLine(const string&);
+string GetLine(const string&, istream& = cin);
 int ParseAsUnsignedInt(const string&);
 string ParseIdAndLun(const string&, int&, int&);
 string Banner(string_view);
@@ -78,11 +79,31 @@ string FormatSenseData(SenseKey, Asc, int = 0);
 vector<byte> HexToBytes(const string&);
 int HexToDec(char);
 
-string Trim(const string&);
+string_view Trim(string_view);
 
 void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
+
+inline const char* to_const_char_ptr(span<const uint8_t> bytes)
+{
+    return reinterpret_cast<const char *>(bytes.data());
+}
+
+inline char* to_char_ptr(span<uint8_t> bytes)
+{
+    return reinterpret_cast<char*>(bytes.data());
+}
+
+inline const char* to_const_char_ptr(span<byte> bytes)
+{
+    return reinterpret_cast<const char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+}
+
+inline char* to_char_ptr(span<byte> bytes)
+{
+    return reinterpret_cast<char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+}
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

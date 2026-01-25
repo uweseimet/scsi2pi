@@ -12,9 +12,7 @@
 #include "buses/bus.h"
 #include "s2pproto_executor.h"
 
-using namespace std;
-
-class S2pProto
+class S2pProto final
 {
 
 public:

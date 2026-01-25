@@ -221,12 +221,12 @@ TEST(StorageDeviceTest, ConfiguredBlockSize)
     EXPECT_EQ(512U, device.GetConfiguredBlockSize());
 }
 
-TEST(StorageDeviceTest, SetBlockSize)
+TEST(StorageDeviceTest, SetGetBlockSize)
 {
     MockStorageDevice device;
 
-    EXPECT_TRUE(device.SetBlockSize(512));
-    EXPECT_FALSE(device.SetBlockSize(520));
+    device.SetBlockSize(4096);
+    EXPECT_EQ(4096U, device.GetBlockSize());
 }
 
 TEST(StorageDeviceTest, ValidateBlockSize)
@@ -312,12 +312,6 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     EXPECT_TRUE(reserved_files.contains("filename"));
 }
 
-TEST(StorageDeviceTest, FileExists)
-{
-    EXPECT_FALSE(StorageDevice::FileExists("/non_existing_file"));
-    EXPECT_TRUE(StorageDevice::FileExists("/dev/null"));
-}
-
 TEST(StorageDeviceTest, GetFileSize)
 {
     MockStorageDevice device;
@@ -337,6 +331,19 @@ TEST(StorageDeviceTest, BlockCount)
 
     device.SetBlockCount(0x1234567887654321);
     EXPECT_EQ(0x1234567887654321U, device.GetBlockCount());
+}
+
+TEST(StorageDeviceTest, GetSupportedBlockSizes)
+{
+    MockStorageDevice device;
+
+    const auto &sizes = device.GetSupportedBlockSizes();
+    EXPECT_EQ(5U, sizes.size());
+    EXPECT_TRUE(sizes.contains(256));
+    EXPECT_TRUE(sizes.contains(512));
+    EXPECT_TRUE(sizes.contains(1024));
+    EXPECT_TRUE(sizes.contains(2048));
+    EXPECT_TRUE(sizes.contains(4096));
 }
 
 TEST(StorageDeviceTest, ChangeBlockSize)

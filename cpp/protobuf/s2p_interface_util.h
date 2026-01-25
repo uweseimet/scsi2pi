@@ -35,7 +35,7 @@ void SetParam(auto &item, const string &key, string_view value)
     }
 }
 
-PbDeviceType ParseDeviceType(const string&);
+PbDeviceType ParseDeviceType(string_view);
 PbCachingMode ParseCachingMode(const string&);
 void ParseParameters(PbDeviceDefinition&, const string&);
 string SetCommandParams(PbCommand&, const string&);

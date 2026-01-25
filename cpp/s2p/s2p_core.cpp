@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) 2020-2023 Contributors to the PiSCSI project
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -21,9 +21,7 @@
 #include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
-#ifdef BUILD_SCHS
 #include "devices/host_services.h"
-#endif
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
@@ -49,15 +47,21 @@ bool S2p::InitBus(bool in_process, bool log_signals)
     return true;
 }
 
-void S2p::CleanUp()
+void S2p::CleanUp(const string &error)
 {
+    if (!error.empty()) {
+        cerr << "Error: " << error << '\n';
+    }
+
     if (service_thread.IsRunning()) {
+        executor->DetachAll();
+
         service_thread.Stop();
     }
 
-    executor->DetachAll();
-
-    bus->CleanUp();
+    if (bus) {
+        bus->CleanUp();
+    }
 }
 
 void S2p::ReadAccessToken(const path &filename)
@@ -110,8 +114,6 @@ void S2p::TerminationHandler(int)
 
 int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
     // The --version/-v option shall result in no other action except displaying the version
     if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v") || !strcmp(arg, "--version");})
         != args.end()) {
@@ -120,7 +122,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (!InitBus(in_process, log_signals)) {
-        cerr << "Error: Can't initialize bus\n";
+        CleanUp("Can't initialize bus");
         return EXIT_FAILURE;
     }
 
@@ -133,24 +135,28 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         properties = ParseArguments(args, ignore_conf);
     }
     catch (const ParserException &e) {
+        CleanUp(e.what());
+        return EXIT_FAILURE;
+    }
+
+    int port = 0;
+    try {
+        port = ParseProperties(properties, ignore_conf);
+    }
+    catch (const ParserException &e) {
         cerr << "Error: " << e.what() << '\n';
         return EXIT_FAILURE;
     }
 
-    int port;
-    if (!ParseProperties(properties, port, ignore_conf)) {
-        return EXIT_FAILURE;
-    }
-
     if (const string &error = MapExtensions(); !error.empty()) {
-        cerr << "Error: " << error << '\n';
+        CleanUp(error);
         return EXIT_FAILURE;
     }
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
         if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
-            cerr << "Error: Invalid log limit '" << log_limit << "'\n";
+            CleanUp("Invalid log limit '" + log_limit + "'");
             return EXIT_FAILURE;
         }
         else {
@@ -160,8 +166,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
-            cerr << "Error: " << error << '\n';
-            CleanUp();
+            CleanUp(error);
             return EXIT_FAILURE;
         }
     }
@@ -173,8 +178,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
     }, s2p_logger); !error.empty()) {
-        cerr << "Error: " << error << '\n';
-        CleanUp();
+        CleanUp(error);
         return EXIT_FAILURE;
     }
 
@@ -182,32 +186,19 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         CreateDevices();
     }
     catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
-        CleanUp();
+        CleanUp(e.what());
         return EXIT_FAILURE;
     }
 
     for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
         if (!key.starts_with(PropertyHandler::DEVICE)) {
-            cerr << "Error: Invalid global property \"" << key << "\", check your command line and "
-                << PropertyHandler::CONFIGURATION << '\n';
-            CleanUp();
+            CleanUp("Invalid global property \"" + key + "\", check your command line and "
+                + PropertyHandler::CONFIGURATION);
             return EXIT_FAILURE;
         }
     }
 
-    // Display and log the device list
-    PbServerInfo server_info;
-    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
-    const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
-        server_info.devices_info().devices().cend() };
-    const string device_list = ListDevices(devices);
-    LogDevices(device_list);
-
-    // Show the device list only once, either the console or the log
-    if (get_level() > level::info) {
-        cout << device_list << flush;
-    }
+    DisplayAttachedDevices();
 
     if (!in_process && !bus->IsRaspberryPi()) {
         cout << "No RaSCSI/PiSCSI board support available, functionality is limited\n" << flush;
@@ -217,16 +208,25 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     service_thread.Start();
 
-    // Signal the in-process client that s2p is ready
-    if (in_process) {
-        bus->CleanUp();
-    }
-
-    ready = true;
-
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+void S2p::DisplayAttachedDevices() const
+{
+    // Display and log the device list
+    PbServerInfo server_info;
+    command_response::GetDevices(controller_factory.GetAllDevices(), server_info);
+    const vector<PbDevice> &devices = { server_info.devices_info().devices().cbegin(),
+        server_info.devices_info().devices().cend() };
+    const string &device_list = ListDevices(devices);
+    LogDevices(device_list);
+
+    // Show the device list only once, either on the console or in the log
+    if (get_level() > level::info) {
+        cout << device_list << flush;
+    }
 }
 
 bool S2p::Ready() const
@@ -234,70 +234,65 @@ bool S2p::Ready() const
     return ready;
 }
 
-bool S2p::ParseProperties(const property_map &properties, int &port, bool ignore_conf)
+int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 {
     const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
-    try {
-        property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
-            ignore_conf);
 
-        if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
-            s2p_logger->set_pattern(log_pattern);
-            spdlog::set_pattern(log_pattern);
-            controller_factory.SetLogPattern(log_pattern);
-        }
+    property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
+        ignore_conf);
 
-        // This sets the global level only, there are no attached devices yet
-        log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
-        if (!dispatcher->SetLogLevel(log_level)) {
-            throw ParserException("Invalid log level: '" + log_level + "'");
-        }
-
-        // Log the properties (on trace level) *after* the log level has been set
-        LogProperties();
-
-        if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-            if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
-                throw ParserException(error);
-            }
-            else {
-                s2p_logger->info("Default image folder set to '{}'", image_folder);
-            }
-        }
-
-        if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
-            if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
-                throw ParserException("Invalid image file scan depth: " + scan_depth);
-            }
-            else {
-                CommandImageSupport::GetInstance().SetDepth(depth);
-            }
-        }
-
-        if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
-            if (!controller_factory.SetScriptFile(script_file)) {
-                throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
-            }
-            s2p_logger->info("Generating script file '" + script_file + "'");
-        }
-
-        if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
-            without_types)) {
-            throw ParserException("Invalid device types list: '" + without_types + "'");
-        }
-
-        const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
-        port = ParseAsUnsignedInt(p);
-        if (port <= 0 || port > 65535) {
-            throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
-        }
-    }
-    catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
-        return false;
+    if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+        s2p_logger->set_pattern(log_pattern);
+        spdlog::set_pattern(log_pattern);
+        controller_factory.SetLogPattern(log_pattern);
     }
 
-    return true;
+    // This sets the global level only, there are no attached devices yet
+    log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
+    if (!dispatcher->SetLogLevel(log_level)) {
+        throw ParserException("Invalid log level: '" + log_level + "'");
+    }
+
+    // Log the properties (on trace level) *after* the log level has been set
+    LogProperties();
+
+    if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
+            throw ParserException(error);
+        }
+        else {
+            s2p_logger->info("Default image folder set to '{}'", image_folder);
+        }
+    }
+
+    if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
+        if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
+            throw ParserException("Invalid image file scan depth: " + scan_depth);
+        }
+        else {
+            CommandImageSupport::GetInstance().SetDepth(depth);
+        }
+    }
+
+    if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
+        if (!controller_factory.SetScriptFile(script_file)) {
+            throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
+        }
+        s2p_logger->info("Generating script file '" + script_file + "'");
+    }
+
+    if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
+        without_types)) {
+        throw ParserException("Invalid device types list: '" + without_types + "'");
+    }
+
+    const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
+    const int port = ParseAsUnsignedInt(p);
+    if (port <= 0 || port > 65535) {
+        throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
+    }
+
+    return port;
 }
 
 void S2p::SetUpEnvironment()
@@ -305,10 +300,8 @@ void S2p::SetUpEnvironment()
     instance = this;
 
     // Signal handler to detach all devices on a KILL or TERM signal
-    struct sigaction termination_handler;
+    struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
-    sigemptyset(&termination_handler.sa_mask);
-    termination_handler.sa_flags = 0;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
@@ -343,7 +336,7 @@ void S2p::LogProperties() const
 {
     s2p_logger->trace("Effective startup properties:");
     for (const auto& [k, v] : property_handler.GetProperties()) {
-        s2p_logger->trace("  {0}={1}", k, v);
+        s2p_logger->trace("  {}={}", k, v);
     }
 }
 
@@ -471,15 +464,24 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
 
 void S2p::ProcessScsiCommands()
 {
+    // On Pis with several cores, avoid context switches for this thread, which executes the SCSI commands
+#ifdef __linux__
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(3, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
+
+    ready = true;
+
     while (service_thread.IsRunning()) {
-        // Only process the SCSI command if the bus is not busy and no other device responded
-        if (bus->WaitForSelection() && WaitForNotBusy()) {
-            scoped_lock<mutex> lock(executor->GetExecutionLocker());
+        if (const uint8_t ids = bus->WaitForSelection(); ids) {
+            scoped_lock lock(executor->GetDispatchLock());
 
             // Process command on the responsible controller based on the current initiator and target ID
-            if (const auto shutdown_mode = controller_factory.ProcessOnController(bus->GetDAT()); shutdown_mode
+            if (const auto shutdown_mode = controller_factory.ProcessOnController(ids); shutdown_mode
                 != ShutdownMode::NONE) {
-                // When the bus is free SCSI2Pi or the Pi may be shut down.
+                // Only when the bus is free SCSI2Pi or the Pi may be shut down.
                 dispatcher->ShutDown(shutdown_mode);
             }
         }
@@ -500,26 +502,9 @@ bool S2p::ExecuteCommand(CommandContext &context)
     const bool status = dispatcher->DispatchCommand(context, result);
     if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
+        google::protobuf::ShutdownProtobufLibrary();
         exit(EXIT_SUCCESS);
     }
 
     return status;
-}
-
-bool S2p::WaitForNotBusy() const
-{
-    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
-    if (bus->GetBSY()) {
-        const auto now = chrono::steady_clock::now();
-        while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3) {
-            bus->Acquire();
-            if (!bus->GetBSY()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    return true;
 }

@@ -20,9 +20,7 @@ class AbstractController;
 class PrimaryDevice;
 class ScriptGenerator;
 
-using namespace std;
-
-class ControllerFactory
+class ControllerFactory final
 {
 
 public:
@@ -31,7 +29,6 @@ public:
     bool DeleteController(const AbstractController&);
     bool DeleteAllControllers();
     ShutdownMode ProcessOnController(uint8_t) const;
-    bool HasController(int) const;
 
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;

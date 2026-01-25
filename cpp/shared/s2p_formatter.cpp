@@ -6,12 +6,8 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include "s2p_formatter.h"
-#include "s2p_util.h"
-
-using namespace spdlog;
-using namespace s2p_util;
+#include <spdlog/spdlog.h>
 
 string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool hex_only) const
 {

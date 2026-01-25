@@ -6,10 +6,12 @@
 //
 //---------------------------------------------------------------------------
 
-#include <gtest/gtest.h>
+#include "mocks.h"
 #include "test_shared.h"
 #include "devices/scsi_generic.h"
 #include "shared/s2p_exceptions.h"
+
+using namespace testing;
 
 TEST(ScsiGenericTest, Device_Defaults)
 {
@@ -54,7 +56,34 @@ TEST(ScsiGenericTest, SetUp)
 
 TEST(ScsiGenericTest, Dispatch)
 {
-    ScsiGeneric device(0, "");
+    auto [controller, d] = CreateDevice(SCSG);
+    // Work-around for an issue with old compilers
+    auto device = d;
 
-    EXPECT_THROW(device.Dispatch(static_cast<ScsiCommand>(0x1f)), ScsiException);
+    EXPECT_THAT([&] { device->Dispatch(static_cast<ScsiCommand>(0x1f)); },
+        Throws<ScsiException>(AllOf(
+            Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::INVALID_COMMAND_OPERATION_CODE))));
+
+    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::TEST_UNIT_READY) ; },
+        Throws<ScsiException>(AllOf(
+        Property(&ScsiException::GetSenseKey, SenseKey::ABORTED_COMMAND),
+        Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
+
+    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::READ_6) ; },
+        Throws<ScsiException>(AllOf(
+            Property(&ScsiException::GetSenseKey, SenseKey::ABORTED_COMMAND),
+            Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
+
+    EXPECT_CALL(*controller, DataOut);
+    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::WRITE_6));
+
+    EXPECT_CALL(*controller, DataOut);
+    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::FORMAT_UNIT));
+
+    ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
+    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT_UNIT) ; },
+        Throws<ScsiException>(AllOf(
+            Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, Asc::LOGICAL_UNIT_NOT_SUPPORTED))));
 }

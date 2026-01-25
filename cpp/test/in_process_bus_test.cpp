@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include "buses/in_process_bus.h"
 
 TEST(InProcessBusTest, BSY)
 {
@@ -90,7 +91,7 @@ TEST(InProcessBusTest, CD)
 
 TEST(InProcessBusTest, IO)
 {
-    InProcessBus bus("", true);
+    InProcessBus bus("", false);
 
     bus.SetIO(true);
     EXPECT_TRUE(bus.GetIO());
@@ -108,11 +109,21 @@ TEST(InProcessBusTest, DAT)
     EXPECT_EQ(0x21, bus.GetDAT());
 }
 
+TEST(InProcessBusTest, Acquire)
+{
+    InProcessBus bus("", false);
+
+    bus.SetDAT(0x12);
+    bus.Acquire();
+    EXPECT_EQ(0x12U, bus.GetDAT());
+}
+
 TEST(InProcessBusTest, BusPhases)
 {
     InProcessBus bus("", false);
 
     EXPECT_EQ(BusPhase::BUS_FREE, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::BUS_FREE));
 
     bus.SetBSY(true);
 
@@ -120,31 +131,50 @@ TEST(InProcessBusTest, BusPhases)
     bus.SetCD(true);
     bus.SetMSG(true);
     EXPECT_EQ(BusPhase::MSG_IN, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_IN));
 
     bus.SetIO(true);
     bus.SetCD(true);
     bus.SetMSG(false);
     EXPECT_EQ(BusPhase::STATUS, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::STATUS));
 
     bus.SetIO(true);
     bus.SetCD(false);
     bus.SetMSG(false);
     EXPECT_EQ(BusPhase::DATA_IN, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_IN));
 
     bus.SetIO(false);
     bus.SetCD(true);
     bus.SetMSG(true);
     EXPECT_EQ(BusPhase::MSG_OUT, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_OUT));
 
     bus.SetIO(false);
     bus.SetCD(true);
     bus.SetMSG(false);
     EXPECT_EQ(BusPhase::COMMAND, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::COMMAND));
 
     bus.SetIO(false);
     bus.SetCD(false);
     bus.SetMSG(false);
     EXPECT_EQ(BusPhase::DATA_OUT, bus.GetPhase());
+    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_OUT));
+}
+
+TEST(InProcessBusTest, Init)
+{
+    InProcessBus bus("", false);
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_TRUE(bus.Init(false));
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
+
+    bus.SetSignals(0x12345678U);
+    EXPECT_TRUE(bus.Init(true));
+    EXPECT_EQ(0xffffffffU, bus.GetSignals());
 }
 
 TEST(InProcessBusTest, Reset)
@@ -152,9 +182,9 @@ TEST(InProcessBusTest, Reset)
     InProcessBus bus("", false);
 
     bus.SetSignal(PIN_BSY, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_BSY));
+    EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
     bus.Reset();
-    EXPECT_FALSE(bus.GetSignal(PIN_BSY));
+    EXPECT_FALSE(bus.GetSignal(PIN_BSY_MASK));
 }
 
 TEST(InProcessBusTest, SetGetSignal)
@@ -162,26 +192,53 @@ TEST(InProcessBusTest, SetGetSignal)
     InProcessBus bus("", false);
 
     bus.SetSignal(PIN_REQ, true);
-    EXPECT_TRUE(bus.GetSignal(PIN_REQ));
+    EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
     bus.SetSignal(PIN_REQ, false);
-    EXPECT_FALSE(bus.GetSignal(PIN_REQ));
+    EXPECT_FALSE(bus.GetSignal(PIN_REQ_MASK));
 }
 
-TEST(InProcessBusTest, WaitSignal)
+TEST(InProcessBusTest, WaitHandshakeACK)
 {
     InProcessBus bus("", false);
 
     bus.SetSignal(PIN_ACK, true);
-    EXPECT_TRUE(bus.WaitSignal(PIN_ACK, true));
+    EXPECT_TRUE(bus.WaitHandShake(PIN_ACK_MASK, true));
 
     bus.SetSignal(PIN_ACK, false);
+    EXPECT_TRUE(bus.WaitHandShake(PIN_ACK_MASK, false));
+
     bus.SetSignal(PIN_RST, true);
-    EXPECT_FALSE(bus.WaitSignal(PIN_ACK, true));
+    bus.SetSignal(PIN_ACK, false);
+    EXPECT_FALSE(bus.WaitHandShake(PIN_ACK_MASK, true));
+}
+
+TEST(InProcessBusTest, WaitHandshakeREQ)
+{
+    InProcessBus bus("", false);
+
+    bus.SetSignal(PIN_REQ, true);
+    EXPECT_TRUE(bus.WaitHandShake(PIN_REQ_MASK, true));
+
+    bus.SetSignal(PIN_REQ, false);
+    EXPECT_TRUE(bus.WaitHandShake(PIN_REQ_MASK, false));
+
+    bus.SetSignal(PIN_RST, true);
+    bus.SetSignal(PIN_REQ, false);
+    EXPECT_FALSE(bus.WaitHandShake(PIN_REQ_MASK, true));
 }
 
 TEST(InProcessBusTest, WaitForSelection)
 {
     InProcessBus bus("", false);
 
-    EXPECT_TRUE(bus.WaitForSelection());
+    bus.SetDAT(0x40);
+    bus.SetBSY(false);
+    EXPECT_EQ(0x40, bus.WaitForSelection());
+}
+
+TEST(InProcessBusTest, IsRaspberryPi)
+{
+    InProcessBus bus("", false);
+
+    EXPECT_FALSE(bus.IsRaspberryPi());
 }

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,8 +19,7 @@ using namespace initiator_util;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
-    // TODO Try to get rid of bus reset
-    bus.Reset();
+    bus.SetDir(true);
 
     status_code = 0xff;
     byte_count = 0;
@@ -28,7 +27,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     const auto cmd = static_cast<ScsiCommand>(cdb[0]);
 
-    auto command_name = string(CommandMetaData::GetInstance().GetCommandName(cmd));
+    auto command_name = CommandMetaData::GetInstance().GetCommandName(cmd);
     if (command_name.empty()) {
         command_name = fmt::format("${:02x}", static_cast<int>(cmd));
     }
@@ -36,7 +35,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     // Only report byte count mismatch for non-linked commands
     if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
         && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
-        initiator_logger.warn("CDB has {0} byte(s), command {1} requires {2} bytes", cdb.size(), command_name, count);
+        initiator_logger.warn("CDB has {} byte(s), command {} requires {} bytes", cdb.size(), command_name, count);
     }
 
     initiator_logger.debug(CommandMetaData::GetInstance().LogCdb(cdb, "Initiator"));
@@ -56,6 +55,9 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
     auto now = steady_clock::now();
     while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
         bus.Acquire();
+
+        // Ensure that the data direction matches the one set by the target
+        bus.SetDir(!bus.GetIO());
 
         if (bus.GetREQ()) {
             try {
@@ -78,7 +80,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         initiator_logger.error("Timeout");
     }
 
-    if (enable_log) {
+    if (enable_log && status_code) {
         initiator_logger.warn(GetStatusString(status_code));
     }
 
@@ -101,11 +103,11 @@ bool InitiatorExecutor::Dispatch(span<uint8_t> cdb, span<uint8_t> buffer, int &l
         break;
 
     case BusPhase::DATA_IN:
-        DataIn(buffer, length);
+        length = DataIn(buffer.first(length));
         break;
 
     case BusPhase::DATA_OUT:
-        DataOut(buffer, length);
+        DataOut(buffer.first(length));
         break;
 
     case BusPhase::MSG_IN:
@@ -160,7 +162,7 @@ bool InitiatorExecutor::Arbitration() const
 
 bool InitiatorExecutor::Selection(bool identify) const
 {
-    initiator_logger.trace("Selection of target {0} with initiator ID {1}", target_id, initiator_id);
+    initiator_logger.trace("Selection of target {} with initiator ID {}", target_id, initiator_id);
 
     // There is no initiator ID with SASI
     bus.SetDAT(static_cast<uint8_t>((sasi ? 0 : 1 << initiator_id) + (1 << target_id)));
@@ -200,7 +202,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
     }
 
     const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
-    const int sent_count = bus.SendHandShake(cdb.data() + cdb_offset, static_cast<int>(cdb.size()) - cdb_offset);
+    const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
     if (static_cast<int>(cdb.size()) < sent_count) {
         initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
     }
@@ -212,7 +214,7 @@ void InitiatorExecutor::Status()
 {
     array<uint8_t, 1> buf = { };
 
-    if (bus.ReceiveHandShake(buf.data(), 1) != 1) {
+    if (bus.InitiatorReceiveHandShake(buf) != 1) {
         initiator_logger.error("STATUS phase failed");
     }
     else {
@@ -220,39 +222,39 @@ void InitiatorExecutor::Status()
     }
 }
 
-void InitiatorExecutor::DataIn(data_in_t buf, int &length)
+int InitiatorExecutor::DataIn(data_in_t buf)
 {
-    if (!length) {
+    if (buf.empty()) {
         throw PhaseException("Buffer full in DATA IN phase");
     }
 
-    initiator_logger.trace("Receiving up to {} byte(s) in DATA IN phase", length);
+    initiator_logger.trace("Receiving up to {} byte(s) in DATA IN phase", buf.size());
 
-    byte_count = bus.ReceiveHandShake(buf.data(), length);
+    byte_count = bus.InitiatorReceiveHandShake(buf);
 
-    length -= byte_count;
+    return static_cast<int>(buf.size()) - byte_count;
 }
 
-void InitiatorExecutor::DataOut(data_out_t buf, int &length)
+void InitiatorExecutor::DataOut(data_out_t buf)
 {
-    if (!length) {
+    if (buf.empty()) {
         throw PhaseException("No more data for DATA OUT phase");
     }
 
-    initiator_logger.debug("Sending {0} byte(s):\n{1}", length, formatter.FormatBytes(buf, length));
+    initiator_logger.debug("Sending {} byte(s):\n{}", buf.size(), formatter.FormatBytes(buf, buf.size()));
 
-    byte_count = bus.SendHandShake(buf.data(), length);
-    if (byte_count != length) {
-        initiator_logger.error("Initiator sent {0} byte(s) in DATA OUT phase, expected size was {1} byte(s)", byte_count, length);
+    byte_count = bus.InitiatorSendHandShake(buf);
+    if (byte_count != static_cast<int>(buf.size())) {
+        initiator_logger.error("Initiator sent {} byte(s) in DATA OUT phase, expected size was {} byte(s)",
+            byte_count, buf.size());
         throw PhaseException("DATA OUT phase failed");
     }
-
-    length -= byte_count;
 }
 
 void InitiatorExecutor::MsgIn()
 {
-    const int msg = bus.MsgInHandShake();
+    // The messages handled must match those in InitiatorMsgInHandShake()
+    const int msg = bus.InitiatorMsgInHandShake();
     switch (msg) {
     case -1:
     case static_cast<int>(MessageCode::MESSAGE_REJECT):
@@ -285,7 +287,7 @@ void InitiatorExecutor::MsgOut()
     // IDENTIFY or MESSAGE REJECT
     buf[0] = static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message);
 
-    if (bus.SendHandShake(buf.data(), buf.size()) != buf.size()) {
+    if (bus.InitiatorSendHandShake(buf) != static_cast<int>(buf.size())) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
             next_message == MessageCode::IDENTIFY ? "IDENTIFY" : "MESSAGE REJECT");
     }
@@ -317,7 +319,7 @@ tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
     return {static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f), static_cast<Asc>(buf[12]), buf[13]};
 }
 
-void InitiatorExecutor::ResetBus()
+void InitiatorExecutor::ResetBus() const
 {
     bus.SetRST(true);
     // 50 us should be enough, the specification requires at least 25 us
@@ -363,4 +365,3 @@ void InitiatorExecutor::SetTarget(int id, int lun, bool s)
     target_lun = lun;
     sasi = s;
 }
-

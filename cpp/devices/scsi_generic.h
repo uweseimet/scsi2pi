@@ -2,11 +2,12 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
-// Implementation of a SCSI printer (see SCSI-2 specification for a command description)
+// Implementation of a generic SCSI device, using the Linux SG driver
 //
 //---------------------------------------------------------------------------
+
 #pragma once
 
 #include "base/primary_device.h"
@@ -14,7 +15,7 @@
 
 using namespace std;
 
-class ScsiGeneric : public PrimaryDevice
+class ScsiGeneric final : public PrimaryDevice
 {
 
 public:
@@ -32,14 +33,12 @@ public:
 
     void Dispatch(ScsiCommand) override;
 
-    vector<uint8_t> InquiryInternal() const override;
-
     int ReadData(data_in_t) override;
-    int WriteData(cdb_t, data_out_t, int, int) override;
+    int WriteData(cdb_t, data_out_t, int) override;
 
 private:
 
-    int ReadWriteData(span<uint8_t>, int);
+    int ReadWriteData(span<uint8_t>);
 
     void EvaluateStatus(int, span<uint8_t>, span<const uint8_t>, bool);
 
@@ -71,7 +70,7 @@ private:
     bool deferred_sense_data_valid = false;
 
     // Linux limits the number of bytes that can be transferred in a single SG 3 SCSI request
-    static const int MAX_TRANSFER_LENGTH = 65536;
+    static constexpr int MAX_TRANSFER_LENGTH = 65536;
 
     static const int TIMEOUT_DEFAULT_SECONDS = 5;
 

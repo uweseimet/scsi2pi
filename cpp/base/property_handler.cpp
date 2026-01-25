@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2025 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -62,18 +62,18 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
 
     string property;
     while (getline(property_file, property)) {
-        if (property_file.fail()) {
-            throw ParserException(fmt::format("Error reading from property file '{}'", filename));
-        }
-
         if (!property.empty() && !property.starts_with("#")) {
-            const vector<string> kv = Split(property, '=', 2);
+            const auto kv = Split(property, '=', 2);
             if (kv.size() < 2) {
                 throw ParserException(fmt::format("Invalid property '{}'", property));
             }
 
             properties[kv[0]] = kv[1];
         }
+    }
+
+    if (property_file.fail() && !property_file.eof()) {
+        throw ParserException(fmt::format("Error reading from property file '{}'", filename));
     }
 }
 
@@ -100,11 +100,9 @@ const property_map& PropertyHandler::GetUnknownProperties() const
 
 const string& PropertyHandler::RemoveProperty(const string &key, const string &def)
 {
-    for (const auto& [k, v] : property_cache) {
-        if (k == key) {
-            unknown_properties.erase(key);
-            return v;
-        }
+    if (const auto it = property_cache.find(key); it != property_cache.end()) {
+        unknown_properties.erase(key);
+        return it->second;
     }
 
     return def;
@@ -116,7 +114,7 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
     unknown_properties[key] = value;
 }
 
-void PropertyHandler::RemoveProperties(const string &filter)
+void PropertyHandler::RemoveProperties(string_view filter)
 {
     erase_if(unknown_properties, [&filter](auto &kv) {return kv.first.starts_with(filter);});
 }
@@ -130,11 +128,7 @@ bool PropertyHandler::Persist() const
     ofstream out(CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {
         out << key << "=" << value << "\n";
-        if (out.fail()) {
-            return false;
-        }
     }
 
-    return true;
+    return out.good();
 }
-
