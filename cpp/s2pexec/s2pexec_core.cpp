@@ -497,7 +497,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
             throw ExecutionException(GetStatusString(status_code));
         }
         else {
-            throw ExecutionException(fmt::format("Can't execute command {} (${:2x})",
+            throw ExecutionException(fmt::format("Can't execute command {} (${:02x})",
                 CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[0])), cdb[0]));
         }
     }
