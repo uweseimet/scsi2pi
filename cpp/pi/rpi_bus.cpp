@@ -263,6 +263,10 @@ void RpiBus::SetDir(bool in) const
 {
     // Change the data input/output direction according to the IO signal
     PinSetSignal(PIN_DTD, !in);
+
+    for (const int pin : DATA_PINS) {
+        PinSetSignal(pin, !in);
+    }
 }
 
 inline void RpiBus::SetDAT(uint8_t dat) const
