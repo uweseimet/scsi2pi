@@ -194,7 +194,7 @@ bool Disk::InitCache(const string &path)
 
 void Disk::FlushCache()
 {
-    if (cache && IsReady()) {
+    if (cache) {
         cache->Flush();
     }
 }
