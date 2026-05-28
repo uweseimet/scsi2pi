@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -15,7 +15,9 @@
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
 {
     vector<uint8_t> data(message.ByteSizeLong());
-    message.SerializeToArray(data.data(), static_cast<int>(data.size()));
+    if (!message.SerializeToArray(data.data(), static_cast<int>(data.size()))) {
+        throw IoException("Can't serialize message");
+    }
 
     // Write the size of the protobuf data as a header
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),

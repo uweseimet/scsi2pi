@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // These tests only test key aspects of the expected output, because the output may change over time.
 //
@@ -135,7 +135,7 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
     int ordinal = 1;
     while (PbDeviceType_IsValid(ordinal)) {
         PbDeviceType type = UNDEFINED;
-        PbDeviceType_Parse(PbDeviceType_Name(static_cast<PbDeviceType>(ordinal)), &type);
+        EXPECT_TRUE(PbDeviceType_Parse(PbDeviceType_Name(static_cast<PbDeviceType>(ordinal)), &type));
 
         auto *type_properties = info.add_properties();
         type_properties->set_type(type);

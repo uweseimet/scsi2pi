@@ -413,7 +413,9 @@ bool S2pCtlCommands::EvaluateParams(string_view image_params, const string &key1
 void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename) const
 {
     vector<uint8_t> data(cmd.ByteSizeLong());
-    cmd.SerializeToArray(data.data(), static_cast<int>(data.size()));
+    if (!cmd.SerializeToArray(data.data(), static_cast<int>(data.size()))) {
+        throw IoException("Error: Can't create protobuf data for binary file '" + filename + "'");
+    }
 
     ofstream out(filename, ios::binary);
     out.write(to_const_char_ptr(data), data.size());
@@ -437,7 +439,9 @@ void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) 
 void S2pCtlCommands::ExportAsText(const PbCommand &cmd, const string &filename) const
 {
     string text;
-    TextFormat::PrintToString(cmd, &text);
+    if (!TextFormat::PrintToString(cmd, &text)) {
+        throw IoException("Can't create protobuf data for text format file '" + filename + "'");
+    }
 
     ofstream out(filename);
     out << text;
