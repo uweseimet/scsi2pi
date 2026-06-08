@@ -25,6 +25,17 @@ void InProcessBus::Reset() const
     Bus::Reset();
 }
 
+void InProcessBus::CleanUp()
+{
+    {
+        scoped_lock lock(sel_lock);
+        selected = true;
+    }
+    sel.notify_one();
+
+    Bus::CleanUp();
+}
+
 void InProcessBus::SetDAT(uint8_t dat) const
 {
     scoped_lock lock(signal_lock);
@@ -67,10 +78,29 @@ void InProcessBus::SetSignal(int pin, bool state) const
     } else {
         SetSignals(GetSignals() | (1 << pin));
     }
+
+    if (pin == PIN_SEL && state) {
+        scoped_lock guard(sel_lock);
+        selected = true;
+        sel.notify_one();
+    }
 }
 
 uint8_t InProcessBus::WaitForSelection()
 {
+    {
+        unique_lock lock(sel_lock);
+
+        if (!selected) {
+            sel.wait(lock, []
+                {
+                    return selected;
+                });
+        }
+
+        selected = false;
+    }
+
     return GetSelection();
 }
 

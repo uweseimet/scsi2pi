@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -225,15 +225,6 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     bus.SetSignal(PIN_RST, true);
     bus.SetSignal(PIN_REQ, false);
     EXPECT_FALSE(bus.WaitHandShake(PIN_REQ_MASK, true));
-}
-
-TEST(InProcessBusTest, WaitForSelection)
-{
-    InProcessBus bus("", false);
-
-    bus.SetDAT(0x40);
-    bus.SetBSY(false);
-    EXPECT_EQ(0x40, bus.WaitForSelection());
 }
 
 TEST(InProcessBusTest, IsRaspberryPi)

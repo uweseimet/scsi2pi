@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -23,6 +23,8 @@ public:
     ~InProcessBus() override = default;
 
     void Reset() const override;
+
+    void CleanUp() override;
 
     void Acquire() const override
     {
@@ -75,6 +77,11 @@ private:
 
     // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;
+
+    // For simulating the selection event, avoids busy waiting
+    inline static mutex sel_lock;
+    inline static condition_variable sel;
+    inline static bool selected = false;
 
     inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY_MASK, "BSY" },
