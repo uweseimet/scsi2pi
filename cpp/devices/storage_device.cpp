@@ -358,7 +358,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const int length = min(static_cast<int>(buf.size()), static_cast<int>(cdb[4]));
+    const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
     int size = 0;
@@ -515,4 +515,3 @@ vector<PbStatistics> StorageDevice::GetStatistics() const
 
     return statistics;
 }
-
