@@ -422,8 +422,8 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
             buf[7] = 0x08;
 
             // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 8,
-                static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCount() : 0xffffffff));
+            SetInt32(buf, 8, static_cast<uint32_t>(
+                GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCountForDescriptor() : 0xffffffff));
             SetInt32(buf, 12, GetBlockSizeForDescriptor(cdb[2] & 0x40));
 
             size += 8;
