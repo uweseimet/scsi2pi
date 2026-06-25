@@ -287,7 +287,9 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         // FUll READ/WRITE LONG support requires an appropriate caching mode
         FlushCache();
         caching_mode = PbCachingMode::LINUX;
-        InitCache(GetFilename());
+        if (!InitCache(GetFilename())) {
+            throw IoException("Can't initialize cache");
+        }
         linux_cache = static_pointer_cast<LinuxCache>(cache);
         LogDebug(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
     }
@@ -585,7 +587,7 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
     LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
 
     // Check capacity
-    if (const uint64_t capacity = GetBlockCount(); !capacity || start + count > capacity) {
+    if (const uint64_t capacity = GetBlockCount(); !capacity || count > capacity - start) {
         LogTrace(
             fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                 start, count));

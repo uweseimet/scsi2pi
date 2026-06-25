@@ -74,6 +74,7 @@ private:
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;
+    mutable mutex last_log_msg_mutex;
 
     // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;

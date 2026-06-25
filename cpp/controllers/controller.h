@@ -52,7 +52,7 @@ private:
     bool TransferFromHost(int);
 
     void ParseMessage();
-    void RejectExtendedMessage(span<const uint8_t>);
+    void RejectExtendedMessage();
     void ProcessMessage();
     void ProcessEndOfMessage();
 
