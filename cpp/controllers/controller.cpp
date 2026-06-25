@@ -556,7 +556,7 @@ void Controller::ParseMessage()
     for (const uint8_t msg_byte : msg_bytes) {
         switch (msg_byte) {
         case 0x01: {
-            RejectExtendedMessage(msg_bytes);
+            RejectExtendedMessage();
             break;
         }
 
@@ -586,7 +586,7 @@ void Controller::ParseMessage()
     }
 }
 
-void Controller::RejectExtendedMessage(span<const uint8_t> msg_bytes)
+void Controller::RejectExtendedMessage()
 {
     if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < msg_bytes[1] + 2) {
         LogWarn("Truncated extended message");
