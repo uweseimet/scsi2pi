@@ -335,6 +335,7 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
 
     int lun = GetEffectiveLun();
     if (asc == Asc::LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
+        assert(GetDeviceForLun(0));
         lun = 0;
     }
 
