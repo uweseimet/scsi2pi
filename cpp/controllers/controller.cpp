@@ -588,7 +588,7 @@ void Controller::ParseMessage()
 
 void Controller::RejectExtendedMessage(span<const uint8_t> msg_bytes)
 {
-    if (msg_bytes.size() < 3) {
+    if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < msg_bytes[1] + 2) {
         LogWarn("Truncated extended message");
     }
     else {
@@ -598,11 +598,11 @@ void Controller::RejectExtendedMessage(span<const uint8_t> msg_bytes)
             break;
 
         case 0x01:
-            LogTrace("Rejecting SYNCHRONOUS DATA TRANFER REQUEST message");
+            LogTrace("Rejecting SYNCHRONOUS DATA TRANSFER REQUEST message");
             break;
 
         case 0x03:
-            LogTrace("Rejecting WIDE DATA TRANFER REQUEST message");
+            LogTrace("Rejecting WIDE DATA TRANSFER REQUEST message");
             break;
 
         case 0x04:
