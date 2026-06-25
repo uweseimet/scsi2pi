@@ -207,7 +207,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
         offset += page_size;
     }
 
-    ChangeBlockSize(size);
+    ChangeBlockSize(block_size);
 }
 
 pair<int, int> StorageDevice::EvaluateBlockDescriptors(ScsiCommand cmd, data_out_t buf, int size)
@@ -358,7 +358,7 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const int length = min(static_cast<int>(buf.size()), cdb[4]);
+    const int length = min(static_cast<int>(buf.size()), static_cast<int>(cdb[4]));
     fill_n(buf.begin(), length, 0);
 
     int size = 0;
@@ -422,8 +422,8 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
             buf[7] = 0x08;
 
             // Short LBA mode parameter block descriptor (number of blocks and block length)
-            SetInt32(buf, 8,
-                static_cast<uint32_t>(GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCount() : 0xffffffff));
+            SetInt32(buf, 8, static_cast<uint32_t>(
+                GetBlockCountForDescriptor() <= 0xffffffff ? GetBlockCountForDescriptor() : 0xffffffff));
             SetInt32(buf, 12, GetBlockSizeForDescriptor(cdb[2] & 0x40));
 
             size += 8;
