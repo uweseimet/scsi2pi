@@ -171,10 +171,10 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
+
         close(fd);
 
         filename = f.data();
-
         out.open(filename, ios::binary);
         CheckForFileError();
     }

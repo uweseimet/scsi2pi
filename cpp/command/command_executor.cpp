@@ -316,7 +316,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
-    const shared_ptr<PrimaryDevice> device, bool dryRun) const
+    const shared_ptr<PrimaryDevice> &device, bool dryRun) const
 {
     if (!device->SupportsImageFile()) {
         return false;
@@ -670,7 +670,7 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice 
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetBlockSize(const CommandContext &context, shared_ptr<PrimaryDevice> device,
+bool CommandExecutor::SetBlockSize(const CommandContext &context, const shared_ptr<PrimaryDevice> &device,
     int block_size) const
 {
 #ifdef BUILD_STORAGE_DEVICE

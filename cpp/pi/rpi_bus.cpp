@@ -163,6 +163,7 @@ string RpiBus::SetUp(bool target)
     ev.data.fd = selevreq.fd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev) == -1) {
         close(epoll_fd);
+        close(selevreq.fd);
         return "Can't add file descriptor to epoll";
     }
 #endif

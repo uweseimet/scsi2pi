@@ -250,7 +250,7 @@ void PrimaryDevice::ReportLuns() const
         }
     }
 
-    SetInt16(buf, 2, size);
+    SetInt32(buf, 0, size);
 
     DataInPhase(min(allocation_length, size + 8));
 }
@@ -370,8 +370,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[2] |= byte { 0x80 };
         buf[13] = static_cast<byte>(Ascq::FILEMARK_DETECTED);
     }
-
-    if (eom != Ascq::NONE) {
+    else if (eom != Ascq::NONE) {
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }
@@ -405,9 +404,6 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     else {
         LogTrace("Unknown initiator tries to access reserved device");
     }
-
-    controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION,
-        StatusCode::RESERVATION_CONFLICT);
 
     return false;
 }

@@ -333,13 +333,14 @@ uint8_t Bus::GetSelection() const
 {
     // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
     const auto now = chrono::steady_clock::now();
+    const auto deadline = now + chrono::seconds(3);
     do {
         Acquire();
         if (!GetBSY()) {
             // Initiator and target ID
             return GetDAT();
         }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
+    } while (chrono::steady_clock::now() < deadline);
 
     return 0;
 }

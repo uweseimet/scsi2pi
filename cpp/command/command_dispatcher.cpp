@@ -89,8 +89,8 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
         else {
-            if (const auto &image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(), filename)) {
-                result.set_allocated_image_file_info(image_file.get());
+            if (auto image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(), filename)) {
+                result.set_allocated_image_file_info(image_file.release());
                 result.set_status(true);
                 return context.WriteResult(result);
             }
@@ -282,7 +282,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 bool CommandDispatcher::SetWithoutTypes(const string &types)
 {
     return ranges::all_of(Split(types, ','), [this](const auto &t) {
-        if(const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
+        if (const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
             without_types.emplace(type);
             return true;
         }

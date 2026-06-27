@@ -311,6 +311,7 @@ int S2pSimh::Add()
                 catch (const out_of_range&)
                 {
                     cerr << "Error: Invalid input data format: '" + line + "'\n";
+                    return EXIT_FAILURE;
                 }
 
                 copy(bytes.begin(), bytes.end(), back_inserter(input_data));

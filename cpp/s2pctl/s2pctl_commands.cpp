@@ -301,7 +301,8 @@ bool S2pCtlCommands::HandleServerInfo()
     if (server_info.has_devices_info() && server_info.devices_info().devices_size()) {
         vector<PbDevice> sorted_devices = { server_info.devices_info().devices().cbegin(),
             server_info.devices_info().devices().cend() };
-        ranges::sort(sorted_devices, [](const auto &a, const auto &b) {return a.id() < b.id() || a.unit() < b.unit();});
+        ranges::sort(sorted_devices,
+            [](const auto &a, const auto &b) {return a.id() != b.id() ? a.id() < b.id() : a.unit() < b.unit();});
 
         cout << "Attached devices:\n";
 
@@ -427,7 +428,9 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
 void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) const
 {
     string json;
-    static_cast<void>(MessageToJsonString(cmd, &json));
+    if (!MessageToJsonString(cmd, &json).ok()) {
+        throw IoException("Can't create JSON data for protobuf JSON file '" + filename + "'");
+    }
 
     ofstream out(filename);
     out << json;

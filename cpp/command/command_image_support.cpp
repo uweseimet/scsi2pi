@@ -65,16 +65,17 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
         folder = path(GetHomeDir() + "/" + folder.string());
     }
 
-    if (path home_root = path(GetHomeDir()).parent_path(); !folder.string().starts_with(home_root.string())) {
+    if (const path home_root = path(GetHomeDir()).parent_path(); folder.lexically_relative(home_root).string().starts_with(
+        "..")) {
         return "Default image folder must be located in '" + home_root.string() + "'";
     }
 
     // Resolve a potential symlink
     if (error_code error; is_symlink(folder, error)) {
-        folder = read_symlink(folder);
+        folder = canonical(folder);
     }
 
-    if (error_code error; !is_directory(folder)) {
+    if (error_code error; !is_directory(folder, error) || error) {
         return string("'") + folder.string() + "' is not a valid image folder";
     }
 
@@ -128,7 +129,6 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     path file(full_filename);
     try {
         ofstream s(file);
-        s.close();
 
         if (!ChangeOwner(context, file, read_only)) {
             return false;
@@ -173,20 +173,17 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
     }
 
     // Delete empty subfolders
-    size_t last_slash = filename.rfind('/');
-    while (last_slash != string::npos) {
-        const string &folder = filename.substr(0, last_slash);
-        const auto &full_folder = path(GetFullName(folder));
-
-        if (error_code error; !filesystem::is_empty(full_folder, error) || error) {
+    auto folder = path(GetFullName(filename)).parent_path();
+    while (folder != path(default_folder)) {
+        if (error_code error; !filesystem::is_empty(folder, error) || error) {
             break;
         }
 
-        if (error_code error; !remove(full_folder)) {
-            return context.ReturnErrorStatus("Can't delete empty image folder '" + full_folder.string() + "'");
+        if (error_code error; !remove(folder)) {
+            return context.ReturnErrorStatus("Can't delete empty image folder '" + folder.string() + "'");
         }
 
-        last_slash = folder.rfind('/');
+        folder = folder.parent_path();
     }
 
     context.GetLogger().info("Deleted image file '{}'", full_filename.string());
@@ -336,7 +333,7 @@ bool CommandImageSupport::ValidateParams(const CommandContext &context, const st
 
     from = GetFullName(from);
     if (!IsValidSrcFilename(from)) {
-        return context.ReturnErrorStatus("Can't " + op + " image file: '" + from + "': Invalid name or type");
+        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Invalid name or type");
     }
 
     to = GetFullName(to);

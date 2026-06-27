@@ -50,6 +50,7 @@ void ScsiGeneric::CleanUp()
 {
     if (fd != -1) {
         close(fd);
+        fd = -1;
     }
 }
 

@@ -206,6 +206,9 @@ void Controller::Execute()
             Error(e.GetSenseKey(), e.GetAsc());
         }
     }
+    else {
+        Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+    }
 }
 
 void Controller::Status()

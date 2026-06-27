@@ -59,22 +59,24 @@ string DisplayAttributes(const PbDeviceProperties &props)
 
 string DisplayDefaultParameters(const PbDeviceProperties &properties)
 {
+    if (properties.default_params().empty()) {
+        return "";
+    }
+
     ostringstream s;
 
-    if (!properties.default_params().empty()) {
-        s << "Default parameters: ";
+    s << "Default parameters: ";
 
-        set<string, less<>> sorted_params;
-        for (const auto& [key, value] : properties.default_params()) {
-            sorted_params.insert(key + "=" + value);
-        }
+    set<string, less<>> sorted_params;
+    for (const auto& [key, value] : properties.default_params()) {
+        sorted_params.insert(key + "=" + value);
+    }
 
-        for (auto it = sorted_params.cbegin(); it != sorted_params.cend(); ++it) {
-            if (it != sorted_params.cbegin()) {
-                s << "\n                            ";
-            }
-            s << *it;
+    for (auto it = sorted_params.cbegin(); it != sorted_params.cend(); ++it) {
+        if (it != sorted_params.cbegin()) {
+            s << "\n                            ";
         }
+        s << *it;
     }
 
     return s.str();
@@ -437,10 +439,10 @@ string s2pctl_display::DisplayOperationInfo(const PbOperationInfo &operation_inf
     const map<int, PbOperationMetaData, less<>> operations(operation_info.operations().cbegin(),
         operation_info.operations().cend());
 
-    // Copies result into a map sorted by operation name
-    auto unknown_operation = make_unique<PbOperationMetaData>();
-    map<string, PbOperationMetaData, less<>> sorted_operations;
+    const PbOperationMetaData unknown_operation;
 
+    // Copies result into a map sorted by operation name
+    map<string, PbOperationMetaData, less<>> sorted_operations;
     for (const auto& [ordinal, meta_data] : operations) {
         if (PbOperation_IsValid(static_cast<PbOperation>(ordinal))) {
             sorted_operations[PbOperation_Name(static_cast<PbOperation>(ordinal))] = meta_data;
@@ -448,7 +450,7 @@ string s2pctl_display::DisplayOperationInfo(const PbOperationInfo &operation_inf
         else {
             // If the server-side operation is unknown for the client use the server-provided operation name
             // No further operation information is available in this case
-            sorted_operations[meta_data.server_side_name()] = *unknown_operation;
+            sorted_operations[meta_data.server_side_name()] = unknown_operation;
         }
     }
 

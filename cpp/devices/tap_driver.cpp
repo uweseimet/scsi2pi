@@ -46,14 +46,13 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         return "No valid network interfaces available";
     }
 
+#ifndef __linux__
+    return "The TAP driver requires a Linux platform";
+#else
     tap_fd = open("/dev/net/tun", O_RDWR);
     if (tap_fd == -1) {
         return fmt::format("Can't open /dev/net/tun: {}", strerror(errno));
     }
-
-#ifndef __linux__
-    return "The TAP driver requires a Linux platform";
-#else
     const bool create_bridge = params[BRIDGE] == "true";
 
     inet = params[INET];
@@ -77,7 +76,10 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
 
     const auto &cleanUp = [this, ip_fd](const string &msg) {
         close(ip_fd);
-        close(tap_fd);
+        if(tap_fd != -1) {
+            close(tap_fd);
+            tap_fd = -1;
+        }
         return msg;
     };
 
@@ -226,8 +228,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
             return {"", ""};
         }
 
-        // long long is required for compatibility with 32 bit platforms
-        const auto mask = static_cast<long long>(pow(2, 32) - (1 << (32 - m)));
+        const uint32_t mask = m == 32 ? 0xFFFFFFFFU : ~((1U << (32 - m)) - 1);
         netmask = to_string((mask >> 24) & 0xff) + '.' + to_string((mask >> 16) & 0xff) + '.' +
             to_string((mask >> 8) & 0xff) + '.' + to_string(mask & 0xff);
     }
@@ -273,7 +274,7 @@ string TapDriver::IpLink(bool up, logger &logger)
         return fmt::format("Can't create socket: {}", strerror(errno));
     }
 
-    logger.trace(string(">ip link set " + BRIDGE_INTERFACE_NAME + " ") + (up ? "up" : "down"));
+    logger.trace(">ip link set {} {}", BRIDGE_INTERFACE_NAME, up ? "up" : "down");
     const string result = IpLink(fd, BRIDGE_INTERFACE_NAME, up);
 
     close(fd);
@@ -322,8 +323,8 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
 void TapDriver::Flush(logger &logger) const
 {
     while (HasPendingPackets()) {
-        array<uint8_t, ETH_FRAME_LEN> m_garbage_buffer;
-        static_cast<void>(Receive(m_garbage_buffer, logger));
+        array<uint8_t, ETH_FRAME_LEN> garbage_buffer;
+        static_cast<void>(Receive(garbage_buffer, logger));
     }
 }
 
@@ -359,8 +360,8 @@ int TapDriver::Receive(data_in_t buf, logger &logger) const
         return 0;
     }
 
-    auto bytes_received = static_cast<uint32_t>(read(tap_fd, buf.data(), ETH_FRAME_LEN));
-    if (bytes_received == static_cast<uint32_t>(-1)) {
+    auto bytes_received = read(tap_fd, buf.data(), ETH_FRAME_LEN);
+    if (bytes_received == -1) {
         logger.warn("Error while receiving a network packet");
         return 0;
     }
@@ -377,7 +378,7 @@ int TapDriver::Receive(data_in_t buf, logger &logger) const
         bytes_received += 4;
     }
 
-    return bytes_received;
+    return static_cast<int>(bytes_received);
 }
 
 int TapDriver::Send(data_out_t buf) const
