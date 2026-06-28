@@ -88,10 +88,10 @@ bool S2pProto::Init(bool in_process, bool log_signals)
 
 bool S2pProto::ParseArguments(span<char*> args)
 {
-    const int OPT_BINARY_INPUT = 2;
-    const int OPT_BINARY_OUTPUT = 3;
-    const int OPT_TEXT_INPUT = 4;
-    const int OPT_TEXT_OUTPUT = 5;
+    constexpr int OPT_BINARY_INPUT = 2;
+    constexpr int OPT_BINARY_OUTPUT = 3;
+    constexpr int OPT_TEXT_INPUT = 4;
+    constexpr int OPT_TEXT_OUTPUT = 5;
 
     const vector<option> options = {
         { "binary-input", no_argument, nullptr, OPT_BINARY_INPUT },

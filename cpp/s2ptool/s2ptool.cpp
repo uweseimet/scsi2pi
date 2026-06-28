@@ -121,11 +121,12 @@ int run(int argc, char *argv[])
 
     // Wait for the in-process bus target up to 1 s
     const auto now = chrono::steady_clock::now();
-    do {
-        if (s2p->Ready()) {
+    while (!s2p->Ready()) {
+        if (chrono::steady_clock::now() - now >= chrono::seconds(1)) {
             break;
         }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
+        this_thread::sleep_for(chrono::milliseconds(10));
+    }
 
     if (!s2p->Ready()) {
         cerr << "Error starting in-process s2p\n";
@@ -145,11 +146,10 @@ int run(int argc, char *argv[])
         s2pexec->Run(client_args, true, log_signals);
     }
     else if (client == "s2pproto") {
-        auto s22proto = make_unique<S2pProto>();
-        s22proto->Run(client_args, true, log_signals);
+        auto s2proto = make_unique<S2pProto>();
+        s2proto->Run(client_args, true, log_signals);
     }
     else {
-        assert(false);
         return EXIT_FAILURE;
     }
 

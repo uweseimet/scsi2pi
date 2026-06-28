@@ -50,7 +50,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
         { "TP", SCTP }
     };
 
-    const auto index = filename.find(".");
+    const auto index = filename.find('.');
     const string &specifier = index == string::npos ? filename : filename.substr(0, index);
     const auto &components = Split(specifier, '_');
 
@@ -99,17 +99,16 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
 
 vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
 {
-    // Convert legacy RaSCSI/PiSCSI ID options to a consistent getopt() format:
+    // Convert legacy PiSCSI ID options to a consistent getopt() format:
     //   -id|-ID -> -i
-    //   -hd|-HD -> -h
-    //   -idn:u|-hdn:u -> -i|-h n:u
+    //   -idn:u -> -i n:u
     vector<char*> args;
     for (const string arg : initial_args) {
         string arg_str(arg);
         const string &arg_lower = ToLower(arg_str);
 
-        if (arg_lower.starts_with("-h") || arg_lower.starts_with("-i")) {
-            args.emplace_back(strdup(arg_lower.substr(0, 2).c_str()));
+        if (arg_lower.starts_with("-i")) {
+            args.emplace_back(strdup("-i"));
 
             const size_t ids = arg_str.find_first_of("0123456789");
             if (ids != string::npos) {
@@ -179,8 +178,8 @@ void s2p_parser::Banner(bool usage)
 
 property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_conf) // NOSONAR Acceptable complexity for parsing
 {
-    const int OPT_SCSI_LEVEL = 2;
-    const int OPT_LOG_LIMIT = 3;
+    constexpr int OPT_SCSI_LEVEL = 2;
+    constexpr int OPT_LOG_LIMIT = 3;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
