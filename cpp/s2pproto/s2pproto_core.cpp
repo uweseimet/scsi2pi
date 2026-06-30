@@ -271,7 +271,10 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
     switch (output_format) {
     case ProtobufFormat::BINARY: {
         vector<uint8_t> data(result.ByteSizeLong());
-        result.SerializeToArray(data.data(), data.size());
+        if (!result.SerializeToArray(data.data(), data.size())) {
+            cerr << "Error: Can't create protobuf data for output file '" << output_filename << "'\n";
+            return EXIT_FAILURE;
+        }
         out.write(to_const_char_ptr(data), data.size());
         break;
     }
@@ -285,7 +288,10 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     case ProtobufFormat::TEXT: {
         string text;
-        TextFormat::PrintToString(result, &text);
+        if (!TextFormat::PrintToString(result, &text)) {
+            cerr << "Error: Can't create protobuf data for output file '" << output_filename << "'\n";
+            return EXIT_FAILURE;
+        }
         out << text << '\n';
         break;
     }

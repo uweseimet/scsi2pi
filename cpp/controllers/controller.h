@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -52,6 +52,7 @@ private:
     bool TransferFromHost(int);
 
     void ParseMessage();
+    void RejectExtendedMessage();
     void ProcessMessage();
     void ProcessEndOfMessage();
 

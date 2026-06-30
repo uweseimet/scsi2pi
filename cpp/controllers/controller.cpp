@@ -553,46 +553,10 @@ void Controller::XferMsg()
 
 void Controller::ParseMessage()
 {
-    bool extended = false;
     for (const uint8_t msg_byte : msg_bytes) {
-        if (extended) {
-            switch (msg_byte) {
-            case 0x00:
-                LogTrace("Rejecting MODIFY DATA POINTERS message");
-                break;
-
-            case 0x01:
-                LogTrace("Rejecting SYNCHRONOUS DATA TRANFER REQUEST message");
-                break;
-
-            case 0x03:
-                LogTrace("Rejecting WIDE DATA TRANFER REQUEST message");
-                break;
-
-            case 0x04:
-                LogTrace("Rejecting PARALLEL PROTOCOL REQUEST message");
-                break;
-
-            case 0x05:
-                LogTrace("Rejecting MODIFY BIDIRECTIONAL DATA POINTER message");
-                break;
-
-            default:
-                LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_byte));
-                break;
-            }
-
-            SetCurrentLength(1);
-            SetTransferSize(1, 1);
-            // MESSSAGE REJECT
-            GetBuffer()[0] = 0x07;
-            MsgIn();
-            return;
-        }
-
         switch (msg_byte) {
         case 0x01: {
-            extended = true;
+            RejectExtendedMessage();
             break;
         }
 
@@ -620,6 +584,46 @@ void Controller::ParseMessage()
             break;
         }
     }
+}
+
+void Controller::RejectExtendedMessage()
+{
+    if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < msg_bytes[1] + 2) {
+        LogWarn("Truncated extended message");
+    }
+    else {
+        switch (msg_bytes[2]) {
+        case 0x00:
+            LogTrace("Rejecting MODIFY DATA POINTER message");
+            break;
+
+        case 0x01:
+            LogTrace("Rejecting SYNCHRONOUS DATA TRANSFER REQUEST message");
+            break;
+
+        case 0x03:
+            LogTrace("Rejecting WIDE DATA TRANSFER REQUEST message");
+            break;
+
+        case 0x04:
+            LogTrace("Rejecting PARALLEL PROTOCOL REQUEST message");
+            break;
+
+        case 0x05:
+            LogTrace("Rejecting MODIFY BIDIRECTIONAL DATA POINTER message");
+            break;
+
+        default:
+            LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_bytes[2]));
+            break;
+        }
+    }
+
+    SetCurrentLength(1);
+    SetTransferSize(1, 1);
+    // MESSSAGE REJECT
+    GetBuffer()[0] = 0x07;
+    MsgIn();
 }
 
 void Controller::ProcessMessage()
