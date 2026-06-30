@@ -184,9 +184,8 @@ void HostServices::ReceiveOperationResults()
     }
 
     case ProtobufFormat::TEXT: {
-        PbResult result;
-        if (!result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size())) ||
-            !TextFormat::PrintToString(result, &data)) {
+        if (PbResult result; !result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()))
+            || !TextFormat::PrintToString(result, &data)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;
