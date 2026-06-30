@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -72,6 +72,7 @@ private:
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;
+    mutable mutex last_log_msg_mutex;
 
     // To prevent competing signal changes and overlapping logs
     inline static mutex signal_lock;

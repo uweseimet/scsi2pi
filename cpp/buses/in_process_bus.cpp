@@ -76,6 +76,8 @@ uint8_t InProcessBus::WaitForSelection()
 
 void InProcessBus::LogSignal(const string &msg) const
 {
+    scoped_lock guard(last_log_msg_mutex);
+
     if (msg != last_log_msg) {
         in_process_logger->trace(msg);
         last_log_msg = msg;
