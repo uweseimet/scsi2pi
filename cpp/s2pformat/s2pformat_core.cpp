@@ -29,7 +29,7 @@ void S2pFormat::Banner(bool header) const
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
-        << "  --help/-H             Display this help.\n"
+        << "  --help/-h             Display this help.\n"
         << "  --log-level/-L LEVEL  Log level (trace|debug|info|warning|error|\n"
         << "                        critical|off), default is 'info'.\n"
         << "  --version/-v          Display the s2pformat version.\n";
@@ -38,7 +38,7 @@ void S2pFormat::Banner(bool header) const
 bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
-        { "help", no_argument, nullptr, 'H' },
+        { "help", no_argument, nullptr, 'h' },
         { "log-level", required_argument, nullptr, 'L' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }

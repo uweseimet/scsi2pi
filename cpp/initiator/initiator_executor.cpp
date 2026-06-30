@@ -19,6 +19,11 @@ using namespace initiator_util;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
 {
+    if (cdb.size() < 6) {
+        initiator_logger.error("CDB has less than 6 bytes");
+        return 0xff;
+    }
+
     bus.SetDir(true);
 
     status_code = 0xff;
