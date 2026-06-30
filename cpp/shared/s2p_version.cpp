@@ -10,5 +10,5 @@
 
 const int s2p_major_version = 6;
 const int s2p_minor_version = 2;
-const int s2p_revision = 2;
+const int s2p_revision = 3;
 const std::string s2p_suffix = "";
