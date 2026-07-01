@@ -27,7 +27,7 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &me
     }
 
     // Write the actual protobuf data
-    if (WriteBytes(fd, data) != static_cast<ssize_t>(data.size())) {
+    if (WriteBytes(fd, data) != data.size()) {
         throw IoException("Can't write message data: " + string(strerror(errno)));
     }
 }
@@ -48,7 +48,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
 
     // Read the binary protobuf data
     vector<byte> data_buf(size);
-    if (ReadBytes(fd, data_buf) != static_cast<ssize_t>(data_buf.size())) {
+    if (ReadBytes(fd, data_buf) != data_buf.size()) {
         throw IoException("Invalid message data: " + string(strerror(errno)));
     }
 
@@ -57,7 +57,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
     }
 }
 
-ssize_t protobuf_util::ReadBytes(int fd, span<byte> buf)
+size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {
@@ -72,7 +72,7 @@ ssize_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     return offset;
 }
 
-ssize_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
+size_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {
