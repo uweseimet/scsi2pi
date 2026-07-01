@@ -173,15 +173,19 @@ TEST(PrimaryDeviceTest, ReserveRelease)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
+    controller->ProcessOnController(0x02);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::RESERVE_RESERVE_ELEMENT_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
 
+    controller->ProcessOnController(0x02);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 
+    controller->ProcessOnController(0x02);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::RESERVE_RESERVE_ELEMENT_6));
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for unknown initiator";
 
+    controller->ProcessOnController(0x02);
     EXPECT_NO_THROW(Dispatch(device, ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for unknown initiator";
 }
@@ -314,6 +318,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     Dispatch(device, ScsiCommand::INQUIRY, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "EVPD bit is not supported");
 
+    controller->SetCdbByte(1, 0);
     controller->SetCdbByte(2, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
     Dispatch(device, ScsiCommand::INQUIRY, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
