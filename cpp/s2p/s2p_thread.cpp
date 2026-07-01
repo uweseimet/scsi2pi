@@ -54,7 +54,6 @@ void S2pThread::Execute() const
 
     if (fd != -1) {
         close(fd);
-        fd = -1;
     }
 }
 
