@@ -51,6 +51,11 @@ void S2pThread::Execute() const
             fd = -1;
         }
     }
+
+    if (fd != -1) {
+        close(fd);
+        fd = -1;
+    }
 }
 
 bool S2pThread::ExecuteCommand(int fd) const

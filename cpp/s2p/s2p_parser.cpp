@@ -197,7 +197,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
         { "property-files", required_argument, nullptr, 'C' },
-        { "reserved-ids", optional_argument, nullptr, 'r' },
+        { "reserved-ids", required_argument, nullptr, 'r' },
         { "scan-depth", required_argument, nullptr, 'R' },
         { "script-file", required_argument, nullptr, 's' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
