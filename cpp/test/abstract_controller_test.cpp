@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -42,15 +42,21 @@ TEST(AbstractControllerTest, SetCurrentLength)
 TEST(AbstractControllerTest, Reset)
 {
     MockAbstractController controller(0);
-
-    controller.AddDevice(make_shared<MockPrimaryDevice>(0));
+    const auto device = make_shared<MockPrimaryDevice>(0);
+    controller.AddDevice(device);
 
     controller.SetPhase(BusPhase::STATUS);
+    controller.SetTransferSize(10, 5);
+    controller.SetCurrentLength(20);
     EXPECT_EQ(BusPhase::STATUS, controller.GetPhase());
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
     EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
     EXPECT_EQ(0, controller.GetCurrentLength());
+    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(0, controller.GetRemainingLength());
+    EXPECT_EQ(0, controller.GetChunkSize());
+    EXPECT_EQ(-1, controller.GetInitiatorId());
 }
 
 TEST(AbstractControllerTest, Status)
@@ -116,8 +122,9 @@ TEST(AbstractControllerTest, UpdateOffsetAndLength)
 {
     MockAbstractController controller;
 
+    controller.SetCurrentLength(5);
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(5, controller.GetOffset());
     EXPECT_EQ(0, controller.GetCurrentLength());
 }
 
@@ -138,8 +145,22 @@ TEST(AbstractControllerTest, ProcessOnController)
 
     EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x02);
+    EXPECT_EQ(-1, controller.GetInitiatorId());
+
     EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x06);
+    EXPECT_EQ(2, controller.GetInitiatorId());
+}
+
+TEST(AbstractControllerTest, CopyToBuffer)
+{
+    MockAbstractController controller;
+    const vector<uint8_t> data { 1, 2, 3, 4 };
+
+    controller.CopyToBuffer(data);
+    EXPECT_EQ(4, controller.GetCurrentLength());
+    const auto &buf = controller.GetBuffer();
+    EXPECT_TRUE(equal(data.begin(), data.end(), buf.begin()));
 }
 
 TEST(AbstractControllerTest, FormatBytes)
@@ -169,4 +190,14 @@ TEST(AbstractControllerTest, FormatBytes)
         bytes.emplace_back(i);
     }
     EXPECT_EQ(str_all, controller.FormatBytes(bytes, bytes.size()));
+}
+
+TEST(AbstractControllerTest, Cdb)
+{
+    MockAbstractController controller;
+
+    controller.SetCdbByte(0, 0x28);
+    controller.SetCdbByte(1, 0xff);
+    EXPECT_EQ(0x28, controller.GetCdb()[0]);
+    EXPECT_EQ(0xff, controller.GetCdb()[1]);
 }

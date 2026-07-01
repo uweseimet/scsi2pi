@@ -72,7 +72,7 @@ ssize_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     return offset;
 }
 
-ssize_t protobuf_util::WriteBytes(int fd, span<uint8_t> buf)
+ssize_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {
