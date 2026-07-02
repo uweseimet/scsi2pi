@@ -498,13 +498,11 @@ bool S2p::ExecuteCommand(CommandContext &context)
         return context.ReturnLocalizedError(LocalizationKey::ERROR_AUTHENTICATION, UNAUTHORIZED);
     }
 
-    PbResult result;
-    const bool status = dispatcher->DispatchCommand(context, result);
-    if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
+    if (PbResult result; dispatcher->DispatchCommand(context, result)
+        && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
-        google::protobuf::ShutdownProtobufLibrary();
-        exit(EXIT_SUCCESS);
+        return false;
     }
 
-    return status;
+    return true;
 }

@@ -31,7 +31,7 @@ string S2pServer::Init(int port)
     }
 
     sockaddr_in server = { };
-    server.sin_family = PF_INET;
+    server.sin_family = AF_INET;
     server.sin_port = htons(static_cast<uint16_t>(port));
     server.sin_addr.s_addr = INADDR_ANY;
     if (bind(server_socket, reinterpret_cast<const sockaddr*>(&server), // NOSONAR bit_cast is not supported by the bullseye compiler

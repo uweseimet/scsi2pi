@@ -15,7 +15,7 @@ using namespace s2p_util;
 string S2pThread::Init(int port, const callback &cb, shared_ptr<logger> logger)
 {
     exec = cb;
-    s2p_logger = logger;
+    s2p_logger = std::move(logger);
 
     return server.Init(port);
 }
@@ -38,7 +38,7 @@ bool S2pThread::IsRunning() const
     return server.IsRunning() && service_thread.joinable();
 }
 
-void S2pThread::Execute() const
+void S2pThread::Execute()
 {
     int fd = -1;
     while (server.IsRunning()) {
@@ -57,12 +57,16 @@ void S2pThread::Execute() const
     }
 }
 
-bool S2pThread::ExecuteCommand(int fd) const
+bool S2pThread::ExecuteCommand(int fd)
 {
     CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
-            exec(context);
+            if (!exec(context)) {
+                // Shutdown requested
+                server.CleanUp();
+            }
+
             return true;
         }
     }
