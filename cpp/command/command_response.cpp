@@ -39,7 +39,7 @@ bool ValidateImageFile(const path &image_path, logger &logger)
 
     // Follow symlink
     if (is_symlink(p, error)) {
-        p = read_symlink(p, error);
+        p = image_path.parent_path() / read_symlink(p, error);
         if (error || !exists(p, error)) {
             logger.warn("Image file symlink '{}' is broken", image_path.string());
             return false;
@@ -150,8 +150,9 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
     const string folder_pattern_lower = ToLower(folder_pattern);
     const string file_pattern_lower = ToLower(file_pattern);
 
-    for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
-        it != recursive_directory_iterator(); ++it) {
+    error_code error;
+    for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink, error);
+        it != recursive_directory_iterator() && !error; it.increment(error)) {
         if (it.depth() > CommandImageSupport::GetInstance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
@@ -176,6 +177,10 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
         if (PbImageFile image_file; command_response::GetImageFile(image_file, filename)) {
             command_response::GetImageFile(*image_files_info.add_image_files(), filename);
         }
+
+        if (error) {
+            logger.warn("Error while traversing image folder '{}': {}", default_folder, error.message());
+        }
     }
 }
 
@@ -195,9 +200,10 @@ PbOperationMetaData* CreateOperation(PbOperationInfo &operation_info, const PbOp
     PbOperationMetaData meta_data;
     meta_data.set_server_side_name(PbOperation_Name(operation));
     meta_data.set_description(description);
-    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
-    (*operation_info.mutable_operations())[number] = meta_data;
-    return &(*operation_info.mutable_operations())[number];
+    const auto number = static_cast<int>(operation);
+    auto &entry = (*operation_info.mutable_operations())[number];
+    entry = std::move(meta_data);
+    return &entry;
 }
 
 void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, const string &description,
@@ -518,7 +524,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
     operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
-    if (getuid()) {
+    if (geteuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
     else {
