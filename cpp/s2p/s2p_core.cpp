@@ -156,7 +156,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
-        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
+        if (const int limit = ParseAsUnsignedInt(log_limit); limit == -1) {
             CleanUp("Invalid log limit '" + log_limit + "'");
             return EXIT_FAILURE;
         }

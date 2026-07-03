@@ -88,17 +88,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         if (const string &filename = GetParam(command, "file"); filename.empty()) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
-        else {
-            if (auto image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(), filename)) {
-                result.set_allocated_image_file_info(image_file.release());
-                result.set_status(true);
-                return context.WriteResult(result);
-            }
-            else {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
-            }
+        else if (auto image_file = make_unique<PbImageFile>(); GetImageFile(*image_file, filename)) {
+            result.set_allocated_image_file_info(image_file.release());
+            result.set_status(true);
+            return context.WriteResult(result);
         }
-        break;
+        else {
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
+        }
 
     case NETWORK_INTERFACES_INFO:
         GetNetworkInterfacesInfo(*result.mutable_network_interfaces_info());
@@ -154,8 +151,6 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         // The remaining commands may only be executed when the target is idle, which is ensured by the lock
         return executor.ProcessCmd(context) ? HandleDeviceListChange(context) : false;
     }
-
-    return true;
 }
 
 bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const

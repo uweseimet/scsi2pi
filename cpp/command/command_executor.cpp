@@ -73,8 +73,6 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
     default:
         return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(static_cast<int>(operation)));
     }
-
-    return false;
 }
 
 bool CommandExecutor::ProcessCmd(const CommandContext &context)
@@ -229,13 +227,6 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
     device->SetParams(params);
 
-    const PbCachingMode caching_mode =
-        pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode();
-    if (caching_mode == PbCachingMode::DEFAULT) {
-        // The requested caching mode is not available for this device type
-        return false;
-    }
-
     if (!SetScsiLevel(context, *device, pb_device.scsi_level())) {
         return false;
     }
@@ -248,19 +239,20 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return false;
     }
 
+#ifdef BUILD_DISK
+    // The caching mode must be set before the file is accessed
+    if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
+        disk->SetCachingMode(
+            pb_device.caching_mode() == PbCachingMode::DEFAULT ? PbCachingMode::PISCSI : pb_device.caching_mode());
+    }
+#endif
+
 #ifdef BUILD_STORAGE_DEVICE
     if (device->SupportsImageFile()) {
         const string &filename = GetParam(pb_device, "file");
 
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
-
-#ifdef BUILD_DISK
-        // The caching mode must be set before the file is accessed
-        if (const auto disk = dynamic_pointer_cast<Disk>(device); disk) {
-            disk->SetCachingMode(caching_mode);
-        }
-#endif
 
         // Only with removable media drives, CD and MO the medium (=file) may be inserted later
         if (!device->IsRemovable() && filename.empty()) {

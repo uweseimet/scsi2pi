@@ -28,29 +28,35 @@ bool FilterMatches(const string &input, string_view pattern_lower)
     return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
 }
 
-bool ValidateImageFile(const path &path, logger &logger)
+bool ValidateImageFile(const path &image_path, logger &logger)
 {
-    if (path.filename().string().starts_with(".")) {
+    if (image_path.filename().string().starts_with(".")) {
         return false;
     }
 
-    filesystem::path p(path);
+    error_code error;
+    filesystem::path p(image_path);
 
     // Follow symlink
-    if (is_symlink(p)) {
-        p = read_symlink(p);
-        if (!exists(p)) {
-            logger.warn("Image file symlink '{}' is broken", path.string());
+    if (is_symlink(p, error)) {
+        p = read_symlink(p, error);
+        if (error || !exists(p, error)) {
+            logger.warn("Image file symlink '{}' is broken", image_path.string());
             return false;
         }
     }
 
-    if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
+    if (is_directory(p, error) || (is_other(p, error) && !is_block_file(p, error))) {
         return false;
     }
 
-    if (!is_block_file(p) && file_size(p) < 256) {
+    if (!error && !is_block_file(p, error) && file_size(p, error) < 256) {
         logger.warn("Image file '{}' is invalid", p.string());
+        return false;
+    }
+
+    if (error) {
+        logger.warn("Can't access image file '{}': {}", p.string(), error.message());
         return false;
     }
 
@@ -137,7 +143,7 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
     const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
 
     const path default_path(default_folder);
-    if (!is_directory(default_path)) {
+    if (error_code error; !is_directory(default_path, error) || error) {
         return;
     }
 
