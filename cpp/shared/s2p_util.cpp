@@ -44,7 +44,7 @@ string s2p_util::GetHomeDir()
 pair<int, int> s2p_util::GetUidAndGid()
 {
     const char *sudo_user = getenv("SUDO_UID");
-    const int uid = sudo_user ? stoi(sudo_user) : getuid();
+    const int uid = sudo_user ? stoi(sudo_user) : geteuid();
 
     passwd pwd = { };
     passwd *p_pwd;

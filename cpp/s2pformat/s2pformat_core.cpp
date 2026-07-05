@@ -101,6 +101,11 @@ int S2pFormat::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
+    if (device.empty()) {
+        cerr << "Error: Missing device\n";
+        return EXIT_FAILURE;
+    }
+
     sg_adapter = make_unique<SgAdapter>(*default_logger());
 
     if (const string &error = sg_adapter->Init(device); !error.empty()) {
@@ -181,7 +186,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     return descriptors;
 }
 
-int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
+int S2pFormat::SelectFormat(span<const FormatDescriptor> descriptors)
 {
     cout << "Formats supported by this drive:\n";
 
@@ -199,6 +204,10 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
         n = stoi(input);
     }
     catch (const invalid_argument&) // NOSONAR The exception details do not matter
+    {
+        return 0;
+    }
+    catch (const out_of_range&) // NOSONAR The exception details do not matter
     {
         return 0;
     }
@@ -224,7 +233,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
     if (n) {
-        // FmdData
+        // FmtData
         cdb[1] = 0x17;
 
         parameters.resize(12);

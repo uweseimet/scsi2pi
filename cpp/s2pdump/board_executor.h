@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -54,8 +54,6 @@ protected:
     void SpaceBack(span<uint8_t>) const override;
 
 private:
-
-    bool Execute(ScsiCommand, span<uint8_t>, span<uint8_t>, int, int, bool) const;
 
     unique_ptr<InitiatorExecutor> initiator_executor;
 };

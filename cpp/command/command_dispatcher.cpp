@@ -187,7 +187,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != ShutdownMode::STOP_S2P && getuid()) {
+    if (mode != ShutdownMode::STOP_S2P && geteuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 

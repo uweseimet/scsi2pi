@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -41,11 +41,11 @@ public:
 
     logger &s2pdump_logger;
 
-    static const int NO_MORE_DATA = -1;
-    static const int BAD_BLOCK = -2;
+    static constexpr int NO_MORE_DATA = -1;
+    static constexpr int BAD_BLOCK = -2;
 
-    static const int SHORT_TIMEOUT = 3;
-    static const int LONG_TIMEOUT = 300;
+    static constexpr int SHORT_TIMEOUT = 3;
+    static constexpr int LONG_TIMEOUT = 300;
 
 protected:
 
