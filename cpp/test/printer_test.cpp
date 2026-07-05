@@ -94,9 +94,10 @@ TEST(PrinterTest, Print)
 {
     auto [controller, PRINTER] = CreateDevice(SCLP);
 
-    EXPECT_CALL(*controller, DataOut);
+    EXPECT_CALL(*controller, DataOut).Times(AtLeast(1));
     EXPECT_NO_THROW(Dispatch(PRINTER, ScsiCommand::PRINT));
 
+    controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
     Dispatch(PRINTER, ScsiCommand::PRINT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
