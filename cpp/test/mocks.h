@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -91,10 +91,13 @@ public:
 
     MockAbstractController() : AbstractController(0, formatter)
     {
+        ResetOffset();
+        SetCurrentLength(0);
     }
     explicit MockAbstractController(int t) : AbstractController(t, formatter)
     {
-        SetCurrentLength(512);
+        ResetOffset();
+        SetCurrentLength(0);
     }
     ~MockAbstractController() override = default;
 
