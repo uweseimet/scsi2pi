@@ -507,8 +507,9 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
+    scsi_device_info.scsi_level = buf[3] & 0x0f;
     cout << "Response Data Format: ";
-    switch (buf[3] & 0x0f) {
+    switch (scsi_device_info.scsi_level) {
     case 0:
         cout << "SCSI-1";
         break;

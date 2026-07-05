@@ -32,7 +32,7 @@ public:
     using ScsiDeviceInfo = struct {
         bool removable;
         byte type;
-        byte scsi_level;
+        int scsi_level;
         string vendor;
         string product;
         string revision;
