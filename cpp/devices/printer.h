@@ -53,8 +53,6 @@ private:
     uint64_t print_error_count = 0;
     uint64_t print_warning_count = 0;
 
-    static constexpr int NOT_RESERVED = -2;
-
     static constexpr const char *CMD = "cmd";
 
     static constexpr const char *PRINTER_FILE_PATTERN = "/scsi2pi_sclp-XXXXXX";
