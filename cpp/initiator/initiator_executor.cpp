@@ -39,7 +39,8 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     // Only report byte count mismatch for non-linked commands
     if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
-        && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb_offset + cdb.size() - 1) & 0x01)) {
+        && count != static_cast<int>(cdb.size()) && count <= static_cast<int>(cdb.size())
+        && !(static_cast<int>(cdb[count - 1]) & 0x01)) {
         initiator_logger.warn("CDB has {} byte(s), command {} requires {} bytes", cdb.size(), command_name, count);
     }
 
