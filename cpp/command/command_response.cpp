@@ -512,7 +512,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
     operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
-    if (getuid()) {
+    if (geteuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
     else {
