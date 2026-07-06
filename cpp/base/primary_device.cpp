@@ -127,30 +127,29 @@ int PrimaryDevice::GetId() const
 
 string PrimaryDevice::SetProductData(const ProductData &data, bool force)
 {
-    if (string_view vendor = Trim(data.vendor); !vendor.empty()) {
-        if (vendor.length() > 8) {
-            return "Vendor '" + data.vendor + "' must have between 1 and 8 characters";
-        }
+    string_view vendor = Trim(data.vendor);
+    if (vendor.length() > 8) {
+        return "Vendor '" + data.vendor + "' must have between 1 and 8 characters";
+    }
 
+    string_view product = Trim(data.product);
+    if (product.length() > 16) {
+        return "Product '" + data.product + "' must have between 1 and 16 characters";
+    }
+
+    string_view revision = Trim(data.revision);
+    if (revision.length() > 4) {
+        return "Revision '" + data.revision + "' must have between 1 and 4 characters";
+    }
+
+    if (!vendor.empty()) {
         product_data.vendor = string(vendor);
     }
-
-    if (string_view product = Trim(data.product); !product.empty()) {
-        if (product.length() > 16) {
-            return "Product '" + data.product + "' must have between 1 and 16 characters";
-        }
-
-        // Changing existing vital product data is not SCSI compliant
-        if (product_data.product.empty() || force) {
-            product_data.product = string(product);
-        }
+    // Changing existing vital product data is not SCSI compliant
+    if (!product.empty() && (product_data.product.empty() || force)) {
+        product_data.product = string(product);
     }
-
-    if (string_view revision = Trim(data.revision); !revision.empty()) {
-        if (revision.length() > 4) {
-            return "Revision '" + data.revision + "' must have between 1 and 4 characters";
-        }
-
+    if (!revision.empty()) {
         product_data.revision = string(revision);
     }
 
@@ -267,7 +266,9 @@ void PrimaryDevice::RequestSense()
     // According to the specification REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
     // Only the Sense Key and ASC are set in order to signal the non-existing LUN.
     if (!controller->GetDeviceForLun(effective_lun)) {
-        assert(controller->GetDeviceForLun(0));
+        if (!controller->GetDeviceForLun(0)) {
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        }
 
         effective_lun = 0;
 

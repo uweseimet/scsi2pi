@@ -208,10 +208,10 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
         cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
     }
 
-    const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
     const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
     if (sent_count < static_cast<int>(cdb.size()) - cdb_offset) {
-        initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
+        initiator_logger.error("Execution of {} failed",
+            CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[cdb_offset])));
     }
 
     cdb_offset += sent_count;

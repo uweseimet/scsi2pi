@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include "bus.h"
+#include <bit>
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
@@ -51,7 +52,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
-    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-awarerrore drivers prepend a $1F byte in front
+    // to the ACSI bus of Atari ST/TT computers and some clones. ICD-aware drivers prepend a $1F byte in front
     // of the CDB (effectively resulting in a custom SCSI command) in order to get access to the full SCSI
     // command set. Native ACSI is limited to the low SCSI command classes with command bytes < $20.
     // Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.
@@ -273,7 +274,8 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
 bool Bus::WaitHandShake(int pin_mask, bool state) const
 {
-    assert(pin_mask == PIN_REQ_MASK || pin_mask == PIN_ACK_MASK);
+    assert(
+        std::has_single_bit(static_cast<unsigned>(pin_mask)) && pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
@@ -321,7 +323,7 @@ void Bus::SetIO(bool state) const
 }
 
 // Get input signal value (except for DP and DT0-DT7)
-inline bool Bus::GetSignal(int pin_mask) const
+bool Bus::GetSignal(int pin_mask) const
 {
     assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 
@@ -362,7 +364,7 @@ int Bus::CommandHandshakeTimeout()
 // | 1 | 0 | 1 | COMMAND
 // | 1 | 1 | 0 | RESERVED
 // | 1 | 1 | 1 | DATA OUT
-constexpr array<BusPhase, 32> Bus::phases = {
+const array<BusPhase, 32> Bus::phases = {
     BusPhase::SELECTION,
     BusPhase::SELECTION,
     BusPhase::SELECTION,

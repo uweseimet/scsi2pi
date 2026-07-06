@@ -8,6 +8,10 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
+#ifdef __linux
+#include <sys/reboot.h>
+#include <linux/reboot.h>
+#endif
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -204,32 +208,38 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     switch (mode) {
     case ShutdownMode::STOP_S2P:
         s2p_logger.info("s2p shutdown requested");
-        return true;
+        break;
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-        system("init 0");
-#pragma GCC diagnostic pop
-        s2p_logger.error("Pi shutdown failed");
+#ifdef __linux__
+        if (reboot(RB_POWER_OFF)) {
+#else
+        if (system("init 0")) {
+#endif
+            s2p_logger.error("Pi shutdown failed");
+            return false;
+        }
         break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-        system("init 6");
-#pragma GCC diagnostic pop
-        s2p_logger.error("Pi restart failed");
+#ifdef __linux__
+        if (reboot(RB_AUTOBOOT)) {
+#else
+        if (system("init 6")) {
+#endif
+            s2p_logger.error("Pi restart failed");
+            return false;
+        }
         break;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
-        break;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 bool CommandDispatcher::SetLogLevel(const string &log_level)
