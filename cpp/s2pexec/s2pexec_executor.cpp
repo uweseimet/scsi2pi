@@ -80,11 +80,7 @@ int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int ti
     }
 #endif
 
-    if (bus->IsRaspberryPi()) {
-        return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, enable_log);
-    }
-
-    return 0xff;
+    return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, enable_log);
 }
 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
