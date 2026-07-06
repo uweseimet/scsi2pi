@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true });
-    AddCommand(ScsiCommand::WRITE_BUFFER, 10, "READ BUFFER", { 6, 3, 0, 0, true });
+    AddCommand(ScsiCommand::WRITE_BUFFER, 10, "WRITE BUFFER", { 6, 3, 0, 0, true });
     AddCommand(ScsiCommand::READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false });
     AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 0, 0, true });
@@ -88,7 +88,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::LOG_SELECT, 10, "LOG SELECT", { 7, 2, 0, 0, true });
     AddCommand(ScsiCommand::LOG_SENSE, 10, "LOG SENSE", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::READ_DISC_INFORMATION, 10, "READ DISC INFORMATION", { 7, 2, 0, 0, false });
-    AddCommand(ScsiCommand::READ_TRACK_INFORMATION, 10, "READ TRACk INFORMATION", { 7, 2, 0, 0, false });
+    AddCommand(ScsiCommand::READ_TRACK_INFORMATION, 10, "READ TRACK INFORMATION", { 7, 2, 0, 0, false });
     AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_10, 10, "RESERVE(10)/RESERVE ELEMENT(10)", { 7, 2, 0, 0, true });
     AddCommand(ScsiCommand::MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_10, 10, "RELEASE(10)/RELEASE ELEMENT(10)", { 7, 2, 0, 0, true });
@@ -149,6 +149,10 @@ CommandMetaData::CdbMetaData CommandMetaData::GetCdbMetaData(ScsiCommand cmd) co
 string CommandMetaData::LogCdb(span<const uint8_t> cdb, string_view type) const
 {
     ostringstream msg;
+
+    if (cdb.empty()) {
+        return "CDB is empty";
+    }
 
     msg << type << " is executing " << GetCommandName(static_cast<ScsiCommand>(cdb[0])) << ", CDB ";
 
