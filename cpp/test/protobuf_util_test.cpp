@@ -97,8 +97,8 @@ TEST(ProtobufUtilTest, WriteBytes)
 
     auto [fd, filename] = OpenTempFile();
     ASSERT_NE(-1, fd);
-    EXPECT_EQ(4, WriteBytes(fd, buf));
+    EXPECT_EQ(4U, WriteBytes(fd, buf));
     close(fd);
 
-    EXPECT_EQ(-1, WriteBytes(-1, buf)) << "Writing to an invalid descriptor must fail";
+    EXPECT_EQ(static_cast<size_t>(-1), WriteBytes(-1, buf)) << "Writing to an invalid descriptor must fail";
 }

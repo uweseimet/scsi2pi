@@ -145,6 +145,8 @@ void Printer::SynchronizeBuffer()
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
     }
 
+    ++file_print_count;
+
     CleanUp();
 
     StatusPhase();

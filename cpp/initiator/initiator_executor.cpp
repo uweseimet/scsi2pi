@@ -39,7 +39,8 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     // Only report byte count mismatch for non-linked commands
     if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
-        && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
+        && count != static_cast<int>(cdb.size()) && count <= static_cast<int>(cdb.size())
+        && !(static_cast<int>(cdb[count - 1]) & 0x01)) {
         initiator_logger.warn("CDB has {} byte(s), command {} requires {} bytes", cdb.size(), command_name, count);
     }
 
@@ -336,7 +337,7 @@ void InitiatorExecutor::ResetBus() const
 bool InitiatorExecutor::WaitForFree() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
         Sleep( { .tv_sec = 0, .tv_nsec = 20'000'000 });
@@ -344,7 +345,7 @@ bool InitiatorExecutor::WaitForFree() const
         if (!bus.GetBSY() && !bus.GetSEL()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }
@@ -352,7 +353,7 @@ bool InitiatorExecutor::WaitForFree() const
 bool InitiatorExecutor::WaitForBusy() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
         Sleep( { .tv_sec = 0, .tv_nsec = 20'000'000 });
@@ -360,7 +361,7 @@ bool InitiatorExecutor::WaitForBusy() const
         if (bus.GetBSY()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }

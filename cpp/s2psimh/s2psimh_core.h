@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ private:
     fstream simh_file;
     ifstream data_file;
 
-    off_t simh_file_size;
+    off_t simh_file_size = 0;
 
     int64_t position = 0;
     int64_t old_position = 0;

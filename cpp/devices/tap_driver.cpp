@@ -323,7 +323,7 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
 void TapDriver::Flush(logger &logger) const
 {
     while (HasPendingPackets()) {
-        array<uint8_t, ETH_FRAME_LEN> garbage_buffer;
+        array<uint8_t, ETH_FRAME_LEN + 4> garbage_buffer;
         static_cast<void>(Receive(garbage_buffer, logger));
     }
 }
