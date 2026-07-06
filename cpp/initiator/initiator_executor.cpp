@@ -335,7 +335,7 @@ void InitiatorExecutor::ResetBus() const
 bool InitiatorExecutor::WaitForFree() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
         Sleep( { .tv_sec = 0, .tv_nsec = 20'000 });
@@ -351,7 +351,7 @@ bool InitiatorExecutor::WaitForFree() const
 bool InitiatorExecutor::WaitForBusy() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
         Sleep( { .tv_sec = 0, .tv_nsec = 20'000 });
