@@ -350,7 +350,7 @@ int S2pSimh::Add()
                 data_index += length;
             }
             else {
-                simh_file.seekp(Pad(length), ios::cur);
+                simh_file.seekp(length, ios::cur);
             }
 
             if (length != Pad(length)) {
