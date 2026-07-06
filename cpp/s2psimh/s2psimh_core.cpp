@@ -160,7 +160,7 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
+    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : (ios::in | ios::out)) | ios::binary);
     if (!simh_file) {
         cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << '\n';
         return EXIT_FAILURE;
