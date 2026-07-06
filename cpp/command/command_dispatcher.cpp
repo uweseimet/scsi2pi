@@ -8,8 +8,9 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#ifdef __linux
+#include <unistd.h>
 #include <sys/reboot.h>
+#ifdef __linux__
 #include <linux/reboot.h>
 #endif
 #include "command_context.h"
@@ -217,10 +218,13 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
+        sync();
 #ifdef __linux__
         if (reboot(RB_POWER_OFF)) {
+#elif __FreeBSD__
+        if (reboot(RB_POWEROFF)) {
 #else
-        if (system("init 0")) {
+        if (reboot(POWERDOWN)) {
 #endif
             s2p_logger.error("Pi shutdown failed");
             return false;
@@ -229,11 +233,8 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#ifdef __linux__
+        sync();
         if (reboot(RB_AUTOBOOT)) {
-#else
-        if (system("init 6")) {
-#endif
             s2p_logger.error("Pi restart failed");
             return false;
         }
