@@ -343,7 +343,7 @@ bool InitiatorExecutor::WaitForFree() const
         if (!bus.GetBSY() && !bus.GetSEL()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }
@@ -359,7 +359,7 @@ bool InitiatorExecutor::WaitForBusy() const
         if (bus.GetBSY()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }
