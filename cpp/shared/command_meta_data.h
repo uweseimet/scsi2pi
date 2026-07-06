@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ private:
 
     void AddCommand(ScsiCommand, int, string_view, const CdbMetaData&);
 
-    array<int, 256> command_byte_counts;
-    array<string, 256> command_names;
-    array<CdbMetaData, 256> cdb_meta_data;
+    array<int, 256> command_byte_counts = { };
+    array<string, 256> command_names = { };
+    array<CdbMetaData, 256> cdb_meta_data = { };
 };

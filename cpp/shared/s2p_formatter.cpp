@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
 
     string str;
 
-    size_t limit = min(static_cast<size_t>(format_limit), count);
+    const size_t limit = min( { static_cast<size_t>(format_limit), bytes.size(), count });
 
     size_t offset = 0;
     while (offset < limit) {
