@@ -56,18 +56,21 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
 string CommandImageSupport::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
-        return "Missing default folder name";
+        return "Missing default image folder name";
     }
 
-    // If a relative path is specified, the path is assumed to be relative to the user's home directory
+    // For the sake of transparency, the image path must be an absolute path
     path folder(f);
     if (folder.is_relative()) {
-        folder = path(GetHomeDir() + "/" + folder.string());
+        return "Default image folder must be specified with an absolute path";
     }
 
-    if (const path home_root = path(GetHomeDir()).parent_path(); folder.lexically_relative(home_root).string().starts_with(
-        "..")) {
-        return "Default image folder must be located in '" + home_root.string() + "'";
+    // The image folder location is restricted, so that s2p cannot modify system folders like "/usr"
+    if (!folder.string().starts_with("/var/lib/piscsi/")) {
+        if (const path home_root = path(GetHomeDir()).parent_path(); folder.lexically_relative(home_root).string().starts_with(
+            "..")) {
+            return "Default image folder must be located in '/var/lib/piscsi/' or in '" + home_root.string() + "'";
+        }
     }
 
     // Resolve a potential symlink
@@ -76,7 +79,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
     }
 
     if (error_code error; !is_directory(folder, error) || error) {
-        return string("'") + folder.string() + "' is not a valid image folder";
+        return string("'") + folder.string() + "' is not a valid or existing folder";
     }
 
     default_folder = folder.string();

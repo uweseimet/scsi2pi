@@ -79,7 +79,7 @@ FILE is the name of the image file to use for the SCSI/SASI device. For devices 
 Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
-The default folder for image files. For files in this folder no absolute path needs to be specified. The default folder is '~/images' except for the root user. In this case, for backward compatibility with PiSCSI the default is '/home/pi/images'.
+The absolute path of the default image folder. It must be located in /var/lib/piscsi/ or in the PiSCSI user's home directory.
 .TP
 .BR --locale/-z\fI " " \fILOCALE
 Overrides the default locale (language) for client-facing error messages. A client can override this setting.

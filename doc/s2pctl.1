@@ -99,7 +99,7 @@ The s2p host to connect to, default is 'localhost'.
 The SCSI or SASI ID and optional LUN that you want to control. (0-7:0-31 for SCSI, 0-7:0-1 for SASI.)
 .TP
 .BR --image-folder/-F\fI " "\fIIMAGE_FOLDER
-Set the default image folder.
+The absolute path of the default image folder. It must be located in /var/lib/piscsi/ or in the PiSCSI user's home directory.
 .TP
 .BR --json-protobuf\fI " "\fIFILENAME
 Do not send the command to s2p but write it to a protobuf JSON file.

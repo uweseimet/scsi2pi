@@ -144,11 +144,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         port = ParseProperties(properties, ignore_conf);
     }
     catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
         CleanUp(e.what());
         return EXIT_FAILURE;
     }
-
     if (const string &error = MapExtensions(); !error.empty()) {
         CleanUp(error);
         return EXIT_FAILURE;
