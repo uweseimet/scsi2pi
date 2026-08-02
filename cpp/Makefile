@@ -6,8 +6,6 @@
 ##
 ##---------------------------------------------------------------------------
 
-.DEFAULT_GOAL: all
-
 ## Optional build flags:
 ##   CROSS_COMPILE= Specifies the compiler toolchain, e.g.
 ##                  arm-linux-gnueabihf-
@@ -71,7 +69,7 @@ endif
 TARGET := /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
-##     Specifies the board type that you are using. Typically this is 
+##     Specifies the board type that you are using. Typically this is
 ##     STANDARD or FULLSPEC. The default is FULLSPEC.
 BOARD ?= FULLSPEC
 
@@ -447,18 +445,18 @@ $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) 
 # Rules for building individual binaries
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)
 
-$(S2P): $(BINDIR)/$(S2P) 
-$(S2PCTL): $(BINDIR)/$(S2PCTL) 
-$(S2PDUMP): $(BINDIR)/$(S2PDUMP) 
-$(S2PEXEC): $(BINDIR)/$(S2PEXEC) 
-$(S2PPROTO): $(BINDIR)/$(S2PPROTO) 
-$(S2PSIMH): $(BINDIR)/$(S2PSIMH) 
-$(S2FORMAT): $(BINDIR)/$(S2PFORMAT) 
+$(S2P): $(BINDIR)/$(S2P)
+$(S2PCTL): $(BINDIR)/$(S2PCTL)
+$(S2PDUMP): $(BINDIR)/$(S2PDUMP)
+$(S2PEXEC): $(BINDIR)/$(S2PEXEC)
+$(S2PPROTO): $(BINDIR)/$(S2PPROTO)
+$(S2PSIMH): $(BINDIR)/$(S2PSIMH)
+$(S2PFORMAT): $(BINDIR)/$(S2PFORMAT)
 $(S2PTOOL): $(BINDIR)/$(S2PTOOL)
 $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
 
-##   clean           Remove all of the object files, intermediate 
-##                   compiler files and executable files 
+##   clean           Remove all of the object files, intermediate
+##                   compiler files and executable files
 .PHONY: clean
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR)
@@ -477,7 +475,7 @@ $(INSTALL_BIN)%: $(BINDIR)/%
 
 ##   help            Lists information about how to use the Makefile
 # The help rule is based upon the approach from:
-#   https://swcarpentry.github.io/make-novice/08-self-doc/index.html 
+#   https://swcarpentry.github.io/make-novice/08-self-doc/index.html
 .PHONY: help
 help: Makefile
 	@sed -n 's/^##//p' $<
