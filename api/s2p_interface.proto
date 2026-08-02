@@ -136,7 +136,7 @@ enum PbOperation {
 
     // Set the default folder for image files.
     // Parameters:
-    //   "folder": The path of the default folder, relative to the user's home folder if relative. If absolute, it must be located in /var/lib/piscsi/.
+    //   "folder": The absolute path of the default folder.
     DEFAULT_FOLDER = 20;
 
     // Set the log level.
