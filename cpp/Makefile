@@ -461,7 +461,7 @@ $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR)
 
-##   install         Installs the stripped binaries, usually to /opt/s2p/bin
+##   install         Installs the stripped binaries, usually to /opt/scsi2pi/bin
 .PHONY: install
 install: $(BINARIES)
 	$(STRIP) $^
