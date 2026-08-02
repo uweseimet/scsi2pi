@@ -2,7 +2,7 @@
 ##
 ## SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 ##
-## Copyright (C) 2023-2025 Uwe Seimet
+## Copyright (C) 2023-2026 Uwe Seimet
 ##
 ##---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ ifeq ($(DEBUG), 1)
 	CXXFLAGS += -O0 -g -DDEBUG
 else
 # Release compiler flags
-	CXXFLAGS += -O3 -Wall -DNDEBUG
+	CXXFLAGS += -O3 -DNDEBUG
 endif
 
 CXXFLAGS += -std=c++20 -I. -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
@@ -59,8 +59,10 @@ endif
 ## EXTRA_FLAGS Can be used to pass special purpose flag
 CXXFLAGS += $(EXTRA_FLAGS)
 
+PROTOC ?= protoc
 ## Additional libraries are required since protobuf version 22
-ifeq ($(shell expr `protoc --version | sed -e 's/3\.//g' | cut -d ' ' -f 2` \>= 22), 1)
+PROTOC_MAJOR := $(shell protoc --version | awk '{split($$2,v,"."); print v[1]}')
+ifeq ($(shell test $(PROTOC_MAJOR) -ge 22 && echo yes),yes)
 	ABSEIL_LIBS = -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash
 endif
 
@@ -157,8 +159,8 @@ endif
 ifeq ($(ENABLE_SCTP),1)
 	BIN_ALL += $(BINDIR)/$(S2PSIMH)
 endif
-# s2pformat requires the Linux SG 3 driver
-ifeq ($(IS_LINUX),1)
+# s2pformat requires the Linux SG 3 driver and initiator mode
+ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
 	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
 endif
 
@@ -174,9 +176,11 @@ DIR_PI := pi
 
 PROTO_API := ../api/s2p_interface.proto
 
-SRC_API = $(GENERATED_DIR)/s2p_interface.pb.cpp
+GENERATED_DIR := generated
+SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED = $(shell ls -1 $(DIR_SHARED)/*.cpp | grep -v sg_adapter)
+SRC_SHARED := $(filter-out $(DIR_SHARED)/sg_adapter.cpp,\
+	$(wildcard $(DIR_SHARED)/*.cpp))
 ifdef IS_LINUX
 SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_adapter.cpp)
 endif
@@ -184,87 +188,83 @@ SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
 SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
 SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
 SRC_SHARED_INITIATOR := $(wildcard $(DIR_SHARED_INITIATOR)/*.cpp)
-SRC_BASE = $(wildcard $(DIR_BASE)/*.cpp)
-SRC_BUSES = $(wildcard $(DIR_BUSES)/*.cpp)
-SRC_CONTROLLERS = $(wildcard $(DIR_CONTROLLERS)/*.cpp)
+SRC_BASE := $(wildcard $(DIR_BASE)/*.cpp)
+SRC_BUSES := $(wildcard $(DIR_BUSES)/*.cpp)
+SRC_CONTROLLERS := $(wildcard $(DIR_CONTROLLERS)/*.cpp)
 
-SRC_DISK = \
+SRC_STORAGE_COMMON := \
+	$(DIR_DEVICES)/storage_device.cpp \
+	$(DIR_DEVICES)/page_handler.cpp
+
+SRC_DISK := \
 	$(DIR_DEVICES)/disk.cpp \
 	$(DIR_DEVICES)/linux_cache.cpp \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
+	$(SRC_STORAGE_COMMON)
 
 ifeq ($(ENABLE_SCHD),1)
-SRC_SCHD = \
+SRC_SCHD := \
 	$(DIR_DEVICES)/scsi_hd.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
-SRC_SCHD += $(SRC_DISK)
+	$(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCMO),1)
-SRC_SCMO = \
+SRC_SCMO := \
 	$(DIR_DEVICES)/optical_memory.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
-SRC_SCMO += $(SRC_DISK)
+	$(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCCD),1)
-SRC_SCCD = \
+SRC_SCCD := \
 	$(DIR_DEVICES)/scsi_cd.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
-SRC_SCCD += $(SRC_DISK)
+	$(SRC_DISK)
 endif
 
 ifeq ($(ENABLE_SCTP),1)
-SRC_SCTP = \
+SRC_SCTP := \
 	$(DIR_DEVICES)/tape.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
+	$(SRC_STORAGE_COMMON)
 endif
 
 ifeq ($(ENABLE_SCDP),1)
-SRC_SCDP = \
+SRC_SCDP := \
 	$(DIR_DEVICES)/daynaport.cpp \
 	$(DIR_DEVICES)/tap_driver.cpp
 endif
 
 ifeq ($(ENABLE_SCLP),1)
-SRC_SCLP = \
+SRC_SCLP := \
 	$(DIR_DEVICES)/printer.cpp
 endif
 
 ifeq ($(ENABLE_SCSG),1)
-SRC_SCSG = \
+SRC_SCSG := \
 	$(DIR_DEVICES)/scsi_generic.cpp
 endif
 
 ifeq ($(ENABLE_SCHS),1)
-SRC_SCHS = \
+SRC_SCHS := \
 	$(DIR_DEVICES)/host_services.cpp \
 	$(DIR_DEVICES)/page_handler.cpp
 endif
 
 ifeq ($(ENABLE_SAHD),1)
-SRC_SAHD = \
+SRC_SAHD := \
 	$(DIR_DEVICES)/sasi_hd.cpp \
-	$(DIR_DEVICES)/storage_device.cpp \
-	$(DIR_DEVICES)/page_handler.cpp
-SRC_SAHD += $(SRC_DISK)
+	$(SRC_DISK)
 endif
 
-SRC_S2P_CORE = $(shell ls -1 s2p/*.cpp | grep -v s2p.cpp)
-SRC_S2P = s2p/s2p.cpp
+SRC_S2P_CORE := $(filter-out s2p/s2p.cpp,$(wildcard s2p/*.cpp))
+SRC_S2P := s2p/s2p.cpp
 
-SRC_S2PCTL_CORE = $(shell ls -1 s2pctl/*.cpp | grep -v s2pctl.cpp)
-SRC_S2PCTL = s2pctl/s2pctl.cpp
+SRC_S2PCTL_CORE := $(filter-out s2pctl/s2pctl.cpp,$(wildcard s2pctl/*.cpp))
+SRC_S2PCTL := s2pctl/s2pctl.cpp
 
-SRC_S2PDUMP = s2pdump/s2pdump.cpp
-SRC_S2PDUMP += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
+SRC_S2PDUMP = s2pdump/s2pdump.cpp \
+	$(filter-out s2pdump/s2pdump.cpp \
+	$(wildcard s2pdump/sg_*.cpp),\
+	$(wildcard s2pdump/*.cpp))
 ifdef IS_LINUX
 SRC_S2PDUMP += $(wildcard s2pdump/sg_*.cpp)
 endif
@@ -277,18 +277,16 @@ SRC_S2PSIMH := $(wildcard s2psimh/*.cpp)
 
 SRC_S2PFORMAT := $(wildcard s2pformat/*.cpp)
 
-SRC_S2P_TEST = $(shell ls -1 test/*.cpp | grep -v scsi_generic_test.cpp)
+SRC_S2P_TEST := $(filter-out test/scsi_generic_test.cpp,$(wildcard test/*.cpp))
 ifdef IS_LINUX
 SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 
-SRC_S2PTOOL = s2ptool/s2ptool.cpp
-SRC_S2PTOOL += $(shell ls -1 s2pdump/*.cpp | grep -v sg_ | grep -v s2pdump.cpp)
-SRC_S2PTOOL += $(shell ls -1 s2pexec/*.cpp | grep -v s2pexec.cpp)
-SRC_S2PTOOL += $(shell ls -1 s2pproto/*.cpp | grep -v s2pproto.cpp)
-ifdef IS_LINUX
-SRC_S2PTOOL += $(wildcard s2pdump/sg_*.cpp)
-endif
+SRC_S2PTOOL := \
+	s2ptool/s2ptool.cpp \
+	$(filter-out s2pdump/s2pdump.cpp,$(SRC_S2PDUMP)) \
+	$(filter-out s2pexec/s2pexec.cpp,$(SRC_S2PEXEC)) \
+	$(filter-out s2pproto/s2pproto.cpp,$(SRC_S2PPROTO))
 
 VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
 	$(DIR_PI) $(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
@@ -306,7 +304,7 @@ LIB_CONTROLLER := $(LIBDIR)/libcontroller.a
 LIB_DEVICE := $(LIBDIR)/libdevice.a
 
 define obj_files
-$(addprefix $(OBJDIR)/,$(notdir $(1:%.cpp=%.o)))
+$(addprefix $(OBJDIR)/,$(1:%.cpp=%.o))
 endef
 
 OBJ_SCHD := $(call obj_files,$(SRC_SCHD))
@@ -327,7 +325,16 @@ OBJ_BUSES := $(call obj_files,$(SRC_BUSES))
 OBJ_CONTROLLERS := $(call obj_files,$(SRC_CONTROLLERS))
 OBJ_PI := $(call obj_files,$(SRC_PI))
 
-OBJ_DEVICES := $(shell echo $(OBJ_SCHD) $(OBJ_SCMO) $(OBJ_SCCD) $(OBJ_SCTP) $(OBJ_SCDP) $(OBJ_SCLP) $(OBJ_SCSG) $(OBJ_SCHS) $(OBJ_SAHD) | xargs -n1 | sort -u | xargs)
+OBJ_DEVICES := $(sort \
+	$(OBJ_SCHD) \
+	$(OBJ_SCMO) \
+	$(OBJ_SCCD) \
+	$(OBJ_SCTP) \
+	$(OBJ_SCDP) \
+	$(OBJ_SCLP) \
+	$(OBJ_SCSG) \
+	$(OBJ_SCHS) \
+	$(OBJ_SAHD))
 
 OBJ_S2P_CORE := $(call obj_files,$(SRC_S2P_CORE))
 OBJ_S2P := $(call obj_files,$(SRC_S2P))
@@ -355,8 +362,6 @@ ifeq ($(ENABLE_SCTP),1)
 	BINARIES += $(INSTALL_BIN)/$(S2PSIMH)
 endif
 
-GENERATED_DIR := generated
-
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
 ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
@@ -379,14 +384,16 @@ $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
 $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_INITIATOR) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE): | $(LIBDIR)
 	$(AR) rcs $@ $^
 
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(SRC_API)
+$(OBJDIR)/%.o: %.cpp | $(SRC_API)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJ_API): | $(OBJDIR)
+$(OBJ_API): | $(SRC_API)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
-	protoc -I ../api --cpp_out=$(GENERATED_DIR) $(PROTO_API)
+	$(PROTOC) -I ../api --cpp_out=$(GENERATED_DIR) $(PROTO_API)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:
@@ -438,7 +445,7 @@ $(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $
 	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(ABSEIL_LIBS) -lpthread -lprotobuf
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
-	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(OBJ_S2PCTL_TEST) | $(BINDIR)
+	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
 	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(ABSEIL_LIBS) -lpthread -lprotobuf -lgmock -lgtest
 
@@ -461,7 +468,7 @@ $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR)
 
-##   install         Installs the stripped binaries, usually to /opt/s2p/bin
+##   install         Installs the stripped binaries, usually to /opt/scsi2pi/bin
 .PHONY: install
 install: $(BINARIES)
 	$(STRIP) $^
