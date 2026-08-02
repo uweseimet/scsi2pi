@@ -27,7 +27,7 @@ else
 	CXXFLAGS += -O3 -DNDEBUG
 endif
 
-CXXFLAGS += -std=c++20 -I. -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
+CXXFLAGS += -std=c++20 -I. -I../build -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
 
 ifeq ("$(shell uname -s)", "Linux")
 # -Wno-psabi might not work on non-Linux platforms
@@ -61,7 +61,7 @@ CXXFLAGS += $(EXTRA_FLAGS)
 
 PROTOC ?= protoc
 ## Additional libraries are required since protobuf version 22
-PROTOC_MAJOR := $(shell protoc --version | awk '{split($$2,v,"."); print v[1]}')
+PROTOC_MAJOR := $(shell $(PROTOC) --version | awk '{split($$2,v,"."); print v[1]}')
 ifeq ($(shell test $(PROTOC_MAJOR) -ge 22 && echo yes),yes)
 	ABSEIL_LIBS = -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash
 endif
@@ -141,16 +141,19 @@ S2P_TEST := s2p_test
 
 INSTALL_BIN := $(TARGET)/bin
 
-OBJDIR := obj
-LIBDIR := lib
-BINDIR := bin
+BUILD_DIR := ../build
+
+OBJDIR := $(BUILD_DIR)/obj
+LIBDIR := $(BUILD_DIR)/lib
+BINDIR := $(BUILD_DIR)/bin
+GENERATED_DIR := $(BUILD_DIR)/generated
 
 BIN_ALL = \
 	$(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
 # s2pdump, s2pexec and s2pproto require initiator support
-ifeq ($(BOARD), FULLSPEC)
+ifeq ($(filter FULLSPEC,$(BOARD)),FULLSPEC)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
 	BIN_ALL += $(BINDIR)/$(S2PPROTO)
@@ -176,7 +179,6 @@ DIR_PI := pi
 
 PROTO_API := ../api/s2p_interface.proto
 
-GENERATED_DIR := generated
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED := $(filter-out $(DIR_SHARED)/sg_adapter.cpp,\
@@ -288,11 +290,11 @@ SRC_S2PTOOL := \
 	$(filter-out s2pexec/s2pexec.cpp,$(SRC_S2PEXEC)) \
 	$(filter-out s2pproto/s2pproto.cpp,$(SRC_S2PPROTO))
 
-VPATH := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
+SRC_DIRS := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
 	$(DIR_PI) $(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
 
-vpath %.h $(VPATH)
-vpath %.cpp $(VPATH) test
+vpath %.h $(SRC_DIRS)
+vpath %.cpp $(SRC_DIRS) test
 vpath %.o $(OBJDIR)
 
 LIB_SHARED := $(LIBDIR)/libshared.a
@@ -346,13 +348,13 @@ OBJ_S2PPROTO := $(call obj_files,$(SRC_S2PPROTO))
 OBJ_S2PSIMH := $(call obj_files,$(SRC_S2PSIMH))
 OBJ_S2PFORMAT := $(call obj_files,$(SRC_S2PFORMAT))
 OBJ_S2PTOOL := $(call obj_files,$(SRC_S2PTOOL))
-OBJ_API := $(call obj_files,$(SRC_API))
 OBJ_S2P_TEST := $(call obj_files,$(SRC_S2P_TEST))
+OBJ_API := $(OBJDIR)/generated/s2p_interface.pb.o
 
 BINARIES = $(INSTALL_BIN)/$(S2PCTL) \
 	$(INSTALL_BIN)/$(S2PTOOL) \
 	$(INSTALL_BIN)/$(S2P)
-ifeq ($(BOARD), FULLSPEC)
+ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
 	BINARIES += $(INSTALL_BIN)/$(S2PDUMP)
 	BINARIES += $(INSTALL_BIN)/$(S2PEXEC)
 	BINARIES += $(INSTALL_BIN)/$(S2PPROTO)
@@ -369,7 +371,6 @@ ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(O
 	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST))
 -include $(ALL_DEPS)
 
-$(OBJ_API): $(SRC_API)
 $(LIB_SHARED): $(OBJ_SHARED)
 $(LIB_SHARED_PROTOBUF): $(OBJ_API) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
 $(LIB_SHARED_COMMAND): $(OBJ_SHARED_COMMAND) $(OBJ_API) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
@@ -388,7 +389,7 @@ $(OBJDIR)/%.o: %.cpp | $(SRC_API)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJ_API): | $(SRC_API)
+$(OBJ_API): $(SRC_API)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -466,7 +467,7 @@ $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
 ##                   compiler files and executable files
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR)
+	rm -rf $(BUILD_DIR)
 
 ##   install         Installs the stripped binaries, usually to /opt/scsi2pi/bin
 .PHONY: install
