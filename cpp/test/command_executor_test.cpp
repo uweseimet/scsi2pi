@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -166,6 +166,17 @@ TEST(CommandExecutorTest, ProcessCmd)
     device2->set_unit(1);
     CommandContext context_attach2(command_attach2, *default_logger());
     EXPECT_FALSE(executor.ProcessCmd(context_attach2)) << "LUN 0 is missing";
+    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 1));
+
+    PbCommand command_attach3;
+    command_attach3.set_operation(ATTACH);
+    auto *device3 = command_attach3.add_devices();
+    device3->set_type(SCHS);
+    device3->set_id(0);
+    device3->set_unit(0);
+    CommandContext context_attach3(command_attach3, *default_logger());
+    EXPECT_TRUE(executor.ProcessCmd(context_attach3));
+    EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
 }
 
 TEST(CommandExecutorTest, Attach)

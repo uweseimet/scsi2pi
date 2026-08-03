@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@
 #ifdef BUILD_SCTP
 #include "devices/tape.h"
 #endif
-#if defined BUILD_SCHD || defined BUILD_SCRM
+#if defined BUILD_SCHD
 #include "devices/scsi_hd.h"
 #endif
 #ifdef BUILD_SCSG
@@ -40,7 +40,7 @@ using namespace s2p_util;
 
 DeviceFactory::DeviceFactory()
 {
-#if defined BUILD_SCHD || defined BUILD_SCRM
+#if defined BUILD_SCHD
     mapping["hd1"] = SCHD;
     mapping["hds"] = SCHD;
     mapping["hda"] = SCHD;
@@ -73,7 +73,7 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
     switch (type) {
 
-#if defined BUILD_SCHD || defined BUILD_SCRM
+#if defined BUILD_SCHD
     case SCHD: {
         const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");

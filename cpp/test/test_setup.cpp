@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -26,6 +26,7 @@ int main(int argc, char*[])
     }
 
     testing::InitGoogleTest();
+    testing::GTEST_FLAG(shuffle) = true;
     const int result = RUN_ALL_TESTS();
 
     testing::TestShared::CleanUp();

@@ -6,6 +6,8 @@
 ##
 ##---------------------------------------------------------------------------
 
+.SUFFIXES:
+
 ## Optional build flags:
 ##   CROSS_COMPILE= Specifies the compiler toolchain, e.g.
 ##                  arm-linux-gnueabihf-
@@ -60,8 +62,16 @@ endif
 CXXFLAGS += $(EXTRA_FLAGS)
 
 PROTOC ?= protoc
+ifeq ($(shell command -v $(PROTOC) 2>/dev/null),)
+  $(error "$(PROTOC)" not found — install protobuf-compiler or set PROTOC=/path/to/protoc)
+endif
+
 ## Additional libraries are required since protobuf version 22
-PROTOC_MAJOR := $(shell $(PROTOC) --version | awk '{split($$2,v,"."); print v[1]}')
+PROTOC_VERSION := $(shell $(PROTOC) --version)
+PROTOC_MAJOR := $(shell echo "$(PROTOC_VERSION)" | grep -oE '[0-9]+' | head -1)
+ifeq ($(PROTOC_MAJOR),)
+  $(error Could not determine protoc major version from "$(PROTOC_VERSION)")
+endif
 ifeq ($(shell test $(PROTOC_MAJOR) -ge 22 && echo yes),yes)
 	ABSEIL_LIBS = -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash
 endif
@@ -119,13 +129,13 @@ endef
 
 $(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disable_type,$(var))))
 
-$(foreach var, SCHD SCRM SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cxx_flag,$(var))))
+$(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cxx_flag,$(var))))
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
 	CXXFLAGS += -DBUILD_STORAGE_DEVICE
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCRM),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
+ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
 	CXXFLAGS += -DBUILD_DISK
 endif
 
@@ -153,7 +163,7 @@ BIN_ALL = \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
 # s2pdump, s2pexec and s2pproto require initiator support
-ifeq ($(filter FULLSPEC,$(BOARD)),FULLSPEC)
+ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
 	BIN_ALL += $(BINDIR)/$(S2PPROTO)
@@ -366,7 +376,7 @@ endif
 
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
-ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
+ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_API) $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
 	$(OBJ_S2PEXEC) $(OBJ_S2PPROTO) $(OBJ_S2PSIMH) $(OBJ_S2PFORMAT) $(OBJ_S2PTOOL) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) \
 	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST))
 -include $(ALL_DEPS)
@@ -379,18 +389,18 @@ $(LIB_BUS): $(OBJ_BUSES) $(OBJ_PI)
 $(LIB_CONTROLLER): $(OBJ_CONTROLLERS)
 $(LIB_DEVICE): $(OBJ_DEVICES) $(OBJ_BASE)
 
-$(OBJDIR) $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
-	mkdir -p $@
+$(LIBDIR) $(BINDIR) $(GENERATED_DIR):
+	@mkdir -p $@
 
 $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_INITIATOR) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE): | $(LIBDIR)
 	$(AR) rcs $@ $^
 
 $(OBJDIR)/%.o: %.cpp | $(SRC_API)
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_API): $(SRC_API)
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
@@ -403,7 +413,7 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all test coverage
+.PHONY: all cpp test coverage
 
 all: cpp
 
@@ -473,8 +483,8 @@ clean:
 .PHONY: install
 install: $(BINARIES)
 
-$(INSTALL_BIN)%: $(BINDIR)/%
-	mkdir -p $(INSTALL_BIN)
+$(INSTALL_BIN)/%: $(BINDIR)/%
+	@mkdir -p $(INSTALL_BIN)
 	cp $< $@
 	$(STRIP) $@
 
