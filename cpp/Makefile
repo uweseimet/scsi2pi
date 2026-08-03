@@ -472,13 +472,11 @@ clean:
 ##   install         Installs the stripped binaries, usually to /opt/scsi2pi/bin
 .PHONY: install
 install: $(BINARIES)
-	$(STRIP) $^
-	chown root:root $^
-	chmod +s $^
 
 $(INSTALL_BIN)%: $(BINDIR)/%
 	mkdir -p $(INSTALL_BIN)
 	cp $< $@
+	$(STRIP) $@
 
 
 ##   help            Lists information about how to use the Makefile
