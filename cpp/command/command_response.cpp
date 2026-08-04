@@ -419,11 +419,11 @@ void command_response::GetVersionInfo(PbVersionInfo &version_info)
 
 void command_response::GetLogLevelInfo(PbLogLevelInfo &log_level_info)
 {
-    for (const auto &log_level : level::level_string_views) {
-        log_level_info.add_log_levels(log_level.data());
+    for (auto level = static_cast<int>(level::trace); level < static_cast<int>(level::n_levels); level++) {
+        log_level_info.add_log_levels(level::to_string_view(static_cast<level::level_enum>(level)).data());
     }
 
-    log_level_info.set_current_log_level(level::level_string_views[get_level()].data());
+    log_level_info.set_current_log_level(level::to_string_view(get_level()).data());
 }
 
 void command_response::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info)

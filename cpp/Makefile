@@ -97,7 +97,7 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
 ##       SCSG Linux Generic SCSI (e.g. for SCSI-to-USB bridge)
-##       SCHS Host Services (e.g. for realtime clock and shutdown)
+##       SCHS Host Services (e.g. for realtime clock and shutdown support)
 ##       SAHD SASI Hard Drive
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
@@ -113,6 +113,10 @@ endif
 
 ifndef IS_LINUX
 	ENABLE_SCSG =
+endif
+
+ifdef ENABLE_SCRM
+	ENABLE_SCHD = 1
 endif
 
 define disable_type
