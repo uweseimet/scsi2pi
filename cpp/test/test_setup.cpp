@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 #include "test_shared.h"

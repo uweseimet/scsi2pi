@@ -7,11 +7,13 @@
 //---------------------------------------------------------------------------
 
 #include "s2pexec_core.h"
+#include <algorithm>
 #include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
+#include <unistd.h>
 #include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"

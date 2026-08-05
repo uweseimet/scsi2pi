@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -179,7 +179,7 @@ TEST(CommandResponseTest, GetServerInfo)
     EXPECT_EQ(s2p_major_version, info1.version_info().major_version());
     EXPECT_EQ(s2p_minor_version, info1.version_info().minor_version());
     EXPECT_EQ(s2p_revision, info1.version_info().patch_version());
-    EXPECT_EQ(level::level_string_views[get_level()], info1.log_level_info().current_log_level());
+    EXPECT_EQ(level::to_string_view(get_level()).data(), info1.log_level_info().current_log_level());
     EXPECT_EQ(1234, info1.image_files_info().depth());
     EXPECT_EQ(2, info1.reserved_ids_info().ids().size());
 
@@ -212,7 +212,7 @@ TEST(CommandResponseTest, GetLogLevelInfo)
 {
     PbLogLevelInfo info;
     GetLogLevelInfo(info);
-    EXPECT_EQ(level::level_string_views[get_level()], info.current_log_level());
+    EXPECT_EQ(level::to_string_view(get_level()).data(), info.current_log_level());
     EXPECT_EQ(7, info.log_levels().size());
 }
 

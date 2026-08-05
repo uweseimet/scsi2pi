@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "sg_util.h"
+#include <fcntl.h>
 #ifdef __linux__
 #include <scsi/sg.h>
 #endif

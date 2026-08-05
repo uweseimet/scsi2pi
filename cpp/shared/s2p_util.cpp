@@ -7,8 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include "s2p_util.h"
+#include <algorithm>
 #include <cassert>
 #include <filesystem>
+#include <fcntl.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>

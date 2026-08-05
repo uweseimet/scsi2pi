@@ -3,16 +3,18 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
 #include <fstream>
 #include <sstream>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 

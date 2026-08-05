@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "protobuf/protobuf_util.h"

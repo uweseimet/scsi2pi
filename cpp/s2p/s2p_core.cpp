@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <netinet/in.h>
+#include <sys/stat.h>
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
