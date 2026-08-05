@@ -419,7 +419,7 @@ void command_response::GetVersionInfo(PbVersionInfo &version_info)
 
 void command_response::GetLogLevelInfo(PbLogLevelInfo &log_level_info)
 {
-    for (auto level = static_cast<int>(level::trace); level < static_cast<int>(level::n_levels); level++) {
+    for (auto level = static_cast<int>(level::trace); level < static_cast<int>(level::n_levels); ++level) {
         log_level_info.add_log_levels(level::to_string_view(static_cast<level::level_enum>(level)).data());
     }
 

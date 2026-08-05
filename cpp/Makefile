@@ -8,57 +8,62 @@
 
 .SUFFIXES:
 
-## Optional build flags:
+BUILD_DIR ?= ../build
+
 ##   CROSS_COMPILE= Specifies the compiler toolchain, e.g.
 ##                  arm-linux-gnueabihf-
-CROSS_COMPILE =
+CROSS_COMPILE ?=
 
-CXX = $(CROSS_COMPILE)g++
-AR = $(CROSS_COMPILE)gcc-ar
-STRIP = $(CROSS_COMPILE)strip
+CXX := $(CROSS_COMPILE)g++
+AR := $(CROSS_COMPILE)gcc-ar
+STRIP := $(CROSS_COMPILE)strip
+
+SPDLOG_FLAGS ?= -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL
+
+CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -MD -MP -Wall -Wextra
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
-##                 only by developers.
+##                 only used by developers.
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-# Debug compiler flags
+# Debug compile flags
 	CXXFLAGS += -O0 -g -DDEBUG
 else
-# Release compiler flags
+# Release compile flags
 	CXXFLAGS += -O3 -DNDEBUG
 endif
 
-CXXFLAGS += -std=c++20 -I. -I../build -D_FILE_OFFSET_BITS=64 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -MD -MP -Wall -Wextra
+UNAME := $(shell uname -s)
 
-ifeq ("$(shell uname -s)", "Linux")
+ifeq ($(UNAME),Linux)
 # -Wno-psabi might not work on non-Linux platforms
 	CXXFLAGS += -Wno-psabi
-	IS_LINUX = 1
+	IS_LINUX := 1
 endif
 
-ifeq ("$(shell uname -s)", "FreeBSD")
-	AR = $(CROSS_COMPILE)ar
+ifeq ($(UNAME),FreeBSD)
+	AR := $(CROSS_COMPILE)ar
 	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
-ifeq ("$(shell uname -s)", "NetBSD")
-	AR = $(CROSS_COMPILE)ar
+ifeq ($(UNAME),NetBSD)
+	AR := $(CROSS_COMPILE)ar
 	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
 endif
 
-ifeq ("$(shell uname -s)", "OpenBSD")
-	AR = $(CROSS_COMPILE)ar
+ifeq ($(UNAME),OpenBSD)
+	AR := $(CROSS_COMPILE)ar
 	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter
 	LDFLAGS += -L/usr/local/lib
 endif
 
-ifeq ("$(shell uname -s)", "Darwin")
-	AR = $(CROSS_COMPILE)ar
+ifeq ($(UNAME),Darwin)
+	AR := $(CROSS_COMPILE)ar
 	CXXFLAGS += -Wno-unused-parameter
 endif
 
-## EXTRA_FLAGS Can be used to pass special purpose flag
+## EXTRA_FLAGS Can be used to pass special purpose compiler flags
 CXXFLAGS += $(EXTRA_FLAGS)
 
 PROTOC ?= protoc
@@ -78,12 +83,13 @@ endif
 
 ## Installation path
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
-TARGET := /opt/scsi2pi
+TARGET ?= /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
 ##     Specifies the board type that you are using. Typically this is
 ##     STANDARD or FULLSPEC. The default is FULLSPEC.
 BOARD ?= FULLSPEC
+INITIATOR_SUPPORT := $(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX))
 
 CXXFLAGS += -DBOARD_$(BOARD)
 
@@ -91,6 +97,7 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##   DISABLE_*=1
 ##     Specifies the device types to build or not to build, default is to build all. Supported types:
 ##       SCHD SCSI Removable and Non-removable Hard Drive
+##       SCRM Same as SCHD
 ##       SCCD SCSI CD-Rom Drive
 ##       SCTP SCSI Tape Drive
 ##       SCMO SCSI Optical Memory
@@ -99,6 +106,9 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SCSG Linux Generic SCSI (e.g. for SCSI-to-USB bridge)
 ##       SCHS Host Services (e.g. for realtime clock and shutdown support)
 ##       SAHD SASI Hard Drive
+ifdef ENABLE_SCRM
+	ENABLE_SCHD = 1
+endif
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
 	ENABLE_SCMO = 1
@@ -114,11 +124,6 @@ endif
 ifndef IS_LINUX
 	ENABLE_SCSG =
 endif
-
-ifdef ENABLE_SCRM
-	ENABLE_SCHD = 1
-endif
-
 define disable_type
 	ifdef DISABLE_$1
 		ENABLE_$1 =
@@ -155,8 +160,6 @@ S2P_TEST := s2p_test
 
 INSTALL_BIN := $(TARGET)/bin
 
-BUILD_DIR := ../build
-
 OBJDIR := $(BUILD_DIR)/obj
 LIBDIR := $(BUILD_DIR)/lib
 BINDIR := $(BUILD_DIR)/bin
@@ -166,19 +169,17 @@ BIN_ALL = \
 	$(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
-# s2pdump, s2pexec and s2pproto require initiator support
-ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
+# s2pdump, s2pexec, s2pproto and s2pformat require initiator support
+ifeq ($(INITIATOR_SUPPORT),1)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
 	BIN_ALL += $(BINDIR)/$(S2PPROTO)
+	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
 endif
-# s2psimh only makes sense with SCTP support
+
+# s2psimh only makes sense with streamer support
 ifeq ($(ENABLE_SCTP),1)
 	BIN_ALL += $(BINDIR)/$(S2PSIMH)
-endif
-# s2pformat requires the Linux SG 3 driver and initiator mode
-ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
-	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
 endif
 
 DIR_SHARED := shared
@@ -368,7 +369,7 @@ OBJ_API := $(OBJDIR)/generated/s2p_interface.pb.o
 BINARIES = $(INSTALL_BIN)/$(S2PCTL) \
 	$(INSTALL_BIN)/$(S2PTOOL) \
 	$(INSTALL_BIN)/$(S2P)
-ifeq ($(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX)),1)
+ifeq ($(INITIATOR_SUPPORT),1)
 	BINARIES += $(INSTALL_BIN)/$(S2PDUMP)
 	BINARIES += $(INSTALL_BIN)/$(S2PEXEC)
 	BINARIES += $(INSTALL_BIN)/$(S2PPROTO)
@@ -382,7 +383,7 @@ endif
 # if they exist. This will trigger a rebuild of a source file if a header changes
 ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_API) $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
 	$(OBJ_S2PEXEC) $(OBJ_S2PPROTO) $(OBJ_S2PSIMH) $(OBJ_S2PFORMAT) $(OBJ_S2PTOOL) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) \
-	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_S2P_TEST))
+	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_PI) $(OBJ_S2P_TEST))
 -include $(ALL_DEPS)
 
 $(LIB_SHARED): $(OBJ_SHARED)
@@ -412,7 +413,7 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 	mv $(GENERATED_DIR)/s2p_interface.pb.cc $@
 
 ## Build targets:
-##   all             Buidl all executable files (default target)
+##   all             Build all executable files (default target)
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
