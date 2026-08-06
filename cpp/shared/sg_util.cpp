@@ -8,6 +8,7 @@
 
 #include "sg_util.h"
 #include <fcntl.h>
+#include <unistd.h>
 #ifdef __linux__
 #include <scsi/sg.h>
 #endif

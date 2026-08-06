@@ -92,6 +92,12 @@ TARGET ?= /opt/scsi2pi
 ##     Specifies the board type that you are using. Typically this is
 ##     STANDARD or FULLSPEC. The default is FULLSPEC.
 BOARD ?= FULLSPEC
+
+VALID_BOARDS := STANDARD FULLSPEC
+ifeq ($(filter $(VALID_BOARDS),$(BOARD)),)
+  $(error Invalid BOARD "$(BOARD)" — must be one of: $(VALID_BOARDS))
+endif
+
 INITIATOR_SUPPORT := $(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX))
 
 CXXFLAGS += -DBOARD_$(BOARD)
@@ -111,6 +117,9 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##       SAHD SASI Hard Drive
 ifdef ENABLE_SCRM
 	ENABLE_SCHD = 1
+endif
+ifdef DISABLE_SCRM
+	DISABLE_SCHD = 1
 endif
 ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_SCDP),$(ENABLE_SCLP),$(ENABLE_SCSG),$(ENABLE_SCHS),$(ENABLE_SAHD)),)
 	ENABLE_SCHD = 1
@@ -143,11 +152,11 @@ $(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disab
 
 $(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cxx_flag,$(var))))
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD),$(ENABLE_SCTP)),1)
+ifneq ($(strip $(ENABLE_SCHD)$(ENABLE_SCMO)$(ENABLE_SCCD)$(ENABLE_SAHD)$(ENABLE_SCTP)),)
 	CXXFLAGS += -DBUILD_STORAGE_DEVICE
 endif
 
-ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SAHD)),1)
+ifneq ($(strip $(ENABLE_SCHD)$(ENABLE_SCMO)$(ENABLE_SCCD)$(ENABLE_SAHD)),)
 	CXXFLAGS += -DBUILD_DISK
 endif
 
@@ -401,6 +410,7 @@ $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
 	@mkdir -p $@
 
 $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_INITIATOR) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE): | $(LIBDIR)
+	rm -f $@
 	$(AR) rcs $@ $^
 
 $(OBJDIR)/%.o: %.cpp | $(SRC_API)

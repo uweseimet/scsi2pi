@@ -22,7 +22,6 @@ jobs:
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
       SONAR_SCANNER_VERSION: 8.1.0.6389
-      BUILD_WRAPPER_OUT_DIR: "$HOME/.build_wrapper_out"
       APT_PACKAGES: protobuf-compiler libspdlog-dev libgmock-dev
 
     steps:
@@ -38,8 +37,9 @@ jobs:
 
       - name: Set up build-wrapper and sonar-scanner
         run: |
+          echo "BUILD_WRAPPER_OUT_DIR=$RUNNER_TEMP/build_wrapper_out" >> "$GITHUB_ENV"
           mkdir -p $HOME/.sonar
-          curl -sSLo /tmp/wrapper.zip $SONAR_SERVER_URL/static/cpp/build-wrapper-linux-x86.zip
+          curl -fsSLo /tmp/wrapper.zip $SONAR_SERVER_URL/static/cpp/build-wrapper-linux-x86.zip
           unzip -o /tmp/wrapper.zip -d $HOME/.sonar/
           curl -sSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
           unzip -o /tmp/scanner.zip -d $HOME/.sonar/

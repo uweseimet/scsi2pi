@@ -8,6 +8,7 @@
 
 #include "command_image_support.h"
 #include <fstream>
+#include <unistd.h>
 #include "command_context.h"
 #include "devices/storage_device.h"
 #include "protobuf/s2p_interface_util.h"

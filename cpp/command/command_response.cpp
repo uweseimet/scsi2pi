@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "command_response.h"
+#include <unistd.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "command_image_support.h"

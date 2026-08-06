@@ -10,6 +10,7 @@
 
 #include "scsi_generic.h"
 #include <fcntl.h>
+#include <unistd.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
 #include "controllers/abstract_controller.h"
