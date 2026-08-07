@@ -206,18 +206,48 @@ PROTO_API := ../api/s2p_interface.proto
 
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
-SRC_SHARED := $(filter-out $(DIR_SHARED)/sg_adapter.cpp,\
-	$(wildcard $(DIR_SHARED)/*.cpp))
+SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
+	$(DIR_SHARED)/memory_util.cpp \
+	$(DIR_SHARED)/network_util.cpp \
+	$(DIR_SHARED)/s2p_formatter.cpp \
+	$(DIR_SHARED)/s2p_util.cpp \
+	$(DIR_SHARED)/s2p_version.cpp \
+	$(DIR_SHARED)/sg_util.cpp \
+	$(DIR_SHARED)/simh_util.cpp
+
 ifdef IS_LINUX
-SRC_SHARED += $(wildcard $(DIR_SHARED)/sg_adapter.cpp)
+SRC_SHARED += $(DIR_SHARED)/sg_adapter.cpp
 endif
-SRC_PI := $(wildcard $(DIR_PI)/*.cpp)
-SRC_SHARED_PROTOBUF := $(wildcard $(DIR_SHARED_PROTOBUF)/*.cpp)
-SRC_SHARED_COMMAND := $(wildcard $(DIR_SHARED_COMMAND)/*.cpp)
-SRC_SHARED_INITIATOR := $(wildcard $(DIR_SHARED_INITIATOR)/*.cpp)
-SRC_BASE := $(wildcard $(DIR_BASE)/*.cpp)
-SRC_BUSES := $(wildcard $(DIR_BUSES)/*.cpp)
-SRC_CONTROLLERS := $(wildcard $(DIR_CONTROLLERS)/*.cpp)
+
+SRC_PI := $(DIR_PI)/rpi_bus.cpp
+
+SRC_SHARED_PROTOBUF := $(DIR_SHARED_PROTOBUF)/protobuf_util.cpp \
+	$(DIR_SHARED_PROTOBUF)/s2p_interface_util.cpp
+
+SRC_SHARED_COMMAND := $(DIR_SHARED_COMMAND)/command_context.cpp \
+	$(DIR_SHARED_COMMAND)/command_dispatcher.cpp \
+	$(DIR_SHARED_COMMAND)/command_executor.cpp \
+	$(DIR_SHARED_COMMAND)/command_image_support.cpp \
+	$(DIR_SHARED_COMMAND)/command_localizer.cpp \
+	$(DIR_SHARED_COMMAND)/command_response.cpp
+
+SRC_SHARED_INITIATOR := $(DIR_SHARED_INITIATOR)/initiator_executor.cpp \
+	$(DIR_SHARED_INITIATOR)/initiator_util.cpp
+
+SRC_BASE := $(DIR_BASE)/device.cpp \
+	$(DIR_BASE)/device_factory.cpp \
+	$(DIR_BASE)/primary_device.cpp \
+	$(DIR_BASE)/property_handler.cpp
+
+SRC_BUSES := $(DIR_BUSES)/bus.cpp \
+	$(DIR_BUSES)/bus_factory.cpp \
+	$(DIR_BUSES)/in_process_bus.cpp
+
+SRC_CONTROLLERS := $(DIR_CONTROLLERS)/abstract_controller.cpp \
+	$(DIR_CONTROLLERS)/controller.cpp \
+	$(DIR_CONTROLLERS)/controller_factory.cpp \
+	$(DIR_CONTROLLERS)/phase_handler.cpp \
+	$(DIR_CONTROLLERS)/script_generator.cpp
 
 SRC_STORAGE_COMMON := \
 	$(DIR_DEVICES)/storage_device.cpp \
@@ -282,45 +312,95 @@ SRC_SAHD := \
 	$(SRC_DISK)
 endif
 
-SRC_S2P_CORE := $(filter-out s2p/s2p.cpp,$(wildcard s2p/*.cpp))
+SRC_S2P_CORE := s2p/s2p_core.cpp \
+	s2p/s2p_parser.cpp \
+	s2p/s2p_server.cpp \
+	s2p/s2p_thread.cpp
 SRC_S2P := s2p/s2p.cpp
 
-SRC_S2PCTL_CORE := $(filter-out s2pctl/s2pctl.cpp,$(wildcard s2pctl/*.cpp))
+SRC_S2PCTL_CORE := s2pctl/s2pctl_commands.cpp \
+	s2pctl/s2pctl_core.cpp \
+	s2pctl/s2pctl_display.cpp
 SRC_S2PCTL := s2pctl/s2pctl.cpp
 
-SRC_S2PDUMP = s2pdump/s2pdump.cpp \
-	$(filter-out s2pdump/s2pdump.cpp \
-	$(wildcard s2pdump/sg_*.cpp),\
-	$(wildcard s2pdump/*.cpp))
+SRC_S2PDUMP_CORE := s2pdump/board_executor.cpp \
+	s2pdump/s2pdump_core.cpp \
+	s2pdump/s2pdump_executor.cpp
 ifdef IS_LINUX
-SRC_S2PDUMP += $(wildcard s2pdump/sg_*.cpp)
+SRC_S2PDUMP_CORE += s2pdump/sg_executor.cpp
 endif
+SRC_S2PDUMP := $(SRC_S2PDUMP_CORE) s2pdump/s2pdump.cpp
 
-SRC_S2PEXEC := $(wildcard s2pexec/*.cpp)
+SRC_S2PEXEC_CORE := s2pexec/s2pexec_core.cpp \
+	s2pexec/s2pexec_executor.cpp
+SRC_S2PEXEC := $(SRC_S2PEXEC_CORE) s2pexec/s2pexec.cpp
 
-SRC_S2PPROTO := $(wildcard s2pproto/*.cpp)
+SRC_S2PPROTO_CORE := s2pproto/s2pproto_core.cpp \
+	s2pproto/s2pproto_executor.cpp
+SRC_S2PPROTO := $(SRC_S2PPROTO_CORE) s2pproto/s2pproto.cpp
 
-SRC_S2PSIMH := $(wildcard s2psimh/*.cpp)
+SRC_S2PSIMH := s2psimh/s2psimh_core.cpp \
+	s2psimh/s2psimh.cpp
 
-SRC_S2PFORMAT := $(wildcard s2pformat/*.cpp)
+SRC_S2PFORMAT := s2pformat/s2pformat_core.cpp \
+	s2pformat/s2pformat.cpp
 
-SRC_S2P_TEST := $(filter-out test/scsi_generic_test.cpp,$(wildcard test/*.cpp))
+SRC_S2P_TEST := test/abstract_controller_test.cpp \
+	test/bus_factory_test.cpp \
+	test/bus_test.cpp \
+	test/command_context_test.cpp \
+	test/command_dispatcher_test.cpp \
+	test/command_executor_test.cpp \
+	test/command_image_support_test.cpp \
+	test/command_localizer_test.cpp \
+	test/command_meta_data_test.cpp \
+	test/command_response_test.cpp \
+	test/controller_factory_test.cpp \
+	test/controller_test.cpp \
+	test/daynaport_test.cpp \
+	test/device_factory_test.cpp \
+	test/device_test.cpp \
+	test/disk_cache_test.cpp \
+	test/disk_test.cpp \
+	test/host_services_test.cpp \
+	test/initiator_util_test.cpp \
+	test/in_process_bus_test.cpp \
+	test/linux_cache_test.cpp \
+	test/memory_util_test.cpp \
+	test/network_util_test.cpp \
+	test/optical_memory_test.cpp \
+	test/page_handler_test.cpp \
+	test/phase_handler_test.cpp \
+	test/primary_device_test.cpp \
+	test/printer_test.cpp \
+	test/property_handler_test.cpp \
+	test/protobuf_util_test.cpp \
+	test/rpi_bus_test.cpp \
+	test/s2pctl_commands_test.cpp \
+	test/s2pctl_display_test.cpp \
+	test/s2p_exceptions_test.cpp \
+	test/s2p_formatter_test.cpp \
+	test/s2p_interface_util_test.cpp \
+	test/s2p_parser_test.cpp \
+	test/s2p_thread_test.cpp \
+	test/s2p_util_test.cpp \
+	test/sasi_hd_test.cpp \
+	test/script_generator_test.cpp \
+	test/scsi_cd_test.cpp \
+	test/scsi_hd_test.cpp \
+	test/sg_util_test.cpp \
+	test/simh_util_test.cpp \
+	test/storage_device_test.cpp \
+	test/tap_driver_test.cpp \
+	test/tape_test.cpp \
+	test/test_setup.cpp \
+	test/test_shared.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/scsi_generic_test.cpp
 endif
 
-SRC_S2PTOOL := \
-	s2ptool/s2ptool.cpp \
-	$(filter-out s2pdump/s2pdump.cpp,$(SRC_S2PDUMP)) \
-	$(filter-out s2pexec/s2pexec.cpp,$(SRC_S2PEXEC)) \
-	$(filter-out s2pproto/s2pproto.cpp,$(SRC_S2PPROTO))
-
-SRC_DIRS := $(DIR_SHARED) $(DIR_SHARED_PROTOBUF) $(DIR_SHARED_INITIATOR) $(DIR_SHARED_COMMAND) $(DIR_BASE) $(DIR_BUSES) \
-	$(DIR_PI) $(DIR_CONTROLLERS) $(DIR_DEVICES) ./s2p ./s2pctl ./s2pdump ./s2pexec ./s2pproto ./s2psimh ./s2ptool ./s2pformat
-
-vpath %.h $(SRC_DIRS)
-vpath %.cpp $(SRC_DIRS) test
-vpath %.o $(OBJDIR)
+SRC_S2PTOOL := s2ptool/s2ptool.cpp \
+	$(SRC_S2PDUMP_CORE) $(SRC_S2PEXEC_CORE) $(SRC_S2PPROTO_CORE)
 
 LIB_SHARED := $(LIBDIR)/libshared.a
 LIB_SHARED_PROTOBUF := $(LIBDIR)/libprotobuf.a
