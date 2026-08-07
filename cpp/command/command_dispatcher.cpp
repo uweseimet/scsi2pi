@@ -211,12 +211,14 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
         sync();
-#ifdef __linux__
+#if defined(__linux__)
         if (reboot(RB_POWER_OFF)) {
-#elif __FreeBSD__
-        if (reboot(RB_POWEROFF)) {
+#elif defined(__NetBSD__)
+        if (reboot(RB_POWERDOWN, nullptr)) {
+#elif defined(__OpenBSD__)
+        if (reboot(RB_HALT)) {
 #else
-        if (reboot(POWERDOWN)) {
+        if (reboot(RB_POWEROFF)) {
 #endif
             s2p_logger.error("Pi shutdown failed");
             return false;
@@ -226,7 +228,11 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
         sync();
+#if defined(__NetBSD__)
+        if (reboot(RB_AUTOBOOT, nullptr)) {
+#else
         if (reboot(RB_AUTOBOOT)) {
+#endif
             s2p_logger.error("Pi restart failed");
             return false;
         }
