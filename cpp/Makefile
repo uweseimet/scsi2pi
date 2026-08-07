@@ -18,10 +18,10 @@ CXX := $(CROSS_COMPILE)g++
 AR := $(CROSS_COMPILE)gcc-ar
 STRIP := $(CROSS_COMPILE)strip
 
-#SPDLOG_FLAGS ?= -DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB
-#SPDLOG_LIBS ?= -lspdlog -lfmt
-#Required for platforms without shared spdlog/fmt libraries
-SPDLOG_FLAGS ?= -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL
+SPDLOG_FLAGS ?= -DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB
+SPDLOG_LIBS ?= -lspdlog -lfmt
+# Required for platforms without shared spdlog/fmt libraries
+#SPDLOG_FLAGS ?= -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL
 
 CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -MD -MP -Wall -Wextra
 
