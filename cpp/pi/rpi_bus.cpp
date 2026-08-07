@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <fcntl.h>
@@ -311,7 +312,7 @@ void RpiBus::CreateWorkTables()
 
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         // Bit string for inspection
-        uint32_t bits = i | (static_cast<uint32_t>(static_cast<byte>(tblParity[i]) << 8));
+        uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
 
         // Bit check
         for (const int pin : DATA_PINS) {
