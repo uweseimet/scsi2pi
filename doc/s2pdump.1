@@ -8,7 +8,7 @@ s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 [\fB\--buffer-size/-b\fR \fIBUFFER_SIZE\fR]
 [\fB\--help/-H\fR]
 [\fB\--image-file/-f\fR \fIIMAGE_FILE\fR]
-[\fB\--inquiry/-I\fR] \fID[:LUN]\fR
+[\fB\--inquiry/-I\fR \fIID[:LUN]\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 [\fB\--restore/-r\fR]
 [\fB\--retries/-R\fR \fIRETRIES\fR]
@@ -31,7 +31,7 @@ When operating in dump mode, s2pdump will copy all data from a remote drive to a
 When used with a tape drive, the data are dumped in a SIMH-compatible format.
 
 In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable.
- Restoring a tape drive expects a SIMH-compatible file.
+Restoring a tape drive expects a SIMH-compatible file.
 
 .SH NOTES
 
@@ -70,7 +70,7 @@ Run in restore mode. The default is dump mode.
 .BR --retries/-R\fI " " \fIRETRIES
 Set the number of retries when dumping/restoring a disk drive, default is 0.
 .TP
-.BR --sasi-capacity/-c\fI " "\fISASI_CAPACITY
+.BR --sasi-capacity/-c\fI " "\fICAPACITY
 The capacity of the SASI hard drive in sectors. This parameter only has a meaning for SASI drives.
 .TP
 .BR --sasi-id/-h\fI " "\fIID[:LUN]
@@ -79,8 +79,8 @@ ID and optional LUN (0-1) of the SASI target drive.
 .BR --sasi-scan/-t\fI
 Scan the bus for SASI devices and display their properties.
 .TP
-.BR --sasi-sector-size/-z\fI " "\fISASI_SECTOR_SIZE
-The sector size of the SASI hard drive in sectors (256, 512, x1024) in bytes. This parameter only has a meaning for SASI drives.
+.BR --sasi-sector-size/-z\fI " "\fISECTOR_SIZE
+The sector size of the SASI hard drive in bytes (256, 512, 1024). This parameter only has a meaning for SASI drives.
 .TP
 .BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
 Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
