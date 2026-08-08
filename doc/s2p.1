@@ -10,10 +10,10 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
-[\fB\--locale,-z\fR \fILOCALE\fR]
+[\fB\--locale/-z\fR \fILOCALE\fR]
 [\fB\--log-level/-L\fR \fILEVEL[:ID:[LUN]]\fR]
-[\fB\--log-limit\fR \fLIMIT\fR]
-[\fB\--log-pattern/-l\fR \f_PATTERN\fR]
+[\fB\--log-limit\fR \fILIMIT\fR]
+[\fB\--log-pattern/-l\fR \fIPATTERN\fR]
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
@@ -32,7 +32,7 @@ emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
 In the arguments to s2p one or more SCSI/SASI (-i n[:u]) devices can be specified.
 The number (n) after the device identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
-The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supportes LUNs 0-1, but s2p supports LUNs 0-31 also for SASI.
+The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supports LUNs 0-1, but s2p supports LUNs 0-31 also for SASI.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
     hd1: Hard Disk image (generic, non-removable, SCSI-1-CCS)
@@ -46,7 +46,7 @@ If no explicit device type is provided, s2p determines the type based upon the f
     tap: Tape image (SIMH-compatible image, SCSI-2)
 
 For example, if you want to specify an Apple-compatible HD image on ID 0, you can use the following command:
-    s2p -id 0 /path/to/drive/hdimage.hda
+    s2p -i 0 /path/to/drive/hdimage.hda
 
 When s2p starts it opens a socket (default port is 6868) to allow external management commands. Examples for management tools are s2pctl or the SCSI Control app.
 
@@ -87,19 +87,19 @@ Overrides the default locale (language) for client-facing error messages. A clie
 .BR --log-level/-L\fI " " \fILEVEL[:ID:[LUN]]
 The s2p log level (trace, debug, info, warning, error, critical, off). The default log level is 'info' for all devices unless a device ID and an optional LUN is provided when setting the level.
 .TP
-.BR --log-limit/\fI " " \fILIMIT
+.BR --log-limit\fI " " \fILIMIT
 Limits the number of data bytes being logged, default is 128 bytes.
 .TP
 .BR --log-pattern/-l\fI " " \fIPATTERN
 The spdlog pattern to use for logging. See https://github.com/gabime/spdlog for details.
 .TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
-Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+Set the optional vendor, product and revision for the device, to be returned with the INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maximum length is automatically applied. Once set the name of a device cannot be changed.
 .TP
 .BR --port/-p\fI " " \fIPORT
 The s2p client service port, default is 6868.
 .TP
-.BR --property-/-c\fI " " \fIKEY=VALUE
+.BR --property/-c\fI " " \fIKEY=VALUE
 Set the s2p configuration property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
 .BR --property-files/-C\fI " " \fIPROPERTY_FILES
@@ -118,7 +118,7 @@ Create a script file for s2pexec or the in-process tool. This file contains all 
 .BR --scsi-level\fI " " \fILEVEL
 The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
 Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
-This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might required older SCSI levels.
+This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might require older SCSI levels.
 .TP
 .BR --token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

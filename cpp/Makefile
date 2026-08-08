@@ -18,10 +18,21 @@ CXX := $(CROSS_COMPILE)g++
 AR := $(CROSS_COMPILE)gcc-ar
 STRIP := $(CROSS_COMPILE)strip
 
-SPDLOG_FLAGS ?= -DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB
-SPDLOG_LIBS ?= -lspdlog -lfmt
+ifeq ($(strip $(CROSS_COMPILE)),)
+ifeq ($(shell pkg-config --exists spdlog 2>/dev/null && echo yes),yes)
+SPDLOG_PKGCONFIG_CFLAGS := $(shell pkg-config --cflags spdlog 2>/dev/null)
+SPDLOG_PKGCONFIG_LIBS := $(shell pkg-config --libs spdlog 2>/dev/null)
+endif
+endif
 
-CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -MD -MP -Wall -Wextra
+SPDLOG_FLAGS ?= -DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB $(SPDLOG_PKGCONFIG_CFLAGS)
+SPDLOG_LIBS ?= $(if $(strip $(SPDLOG_PKGCONFIG_LIBS)),$(SPDLOG_PKGCONFIG_LIBS),-lspdlog -lfmt)
+
+DEBUG_FLAGS ?= -g -O0 -DDEBUG
+RELEASE_FLAGS ?= -O3 -DNDEBUG
+WARNING_FLAGS ?= -Wall -Wextra
+
+CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) $(WARNING_FLAGS) -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
@@ -29,10 +40,10 @@ CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS)
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
 # Debug compile flags
-	CXXFLAGS += -O0 -g -DDEBUG
+	CXXFLAGS += $(DEBUG_FLAGS)
 else
 # Release compile flags
-	CXXFLAGS += -O3 -DNDEBUG
+	CXXFLAGS += $(RELEASE_FLAGS)
 endif
 
 UNAME := $(shell uname -s)
@@ -55,7 +66,7 @@ endif
 
 ifeq ($(UNAME),OpenBSD)
 	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter -DSPDLOG_FMT_EXTERNAL
+	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter
 	LDFLAGS += -L/usr/local/lib
 endif
 
@@ -84,7 +95,7 @@ endif
 
 ## Installation path
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
-TARGET ?= /opt/scsi2pi
+PREFIX ?= /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
 ##     Specifies the board type that you are using. Typically this is
@@ -103,8 +114,8 @@ CXXFLAGS += -DBOARD_$(BOARD)
 ##   ENABLE_*=1
 ##   DISABLE_*=1
 ##     Specifies the device types to build or not to build, default is to build all. Supported types:
-##       SCHD SCSI Removable and Non-removable Hard Drive
-##       SCRM Same as SCHD
+##       SCHD SCSI Non-removable Hard Drive
+##       SCRM Removable Media Drive
 ##       SCCD SCSI CD-Rom Drive
 ##       SCTP SCSI Tape Drive
 ##       SCMO SCSI Optical Memory
@@ -168,7 +179,7 @@ S2PFORMAT := s2pformat
 S2PTOOL := s2ptool
 S2P_TEST := s2p_test
 
-INSTALL_BIN := $(TARGET)/bin
+INSTALL_BIN := $(PREFIX)/bin
 
 OBJDIR := $(BUILD_DIR)/obj
 LIBDIR := $(BUILD_DIR)/lib
