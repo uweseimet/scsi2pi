@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,6 +29,10 @@ TEST(CommandImageSupportTest, SetGetDefaultFolder)
 
     EXPECT_FALSE(image.SetDefaultFolder("").empty());
     EXPECT_FALSE(image.SetDefaultFolder("/not_in_home").empty());
+
+    if (exists("/var/lib/piscsi/images")) {
+        EXPECT_TRUE(image.SetDefaultFolder("/var/lib/piscsi/images").empty());
+    }
 }
 
 TEST(CommandImageSupportTest, CreateImage)

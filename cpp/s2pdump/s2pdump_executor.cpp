@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -136,10 +136,10 @@ int S2pDumpExecutor::WriteFilemark() const
 
 int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
 {
-    array<uint8_t, 6> cdb = { };
-
     // Restore
     if (length) {
+        array<uint8_t, 6> cdb = { };
+        cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_6);
         SetInt24(cdb, 2, length);
 
         if (Write(cdb, buf, length)) {
@@ -152,6 +152,8 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     // Dump
     bool has_error = false;
     while (true) {
+        array<uint8_t, 6> cdb = { };
+        cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
         SetInt24(cdb, 2, default_length);
 
         if (!Read(cdb, buf, default_length)) {
@@ -160,9 +162,10 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
         }
 
         array<uint8_t, 14> sense_data = { };
-        fill_n(cdb.begin(), cdb.size(), 0);
-        cdb[4] = static_cast<uint8_t>(sense_data.size());
-        const int status = RequestSense(cdb, sense_data);
+        array<uint8_t, 6> sense_cdb = { };
+        sense_cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+        sense_cdb[4] = static_cast<uint8_t>(sense_data.size());
+        const int status = RequestSense(sense_cdb, sense_data);
         if (status == 0xff) {
             return status;
         }
@@ -197,12 +200,12 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         // VALID and ILI?
         if (static_cast<int>(sense_data[0]) & 0x80 && static_cast<int>(sense_data[2]) & 0x20) {
-            length = default_length;
+            const int previous_length = default_length;
 
             default_length -= GetInt32(sense_data, 3);
 
             // If all available data have been read there is no need to re-try
-            if (default_length < length) {
+            if (default_length < previous_length) {
                 GetLogger().debug("Read block with {} byte(s)", default_length);
 
                 return default_length;

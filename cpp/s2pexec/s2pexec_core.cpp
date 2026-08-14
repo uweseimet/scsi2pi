@@ -7,11 +7,13 @@
 //---------------------------------------------------------------------------
 
 #include "s2pexec_core.h"
+#include <algorithm>
 #include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
+#include <unistd.h>
 #include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
@@ -114,13 +116,13 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
         { "hex-only", no_argument, nullptr, 'x' },
         { "hex-output-file", required_argument, nullptr, 'T' },
         { "log-level", required_argument, nullptr, 'L' },
-        { "log-limit/-l", required_argument, nullptr, 'l' },
+        { "log-limit", required_argument, nullptr, 'l' },
         { "request-sense", no_argument, nullptr, 'R' },
         { "reset-bus", no_argument, nullptr, 'r' },
         { "scsi-generic", required_argument, nullptr, 'g' },
         { "scsi-target", required_argument, nullptr, 'i' },
         { "sasi-target", required_argument, nullptr, 'h' },
-        { "timeout", required_argument, nullptr, 'o' },
+        { "timeout", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -545,7 +547,11 @@ string S2pExec::ReadData()
         }
     }
     else {
-        const size_t size = file_size(filename);
+        error_code error;
+        const size_t size = file_size(filename, error);
+        if (error) {
+            return fmt::format("Can't get size of input file '{}': {}", filename, error.message());
+        }
         buffer.resize(size);
         in.read(to_char_ptr(buffer), size);
     }

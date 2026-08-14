@@ -206,6 +206,9 @@ void Controller::Execute()
             Error(e.GetSenseKey(), e.GetAsc());
         }
     }
+    else {
+        Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+    }
 }
 
 void Controller::Status()
@@ -335,6 +338,7 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
 
     int lun = GetEffectiveLun();
     if (asc == Asc::LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
+        assert(GetDeviceForLun(0));
         lun = 0;
     }
 
@@ -588,7 +592,7 @@ void Controller::ParseMessage()
 
 void Controller::RejectExtendedMessage()
 {
-    if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < msg_bytes[1] + 2) {
+    if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < static_cast<size_t>(msg_bytes[1] + 2)) {
         LogWarn("Truncated extended message");
     }
     else {

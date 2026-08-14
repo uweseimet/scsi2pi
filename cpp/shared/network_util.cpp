@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -26,6 +26,9 @@ bool IsInterfaceUp(const string &interface)
     ifreq ifr = { };
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+    if (fd == -1) {
+        return false;
+    }
 
     if (!ioctl(fd, SIOCGIFFLAGS, &ifr) && (ifr.ifr_flags & IFF_UP)) {
         close(fd);
@@ -45,6 +48,9 @@ vector<uint8_t> network_util::GetMacAddress(const string &interface)
     ifreq ifr = { };
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+    if (fd == -1) {
+        return vector<uint8_t>();
+    }
 
     if (!ioctl(fd, SIOCGIFHWADDR, &ifr)) {
         close(fd);
@@ -63,7 +69,9 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 
 #ifdef __linux__
     ifaddrs *addrs;
-    getifaddrs(&addrs);
+    if (getifaddrs(&addrs) == -1) {
+        return network_interfaces;
+    }
     ifaddrs *tmp = addrs;
 
     while (tmp) {

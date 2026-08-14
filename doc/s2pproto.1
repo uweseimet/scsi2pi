@@ -7,9 +7,9 @@ s2pproto \- SCSI2Pi custom SCSI command executor
 [\fB\--binary-output\fR]
 [\fB\--board-id/-B\fR \fIBOARD_ID\fR]
 [\fB\--help/-H\fR]
-{\fB\--input-file/-f\fR \fIFILE\fR]
+[\fB\--input-file/-f\fR \fIFILE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
-{\fB\--output-file/-F\fR \fIFILE\fR]
+[\fB\--output-file/-F\fR \fIFILE\fR]
 [\fB\--scsi-target/-i\fR \fIID[:LUN]\fR]
 [\fB\--text-input\fR]
 [\fB\--text-output\fR]
@@ -27,7 +27,7 @@ Signals that the input file is in protobuf binary format instead of JSON.
 Generate a protobuf binary format output file instead of JSON for the results.
 .TP
 .BR --board-id/-B\fI " "\fIBOARD_ID
-SCSI ID used by s2pexec. If not specified, s2pexec will use the board (initiator) ID 7.
+SCSI ID used by s2pproto. If not specified, s2pproto will use the board (initiator) ID 7.
 .TP
 .BR --help/-H\fI
 Display this help.

@@ -3,16 +3,19 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <cstddef>
 #include <fstream>
 #include <sstream>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_util.h"
 
@@ -163,6 +166,7 @@ string RpiBus::SetUp(bool target)
     ev.data.fd = selevreq.fd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev) == -1) {
         close(epoll_fd);
+        close(selevreq.fd);
         return "Can't add file descriptor to epoll";
     }
 #endif
@@ -308,7 +312,7 @@ void RpiBus::CreateWorkTables()
 
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         // Bit string for inspection
-        uint32_t bits = i | (static_cast<uint32_t>(static_cast<byte>(tblParity[i]) << 8));
+        uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
 
         // Bit check
         for (const int pin : DATA_PINS) {

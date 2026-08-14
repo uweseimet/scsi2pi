@@ -59,7 +59,7 @@ void S2pDump::Banner(bool header) const
         << "  --all-luns/-a                      Check all LUNs during bus scan,\n"
         << "                                     default is LUN 0 only.\n"
         << "  --board-id/-B BOARD_ID             Board (initiator) ID (0-7), default is 7.\n"
-        << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,"
+        << "  --buffer-size/-b BUFFER_SIZE       Transfer buffer size, at least " << MINIMUM_BUFFER_SIZE << " bytes,\n"
         << "                                     default is 1 MiB.\n"
         << "  --help/-H                          Display this help.\n"
         << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
@@ -294,21 +294,21 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         if (!sector_count.empty()) {
             count = ParseAsUnsignedInt(sector_count);
             if (count <= 0) {
-                throw ParserException("Invalid sector count: '" + sector_count + "'");
+                throw ParserException("Invalid sector count: " + sector_count);
             }
         }
 
         if (!start_sector.empty()) {
             start = ParseAsUnsignedInt(start_sector);
             if (start < 0) {
-                throw ParserException("Invalid start sector: " + string(optarg));
+                throw ParserException("Invalid start sector: " + start_sector);
             }
         }
 
         if (!retry_count.empty()) {
             retries = ParseAsUnsignedInt(retry_count);
             if (retries < 0) {
-                throw ParserException("Invalid retry count: " + string(optarg));
+                throw ParserException("Invalid retry count: " + retry_count);
             }
         }
 
@@ -479,7 +479,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
 
 bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 {
-    const auto type = static_cast<int>(buf[0]) & 0x0f;
+    const auto type = static_cast<int>(buf[0]) & 0x1f;
     if (type == 0x1f) {
         // Requested LUN is not available
         return false;
@@ -507,8 +507,9 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
+    scsi_device_info.scsi_level = buf[3] & 0x0f;
     cout << "Response Data Format: ";
-    switch (buf[3]) {
+    switch (scsi_device_info.scsi_level) {
     case 0:
         cout << "SCSI-1";
         break;
@@ -824,7 +825,8 @@ long S2pDump::CalculateEffectiveSize()
         return -1;
     }
 
-    const off_t disk_size_in_bytes = count * (sasi ? sasi_sector_size : scsi_device_info.sector_size);
+    const off_t disk_size_in_bytes = static_cast<off_t>(count)
+        * (sasi ? sasi_sector_size : scsi_device_info.sector_size);
 
     size_t effective_size;
     if (restore) {
@@ -950,13 +952,13 @@ void S2pDump::DisplayProperties(int id, int lun) const
     const int length = buf[0] + 1;
     int offset = 4;
     while (offset < length) {
-        const int page_code = buf[offset];
+        const int page_code = buf[offset] & 0x3f;
         ++offset;
 
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes
         const int page_length = page_code ? buf[offset] : length - offset;
 
-        cout << fmt::format("{}mode_page.{}={:02x}", id_and_lun, page_code & 0x3f, page_code);
+        cout << fmt::format("{}mode_page.{}={:02x}", id_and_lun, page_code, page_code);
 
         if (page_code) {
             cout << fmt::format(":{:02x}", page_length);

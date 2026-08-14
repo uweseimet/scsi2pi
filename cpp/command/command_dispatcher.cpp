@@ -8,6 +8,8 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
+#include <sys/reboot.h>
+#include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -88,17 +90,14 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         if (const string &filename = GetParam(command, "file"); filename.empty()) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
         }
-        else {
-            if (const auto &image_file = make_unique<PbImageFile>(); GetImageFile(*image_file.get(), filename)) {
-                result.set_allocated_image_file_info(image_file.get());
-                result.set_status(true);
-                return context.WriteResult(result);
-            }
-            else {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
-            }
+        else if (auto image_file = make_unique<PbImageFile>(); GetImageFile(*image_file, filename)) {
+            result.set_allocated_image_file_info(image_file.release());
+            result.set_status(true);
+            return context.WriteResult(result);
         }
-        break;
+        else {
+            return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
+        }
 
     case NETWORK_INTERFACES_INFO:
         GetNetworkInterfacesInfo(*result.mutable_network_interfaces_info());
@@ -154,8 +153,6 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         // The remaining commands may only be executed when the target is idle, which is ensured by the lock
         return executor.ProcessCmd(context) ? HandleDeviceListChange(context) : false;
     }
-
-    return true;
 }
 
 bool CommandDispatcher::HandleDeviceListChange(const CommandContext &context) const
@@ -192,7 +189,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != ShutdownMode::STOP_S2P && getuid()) {
+    if (mode != ShutdownMode::STOP_S2P && geteuid()) {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
     }
 
@@ -209,32 +206,44 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     switch (mode) {
     case ShutdownMode::STOP_S2P:
         s2p_logger.info("s2p shutdown requested");
-        return true;
+        break;
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-        system("init 0");
-#pragma GCC diagnostic pop
-        s2p_logger.error("Pi shutdown failed");
+        sync();
+#if defined(__linux__)
+        if (reboot(RB_POWER_OFF)) {
+#elif defined(__NetBSD__)
+        if (reboot(RB_POWERDOWN, nullptr)) {
+#elif defined(__OpenBSD__)
+        if (reboot(RB_HALT)) {
+#else
+        if (reboot(RB_POWEROFF)) {
+#endif
+            s2p_logger.error("Pi shutdown failed");
+            return false;
+        }
         break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-        system("init 6");
-#pragma GCC diagnostic pop
-        s2p_logger.error("Pi restart failed");
+        sync();
+#if defined(__NetBSD__)
+        if (reboot(RB_AUTOBOOT, nullptr)) {
+#else
+        if (reboot(RB_AUTOBOOT)) {
+#endif
+            s2p_logger.error("Pi restart failed");
+            return false;
+        }
         break;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
-        break;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 bool CommandDispatcher::SetLogLevel(const string &log_level)
@@ -282,7 +291,7 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 bool CommandDispatcher::SetWithoutTypes(const string &types)
 {
     return ranges::all_of(Split(types, ','), [this](const auto &t) {
-        if(const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
+        if (const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
             without_types.emplace(type);
             return true;
         }

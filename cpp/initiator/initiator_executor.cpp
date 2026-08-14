@@ -39,7 +39,8 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     // Only report byte count mismatch for non-linked commands
     if (const int count = CommandMetaData::GetInstance().GetByteCount(cmd); count
-        && count != static_cast<int>(cdb.size()) && !(static_cast<int>(cdb[cdb_offset + 5]) & 0x01)) {
+        && count != static_cast<int>(cdb.size()) && count <= static_cast<int>(cdb.size())
+        && !(static_cast<int>(cdb[count - 1]) & 0x01)) {
         initiator_logger.warn("CDB has {} byte(s), command {} requires {} bytes", cdb.size(), command_name, count);
     }
 
@@ -58,7 +59,12 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     // Wait for the command to finish
     auto now = steady_clock::now();
-    while ((duration_cast<seconds>(steady_clock::now() - now).count()) < timeout) {
+    while (true) {
+        if (duration_cast<seconds>(steady_clock::now() - now).count() >= timeout) {
+            initiator_logger.error("Timeout");
+            return 0xff;
+        }
+
         bus.Acquire();
 
         // Ensure that the data direction matches the one set by the target
@@ -79,10 +85,6 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
                 return 0xff;
             }
         }
-    }
-
-    if ((duration_cast<seconds>(steady_clock::now() - now).count()) >= timeout) {
-        initiator_logger.error("Timeout");
     }
 
     if (enable_log && status_code) {
@@ -206,10 +208,10 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
         cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
     }
 
-    const auto cmd = static_cast<ScsiCommand>(cdb[cdb_offset]);
     const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
-    if (static_cast<int>(cdb.size()) < sent_count) {
-        initiator_logger.error("Execution of {} failed", CommandMetaData::GetInstance().GetCommandName(cmd));
+    if (sent_count < static_cast<int>(cdb.size()) - cdb_offset) {
+        initiator_logger.error("Execution of {} failed",
+            CommandMetaData::GetInstance().GetCommandName(static_cast<ScsiCommand>(cdb[cdb_offset])));
     }
 
     cdb_offset += sent_count;
@@ -303,7 +305,7 @@ void InitiatorExecutor::MsgOut()
 
 tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
 {
-    array<uint8_t, 255> buf = { };
+    array<uint8_t, 252> buf = { };
     array<uint8_t, 6> cdb = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
@@ -315,7 +317,7 @@ tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
 
     initiator_logger.trace(formatter.FormatBytes(buf, byte_count));
 
-    if (byte_count < 14) {
+    if (byte_count < 18) {
         initiator_logger.warn(
             "Device did not return standard REQUEST SENSE data, sense data details are not available");
         return {SenseKey {-1}, Asc {-1}, -1};
@@ -335,15 +337,15 @@ void InitiatorExecutor::ResetBus() const
 bool InitiatorExecutor::WaitForFree() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
-        Sleep( { .tv_sec = 0, .tv_nsec = 20'000 });
+        Sleep( { .tv_sec = 0, .tv_nsec = 20'000'000 });
         bus.Acquire();
         if (!bus.GetBSY() && !bus.GetSEL()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }
@@ -351,15 +353,15 @@ bool InitiatorExecutor::WaitForFree() const
 bool InitiatorExecutor::WaitForBusy() const
 {
     // Wait for up to 2 s
-    int count = 10'000;
+    int count = 100;
     do {
         // Wait 20 ms
-        Sleep( { .tv_sec = 0, .tv_nsec = 20'000 });
+        Sleep( { .tv_sec = 0, .tv_nsec = 20'000'000 });
         bus.Acquire();
         if (bus.GetBSY()) {
             return true;
         }
-    } while (count--);
+    } while (--count);
 
     return false;
 }

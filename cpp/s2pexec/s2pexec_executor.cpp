@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -80,7 +80,11 @@ int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int ti
     }
 #endif
 
-    return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, enable_log);
+    if (initiator_executor) {
+        return initiator_executor->Execute(cdb, buf, static_cast<int>(buf.size()), timeout, enable_log);
+    }
+
+    return 0xff;
 }
 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const

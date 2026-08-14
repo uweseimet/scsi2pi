@@ -207,7 +207,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
         offset += page_size;
     }
 
-    ChangeBlockSize(size);
+    ChangeBlockSize(block_size);
 }
 
 pair<int, int> StorageDevice::EvaluateBlockDescriptors(ScsiCommand cmd, data_out_t buf, int size)
@@ -343,12 +343,13 @@ bool StorageDevice::IsReadOnlyFile() const
 
 off_t StorageDevice::GetFileSize() const
 {
-    try {
-        return file_size(filename);
+    error_code error;
+    const off_t size = file_size(filename, error);
+    if (!error) {
+        return size;
     }
-    catch (const filesystem_error &e) {
-        throw IoException("Can't get size of '" + filename.string() + "': " + e.what());
-    }
+
+    throw IoException("Can't get size of '" + filename.string() + "': " + error.message());
 }
 
 int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
@@ -515,4 +516,3 @@ vector<PbStatistics> StorageDevice::GetStatistics() const
 
     return statistics;
 }
-

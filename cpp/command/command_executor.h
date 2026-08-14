@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ public:
 
     bool ProcessDeviceCmd(const CommandContext&, const PbDeviceDefinition&, bool);
     bool ProcessCmd(const CommandContext&);
-    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>, bool) const;
+    bool Insert(const CommandContext&, const PbDeviceDefinition&, const shared_ptr<PrimaryDevice>&, bool) const;
     void DetachAll() const;
     string SetReservedIds(const string&);
 #ifdef BUILD_STORAGE_DEVICE
@@ -64,7 +64,7 @@ public:
 #endif
     bool ValidateDevice(const CommandContext&, const PbDeviceDefinition&) const;
     shared_ptr<PrimaryDevice> CreateDevice(const CommandContext&, const PbDeviceDefinition&) const;
-    bool SetBlockSize(const CommandContext&, shared_ptr<PrimaryDevice>, int) const;
+    bool SetBlockSize(const CommandContext&, const shared_ptr<PrimaryDevice>&, int) const;
 
     static bool ValidateOperation(const CommandContext&, const PrimaryDevice&);
     static string PrintCommand(const PbCommand&, const PbDeviceDefinition&);

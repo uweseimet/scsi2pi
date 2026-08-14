@@ -8,6 +8,7 @@
 
 #include "command_image_support.h"
 #include <fstream>
+#include <unistd.h>
 #include "command_context.h"
 #include "devices/storage_device.h"
 #include "protobuf/s2p_interface_util.h"
@@ -56,26 +57,30 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
 string CommandImageSupport::SetDefaultFolder(string_view f)
 {
     if (f.empty()) {
-        return "Missing default folder name";
+        return "Missing default image folder name";
     }
 
-    // If a relative path is specified, the path is assumed to be relative to the user's home directory
+    // For the sake of transparency, the image path must be an absolute path
     path folder(f);
     if (folder.is_relative()) {
-        folder = path(GetHomeDir() + "/" + folder.string());
+        return "Default image folder must be specified with an absolute path";
     }
 
-    if (path home_root = path(GetHomeDir()).parent_path(); !folder.string().starts_with(home_root.string())) {
-        return "Default image folder must be located in '" + home_root.string() + "'";
+    // The image folder location is restricted, so that s2p cannot modify system folders like "/usr"
+    if (!folder.string().starts_with("/var/lib/piscsi/")) {
+        if (const path home_root = path(GetHomeDir()).parent_path(); folder.lexically_relative(home_root).string().starts_with(
+            "..")) {
+            return "Default image folder must be located in '/var/lib/piscsi/' or in '" + home_root.string() + "'";
+        }
     }
 
     // Resolve a potential symlink
     if (error_code error; is_symlink(folder, error)) {
-        folder = read_symlink(folder);
+        folder = canonical(folder);
     }
 
-    if (error_code error; !is_directory(folder)) {
-        return string("'") + folder.string() + "' is not a valid image folder";
+    if (error_code error; !is_directory(folder, error) || error) {
+        return string("'") + folder.string() + "' is not a valid or existing folder";
     }
 
     default_folder = folder.string();
@@ -128,7 +133,6 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     path file(full_filename);
     try {
         ofstream s(file);
-        s.close();
 
         if (!ChangeOwner(context, file, read_only)) {
             return false;
@@ -173,20 +177,17 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
     }
 
     // Delete empty subfolders
-    size_t last_slash = filename.rfind('/');
-    while (last_slash != string::npos) {
-        const string &folder = filename.substr(0, last_slash);
-        const auto &full_folder = path(GetFullName(folder));
-
-        if (error_code error; !filesystem::is_empty(full_folder, error) || error) {
+    auto folder = path(GetFullName(filename)).parent_path();
+    while (folder != path(default_folder)) {
+        if (error_code error; !filesystem::is_empty(folder, error) || error) {
             break;
         }
 
-        if (error_code error; !remove(full_folder)) {
-            return context.ReturnErrorStatus("Can't delete empty image folder '" + full_folder.string() + "'");
+        if (error_code error; !remove(folder)) {
+            return context.ReturnErrorStatus("Can't delete empty image folder '" + folder.string() + "'");
         }
 
-        last_slash = folder.rfind('/');
+        folder = folder.parent_path();
     }
 
     context.GetLogger().info("Deleted image file '{}'", full_filename.string());
@@ -336,7 +337,7 @@ bool CommandImageSupport::ValidateParams(const CommandContext &context, const st
 
     from = GetFullName(from);
     if (!IsValidSrcFilename(from)) {
-        return context.ReturnErrorStatus("Can't " + op + " image file: '" + from + "': Invalid name or type");
+        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Invalid name or type");
     }
 
     to = GetFullName(to);

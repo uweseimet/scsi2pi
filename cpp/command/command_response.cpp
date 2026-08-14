@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "command_response.h"
+#include <unistd.h>
 #include "base/device_factory.h"
 #include "base/property_handler.h"
 #include "command_image_support.h"
@@ -28,29 +29,35 @@ bool FilterMatches(const string &input, string_view pattern_lower)
     return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
 }
 
-bool ValidateImageFile(const path &path, logger &logger)
+bool ValidateImageFile(const path &image_path, logger &logger)
 {
-    if (path.filename().string().starts_with(".")) {
+    if (image_path.filename().string().starts_with(".")) {
         return false;
     }
 
-    filesystem::path p(path);
+    error_code error;
+    filesystem::path p(image_path);
 
     // Follow symlink
-    if (is_symlink(p)) {
-        p = read_symlink(p);
-        if (!exists(p)) {
-            logger.warn("Image file symlink '{}' is broken", path.string());
+    if (is_symlink(p, error)) {
+        p = image_path.parent_path() / read_symlink(p, error);
+        if (error || !exists(p, error)) {
+            logger.warn("Image file symlink '{}' is broken", image_path.string());
             return false;
         }
     }
 
-    if (is_directory(p) || (is_other(p) && !is_block_file(p))) {
+    if (is_directory(p, error) || (is_other(p, error) && !is_block_file(p, error))) {
         return false;
     }
 
-    if (!is_block_file(p) && file_size(p) < 256) {
+    if (!error && !is_block_file(p, error) && file_size(p, error) < 256) {
         logger.warn("Image file '{}' is invalid", p.string());
+        return false;
+    }
+
+    if (error) {
+        logger.warn("Can't access image file '{}': {}", p.string(), error.message());
         return false;
     }
 
@@ -137,15 +144,16 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
     const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
 
     const path default_path(default_folder);
-    if (!is_directory(default_path)) {
+    if (error_code error; !is_directory(default_path, error) || error) {
         return;
     }
 
     const string folder_pattern_lower = ToLower(folder_pattern);
     const string file_pattern_lower = ToLower(file_pattern);
 
-    for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink);
-        it != recursive_directory_iterator(); ++it) {
+    error_code error;
+    for (auto it = recursive_directory_iterator(default_path, directory_options::follow_directory_symlink, error);
+        it != recursive_directory_iterator() && !error; it.increment(error)) {
         if (it.depth() > CommandImageSupport::GetInstance().GetDepth()) {
             it.disable_recursion_pending();
             continue;
@@ -170,6 +178,10 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
         if (PbImageFile image_file; command_response::GetImageFile(image_file, filename)) {
             command_response::GetImageFile(*image_files_info.add_image_files(), filename);
         }
+
+        if (error) {
+            logger.warn("Error while traversing image folder '{}': {}", default_folder, error.message());
+        }
     }
 }
 
@@ -189,9 +201,10 @@ PbOperationMetaData* CreateOperation(PbOperationInfo &operation_info, const PbOp
     PbOperationMetaData meta_data;
     meta_data.set_server_side_name(PbOperation_Name(operation));
     meta_data.set_description(description);
-    const int number = PbOperation_descriptor()->FindValueByName(PbOperation_Name(operation))->number();
-    (*operation_info.mutable_operations())[number] = meta_data;
-    return &(*operation_info.mutable_operations())[number];
+    const auto number = static_cast<int>(operation);
+    auto &entry = (*operation_info.mutable_operations())[number];
+    entry = std::move(meta_data);
+    return &entry;
 }
 
 void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, const string &description,
@@ -407,11 +420,11 @@ void command_response::GetVersionInfo(PbVersionInfo &version_info)
 
 void command_response::GetLogLevelInfo(PbLogLevelInfo &log_level_info)
 {
-    for (const auto &log_level : level::level_string_views) {
-        log_level_info.add_log_levels(log_level.data());
+    for (auto level = static_cast<int>(level::trace); level < static_cast<int>(level::n_levels); ++level) {
+        log_level_info.add_log_levels(level::to_string_view(static_cast<level::level_enum>(level)).data());
     }
 
-    log_level_info.set_current_log_level(level::level_string_views[get_level()].data());
+    log_level_info.set_current_log_level(level::to_string_view(get_level()).data());
 }
 
 void command_response::GetNetworkInterfacesInfo(PbNetworkInterfacesInfo &network_interfaces_info)
@@ -512,7 +525,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
     operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
-    if (getuid()) {
+    if (geteuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
     else {

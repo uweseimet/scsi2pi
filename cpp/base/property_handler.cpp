@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -61,11 +61,14 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     }
 
     string property;
+    int line_no = 0;
     while (getline(property_file, property)) {
+        ++line_no;
+
         if (!property.empty() && !property.starts_with("#")) {
             const auto kv = Split(property, '=', 2);
             if (kv.size() < 2) {
-                throw ParserException(fmt::format("Invalid property '{}'", property));
+                throw ParserException(fmt::format("Invalid property '{}' at line {}", property, line_no));
             }
 
             properties[kv[0]] = kv[1];
@@ -98,7 +101,7 @@ const property_map& PropertyHandler::GetUnknownProperties() const
     return unknown_properties;
 }
 
-const string& PropertyHandler::RemoveProperty(const string &key, const string &def)
+string PropertyHandler::RemoveProperty(const string &key, const string &def)
 {
     if (const auto it = property_cache.find(key); it != property_cache.end()) {
         unknown_properties.erase(key);
@@ -124,6 +127,9 @@ bool PropertyHandler::Persist() const
     error_code error;
     remove(CONFIGURATION_OLD, error);
     rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
+    if (error) {
+        return false;
+    }
 
     ofstream out(CONFIGURATION);
     for (const auto& [key, value] : GetProperties()) {

@@ -2,7 +2,7 @@
 .SH NAME
 s2pctl \- SCSI2Pi Server Controller Tool
 .SH SYNOPSIS
-.B scsictl
+.B s2pctl
 [\fB\--binary-protobuf\fR \fIFILENAME\fR] |
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR] |
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR] |
@@ -10,11 +10,11 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--copy/-x\fR \fICURRENT_NAME:NEW_NAME\fR] |
 [\fB\--create/-C\fR \fIFILENAME:FILESIZE\fR] |
 [\fB\--delete/-d\fR \fIFILENAME\fR] |
-[\fB\--detach-all-D\fR] |
-[\fB\--file/f\fR \fIFILE|PARAM\fR] |
+[\fB\--detach-all/-D\fR] |
+[\fB\--file/-f\fR \fIFILE|PARAM\fR] |
 [\fB\--help/-h\fR] |
 [\fB\--host/-H\fR \fIHOST\fR] |
-[\fB\--id/i\fR \fIID[:LUN]\fR] |
+[\fB\--id/-i\fR \fIID[:LUN]\fR] |
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR] |
 [\fB\--json-protobuf\fR \fIFILENAME\fR] |
 [\fB\--list-devices/-l\fR] |
@@ -31,7 +31,7 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--list-settings/-s\fR \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]\fR] |
 [\fB\--locale\fR \fILOCALE\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR] |
-[\fB\--name/-n\fR \fINAME\fR \fIVENDOR:PRODUCT:REVISION\fR] |
+[\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR] |
 [\fB\--persist\fR]
 [\fB\--port/-p\fR \fIPORT\fR] |
 [\fB\--prompt\fR] |
@@ -39,9 +39,9 @@ s2pctl \- SCSI2Pi Server Controller Tool
 [\fB\--reserved-ids/-r\fR \fIIDS\fR] |
 [\fB\--server-version/-V\fR] |
 [\fB\--shut-down/-X\fR] |
-[\fB\--text-protobuf\fR] \fFILENAME\fR] |
+[\fB\--text-protobuf\fR \fIFILENAME\fR] |
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR] |
-[\fB\--version/-v\fR] |
+[\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pctl
 sends commands to s2p in order to apply configuration changes at runtime or to check a device status.
@@ -68,7 +68,7 @@ Command is the operation being requested. Options are:
    a(ttach): Attach device
    d(etach): Detach device
    i(nsert): Insert medium (removable media devices only, i.e. SCRM, SCMO, SCCD, SCTP). If no filename is provided the file last ejected (if any) is re-inserted.
-   e(ject): Eject medium (removable media devices only, i.e. SCRM, SCMO, SCCD, SCTP). When ejecting a removable mediak disk drive cached data are automatically flushed.
+   e(ject): Eject medium (removable media devices only, i.e. SCRM, SCMO, SCCD, SCTP). When ejecting a removable media disk drive cached data are automatically flushed.
    p(rotect): Write protect the medium (not for CD-ROMs, which are always read-only)
    u(nprotect): Remove write protection from the medium (not for CD-ROMs, which are always read-only)
 .IP
@@ -99,7 +99,7 @@ The s2p host to connect to, default is 'localhost'.
 The SCSI or SASI ID and optional LUN that you want to control. (0-7:0-31 for SCSI, 0-7:0-1 for SASI.)
 .TP
 .BR --image-folder/-F\fI " "\fIIMAGE_FOLDER
-Set the default image folder.
+The absolute path of the default image folder. It must be located in /var/lib/piscsi/ or in the PiSCSI user's home directory.
 .TP
 .BR --json-protobuf\fI " "\fIFILENAME
 Do not send the command to s2p but write it to a protobuf JSON file.
@@ -128,7 +128,7 @@ Display the available s2p log levels and the current log level.
 .BR --list-operations/-o\fI
 List available remote interface operations.
 .TP
-.BR --list-properties/-P\fI " " \fIPORT
+.BR --list-properties/-P\fI
 Display the current s2p properties. The resulting output can directly be used for property files, e.g. for /etc/s2p.conf when running s2p as a system service.
 .TP
 .BR --list-reserved-ids/-I\fI
@@ -139,7 +139,7 @@ Display s2p statistics.
 .TP
 .BR --list-settings/-s\fI " " \fI[FOLDER_PATTERN:FILE_PATTERN:OPERATIONS]
 Display all s2p settings. Filenames are optionally filtered by folder and file patterns.
-OPERATIONS is an optional comma-seperated list of server operations to take into account, in order to limit the amount of output.
+OPERATIONS is an optional comma-separated list of server operations to take into account, in order to limit the amount of output.
 .TP
 .BR --locale\fI " "\fILOCALE
 Overrides the default locale (language) for client-facing error messages.
@@ -148,7 +148,7 @@ Overrides the default locale (language) for client-facing error messages.
 Set the s2p log level (trace, debug, info, warning, error, critical, off).
 .TP
 .BR --name/-n\fI " " \fIVENDOR:PRODUCT:REVISION
-The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maxium length is automatically applied. Once set the name of a device cannot be changed.
+The optional vendor, product and revision for the device, to be returned with the SCSI INQUIRY data. A complete set of name components must be provided. VENDOR may have up to 8, PRODUCT up to 16, REVISION up to 4 characters. Padding with blanks to the maximum length is automatically applied. Once set the name of a device cannot be changed.
 The name of the SCSG device type cannot be changed, because this name is provided by the connected device.
 .TP
 .BR --persist\fI " " \fI
@@ -190,14 +190,14 @@ Specifies the device type. This type overrides the type derived from the file ex
    sclp: SCSI printer
    scmo: Magneto-optical disk
    scrm: SCSI removable media drive
-   scsg: SCSI-to-USBb bridge
+   scsg: SCSI-to-USB bridge
    sctp: SCSI tape drive (streamer)
 .TP
 .BR --version/-v\fI " " \fI
 Display the s2pctl version.
 
 .SH EXAMPLES
-Display the completer remote service information.
+Display the complete remote service information.
    s2pctl -s
 
 Request s2p to attach a disk (assumed) to SCSI ID 0 with the contents of the file system image "hdimage0.hds".

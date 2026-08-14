@@ -121,41 +121,39 @@ int run(int argc, char *argv[])
 
     // Wait for the in-process bus target up to 1 s
     const auto now = chrono::steady_clock::now();
-    do {
-        if (s2p->Ready()) {
+    while (!s2p->Ready()) {
+        if (chrono::steady_clock::now() - now >= chrono::seconds(1)) {
             break;
         }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 1);
+        this_thread::sleep_for(chrono::milliseconds(10));
+    }
 
     if (!s2p->Ready()) {
         cerr << "Error starting in-process s2p\n";
         return EXIT_FAILURE;
     }
 
+    int result = EXIT_FAILURE;
     if (client == "s2pctl") {
         auto s2pctl = make_unique<S2pCtl>();
-        s2pctl->Run(client_args);
+        result = s2pctl->Run(client_args);
     }
     else if (client == "s2pdump") {
         auto s2pdump = make_unique<S2pDump>();
-        s2pdump->Run(client_args, true, log_signals);
+        result = s2pdump->Run(client_args, true, log_signals);
     }
     else if (client == "s2pexec") {
         auto s2pexec = make_unique<S2pExec>();
-        s2pexec->Run(client_args, true, log_signals);
+        result = s2pexec->Run(client_args, true, log_signals);
     }
     else if (client == "s2pproto") {
-        auto s22proto = make_unique<S2pProto>();
-        s22proto->Run(client_args, true, log_signals);
-    }
-    else {
-        assert(false);
-        return EXIT_FAILURE;
+        auto s2proto = make_unique<S2pProto>();
+        result = s2proto->Run(client_args, true, log_signals);
     }
 
     s2p->CleanUp();
 
-    return EXIT_SUCCESS;
+    return result;
 }
 
 int main(int argc, char *argv[])

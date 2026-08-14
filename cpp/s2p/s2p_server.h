@@ -2,12 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <atomic>
 #include <string>
 
 using namespace std;
@@ -30,7 +31,7 @@ public:
 
 private:
 
-    int server_socket = -1;
+    atomic<int> server_socket = -1;
 
-    bool running = false;
+    atomic<bool> running = false;
 };

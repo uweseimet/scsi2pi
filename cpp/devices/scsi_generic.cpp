@@ -10,6 +10,7 @@
 
 #include "scsi_generic.h"
 #include <fcntl.h>
+#include <unistd.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
 #include "controllers/abstract_controller.h"
@@ -50,6 +51,7 @@ void ScsiGeneric::CleanUp()
 {
     if (fd != -1) {
         close(fd);
+        fd = -1;
     }
 }
 
@@ -67,10 +69,12 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
     if (cmd == ScsiCommand::READ_6 || cmd == ScsiCommand::WRITE_6) {
+        const int transfer_length = local_cdb[4] ? local_cdb[4] : 256;
+
         local_cdb.push_back(0);
         // Sector count
-        local_cdb.push_back(0);
-        local_cdb.push_back(local_cdb[4]);
+        local_cdb.push_back(static_cast<uint8_t>(transfer_length >> 8));
+        local_cdb.push_back(static_cast<uint8_t>(transfer_length));
         // Control
         local_cdb.push_back(local_cdb[5]);
         // Sector number

@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <netinet/in.h>
+#include <sys/stat.h>
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
@@ -144,10 +145,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         port = ParseProperties(properties, ignore_conf);
     }
     catch (const ParserException &e) {
-        cerr << "Error: " << e.what() << '\n';
+        CleanUp(e.what());
         return EXIT_FAILURE;
     }
-
     if (const string &error = MapExtensions(); !error.empty()) {
         CleanUp(error);
         return EXIT_FAILURE;
@@ -155,7 +155,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     controller_factory.SetFormatLimit(128);
     if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
-        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
+        if (const int limit = ParseAsUnsignedInt(log_limit); limit == -1) {
             CleanUp("Invalid log limit '" + log_limit + "'");
             return EXIT_FAILURE;
         }
@@ -172,7 +172,13 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
 
     if (const string &token_file = property_handler.RemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
-        ReadAccessToken(path(token_file));
+        try {
+            ReadAccessToken(path(token_file));
+        }
+        catch (const ParserException &e) {
+            CleanUp(e.what());
+            return EXIT_FAILURE;
+        }
     }
 
     if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
@@ -498,13 +504,12 @@ bool S2p::ExecuteCommand(CommandContext &context)
         return context.ReturnLocalizedError(LocalizationKey::ERROR_AUTHENTICATION, UNAUTHORIZED);
     }
 
-    PbResult result;
-    const bool status = dispatcher->DispatchCommand(context, result);
-    if (status && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
+    if (PbResult result; dispatcher->DispatchCommand(context, result)
+        && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
         google::protobuf::ShutdownProtobufLibrary();
         exit(EXIT_SUCCESS);
     }
 
-    return status;
+    return true;
 }

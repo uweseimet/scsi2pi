@@ -2,10 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include "test_shared.h"
 #include "protobuf/protobuf_util.h"
@@ -50,7 +51,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd2, buf.data(), buf.size()));
     close(fd2);
     fd2 = open(filename2.c_str(), O_RDONLY);
-    EXPECT_NE(-1, fd2);
+    ASSERT_NE(-1, fd2);
     EXPECT_THROW(DeserializeMessage(fd2, result), IoException)<< "Invalid data were not rejected";
 }
 
@@ -89,4 +90,16 @@ TEST(ProtobufUtilTest, ReadBytes)
     EXPECT_EQ(1U, ReadBytes(fd, buf1));
     EXPECT_EQ(0U, ReadBytes(fd, buf2));
     close(fd);
+}
+
+TEST(ProtobufUtilTest, WriteBytes)
+{
+    const vector<uint8_t> buf(4, 0xab);
+
+    auto [fd, filename] = OpenTempFile();
+    ASSERT_NE(-1, fd);
+    EXPECT_EQ(4U, WriteBytes(fd, buf));
+    close(fd);
+
+    EXPECT_EQ(static_cast<size_t>(-1), WriteBytes(-1, buf)) << "Writing to an invalid descriptor must fail";
 }

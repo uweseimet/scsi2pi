@@ -112,7 +112,7 @@ void Tape::ValidateFile()
     StorageDevice::ValidateFile();
 
     file.open(GetFilename(), ios::in | ios::out | ios::binary);
-    if (file.bad()) {
+    if (file.fail()) {
         throw IoException("Can't open image file '" + GetFilename() + "'");
     }
 

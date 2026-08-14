@@ -2,11 +2,12 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "s2p_thread.h"
+#include <unistd.h>
 #include "command/command_context.h"
 #include "shared/s2p_exceptions.h"
 
@@ -15,7 +16,7 @@ using namespace s2p_util;
 string S2pThread::Init(int port, const callback &cb, shared_ptr<logger> logger)
 {
     exec = cb;
-    s2p_logger = logger;
+    s2p_logger = std::move(logger);
 
     return server.Init(port);
 }
@@ -30,6 +31,10 @@ void S2pThread::Start()
 // This method might be called twice when pressing Ctrl-C, because of the installed handlers
 void S2pThread::Stop()
 {
+#ifndef __OpenBSD__
+    service_thread.request_stop();
+#endif
+
     server.CleanUp();
 }
 
@@ -38,10 +43,14 @@ bool S2pThread::IsRunning() const
     return server.IsRunning() && service_thread.joinable();
 }
 
-void S2pThread::Execute() const
+void S2pThread::Execute()
 {
     int fd = -1;
-    while (server.IsRunning()) {
+    while (server.IsRunning()
+#ifndef __OpenBSD__
+        && !service_thread.get_stop_token().stop_requested()
+#endif
+    ) {
         if (fd == -1) {
             fd = server.Accept();
         }
@@ -51,14 +60,22 @@ void S2pThread::Execute() const
             fd = -1;
         }
     }
+
+    if (fd != -1) {
+        close(fd);
+    }
 }
 
-bool S2pThread::ExecuteCommand(int fd) const
+bool S2pThread::ExecuteCommand(int fd)
 {
     CommandContext context(fd, *s2p_logger);
     try {
         if (context.ReadCommand()) {
-            exec(context);
+            if (!exec(context)) {
+                // Shutdown requested
+                server.CleanUp();
+            }
+
             return true;
         }
     }

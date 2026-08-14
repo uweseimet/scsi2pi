@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ public:
 
     property_map GetProperties(const string& = "") const;
     const property_map& GetUnknownProperties() const;
-    const string& RemoveProperty(const string&, const string& = "");
+    string RemoveProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
     void RemoveProperties(string_view);
 

@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "s2psimh_core.h"
-#include <cassert>
 #include <cstring>
 #include <filesystem>
 #include <getopt.h>
@@ -160,9 +159,9 @@ int S2pSimh::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : ios::out) | ios::binary);
+    simh_file.open(simh_filename, (meta_data.empty() ? ios::in : (ios::in | ios::out)) | ios::binary);
     if (!simh_file) {
-        cerr << "Error: Can't open '" << simh_filename << "':" << strerror(errno) << '\n';
+        cerr << "Error: Can't open '" << simh_filename << "': " << strerror(errno) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -264,8 +263,7 @@ int S2pSimh::Analyze()
             break;
 
         default:
-            assert(false);
-            break;
+            return EXIT_FAILURE;
         }
     }
 
@@ -311,6 +309,7 @@ int S2pSimh::Add()
                 catch (const out_of_range&)
                 {
                     cerr << "Error: Invalid input data format: '" + line + "'\n";
+                    return EXIT_FAILURE;
                 }
 
                 copy(bytes.begin(), bytes.end(), back_inserter(input_data));
@@ -335,14 +334,14 @@ int S2pSimh::Add()
         const auto &data = ToLittleEndian(object);
         simh_file.write(to_const_char_ptr(data), data.size());
         if (simh_file.bad()) {
-            cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't write to '" << simh_filename << "'\n";
             return EXIT_FAILURE;
         }
 
         if (IsRecord(object) && !(object.cls == SimhClass::BAD_DATA_RECORD && !object.value)) {
             const uint32_t length = object.value & 0x0fffffff;
             if (has_data_file) {
-                if (data_index >= input_data.size()) {
+                if (data_index + length > input_data.size()) {
                     cerr << "Error: Not enough record data in '" << data_filename << "'\n";
                     return EXIT_FAILURE;
                 }
@@ -350,7 +349,7 @@ int S2pSimh::Add()
                 data_index += length;
             }
             else {
-                simh_file.seekp(Pad(length), ios::cur);
+                simh_file.seekp(length, ios::cur);
             }
 
             if (length != Pad(length)) {
@@ -360,7 +359,7 @@ int S2pSimh::Add()
             simh_file.write(to_const_char_ptr(data), data.size());
 
             if (simh_file.bad()) {
-                cerr << "Can't write to '" << simh_filename << "': " << strerror(errno) << '\n';
+                cerr << "Error: Can't write to '" << simh_filename << "'\n";
                 return EXIT_FAILURE;
             }
         }
@@ -463,7 +462,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
 
     for (const auto &object : Split(s, ',')) {
         const auto &components = Split(object, ':');
-        if (components.empty() || components.size() % 2) {
+        if (components.size() != 2) {
             cerr << "Error: Invalid class/value definition '" << object << "'\n";
             return {};
         }

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -126,15 +126,15 @@ int S2pCtl::RunInteractive()
 
 int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable complexity for parsing
 {
-    const int OPT_PROMPT = 2;
-    const int OPT_BINARY_PROTOBUF = 3;
-    const int OPT_JSON_PROTOBUF = 4;
-    const int OPT_TEXT_PROTOBUF = 5;
-    const int OPT_LIST_LOG_LEVELS = 6;
-    const int OPT_LOCALE = 7;
-    const int OPT_SCSI_LEVEL = 8;
-    const int OPT_LIST_EXTENSIONS = 9;
-    const int OPT_PERSIST = 10;
+    constexpr int OPT_PROMPT = 2;
+    constexpr int OPT_BINARY_PROTOBUF = 3;
+    constexpr int OPT_JSON_PROTOBUF = 4;
+    constexpr int OPT_TEXT_PROTOBUF = 5;
+    constexpr int OPT_LIST_LOG_LEVELS = 6;
+    constexpr int OPT_LOCALE = 7;
+    constexpr int OPT_SCSI_LEVEL = 8;
+    constexpr int OPT_LIST_EXTENSIONS = 9;
+    constexpr int OPT_PERSIST = 10;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },

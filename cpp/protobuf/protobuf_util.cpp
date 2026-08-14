@@ -43,7 +43,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
     const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
         + (static_cast<int>(header[1]) << 8) + static_cast<int>(header[0]);
     if (size < 0) {
-        throw IoException("Invalid message size: " + string(strerror(errno)));
+        throw IoException("Invalid message size");
     }
 
     // Read the binary protobuf data
@@ -72,7 +72,7 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     return offset;
 }
 
-size_t protobuf_util::WriteBytes(int fd, span<uint8_t> buf)
+size_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {

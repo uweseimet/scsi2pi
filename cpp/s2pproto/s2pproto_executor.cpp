@@ -31,8 +31,14 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     switch (input_format) {
     case ProtobufFormat::BINARY:
         length = file_size(filename);
+        if (length > BUFFER_SIZE) {
+            return "Buffer overflow";
+        }
         buffer.resize(length);
         in.read(to_char_ptr(buffer), length);
+        if (in.fail()) {
+            return "Can't read from input file '" + filename + "'";
+        }
         break;
 
     case ProtobufFormat::JSON:
@@ -41,6 +47,9 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
         buf << in.rdbuf();
         const string &data = buf.str();
         length = data.size();
+        if (length > BUFFER_SIZE) {
+            return "Buffer overflow";
+        }
         buffer.resize(length);
         memcpy(buffer.data(), data.data(), length);
         break;
@@ -49,10 +58,6 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     default:
         assert(false);
         break;
-    }
-
-    if (buffer.size() > BUFFER_SIZE) {
-        return "Buffer overflow";
     }
 
     array<uint8_t, 10> cdb = { };

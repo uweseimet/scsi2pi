@@ -157,7 +157,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_shut_down_rascsi(command_shut_down, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_shut_down_rascsi, result));
 
-    if (getuid()) {
+    if (geteuid()) {
         SetParam(command_shut_down, "mode", "system");
         CommandContext context_shut_down_system(command_shut_down, *default_logger());
         EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_system, result));

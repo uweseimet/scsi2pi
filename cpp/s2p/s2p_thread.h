@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -17,7 +17,9 @@
 
 // OpenBSD does not support modern jthreads
 #ifdef __OpenBSD__
-#define jthread thread
+using jthread = std::thread;
+#else
+using jthread = std::jthread;
 #endif
 
 class CommandContext;
@@ -37,8 +39,8 @@ public:
 
 private:
 
-    void Execute() const;
-    bool ExecuteCommand(int) const;
+    void Execute();
+    bool ExecuteCommand(int);
 
     callback exec;
 

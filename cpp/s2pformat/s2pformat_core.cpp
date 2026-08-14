@@ -29,7 +29,7 @@ void S2pFormat::Banner(bool header) const
     }
 
     cout << "Usage: s2pformat [options] </dev/sg*>\n"
-        << "  --help/-H             Display this help.\n"
+        << "  --help/-h             Display this help.\n"
         << "  --log-level/-L LEVEL  Log level (trace|debug|info|warning|error|\n"
         << "                        critical|off), default is 'info'.\n"
         << "  --version/-v          Display the s2pformat version.\n";
@@ -38,7 +38,7 @@ void S2pFormat::Banner(bool header) const
 bool S2pFormat::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
-        { "help", no_argument, nullptr, 'H' },
+        { "help", no_argument, nullptr, 'h' },
         { "log-level", required_argument, nullptr, 'L' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
@@ -101,6 +101,11 @@ int S2pFormat::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
+    if (device.empty()) {
+        cerr << "Error: Missing device\n";
+        return EXIT_FAILURE;
+    }
+
     sg_adapter = make_unique<SgAdapter>(*default_logger());
 
     if (const string &error = sg_adapter->Init(device); !error.empty()) {
@@ -116,7 +121,7 @@ int S2pFormat::Run(span<char*> args)
         return EXIT_SUCCESS;
     }
 
-    cout << "Are you sure? Formatting will erase all data and may take long. (N/y)\n";
+    cout << "Are you sure? Formatting will erase all data and may take a while. (N/y)\n";
 
     string input;
     getline(cin, input);
@@ -181,7 +186,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     return descriptors;
 }
 
-int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
+int S2pFormat::SelectFormat(span<const FormatDescriptor> descriptors)
 {
     cout << "Formats supported by this drive:\n";
 
@@ -199,6 +204,10 @@ int S2pFormat::SelectFormat(span<const S2pFormat::FormatDescriptor> descriptors)
         n = stoi(input);
     }
     catch (const invalid_argument&) // NOSONAR The exception details do not matter
+    {
+        return 0;
+    }
+    catch (const out_of_range&) // NOSONAR The exception details do not matter
     {
         return 0;
     }
@@ -224,7 +233,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
     if (n) {
-        // FmdData
+        // FmtData
         cdb[1] = 0x17;
 
         parameters.resize(12);
