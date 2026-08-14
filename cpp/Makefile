@@ -186,7 +186,7 @@ LIBDIR := $(BUILD_DIR)/lib
 BINDIR := $(BUILD_DIR)/bin
 GENERATED_DIR := $(BUILD_DIR)/generated
 
-BIN_ALL = \
+BIN_ALL := \
 	$(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
@@ -480,11 +480,30 @@ ifeq ($(ENABLE_SCTP),1)
 	BINARIES += $(INSTALL_BIN)/$(S2PSIMH)
 endif
 
+ALL_OBJ := $(OBJ_API) \
+	$(OBJ_S2P_CORE) \
+	$(OBJ_S2PCTL_CORE) \
+	$(OBJ_S2P) \
+	$(OBJ_S2PCTL) \
+	$(OBJ_S2PDUMP) \
+	$(OBJ_S2PEXEC) \
+	$(OBJ_S2PPROTO) \
+	$(OBJ_S2PSIMH) \
+	$(OBJ_S2PFORMAT) \
+	$(OBJ_S2PTOOL) \
+	$(OBJ_SHARED) \
+	$(OBJ_SHARED_PROTOBUF) \
+	$(OBJ_SHARED_INITIATOR) \
+	$(OBJ_SHARED_COMMAND) \
+	$(OBJ_BASE) \
+	$(OBJ_BUSES) \
+	$(OBJ_CONTROLLERS) \
+	$(OBJ_DEVICES) \
+	$(OBJ_PI) \
+	$(OBJ_S2P_TEST)
+ALL_DEPS := $(patsubst %.o,%.d,$(ALL_OBJ))
 # The following will include all of the auto-generated dependency files (*.d)
 # if they exist. This will trigger a rebuild of a source file if a header changes
-ALL_DEPS := $(patsubst %.o,%.d,$(OBJ_API) $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P) $(OBJ_S2PCTL) $(OBJ_S2PDUMP) \
-	$(OBJ_S2PEXEC) $(OBJ_S2PPROTO) $(OBJ_S2PSIMH) $(OBJ_S2PFORMAT) $(OBJ_S2PTOOL) $(OBJ_SHARED) $(OBJ_SHARED_PROTOBUF) \
-	$(OBJ_SHARED_INITIATOR) $(OBJ_SHARED_COMMAND) $(OBJ_BASE) $(OBJ_BUSES) $(OBJ_CONTROLLERS) $(OBJ_DEVICES) $(OBJ_PI) $(OBJ_S2P_TEST))
 -include $(ALL_DEPS)
 
 $(LIB_SHARED): $(OBJ_SHARED)
