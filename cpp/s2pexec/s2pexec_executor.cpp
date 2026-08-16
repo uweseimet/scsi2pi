@@ -33,7 +33,7 @@ string S2pExecExecutor::Init(const string &device)
 string S2pExecExecutor::Init(int id, const string &name, bool in_process, bool log_signals)
 {
     if (!bus) {
-        bus = bus_factory::CreateBus(false, in_process, name, log_signals);
+        bus = bus_factory::CreateBus(false, in_process, log_signals, name);
         if (!bus) {
             return "Can't initialize bus";
         }

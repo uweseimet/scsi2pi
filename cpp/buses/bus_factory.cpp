@@ -13,7 +13,7 @@
 
 using namespace spdlog;
 
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const string &identifier, bool log_signals)
+unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals, const string &identifier)
 {
     unique_ptr<Bus> bus;
 

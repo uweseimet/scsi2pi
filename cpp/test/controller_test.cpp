@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ TEST(ControllerTest, Reset)
 TEST(ControllerTest, Process)
 {
     const S2pFormatter formatter;
-    auto bus = bus_factory::CreateBus(true, true, "", false);
+    auto bus = bus_factory::CreateBus(true, true, false, "");
     auto controller = make_shared<Controller>(*bus, 2, nullptr, formatter);
 
     bus->SetRST(true);

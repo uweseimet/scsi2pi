@@ -34,7 +34,7 @@ using namespace s2p_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = bus_factory::CreateBus(true, in_process, APP_NAME, log_signals);
+    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME);
     if (!bus) {
         return false;
     }

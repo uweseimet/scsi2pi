@@ -70,13 +70,13 @@ private:
 
     void SetDir(bool) const override;
 
-    // Set GPIO pin pull up/down resistor setting to PULLDOWN
-    void ConfigurePullDown(int) const;
-
     // GPIO pin direction setting
     void PinConfig(int, int) const;
 
     void PinSetSignal(int, bool) const;
+
+    // Set GPIO pin pull up/down resistor setting to PULLDOWN
+    void ConfigurePullDown(int) const;
 
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;

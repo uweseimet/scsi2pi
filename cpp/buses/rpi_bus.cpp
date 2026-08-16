@@ -217,8 +217,8 @@ void RpiBus::Reset() const
     PinSetSignal(PIN_ACT, false);
 
     // Set all signals to off
-    for (const int s : SIGNAL_TABLE) {
-        SetSignal(s, false);
+    for (const int pin : SIGNAL_TABLE) {
+        SetSignal(pin, false);
     }
 
     // Set target signal to input for all modes
@@ -323,9 +323,11 @@ void RpiBus::CreateWorkTables()
     }
 }
 
-// Set output signal value (except for DP and DT0-DT7)
 void RpiBus::SetSignal(int pin, bool state) const
 {
+    // Only for non-data signals, because these use SetDAT()
+    assert(pin != PIN_DP && (pin < PIN_DT0 || pin > PIN_DT7));
+
     const int index = pin / 10;
     assert(index <= 2);
     const int shift = (pin % 10) * 3;
@@ -410,13 +412,21 @@ void RpiBus::PinConfig(int pin, int mode) const
     gpio[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
 }
 
-void RpiBus::ConfigurePullDown(int pin) const
+// Set output pin
+void RpiBus::PinSetSignal(int pin, bool state) const
 {
 #ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
 #endif
+
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+}
+
+void RpiBus::ConfigurePullDown(int pin) const
+{
+    assert(pin >= 0);
 
     pin &= 0x1f;
     if (pi_type == PiType::PI_4) {
@@ -435,18 +445,6 @@ void RpiBus::ConfigurePullDown(int pin) const
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
     }
-}
-
-// Set output pin
-void RpiBus::PinSetSignal(int pin, bool state) const
-{
-#ifdef BOARD_STANDARD
-    if (pin < 0) {
-        return;
-    }
-#endif
-
-    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
 }
 
 void RpiBus::SetSignalDriveStrength(uint32_t drive) const
