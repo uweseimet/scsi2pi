@@ -41,7 +41,7 @@ void InProcessBus::SetDAT(uint8_t dat) const
     scoped_lock lock(signal_lock);
 
     uint32_t s = ~GetSignals();
-    s &= 0b11111111111111000000001111111111;
+    s &= ~DATA_BITS_MASK;
     s |= static_cast<uint32_t>(dat) << PIN_DT0;
     SetSignals(~s);
 }

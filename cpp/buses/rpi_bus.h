@@ -3,7 +3,7 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -28,6 +28,10 @@ public:
         PI_3 = 3,
         PI_4 = 4
     };
+
+    explicit RpiBus(PiType type) : pi_type(type)
+    {
+    }
 
     string SetUp(bool) override;
     void Reset() const override;
@@ -77,7 +81,7 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type = GetPiType();
+    PiType pi_type;
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
@@ -125,8 +129,6 @@ private:
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
-    // Data mask table
-    array<array<uint32_t, 256>, 3> tblDatMsk = { };
     // Data setting table
     array<array<uint32_t, 256>, 3> tblDatSet = { };
 

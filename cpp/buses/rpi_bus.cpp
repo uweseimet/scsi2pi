@@ -156,7 +156,7 @@ string RpiBus::SetUp(bool target)
     }
     close(fd);
 
-    epoll_fd = epoll_create(1);
+    epoll_fd = epoll_create(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {
         return "Can't create epoll instance";
     }
@@ -305,11 +305,6 @@ void RpiBus::CreateWorkTables()
         tblParity[i] = !parity;
     }
 
-    // Mask data defaults
-    for (auto &tbl : tblDatMsk) {
-        tbl.fill(-1);
-    }
-
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         // Bit string for inspection
         uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
@@ -319,9 +314,6 @@ void RpiBus::CreateWorkTables()
             // Offset of the Function Select register for this pin (3 bits per pin)
             const int index = pin / 10;
             const int shift = (pin % 10) * 3;
-
-            // Mask data (GPIO pin is an output pin)
-            tblDatMsk[index][i] &= ~(0b111 << shift);
 
             // Value (GPIO pin is set to 1)
             tblDatSet[index][i] |= (bits & 0b001) << shift;

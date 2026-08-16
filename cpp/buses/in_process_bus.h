@@ -85,6 +85,8 @@ private:
     inline static condition_variable sel;
     inline static bool selected = false;
 
+    inline static constexpr uint32_t DATA_BITS_MASK = 0xffu << PIN_DT0;
+
     inline static const unordered_map<int, const char*> SIGNALS_TO_LOG = {
         { PIN_BSY_MASK, "BSY" },
         { PIN_SEL_MASK, "SEL" },
