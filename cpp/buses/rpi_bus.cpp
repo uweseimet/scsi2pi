@@ -284,10 +284,10 @@ inline void RpiBus::SetDAT(uint8_t dat) const
 
 void RpiBus::InitializeSignals() const
 {
-    for (const int s : SIGNAL_TABLE) {
-        PinSetSignal(s, false);
-        PinConfig(s, GPIO_INPUT);
-        ConfigurePullDown(s);
+    for (const int pin : SIGNAL_TABLE) {
+        PinSetSignal(pin, false);
+        PinConfig(pin, GPIO_INPUT);
+        ConfigurePullDown(pin);
     }
 }
 
