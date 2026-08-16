@@ -50,6 +50,13 @@ int run(int argc, char *argv[])
         { nullptr, 0, nullptr, 0 }
     };
 
+    const set<string> clients = {
+        "s2pctl"
+        #ifndef BOARD_STANDARD
+        , "s2pdump", "s2pexec", "s2poroto"
+    #endif
+    };
+
     string client = "s2pexec";
     string t_args;
     string c_args;
@@ -90,9 +97,11 @@ int run(int argc, char *argv[])
         }
     }
 
-    if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
+    if (!clients.contains(client)) {
         cerr << "Invalid in-process test tool client: '" << client
-            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto\n";
+            << "', client must be "
+            << Join(clients, ", ")
+            << '\n';
         return EXIT_FAILURE;
     }
 
