@@ -211,7 +211,6 @@ DIR_BASE := base
 DIR_BUSES := buses
 DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
-DIR_PI := pi
 
 PROTO_API := ../api/s2p_interface.proto
 
@@ -229,8 +228,6 @@ SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
 ifdef IS_LINUX
 SRC_SHARED += $(DIR_SHARED)/sg_adapter.cpp
 endif
-
-SRC_PI := $(DIR_PI)/rpi_bus.cpp
 
 SRC_SHARED_PROTOBUF := $(DIR_SHARED_PROTOBUF)/protobuf_util.cpp \
 	$(DIR_SHARED_PROTOBUF)/s2p_interface_util.cpp
@@ -252,7 +249,8 @@ SRC_BASE := $(DIR_BASE)/device.cpp \
 
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
-	$(DIR_BUSES)/in_process_bus.cpp
+	$(DIR_BUSES)/in_process_bus.cpp \
+	$(DIR_BUSES)/rpi_bus.cpp
 
 SRC_CONTROLLERS := $(DIR_CONTROLLERS)/abstract_controller.cpp \
 	$(DIR_CONTROLLERS)/controller.cpp \
@@ -441,7 +439,6 @@ OBJ_SHARED_INITIATOR := $(call obj_files,$(SRC_SHARED_INITIATOR))
 OBJ_BASE := $(call obj_files,$(SRC_BASE))
 OBJ_BUSES := $(call obj_files,$(SRC_BUSES))
 OBJ_CONTROLLERS := $(call obj_files,$(SRC_CONTROLLERS))
-OBJ_PI := $(call obj_files,$(SRC_PI))
 
 OBJ_DEVICES := $(sort \
 	$(OBJ_SCHD) \
@@ -499,7 +496,6 @@ ALL_OBJ := $(OBJ_API) \
 	$(OBJ_BUSES) \
 	$(OBJ_CONTROLLERS) \
 	$(OBJ_DEVICES) \
-	$(OBJ_PI) \
 	$(OBJ_S2P_TEST)
 ALL_DEPS := $(patsubst %.o,%.d,$(ALL_OBJ))
 # The following will include all of the auto-generated dependency files (*.d)
@@ -510,7 +506,7 @@ $(LIB_SHARED): $(OBJ_SHARED)
 $(LIB_SHARED_PROTOBUF): $(OBJ_API) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
 $(LIB_SHARED_COMMAND): $(OBJ_SHARED_COMMAND) $(OBJ_API) $(OBJ_SHARED_PROTOBUF) $(OBJ_SHARED)
 $(LIB_SHARED_INITIATOR): $(OBJ_SHARED_INITIATOR)
-$(LIB_BUS): $(OBJ_BUSES) $(OBJ_PI)
+$(LIB_BUS): $(OBJ_BUSES)
 $(LIB_CONTROLLER): $(OBJ_CONTROLLERS)
 $(LIB_DEVICE): $(OBJ_DEVICES) $(OBJ_BASE)
 

@@ -9,7 +9,7 @@
 #include "bus_factory.h"
 #include <condition_variable>
 #include "in_process_bus.h"
-#include "pi/rpi_bus.h"
+#include "rpi_bus.h"
 
 using namespace spdlog;
 
