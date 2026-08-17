@@ -17,13 +17,13 @@ static void CheckPosition(const AbstractController &controller, shared_ptr<Prima
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, ScsiCommand::READ_POSITION);
 
-    assert(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
+    ASSERT_TRUE(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
 }
 
 static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
 {
     auto *c = dynamic_cast<MockAbstractController*>(tape->GetController());
-    assert(c);
+    ASSERT_NE(nullptr, c);
     c->ResetCdb();
     c->SetCdbByte(1, 0x01);
     CheckPosition(*c, tape, position);
@@ -58,7 +58,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<MockTape>> CreateTape()
 
 void WriteSimhObject(ostream &file, span<const uint8_t> leading, int length = 0, span<const uint8_t> trailing = { })
 {
-    assert(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
+    ASSERT_TRUE(!(leading.size() % 4) && !(trailing.size() % 4) && "SIMH meta data length must be a multiple of 4");
 
     file.write(to_const_char_ptr(leading), leading.size());
     file.seekp(length, ios::cur);

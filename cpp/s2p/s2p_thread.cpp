@@ -53,6 +53,11 @@ void S2pThread::Execute()
     ) {
         if (fd == -1) {
             fd = server.Accept();
+
+            // Prevent busy-waiting if accept fails while the server is running
+            if (fd == -1 && server.IsRunning()) {
+                this_thread::sleep_for(50ms);
+            }
         }
 
         if (fd != -1 && !ExecuteCommand(fd)) {
