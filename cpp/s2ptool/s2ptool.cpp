@@ -50,13 +50,6 @@ int run(int argc, char *argv[])
         { nullptr, 0, nullptr, 0 }
     };
 
-    const set<string> clients = {
-        "s2pctl"
-        #ifndef BOARD_STANDARD
-        , "s2pdump", "s2pexec", "s2poroto"
-    #endif
-    };
-
     string client = "s2pexec";
     string t_args;
     string c_args;
@@ -95,20 +88,6 @@ int run(int argc, char *argv[])
 
             return EXIT_FAILURE;
         }
-    }
-
-    if (!clients.contains(client)) {
-        cerr << "Invalid in-process test tool client: '" << client
-            << "', client must be "
-            << Join(clients, ", ")
-            << '\n';
-        return EXIT_FAILURE;
-    }
-
-    // s2pctl and s2pexec do not require arguments because they support an interactive mode
-    if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
-        cerr << "Test client '" << client << "' requires arguments\n";
-        return EXIT_FAILURE;
     }
 
     vector<char*> client_args;
@@ -161,6 +140,9 @@ int run(int argc, char *argv[])
         result = s2proto->Run(client_args, true, log_signals);
     }
 #endif
+    else {
+        cerr << "Invalid in-process test tool client: '" << client << "'\n";
+    }
 
     s2p->CleanUp();
 

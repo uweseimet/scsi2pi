@@ -39,8 +39,6 @@ bool S2p::InitBus(bool in_process, bool log_signals)
         return false;
     }
 
-    s2p_logger = CreateLogger(APP_NAME);
-
     executor = make_unique<CommandExecutor>(*bus, controller_factory, *s2p_logger);
 
     dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory, *s2p_logger);
@@ -122,12 +120,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_SUCCESS;
     }
 
-    if (!InitBus(in_process, log_signals)) {
-        CleanUp("Can't initialize bus");
-        return EXIT_FAILURE;
-    }
-
     Banner(false);
+
+    s2p_logger = CreateLogger(APP_NAME);
 
     bool ignore_conf = false;
 
@@ -150,6 +145,16 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
     if (const string &error = MapExtensions(); !error.empty()) {
         CleanUp(error);
+        return EXIT_FAILURE;
+    }
+
+    if (!InitBus(in_process, log_signals)) {
+        CleanUp("Can't initialize bus");
+        return EXIT_FAILURE;
+    }
+
+    if (!dispatcher->SetLogLevel(log_level)) {
+        CleanUp("Invalid log level: '" + log_level + "'");
         return EXIT_FAILURE;
     }
 
@@ -255,9 +260,6 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 
     // This sets the global level only, there are no attached devices yet
     log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
-    if (!dispatcher->SetLogLevel(log_level)) {
-        throw ParserException("Invalid log level: '" + log_level + "'");
-    }
 
     // Log the properties (on trace level) *after* the log level has been set
     LogProperties();

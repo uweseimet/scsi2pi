@@ -24,6 +24,13 @@ using namespace s2p_util;
 
 string RpiBus::SetUp(bool target)
 {
+#ifdef BOARD_STANDARD
+    if (!target) {
+        assert(false);
+        return "Initiator mode requires a FULLSPEC board";
+    }
+#endif
+
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";

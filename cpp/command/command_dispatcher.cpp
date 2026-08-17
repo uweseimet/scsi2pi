@@ -211,31 +211,29 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
         sync();
-#if defined(__linux__)
+#ifdef __linux__
         if (reboot(RB_POWER_OFF)) {
-#elif defined(__NetBSD__)
-        if (reboot(RB_POWERDOWN, nullptr)) {
-#elif defined(__OpenBSD__)
-        if (reboot(RB_HALT)) {
-#else
-        if (reboot(RB_POWEROFF)) {
-#endif
             s2p_logger.error("Pi shutdown failed");
             return false;
         }
+#else
+        s2p_logger.error("Shutdown is not supported on this platform");
+        return false;
+#endif
         break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
         sync();
-#if defined(__NetBSD__)
-        if (reboot(RB_AUTOBOOT, nullptr)) {
-#else
+#ifdef __linux__
         if (reboot(RB_AUTOBOOT)) {
-#endif
             s2p_logger.error("Pi restart failed");
             return false;
         }
+#else
+        s2p_logger.error("Restart is not supported on this platform");
+        return false;
+#endif
         break;
 
     default:

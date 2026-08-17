@@ -55,6 +55,8 @@ jobs:
         run: gcov -p $(find ../build/obj -name '*.gcno')
 
       - name: Run sonar-scanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           $HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64/bin/sonar-scanner \
             --define sonar.host.url=$SONAR_SERVER_URL \
@@ -67,5 +69,4 @@ jobs:
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.branch.name=${{ inputs.branch }} \
             --define sonar.cpd.exclusions="s2pdump/sg_executor.h" \
-            --define sonar.test.inclusions=test/** \
-            --define sonar.token=${{ secrets.SONAR_TOKEN }}
+            --define sonar.test.inclusions=test/**
