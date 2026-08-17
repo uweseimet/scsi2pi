@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ public:
 
     bool ShutDown(ShutdownMode) const;
 
-    bool SetLogLevel(const string&);
+    bool SetLogLevel(string_view);
 
     bool SetWithoutTypes(const string&);
 

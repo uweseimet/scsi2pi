@@ -246,13 +246,13 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     return true;
 }
 
-bool CommandDispatcher::SetLogLevel(const string &log_level)
+bool CommandDispatcher::SetLogLevel(string_view log_level)
 {
     int id = -1;
     int lun = -1;
-    string level = log_level;
+    string level = log_level.data();
 
-    if (const auto &components = Split(log_level, COMPONENT_SEPARATOR, 2); !components.empty()) {
+    if (const auto &components = Split(level, COMPONENT_SEPARATOR, 2); !components.empty()) {
         level = components[0];
 
         if (components.size() > 1) {

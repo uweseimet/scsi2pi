@@ -56,7 +56,7 @@ public:
         return true;
     }
 
-    static PiType GetPiType(const string& = "/proc/device-tree/model");
+    static PiType GetPiType(string_view = "/proc/device-tree/model");
 
 private:
 
@@ -125,10 +125,11 @@ private:
 
 #ifdef __linux__
     // SEL signal event request
-    struct gpioevent_request selevreq = { };
+    struct gpioevent_request selevreq = { .lineoffset = PIN_SEL, .handleflags = GPIOHANDLE_REQUEST_INPUT, .eventflags =
+        GPIOEVENT_REQUEST_FALLING_EDGE, .consumer_label = "SCSI2Pi", .fd = -1, };
 #endif
 
-    int epoll_fd = 0;
+    int epoll_fd = -1;
 
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;

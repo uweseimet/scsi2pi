@@ -20,8 +20,6 @@ TEST(ControllerTest, Reset)
     const S2pFormatter formatter;
     auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
 
-    controller->Init();
-
     controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
     EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());
     controller->Reset();
@@ -46,8 +44,6 @@ TEST(ControllerTest, GetInitiatorId)
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
     auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
-
-    controller->Init();
 
     controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
     EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());

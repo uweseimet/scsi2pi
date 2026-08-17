@@ -148,12 +148,6 @@ string RpiBus::SetUp(bool target)
     }
 
 #ifdef __linux__
-    // Event request setting
-    strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
-    selevreq.lineoffset = PIN_SEL;
-    selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
-    selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
-
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
         close(fd);
         return "Can't register event request. If s2p is running (e.g. as a service), shut it down first.";
@@ -193,8 +187,12 @@ string RpiBus::SetUp(bool target)
 void RpiBus::CleanUp()
 {
 #ifdef __linux__
-    // Release SEL signal interrupt
-    close(selevreq.fd);
+    if (epoll_fd >= 0) {
+        close(epoll_fd);
+    }
+    if (selevreq.fd >= 0) {
+        close(selevreq.fd);
+    }
 #endif
 
     // Set control signals
@@ -476,9 +474,9 @@ void RpiBus::WaitNanoSeconds(bool daynaport) const
     }
 }
 
-RpiBus::PiType RpiBus::GetPiType(const string &device_file)
+RpiBus::PiType RpiBus::GetPiType(string_view device_file)
 {
-    ifstream in(device_file);
+    ifstream in(device_file.data());
     stringstream s;
     s << in.rdbuf();
     const string &model = s.str();
@@ -489,12 +487,12 @@ RpiBus::PiType RpiBus::GetPiType(const string &device_file)
     }
 
     int type;
-    if(model.find("Zero 2") != string::npos) {
+    if (model.find("Zero 2") != string::npos) {
         type = static_cast<int>(RpiBus::PiType::PI_3);
     }
     else {
         type = model.find("Zero") != string::npos ||
-        model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+            model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
     }
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);

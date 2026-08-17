@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2023 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -97,7 +97,6 @@ TEST(PhaseHandlerTest, Phases)
 TEST(PhaseHandlerTest, ProcessPhase)
 {
     MockPhaseHandler handler;
-    handler.Init();
 
     handler.SetPhase(BusPhase::SELECTION);
     EXPECT_CALL(handler, Selection);

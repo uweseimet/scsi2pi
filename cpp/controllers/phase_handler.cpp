@@ -2,23 +2,55 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2024 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "phase_handler.h"
+#include <cassert>
 
-void PhaseHandler::Init()
+bool PhaseHandler::ProcessPhase()
 {
-    phase_executors[static_cast<int>(BusPhase::BUS_FREE)] = [this]() {BusFree(); return true;};
-    phase_executors[static_cast<int>(BusPhase::ARBITRATION)] = []() {return false;};
-    phase_executors[static_cast<int>(BusPhase::SELECTION)] = [this]() {Selection(); return true;};
-    phase_executors[static_cast<int>(BusPhase::RESELECTION)] = []() {return false;};
-    phase_executors[static_cast<int>(BusPhase::COMMAND)] = [this]() {Command(); return true;};
-    phase_executors[static_cast<int>(BusPhase::DATA_IN)] = [this]() {DataIn(); return true;};
-    phase_executors[static_cast<int>(BusPhase::DATA_OUT)] = [this]() {DataOut(); return true;};
-    phase_executors[static_cast<int>(BusPhase::STATUS)] = [this]() {Status(); return true;};
-    phase_executors[static_cast<int>(BusPhase::MSG_IN)] = [this]() {MsgIn(); return true;};
-    phase_executors[static_cast<int>(BusPhase::MSG_OUT)] = [this]() {MsgOut(); return true;};
-    phase_executors[static_cast<int>(BusPhase::RESERVED)] = []() {return false;};
+    assert(phase <= BusPhase::RESERVED);
+
+    switch (phase) {
+    case BusPhase::BUS_FREE:
+        BusFree();
+        return true;
+
+    case BusPhase::SELECTION:
+        Selection();
+        return true;
+
+    case BusPhase::COMMAND:
+        Command();
+        return true;
+
+    case BusPhase::DATA_IN:
+        DataIn();
+        return true;
+
+    case BusPhase::DATA_OUT:
+        DataOut();
+        return true;
+
+    case BusPhase::STATUS:
+        Status();
+        return true;
+
+    case BusPhase::MSG_IN:
+        MsgIn();
+        return true;
+
+    case BusPhase::MSG_OUT:
+        MsgOut();
+        return true;
+
+    case BusPhase::ARBITRATION:
+    case BusPhase::RESELECTION:
+    case BusPhase::RESERVED:
+    default:
+        return false;
+    }
 }
+
