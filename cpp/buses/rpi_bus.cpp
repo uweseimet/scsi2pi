@@ -162,6 +162,7 @@ string RpiBus::SetUp(bool target)
 
     epoll_fd = epoll_create(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {
+        close(selevreq.fd);
         return "Can't create epoll instance";
     }
 
@@ -175,7 +176,7 @@ string RpiBus::SetUp(bool target)
     }
 #endif
 
-    CreateWorkTables();
+    CreateWorkTable();
 
     // Set the initiator signal direction
     PinSetSignal(pin_ind, !target);
@@ -284,11 +285,11 @@ void RpiBus::SetDir(bool in) const
     }
 }
 
-inline void RpiBus::SetDAT(uint8_t dat) const
+void RpiBus::SetDAT(uint8_t dat) const
 {
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
-    fsel |= tblDatSet[1][dat];
+    fsel |= tblDatSet[dat];
     gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 }
@@ -302,11 +303,10 @@ void RpiBus::InitializeSignals() const
     }
 }
 
-void RpiBus::CreateWorkTables()
+void RpiBus::CreateWorkTable()
 {
     array<uint8_t, 256> tblParity;
 
-    // Create parity table
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
@@ -323,11 +323,10 @@ void RpiBus::CreateWorkTables()
         // Bit check
         for (const int pin : DATA_PINS) {
             // Offset of the Function Select register for this pin (3 bits per pin)
-            const int index = pin / 10;
             const int shift = (pin % 10) * 3;
 
             // Value (GPIO pin is set to 1)
-            tblDatSet[index][i] |= (bits & 0b001) << shift;
+            tblDatSet[i] |= (bits & 0b001) << shift;
 
             bits >>= 1;
         }
@@ -461,7 +460,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 }
 
 // Read data from bus
-inline void RpiBus::Acquire() const
+void RpiBus::Acquire() const
 {
     SetSignals(*level);
 }

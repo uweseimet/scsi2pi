@@ -62,7 +62,7 @@ private:
 
     void InitializeSignals() const;
 
-    void CreateWorkTables();
+    void CreateWorkTable();
 
     void SetSignal(int, bool) const override;
 
@@ -114,10 +114,10 @@ private:
     // Interrupt enabled state
     uint32_t irpt_enb = 0;
 
-    // Interupt control target CPU
+    // Interrupt control target CPU
     int tint_core = 0;
 
-    // Interupt control
+    // Interrupt control
     uint32_t tint_ctl = 0;
 
     // GIC priority setting
@@ -140,8 +140,8 @@ private:
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
-    // Data setting table
-    array<array<uint32_t, 256>, 3> tblDatSet = { };
+    // Data setting table for data pins
+    array<uint32_t, 256> tblDatSet = { };
 
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };

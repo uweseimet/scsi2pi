@@ -3,7 +3,7 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@
 // Control signal pin assignment
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE
-// These are set to -1 for the STANDARD board
+// These are set to -1 for the STANDARD board in rpi_bus.cpp
 constexpr static int PIN_IND = 6; // INITIATOR CTRL DIRECTION
 constexpr static int PIN_TAD = 7; // TARGET CTRL DIRECTION
 constexpr static int PIN_DTD = 8; // DATA DIRECTION

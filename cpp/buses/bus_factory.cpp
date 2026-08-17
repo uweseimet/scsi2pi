@@ -7,11 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "bus_factory.h"
-#include <condition_variable>
 #include "in_process_bus.h"
 #include "rpi_bus.h"
-
-using namespace spdlog;
 
 unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
     const string &identifier, bool standard_board)
