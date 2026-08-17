@@ -191,11 +191,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (GetController() && GetLogger().level() <= level::debug) {
+    if (GetController() && GetLogger().should_log(level::debug)) {
         LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
-    if (write && GetController() && GetLogger().level() == level::trace) {
+    if (write && GetController() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Transferring {} byte(s) to SG driver{}", length,
             length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : ""));
     }
@@ -208,7 +208,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (!write && GetController() && GetLogger().level() == level::trace) {
+    if (!write && GetController() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Transferred {} byte(s) from SG driver{}", transferred_length,
             transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : ""));
     }

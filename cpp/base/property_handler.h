@@ -68,7 +68,7 @@ private:
 
     PropertyHandler() = default;
 
-    static void ParsePropertyFile(property_map&, const string&, bool);
+    static void ParsePropertyFile(property_map&, string_view, bool);
 
     property_map property_cache;
 

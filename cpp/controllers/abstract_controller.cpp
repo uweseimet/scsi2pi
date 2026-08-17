@@ -80,8 +80,7 @@ void AbstractController::UpdateOffsetAndLength()
 void AbstractController::CopyToBuffer(span<const uint8_t> buf)
 {
     SetCurrentLength(static_cast<int>(buf.size()));
-
-    memcpy(buffer.data(), buf.data(), buf.size());
+    ranges::copy(buf, buffer.begin());
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const

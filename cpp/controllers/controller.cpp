@@ -139,7 +139,7 @@ void Controller::Command()
         }
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
-        if (GetLogger().level() <= level::debug) {
+        if (GetLogger().should_log(level::debug)) {
             LogDebug(CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
@@ -360,7 +360,7 @@ void Controller::Send()
     assert(bus.GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        if (GetLogger().level() == level::trace && IsDataIn()) {
+        if (IsDataIn() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), length);
             LogTrace(fmt::format("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
                 bytes.empty() ? "" : ":\n", bytes));
@@ -440,7 +440,7 @@ void Controller::Receive()
             return;
         }
 
-        if (GetLogger().level() == level::trace && IsDataOut()) {
+        if (IsDataOut() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), curr_length);
             LogTrace(fmt::format("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n",
                 bytes));

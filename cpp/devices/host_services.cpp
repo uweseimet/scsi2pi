@@ -176,10 +176,12 @@ void HostServices::ReceiveOperationResults()
 
     case ProtobufFormat::JSON: {
         PbResult result;
-        if (!result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()))) {
+        if (!result.ParseFromString(execution_result)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
-        static_cast<void>(MessageToJsonString(result, &data).ok());
+        if (!MessageToJsonString(result, &data).ok()) {
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        }
         break;
     }
 

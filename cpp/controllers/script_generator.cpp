@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,9 +14,9 @@
 
 using namespace s2p_util;
 
-bool ScriptGenerator::CreateFile(const string &filename)
+bool ScriptGenerator::CreateFile(string_view filename)
 {
-    file.open(filename);
+    file.open(filename.data());
 
     return file.good();
 }

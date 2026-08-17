@@ -250,7 +250,7 @@ bool CommandDispatcher::SetLogLevel(string_view log_level)
 {
     int id = -1;
     int lun = -1;
-    string level = log_level.data();
+    string level(log_level);
 
     if (const auto &components = Split(level, COMPONENT_SEPARATOR, 2); !components.empty()) {
         level = components[0];
