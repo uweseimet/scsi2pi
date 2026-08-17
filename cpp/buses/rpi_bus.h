@@ -84,10 +84,15 @@ private:
 
     PiType pi_type;
 
-    // Pins only available with the FULLSPEC board, set to -1 for the STANDARD board
+#ifdef BOARD_STANDARD
+    int pin_ind = -1;
+    int pin_tad = -1;
+    int pin_dtd = -1;
+#else
     int pin_ind = PIN_IND;
     int pin_tad = PIN_TAD;
     int pin_dtd = PIN_DTD;
+#endif
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
