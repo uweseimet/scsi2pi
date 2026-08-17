@@ -125,8 +125,7 @@ private:
 
 #ifdef __linux__
     // SEL signal event request
-    struct gpioevent_request selevreq = { .lineoffset = PIN_SEL, .handleflags = GPIOHANDLE_REQUEST_INPUT, .eventflags =
-        GPIOEVENT_REQUEST_FALLING_EDGE, .consumer_label = "SCSI2Pi", .fd = -1, };
+    struct gpioevent_request selevreq = { };
 #endif
 
     int epoll_fd = -1;

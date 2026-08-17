@@ -148,6 +148,13 @@ string RpiBus::SetUp(bool target)
     }
 
 #ifdef __linux__
+    // Event request setting
+    strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
+    selevreq.lineoffset = PIN_SEL;
+    selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
+    selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
+    selevreq.fd = -1;
+
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
         close(fd);
         return "Can't register event request. If s2p is running (e.g. as a service), shut it down first.";
