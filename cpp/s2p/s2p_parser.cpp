@@ -157,6 +157,7 @@ void s2p_parser::Banner(bool usage)
             << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
+            << "  --standard-board/-S            Run the FULLSPEC board binary with a STANDARD board.\n"
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"
@@ -201,6 +202,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "scan-depth", required_argument, nullptr, 'R' },
         { "script-file", required_argument, nullptr, 's' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
+        { "standard-board", no_argument, nullptr, 'S' },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
@@ -218,7 +220,8 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { 'L', PropertyHandler::LOG_LEVEL },
         { 'l', PropertyHandler::LOG_PATTERN },
         { 'P', PropertyHandler::TOKEN_FILE },
-        { 'R', PropertyHandler::SCAN_DEPTH }
+        { 'R', PropertyHandler::SCAN_DEPTH },
+        { 'S', PropertyHandler::STANDARD_BOARD }
     };
 
     vector<char*> args = ConvertLegacyOptions(initial_args);
@@ -236,10 +239,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BS",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
-            properties[property->second] = optarg;
+            properties[property->second] = optarg ? optarg : "true";
             continue;
         }
 

@@ -8,7 +8,9 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
+#ifdef __linux__
 #include <sys/reboot.h>
+#endif
 #include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"

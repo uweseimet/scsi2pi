@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       debug:
-        required: false
+        required: true
         type: boolean
         description: Debug build
         default: true
       board:
-        required: false
+        required: true
         type: choice
         description: Board type
         options:
@@ -53,4 +53,3 @@ jobs:
         run: |
           debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
           make test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
-

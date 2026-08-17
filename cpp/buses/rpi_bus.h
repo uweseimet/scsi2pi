@@ -36,6 +36,7 @@ public:
     string SetUp(bool) override;
     void Reset() const override;
     void CleanUp() override;
+    void SetStandardBoard();
 
     uint8_t WaitForSelection() override;
 
@@ -82,6 +83,11 @@ private:
     void SetSignalDriveStrength(uint32_t) const;
 
     PiType pi_type;
+
+    // Pins only available with the FULLSPEC board, set to -1 for the STANDARD board
+    int pin_ind = PIN_IND;
+    int pin_tad = PIN_TAD;
+    int pin_dtd = PIN_DTD;
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;

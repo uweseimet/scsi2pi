@@ -24,12 +24,9 @@ using namespace s2p_util;
 
 string RpiBus::SetUp(bool target)
 {
-#ifdef BOARD_STANDARD
-    if (!target) {
-        assert(false);
+    if (pin_ind < 0 && !target) {
         return "Initiator mode requires a FULLSPEC board";
     }
-#endif
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
@@ -128,13 +125,13 @@ string RpiBus::SetUp(bool target)
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(PIN_TAD, false);
-    PinSetSignal(PIN_IND, false);
-    PinSetSignal(PIN_DTD, false);
+    PinSetSignal(pin_tad, false);
+    PinSetSignal(pin_ind, false);
+    PinSetSignal(pin_dtd, false);
     PinConfig(PIN_ACT, GPIO_OUTPUT);
-    PinConfig(PIN_TAD, GPIO_OUTPUT);
-    PinConfig(PIN_IND, GPIO_OUTPUT);
-    PinConfig(PIN_DTD, GPIO_OUTPUT);
+    PinConfig(pin_tad, GPIO_OUTPUT);
+    PinConfig(pin_ind, GPIO_OUTPUT);
+    PinConfig(pin_dtd, GPIO_OUTPUT);
 
     PinSetSignal(PIN_ENB, false);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
@@ -181,10 +178,10 @@ string RpiBus::SetUp(bool target)
     CreateWorkTables();
 
     // Set the initiator signal direction
-    PinSetSignal(PIN_IND, !target);
+    PinSetSignal(pin_ind, !target);
 
     // Set data bus signal directions
-    PinSetSignal(PIN_DTD, target);
+    PinSetSignal(pin_dtd, target);
 
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
@@ -202,13 +199,13 @@ void RpiBus::CleanUp()
     // Set control signals
     PinSetSignal(PIN_ENB, false);
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(PIN_TAD, false);
-    PinSetSignal(PIN_IND, false);
-    PinSetSignal(PIN_DTD, false);
+    PinSetSignal(pin_tad, false);
+    PinSetSignal(pin_ind, false);
+    PinSetSignal(pin_dtd, false);
     PinConfig(PIN_ACT, GPIO_INPUT);
-    PinConfig(PIN_TAD, GPIO_INPUT);
-    PinConfig(PIN_IND, GPIO_INPUT);
-    PinConfig(PIN_DTD, GPIO_INPUT);
+    PinConfig(pin_tad, GPIO_INPUT);
+    PinConfig(pin_ind, GPIO_INPUT);
+    PinConfig(pin_dtd, GPIO_INPUT);
 
     InitializeSignals();
 
@@ -229,7 +226,14 @@ void RpiBus::Reset() const
     }
 
     // Set target signal to input for all modes
-    PinSetSignal(PIN_TAD, false);
+    PinSetSignal(pin_tad, false);
+}
+
+void RpiBus::SetStandardBoard()
+{
+    pin_ind = -1;
+    pin_tad = -1;
+    pin_dtd = -1;
 }
 
 uint8_t RpiBus::WaitForSelection()
@@ -260,7 +264,7 @@ void RpiBus::SetBSY(bool state) const
     Bus::SetBSY(state);
 
     PinSetSignal(PIN_ACT, state);
-    PinSetSignal(PIN_TAD, state);
+    PinSetSignal(pin_tad, state);
 }
 
 void RpiBus::SetSEL(bool state) const
@@ -273,7 +277,7 @@ void RpiBus::SetSEL(bool state) const
 void RpiBus::SetDir(bool in) const
 {
     // Change the data input/output direction according to the IO signal
-    PinSetSignal(PIN_DTD, !in);
+    PinSetSignal(pin_dtd, !in);
 
     for (const int pin : DATA_PINS) {
         PinSetSignal(pin, !in);
@@ -408,11 +412,9 @@ void RpiBus::EnableIRQ()
 // Pin direction setting (input/output)
 void RpiBus::PinConfig(int pin, int mode) const
 {
-#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
-#endif
 
     const int index = pin / 10;
     const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
@@ -422,11 +424,9 @@ void RpiBus::PinConfig(int pin, int mode) const
 // Set output pin
 void RpiBus::PinSetSignal(int pin, bool state) const
 {
-#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
-#endif
 
     gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
 }

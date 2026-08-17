@@ -34,7 +34,8 @@ using namespace s2p_util;
 
 bool S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME);
+    const bool standard_board = property_handler.RemoveProperty(PropertyHandler::STANDARD_BOARD, "false") == "true";
+    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, standard_board);
     if (!bus) {
         return false;
     }

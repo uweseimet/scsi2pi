@@ -50,20 +50,13 @@
 //
 //---------------------------------------------------------------------------
 
-// Control signal pin assignment (-1 means no control)
+// Control signal pin assignment
 constexpr static int PIN_ACT = 4; // ACTIVE
 constexpr static int PIN_ENB = 5; // ENABLE
-#if defined BOARD_FULLSPEC
+// These are set to -1 for the STANDARD board
 constexpr static int PIN_IND = 6; // INITIATOR CTRL DIRECTION
 constexpr static int PIN_TAD = 7; // TARGET CTRL DIRECTION
 constexpr static int PIN_DTD = 8; // DATA DIRECTION
-#elif defined BOARD_STANDARD
-constexpr static int PIN_IND = -1;
-constexpr static int PIN_TAD = -1;
-constexpr static int PIN_DTD = -1;
-#else
-#error Invalid connection type or none specified
-#endif
 
 // SCSI signal pin assignment
 constexpr static int PIN_DT0 = 10;

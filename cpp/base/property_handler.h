@@ -34,6 +34,7 @@ public:
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
+    static constexpr const char *STANDARD_BOARD = "standard_board";
     static constexpr const char *TOKEN_FILE = "token_file";
     static constexpr const char *WITHOUT_TYPES = "without_types";
 

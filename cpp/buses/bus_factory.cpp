@@ -13,7 +13,8 @@
 
 using namespace spdlog;
 
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals, const string &identifier)
+unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
+    const string &identifier, bool standard_board)
 {
     unique_ptr<Bus> bus;
 
@@ -21,7 +22,11 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
         bus = make_unique<InProcessBus>(identifier, log_signals);
     }
     else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
-        bus = make_unique<RpiBus>(pi_type);
+        auto rpi_bus = make_unique<RpiBus>(pi_type);
+        if (standard_board) {
+            rpi_bus->SetStandardBoard();
+        }
+        bus = std::move(rpi_bus);
     }
     else {
         bus = make_unique<InProcessBus>(identifier, false);

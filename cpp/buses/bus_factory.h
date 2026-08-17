@@ -14,6 +14,6 @@
 namespace bus_factory
 {
 
-unique_ptr<Bus> CreateBus(bool, bool, bool, const string&);
+unique_ptr<Bus> CreateBus(bool, bool, bool, const string&, bool = false);
 
 }
