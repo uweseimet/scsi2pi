@@ -31,9 +31,8 @@ SPDLOG_LIBS ?= $(if $(strip $(SPDLOG_PKGCONFIG_LIBS)),$(SPDLOG_PKGCONFIG_LIBS),-
 DEBUG_FLAGS ?= -g -O0 -DDEBUG
 RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
-VISIBILITY_FLAGS ?= -fvisibility=hidden -fvisibility-inlines-hidden
 
-CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) $(WARNING_FLAGS) $(VISIBILITY_FLAGS) -MD -MP
+CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) $(WARNING_FLAGS) -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
@@ -115,7 +114,8 @@ CXXFLAGS += -DBOARD_$(BOARD)
 
 ##   ENABLE_*=1
 ##   DISABLE_*=1
-##     Specifies the device types to build or not to build, default is to build all. Supported types:
+##     Specifies the device types to build or not to build,
+##     default is to build all. Supported types:
 ##       SCHD SCSI Non-removable Hard Drive
 ##       SCRM Removable Media Drive
 ##       SCCD SCSI CD-Rom Drive
