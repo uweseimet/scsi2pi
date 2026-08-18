@@ -8,18 +8,21 @@
 
 .DEFAULT_GOAL := all
 
-CONNECT_TYPE ?= FULLSPEC
+BOARD ?= FULLSPEC
 
 TARGET := /opt/scsi2pi
 
 INSTALL_DIR := $(TARGET)/man/man1/
 
 MANPAGES = s2p.1 \
-	s2pctl.1
-ifeq ($(CONNECT_TYPE), FULLSPEC)
+	s2pctl.1 \
+	s2psimh.1 \
+	s2ptool.1
+ifneq ($(BOARD), STANDARD)
 	MANPAGES += s2pdump.1 \
 	s2pexec.1 \
-	s2pproto.1
+	s2pproto.1 \
+	s2pformat.1
 endif
 
 INSTALL_PAGES := $(addprefix $(INSTALL_DIR),$(MANPAGES))
@@ -38,4 +41,4 @@ $(INSTALL_DIR)%.1: %.1 | $(INSTALL_DIR)
 	cp $< $(INSTALL_DIR)
 
 $(INSTALL_DIR):
-	mkdir -p $@
+	@mkdir -p $@

@@ -8,14 +8,14 @@
 
 .SUFFIXES:
 
+##   BUILD_DIR= The target directory for the files built
 BUILD_DIR ?= ../build
 
-##   CROSS_COMPILE= Specifies the compiler toolchain, e.g.
-##                  arm-linux-gnueabihf-
+##   CROSS_COMPILE= The compiler toolchain, e.g. arm-linux-gnueabihf-
 CROSS_COMPILE ?=
 
 CXX := $(CROSS_COMPILE)g++
-AR := $(CROSS_COMPILE)gcc-ar
+AR := $(CROSS_COMPILE)ar
 STRIP := $(CROSS_COMPILE)strip
 
 ifeq ($(strip $(CROSS_COMPILE)),)
@@ -25,14 +25,15 @@ SPDLOG_PKGCONFIG_LIBS := $(shell pkg-config --libs spdlog 2>/dev/null)
 endif
 endif
 
-SPDLOG_FLAGS ?= -DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB $(SPDLOG_PKGCONFIG_CFLAGS)
+SPDLOG_FLAGS ?= $(if $(strip $(SPDLOG_PKGCONFIG_CFLAGS)),$(SPDLOG_PKGCONFIG_CFLAGS),-DSPDLOG_COMPILED_LIB -DSPDLOG_SHARED_LIB)
 SPDLOG_LIBS ?= $(if $(strip $(SPDLOG_PKGCONFIG_LIBS)),$(SPDLOG_PKGCONFIG_LIBS),-lspdlog -lfmt)
 
 DEBUG_FLAGS ?= -g -O0 -DDEBUG
 RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
+VISIBILITY_FLAGS ?= -fvisibility=hidden -fvisibility-inlines-hidden
 
-CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) $(WARNING_FLAGS) -MD -MP -fvisibility=hidden -fvisibility-inlines-hidden
+CXXFLAGS := -std=c++20 -I. -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) $(WARNING_FLAGS) $(VISIBILITY_FLAGS) -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
@@ -51,29 +52,28 @@ UNAME := $(shell uname -s)
 ifeq ($(UNAME),Linux)
 # -Wno-psabi might not work on non-Linux platforms
 	IS_LINUX := 1
-	CXXFLAGS += -Wno-psabi
+	LINUX_FLAGS := -Wno-psabi
 endif
 
+CXXFLAGS += $(LINUX_FLAGS)
+
 ifeq ($(UNAME),FreeBSD)
-	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
+	BSD_FLAGS := -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ifeq ($(UNAME),NetBSD)
-	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter
+	BSD_FLAGS := -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
 endif
 
 ifeq ($(UNAME),OpenBSD)
-	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -D_LIBCPP_ENABLE_EXPERIMENTAL -I/usr/local/include -Wno-unused-parameter
-	LDFLAGS += -L/usr/local/lib
+	BSD_FLAGS := -D_LIBCPP_ENABLE_EXPERIMENTAL -Wno-unused-parameter
 endif
 
 ifeq ($(UNAME),Darwin)
-	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -Wno-unused-parameter
+	BSD_FLAGS := -Wno-unused-parameter -Wno-macro-redefined
 endif
+
+CXXFLAGS += $(BSD_FLAGS)
 
 ## EXTRA_FLAGS Can be used to pass special purpose compiler flags
 CXXFLAGS += $(EXTRA_FLAGS)
@@ -90,7 +90,9 @@ ifeq ($(PROTOC_MAJOR),)
   $(error Could not determine protoc major version from "$(PROTOC_VERSION)")
 endif
 ifeq ($(shell test $(PROTOC_MAJOR) -ge 22 && echo yes),yes)
-	ABSEIL_LIBS = -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash
+	PROTOBUF_LIBS := -labsl_log_internal_check_op -labsl_log_internal_message -labsl_status -labsl_log_internal_nullguard -labsl_hash -lprotobuf
+else
+	PROTOBUF_LIBS := -lprotobuf
 endif
 
 ## Installation path
@@ -98,7 +100,7 @@ endif
 PREFIX ?= /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
-##     Specifies the board type that you are using. Typically this is
+##     Specifies the board type that you are using, either
 ##     STANDARD or FULLSPEC. The default is FULLSPEC.
 BOARD ?= FULLSPEC
 
@@ -550,10 +552,10 @@ $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_API)
 
 $(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) \
-	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(ABSEIL_LIBS) -lpthread -lprotobuf
+	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
 
 $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(SPDLOG_LIBS) $(ABSEIL_LIBS) -lprotobuf
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2PDUMP): $(OBJ_S2PDUMP) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PDUMP) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(SPDLOG_LIBS)
@@ -563,7 +565,7 @@ $(BINDIR)/$(S2PEXEC): $(OBJ_S2PEXEC) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SH
 
 $(BINDIR)/$(S2PPROTO): $(OBJ_S2PPROTO) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(OBJ_API) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) \
-	$(OBJ_API)  $(SPDLOG_LIBS) $(ABSEIL_LIBS) -lprotobuf
+	$(OBJ_API)  $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2PSIMH): $(OBJ_S2PSIMH) $(LIB_SHARED) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2PSIMH) $(LIB_SHARED) $(SPDLOG_LIBS)
@@ -574,12 +576,12 @@ $(BINDIR)/$(S2PFORMAT): $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LI
 $(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
-	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(ABSEIL_LIBS) -lpthread -lprotobuf
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
-	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(ABSEIL_LIBS) -lpthread -lprotobuf -lgmock -lgtest
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread -lgmock -lgtest
 
 # Rules for building individual binaries
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)
@@ -600,7 +602,7 @@ $(S2P_TEST): $(BINDIR)/$(S2P_TEST)
 clean:
 	rm -rf $(BUILD_DIR)
 
-##   install         Installs the stripped binaries, usually to /opt/scsi2pi/bin
+##   install         Installs and strips the binaries, usually to /opt/scsi2pi/bin
 .PHONY: install
 install: $(BINARIES)
 
