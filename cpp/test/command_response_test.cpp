@@ -212,7 +212,7 @@ TEST(CommandResponseTest, GetLogLevelInfo)
 {
     PbLogLevelInfo info;
     GetLogLevelInfo(info);
-    EXPECT_EQ(level::to_string_view(get_level()).data(), info.current_log_level());
+    EXPECT_EQ(level::to_string_view(get_level()), info.current_log_level());
     EXPECT_EQ(7, info.log_levels().size());
 }
 

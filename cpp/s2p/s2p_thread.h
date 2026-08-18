@@ -15,13 +15,6 @@
 #include <spdlog/spdlog.h>
 #include "s2p_server.h"
 
-// OpenBSD does not support modern jthreads
-#ifdef __OpenBSD__
-using jthread = std::thread;
-#else
-using jthread = std::jthread;
-#endif
-
 class CommandContext;
 
 using namespace spdlog;

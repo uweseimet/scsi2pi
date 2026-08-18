@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ TEST(ScsiCdTest, GetBlockSizes)
 TEST(ScsiCdTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
-    MockScsiCd cd(0);
+    ScsiCd cd(0, false);
 
     // Non changeable
     cd.SetUpModePages(pages, 0x3f, false);
@@ -79,7 +79,8 @@ TEST(ScsiCdTest, SetUpModePages)
 
 TEST(ScsiCdTest, Open)
 {
-    MockScsiCd cd(0);
+    ScsiCd cd(0, false);
+    cd.SetCachingMode(PbCachingMode::PISCSI);
 
     EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 

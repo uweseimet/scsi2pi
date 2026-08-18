@@ -165,7 +165,7 @@ TEST(CommandImageSupportTest, SetImagePermissions)
     PbCommand command3;
     SetParam(command3, "file", "filename");
     CommandContext context3(command3, *default_logger());
-    EXPECT_FALSE(image.CopyImage(context3)) << "Source file must be reported as missing";
+    EXPECT_FALSE(image.SetImagePermissions(context3)) << "Source file must be reported as missing";
 
     // Further testing would modify the filesystem
 }

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ TEST(OpticalMemoryTest, GetBlockSizes)
 TEST(OpticalMemoryTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
-    MockOpticalMemory mo(0);
+    OpticalMemory mo(0);
 
     // Non changeable
     mo.SetUpModePages(pages, 0x3f, false);
@@ -163,7 +163,8 @@ TEST(OpticalMemoryTest, ModeSelect)
 
 TEST(OpticalMemoryTest, Open)
 {
-    MockOpticalMemory mo(0);
+    OpticalMemory mo(0);
+    mo.SetCachingMode(PbCachingMode::PISCSI);
 
     EXPECT_THROW(mo.Open(), IoException)<< "Missing filename";
 

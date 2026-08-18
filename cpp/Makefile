@@ -50,23 +50,23 @@ UNAME := $(shell uname -s)
 
 ifeq ($(UNAME),Linux)
 # -Wno-psabi might not work on non-Linux platforms
-	CXXFLAGS += -Wno-psabi
 	IS_LINUX := 1
+	CXXFLAGS += -Wno-psabi
 endif
 
 ifeq ($(UNAME),FreeBSD)
 	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter -Wno-macro-redefined
+	CXXFLAGS += -fexperimental-library -I/usr/local/include -Wno-unused-parameter
 endif
 
 ifeq ($(UNAME),NetBSD)
 	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter -Wno-macro-redefined
+	CXXFLAGS += -I/usr/pkg/include -Wno-unused-parameter
 endif
 
 ifeq ($(UNAME),OpenBSD)
 	AR := $(CROSS_COMPILE)ar
-	CXXFLAGS += -I/usr/local/include -Wno-unused-parameter
+	CXXFLAGS += -D_LIBCPP_ENABLE_EXPERIMENTAL -I/usr/local/include -Wno-unused-parameter
 	LDFLAGS += -L/usr/local/lib
 endif
 

@@ -31,9 +31,7 @@ void S2pThread::Start()
 // This method might be called twice when pressing Ctrl-C, because of the installed handlers
 void S2pThread::Stop()
 {
-#ifndef __OpenBSD__
     service_thread.request_stop();
-#endif
 
     server.CleanUp();
 }
@@ -47,9 +45,7 @@ void S2pThread::Execute()
 {
     int fd = -1;
     while (server.IsRunning()
-#ifndef __OpenBSD__
         && !service_thread.get_stop_token().stop_requested()
-#endif
     ) {
         if (fd == -1) {
             fd = server.Accept();

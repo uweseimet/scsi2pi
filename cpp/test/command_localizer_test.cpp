@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ TEST(CommandLocalizer, Localize)
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = command_localizer.Localize((LocalizationKey)1234, "");
+    message = command_localizer.Localize(static_cast<LocalizationKey>(1234), "");
     EXPECT_FALSE(message.empty());
     EXPECT_NE(string::npos, message.find("enum value"));
 }

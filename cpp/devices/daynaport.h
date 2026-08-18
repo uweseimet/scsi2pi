@@ -16,7 +16,7 @@
 // this development. (Farallon's EtherMac is a re-branded DaynaPort
 // SCSI/Link-T).
 //
-// Note: This requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
+// Note: This requires a DaynaPort SCSI Link driver.
 //
 //---------------------------------------------------------------------------
 
