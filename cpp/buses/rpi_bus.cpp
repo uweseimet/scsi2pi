@@ -193,10 +193,10 @@ string RpiBus::SetUp(bool target)
 
 void RpiBus::CleanUp()
 {
-#ifdef __linux__
     if (epoll_fd >= 0) {
         close(epoll_fd);
     }
+#ifdef __linux__
     if (selevreq.fd >= 0) {
         close(selevreq.fd);
     }

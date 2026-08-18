@@ -23,9 +23,6 @@
 #pragma once
 
 #include <array>
-#if !defined(__NetBSD__) && !defined(__OpenBSD__)
-#include <net/ethernet.h>
-#endif
 #include "base/primary_device.h"
 #include "tap_driver.h"
 

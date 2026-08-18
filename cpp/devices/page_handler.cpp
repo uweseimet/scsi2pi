@@ -141,12 +141,12 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
         else {
             // Validate the page code and (except for page 0, which has no well-defined format) the page size
             if (page_code && (page_code != to_integer<int>(page_data[0] & byte { 0x3f }))) {
-                warn("Ignored mode page definition with inconsistent page code {}: {}", page_code, page_data[0]);
+                warn("Ignored mode page definition with inconsistent page code {}: {}", page_code, static_cast<uint8_t>(page_data[0]));
                 continue;
             }
 
             if (page_code && static_cast<byte>(page_data.size() - 2) != page_data[1]) {
-                warn("Ignored mode page definition with wrong page size {}: {}", page_code, page_data[1]);
+                warn("Ignored mode page definition with wrong page size {}: {}", page_code, static_cast<uint8_t>(page_data[1]));
                 continue;
             }
 
