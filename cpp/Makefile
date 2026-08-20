@@ -551,7 +551,7 @@ test: $(BINDIR)/$(S2P_TEST)
 
 coverage: CXXFLAGS += --coverage
 coverage: LDFLAGS += --coverage
-coverage: clean test
+coverage: test
 
 $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_API)
 
