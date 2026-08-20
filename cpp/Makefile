@@ -522,7 +522,6 @@ $(LIB_SHARED) $(LIB_SHARED_PROTOBUF) $(LIB_SHARED_INITIATOR) $(LIB_SHARED_COMMAN
 	rm -f $@
 	$(AR) rcs $@ $^
 
-# Compilation rules use $(CPPFLAGS) $(CXXFLAGS)
 $(OBJDIR)/%.o: %.cpp | $(SRC_API)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
@@ -539,7 +538,7 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 ##   all             Build all executable files (default target)
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
-##                   Run 'make clean' between coverage and non-coverage builds.
+##                   Run 'make clean' before a non-coverage build after a coverage build
 .DEFAULT_GOAL := all
 .PHONY: all cpp test coverage
 
@@ -551,11 +550,11 @@ test: $(BINDIR)/$(S2P_TEST)
 	$(BINDIR)/$(S2P_TEST)
 
 coverage: CXXFLAGS += --coverage
-coverage: test
+coverage: LDFLAGS += --coverage
+coverage: clean test
 
 $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_API)
 
-# Linker rules drop $(CXXFLAGS) and preserve only $(LDFLAGS) to prevent leaking preprocessor defines
 $(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) \
 	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
@@ -589,7 +588,6 @@ $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) 
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
 	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread -lgmock -lgtest
 
-# Rules for building individual binaries
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)
 
 $(S2P): $(BINDIR)/$(S2P)
