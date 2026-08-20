@@ -52,31 +52,34 @@ UNAME := $(shell uname -s)
 ifeq ($(UNAME),Linux)
 # -Wno-psabi might not work on non-Linux platforms
 	IS_LINUX := 1
-	LINUX_FLAGS := -Wno-psabi
+	LINUX_CXXFLAGS := -Wno-psabi
 endif
 
-CXXFLAGS += $(LINUX_FLAGS)
+CXXFLAGS += $(LINUX_CXXFLAGS)
 
 ifeq ($(UNAME),FreeBSD)
-	BSD_FLAGS := -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
+	BSD_CXXFLAGS := -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
 endif
 
 ifeq ($(UNAME),NetBSD)
-	BSD_FLAGS := -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
+	BSD_CXXFLAGS := -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
 endif
 
 ifeq ($(UNAME),OpenBSD)
-	BSD_FLAGS := -D_LIBCPP_ENABLE_EXPERIMENTAL -Wno-unused-parameter
+	BSD_CPPFLAGS := -D_LIBCPP_ENABLE_EXPERIMENTAL
+	BSD_CXXFLAGS := -Wno-unused-parameter
 endif
 
 ifeq ($(UNAME),Darwin)
-	BSD_FLAGS := -Wno-unused-parameter -Wno-macro-redefined
+	BSD_CXXFLAGS := -Wno-unused-parameter -Wno-macro-redefined
 endif
 
-CXXFLAGS += $(BSD_FLAGS)
+CPPFLAGS += $(BSD_CPPFLAGS)
+CXXFLAGS += $(BSD_CXXFLAGS)
 
-## EXTRA_FLAGS Can be used to pass special purpose compiler flags
-CXXFLAGS += $(EXTRA_FLAGS)
+## EXTRA_CPPFLAGS and EXTRA_CXXFLAGS Can be used to pass special purpose flags
+CPPFLAGS += $(EXTRA_CPPFLAGS)
+CXXFLAGS += $(EXTRA_CXXFLAGS)
 
 PROTOC ?= protoc
 ifeq ($(shell command -v $(PROTOC) 2>/dev/null),)
