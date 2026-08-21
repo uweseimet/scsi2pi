@@ -82,7 +82,7 @@ TEST(SimhUtilTest, Pad)
 
 TEST(SimhUtilTest, WriteFilemark)
 {
-    const string &filename = CreateTempFile();
+    const string &filename = CreateTempFile().string();
     fstream file(filename);
 
     EXPECT_TRUE(WriteFilemark(file));
@@ -98,7 +98,7 @@ TEST(SimhUtilTest, WriteFilemark)
 
 TEST(SimhUtilTest, WriteGoodData)
 {
-    const string &filename = CreateTempFile();
+    const string &filename = CreateTempFile().string();
     fstream file(filename);
 
     vector<uint8_t> data = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };

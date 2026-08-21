@@ -41,7 +41,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     buf = { byte { 0xff }, byte { 0xff }, byte { 0xff }, byte { 0xff } };
     EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd1, buf.data(), buf.size()));
     close(fd1);
-    fd1 = open(filename1.c_str(), O_RDONLY);
+    fd1 = open(filename1.string().c_str(), O_RDONLY);
     ASSERT_NE(-1, fd1);
     EXPECT_THROW(DeserializeMessage(fd1, result), IoException)<< "Invalid header was not rejected";
 
@@ -50,7 +50,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     buf = { byte { 0x02 }, byte { 0x00 }, byte { 0x00 }, byte { 0x00 } };
     EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd2, buf.data(), buf.size()));
     close(fd2);
-    fd2 = open(filename2.c_str(), O_RDONLY);
+    fd2 = open(filename2.string().c_str(), O_RDONLY);
     ASSERT_NE(-1, fd2);
     EXPECT_THROW(DeserializeMessage(fd2, result), IoException)<< "Invalid data were not rejected";
 }
@@ -66,7 +66,7 @@ TEST(ProtobufUtilTest, SerializeDeserializeMessage)
     close(fd);
 
     result.set_status(false);
-    fd = open(filename.c_str(), O_RDONLY);
+    fd = open(filename.string().c_str(), O_RDONLY);
     ASSERT_NE(-1, fd);
     DeserializeMessage(fd, result);
     close(fd);

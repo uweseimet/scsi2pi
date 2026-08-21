@@ -386,7 +386,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/in_process_bus_test.cpp \
 	test/linux_cache_test.cpp \
 	test/memory_util_test.cpp \
-	test/network_util_test.cpp \
 	test/optical_memory_test.cpp \
 	test/page_handler_test.cpp \
 	test/phase_handler_test.cpp \
@@ -414,6 +413,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/test_shared.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
+	test/network_util_test.cpp \
 	test/rpi_bus_test.cpp \
 	test/scsi_generic_test.cpp \
 	test/tap_driver_test.cpp

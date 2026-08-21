@@ -2,16 +2,24 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
 //---------------------------------------------------------------------------
 
+#if __has_include(<sys/socket.h>)
 #include <sys/socket.h>
+#endif
+#if __has_include(<arpa/inet.h>)
 #include <arpa/inet.h>
+#endif
+#if __has_include(<netdb.h>)
 #include <netdb.h>
+#endif
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
 #include <unistd.h>
 #include <gtest/gtest.h>
 #include "command/command_context.h"
@@ -23,6 +31,7 @@
 using namespace protobuf_util;
 using namespace network_util;
 
+#if __has_include(<sys/socket.h>)
 void SendCommand(const PbCommand &command, PbResult &result)
 {
     sockaddr_in server_addr = { };
@@ -38,6 +47,7 @@ void SendCommand(const PbCommand &command, PbResult &result)
     DeserializeMessage(fd, result);
     close(fd);
 }
+#endif
 
 TEST(S2pThreadTest, Init)
 {
@@ -62,6 +72,7 @@ TEST(S2pThreadTest, IsRunning)
     EXPECT_FALSE(service_thread.IsRunning());
 }
 
+#if __has_include(<sys/socket.h>)
 TEST(S2pThreadTest, Execute)
 {
     sockaddr_in server_addr = { };
@@ -98,3 +109,4 @@ TEST(S2pThreadTest, Execute)
 
     service_thread.Stop();
 }
+#endif

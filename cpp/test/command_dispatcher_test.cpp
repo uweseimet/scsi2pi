@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -157,6 +157,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_shut_down_rascsi(command_shut_down, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_shut_down_rascsi, result));
 
+#if __has_include(<pwd.h>)
     if (geteuid()) {
         SetParam(command_shut_down, "mode", "system");
         CommandContext context_shut_down_system(command_shut_down, *default_logger());
@@ -166,6 +167,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
         CommandContext context_shut_down_reboot(command_shut_down, *default_logger());
         EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_reboot, result));
     }
+#endif
 
     SetParam(command_shut_down, "mode", "invalid");
     CommandContext context_shut_down_invalid(command_shut_down, *default_logger());

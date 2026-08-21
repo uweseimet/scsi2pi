@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ TEST(DiskCache, Init)
 TEST(DiskCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    DiskCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1);
+    DiskCache cache(CreateTempFile(buf.size()).string(), static_cast<int>(buf.size()), 1);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));

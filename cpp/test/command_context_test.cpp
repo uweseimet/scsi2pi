@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ TEST(CommandContext, GetLogger)
 
 TEST(CommandContext, WriteResult)
 {
-    const string &filename = CreateTempFile(0);
+    const string &filename = CreateTempFile(0).string();
     const int fd = open(filename.c_str(), O_RDWR | O_APPEND);
     PbResult result;
     result.set_error_code(PbErrorCode::UNAUTHORIZED);

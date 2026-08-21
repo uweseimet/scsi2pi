@@ -69,7 +69,7 @@ TEST(ControllerFactoryTest, SetScriptFile)
     ControllerFactory controller_factory;
 
     EXPECT_FALSE(controller_factory.SetScriptFile(""));
-    const string &filename = CreateTempFile();
+    const string &filename = CreateTempFile().string();
     EXPECT_TRUE(controller_factory.SetScriptFile(filename));
     ifstream file(filename);
     EXPECT_TRUE(file.good());

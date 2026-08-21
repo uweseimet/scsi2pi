@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
@@ -119,17 +119,17 @@ TEST(S2pCtlCommandsTest, Export)
     command.set_operation(OPERATION_INFO);
 
     auto [fd_bin, filename_bin] = OpenTempFile();
-    S2pCtlCommands commands1(command, "localhost", 0, filename_bin, "", "");
+    S2pCtlCommands commands1(command, "localhost", 0, filename_bin.string(), "", "");
     EXPECT_TRUE(commands1.Execute("", "", "", "", ""));
     EXPECT_EQ(2U, file_size(filename_bin));
 
     auto [fd_json, filename_json] = OpenTempFile();
-    S2pCtlCommands commands2(command, "localhost", 0, "", filename_json, "");
+    S2pCtlCommands commands2(command, "localhost", 0, "", filename_json.string(), "");
     EXPECT_TRUE(commands2.Execute("", "", "", "", ""));
-    EXPECT_NE(string::npos, ReadTempFileToString(filename_json).find(PbOperation_Name(OPERATION_INFO)));
+    EXPECT_NE(string::npos, ReadTempFileToString(filename_json.string()).find(PbOperation_Name(OPERATION_INFO)));
 
     auto [fd_txt, filename_txt] = OpenTempFile();
-    S2pCtlCommands commands3(command, "localhost", 0, "", "", filename_txt);
+    S2pCtlCommands commands3(command, "localhost", 0, "", "", filename_txt.string());
     EXPECT_TRUE(commands3.Execute("", "", "", "", ""));
-    EXPECT_NE(string::npos, ReadTempFileToString(filename_txt).find(PbOperation_Name(OPERATION_INFO)));
+    EXPECT_NE(string::npos, ReadTempFileToString(filename_txt.string()).find(PbOperation_Name(OPERATION_INFO)));
 }

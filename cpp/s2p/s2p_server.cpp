@@ -19,11 +19,11 @@
 
 string S2pServer::Init(int port)
 {
-#ifdef SO_REUSEADDR
     assert(!running);
     assert(server_socket == -1);
     assert(port > 0 && port <= 65535);
 
+#if __has_include(<sys/socket.h>)
     server_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
         return "Can't create server socket: " + string(strerror(errno));

@@ -167,7 +167,7 @@ pair<int, path> OpenTempFile(const string &extension)
         effective_name += "." + extension;
     }
 
-    const int fd = open(effective_name.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+    const int fd = open(effective_name.string().c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
     EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << effective_name << "'";
 
     TestShared::RememberTempFile(effective_name.string());
@@ -203,14 +203,14 @@ string ReadTempFileToString(const string &filename)
 void SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
     const auto& [fd1, filename1] = OpenTempFile();
-    string filenames = filename1;
+    string filenames = filename1.string();
     write(fd1, properties1.data(), properties1.size());
     close(fd1);
 
     if (!properties2.empty()) {
         const auto& [fd2, filename2] = OpenTempFile();
         filenames += ",";
-        filenames += filename2;
+        filenames += filename2.string();
         write(fd2, properties2.data(), properties2.size());
         close(fd2);
     }

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,12 +13,10 @@
 
 using namespace network_util;
 
-#ifdef __linux__
 TEST(NetworkUtilTest, GetNetworkInterfaces)
 {
     EXPECT_FALSE(GetNetworkInterfaces().empty());
 }
-#endif
 
 TEST(NetworkUtilTest, ResolveHostName)
 {
