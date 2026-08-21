@@ -253,6 +253,8 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 {
     pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
+// TODO Find a better solution
+#ifndef _WIN32
     if (!changeable) {
         const time_t &t = system_clock::to_time_t(system_clock::now());
         tm local_time;
@@ -271,6 +273,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
         memcpy(&pages[32][2], &datetime, sizeof(datetime));
     }
+#endif
 }
 
 int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)

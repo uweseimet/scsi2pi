@@ -7,8 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "bus_factory.h"
+#include <spdlog/spdlog.h>
 #include "in_process_bus.h"
+#ifdef __linux__
 #include "rpi_bus.h"
+#endif
 
 unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
     const string &identifier, bool standard_board)
@@ -18,6 +21,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
     if (in_process) {
         bus = make_unique<InProcessBus>(identifier, log_signals);
     }
+#ifdef __linux__
     else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
         auto rpi_bus = make_unique<RpiBus>(pi_type);
         if (standard_board) {
@@ -25,7 +29,12 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
         }
         bus = std::move(rpi_bus);
     }
+#endif
     else {
+#ifndef __linux__
+        spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
+#endif
+
         bus = make_unique<InProcessBus>(identifier, false);
     }
 

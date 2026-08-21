@@ -147,7 +147,6 @@ string RpiBus::SetUp(bool target)
         return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
     }
 
-#ifdef __linux__
     // Event request setting
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
@@ -175,7 +174,6 @@ string RpiBus::SetUp(bool target)
         close(selevreq.fd);
         return "Can't add file descriptor to epoll";
     }
-#endif
 
     CreateWorkTable();
 
@@ -196,11 +194,10 @@ void RpiBus::CleanUp()
     if (epoll_fd >= 0) {
         close(epoll_fd);
     }
-#ifdef __linux__
+
     if (selevreq.fd >= 0) {
         close(selevreq.fd);
     }
-#endif
 
     // Set control signals
     PinSetSignal(PIN_ENB, false);
@@ -244,7 +241,6 @@ void RpiBus::SetStandardBoard()
 
 uint8_t RpiBus::WaitForSelection()
 {
-#ifdef __linux__
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
             warn("epoll_wait failed: {}", strerror(errno));
@@ -260,9 +256,6 @@ uint8_t RpiBus::WaitForSelection()
     }
 
     return GetSelection();
-#else
-    return 0;
-#endif
 }
 
 void RpiBus::SetBSY(bool state) const
@@ -369,9 +362,7 @@ void RpiBus::DisableIRQ()
     case PiType::PI_2:
     case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
-#ifdef __linux__
         tint_core = sched_getcpu() + QA7_CORE0_TINTC;
-#endif
         tint_ctl = qa7_regs[tint_core];
         qa7_regs[tint_core] = 0;
         break;

@@ -8,18 +8,26 @@
 
 #include "network_util.h"
 #include <cstring>
-#ifdef __linux__
+#if __has_include(<ifaddrs.h>)
 #include <ifaddrs.h>
+#endif
+#if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
 #endif
+#if __has_include(<netdb.h>)
 #include <netdb.h>
+#endif
+#if __has_include(<net/if.h>)
 #include <net/if.h>
+#endif
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
 #include <unistd.h>
 
 using namespace std;
 
-#ifdef __linux__
+#ifdef SOCK_DGRAM
 namespace
 {
 
@@ -46,7 +54,7 @@ bool IsInterfaceUp(const string &interface)
 
 vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {
-#ifdef __linux__
+#ifdef SIOCGIFHWADDR
     ifreq ifr = { };
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
@@ -69,7 +77,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 {
     set<string, less<>> network_interfaces;
 
-#ifdef __linux__
+#ifdef IFF_LOOPBACK
     ifaddrs *addrs;
     if (getifaddrs(&addrs) == -1) {
         return network_interfaces;
@@ -96,6 +104,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 
 bool network_util::ResolveHostName(const string &host, sockaddr_in *addr)
 {
+#ifdef SOCK_STREAM
     addrinfo hints = { };
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -105,6 +114,7 @@ bool network_util::ResolveHostName(const string &host, sockaddr_in *addr)
         freeaddrinfo(result);
         return true;
     }
+#endif
 
     return false;
 }

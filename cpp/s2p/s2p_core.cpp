@@ -14,7 +14,9 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
 #include <sys/stat.h>
 #include "base/device_factory.h"
 #include "buses/bus_factory.h"
@@ -70,9 +72,11 @@ void S2p::ReadAccessToken(const path &filename)
         throw ParserException("Access token file '" + filename.string() + "' must be a regular file");
     }
 
+#if __has_include(<pwd.h>)
     if (struct stat st; stat(filename.c_str(), &st) || st.st_uid || st.st_gid) {
         throw ParserException("Access token file '" + filename.string() + "' must be owned by root");
     }
+#endif
 
     if (const auto perms = filesystem::status(filename).permissions();
     (perms & perms::group_read) != perms::none || (perms & perms::others_read) != perms::none ||
@@ -308,12 +312,14 @@ void S2p::SetUpEnvironment()
 {
     instance = this;
 
+#ifdef SIGPIPE
     // Signal handler to detach all devices on a KILL or TERM signal
     struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
+#endif
 }
 
 string S2p::MapExtensions() const
@@ -474,7 +480,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
 void S2p::ProcessScsiCommands()
 {
     // On Pis with several cores, avoid context switches for this thread, which executes the SCSI commands
-#ifdef __linux__
+#ifdef CPU_ZERO
     cpu_set_t mask;
     CPU_ZERO(&mask);
     CPU_SET(3, &mask);

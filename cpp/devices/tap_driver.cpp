@@ -10,12 +10,10 @@
 
 #include "tap_driver.h"
 #include <sstream>
-#include <fcntl.h>
-#ifdef __linux__
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <linux/if_tun.h>
 #include <linux/sockios.h>
-#endif
 #include <net/if.h>
 #include <poll.h>
 #include <sys/ioctl.h>
@@ -47,9 +45,6 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         return "No valid network interfaces available";
     }
 
-#ifndef __linux__
-    return "The TAP driver requires a Linux platform";
-#else
     tap_fd = open("/dev/net/tun", O_RDWR);
     if (tap_fd == -1) {
         return fmt::format("Can't open /dev/net/tun: {}", strerror(errno));
@@ -119,7 +114,6 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
     logger.info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
 
     return "";
-#endif
 }
 
 void TapDriver::CleanUp(logger &logger) const
@@ -191,7 +185,6 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &
         return "Error extracting inet address and netmask";
     }
 
-#ifdef __linux__
     ifreq ifr_a;
     ifr_a.ifr_addr.sa_family = AF_INET;
     strncpy(ifr_a.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
@@ -211,7 +204,6 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &
     if (ioctl(fd, SIOCSIFADDR, &ifr_a) == -1 || ioctl(fd, SIOCSIFNETMASK, &ifr_n) == -1) {
         return "Can't ioctl SIOCSIFADDR or SIOCSIFNETMASK";
     }
-#endif
 
     return "";
 }
@@ -239,7 +231,6 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
 
 string TapDriver::AddBridge(int fd, logger &logger) const
 {
-#ifdef __linux__
     logger.trace(">brctl addbr " + BRIDGE_NAME);
     if (ioctl(fd, SIOCBRADDBR, BRIDGE_NAME.c_str()) == -1) {
         return "Can't ioctl SIOCBRADDBR";
@@ -249,21 +240,18 @@ string TapDriver::AddBridge(int fd, logger &logger) const
     if (const string &error = BrSetIf(fd, bridge_interface, true); !error.empty()) {
         return error;
     }
-#endif
 
     return "";
 }
 
 string TapDriver::DeleteBridge(int fd, logger &logger) const
 {
-#ifdef __linux__
     if (bridge_created) {
         logger.trace(">brctl delbr " + BRIDGE_NAME);
         if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
             return "Removing bridge " + BRIDGE_NAME + " failed: " + strerror(errno);
         }
     }
-#endif
 
     return "";
 }
@@ -305,7 +293,6 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
 
 string TapDriver::BrSetIf(int fd, const string &interface, bool add)
 {
-#ifdef __linux__
     ifreq ifr;
     ifr.ifr_ifindex = if_nametoindex(interface.c_str());
     if (!ifr.ifr_ifindex) {
@@ -316,7 +303,6 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
     if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
         return fmt::format("Can't ioctl {}: {}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
     }
-#endif
 
     return "";
 }

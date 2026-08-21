@@ -10,12 +10,16 @@
 #include <cassert>
 #include <cstring>
 #include <unistd.h>
-
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
+#if __has_include(<sys/socket.h>)
 #include <sys/socket.h>
+#endif
 
 string S2pServer::Init(int port)
 {
+#ifdef SO_REUSEADDR
     assert(!running);
     assert(server_socket == -1);
     assert(port > 0 && port <= 65535);
@@ -46,21 +50,28 @@ string S2pServer::Init(int port)
     }
 
     running = true;
+#endif
 
     return "";
 }
 
 void S2pServer::CleanUp()
 {
+#ifdef SHUT_RD
     if (const int fd = server_socket.exchange(-1); fd != -1) {
         shutdown(fd, SHUT_RD);
         close(fd);
     }
+#endif
 
     running = false;
 }
 
 int S2pServer::Accept() const
 {
+#if __has_include(<sys/socket.h>)
     return accept(server_socket, nullptr, nullptr);
+#else
+    return -1;
+#endif
 }

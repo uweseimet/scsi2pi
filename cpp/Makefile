@@ -152,6 +152,7 @@ ifeq ($(or $(ENABLE_SCHD),$(ENABLE_SCMO),$(ENABLE_SCCD),$(ENABLE_SCTP),$(ENABLE_
 endif
 
 ifndef IS_LINUX
+	ENABLE_SCDP =
 	ENABLE_SCSG =
 endif
 define disable_type
@@ -258,8 +259,10 @@ SRC_BASE := $(DIR_BASE)/device.cpp \
 
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
-	$(DIR_BUSES)/in_process_bus.cpp \
-	$(DIR_BUSES)/rpi_bus.cpp
+	$(DIR_BUSES)/in_process_bus.cpp
+ifdef IS_LINUX
+SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp
+endif
 
 SRC_CONTROLLERS := $(DIR_CONTROLLERS)/abstract_controller.cpp \
 	$(DIR_CONTROLLERS)/controller.cpp \
@@ -374,7 +377,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/command_response_test.cpp \
 	test/controller_factory_test.cpp \
 	test/controller_test.cpp \
-	test/daynaport_test.cpp \
 	test/device_factory_test.cpp \
 	test/device_test.cpp \
 	test/disk_cache_test.cpp \
@@ -392,7 +394,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/printer_test.cpp \
 	test/property_handler_test.cpp \
 	test/protobuf_util_test.cpp \
-	test/rpi_bus_test.cpp \
 	test/s2pctl_commands_test.cpp \
 	test/s2pctl_display_test.cpp \
 	test/s2p_exceptions_test.cpp \
@@ -408,12 +409,14 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/sg_util_test.cpp \
 	test/simh_util_test.cpp \
 	test/storage_device_test.cpp \
-	test/tap_driver_test.cpp \
 	test/tape_test.cpp \
 	test/test_setup.cpp \
 	test/test_shared.cpp
 ifdef IS_LINUX
-SRC_S2P_TEST += test/scsi_generic_test.cpp
+SRC_S2P_TEST += test/daynaport_test.cpp \
+	test/rpi_bus_test.cpp \
+	test/scsi_generic_test.cpp \
+	test/tap_driver_test.cpp
 endif
 
 SRC_S2PTOOL := s2ptool/s2ptool.cpp \

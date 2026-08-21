@@ -9,9 +9,15 @@
 #include "s2pctl_commands.h"
 #include <fstream>
 #include <iostream>
+#if __has_include(<netdb.h>)
 #include <netdb.h>
+#endif
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
+#if __has_include(<sys/socket.h>)
 #include <sys/socket.h>
+#endif
 #include <unistd.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
@@ -104,6 +110,7 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
 
 bool S2pCtlCommands::SendCommand()
 {
+#ifdef SOCK_STREAM
     if (!filename_binary.empty()) {
         ExportAsBinary(command, filename_binary);
     }
@@ -157,6 +164,9 @@ bool S2pCtlCommands::SendCommand()
     }
 
     return true;
+#else
+    return false;
+#endif
 }
 
 bool S2pCtlCommands::HandleDevicesInfo()

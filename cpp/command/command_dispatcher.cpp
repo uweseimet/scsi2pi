@@ -8,7 +8,7 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#ifdef __linux__
+#if __has_include(<sys/reboot.h>)
 #include <sys/reboot.h>
 #endif
 #include <unistd.h>
@@ -180,26 +180,30 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
         mode = ShutdownMode::STOP_S2P;
     }
+#if __has_include(<sys/reboot.h>)
     else if (m == "system") {
         mode = ShutdownMode::STOP_PI;
     }
     else if (m == "reboot") {
         mode = ShutdownMode::RESTART_PI;
     }
+#endif
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
+#if __has_include(<sys/reboot.h>)
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != ShutdownMode::STOP_S2P && geteuid()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
+    if (mode == ShutdownMode::STOP_S2P || geteuid()) {
+        // Report success now because after a shutdown nothing can be reported anymore
+        PbResult result;
+        context.WriteSuccessResult(result);
+
+        return ShutDown(mode);
     }
+#endif
 
-    // Report success now because after a shutdown nothing can be reported anymore
-    PbResult result;
-    context.WriteSuccessResult(result);
-
-    return ShutDown(mode);
+    return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
 }
 
 // Shutdown on a SCSI command
@@ -212,7 +216,7 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-#ifdef __linux__
+#ifdef RB_POWER_OFF
         sync();
         if (reboot(RB_POWER_OFF)) {
             s2p_logger.error("Pi shutdown failed");
@@ -226,7 +230,7 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#ifdef __linux__
+#if RB_AUTOBOOT
         sync();
         if (reboot(RB_AUTOBOOT)) {
             s2p_logger.error("Pi restart failed");

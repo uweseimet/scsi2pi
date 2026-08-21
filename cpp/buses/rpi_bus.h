@@ -9,10 +9,8 @@
 
 #pragma once
 
-#ifdef __linux__
 #include <linux/gpio.h>
 #include <sys/epoll.h>
-#endif
 #include "buses/bus.h"
 
 class RpiBus final : public Bus
@@ -123,10 +121,8 @@ private:
     // GIC priority setting
     uint32_t gicc_pmr_saved = 0;
 
-#ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
-#endif
 
     int epoll_fd = -1;
 

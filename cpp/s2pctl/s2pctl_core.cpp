@@ -389,9 +389,12 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             command.set_operation(STATISTICS_INFO);
             break;
 
+// TODO Replace getpass()
+#ifndef _WIN32
         case OPT_PROMPT:
             token = optarg ? optarg : getpass("Password: ");
             break;
+#endif
 
         case 'x':
             command.set_operation(COPY_IMAGE);
@@ -481,4 +484,3 @@ PbOperation S2pCtl::ParseOperation(string_view operation)
     const auto &it = OPERATIONS.find(tolower(operation[0]));
     return it != OPERATIONS.end() ? it->second : NO_OPERATION;
 }
-

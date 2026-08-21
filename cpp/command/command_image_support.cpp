@@ -375,6 +375,7 @@ bool CommandImageSupport::IsValidDstFilename(string_view filename)
 
 bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
 {
+#if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
     if (chown(filename.c_str(), uid, gid)) {
         // Remember the current error before the next filesystem operation
@@ -385,6 +386,7 @@ bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path 
 
         return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(e));
     }
+#endif
 
     permissions(filename,
         read_only ?

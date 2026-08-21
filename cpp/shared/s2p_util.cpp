@@ -9,8 +9,11 @@
 #include "s2p_util.h"
 #include <algorithm>
 #include <cassert>
+#include <clocale>
 #include <fcntl.h>
+#if __has_include(<pwd.h>)
 #include <pwd.h>
+#endif
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "s2p_version.h"
@@ -27,22 +30,23 @@ string s2p_util::GetVersionString()
 
 string s2p_util::GetHomeDir()
 {
+#if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
 
     passwd pwd = { };
     passwd *p_pwd;
-    array<char, 256> pwbuf;
 
-    if (uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+    if (array<char, 256> pwbuf; uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
         return pwd.pw_dir;
     }
-    else {
-        return "/home/pi";
-    }
+#endif
+
+    return "/home/pi";
 }
 
 pair<int, int> s2p_util::GetUidAndGid()
 {
+#if __has_include(<pwd.h>)
     const char *sudo_user = getenv("SUDO_UID");
     const int uid = sudo_user ? stoi(sudo_user) : geteuid();
 
@@ -56,6 +60,9 @@ pair<int, int> s2p_util::GetUidAndGid()
     }
 
     return {uid, gid};
+#else
+    return {0, 0};
+#endif
 }
 
 bool s2p_util::IsReadOnlyFile(const path& filename)
@@ -108,7 +115,11 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
 
 string s2p_util::GetLocale()
 {
+#ifdef LC_MESSAGES
     const char *locale = setlocale(LC_MESSAGES, "");
+#else
+    const char *locale = setlocale(LC_ALL, "");
+#endif
     if (locale == nullptr || !strcmp(locale, "C") || !strcmp(locale, "POSIX")) {
         locale = "en";
     }

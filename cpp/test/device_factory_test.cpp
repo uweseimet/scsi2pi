@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -24,10 +24,10 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCRM, factory.CreateDevice(SCRM, 0, "")->GetType());
     EXPECT_EQ(SCMO, factory.CreateDevice(SCMO, 0, "")->GetType());
     EXPECT_EQ(SCCD, factory.CreateDevice(SCCD, 0, "")->GetType());
-    EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCLP, factory.CreateDevice(SCLP, 0, "")->GetType());
     EXPECT_EQ(SCHS, factory.CreateDevice(SCHS, 0, "")->GetType());
 #ifdef __linux__
+    EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCSG, factory.CreateDevice(SCSG, 0, "")->GetType());
 #endif
     EXPECT_EQ(SCTP, factory.CreateDevice(SCTP, 0, "")->GetType());
