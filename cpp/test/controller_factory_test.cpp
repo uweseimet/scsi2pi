@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -27,14 +27,14 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     device = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_NE(nullptr, device->GetController());
+    ASSERT_NE(nullptr, device->GetController());
     EXPECT_EQ(1U, device->GetController()->GetLunCount());
     EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
     EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
 
     device = device_factory.CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_NE(nullptr, device->GetController());
+    ASSERT_NE(nullptr, device->GetController());
     EXPECT_EQ(2U, device->GetController()->GetLunCount());
     EXPECT_TRUE(controller_factory.DeleteController(*device->GetController()));
 

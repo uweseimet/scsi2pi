@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <numeric>
 #include "mocks.h"
 #include "controllers/script_generator.h"
 #include "shared/s2p_defs.h"
@@ -159,6 +160,7 @@ TEST(AbstractControllerTest, CopyToBuffer)
     controller.CopyToBuffer(data);
     EXPECT_EQ(4, controller.GetCurrentLength());
     const auto &buf = controller.GetBuffer();
+    EXPECT_GE(buf.size(), data.size());
     EXPECT_TRUE(equal(data.begin(), data.end(), buf.begin()));
 }
 
@@ -184,10 +186,9 @@ TEST(AbstractControllerTest, FormatBytes)
 
     MockAbstractController controller;
 
-    vector<uint8_t> bytes;
-    for (int i = 0; i < 256; ++i) {
-        bytes.emplace_back(i);
-    }
+    vector<uint8_t> bytes(256);
+    iota(bytes.begin(), bytes.end(), 0);
+
     EXPECT_EQ(str_all, controller.FormatBytes(bytes, bytes.size()));
 }
 

@@ -7,7 +7,10 @@
 //---------------------------------------------------------------------------
 
 #include <fstream>
-#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <random>
+#include <fcntl.h>
 #include <unistd.h>
 #include "mocks.h"
 #include "base/device_factory.h"
@@ -18,7 +21,10 @@
 using namespace filesystem;
 using namespace s2p_util;
 
-pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::CreateDevice(PbDeviceType type, int lun,
+namespace testing
+{
+
+pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType type, int lun,
     const string &extension)
 {
     const auto controller = make_shared<NiceMock<MockAbstractController>>(lun);
@@ -31,7 +37,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> testing::Cre
     return {controller, device};
 }
 
-vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
+vector<int> CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
     cdb.emplace_back(static_cast<int>(cmd));
@@ -42,14 +48,14 @@ vector<int> testing::CreateCdb(ScsiCommand cmd, const string &hex)
     return cdb;
 }
 
-vector<uint8_t> testing::CreateParameters(const string &hex)
+vector<uint8_t> CreateParameters(const string &hex)
 {
     vector<uint8_t> parameters;
     ranges::transform(HexToBytes(hex), back_inserter(parameters), [](const byte b) {return to_integer<uint8_t>(b);});
     return parameters;
 }
 
-string testing::CreateImageFile(StorageDevice &device, size_t size, const string &extension)
+string CreateImageFile(StorageDevice &device, size_t size, const string &extension)
 {
     const auto &filename = CreateTempFile(size, extension);
     device.SetFilename(filename.string());
@@ -57,19 +63,19 @@ string testing::CreateImageFile(StorageDevice &device, size_t size, const string
     return filename.string();
 }
 
-string testing::TestShared::GetVersion()
+string TestShared::GetVersion()
 {
     return fmt::format("{:02}{}{}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
-void testing::TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+void TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
 {
     // Allocation length
     controller->SetCdbByte(4, 255);
     Dispatch(device, ScsiCommand::REQUEST_SENSE);
 }
 
-void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, const string &ident,
+void TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, const string &ident,
     int additional_length, bool removable, const string &extension)
 {
     const auto [controller, device] = CreateDevice(type, 0, extension);
@@ -93,7 +99,7 @@ void testing::TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, 
     EXPECT_EQ(product_data, string(reinterpret_cast<const char*>(buffer.data()) + 8, 28));
 }
 
-void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
+void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, const string &product)
 {
     const auto device = DeviceFactory::GetInstance().CreateDevice(type, 0, filename);
 
@@ -116,7 +122,7 @@ void testing::TestShared::TestRemovableDrive(PbDeviceType type, const string &fi
     EXPECT_EQ(GetVersion(), r);
 }
 
-void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
+void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
     const string &msg)
 {
     try {
@@ -139,38 +145,42 @@ void testing::TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand
     }
 }
 
-string testing::CreateTempName()
+string CreateTempName()
 {
-    return fmt::format("{}/scsi2pi_test-XXXXXX", temp_directory_path().string()); // NOSONAR Publicly writable directory is safe here
+    static random_device rd;
+    static mt19937_64 gen(rd());
+    static uniform_int_distribution<uint64_t> dis;
+
+    ostringstream ss;
+    ss << "scsi2pi_test-" << hex << setfill('0') << setw(16) << dis(gen);
+
+    return (temp_directory_path() / ss.str()).string();
 }
 
-pair<int, path> testing::OpenTempFile(const string &extension)
+pair<int, path> OpenTempFile(const string &extension)
 {
     const string name = CreateTempName();
-    vector<char> f(name.begin(), name.end());
-    f.push_back('\0');
-
-    const int fd = mkstemp(f.data());
-    const path filename = f.data();
-    EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << filename << "'";
+    path filename = name;
 
     path effective_name = filename;
     if (!extension.empty()) {
         effective_name += "." + extension;
-        rename(path(filename), effective_name);
     }
 
-    TestShared::RememberTempFile(effective_name);
+    const int fd = open(effective_name.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+    EXPECT_NE(-1, fd) << "Couldn't create temporary file '" << effective_name << "'";
+
+    TestShared::RememberTempFile(effective_name.string());
 
     return {fd, effective_name};
 }
 
-path testing::CreateTempFile(size_t size, const string &extension)
+path CreateTempFile(size_t size, const string &extension)
 {
     return path(CreateTempFileWithData(vector<byte>(size), extension));
 }
 
-string testing::CreateTempFileWithData(span<const byte> data, const string &extension)
+string CreateTempFileWithData(span<const byte> data, const string &extension)
 {
     const auto& [fd, filename] = OpenTempFile(extension);
 
@@ -181,7 +191,7 @@ string testing::CreateTempFileWithData(span<const byte> data, const string &exte
     return filename.string();
 }
 
-string testing::ReadTempFileToString(const string &filename)
+string ReadTempFileToString(const string &filename)
 {
     ifstream in(path(filename), ios::binary);
     stringstream buffer;
@@ -190,7 +200,7 @@ string testing::ReadTempFileToString(const string &filename)
     return buffer.str();
 }
 
-void testing::SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
+void SetUpProperties(string_view properties1, string_view properties2, const property_map &cmd_properties)
 {
     const auto& [fd1, filename1] = OpenTempFile();
     string filenames = filename1;
@@ -208,12 +218,14 @@ void testing::SetUpProperties(string_view properties1, string_view properties2, 
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
 }
 
-void testing::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+void RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
 {
     TestShared::RequestSense(controller, device);
 }
 
-void testing::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand command, SenseKey s, Asc a, const string &msg)
+void Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand command, SenseKey s, Asc a, const string &msg)
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }
+
+};

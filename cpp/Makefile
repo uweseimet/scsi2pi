@@ -504,7 +504,7 @@ ALL_OBJ := $(OBJ_API) \
 	$(OBJ_S2P_TEST)
 ALL_DEPS := $(patsubst %.o,%.d,$(ALL_OBJ))
 # The following will include all of the auto-generated dependency files (*.d)
-# if they exist. This will trigger a rebuild of a source file if a header changes
+# if they exist. This will trigger a rebuild of a source file if a header changes.
 -include $(ALL_DEPS)
 
 $(LIB_SHARED): $(OBJ_SHARED)
@@ -538,7 +538,7 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 ##   all             Build all executable files (default target)
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
-##                   Run 'make clean' before a non-coverage build after a coverage build
+##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
 .PHONY: all cpp test coverage
 

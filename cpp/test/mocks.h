@@ -108,7 +108,7 @@ public:
         }
     }
 
-    void SetCdbByte(int index, int value) // NONSONAR Having the same name as the inherited method is intentional
+    void SetCdbByte(int index, int value) // NONSONAR Shadowing the inherited method is intentional
     {
         AbstractController::SetCdbByte(index, value);
     }
@@ -194,7 +194,6 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
-    FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetGetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
@@ -215,15 +214,15 @@ public:
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetReady(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetRemovable(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetLocked(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }
