@@ -11,8 +11,8 @@
 #include <unistd.h>
 #ifdef __linux__
 #include <scsi/sg.h>
-#endif
 #include <sys/ioctl.h>
+#endif
 #include <spdlog/spdlog.h>
 #include "command_meta_data.h"
 #include "memory_util.h"
@@ -27,20 +27,22 @@ int sg_util::OpenDevice(const string &device)
         throw IoException(fmt::format("Missing or invalid device file: '{}'", device));
     }
 
+#ifdef __linux__
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
         throw IoException(fmt::format("Can't open '{}': {}", device, strerror(errno)));
     }
 
-#ifdef __linux__
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
         throw IoException(
             fmt::format("'{}' is not supported by the Linux SG driver: {}", device, strerror(errno)));
     }
-#endif
 
     return fd;
+#else
+    return -1;
+#endif
 }
 
 int sg_util::GetAllocationLength(span<const uint8_t> cdb)

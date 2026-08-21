@@ -2,17 +2,21 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include <unistd.h>
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
 using namespace s2p_util;
+
+TEST(S2pUtilTest, IsReadyOnlyFile)
+{
+    EXPECT_TRUE("/tmp/xyz");
+}
 
 TEST(S2pUtilTest, Split)
 {

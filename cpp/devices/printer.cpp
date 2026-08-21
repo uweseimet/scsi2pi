@@ -67,7 +67,7 @@ string Printer::SetUp()
         });
 
     error_code error;
-    file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is safe here
+    file_template = temp_directory_path(error).string(); // NOSONAR Publicly writable directory is safe here
     file_template += PRINTER_FILE_PATTERN;
 
     return "";

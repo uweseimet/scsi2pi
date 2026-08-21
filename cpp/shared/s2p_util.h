@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -20,6 +21,7 @@
 #include "scsi.h"
 
 using namespace std;
+using namespace filesystem;
 
 namespace s2p_util
 {
@@ -57,6 +59,7 @@ string Join(const auto &collection, const string &separator = ", ")
 string GetVersionString();
 string GetHomeDir();
 pair<int, int> GetUidAndGid();
+bool IsReadOnlyFile(const path&);
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
 string ToUpper(string_view);
 string ToLower(string_view);

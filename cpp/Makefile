@@ -57,14 +57,17 @@ endif
 
 CXXFLAGS += $(LINUX_CXXFLAGS)
 
+# For building with clang++
 ifeq ($(UNAME),FreeBSD)
 	BSD_CXXFLAGS := -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
 endif
 
+# For building with clang++
 ifeq ($(UNAME),NetBSD)
 	BSD_CXXFLAGS := -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
 endif
 
+# For building with clang++
 ifeq ($(UNAME),OpenBSD)
 	BSD_CPPFLAGS := -D_LIBCPP_ENABLE_EXPERIMENTAL
 	BSD_CXXFLAGS := -Wno-unused-parameter

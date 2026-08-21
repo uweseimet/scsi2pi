@@ -7,11 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "storage_device.h"
-#include <unistd.h>
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
-using namespace filesystem;
 using namespace memory_util;
+using namespace s2p_util;
 
 string StorageDevice::SetUp()
 {
@@ -296,7 +296,7 @@ void StorageDevice::ValidateFile()
 {
     GetFileSize();
 
-    if (IsReadOnlyFile()) {
+    if (IsReadOnlyFile(filename)) {
         // Permanently write-protected
         SetReadOnly(true);
         SetProtectable(false);
@@ -334,11 +334,6 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
     }
 
     return {-1, -1};
-}
-
-bool StorageDevice::IsReadOnlyFile() const
-{
-    return access(filename.c_str(), W_OK);
 }
 
 off_t StorageDevice::GetFileSize() const

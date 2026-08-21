@@ -281,7 +281,7 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
         const path p(
             filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
 
-        image_file.set_read_only(access(p.c_str(), W_OK));
+        image_file.set_read_only(IsReadOnlyFile(p));
 
         error_code error;
         if (is_regular_file(p, error) || (is_symlink(p, error) && !is_block_file(p, error))) {

@@ -212,8 +212,8 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        sync();
 #ifdef __linux__
+        sync();
         if (reboot(RB_POWER_OFF)) {
             s2p_logger.error("Pi shutdown failed");
             return false;
@@ -226,8 +226,8 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        sync();
 #ifdef __linux__
+        sync();
         if (reboot(RB_AUTOBOOT)) {
             s2p_logger.error("Pi restart failed");
             return false;

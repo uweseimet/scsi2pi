@@ -9,7 +9,6 @@
 #include "s2p_util.h"
 #include <algorithm>
 #include <cassert>
-#include <filesystem>
 #include <fcntl.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -17,7 +16,6 @@
 #include "s2p_version.h"
 #include "shared/memory_util.h"
 
-using namespace filesystem;
 using namespace spdlog;
 using namespace memory_util;
 
@@ -58,6 +56,12 @@ pair<int, int> s2p_util::GetUidAndGid()
     }
 
     return {uid, gid};
+}
+
+bool s2p_util::IsReadOnlyFile(const path& filename)
+{
+    const auto status = filesystem::status(filename);
+    return exists(status) && (status.permissions() & perms::owner_write) == perms::none;
 }
 
 vector<string> s2p_util::Split(const string &s, char separator, int limit)

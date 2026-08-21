@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <unistd.h>
-#include <arpa/inet.h>
+
 #include <netinet/in.h>
 #include <sys/socket.h>
 

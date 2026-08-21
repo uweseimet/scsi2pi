@@ -10,9 +10,9 @@
 
 #include "tap_driver.h"
 #include <sstream>
-#include <arpa/inet.h>
 #include <fcntl.h>
 #ifdef __linux__
+#include <arpa/inet.h>
 #include <linux/if_tun.h>
 #include <linux/sockios.h>
 #endif

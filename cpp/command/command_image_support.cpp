@@ -168,7 +168,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Image file '" + full_filename.string() + "' does not exist");
     }
 
-    if (!IsReservedFile(context, full_filename, "delete")) {
+    if (!IsReservedFile(context, full_filename.string(), "delete")) {
         return false;
     }
 

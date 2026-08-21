@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
+#include <unistd.h>
 #include "base/device_factory.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"

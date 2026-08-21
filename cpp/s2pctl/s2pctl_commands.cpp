@@ -9,7 +9,6 @@
 #include "s2pctl_commands.h"
 #include <fstream>
 #include <iostream>
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
