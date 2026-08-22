@@ -57,7 +57,7 @@ string Join(const auto &collection, const string &separator = ", ")
 }
 
 string GetVersionString();
-string GetHomeDir();
+string GetAppDir();
 int GetEuid();
 pair<int, int> GetUidAndGid();
 bool IsReadOnlyFile(const path&);

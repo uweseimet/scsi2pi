@@ -8,7 +8,7 @@
 
 .DEFAULT_GOAL := all
 
-TARGETS := all test clean install
+TARGETS := all tests test clean install
 
 SUBDIRS := cpp doc
 

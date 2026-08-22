@@ -543,17 +543,20 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 
 ## Build targets:
 ##   all             Build all executable files (default target)
+##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
 .PHONY: all cpp test coverage
 
-all: cpp
-
 cpp: $(BIN_ALL)
 
-test: $(BINDIR)/$(S2P_TEST)
+all: cpp
+
+tests: $(BINDIR)/$(S2P_TEST)
+
+test: tests
 	$(BINDIR)/$(S2P_TEST)
 
 coverage: CXXFLAGS += --coverage

@@ -24,7 +24,7 @@ string S2pServer::Init(int port)
     assert(port > 0 && port <= 65535);
 
 #if __has_include(<sys/socket.h>)
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == -1) {
         return "Can't create server socket: " + string(strerror(errno));
     }

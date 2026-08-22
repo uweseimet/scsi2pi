@@ -27,7 +27,7 @@
 
 using namespace std;
 
-#ifdef SOCK_DGRAM
+#if __has_include(<sys/ioctl.h>)
 namespace
 {
 
@@ -54,7 +54,7 @@ bool IsInterfaceUp(const string &interface)
 
 vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {
-#ifdef SIOCGIFHWADDR
+#if __has_include(<sys/ioctl.h>)
     ifreq ifr = { };
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
@@ -77,7 +77,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 {
     set<string, less<>> network_interfaces;
 
-#ifdef IFF_LOOPBACK
+#if __has_include(<ifaddrs.h>)
     ifaddrs *addrs;
     if (getifaddrs(&addrs) == -1) {
         return network_interfaces;

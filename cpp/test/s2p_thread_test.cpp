@@ -32,7 +32,7 @@ void SendCommand(const PbCommand &command, PbResult &result)
     ASSERT_TRUE(server_addr.has_value());
     server_addr->sin_port = htons(uint16_t(9999));
 
-    const int fd = socket(AF_INET, SOCK_STREAM, 0);
+    const int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     ASSERT_NE(-1, fd);
     EXPECT_TRUE(connect(fd, reinterpret_cast<sockaddr*>(&(*server_addr)), sizeof(*server_addr)) >= 0)
         << "Service should be running";

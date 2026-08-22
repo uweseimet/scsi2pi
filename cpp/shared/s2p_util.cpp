@@ -52,7 +52,7 @@ string s2p_util::GetVersionString()
     return fmt::format("{}.{}{}{}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
 }
 
-string s2p_util::GetHomeDir()
+string s2p_util::GetAppDir()
 {
     return get<2>(GetPwData());
 }

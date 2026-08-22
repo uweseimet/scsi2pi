@@ -13,10 +13,10 @@
 
 using namespace s2p_util;
 
-TEST(S2pUtilTest, GetHomeDir)
+TEST(S2pUtilTest, GetAppDir)
 {
     if (!GetEuid()) {
-        EXPECT_EQ(exists("/home/pi") ? "/home/pi" : "/var/lib/piscsi", GetHomeDir());
+        EXPECT_EQ(exists("/home/pi") ? "/home/pi" : "/var/lib/piscsi", GetAppDir());
     }
 }
 

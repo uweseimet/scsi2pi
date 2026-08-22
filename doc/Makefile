@@ -29,6 +29,8 @@ INSTALL_PAGES := $(addprefix $(INSTALL_DIR),$(MANPAGES))
 
 all: doc
 
+tests:
+
 test:
 
 doc:
