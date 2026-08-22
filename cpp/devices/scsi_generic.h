@@ -72,8 +72,8 @@ private:
     // Linux limits the number of bytes that can be transferred in a single SG 3 SCSI request
     static constexpr int MAX_TRANSFER_LENGTH = 65536;
 
-    static const int TIMEOUT_DEFAULT_SECONDS = 5;
+    static constexpr int TIMEOUT_DEFAULT_SECONDS = 5;
 
     // Sufficient for formatting a floppy disk in a USB floppy drive
-    static const int TIMEOUT_FORMAT_SECONDS = 120;
+    static constexpr int TIMEOUT_FORMAT_SECONDS = 120;
 };

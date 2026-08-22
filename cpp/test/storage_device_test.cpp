@@ -262,8 +262,8 @@ TEST(StorageDeviceTest, ReserveUnreserveFile)
 
 TEST(StorageDeviceTest, GetIdsForReservedFile)
 {
-    const int ID = 1;
-    const int LUN = 0;
+    constexpr int ID = 1;
+    constexpr int LUN = 0;
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
     MockAbstractController controller(ID);
@@ -290,8 +290,8 @@ TEST(StorageDeviceTest, GetIdsForReservedFile)
 
 TEST(StorageDeviceTest, GetSetReservedFiles)
 {
-    const int ID = 1;
-    const int LUN = 0;
+    constexpr int ID = 1;
+    constexpr int LUN = 0;
     auto bus = make_shared<MockBus>();
     ControllerFactory controller_factory;
     MockAbstractController controller(ID);

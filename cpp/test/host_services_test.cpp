@@ -20,6 +20,11 @@ protected:
         tie(controller, services) = CreateDevice(SCHS);
     }
 
+    void TearDown() override {
+        controller.reset();
+        services.reset();
+    }
+
     shared_ptr<MockAbstractController> controller;
     shared_ptr<PrimaryDevice> services;
 };

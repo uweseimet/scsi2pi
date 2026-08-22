@@ -13,8 +13,8 @@
 
 TEST(ControllerTest, Reset)
 {
-    const int TARGET_ID = 5;
-    const int INITIATOR_ID = 7;
+    constexpr int TARGET_ID = 5;
+    constexpr int INITIATOR_ID = 7;
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
@@ -28,9 +28,11 @@ TEST(ControllerTest, Reset)
 
 TEST(ControllerTest, Process)
 {
+    constexpr int TARGET_ID = 5;
+
     const S2pFormatter formatter;
     auto bus = bus_factory::CreateBus(true, true, false, "", false);
-    auto controller = make_shared<Controller>(*bus, 2, nullptr, formatter);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID, nullptr, formatter);
 
     bus->SetRST(true);
     EXPECT_FALSE(controller->Process());
@@ -38,8 +40,8 @@ TEST(ControllerTest, Process)
 
 TEST(ControllerTest, GetInitiatorId)
 {
-    const int TARGET_ID = 1;
-    const int INITIATOR_ID = 6;
+    constexpr int TARGET_ID = 5;
+    constexpr int INITIATOR_ID = 6;
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;

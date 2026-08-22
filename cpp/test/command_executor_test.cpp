@@ -19,8 +19,8 @@ using namespace s2p_interface_util;
 
 TEST(CommandExecutorTest, ProcessDeviceCmd)
 {
-    const int ID = 3;
-    const int LUN = 0;
+    constexpr int ID = 3;
+    constexpr int LUN = 0;
 
     MockAbstractController controller(ID);
     ControllerFactory controller_factory;
@@ -181,8 +181,8 @@ TEST(CommandExecutorTest, ProcessCmd)
 
 TEST(CommandExecutorTest, Attach)
 {
-    const int ID = 3;
-    const int LUN = 0;
+    constexpr int ID = 3;
+    constexpr int LUN = 0;
 
     ControllerFactory controller_factory;
     MockBus bus;
@@ -314,9 +314,9 @@ TEST(CommandExecutorTest, Insert)
 
 TEST(CommandExecutorTest, Detach)
 {
-    const int ID = 3;
-    const int LUN0 = 0;
-    const int LUNx = 1;
+    constexpr int ID = 3;
+    constexpr int LUN0 = 0;
+    constexpr int LUNx = 1;
 
     ControllerFactory controller_factory;
     MockBus bus;
@@ -349,7 +349,7 @@ TEST(CommandExecutorTest, Detach)
 
 TEST(CommandExecutorTest, DetachAll)
 {
-    const int ID = 4;
+    constexpr int ID = 4;
 
     ControllerFactory controller_factory;
     MockBus bus;

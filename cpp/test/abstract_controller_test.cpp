@@ -69,8 +69,8 @@ TEST(AbstractControllerTest, Status)
 
 TEST(AbstractControllerTest, DeviceLunLifeCycle)
 {
-    const int ID = 1;
-    const int LUN = 4;
+    constexpr int ID = 1;
+    constexpr int LUN = 4;
 
     MockAbstractController controller(ID);
 
@@ -81,7 +81,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_TRUE(controller.AddDevice(device));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(32)));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(-1)));
-    EXPECT_TRUE(controller.GetLunCount() > 0);
+    EXPECT_GT(controller.GetLunCount(), 0U);
     EXPECT_NE(nullptr, controller.GetDeviceForLun(LUN));
     EXPECT_EQ(nullptr, controller.GetDeviceForLun(0));
     EXPECT_TRUE(controller.RemoveDevice(*device));

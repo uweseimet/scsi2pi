@@ -96,10 +96,10 @@ TEST(CommandResponseTest, GetReservedIds)
 
 TEST(CommandResponseTest, GetDevicesInfo)
 {
-    const int ID = 2;
-    const int LUN1 = 0;
-    const int LUN2 = 5;
-    const int LUN3 = 6;
+    constexpr int ID = 2;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 5;
+    constexpr int LUN3 = 6;
 
     MockBus bus;
     ControllerFactory controller_factory;

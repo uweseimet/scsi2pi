@@ -17,6 +17,11 @@ protected:
         tie(controller, daynaport) = CreateDevice(SCDP);
     }
 
+    void TearDown() override {
+        controller.reset();
+        daynaport.reset();
+    }
+
     shared_ptr<MockAbstractController> controller;
     shared_ptr<PrimaryDevice> daynaport;
 };
@@ -119,8 +124,8 @@ TEST_F(DaynaportTest, SendMessage6)
     Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
 
-    controller->SetCdbByte(3, -1);
-    controller->SetCdbByte(4, -8);
+    controller->SetCdbByte(3, 255);
+    controller->SetCdbByte(4, 0);
     controller->SetCdbByte(5, 0x08);
     Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid transfer length");

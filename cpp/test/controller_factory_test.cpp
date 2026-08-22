@@ -13,10 +13,10 @@
 
 TEST(ControllerFactoryTest, LifeCycle)
 {
-    const int ID1 = 4;
-    const int ID2 = 5;
-    const int LUN1 = 0;
-    const int LUN2 = 1;
+    constexpr int ID1 = 4;
+    constexpr int ID2 = 5;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 1;
 
     MockBus bus;
     ControllerFactory controller_factory;
@@ -48,9 +48,9 @@ TEST(ControllerFactoryTest, LifeCycle)
 
 TEST(ControllerFactoryTest, AttachToController)
 {
-    const int ID = 4;
-    const int LUN1 = 3;
-    const int LUN2 = 0;
+    constexpr int ID = 4;
+    constexpr int LUN1 = 3;
+    constexpr int LUN2 = 0;
 
     MockBus bus;
     ControllerFactory controller_factory;
@@ -77,8 +77,8 @@ TEST(ControllerFactoryTest, SetScriptFile)
 
 TEST(ControllerFactoryTest, ProcessOnController)
 {
-    const int VALID_ID = 0;
-    const int INVALID_ID = 1;
+    constexpr int VALID_ID = 0;
+    constexpr int INVALID_ID = 1;
 
     NiceMock<MockBus> bus;
     ControllerFactory controller_factory;
@@ -95,9 +95,9 @@ TEST(ControllerFactoryTest, ProcessOnController)
 
 TEST(ControllerFactoryTest, SetLogLevel)
 {
-    const int ID = 4;
-    const int LUN1 = 0;
-    const int LUN2 = 3;
+    constexpr int ID = 4;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 3;
 
     MockBus bus;
     ControllerFactory controller_factory;

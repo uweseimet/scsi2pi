@@ -17,6 +17,11 @@ protected:
         tie(controller, printer) = CreateDevice(SCLP);
     }
 
+    void TearDown() override {
+        controller.reset();
+        printer.reset();
+    }
+
     shared_ptr<MockAbstractController> controller;
     shared_ptr<PrimaryDevice> printer;
 };

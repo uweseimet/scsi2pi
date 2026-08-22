@@ -24,7 +24,7 @@ TEST(SasiHdTest, Inquiry)
 
 TEST(SasiHdTest, RequestSense)
 {
-    const int LUN = 1;
+    constexpr int LUN = 1;
     auto [controller, hd] = CreateDevice(SAHD, LUN);
 
     // ALLOCATION LENGTH
