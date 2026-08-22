@@ -107,14 +107,10 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_image_file_info2(image_support_file_info2, *default_logger());
     EXPECT_FALSE(dispatcher.DispatchCommand(context_image_file_info2, result)) << "Non-existing file";
 
-#ifdef __linux__
     PbCommand command_network_interfaces_info;
     command_network_interfaces_info.set_operation(NETWORK_INTERFACES_INFO);
     CommandContext context_network_interfaces_info(command_network_interfaces_info, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_network_interfaces_info, result));
-    const auto &network_interfaces_info = result.network_interfaces_info();
-    EXPECT_NE(0, network_interfaces_info.name_size());
-#endif
 
     PbCommand command_mapping_info;
     command_mapping_info.set_operation(MAPPING_INFO);

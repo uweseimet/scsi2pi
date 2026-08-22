@@ -217,7 +217,7 @@ TEST(CommandResponseTest, GetLogLevelInfo)
     EXPECT_EQ(7, info.log_levels().size());
 }
 
-#ifdef __linux__
+#if __has_include(<ifaddrs.h>)
 TEST(CommandResponseTest, GetNetworkInterfacesInfo)
 {
     PbNetworkInterfacesInfo info;

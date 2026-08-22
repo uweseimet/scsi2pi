@@ -26,7 +26,7 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCCD, factory.CreateDevice(SCCD, 0, "")->GetType());
     EXPECT_EQ(SCLP, factory.CreateDevice(SCLP, 0, "")->GetType());
     EXPECT_EQ(SCHS, factory.CreateDevice(SCHS, 0, "")->GetType());
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCSG, factory.CreateDevice(SCSG, 0, "")->GetType());
 #endif

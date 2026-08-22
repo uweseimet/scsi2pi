@@ -9,8 +9,10 @@
 #include "sg_util.h"
 #include <fcntl.h>
 #include <unistd.h>
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
 #include <scsi/sg.h>
+#endif
+#if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
 #endif
 #include <spdlog/spdlog.h>
@@ -27,7 +29,7 @@ int sg_util::OpenDevice(const string &device)
         throw IoException(fmt::format("Missing or invalid device file: '{}'", device));
     }
 
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
         throw IoException(fmt::format("Can't open '{}': {}", device, strerror(errno)));

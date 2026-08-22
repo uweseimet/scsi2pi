@@ -17,7 +17,7 @@
 //    - https://github.com/PiSCSI/piscsi/wiki/Dayna-Port-SCSI-Link
 //
 // The DaynaPort appears to be a mixture of a SCSI processor device and a SCSI communications device.
-// The emulation requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
+// The emulation requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and Atari 16/32-bit computers.
 //
 //---------------------------------------------------------------------------
 

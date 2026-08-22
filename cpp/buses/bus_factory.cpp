@@ -9,7 +9,7 @@
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
 #include "in_process_bus.h"
-#ifdef __linux__
+#if __has_include (<linux/gpio.h>)
 #include "rpi_bus.h"
 #endif
 
@@ -21,7 +21,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
     if (in_process) {
         bus = make_unique<InProcessBus>(identifier, log_signals);
     }
-#ifdef __linux__
+#if __has_include (<linux/gpio.h>)
     else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
         auto rpi_bus = make_unique<RpiBus>(pi_type);
         if (standard_board) {
@@ -31,7 +31,7 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
     }
 #endif
     else {
-#ifndef __linux__
+#if __has_include (<linux/gpio.h>)
         spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
 #endif
 

@@ -12,7 +12,7 @@
 
 string S2pExecExecutor::Init(const string &device)
 {
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     if (sg_adapter) {
         sg_adapter->CleanUp();
     }
@@ -56,7 +56,7 @@ void S2pExecExecutor::CleanUp()
         bus->CleanUp();
     }
 
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     if (is_sg && sg_adapter) {
         sg_adapter->CleanUp();
     }
@@ -74,7 +74,7 @@ void S2pExecExecutor::ResetBus()
 
 int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout, bool enable_log)
 {
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     if (is_sg) {
         return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
     }
@@ -89,7 +89,7 @@ int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int ti
 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 {
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     if (is_sg) {
         array<uint8_t, 14> sense_data;
         array<uint8_t, 6> cdb = { };

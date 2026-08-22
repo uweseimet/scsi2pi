@@ -126,7 +126,7 @@ int run(int argc, char *argv[])
         auto s2pctl = make_unique<S2pCtl>();
         result = s2pctl->Run(client_args);
     }
-#if defined(__linux__) && !defined(BOARD_STANDARD)
+#if __has_include(<linux/gpio.h>) && !defined(BOARD_STANDARD)
     else if (client == "s2pdump") {
         auto s2pdump = make_unique<S2pDump>();
         result = s2pdump->Run(client_args, true, log_signals);
