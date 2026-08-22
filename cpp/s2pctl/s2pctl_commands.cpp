@@ -9,9 +9,6 @@
 #include "s2pctl_commands.h"
 #include <fstream>
 #include <iostream>
-#if __has_include(<netdb.h>)
-#include <netdb.h>
-#endif
 #if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
 #endif
@@ -125,9 +122,9 @@ bool S2pCtlCommands::SendCommand()
         return true;
     }
 
-#ifdef SOCK_STREAM
-    sockaddr_in server_addr = { };
-    if (!ResolveHostName(hostname, &server_addr)) {
+#if __has_include(<sys/socket.h>)
+    auto server_addr = ResolveHostName(hostname);
+    if (!server_addr) {
         throw IoException("Can't resolve hostname '" + hostname + "'");
     }
 
@@ -136,8 +133,8 @@ bool S2pCtlCommands::SendCommand()
         throw IoException("Can't create socket: " + string(strerror(errno)));
     }
 
-    server_addr.sin_port = htons(uint16_t(port));
-    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+    server_addr->sin_port = htons(uint16_t(port));
+    if (connect(fd, (sockaddr*)(&(*server_addr)), sizeof(*server_addr)) == -1) {
         close(fd);
 
         throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
@@ -154,6 +151,7 @@ bool S2pCtlCommands::SendCommand()
     DeserializeMessage(fd, result);
 
     close(fd);
+#endif
 
     if (!result.status()) {
         throw IoException(result.msg());
@@ -164,9 +162,6 @@ bool S2pCtlCommands::SendCommand()
     }
 
     return true;
-#else
-    throw IoException("No socket support");
-#endif
 }
 
 bool S2pCtlCommands::HandleDevicesInfo()

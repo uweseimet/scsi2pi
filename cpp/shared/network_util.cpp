@@ -102,19 +102,18 @@ set<string, less<>> network_util::GetNetworkInterfaces()
     return network_interfaces;
 }
 
-bool network_util::ResolveHostName(const string &host, sockaddr_in *addr)
+optional<sockaddr_in> network_util::ResolveHostName(const string &host)
 {
-#ifdef SOCK_STREAM
     addrinfo hints = { };
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
     if (addrinfo *result; !getaddrinfo(host.c_str(), nullptr, &hints, &result)) {
-        *addr = *reinterpret_cast<sockaddr_in*>(result->ai_addr); // NOSONAR bit_cast is not supported by the bullseye compiler
+        sockaddr_in addr;
+        memcpy(&addr, result->ai_addr, sizeof(sockaddr_in));
         freeaddrinfo(result);
-        return true;
+        return addr;
     }
-#endif
 
-    return false;
+    return nullopt;
 }

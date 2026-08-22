@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include "shared/network_util.h"
 
@@ -20,7 +19,6 @@ TEST(NetworkUtilTest, GetNetworkInterfaces)
 
 TEST(NetworkUtilTest, ResolveHostName)
 {
-    sockaddr_in server_addr = { };
-    EXPECT_FALSE(ResolveHostName("foo.foobar", &server_addr));
-    EXPECT_TRUE(ResolveHostName("127.0.0.1", &server_addr));
+    EXPECT_FALSE(ResolveHostName("foo.foobar").has_value());
+    EXPECT_TRUE(ResolveHostName("127.0.0.1").has_value());
 }

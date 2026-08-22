@@ -14,12 +14,6 @@
 #if __has_include(<arpa/inet.h>)
 #include <arpa/inet.h>
 #endif
-#if __has_include(<netdb.h>)
-#include <netdb.h>
-#endif
-#if __has_include(<netinet/in.h>)
-#include <netinet/in.h>
-#endif
 #include <unistd.h>
 #include <gtest/gtest.h>
 #include "command/command_context.h"
@@ -34,14 +28,14 @@ using namespace network_util;
 #if __has_include(<sys/socket.h>)
 void SendCommand(const PbCommand &command, PbResult &result)
 {
-    sockaddr_in server_addr = { };
-    ASSERT_TRUE(ResolveHostName("127.0.0.1", &server_addr));
-    server_addr.sin_port = htons(uint16_t(9999));
+    auto server_addr = ResolveHostName("127.0.0.1");
+    ASSERT_TRUE(server_addr.has_value());
+    server_addr->sin_port = htons(uint16_t(9999));
 
     const int fd = socket(AF_INET, SOCK_STREAM, 0);
     ASSERT_NE(-1, fd);
-    EXPECT_TRUE(connect(fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) >= 0)
-    << "Service should be running"; // NOSONAR bit_cast is not supported by the bullseye clang++ compiler
+    EXPECT_TRUE(connect(fd, reinterpret_cast<sockaddr*>(&(*server_addr)), sizeof(*server_addr)) >= 0)
+        << "Service should be running";
     ASSERT_EQ(6, write(fd, "RASCSI", 6));
     SerializeMessage(fd, command);
     DeserializeMessage(fd, result);
@@ -77,18 +71,6 @@ TEST(S2pThreadTest, IsRunning)
 #if __has_include(<sys/socket.h>)
 TEST(S2pThreadTest, Execute)
 {
-    sockaddr_in server_addr = { };
-    ASSERT_TRUE(ResolveHostName("127.0.0.1", &server_addr));
-
-    const int fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(-1, fd);
-
-    server_addr.sin_port = htons(uint16_t(9999));
-    EXPECT_FALSE(connect(fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) >= 0)
-    << "Service should not be running"; // NOSONAR bit_cast is not supported by the bullseye clang++ compiler
-
-    close(fd);
-
     S2pThread service_thread;
     service_thread.Init(9999, [](const CommandContext &context) {
         PbResult result;

@@ -70,7 +70,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
 
     // The image folder location is restricted, so that s2p cannot modify data in system directories like "/usr"
     if (!folder.string().starts_with("/var/lib/piscsi/")) {
-        if (const path home_root = path(GetHomeDir()); folder.lexically_relative(home_root).string().starts_with(
+        if (const auto home_root = path(GetHomeDir()); folder.lexically_relative(home_root).string().starts_with(
             "..")) {
             return "Default image folder must be located in '/var/lib/piscsi/' if it exists, otherwise in your home directory";
         }
