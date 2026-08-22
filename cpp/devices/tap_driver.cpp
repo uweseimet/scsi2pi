@@ -49,7 +49,12 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
     if (tap_fd == -1) {
         return fmt::format("Can't open /dev/net/tun: {}", strerror(errno));
     }
-    const bool create_bridge = params[BRIDGE] == "true";
+
+    bool create_bridge = params[MODE] == "bridge";
+    // For backwards compatibility
+    if (params[BRIDGE] != "true") {
+        create_bridge = false;
+    }
 
     inet = params[INET];
 
@@ -152,6 +157,7 @@ param_map TapDriver::GetDefaultParams() const
 {
     return {
         {   BRIDGE, "true"},
+        {   MODE, "bridge"},
         {   INET, DEFAULT_IP},
         {   INTERFACE, Join(available_interfaces, ",")}
     };

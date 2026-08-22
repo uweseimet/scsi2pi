@@ -49,10 +49,11 @@ TEST_F(DaynaportTest, Device_Defaults)
 TEST_F(DaynaportTest, GetDefaultParams)
 {
     const auto &params = daynaport->GetDefaultParams();
-    EXPECT_EQ(3U, params.size());
-    EXPECT_TRUE(params.contains("interface"));
-    EXPECT_TRUE(params.contains("inet"));
+    EXPECT_EQ(4U, params.size());
     EXPECT_EQ("true", params.at("bridge"));
+    EXPECT_EQ("bridge", params.at("mode"));
+    EXPECT_TRUE(params.contains("inet"));
+    EXPECT_TRUE(params.contains("interface"));
 }
 
 TEST_F(DaynaportTest, GetIdentifier)
