@@ -524,16 +524,14 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     operation = CreateOperation(operation_info, RESERVE_IDS, "Reserve device IDs");
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
-#if __has_include(<pwd.h>)
     operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
-    if (geteuid()) {
+    if (GetEuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
     else {
         // System shutdown/reboot requires root permissions
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi", "system", "reboot" });
     }
-#endif
 
     operation = CreateOperation(operation_info, CREATE_IMAGE, "Create an image file");
     AddOperationParameter(*operation, "file", "Image file name", "", true);

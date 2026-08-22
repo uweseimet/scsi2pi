@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -59,7 +59,8 @@ public:
     static void CleanUp()
     {
         for (const string &filename : temp_files) {
-            remove(path(filename));
+            error_code error;
+            remove(path(filename), error);
         }
     }
 

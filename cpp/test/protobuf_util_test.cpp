@@ -19,10 +19,13 @@ TEST(ProtobufUtilTest, SerializeMessage)
 {
     PbResult result;
 
-    const int fd = open("/dev/null", O_WRONLY);
-    ASSERT_NE(-1, fd);
-    SerializeMessage(fd, result);
-    close(fd);
+    if (exists("/dev/null")) {
+        const int fd = open("/dev/null", O_WRONLY);
+        ASSERT_NE(-1, fd);
+        EXPECT_NO_THROW(SerializeMessage(fd, result));
+        close(fd);
+    }
+
     EXPECT_THROW(SerializeMessage(-1, result), IoException)<< "Writing a message must fail";
 }
 
@@ -31,10 +34,12 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     PbResult result;
     vector<byte> buf(1);
 
-    int fd = open("/dev/null", O_RDONLY);
-    ASSERT_NE(-1, fd);
-    EXPECT_THROW(DeserializeMessage(fd, result), IoException)<< "Reading the message header must fail";
-    close(fd);
+    if (exists("/dev/null")) {
+        const int fd = open("/dev/null", O_RDONLY);
+        ASSERT_NE(-1, fd);
+        EXPECT_THROW(DeserializeMessage(fd, result), IoException)<< "Reading the message header must fail";
+        close(fd);
+    }
 
     auto [fd1, filename1] = OpenTempFile();
     // Data size -1
@@ -79,17 +84,21 @@ TEST(ProtobufUtilTest, ReadBytes)
     vector<byte> buf1(1);
     vector<byte> buf2;
 
-    int fd = open("/dev/null", O_RDONLY);
-    ASSERT_NE(-1, fd);
-    EXPECT_EQ(0U, ReadBytes(fd, buf1));
-    EXPECT_EQ(0U, ReadBytes(fd, buf2));
-    close(fd);
+    if (exists("/dev/null")) {
+        const int fd = open("/dev/null", O_RDONLY);
+        ASSERT_NE(-1, fd);
+        EXPECT_EQ(0U, ReadBytes(fd, buf1));
+        EXPECT_EQ(0U, ReadBytes(fd, buf2));
+        close(fd);
+    }
 
-    fd = open("/dev/zero", O_RDONLY);
-    ASSERT_NE(-1, fd);
-    EXPECT_EQ(1U, ReadBytes(fd, buf1));
-    EXPECT_EQ(0U, ReadBytes(fd, buf2));
-    close(fd);
+    if (exists("/dev/zero")) {
+        const int fd = open("/dev/zero", O_RDONLY);
+        ASSERT_NE(-1, fd);
+        EXPECT_EQ(1U, ReadBytes(fd, buf1));
+        EXPECT_EQ(0U, ReadBytes(fd, buf2));
+        close (fd);
+    }
 }
 
 TEST(ProtobufUtilTest, WriteBytes)

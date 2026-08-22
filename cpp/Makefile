@@ -47,38 +47,39 @@ else
 	CXXFLAGS += $(RELEASE_FLAGS)
 endif
 
-UNAME := $(shell uname -s)
+UNAME_S := $(shell uname -s)
 
-ifeq ($(UNAME),Linux)
+ifeq ($(UNAME_S),Linux)
 # -Wno-psabi might not work on non-Linux platforms
 	IS_LINUX := 1
-	LINUX_CXXFLAGS := -Wno-psabi
+	CXXFLAGS += -Wno-psabi
 endif
 
-CXXFLAGS += $(LINUX_CXXFLAGS)
-
-# For building with clang++
-ifeq ($(UNAME),FreeBSD)
-	BSD_CXXFLAGS := -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
+# For building on FreeBSD with clang++
+ifeq ($(UNAME_S),FreeBSD)
+	CXXFLAGS += -fexperimental-library -Wno-unused-parameter -Wno-macro-redefined
 endif
 
-# For building with clang++
-ifeq ($(UNAME),NetBSD)
-	BSD_CXXFLAGS := -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
+# For building on NetBSD with clang++
+ifeq ($(UNAME_S),NetBSD)
+	CXXFLAGS += -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
 endif
 
-# For building with clang++
-ifeq ($(UNAME),OpenBSD)
-	BSD_CPPFLAGS := -D_LIBCPP_ENABLE_EXPERIMENTAL
-	BSD_CXXFLAGS := -Wno-unused-parameter
+# For building on OpenBSD with clang++
+ifeq ($(UNAME_S),OpenBSD)
+	CPPFLAGS += -D_LIBCPP_ENABLE_EXPERIMENTAL
+	CXXFLAGS += -Wno-unused-parameter
 endif
 
-ifeq ($(UNAME),Darwin)
-	BSD_CXXFLAGS := -Wno-unused-parameter -Wno-macro-redefined
+# For building on macOS with g++
+ifeq ($(UNAME_S),Darwin)
+	CXXFLAGS += -Wno-unused-parameter -Wno-macro-redefined
 endif
 
-CPPFLAGS += $(BSD_CPPFLAGS)
-CXXFLAGS += $(BSD_CXXFLAGS)
+# For building on Windows (MINGW64) with clang++
+ifneq ($(findstring MINGW,$(UNAME_S)),)
+	CPPFLAGS += -DPROTOBUF_USE_DLLS
+endif
 
 ## EXTRA_CPPFLAGS and EXTRA_CXXFLAGS Can be used to pass special purpose flags
 CPPFLAGS += $(EXTRA_CPPFLAGS)

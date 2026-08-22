@@ -389,12 +389,15 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             command.set_operation(STATISTICS_INFO);
             break;
 
-// TODO Replace getpass()
-#ifndef _WIN32
         case OPT_PROMPT:
-            token = optarg ? optarg : getpass("Password: ");
+            if (optarg) {
+                token = optarg;
+            }
+            else {
+                cout << "Password: " << flush;
+                getline(cin, token);
+            }
             break;
-#endif
 
         case 'x':
             command.set_operation(COPY_IMAGE);

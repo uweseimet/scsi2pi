@@ -14,6 +14,7 @@
 #include "protobuf/s2p_interface_util.h"
 
 using namespace s2p_interface_util;
+using namespace s2p_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {
@@ -157,8 +158,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_shut_down_rascsi(command_shut_down, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_shut_down_rascsi, result));
 
-#if __has_include(<pwd.h>)
-    if (geteuid()) {
+    if (GetEuid()) {
         SetParam(command_shut_down, "mode", "system");
         CommandContext context_shut_down_system(command_shut_down, *default_logger());
         EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_system, result));
@@ -167,7 +167,6 @@ TEST(CommandDispatcherTest, DispatchCommand)
         CommandContext context_shut_down_reboot(command_shut_down, *default_logger());
         EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_reboot, result));
     }
-#endif
 
     SetParam(command_shut_down, "mode", "invalid");
     CommandContext context_shut_down_invalid(command_shut_down, *default_logger());

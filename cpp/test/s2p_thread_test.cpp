@@ -58,6 +58,7 @@ TEST(S2pThreadTest, Init)
     service_thread.Stop();
 }
 
+#if __has_include(<sys/socket.h>)
 TEST(S2pThreadTest, IsRunning)
 {
     S2pThread service_thread;
@@ -71,6 +72,7 @@ TEST(S2pThreadTest, IsRunning)
     service_thread.Stop();
     EXPECT_FALSE(service_thread.IsRunning());
 }
+#endif
 
 #if __has_include(<sys/socket.h>)
 TEST(S2pThreadTest, Execute)

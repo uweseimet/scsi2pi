@@ -22,6 +22,30 @@
 using namespace spdlog;
 using namespace memory_util;
 
+namespace
+{
+
+tuple<int, int, string> GetPwData()
+{
+    const char *fallback_dir = exists("/var/lib/piscsi/") ? "/var/lib/piscsi" : "/home/pi";
+
+#if __has_include(<pwd.h>)
+    const char *sudo_user = getenv("SUDO_UID");
+    const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
+
+    passwd pwd = { };
+    passwd *p_pwd;
+
+    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+        return {uid, pwd.pw_gid, uid && !exists("/var/lib/piscsi/") ? pwd.pw_dir : fallback_dir};
+    }
+#endif
+
+    return {-1, -1, fallback_dir};
+}
+
+}
+
 string s2p_util::GetVersionString()
 {
     const string &revision = s2p_revision <= 0 ? "" : "." + to_string(s2p_revision);
@@ -30,39 +54,22 @@ string s2p_util::GetVersionString()
 
 string s2p_util::GetHomeDir()
 {
+    return get<2>(GetPwData());
+}
+
+int s2p_util::GetEuid()
+{
 #if __has_include(<pwd.h>)
-    const auto [uid, gid] = GetUidAndGid();
-
-    passwd pwd = { };
-    passwd *p_pwd;
-
-    if (array<char, 256> pwbuf; uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        return pwd.pw_dir;
-    }
+    return geteuid();
+#else
+    return -1;
 #endif
-
-    return "/home/pi";
 }
 
 pair<int, int> s2p_util::GetUidAndGid()
 {
-#if __has_include(<pwd.h>)
-    const char *sudo_user = getenv("SUDO_UID");
-    const int uid = sudo_user ? stoi(sudo_user) : geteuid();
-
-    passwd pwd = { };
-    passwd *p_pwd;
-    array<char, 256> pwbuf;
-
-    int gid = -1;
-    if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        gid = pwd.pw_gid;
-    }
-
+    const auto& [uid, gid, _] = GetPwData(); // NOSONAR '_' will be supported in C++-26
     return {uid, gid};
-#else
-    return {0, 0};
-#endif
 }
 
 bool s2p_util::IsReadOnlyFile(const path& filename)

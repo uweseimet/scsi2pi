@@ -64,7 +64,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         return fmt::format("Can't ioctl TUNSETIFF: {}", strerror(errno));
     }
 
-    const int ip_fd = socket(PF_INET, SOCK_DGRAM, 0);
+    const int ip_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
         close(tap_fd);
         return fmt::format("Can't create IP socket: {}", strerror(errno));
@@ -258,7 +258,7 @@ string TapDriver::DeleteBridge(int fd, logger &logger) const
 
 string TapDriver::IpLink(bool up, logger &logger)
 {
-    const int fd = socket(PF_INET, SOCK_DGRAM, 0);
+    const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1) {
         return fmt::format("Can't create socket: {}", strerror(errno));
     }

@@ -19,7 +19,7 @@
 #include "shared/s2p_exceptions.h"
 #include "shared/simh_util.h"
 #include "board_executor.h"
-#ifdef __linux__
+#ifdef BUILD_SCSG
 #include "shared/sg_adapter.h"
 #include "sg_executor.h"
 #endif
@@ -74,8 +74,10 @@ void S2pDump::Banner(bool header) const
         << "                                     default LUN is 0.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
+#ifdef BUILD_SCSG
         << "  --scsi-generic/-g DEVICE_FILE      Use the Linux SG driver instead of a\n"
         << "                                     RaSCSI/PiSCSI board.\n"
+#endif
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
         << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
@@ -172,9 +174,11 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             filename = optarg;
             break;
 
+#ifdef BUILD_SCSG
         case 'g':
             device_file = optarg;
             break;
+#endif
 
         case 'h':
             id_and_lun = optarg;
@@ -267,7 +271,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
     }
 
-#ifdef __linux__
+#ifdef BUILD_SCSG
     if (!device_file.empty()) {
         sg_adapter = make_shared<SgAdapter>(*s2pdump_logger);
         if (const string &error = sg_adapter->Init(device_file); !error.empty()) {
@@ -384,7 +388,7 @@ int S2pDump::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-#ifdef __linux__
+#ifdef BUILD_SCSG
     if (device_file.empty()) {
         s2pdump_executor = make_shared<BoardExecutor>(*bus, initiator_id, *s2pdump_logger);
     }

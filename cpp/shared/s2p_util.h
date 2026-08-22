@@ -58,6 +58,7 @@ string Join(const auto &collection, const string &separator = ", ")
 
 string GetVersionString();
 string GetHomeDir();
+int GetEuid();
 pair<int, int> GetUidAndGid();
 bool IsReadOnlyFile(const path&);
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());

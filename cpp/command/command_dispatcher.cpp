@@ -192,16 +192,14 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
-#if __has_include(<sys/reboot.h>)
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode == ShutdownMode::STOP_S2P || geteuid()) {
+    if (mode == ShutdownMode::STOP_S2P || GetEuid()) {
         // Report success now because after a shutdown nothing can be reported anymore
         PbResult result;
         context.WriteSuccessResult(result);
 
         return ShutDown(mode);
     }
-#endif
 
     return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
 }
@@ -230,7 +228,7 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#if RB_AUTOBOOT
+#ifdef RB_AUTOBOOT
         sync();
         if (reboot(RB_AUTOBOOT)) {
             s2p_logger.error("Pi restart failed");

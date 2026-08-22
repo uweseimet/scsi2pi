@@ -110,7 +110,6 @@ bool S2pCtlCommands::Execute(string_view log_level, string_view default_folder, 
 
 bool S2pCtlCommands::SendCommand()
 {
-#ifdef SOCK_STREAM
     if (!filename_binary.empty()) {
         ExportAsBinary(command, filename_binary);
     }
@@ -126,6 +125,7 @@ bool S2pCtlCommands::SendCommand()
         return true;
     }
 
+#ifdef SOCK_STREAM
     sockaddr_in server_addr = { };
     if (!ResolveHostName(hostname, &server_addr)) {
         throw IoException("Can't resolve hostname '" + hostname + "'");
@@ -165,7 +165,7 @@ bool S2pCtlCommands::SendCommand()
 
     return true;
 #else
-    return false;
+    throw IoException("No socket support");
 #endif
 }
 

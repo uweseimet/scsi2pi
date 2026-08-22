@@ -13,6 +13,18 @@
 
 using namespace s2p_util;
 
+TEST(S2pUtilTest, GetHomeDir)
+{
+    if (!GetEuid()) {
+        EXPECT_EQ(exists("/home/pi") ? "/home/pi" : "/var/lib/piscsi", GetHomeDir());
+    }
+}
+
+TEST(S2pUtilTest, GetUidAndGid)
+{
+    EXPECT_EQ(GetEuid(), GetUidAndGid().first);
+}
+
 TEST(S2pUtilTest, IsReadyOnlyFile)
 {
     EXPECT_TRUE("/tmp/xyz");

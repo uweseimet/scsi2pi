@@ -35,19 +35,21 @@ string CommandImageSupport::GetFullName(const string &filename) const
 
 bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
 {
+    error_code error;
+
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
         // Checking for existence first prevents an error if the top-level folder is a softlink
-        if (error_code error; exists(folder, error)) {
+        if (exists(folder, error)) {
             return true;
         }
 
-        try {
-            create_directories(folder);
-
-            return ChangeOwner(context, folder, false);
+        if (!create_directories(folder, error)) {
+            return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "': " + error.message());
         }
-        catch (const filesystem_error &e) {
-            return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "': " + e.what());
+
+        if (!ChangeOwner(context, folder, false)) {
+            remove(folder, error);
+            return false;
         }
     }
 
@@ -135,13 +137,14 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         ofstream s(file);
 
         if (!ChangeOwner(context, file, read_only)) {
+            remove(file, error);
             return false;
         }
 
         resize_file(file, len);
     }
     catch (const filesystem_error &e) {
-        filesystem::remove(file, error);
+        remove(file, error);
 
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
@@ -377,14 +380,8 @@ bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path 
 {
 #if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
-    if (chown(filename.c_str(), uid, gid)) {
-        // Remember the current error before the next filesystem operation
-        const int e = errno;
-
-        error_code error;
-        remove(filename, error);
-
-        return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(e));
+    if (gid == -1 || chown(filename.c_str(), uid, gid)) {
+        return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(errno));
     }
 #endif
 

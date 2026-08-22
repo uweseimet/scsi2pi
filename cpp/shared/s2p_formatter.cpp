@@ -36,7 +36,8 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
             }
             output_hex += fmt::format("{:02x}", bytes[offset]);
 
-            output_ascii += isprint(bytes[offset]) ? string(1, static_cast<char>(bytes[offset])) : ".";
+            const unsigned char c = bytes[offset];
+            output_ascii += c >= 0x20 && c <= 0x7e ? static_cast<char>(c) : '.';
 
             ++offset;
             ++index;
