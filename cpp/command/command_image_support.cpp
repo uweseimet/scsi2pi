@@ -183,7 +183,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
             break;
         }
 
-        if (error_code error; !remove(folder)) {
+        if (error_code error; !remove(folder, error)) {
             return context.ReturnErrorStatus("Can't delete empty image folder '" + folder.string() + "'");
         }
 
