@@ -2,16 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "s2pformat_core.h"
-#include <vector>
 
 int main(int argc, char *argv[])
 {
-    vector<char*> args(argv, argv + argc);
-
-    return S2pFormat().Run(args);
+    return S2pFormat().Run( { argv, static_cast<size_t>(argc) });
 }

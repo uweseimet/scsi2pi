@@ -151,11 +151,5 @@ int run(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-    const int status = run(argc, argv);
-
-    google::protobuf::ShutdownProtobufLibrary();
-
-    return status;
+    return run(argc, argv);
 }

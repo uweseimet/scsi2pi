@@ -16,6 +16,10 @@
 unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
     const string &identifier, bool standard_board)
 {
+#ifdef BOARD_STANDARD
+    standard_board = true;
+#endif
+
     unique_ptr<Bus> bus;
 
     if (in_process) {

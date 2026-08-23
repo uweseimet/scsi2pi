@@ -516,7 +516,6 @@ bool S2p::ExecuteCommand(CommandContext &context)
     if (PbResult result; dispatcher->DispatchCommand(context, result)
         && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
-        google::protobuf::ShutdownProtobufLibrary();
         exit(EXIT_SUCCESS);
     }
 
