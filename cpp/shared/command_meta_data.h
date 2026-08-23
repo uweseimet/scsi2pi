@@ -29,9 +29,12 @@ public:
         bool has_data_out;
     };
 
+    CommandMetaData(const CommandMetaData&) = delete;
+    CommandMetaData& operator=(const CommandMetaData&) = delete;
+
     static const CommandMetaData& GetInstance()
     {
-        static const CommandMetaData instance; // NOSONAR instance cannot be inlined
+        static const CommandMetaData instance;
         return instance;
     }
 

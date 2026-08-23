@@ -175,10 +175,7 @@ int s2p_util::ParseAsUnsignedInt(const string &value)
     try {
         return static_cast<int>(stoul(value));
     }
-    catch (const invalid_argument&) {
-        return -1;
-    }
-    catch (const out_of_range&) {
+    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
         return -1;
     }
 }

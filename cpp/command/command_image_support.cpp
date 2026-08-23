@@ -115,12 +115,10 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     try {
         len = stoull(size);
     }
-    catch (const invalid_argument&) {
+    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
-    catch (const out_of_range&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
-    }
+
     if (len < 512 || (len & 0x1ff)) {
         return context.ReturnErrorStatus(fmt::format("Invalid image file size: {} (not a multiple of 512)", len));
     }

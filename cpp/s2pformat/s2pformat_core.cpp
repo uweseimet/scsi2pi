@@ -203,11 +203,7 @@ int S2pFormat::SelectFormat(span<const FormatDescriptor> descriptors)
     try {
         n = stoi(input);
     }
-    catch (const invalid_argument&) // NOSONAR The exception details do not matter
-    {
-        return 0;
-    }
-    catch (const out_of_range&) // NOSONAR The exception details do not matter
+    catch (const logic_error&)
     {
         return 0;
     }

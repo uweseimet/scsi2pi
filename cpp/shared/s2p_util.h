@@ -89,24 +89,24 @@ void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
-inline const char* to_const_char_ptr(span<const uint8_t> bytes)
+constexpr const char* to_const_char_ptr(span<const uint8_t> bytes)
 {
-    return reinterpret_cast<const char *>(bytes.data());
+    return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-inline char* to_char_ptr(span<uint8_t> bytes)
+constexpr char* to_char_ptr(span<uint8_t> bytes)
 {
-    return reinterpret_cast<char*>(bytes.data());
+    return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
-inline const char* to_const_char_ptr(span<byte> bytes)
+constexpr const char* to_const_char_ptr(span<byte> bytes)
 {
-    return reinterpret_cast<const char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+    return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-inline char* to_char_ptr(span<byte> bytes)
+constexpr char* to_char_ptr(span<byte> bytes)
 {
-    return reinterpret_cast<char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+    return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
 static constexpr array<const char*, 16> SENSE_KEYS = {

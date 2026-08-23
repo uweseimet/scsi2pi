@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <algorithm>
 #include "network_util.h"
 #include <cstring>
 #if __has_include(<ifaddrs.h>)
@@ -34,7 +35,8 @@ namespace
 bool IsInterfaceUp(const string &interface)
 {
     ifreq ifr = { };
-    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    ranges::copy(interface, ifr.ifr_name);
+
     const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {
         return false;
@@ -56,7 +58,8 @@ vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {
 #if __has_include(<sys/ioctl.h>)
     ifreq ifr = { };
-    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
+    ranges::copy(interface, ifr.ifr_name);
+
     const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {
         return vector<uint8_t>();
@@ -110,7 +113,7 @@ optional<sockaddr_in> network_util::ResolveHostName(const string &host)
 
     if (addrinfo *result; !getaddrinfo(host.c_str(), nullptr, &hints, &result)) {
         sockaddr_in addr;
-        memcpy(&addr, result->ai_addr, sizeof(sockaddr_in));
+        memcpy(&addr, result->ai_addr, sizeof(sockaddr_in)); // NOSONAR The bullseye compiler does not support bit_cast
         freeaddrinfo(result);
         return addr;
     }

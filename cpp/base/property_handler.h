@@ -20,6 +20,25 @@ class PropertyHandler final
 
 public:
 
+    PropertyHandler(const PropertyHandler&) = delete;
+    PropertyHandler& operator=(const PropertyHandler&) = delete;
+
+    static PropertyHandler& GetInstance()
+    {
+        static PropertyHandler instance; // NOSONAR Singleton with mutable internal state
+        return instance;
+    }
+
+    void Init(const string&, const property_map&, bool);
+
+    property_map GetProperties(const string& = "") const;
+    const property_map& GetUnknownProperties() const;
+    string RemoveProperty(const string&, const string& = "");
+    void AddProperty(const string&, string_view);
+    void RemoveProperties(string_view);
+
+    bool Persist() const;
+
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
 
     // Global property keys
@@ -47,22 +66,6 @@ public:
     static constexpr const char *PARAMS = "params";
     static constexpr const char *SCSI_LEVEL = "scsi_level";
     static constexpr const char *TYPE = "type";
-
-    static PropertyHandler& GetInstance()
-    {
-        static PropertyHandler instance; // NOSONAR instance cannot be inlined
-        return instance;
-    }
-
-    void Init(const string&, const property_map&, bool);
-
-    property_map GetProperties(const string& = "") const;
-    const property_map& GetUnknownProperties() const;
-    string RemoveProperty(const string&, const string& = "");
-    void AddProperty(const string&, string_view);
-    void RemoveProperties(string_view);
-
-    bool Persist() const;
 
 private:
 
