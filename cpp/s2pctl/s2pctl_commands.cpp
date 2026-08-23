@@ -432,8 +432,8 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
 void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) const
 {
     string json;
-    if (!MessageToJsonString(cmd, &json).ok()) {
-        throw IoException("Can't create JSON data for protobuf JSON file '" + filename + "'");
+    if (const auto status = MessageToJsonString(cmd, &json); !status.ok()) {
+        throw IoException("Can't create JSON data for protobuf JSON file '" + filename + "': " + status.ToString());
     }
 
     ofstream out(filename);

@@ -45,12 +45,14 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
 
         str += output_offset;
         str += fmt::format("{:47}", output_hex);
-        str += hex_only ? "" : fmt::format("  '{}'", output_ascii);
-
-        if (hex_only) {
-            str.erase(str.find_last_not_of(' ') + 1);
+        if (!hex_only) {
+            str += fmt::format("  '{}'", output_ascii);
+        } else {
+            const auto last_non_space = str.find_last_not_of(' ');
+            if (last_non_space != string::npos) {
+                str.erase(last_non_space + 1);
+            }
         }
-
         if (offset < limit) {
             str += "\n";
         }

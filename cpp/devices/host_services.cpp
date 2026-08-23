@@ -179,7 +179,7 @@ void HostServices::ReceiveOperationResults()
         if (!result.ParseFromString(execution_result)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
-        if (!MessageToJsonString(result, &data).ok()) {
+        if (const auto status = MessageToJsonString(result, &data); !status.ok()) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         break;

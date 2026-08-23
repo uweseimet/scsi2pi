@@ -257,7 +257,10 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     if (output_filename.empty()) {
         string json;
-        static_cast<void>(MessageToJsonString(result, &json));
+        if (const auto status = MessageToJsonString(result, &json); !status.ok()) {
+            cerr << "Error: Failed to convert protobuf to JSON: " << status.ToString() << '\n';
+            return EXIT_FAILURE;
+        }
         cout << json << '\n';
         return EXIT_SUCCESS;
     }
@@ -281,7 +284,11 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     case ProtobufFormat::JSON: {
         string json;
-        static_cast<void>(MessageToJsonString(result, &json));
+        if (const auto status = MessageToJsonString(result, &json); !status.ok()) {
+            cerr << "Error: Can't create protobuf data for output file '" << output_filename << "': "
+                << status.ToString() << '\n';
+            return EXIT_FAILURE;
+        }
         out << json << '\n';
         break;
     }

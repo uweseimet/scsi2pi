@@ -132,7 +132,10 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     error_code error;
     path file(full_filename);
     try {
-        ofstream s(file);
+        // Use a scope, so that the file handle is closed before further operations
+        {
+            ofstream s(file);
+        }
 
         if (!ChangeOwner(context, file, read_only)) {
             remove(file, error);
@@ -184,7 +187,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
             break;
         }
 
-        if (error_code error; !remove(folder)) {
+        if (error_code error; !remove(folder, error)) {
             return context.ReturnErrorStatus("Can't delete empty image folder '" + folder.string() + "'");
         }
 
