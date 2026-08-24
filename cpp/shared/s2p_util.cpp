@@ -309,16 +309,14 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
             throw out_of_range("");
         }
 
-        const string &line_lower = ToLower(line);
-
         size_t i = 0;
-        while (i < line_lower.length()) {
-            if (line_lower[i] == ':' && i + 2 < line_lower.length()) {
+        while (i < line.length()) {
+            if (line[i] == ':' && i + 2 < line.length()) {
                 ++i;
             }
 
-            const int b1 = HexToDec(line_lower[i]);
-            const int b2 = HexToDec(line_lower[i + 1]);
+            const int b1 = HexToDec(line[i]);
+            const int b2 = HexToDec(line[i + 1]);
             if (b1 == -1 || b2 == -1) {
                 throw out_of_range("");
             }
@@ -330,19 +328,6 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     }
 
     return bytes;
-}
-
-int s2p_util::HexToDec(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c -'0';
-    }
-
-    if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    }
-
-    return -1;
 }
 
 string_view s2p_util::Trim(string_view s)

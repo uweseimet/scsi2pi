@@ -248,8 +248,8 @@ TEST(S2pUtilTest, HexToDec)
     EXPECT_EQ(9, HexToDec('9'));
     EXPECT_EQ(10, HexToDec('a'));
     EXPECT_EQ(15, HexToDec('f'));
-    EXPECT_EQ(-1, HexToDec('A'));
-    EXPECT_EQ(-1, HexToDec('F'));
+    EXPECT_EQ(10, HexToDec('A'));
+    EXPECT_EQ(15, HexToDec('F'));
     EXPECT_EQ(-1, HexToDec('x'));
 }
 

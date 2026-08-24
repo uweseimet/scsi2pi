@@ -132,7 +132,8 @@ void s2p_parser::Banner(bool usage)
     else {
         cout << "Usage: s2p options ... FILE\n"
             << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
-            << "  --blue-scsi-mode/-B            Enable BlueSCSI filename compatibility mode.\n"
+            << "  --blue-scsi-mode/-B            Enable BlueSCSI/ZuluSCSI filename\n"
+            << "                                 compatibility mode.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
@@ -157,7 +158,7 @@ void s2p_parser::Banner(bool usage)
             << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
-            << "  --standard-board/-S            Run the FULLSPEC board binary with a STANDARD board.\n"
+            << "  --standard-board/-S            Enable STANDARD board support.\n"
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"

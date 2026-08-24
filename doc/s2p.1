@@ -60,8 +60,8 @@ The optional default block size. The default size for SASI hard drives is 256 by
 s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
 .BR --blue-scsi-mode/-B\fI " " \fI
-Enable BlueSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI parsing rules.
-This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
+Enable BlueSCSI/ZuluSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI/ZuluSCSI parsing rules.
+This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI/ZuluSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is an additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP

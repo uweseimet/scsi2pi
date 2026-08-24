@@ -40,7 +40,7 @@ struct StringHash
     }
 };
 
-string Join(const auto &collection, const string &separator = ", ")
+inline string Join(const auto &collection, const string &separator = ", ")
 {
     // Using a stream (and not a string) is required in order to correctly convert the element data
     ostringstream s;
@@ -81,7 +81,20 @@ string FormatSenseData(span<const byte>);
 string FormatSenseData(SenseKey, Asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-int HexToDec(char);
+
+constexpr int HexToDec(char c) noexcept
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1;
+}
 
 string_view Trim(string_view);
 

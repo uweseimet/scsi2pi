@@ -13,12 +13,9 @@
 
 using namespace std;
 
-namespace google
-{
-namespace protobuf
+namespace google::protobuf
 {
 class MessageLite;
-}
 }
 
 namespace protobuf_util
