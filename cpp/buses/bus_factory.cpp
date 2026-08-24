@@ -39,5 +39,6 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
 
     spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
 
+    // Fall back to the in-process bus
     return make_initialized(make_unique<InProcessBus>(identifier, false));
 }

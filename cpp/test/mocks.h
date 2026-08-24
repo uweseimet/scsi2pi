@@ -43,25 +43,6 @@ public:
     }
 };
 
-class MockPhaseHandler : public PhaseHandler
-{
-    FRIEND_TEST(PhaseHandlerTest, Phases);
-    FRIEND_TEST(PhaseHandlerTest, ProcessPhase);
-
-public:
-
-    MOCK_METHOD(void, Status, (), (override));
-    MOCK_METHOD(void, DataIn, (), (override));
-    MOCK_METHOD(void, DataOut, (), (override));
-    MOCK_METHOD(void, BusFree, (), (override));
-    MOCK_METHOD(void, Selection, (), (override));
-    MOCK_METHOD(void, Command, (), (override));
-    MOCK_METHOD(void, MsgIn, (), (override));
-    MOCK_METHOD(void, MsgOut, (), (override));
-
-    using PhaseHandler::PhaseHandler;
-};
-
 class MockAbstractController : public AbstractController // NOSONAR Having many methods cannot be avoided
 {
     friend class testing::TestShared;

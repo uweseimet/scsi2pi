@@ -6,6 +6,8 @@
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2022-2026 Uwe Seimet
 //
+// This controller supports both the SCSI and SASI protocols
+//
 //---------------------------------------------------------------------------
 
 #include "controller.h"

@@ -107,8 +107,12 @@ endif
 PREFIX ?= /opt/scsi2pi
 
 ##   BOARD=FULLSPEC
-##     Specifies the board type that you are using, either
-##     STANDARD or FULLSPEC. The default is FULLSPEC.
+##     Specifies whether to also build the initiator mode tools for the
+##     FULLSPEC board. When compiling for the STANDARD board, these tools
+##     are omitted. The default is FULLSPEC.
+##     You can run the FULLSPEC s2p also with a STANDARD board. Just
+##     use the --standard-board/-S option or add "standard-board=true"
+##     to /etc/s2p.conf.
 BOARD ?= FULLSPEC
 
 VALID_BOARDS := STANDARD FULLSPEC
@@ -268,7 +272,6 @@ endif
 SRC_CONTROLLERS := $(DIR_CONTROLLERS)/abstract_controller.cpp \
 	$(DIR_CONTROLLERS)/controller.cpp \
 	$(DIR_CONTROLLERS)/controller_factory.cpp \
-	$(DIR_CONTROLLERS)/phase_handler.cpp \
 	$(DIR_CONTROLLERS)/script_generator.cpp
 
 SRC_STORAGE_COMMON := \
@@ -389,7 +392,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/memory_util_test.cpp \
 	test/optical_memory_test.cpp \
 	test/page_handler_test.cpp \
-	test/phase_handler_test.cpp \
 	test/primary_device_test.cpp \
 	test/printer_test.cpp \
 	test/property_handler_test.cpp \
