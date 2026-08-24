@@ -17,6 +17,7 @@ CROSS_COMPILE ?=
 CXX := $(CROSS_COMPILE)g++
 AR := $(CROSS_COMPILE)ar
 STRIP := $(CROSS_COMPILE)strip
+PROTOC := $(CROSS_COMPILE)protoc
 
 ifeq ($(strip $(CROSS_COMPILE)),)
 ifeq ($(shell pkg-config --exists spdlog 2>/dev/null && echo yes),yes)
@@ -84,11 +85,6 @@ endif
 ## EXTRA_CPPFLAGS and EXTRA_CXXFLAGS Can be used to pass special purpose flags
 CPPFLAGS += $(EXTRA_CPPFLAGS)
 CXXFLAGS += $(EXTRA_CXXFLAGS)
-
-PROTOC ?= protoc
-ifeq ($(shell command -v $(PROTOC) 2>/dev/null),)
-  $(error "$(PROTOC)" not found — install protobuf-compiler or set PROTOC=/path/to/protoc)
-endif
 
 ## Additional libraries are required since protobuf version 22
 PROTOC_VERSION := $(shell $(PROTOC) --version)
