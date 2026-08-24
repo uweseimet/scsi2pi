@@ -22,6 +22,15 @@
 using namespace spdlog;
 using namespace s2p_util;
 
+RpiBus::RpiBus(PiType type, bool standard_board) : pi_type(type)
+{
+    if (standard_board) {
+        pin_ind = -1;
+        pin_tad = -1;
+        pin_dtd = -1;
+    }
+}
+
 string RpiBus::SetUp(bool target)
 {
     if (pin_ind < 0 && !target) {
@@ -230,13 +239,6 @@ void RpiBus::Reset() const
 
     // Set target signal to input for all modes
     PinSetSignal(pin_tad, false);
-}
-
-void RpiBus::SetStandardBoard()
-{
-    pin_ind = -1;
-    pin_tad = -1;
-    pin_dtd = -1;
 }
 
 uint8_t RpiBus::WaitForSelection()

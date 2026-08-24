@@ -33,7 +33,7 @@ emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
 .PP
 In the arguments to s2p one or more SCSI/SASI (-i n[:u]) devices can be specified.
 The number (n) after the device identifier specifies the ID number for that device. The optional number (u) specifies the LUN (logical unit) for that device. The default LUN is 0.
-The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supports LUNs 0-1, but s2p supports LUNs 0-31 also for SASI. SASI and SCSI devices can be used simultaneously.
+The ID is limited from 0-7. However, typically SCSI ID 7 is reserved for the "initiator" (the host computer). The LUN is limited from 0-31. SASI only supports LUNs 0-1. SASI and SCSI devices can be used simultaneously.
 .PP
 If no explicit device type is provided, s2p determines the type based upon the file extension of the FILE argument.
     hd1: Hard Disk image (generic, non-removable, SCSI-1-CCS)

@@ -300,9 +300,8 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
     return context.ReturnSuccessStatus();
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandImageSupport::IsReservedFile(const CommandContext &context, const string &file, const string &op)
+bool CommandImageSupport::IsReservedFile([[maybe_unused]] const CommandContext &context,
+    [[maybe_unused]] const string &file, [[maybe_unused]]const string &op)
 {
 #ifdef BUILD_STORAGE_DEVICE
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
@@ -316,7 +315,6 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
     return false;
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from,
     string &to) const

@@ -27,14 +27,11 @@ public:
         PI_4 = 4
     };
 
-    explicit RpiBus(PiType type) : pi_type(type)
-    {
-    }
+    RpiBus(PiType type, bool);
 
     string SetUp(bool) override;
     void Reset() const override;
     void CleanUp() override;
-    void SetStandardBoard();
 
     uint8_t WaitForSelection() override;
 

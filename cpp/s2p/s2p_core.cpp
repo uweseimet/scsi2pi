@@ -217,7 +217,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     DisplayAttachedDevices();
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cout << "No RaSCSI/PiSCSI board support available, functionality is limited\n" << flush;
+        cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
     SetUpEnvironment();

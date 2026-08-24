@@ -305,10 +305,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
-    const shared_ptr<PrimaryDevice> &device, bool dryRun) const
+bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
+    [[maybe_unused]] const PbDeviceDefinition &pb_device,
+    const shared_ptr<PrimaryDevice> &device, [[maybe_unused]] bool dryRun) const
 {
     if (!device->SupportsImageFile()) {
         return false;
@@ -364,7 +363,6 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     return true;
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
@@ -525,9 +523,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 }
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const string &filename)
+bool CommandExecutor::CheckForReservedFile([[maybe_unused]]const CommandContext &context,
+    [[maybe_unused]]const string &filename)
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
@@ -538,7 +535,6 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
     return true;
 }
-#pragma GCC diagnostic pop
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
@@ -660,10 +656,9 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice 
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetBlockSize(const CommandContext &context, const shared_ptr<PrimaryDevice> &device,
-    int block_size) const
+bool CommandExecutor::SetBlockSize([[maybe_unused]]const CommandContext &context,
+    [[maybe_unused]] const shared_ptr<PrimaryDevice> &device,
+    [[maybe_unused]] int block_size) const
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
@@ -684,7 +679,6 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, const shared_p
     return false;
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {

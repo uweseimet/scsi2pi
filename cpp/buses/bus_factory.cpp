@@ -14,33 +14,30 @@
 #endif
 
 unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
-    const string &identifier, bool standard_board)
+    const string &identifier, [[maybe_unused]] bool standard_board)
 {
-#ifdef BOARD_STANDARD
-    standard_board = true;
-#endif
-
-    unique_ptr<Bus> bus;
+    auto make_initialized = [target](unique_ptr<Bus> bus) {
+        return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
+    };
 
     if (in_process) {
-        bus = make_unique<InProcessBus>(identifier, log_signals);
-    }
-#if __has_include (<linux/gpio.h>)
-    else if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
-        auto rpi_bus = make_unique<RpiBus>(pi_type);
-        if (standard_board) {
-            rpi_bus->SetStandardBoard();
-        }
-        bus = std::move(rpi_bus);
-    }
-#endif
-    else {
-#if __has_include (<linux/gpio.h>)
-        spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
-#endif
-
-        bus = make_unique<InProcessBus>(identifier, false);
+        return make_initialized(make_unique<InProcessBus>(identifier, log_signals));
     }
 
-    return bus->Init(target) ? std::move(bus) : nullptr;
+#if __has_include (<linux/gpio.h>)
+    if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
+        constexpr bool override_standard =
+#ifdef BOARD_STANDARD
+            true;
+#else
+            false;
+#endif
+
+        auto bus = make_unique<RpiBus>(pi_type, override_standard || standard_board);
+        return make_initialized(std::move(bus));    }
+#endif
+
+    spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
+
+    return make_initialized(make_unique<InProcessBus>(identifier, false));
 }
