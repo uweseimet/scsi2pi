@@ -145,14 +145,14 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     vector<uint8_t> cdb(6);
 
     if (ExecuteCommand(cdb, { }, 3)) {
-        cerr << "Error: Can't get drive data: " << strerror(errno) << '\n';
+        cerr << "Error: Can't get drive data: "s << system_error(errno, generic_category()).what() << '\n';
         return {};
     }
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
     if (ExecuteCommand(cdb, buf, 3)) {
-        cerr << "Error: Can't get drive data: " << strerror(errno) << '\n';
+        cerr << "Error: Can't get drive data: "s << system_error(errno, generic_category()).what() << '\n';
         return {};
     }
 
@@ -240,7 +240,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
     const int status = ExecuteCommand(cdb, parameters, 3600);
 
-    return status ? fmt::format("Can't format drive: {}", strerror(errno)) : "";
+    return status ? fmt::format("Can't format drive: {}", system_error(errno, generic_category()).what()) : "";
 }
 
 int S2pFormat::ExecuteCommand(span<const uint8_t> cdb, span<uint8_t> buf, int timeout)

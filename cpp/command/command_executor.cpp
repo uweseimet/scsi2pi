@@ -340,7 +340,7 @@ bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
     }
 
     s2p_logger.info(
-        "Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
+        "Insert "s + (pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
         + GetIdentifier(*storage_device));
 
     if (!SetBlockSize(context, storage_device, pb_device.block_size())) {

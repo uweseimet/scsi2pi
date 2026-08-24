@@ -150,7 +150,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    context.GetLogger().info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    context.GetLogger().info("Created "s + (read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -291,11 +291,11 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
                                                        perms::owner_write | perms::group_write);
     }
     catch (const filesystem_error &e) {
-        return context.ReturnErrorStatus("Can't " + string(protect ? "protect" : "unprotect") + " image file '" +
+        return context.ReturnErrorStatus("Can't "s + (protect ? "protect" : "unprotect") + " image file '" +
             full_filename + "': " + e.what());
     }
 
-    context.GetLogger().info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    context.GetLogger().info((protect ? "Protected" : "Unprotected") + " image file '"s + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }
@@ -380,7 +380,8 @@ bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path 
 #if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
     if (gid == -1 || chown(filename.c_str(), uid, gid)) {
-        return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(errno));
+        return context.ReturnErrorStatus(
+            "Can't change ownership of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
     }
 #endif
 

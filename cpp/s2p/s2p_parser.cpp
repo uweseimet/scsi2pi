@@ -258,7 +258,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
-                throw ParserException("Invalid property '" + string(optarg) + "'");
+                throw ParserException("Invalid property '"s + optarg + "'");
             }
             else {
                 properties[key_value[0]] = key_value[1];

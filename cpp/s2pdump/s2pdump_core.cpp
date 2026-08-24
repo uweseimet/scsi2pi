@@ -574,7 +574,7 @@ string S2pDump::DumpRestore()
 
     fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
     if (!file) {
-        return "Can't open image file '" + filename + "': " + strerror(errno);
+        return "Can't open image file '" + filename + "': " + system_error(errno, generic_category()).what();
     }
 
     if (!restore) {
@@ -691,7 +691,7 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
     if (restore) {
         file.read(to_char_ptr(buffer), bytes);
         if (file.fail()) {
-            return "Can't read from file '" + filename + "': " + strerror(errno);
+            return "Can't read from file '" + filename + "': " + system_error(errno, generic_category()).what();
         }
 
         if (!readWrite()) {
@@ -704,7 +704,7 @@ string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_coun
 
         file.write(to_const_char_ptr(buffer), bytes);
         if (file.fail()) {
-            return "Can't write to file '" + filename + "': " + strerror(errno);
+            return "Can't write to file '" + filename + "': " + system_error(errno, generic_category()).what();
         }
     }
 

@@ -47,7 +47,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
 
     tap_fd = open("/dev/net/tun", O_RDWR);
     if (tap_fd == -1) {
-        return fmt::format("Can't open /dev/net/tun: {}", strerror(errno));
+        return fmt::format("Can't open /dev/net/tun: {}", system_error(errno, generic_category()).what());
     }
 
     bool create_bridge = params[MODE] == "bridge";
@@ -66,13 +66,13 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
     strncpy(ifr.ifr_name, BRIDGE_INTERFACE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (const int ret = ioctl(tap_fd, TUNSETIFF, static_cast<void*>(&ifr)); ret == -1) {
         close(tap_fd);
-        return fmt::format("Can't ioctl TUNSETIFF: {}", strerror(errno));
+        return fmt::format("Can't ioctl TUNSETIFF: {}", system_error(errno, generic_category()).what());
     }
 
     const int ip_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (ip_fd == -1) {
         close(tap_fd);
-        return fmt::format("Can't create IP socket: {}", strerror(errno));
+        return fmt::format("Can't create IP socket: {}", system_error(errno, generic_category()).what());
     }
 
     const auto &cleanUp = [this, ip_fd](const string &msg) {
@@ -92,7 +92,8 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
     if (const bool is_physical = bridge_interface.starts_with("eth"); is_physical && create_bridge) {
         const int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
         if (fd == -1) {
-            return cleanUp(fmt::format("Can't create bridge socket: {}", strerror(errno)));
+            return cleanUp(
+                fmt::format("Can't create bridge socket: {}", system_error(errno, generic_category()).what()));
         }
 
         if (const string &error = CreateBridge(fd, ip_fd, logger); !error.empty()) {
@@ -129,7 +130,7 @@ void TapDriver::CleanUp(logger &logger) const
 
     if (bridge_created) {
         if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            logger.error("Can't create bridge socket: {}", strerror(errno));
+            logger.error("Can't create bridge socket: {}", system_error(errno, generic_category()).what());
         } else {
             logger.trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
             if (const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
@@ -255,7 +256,7 @@ string TapDriver::DeleteBridge(int fd, logger &logger) const
     if (bridge_created) {
         logger.trace(">brctl delbr " + BRIDGE_NAME);
         if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
-            return "Removing bridge " + BRIDGE_NAME + " failed: " + strerror(errno);
+            return "Removing bridge " + BRIDGE_NAME + " failed: " + system_error(errno, generic_category()).what();
         }
     }
 
@@ -266,7 +267,7 @@ string TapDriver::IpLink(bool up, logger &logger)
 {
     const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1) {
-        return fmt::format("Can't create socket: {}", strerror(errno));
+        return fmt::format("Can't create socket: {}", system_error(errno, generic_category()).what());
     }
 
     logger.trace(">ip link set {} {}", BRIDGE_INTERFACE_NAME, up ? "up" : "down");
@@ -282,7 +283,7 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
     ifreq ifr;
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCGIFFLAGS: " + string(strerror(errno));
+        return "Can't ioctl SIOCGIFFLAGS: "s + system_error(errno, generic_category()).what();
     }
 
     ifr.ifr_flags &= ~IFF_UP;
@@ -291,7 +292,7 @@ string TapDriver::IpLink(int fd, const string &interface, bool up)
     }
 
     if (ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
-        return "Can't ioctl SIOCSIFFLAGS: " + string(strerror(errno));
+        return "Can't ioctl SIOCSIFFLAGS: "s + system_error(errno, generic_category()).what();
     }
 
     return "";
@@ -302,12 +303,13 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
     ifreq ifr;
     ifr.ifr_ifindex = if_nametoindex(interface.c_str());
     if (!ifr.ifr_ifindex) {
-        return fmt::format("Can't if_nametoindex {}: {}", interface, strerror(errno));
+        return fmt::format("Can't if_nametoindex {}: {}", interface, system_error(errno, generic_category()).what());
     }
 
     strncpy(ifr.ifr_name, BRIDGE_NAME.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
     if (ioctl(fd, add ? SIOCBRADDIF : SIOCBRDELIF, &ifr) == -1) {
-        return fmt::format("Can't ioctl {}: {}", add ? "SIOCBRADDIF" : "SIOCBRDELIF", strerror(errno));
+        return fmt::format("Can't ioctl {}: {}", add ? "SIOCBRADDIF" : "SIOCBRDELIF",
+            system_error(errno, generic_category()).what());
     }
 
     return "";

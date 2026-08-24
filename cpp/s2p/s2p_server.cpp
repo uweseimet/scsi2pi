@@ -9,6 +9,7 @@
 #include "s2p_server.h"
 #include <cassert>
 #include <cstring>
+#include <system_error>
 #include <unistd.h>
 #if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
@@ -26,12 +27,12 @@ string S2pServer::Init(int port)
 #if __has_include(<sys/socket.h>)
     server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == -1) {
-        return "Can't create server socket: " + string(strerror(errno));
+        return "Can't create server socket: "s + system_error(errno, generic_category()).what();
     }
 
     if (const int enable = 1; setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         CleanUp();
-        return "Can't reuse socket: " + string(strerror(errno));
+        return "Can't reuse socket: "s + system_error(errno, generic_category()).what();
     }
 
     sockaddr_in server = { };
@@ -45,7 +46,7 @@ string S2pServer::Init(int port)
 
     if (listen(server_socket, 2) == -1) {
         CleanUp();
-        return "Can't listen on server socket: " + string(strerror(errno));
+        return "Can't listen on server socket: "s + system_error(errno, generic_category()).what();
     }
 
     running = true;

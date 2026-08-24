@@ -66,7 +66,7 @@ string RpiBus::SetUp(bool target)
     auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_addr));
     if (map == MAP_FAILED) {
         close(fd);
-        return "Can't map memory: " + string(strerror(errno));
+        return "Can't map memory: "s + system_error(errno, generic_category()).what();
     }
 
     // RPI Mailbox property interface
@@ -92,7 +92,7 @@ string RpiBus::SetUp(bool target)
     }
     else {
         close(fd);
-        return "Can't open /dev/vcio: " + string(strerror(errno));
+        return "Can't open /dev/vcio: "s + system_error(errno, generic_category()).what();
     }
 
     armt_addr = map + ARMT_OFFSET / sizeof(uint32_t);
@@ -118,7 +118,7 @@ string RpiBus::SetUp(bool target)
         void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
         if (addr == MAP_FAILED) {
             close(fd);
-            return "Can't map GIC: " + string(strerror(errno));
+            return "Can't map GIC: "s + system_error(errno, generic_category()).what();
         }
 
         // MPR has offset 1
@@ -245,14 +245,14 @@ uint8_t RpiBus::WaitForSelection()
 {
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
-            warn("epoll_wait failed: {}", strerror(errno));
+            warn("epoll_wait failed: {}", system_error(errno, generic_category()).what());
         }
         return 0;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
         if (errno != EINTR) {
-            warn("Reading event failed: {}", strerror(errno));
+            warn("Reading event failed: {}", system_error(errno, generic_category()).what());
         }
         return 0;
     }

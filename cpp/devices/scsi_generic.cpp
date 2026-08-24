@@ -242,7 +242,8 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 {
     if (status == -1) {
         if (GetController()) {
-            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(), strerror(errno)));
+            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(),
+                system_error(errno, generic_category()).what()));
         }
 
         throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);

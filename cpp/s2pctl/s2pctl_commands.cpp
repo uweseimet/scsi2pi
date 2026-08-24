@@ -130,7 +130,7 @@ bool S2pCtlCommands::SendCommand()
 #if __has_include(<sys/socket.h>)
     const int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {
-        throw IoException("Can't create socket: " + string(strerror(errno)));
+        throw IoException("Can't create socket: "s + system_error(errno, generic_category()).what());
     }
 
     server_addr->sin_port = htons(uint16_t(port));
@@ -138,7 +138,7 @@ bool S2pCtlCommands::SendCommand()
         close(fd);
 
         throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
-            + ": " + strerror(errno));
+        + ": " + system_error(errno, generic_category()).what());
     }
 
     if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {

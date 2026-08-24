@@ -162,7 +162,8 @@ int S2pSimh::Run(span<char*> args)
 
     simh_file.open(simh_filename, (meta_data.empty() ? ios::in : (ios::in | ios::out)) | ios::binary);
     if (!simh_file) {
-        cerr << "Error: Can't open '" << simh_filename << "': " << strerror(errno) << '\n';
+        cerr << "Error: Can't open '" << simh_filename << "': " << system_error(errno, generic_category()).what()
+            << '\n';
         return EXIT_FAILURE;
     }
 
@@ -190,7 +191,8 @@ int S2pSimh::Analyze()
 
         SimhMetaData meta;
         if (!ReadMetaData(simh_file, meta)) {
-            cerr << "Error: Can't read from '" << simh_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << simh_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 
@@ -292,7 +294,8 @@ int S2pSimh::Add()
 
         data_file.open(data_filename, ios::in);
         if (!data_file.is_open()) {
-            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << data_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 
@@ -320,7 +323,8 @@ int S2pSimh::Add()
         }
 
         if (data_file.bad()) {
-            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << data_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 

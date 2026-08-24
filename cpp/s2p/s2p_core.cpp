@@ -289,7 +289,8 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 
     if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
         if (!controller_factory.SetScriptFile(script_file)) {
-            throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
+            throw ParserException(
+                "Can't create script file '" + script_file + "': " + system_error(errno, generic_category()).what());
         }
         s2p_logger->info("Generating script file '" + script_file + "'");
     }

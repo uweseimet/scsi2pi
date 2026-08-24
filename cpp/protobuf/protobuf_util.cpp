@@ -8,11 +8,12 @@
 
 #include "protobuf_util.h"
 #include <unistd.h>
+#include <google/protobuf/message_lite.h>
 #include "shared/s2p_exceptions.h"
 
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
 // A little endian platform is assumed.
-void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &message)
+void protobuf_util::SerializeMessage(int fd, const google::protobuf::MessageLite &message)
 {
     vector<uint8_t> data(message.ByteSizeLong());
     if (!message.SerializeToArray(data.data(), static_cast<int>(data.size()))) {
@@ -23,21 +24,21 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::Message &me
     if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
         static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
     WriteBytes(fd, header) != header.size()) {
-        throw IoException("Can't write message size: " + string(strerror(errno)));
+        throw IoException("Can't write message size: "s + system_error(errno, generic_category()).what());
     }
 
     // Write the actual protobuf data
     if (WriteBytes(fd, data) != data.size()) {
-        throw IoException("Can't write message data: " + string(strerror(errno)));
+        throw IoException("Can't write message data: "s + system_error(errno, generic_category()).what());
     }
 }
 
-void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &message)
+void protobuf_util::DeserializeMessage(int fd, google::protobuf::MessageLite &message)
 {
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
     if (ReadBytes(fd, header) != header.size()) {
-        throw IoException("Can't read message size: " + string(strerror(errno)));
+        throw IoException("Can't read message size: "s + system_error(errno, generic_category()).what());
     }
 
     const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
@@ -49,7 +50,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::Message &messag
     // Read the binary protobuf data
     vector<byte> data_buf(size);
     if (ReadBytes(fd, data_buf) != data_buf.size()) {
-        throw IoException("Invalid message data: " + string(strerror(errno)));
+        throw IoException("Invalid message data: "s + system_error(errno, generic_category()).what());
     }
 
     if (!message.ParseFromArray(data_buf.data(), size)) {
