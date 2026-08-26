@@ -40,7 +40,10 @@ using namespace s2p_util;
 
 DeviceFactory::DeviceFactory()
 {
-#if defined BUILD_SCHD
+#ifdef BUILD_SAHD
+    mapping["hdf"] = SAHD;
+#endif
+#ifdef BUILD_SCHD
     mapping["hd1"] = SCHD;
     mapping["hds"] = SCHD;
     mapping["hda"] = SCHD;
