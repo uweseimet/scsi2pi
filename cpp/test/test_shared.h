@@ -11,8 +11,8 @@
 #include <filesystem>
 #include <span>
 #include "shared/scsi.h"
-#include "base/property_handler.h"
 #include "devices/storage_device.h"
+#include "shared/property_handler.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace filesystem;

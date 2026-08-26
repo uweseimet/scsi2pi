@@ -18,7 +18,7 @@
 #include "command_response.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/s2p_interface_util.h"
-#include "base/property_handler.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace command_response;

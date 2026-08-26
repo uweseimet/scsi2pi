@@ -9,10 +9,10 @@
 #pragma once
 
 #include <filesystem>
-#include "base/property_handler.h"
 #include "buses/bus.h"
 #include "command/command_executor.h"
 #include "controllers/controller_factory.h"
+#include "shared/property_handler.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;

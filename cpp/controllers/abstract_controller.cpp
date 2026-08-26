@@ -8,7 +8,7 @@
 
 #include "abstract_controller.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "base/primary_device.h"
+#include "devices/primary_device.h"
 #include "buses/bus.h"
 
 using namespace s2p_util;

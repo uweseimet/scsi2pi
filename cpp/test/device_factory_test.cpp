@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "base/device_factory.h"
 #include "devices/daynaport.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "devices/optical_memory.h"
 #include "devices/printer.h"

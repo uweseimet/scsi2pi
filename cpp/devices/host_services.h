@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "base/primary_device.h"
+#include "primary_device.h"
 
 class CommandDispatcher;
 class PageHandler;

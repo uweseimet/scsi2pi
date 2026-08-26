@@ -8,10 +8,10 @@
 
 #include "mocks.h"
 #include <unistd.h>
-#include "base/device_factory.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_version.h"

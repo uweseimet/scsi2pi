@@ -7,8 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 #include "generated/s2p_interface.pb.h"
 

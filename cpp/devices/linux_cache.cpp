@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "linux_cache.h"
-#include "base/device.h"
+#include "device.h"
 
 using namespace s2p_util;
 

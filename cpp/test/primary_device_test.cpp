@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device_factory.h"
+#include "devices/device_factory.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;

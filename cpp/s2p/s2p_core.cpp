@@ -18,12 +18,12 @@
 #include <netinet/in.h>
 #endif
 #include <sys/stat.h>
-#include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"

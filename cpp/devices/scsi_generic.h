@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "base/primary_device.h"
+#include "primary_device.h"
 #include "shared/command_meta_data.h"
 
 using namespace std;

@@ -8,13 +8,13 @@
 
 #include "command_response.h"
 #include <unistd.h>
-#include "base/device_factory.h"
-#include "base/property_handler.h"
 #include "command_image_support.h"
+#include "devices/device_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/network_util.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_version.h"
 
 using namespace network_util;

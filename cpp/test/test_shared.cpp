@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "mocks.h"
-#include "base/device_factory.h"
+#include "devices/device_factory.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"

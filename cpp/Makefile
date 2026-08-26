@@ -218,7 +218,6 @@ DIR_SHARED := shared
 DIR_SHARED_PROTOBUF := protobuf
 DIR_SHARED_COMMAND := command
 DIR_SHARED_INITIATOR := initiator
-DIR_BASE := base
 DIR_BUSES := buses
 DIR_CONTROLLERS := controllers
 DIR_DEVICES := devices
@@ -230,6 +229,7 @@ SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
 	$(DIR_SHARED)/memory_util.cpp \
 	$(DIR_SHARED)/network_util.cpp \
+	$(DIR_SHARED)/property_handler.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
 	$(DIR_SHARED)/s2p_util.cpp \
 	$(DIR_SHARED)/s2p_version.cpp \
@@ -253,11 +253,6 @@ SRC_SHARED_COMMAND := $(DIR_SHARED_COMMAND)/command_context.cpp \
 SRC_SHARED_INITIATOR := $(DIR_SHARED_INITIATOR)/initiator_executor.cpp \
 	$(DIR_SHARED_INITIATOR)/initiator_util.cpp
 
-SRC_BASE := $(DIR_BASE)/device.cpp \
-	$(DIR_BASE)/device_factory.cpp \
-	$(DIR_BASE)/primary_device.cpp \
-	$(DIR_BASE)/property_handler.cpp
-
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
 	$(DIR_BUSES)/in_process_bus.cpp
@@ -275,12 +270,14 @@ SRC_STORAGE_COMMON := \
 	$(DIR_DEVICES)/page_handler.cpp
 
 SRC_DISK := \
+	$(DIR_DEVICES)/device.cpp \
+	$(DIR_DEVICES)/device_factory.cpp \
 	$(DIR_DEVICES)/disk.cpp \
 	$(DIR_DEVICES)/linux_cache.cpp \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
+	$(DIR_DEVICES)/primary_device.cpp \
 	$(SRC_STORAGE_COMMON)
-
 ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD := \
 	$(DIR_DEVICES)/scsi_hd.cpp \
@@ -446,7 +443,6 @@ OBJ_SHARED := $(call obj_files,$(SRC_SHARED))
 OBJ_SHARED_PROTOBUF := $(call obj_files,$(SRC_SHARED_PROTOBUF))
 OBJ_SHARED_COMMAND := $(call obj_files,$(SRC_SHARED_COMMAND))
 OBJ_SHARED_INITIATOR := $(call obj_files,$(SRC_SHARED_INITIATOR))
-OBJ_BASE := $(call obj_files,$(SRC_BASE))
 OBJ_BUSES := $(call obj_files,$(SRC_BUSES))
 OBJ_CONTROLLERS := $(call obj_files,$(SRC_CONTROLLERS))
 
@@ -502,7 +498,6 @@ ALL_OBJ := $(OBJ_API) \
 	$(OBJ_SHARED_PROTOBUF) \
 	$(OBJ_SHARED_INITIATOR) \
 	$(OBJ_SHARED_COMMAND) \
-	$(OBJ_BASE) \
 	$(OBJ_BUSES) \
 	$(OBJ_CONTROLLERS) \
 	$(OBJ_DEVICES) \
@@ -518,7 +513,7 @@ $(LIB_SHARED_COMMAND): $(OBJ_SHARED_COMMAND) $(OBJ_API) $(OBJ_SHARED_PROTOBUF) $
 $(LIB_SHARED_INITIATOR): $(OBJ_SHARED_INITIATOR)
 $(LIB_BUS): $(OBJ_BUSES)
 $(LIB_CONTROLLER): $(OBJ_CONTROLLERS)
-$(LIB_DEVICE): $(OBJ_DEVICES) $(OBJ_BASE)
+$(LIB_DEVICE): $(OBJ_DEVICES)
 
 $(LIBDIR) $(BINDIR) $(GENERATED_DIR):
 	@mkdir -p $@

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "base/device.h"
+#include "device.h"
 #include "shared/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN

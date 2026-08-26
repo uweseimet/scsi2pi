@@ -17,8 +17,8 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
-#include "base/property_handler.h"
 #include "controllers/abstract_controller.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;

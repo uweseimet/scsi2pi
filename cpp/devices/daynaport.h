@@ -23,7 +23,7 @@
 #pragma once
 
 #include <array>
-#include "base/primary_device.h"
+#include "primary_device.h"
 #include "tap_driver.h"
 
 class DaynaPort final : public PrimaryDevice

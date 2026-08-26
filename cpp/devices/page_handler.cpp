@@ -8,9 +8,9 @@
 
 #include "page_handler.h"
 #include <spdlog/spdlog.h>
-#include "base/primary_device.h"
-#include "base/property_handler.h"
 #include "controllers/abstract_controller.h"
+#include "devices/primary_device.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
