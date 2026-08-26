@@ -168,6 +168,7 @@ void s2p_parser::Banner(bool usage)
             << "    hds: HD image (Non-removable SCSI-2 HD image)\n"
             << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
             << "    hdr: HD image (Removable SCSI-2 HD image)\n"
+            << "    hdf: HD image (SASI)\n"
             << "    mos: MO image (SCSI-2 MO image)\n"
             << "    iso: CD image (SCSI-2 ISO 9660 image)\n"
             << "    is1: CD image (SCSI-1-CCS ISO 9660 image)\n"
