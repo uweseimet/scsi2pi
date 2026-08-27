@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -41,6 +41,15 @@ TEST(SasiHdTest, RequestSense)
     EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::REQUEST_SENSE));
     EXPECT_EQ(0, buffer[0]);
     EXPECT_EQ(LUN << 5, buffer[1]);
+}
+
+TEST(SasiHdTest, AssignDiskParameters)
+{
+    auto [controller, hd] = CreateDevice(SAHD);
+
+    EXPECT_CALL(*controller, DataOut);
+    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::ASSIGN_DISK_PARAMETERS));
+    EXPECT_EQ(10, controller->GetCurrentLength());
 }
 
 TEST(SasiHdTest, GetBlockSizes)

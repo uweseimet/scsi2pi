@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -156,7 +156,9 @@ enum class ScsiCommand
     READ_CD = 0xbe,
     // SCSi2Pi-specific commands (host services)
     EXECUTE_OPERATION = 0xc0,
-    RECEIVE_OPERATION_RESULTS = 0xc1
+    RECEIVE_OPERATION_RESULTS = 0xc1,
+    // X68000-specific
+    ASSIGN_DISK_PARAMETERS = 0xc2
 };
 
 enum class MessageCode

@@ -522,11 +522,12 @@ bool Controller::TransferFromHost(int length)
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
+        // TODO Get rid of these comparisons
         if ((cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
-        else {
+        else if (cmd != ScsiCommand::ASSIGN_DISK_PARAMETERS) {
             transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
         }
     }
