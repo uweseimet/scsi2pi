@@ -13,16 +13,19 @@
 #include <string>
 #include <set>
 #include <vector>
+#if __has_include(<netinet/in.h>)
+#include <netinet/in.h>
+#endif
 
 using namespace std;
-
-struct sockaddr_in;
 
 namespace network_util
 {
 
 vector<uint8_t> GetMacAddress(const string&);
 set<string, less<>> GetNetworkInterfaces();
+#if __has_include(<netinet/in.h>)
 optional<sockaddr_in> ResolveHostName(const string&);
+#endif
 
 }

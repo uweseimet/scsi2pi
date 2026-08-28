@@ -21,9 +21,6 @@
 #if __has_include(<net/if.h>)
 #include <net/if.h>
 #endif
-#if __has_include(<netinet/in.h>)
-#include <netinet/in.h>
-#endif
 #include <unistd.h>
 
 using namespace std;
@@ -56,7 +53,7 @@ bool IsInterfaceUp(const string &interface)
 
 vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {
-#if __has_include(<sys/ioctl.h>)
+#ifdef SIOCGIFHWADDR
     ifreq ifr = { };
     ranges::copy(interface, ifr.ifr_name);
 
@@ -105,6 +102,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
     return network_interfaces;
 }
 
+#if __has_include(<netinet/in.h>)
 optional<sockaddr_in> network_util::ResolveHostName(const string &host)
 {
     addrinfo hints = { };
@@ -120,3 +118,4 @@ optional<sockaddr_in> network_util::ResolveHostName(const string &host)
 
     return nullopt;
 }
+#endif

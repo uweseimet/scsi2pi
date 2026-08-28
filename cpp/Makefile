@@ -80,6 +80,7 @@ endif
 # For building on Windows (MINGW64) with clang++
 ifneq ($(findstring MINGW,$(UNAME_S)),)
 	CPPFLAGS += -DPROTOBUF_USE_DLLS
+	CXXFLAGS += -Wno-unused-parameter
 endif
 
 ## EXTRA_CPPFLAGS and EXTRA_CXXFLAGS Can be used to pass special purpose flags

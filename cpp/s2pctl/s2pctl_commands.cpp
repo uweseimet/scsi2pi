@@ -122,12 +122,12 @@ bool S2pCtlCommands::SendCommand()
         return true;
     }
 
+#if __has_include(<sys/socket.h>)
     auto server_addr = ResolveHostName(hostname);
     if (!server_addr) {
         throw IoException("Can't resolve hostname '" + hostname + "'");
     }
 
-#if __has_include(<sys/socket.h>)
     const int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {
         throw IoException("Can't create socket: "s + system_error(errno, generic_category()).what());
