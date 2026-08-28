@@ -72,7 +72,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
     if (!folder.string().starts_with("/var/lib/piscsi/")) {
         if (const auto app_root = path(GetAppDir()); folder.lexically_relative(app_root).string().starts_with(
             "..")) {
-            return "Default image folder must be located in '/var/lib/piscsi/' if it exists, otherwise in your home directory";
+            return "The default image folder must be located in '/var/lib/piscsi/' if it exists, or in your home directory otherwise";
         }
     }
 

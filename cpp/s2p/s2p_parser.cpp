@@ -156,7 +156,7 @@ void s2p_parser::Banner(bool usage)
             << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
             << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
             << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
-            << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
+            << "  --scsi-level LEVEL             Optional SCSI/SPC standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
             << "  --standard-board/-S            Enable STANDARD board support.\n"
             << "  --token-file/-P FILE           Access token file.\n"

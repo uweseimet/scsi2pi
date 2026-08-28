@@ -47,9 +47,8 @@ TEST(SasiHdTest, AssignDiskParameters)
 {
     auto [controller, hd] = CreateDevice(SAHD);
 
-    EXPECT_CALL(*controller, DataOut);
+    EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::ASSIGN_DISK_PARAMETERS));
-    EXPECT_EQ(10, controller->GetCurrentLength());
 }
 
 TEST(SasiHdTest, GetBlockSizes)

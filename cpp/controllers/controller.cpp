@@ -516,18 +516,17 @@ void Controller::TransferToHost()
 
 bool Controller::TransferFromHost(int length)
 {
-    const auto cmd = static_cast<ScsiCommand>(GetCdb()[0]);
-    assert(CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
+    const auto meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0]));
+    assert(meta_data.has_data_out);
 
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
-        // TODO Get rid of these comparisons
-        if ((cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) && device->GetType() != SCSG) {
+        if (meta_data.has_custom_data_out && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }
-        else if (cmd != ScsiCommand::ASSIGN_DISK_PARAMETERS) {
+        else {
             transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
         }
     }

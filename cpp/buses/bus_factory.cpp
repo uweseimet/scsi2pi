@@ -26,18 +26,19 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
 
 #if __has_include (<linux/gpio.h>)
     if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
-        constexpr bool override_standard =
+        constexpr bool override_standard_board =
+
 #ifdef BOARD_STANDARD
             true;
 #else
             false;
 #endif
 
-        auto bus = make_unique<RpiBus>(pi_type, override_standard || standard_board);
+        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board);
         return make_initialized(std::move(bus));    }
+#else
+    spdlog::warn("This platform is not a Raspberry Pi running Linux, functionality is limited");
 #endif
-
-    spdlog::warn("This platform is not a Raspberry Pi, functionality is limited");
 
     // Fall back to the in-process bus
     return make_initialized(make_unique<InProcessBus>(identifier, false));
