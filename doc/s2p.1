@@ -20,7 +20,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--reserved-ids/-r\fR \fIIDS\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
-[\fB\--script-file/-s\fR \fISCRIPT_FILE\fR]
+[\fB\--script-file/-f\fR \fISCRIPT_FILE\fR]
 [\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
@@ -113,7 +113,7 @@ An optional comma-separated list of IDs to reserve. Pass an empty list in order 
 .BR --scan-depth/-R\fI " " \fISCAN_DEPTH
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
-.BR --script-file/-s\fI " " \fISCRIPT_FILE
+.BR --script-file/-f\fI " " \fISCRIPT_FILE
 Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
 .TP
 .BR --scsi-level\fI " " \fILEVEL

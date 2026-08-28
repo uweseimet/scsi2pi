@@ -154,7 +154,7 @@ void s2p_parser::Banner(bool usage)
             << "  --property-files/-C            List of configuration property files.\n"
             << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
             << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
-            << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
+            << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
             << "  --token-file/-P FILE           Access token file.\n"
@@ -200,7 +200,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", required_argument, nullptr, 'r' },
         { "scan-depth", required_argument, nullptr, 'R' },
-        { "script-file", required_argument, nullptr, 's' },
+        { "script-file", required_argument, nullptr, 'f' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
@@ -212,7 +212,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
-        { 's', PropertyHandler::SCRIPT_FILE },
+        { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
