@@ -146,7 +146,7 @@ enum class ScsiCommand
     WRITE_12 = 0xaa,
     ERASE_12 = 0xac,
     READ_DVD_STRUCTURE = 0xad,
-    WRITE_AND_VERIFY_12 = 0xaf,
+    WRITE_AND_VERIFY_12 = 0xae,
     VERIFY_12 = 0xaf,
     SEND_VOLUME_TAG = 0xb6,
     READ_DEFECT_DATA_12 = 0xb7,
