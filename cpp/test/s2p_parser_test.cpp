@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("scan_depth", properties[PropertyHandler::SCAN_DEPTH]);
 
-    SetUpArgs(args, "-s", "script_file");
+    SetUpArgs(args, "-f", "script_file");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("script_file", properties[PropertyHandler::SCRIPT_FILE]);

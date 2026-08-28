@@ -155,7 +155,7 @@ void s2p_parser::Banner(bool usage)
             << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
             << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
             << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
-            << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
+            << "  --scsi-level LEVEL             Optional SCSI/SPC standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
@@ -237,7 +237,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:B",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:t:z:w:C:IF:L:P:R:B",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg;
