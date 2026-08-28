@@ -155,7 +155,7 @@ void s2p_parser::Banner(bool usage)
             << "  --property-files/-C            List of configuration property files.\n"
             << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
             << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
-            << "  --script-file/-s FILE          File to write s2pexec command script to.\n"
+            << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
             << "  --standard-board/-S            Enable STANDARD board support.\n"
@@ -202,7 +202,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", required_argument, nullptr, 'r' },
         { "scan-depth", required_argument, nullptr, 'R' },
-        { "script-file", required_argument, nullptr, 's' },
+        { "script-file", required_argument, nullptr, 'f' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
         { "standard-board", no_argument, nullptr, 'S' },
         { "token-file", required_argument, nullptr, 'P' },
@@ -215,7 +215,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
-        { 's', PropertyHandler::SCRIPT_FILE },
+        { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
         { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
@@ -241,7 +241,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BS",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:t:z:w:C:IF:L:P:R:BS",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";
