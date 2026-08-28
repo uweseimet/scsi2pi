@@ -213,7 +213,7 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
         LogWarn(fmt::format("Unknown data format: ${:02x}", data_format));
     }
 
-    if (buf.size() && GetLogger().should_log(level::trace)) {
+    if (!buf.empty() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length,
             GetController()->FormatBytes(buf, data_length)));
     }

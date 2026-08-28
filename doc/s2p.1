@@ -118,7 +118,7 @@ Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to 
 Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
 .TP
 .BR --scsi-level\fI " " \fILEVEL
-The optional SCSI standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
+The optional SCSI/SPC standard level. The default level is device-specific and usually is SCSI-2. Be careful with using this option, you will usually not need it.
 Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extension and "--scsi-level 1" can be used.
 This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might require older SCSI levels.
 .TP

@@ -41,7 +41,8 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     // Normalize properties by adding an explicit LUN where required
     for (const auto& [key, value] : properties) {
         const auto &components = Split(key, '.');
-        if (key.starts_with(PropertyHandler::DEVICE) && key.find(":") == string::npos && components.size() == 3) {
+        if (key.starts_with(PropertyHandler::DEVICE) && key.find(COMPONENT_SEPARATOR) == string::npos
+            && components.size() == 3) {
             AddProperty(components[0] + "." + components[1] + ":0." + components[2], value);
         }
         else {
@@ -126,9 +127,11 @@ bool PropertyHandler::Persist() const
 {
     error_code error;
     remove(CONFIGURATION_OLD, error);
-    rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
-    if (error) {
-        return false;
+    if (exists(path(CONFIGURATION))) {
+        rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
+        if (error) {
+            return false;
+        }
     }
 
     ofstream out(CONFIGURATION);

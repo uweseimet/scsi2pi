@@ -57,15 +57,15 @@ string PrimaryDevice::Init()
 
 void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 {
-    assert(!commands[static_cast<int>(cmd)]);
-    commands[static_cast<int>(cmd)] = c;
+    assert(!commands[static_cast<size_t>(cmd)]);
+    commands[static_cast<size_t>(cmd)] = c;
 }
 
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
-    if (const auto &command = commands[static_cast<int>(cmd)]; command) {
+    if (const auto &command = commands[static_cast<size_t>(cmd)]; command) {
         LogDebug(fmt::format("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
-                static_cast<int>(cmd)));
+                static_cast<size_t>(cmd)));
         command();
     }
     else {

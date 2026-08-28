@@ -236,23 +236,18 @@ string s2p_util::GetScsiLevel(int scsi_level)
     switch (scsi_level) {
     case 0:
         return "-";
-        break;
 
     case 1:
         return "SCSI-1-CCS";
-        break;
 
     case 2:
         return "SCSI-2";
-        break;
 
     case 3:
         return "SCSI-3 (SPC)";
-        break;
 
     default:
         return "SPC-" + to_string(scsi_level - 2);
-        break;
     }
 }
 

@@ -127,23 +127,17 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_DVD_STRUCTURE, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true, false });
     AddCommand(ScsiCommand::VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true, false });
-#ifdef BUILD_SCCD
     AddCommand(ScsiCommand::SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA", { 6, 4, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::PLAY_CD, 12, "PLAY CD", { 6, 4, 2, 4, false, false });
     AddCommand(ScsiCommand::READ_CD, 12, "READ CD", { 6, 3, 2, 4, false, false });
-#endif
-#ifdef BUILD_SCHS
     AddCommand(ScsiCommand::EXECUTE_OPERATION, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0, true, false });
     AddCommand(ScsiCommand::RECEIVE_OPERATION_RESULTS, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)",
         { 7, 2, 0, 0, false, false });
-#endif
-#ifdef BUILD_SAHD
     AddCommand(ScsiCommand::ASSIGN_DISK_PARAMETERS, 6, "ASSIGN DISK PARAMETERS (X68000-specific)",
         { 0, 0, 0, 0, true, false });
-#endif
 }
 
 void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string_view name, const CdbMetaData &meta_data)
