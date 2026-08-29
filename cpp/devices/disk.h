@@ -91,9 +91,9 @@ private:
     bool SetUpCache();
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
-    void WriteVerify(uint64_t, uint32_t, bool);
+    void WriteVerify(uint64_t, uint32_t);
     uint64_t ValidateBlockAddress(AccessMode);
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
+    pair<uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
 
     shared_ptr<Cache> cache;
 

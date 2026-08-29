@@ -213,8 +213,8 @@ void Disk::FormatUnit()
 
 void Disk::Read(AccessMode mode)
 {
-    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
-    if (valid) {
+    const auto& [start, count] = CheckAndGetStartAndCount(mode);
+    if (count) {
         next_sector = start;
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
@@ -233,24 +233,24 @@ void Disk::Write(AccessMode mode)
 {
     CheckWritePreconditions();
 
-    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
-    WriteVerify(start, count, valid);
+    const auto& [start, count] = CheckAndGetStartAndCount(mode);
+    WriteVerify(start, count);
 }
 
 void Disk::Verify(AccessMode mode)
 {
-    // A transfer length of 0 is legal
-    const auto& [valid, start, count] = CheckAndGetStartAndCount(mode);
+    const auto& [start, count] = CheckAndGetStartAndCount(mode);
 
     // Flush the cache according to the specification
     FlushCache();
 
-    WriteVerify(start, count, false);
+    WriteVerify(start, count);
 }
 
-void Disk::WriteVerify(uint64_t start, uint32_t count, bool data_out)
+void Disk::WriteVerify(uint64_t start, uint32_t count)
 {
-    if (data_out) {
+    // A transfer length of 0 is legal
+    if (count) {
         next_sector = start;
 
         sector_transfer_count = caching_mode == PbCachingMode::LINUX_OPTIMIZED ? count : 1;
@@ -554,20 +554,22 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
+pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
 {
     CheckReady();
 
     uint64_t start;
-    uint32_t count;
+    uint32_t count = 0;
 
     if (mode == RW6 || mode == SEEK6) {
         // Mask LUN bits
         start = GetCdbInt24(1) & 0x1fffff;
 
-        count = GetCdbByte(4);
-        if (!count) {
-            count = 256;
+        if (mode == RW6) {
+            count = GetCdbByte(4);
+            if (!count) {
+                count = 256;
+            }
         }
     }
     else {
@@ -579,23 +581,19 @@ tuple<bool, uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
         else if (mode != SEEK10) {
             count = GetCdbInt16(7);
         }
-        else {
-            count = 0;
-        }
     }
 
     LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
 
     // Check capacity
-    if (const uint64_t capacity = GetBlockCount(); !capacity || count > capacity - start) {
+    if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
         LogTrace(
             fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                 start, count));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
-    // Do not process 0 blocks
-    return {count || mode == SEEK6 || mode == SEEK10, start, count};
+    return {start, count};
 }
 
 vector<PbStatistics> Disk::GetStatistics() const

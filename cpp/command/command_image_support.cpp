@@ -18,8 +18,6 @@ using namespace s2p_util;
 
 CommandImageSupport::CommandImageSupport()
 {
-    // ~/images is the default folder for device image files,
-    // for the root user it is /home/pi/images for PiSCSI backward compatibility
     default_folder = GetAppDir() + "/images";
 }
 

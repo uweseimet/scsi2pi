@@ -133,7 +133,7 @@ CPPFLAGS += -DBOARD_$(BOARD)
 ##       SCDP DaynaPort Network Adapter
 ##       SCLP SCSI Printer
 ##       SCSG Linux Generic SCSI (e.g. for SCSI-to-USB bridge)
-##       SCHS Host Services (e.g. for realtime clock and shutdown support)
+##       SCHS Host Services (e.g. for real-time clock and shutdown support)
 ##       SAHD SASI Hard Drive
 ifdef ENABLE_SCRM
 	ENABLE_SCHD = 1

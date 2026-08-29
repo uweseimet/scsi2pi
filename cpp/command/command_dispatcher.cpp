@@ -193,7 +193,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode == ShutdownMode::STOP_S2P || GetEuid()) {
+    if (mode == ShutdownMode::STOP_S2P || !GetEuid()) {
         // Report success now because after a shutdown nothing can be reported anymore
         PbResult result;
         context.WriteSuccessResult(result);

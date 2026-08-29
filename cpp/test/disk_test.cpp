@@ -113,14 +113,16 @@ TEST(DiskTest, Seek6)
     disk->SetReady(true);
 
     Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
-        "SEEK(6) must fail for a medium with 0 sectors");
+        "SEEK(6) for sector 0 must fail for a medium with 0 sectors");
 
     disk->SetBlockCount(1);
-    // Sector count
-    controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SEEK_6));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+
+    controller->SetCdbByte(3, 1);
+    Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
+        "SEEK(6) for sector 1 must fail for a medium with 1 sector");
 }
 
 TEST(DiskTest, Seek10)
@@ -136,11 +138,13 @@ TEST(DiskTest, Seek10)
         "SEEK(10) must fail for a medium with 0 sectors");
 
     disk->SetBlockCount(1);
-    // Sector count
-    controller->SetCdbByte(5, 1);
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(disk, ScsiCommand::SEEK_10));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+
+    controller->SetCdbByte(5, 1);
+    Dispatch(disk, ScsiCommand::SEEK_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
+        "SEEK(10) for sector 1 must fail for a medium with 1 sector");
 }
 
 TEST(DiskTest, ReadCapacity10)
