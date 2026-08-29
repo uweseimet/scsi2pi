@@ -277,14 +277,14 @@ bool CommandDispatcher::SetLogLevel(string_view log_level)
 
     if (id != -1) {
         if (lun == -1) {
-            s2p_logger.info("Set log level for device {} to '{}'", id, level);
+            s2p_logger.info("Log level for device {} is '{}'", id, level);
         }
         else {
-            s2p_logger.info("Set log level for device {}:{} to '{}'", id, lun, level);
+            s2p_logger.info("Log level for device {}:{} is '{}'", id, lun, level);
         }
     }
     else {
-        s2p_logger.info("Set log level to '{}'", level);
+        s2p_logger.info("Log level is '{}'", level);
     }
 
     return true;

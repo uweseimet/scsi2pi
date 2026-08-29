@@ -52,7 +52,7 @@ Buffer size for received data, the default is 131072 bytes. When sending data, t
 Command blocks to send in hexadecimal format. Hexadecimal numbers may be separated by a colon. s2pexec also accepts linked commands.
 .TP
 .BR --data/-d\fI " "\fIDATA
-Data to send with the command in hexadecimal format. These data is sent in the DATA OUT phase. If \fIDATA\fR  starts with @, the remaining string is the name of a file in hexadecimal format to read the data from.
+Data to send with the command in hexadecimal format. This data is sent in the DATA OUT phase. If \fIDATA\fR  starts with @, the remaining string is the name of a file in hexadecimal format to read the data from.
 .TP
 .BR --help/-H\fI
 Display this help.
@@ -61,7 +61,7 @@ Display this help.
 Do not display/save the offsets and the ASCII representation of the received data.
 .TP
 .BR --hex-output-file/-T\fI " "\fIFILE
-Optional file for data received in the DATA IN phase. The data in this file are coded in hexadecimal (human-readable) format.
+Optional file for data received in the DATA IN phase. The data in this file is coded in hexadecimal (human-readable) format.
 .TP
 .BR --log-level/-L\fI " " \fILEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'info'.
