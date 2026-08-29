@@ -83,7 +83,11 @@ bool Device::Eject(bool force)
 
 void Device::CreateLogger()
 {
+    assert(device_logger == default_logger());
+
+    const auto old_level = device_logger->level();
     device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {}:{})", GetId(), lun));
+    device_logger->set_level(old_level);
 }
 
 logger& Device::GetLogger() const
