@@ -14,9 +14,9 @@
 
 using namespace s2p_util;
 
-bool ScriptGenerator::CreateFile(string_view filename)
+bool ScriptGenerator::CreateFile(const string &filename)
 {
-    file.open(filename.data());
+    file.open(filename);
 
     return file.good();
 }

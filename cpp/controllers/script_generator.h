@@ -9,6 +9,7 @@
 #pragma once
 
 #include <fstream>
+#include <string>
 #include "shared/s2p_defs.h"
 
 class ScriptGenerator final
@@ -16,7 +17,7 @@ class ScriptGenerator final
 
 public:
 
-    bool CreateFile(string_view);
+    bool CreateFile(const string&);
 
     void AddCdb(int, int, cdb_t);
     void AddData(span<const uint8_t>);

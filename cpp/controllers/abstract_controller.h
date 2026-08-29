@@ -234,4 +234,22 @@ private:
     int initiator_id = UNKNOWN_INITIATOR_ID;
 
     ShutdownMode shutdown_mode = ShutdownMode::NONE;
+
+    using PhaseHandler = void (AbstractController::*)();
+    static constexpr array<PhaseHandler, 11> PHASE_HANDLERS = {
+        &AbstractController::BusFree,
+        // ARBITRATION
+        nullptr,
+        &AbstractController::Selection,
+        // RESELECTION
+        nullptr,
+        &AbstractController::Command,
+        &AbstractController::DataIn,
+        &AbstractController::DataOut,
+        &AbstractController::Status,
+        &AbstractController::MsgIn,
+        &AbstractController::MsgOut,
+        // RESERVED
+        nullptr
+    };
 };

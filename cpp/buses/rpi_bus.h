@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <string>
 #include <linux/gpio.h>
 #include <sys/epoll.h>
 #include "buses/bus.h"
@@ -51,7 +52,7 @@ public:
         return true;
     }
 
-    static PiType GetPiType(string_view = "/proc/device-tree/model");
+    static PiType GetPiType(const string& = "/proc/device-tree/model");
 
 private:
 

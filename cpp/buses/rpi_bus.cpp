@@ -474,9 +474,9 @@ void RpiBus::WaitNanoSeconds(bool daynaport) const
     }
 }
 
-RpiBus::PiType RpiBus::GetPiType(string_view device_file)
+RpiBus::PiType RpiBus::GetPiType(const string &device_file)
 {
-    ifstream in(device_file.data());
+    ifstream in(device_file);
     stringstream s;
     s << in.rdbuf();
     const string &model = s.str();

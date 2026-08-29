@@ -47,42 +47,12 @@ bool AbstractController::ProcessPhase()
 {
     assert(phase <= BusPhase::RESERVED);
 
-    switch (phase) {
-    case BusPhase::BUS_FREE:
-        BusFree();
+    if (const auto index = static_cast<size_t>(phase); PHASE_HANDLERS[index]) {
+        (this->*PHASE_HANDLERS[index])();
         return true;
-
-    case BusPhase::SELECTION:
-        Selection();
-        return true;
-
-    case BusPhase::COMMAND:
-        Command();
-        return true;
-
-    case BusPhase::DATA_IN:
-        DataIn();
-        return true;
-
-    case BusPhase::DATA_OUT:
-        DataOut();
-        return true;
-
-    case BusPhase::STATUS:
-        Status();
-        return true;
-
-    case BusPhase::MSG_IN:
-        MsgIn();
-        return true;
-
-    case BusPhase::MSG_OUT:
-        MsgOut();
-        return true;
-
-    default:
-        return false;
     }
+
+    return false;
 }
 
 void AbstractController::SetCurrentLength(int length)

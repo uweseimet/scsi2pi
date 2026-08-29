@@ -14,7 +14,7 @@
 bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryDevice> device)
 {
     device->GetLogger().set_level(log_level);
-    device->GetLogger().set_pattern(log_pattern);
+    device->SetLogPattern(log_pattern);
 
     if (const auto &it = controllers.find(id); it != controllers.end()) {
         return it->second->AddDevice(device);
@@ -108,7 +108,7 @@ void ControllerFactory::SetLogLevel(int id, int lun, level::level_enum level)
             device->GetController()->GetLogger().set_level(log_level);
             device->GetController()->GetLogger().set_pattern(log_pattern);
             device->GetLogger().set_level(log_level);
-            device->GetLogger().set_pattern(log_pattern);
+            device->SetLogPattern(log_pattern);
         }
         else {
             device->GetController()->GetLogger().set_level(level::level_enum::off);

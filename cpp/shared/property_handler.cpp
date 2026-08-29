@@ -53,9 +53,9 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     RemoveProperties("mode_page.");
 }
 
-void PropertyHandler::ParsePropertyFile(property_map &properties, string_view filename, bool default_file)
+void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
 {
-    ifstream property_file(filename.data());
+    ifstream property_file(filename);
     if (!property_file && !default_file) {
         // Only report an error if an explicitly specified file is missing
         throw ParserException(fmt::format("No property file '{}'", filename));

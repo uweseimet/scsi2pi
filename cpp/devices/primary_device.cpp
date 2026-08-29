@@ -187,7 +187,7 @@ void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
 
-    CreateLogger();
+    CreateDeviceLogger();
 }
 
 void PrimaryDevice::StatusPhase() const
