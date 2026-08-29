@@ -12,6 +12,10 @@
 #include "initiator/initiator_executor.h"
 #include "shared/sg_adapter.h"
 
+#if !__has_include(<scsi/sg.h>)
+#undef BUILD_SCSG
+#endif
+
 class S2pExecExecutor final
 {
 
@@ -48,7 +52,9 @@ private:
 
     unique_ptr<InitiatorExecutor> initiator_executor;
 
+#ifdef BUILD_SCSG
     unique_ptr<SgAdapter> sg_adapter;
+#endif
 
     logger &s2pexec_logger;
 

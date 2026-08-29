@@ -173,11 +173,11 @@ $(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call disab
 
 $(foreach var, SCHD SCMO SCCD SCTP SCDP SCLP SCSG SCHS SAHD, $(eval $(call add_cpp_flag,$(var))))
 
-ifneq ($(strip $(ENABLE_SCHD)$(ENABLE_SCMO)$(ENABLE_SCCD)$(ENABLE_SAHD)$(ENABLE_SCTP)),)
-	CPPFLAGS += -DBUILD_STORAGE_DEVICE
+ifneq ($(filter 1 y,$(ENABLE_SCHD) $(ENABLE_SCMO) $(ENABLE_SCCD) $(ENABLE_SAHD) $(ENABLE_SCTP)),)
+    CPPFLAGS += -DBUILD_STORAGE_DEVICE
 endif
 
-ifneq ($(strip $(ENABLE_SCHD)$(ENABLE_SCMO)$(ENABLE_SCCD)$(ENABLE_SAHD)),)
+ifneq ($(filter 1 y,$(ENABLE_SCHD) $(ENABLE_SCMO) $(ENABLE_SCCD) $(ENABLE_SAHD)),)
 	CPPFLAGS += -DBUILD_DISK
 endif
 
@@ -207,10 +207,10 @@ ifeq ($(INITIATOR_SUPPORT),1)
 	BIN_ALL += $(BINDIR)/$(S2PDUMP)
 	BIN_ALL += $(BINDIR)/$(S2PEXEC)
 	BIN_ALL += $(BINDIR)/$(S2PPROTO)
+ifeq ($(ENABLE_SCSG),1)
 	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
 endif
-
-# s2psimh only makes sense with streamer support
+endif
 ifeq ($(ENABLE_SCTP),1)
 	BIN_ALL += $(BINDIR)/$(S2PSIMH)
 endif
@@ -234,12 +234,14 @@ SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
 	$(DIR_SHARED)/s2p_util.cpp \
 	$(DIR_SHARED)/s2p_version.cpp \
-	$(DIR_SHARED)/sg_util.cpp \
 	$(DIR_SHARED)/simh_util.cpp
-
+ifeq ($(ENABLE_SCSG),1)
+SRC_SHARED += $(DIR_SHARED)/sg_util.cpp
 ifdef IS_LINUX
 SRC_SHARED += $(DIR_SHARED)/sg_adapter.cpp
 endif
+endif
+
 
 SRC_SHARED_PROTOBUF := $(DIR_SHARED_PROTOBUF)/protobuf_util.cpp \
 	$(DIR_SHARED_PROTOBUF)/s2p_interface_util.cpp
@@ -270,14 +272,16 @@ SRC_STORAGE_COMMON := \
 	$(DIR_DEVICES)/storage_device.cpp \
 	$(DIR_DEVICES)/page_handler.cpp
 
-SRC_DISK := \
+SRC_DEVICE := \
 	$(DIR_DEVICES)/device.cpp \
 	$(DIR_DEVICES)/device_factory.cpp \
+	$(DIR_DEVICES)/primary_device.cpp
+
+SRC_DISK := \
 	$(DIR_DEVICES)/disk.cpp \
 	$(DIR_DEVICES)/linux_cache.cpp \
 	$(DIR_DEVICES)/disk_cache.cpp \
 	$(DIR_DEVICES)/disk_track.cpp \
-	$(DIR_DEVICES)/primary_device.cpp \
 	$(SRC_STORAGE_COMMON)
 ifeq ($(ENABLE_SCHD),1)
 SRC_SCHD := \
@@ -334,7 +338,8 @@ endif
 SRC_S2P_CORE := s2p/s2p_core.cpp \
 	s2p/s2p_parser.cpp \
 	s2p/s2p_server.cpp \
-	s2p/s2p_thread.cpp
+	s2p/s2p_thread.cpp \
+	$(SRC_DEVICE)
 SRC_S2P := s2p/s2p.cpp
 
 SRC_S2PCTL_CORE := s2pctl/s2pctl_commands.cpp \
@@ -346,8 +351,10 @@ ifeq ($(INITIATOR_SUPPORT),1)
 SRC_S2PDUMP_CORE := s2pdump/board_executor.cpp \
 	s2pdump/s2pdump_core.cpp \
 	s2pdump/s2pdump_executor.cpp
+ifeq ($(ENABLE_SCSG),1)
 ifdef IS_LINUX
 SRC_S2PDUMP_CORE += s2pdump/sg_executor.cpp
+endif
 endif
 SRC_S2PDUMP := $(SRC_S2PDUMP_CORE) s2pdump/s2pdump.cpp
 SRC_S2PEXEC_CORE := s2pexec/s2pexec_core.cpp \

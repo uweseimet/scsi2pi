@@ -10,9 +10,9 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 
-string S2pExecExecutor::Init(const string &device)
+string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 {
-#if __has_include(<scsi/sg.h>)
+#ifdef BUILD_SCSG
     if (sg_adapter) {
         sg_adapter->CleanUp();
     }
@@ -56,7 +56,7 @@ void S2pExecExecutor::CleanUp()
         bus->CleanUp();
     }
 
-#if __has_include(<scsi/sg.h>)
+#ifdef BUILD_SCSG
     if (is_sg && sg_adapter) {
         sg_adapter->CleanUp();
     }
@@ -74,7 +74,7 @@ void S2pExecExecutor::ResetBus()
 
 int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int timeout, bool enable_log)
 {
-#if __has_include(<scsi/sg.h>)
+#ifdef BUILD_SCSG
     if (is_sg) {
         return sg_adapter->SendCommand(cdb, buf, static_cast<int>(buf.size()), timeout);
     }
@@ -89,7 +89,7 @@ int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int ti
 
 tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 {
-#if __has_include(<scsi/sg.h>)
+#ifdef BUILD_SCSG
     if (is_sg) {
         array<uint8_t, 14> sense_data;
         array<uint8_t, 6> cdb = { };
@@ -107,7 +107,11 @@ tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 
 int S2pExecExecutor::GetByteCount() const
 {
+#ifdef BUILD_SCSG
     return is_sg ? sg_adapter->GetByteCount() : initiator_executor->GetByteCount();
+#else
+    return initiator_executor->GetByteCount();
+#endif
 }
 
 void S2pExecExecutor::SetTarget(int id, int lun, bool sasi)

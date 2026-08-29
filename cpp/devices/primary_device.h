@@ -12,6 +12,7 @@
 
 #include <functional>
 #include "device.h"
+#include "page_handler.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_defs.h"
 
