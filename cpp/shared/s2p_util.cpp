@@ -28,21 +28,24 @@ namespace
 tuple<int, int, string> GetPwData()
 {
 #if __has_include(<pwd.h>)
-    if (error_code error; !exists("/var/lib/piscsi", error)) {
-        const char *sudo_user = getenv("SUDO_UID");
-        const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
+    const char *sudo_user = getenv("SUDO_UID");
+    const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
 
-        passwd pwd = { };
-        passwd *p_pwd;
+    passwd pwd = { };
+    passwd *p_pwd;
 
-        // For backward compatibility
-        if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+        if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
+            return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
+        }
+        else {
+            // For backward compatibility
             return {uid, pwd.pw_gid, uid ? pwd.pw_dir : "/home/pi"};
         }
     }
 #endif
 
-    return {-1, -1 ,"/var/lib/piscsi"};
+    return {-1, -1 , s2p_util::DEFAULT_APP_FOLDER};
 }
 
 }

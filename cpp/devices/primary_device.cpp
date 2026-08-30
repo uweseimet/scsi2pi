@@ -428,20 +428,20 @@ int PrimaryDevice::GetCdbByte(int index) const
 
 int PrimaryDevice::GetCdbInt16(int index) const
 {
-    return memory_util::GetInt16(controller->GetCdb(), index);
+    return GetInt16(controller->GetCdb(), index);
 }
 
 int PrimaryDevice::GetCdbInt24(int index) const
 {
-    return memory_util::GetInt24(controller->GetCdb(), index);
+    return GetInt24(controller->GetCdb(), index);
 }
 
 uint32_t PrimaryDevice::GetCdbInt32(int index) const
 {
-    return memory_util::GetInt32(controller->GetCdb(), index);
+    return GetInt32(controller->GetCdb(), index);
 }
 
 uint64_t PrimaryDevice::GetCdbInt64(int index) const
 {
-    return memory_util::GetInt64(controller->GetCdb(), index);
+    return GetInt64(controller->GetCdb(), index);
 }

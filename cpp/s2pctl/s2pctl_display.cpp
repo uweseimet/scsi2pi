@@ -283,7 +283,12 @@ string s2pctl_display::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_ty
         }
         has_type = true;
 
-        s << "  " << PbDeviceType_Name(device_type_info.type());
+        if (PbDeviceType_IsValid(device_type_info.type())) {
+            s << "  " << PbDeviceType_Name(device_type_info.type());
+        }
+        else {
+            s << "  ? " << device_type_info.type();
+        }
 
         string indent = "  ";
 

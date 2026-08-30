@@ -143,6 +143,10 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
     if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
+            if (buf.size() < 4) {
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
+            }
+
             format_header.insert(format_header.end(), buf.begin(), buf.begin() + 4);
             byte_count = GetInt16(buf, 2) + 4;
             GetController()->SetTransferSize(byte_count, byte_count);
@@ -161,7 +165,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 {
     const int length = min(min(remaining_count, static_cast<int>(buf.size())), MAX_TRANSFER_LENGTH);
-    SetBlockCount(local_cdb, length / block_size);
+    SetBlockCount(local_cdb, length / (block_size ? block_size : 512));
 
     sg_io_hdr io_hdr = { };
 
@@ -181,7 +185,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
-    io_hdr.mx_sb_len = sense_data.size();
+    io_hdr.mx_sb_len = static_cast<uint8_t>(sense_data.size());
 
     io_hdr.cmdp = local_cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());

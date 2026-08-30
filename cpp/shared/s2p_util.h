@@ -122,6 +122,8 @@ constexpr char* to_char_ptr(span<byte> bytes)
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
+static constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
+
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",
