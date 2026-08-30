@@ -157,8 +157,6 @@ enum class ScsiCommand
     // SCSi2Pi-specific commands (host services)
     EXECUTE_OPERATION = 0xc0,
     RECEIVE_OPERATION_RESULTS = 0xc1,
-    // X68000-specific
-    ASSIGN_DISK_PARAMETERS = 0xc2
 };
 
 enum class MessageCode

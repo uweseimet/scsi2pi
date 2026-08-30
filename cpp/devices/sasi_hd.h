@@ -18,8 +18,6 @@ public:
     explicit SasiHd(int, const set<uint32_t>& = { 256, 512, 1024 });
     ~SasiHd() override = default;
 
-    string SetUp() override;
-
     void Open() override;
 
     void Inquiry() override;

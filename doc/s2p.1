@@ -27,6 +27,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
 [\fB\--without-types/-w\fR \fITYPES\fR]
+[\fB\--zulu-scsi-mode/-Z\fR]
 .SH DESCRIPTION
 .B s2p
 emulates SCSI and SASI devices with the Raspberry Pi and a PiSCSI/RaSCSI board.
@@ -61,8 +62,8 @@ The optional default block size. The default size for SASI hard drives is 256 by
 s2p supports non-standard block sizes as long as they are multiples of 4. Non-standard sizes are only required for exotic platforms.
 .TP
 .BR --blue-scsi-mode/-B\fI " " \fI
-Enable BlueSCSI/ZuluSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI/ZuluSCSI parsing rules.
-This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI/ZuluSCSI.
+Enable BlueSCSI filename parsing compatibility mode for the respective device. In this mode the name of an image file is parsed based on the BlueSCSI parsing rules.
+This mode is useful in order to share drive images between SCSI2Pi and BlueSCSI.
 If there are SCSI2Pi command line options for the respective device they will override the settings derived from the filename.
 If there is additional text before the filename extension s2p tries to parse this text as INQUIRY product data.
 .TP
@@ -136,6 +137,9 @@ Displays the s2p version.
 .TP
 .BR --without-types/-w\fI " " \fITYPES
 Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the PiSCSI web UI. DEVICE_TYPES is usually SCSG.
+.TP
+.BR --zulu-scsi-mode/-Z\fI " " \fI
+The same as the BlueSCSI compatibility mode, because both modes are compatible.
 
 .SH EXAMPLES
 Launch s2p with no devices attached:

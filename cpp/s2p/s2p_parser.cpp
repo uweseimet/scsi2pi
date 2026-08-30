@@ -39,7 +39,7 @@ string_view ParseNumber(string_view s)
     return s.substr(0, i);
 }
 
-string ParseBlueScsiFilename(property_map &properties, const string &d, const string &filename)
+string ParseFilename(property_map &properties, const string &d, const string &filename)
 {
     const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
         { "CD", SCCD },
@@ -56,10 +56,10 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
 
     string_view type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
-        throw ParserException(fmt::format("Invalid BlueSCSI filename format: '{}'", specifier));
+        throw ParserException(fmt::format("Invalid BlueSCSI/ZuluSCSI filename format: '{}'", specifier));
     }
 
-    // An explicit ID/LUN on the command line overrides the BlueSCSI ID/LUN
+    // An explicit ID/LUN on the command line overrides the BlueSCSI/ZuluSCSI ID/LUN
     string device_key = d;
     if (d.empty()) {
         const char id = type_id_lun[2];
@@ -74,7 +74,7 @@ string ParseBlueScsiFilename(property_map &properties, const string &d, const st
     string_view type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
-        throw ParserException(fmt::format("Invalid BlueSCSI device type: '{}'", type));
+        throw ParserException(fmt::format("Invalid BlueSCSI/ZuluSCSI device type: '{}'", type));
     }
     properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
@@ -132,8 +132,7 @@ void s2p_parser::Banner(bool usage)
     else {
         cout << "Usage: s2p options ... FILE\n"
             << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
-            << "  --blue-scsi-mode/-B            Enable BlueSCSI/ZuluSCSI filename\n"
-            << "                                 compatibility mode.\n"
+            << "  --blue-scsi-mode/-B            Enable BlueSCSI filename compatibility mode.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
@@ -164,6 +163,7 @@ void s2p_parser::Banner(bool usage)
             << "  --version/-v                   Display the s2p version.\n"
             << "  --without-types/-w TYPES       Do not report the listed device types in the\n"
             << "                                 API (for PiSCSI web UI compatibility).\n"
+            << "  --zulu-scsi-mode/-Z            Enable ZuluSCSI filename compatibility mode.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n";
 #ifdef BUILD_SCHD
@@ -219,6 +219,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
         { "without-types", required_argument, nullptr, 'w' },
+        { "zulu-scsi-mode", no_argument, nullptr, 'Z' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -244,14 +245,14 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     string name;
     string block_size;
     string caching_mode;
-    bool blue_scsi_mode = false;
+    bool compatibility_mode = false;
     int exit_status = -1;
 
     property_map properties;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:t:z:w:C:IF:L:P:R:BS",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BSZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";
@@ -265,7 +266,8 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             continue;
 
         case 'B':
-            blue_scsi_mode = true;
+        case 'Z':
+            compatibility_mode = true;
             continue;
 
         case 'c':
@@ -292,6 +294,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'n':
             name = optarg;
+            continue;
+
+        case 's':
+            // Ignore dubious piscsi option
             continue;
 
         case 't':
@@ -331,8 +337,8 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         string device_key = id_lun.empty() ? "" : fmt::format("{}{}.", PropertyHandler::DEVICE, id_lun);
 
-        if (blue_scsi_mode && !params.empty()) {
-            device_key = ParseBlueScsiFilename(properties, device_key, params);
+        if (compatibility_mode && !params.empty()) {
+            device_key = ParseFilename(properties, device_key, params);
         }
 
         id_lun.clear();

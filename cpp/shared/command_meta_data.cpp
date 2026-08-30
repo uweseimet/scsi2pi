@@ -136,8 +136,6 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::EXECUTE_OPERATION, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0, true, false });
     AddCommand(ScsiCommand::RECEIVE_OPERATION_RESULTS, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)",
         { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::ASSIGN_DISK_PARAMETERS, 6, "ASSIGN DISK PARAMETERS (X68000-specific)",
-        { 0, 0, 0, 0, true, false });
 }
 
 void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string_view name, const CdbMetaData &meta_data)

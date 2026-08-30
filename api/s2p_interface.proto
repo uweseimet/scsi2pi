@@ -44,7 +44,7 @@ enum PbDeviceType {
     SCHS = 8;
     // Printer device
     SCLP = 9;
-    // Tape device
+    // Streamer (tape) device
     SCTP = 10;
     // Linux SG Driver (e.g. for a SCSI-to-USB bridge)
     SCSG = 11;

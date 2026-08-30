@@ -15,17 +15,6 @@ SasiHd::SasiHd(int l, const set<uint32_t> &sector_sizes) : Disk(SAHD, l, false, 
     SetProtectable(true);
 }
 
-string SasiHd::SetUp()
-{
-    AddCommand(ScsiCommand::ASSIGN_DISK_PARAMETERS, [this]
-        {
-            // Ignore the 10 bytes of data sent with this X68000-specific command
-            StatusPhase();
-        });
-
-    return Disk::SetUp();
-}
-
 void SasiHd::Open()
 {
     assert(!IsReady());

@@ -43,14 +43,6 @@ TEST(SasiHdTest, RequestSense)
     EXPECT_EQ(LUN << 5, buffer[1]);
 }
 
-TEST(SasiHdTest, AssignDiskParameters)
-{
-    auto [controller, hd] = CreateDevice(SAHD);
-
-    EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::ASSIGN_DISK_PARAMETERS));
-}
-
 TEST(SasiHdTest, GetBlockSizes)
 {
     SasiHd hd(0);
