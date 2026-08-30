@@ -17,7 +17,7 @@ CROSS_COMPILE ?=
 CXX := $(CROSS_COMPILE)g++
 AR := $(CROSS_COMPILE)ar
 STRIP := $(CROSS_COMPILE)strip
-PROTOC := $(CROSS_COMPILE)protoc
+PROTOC := protoc
 
 ifeq ($(strip $(CROSS_COMPILE)),)
 ifeq ($(shell pkg-config --exists spdlog 2>/dev/null && echo yes),yes)

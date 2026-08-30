@@ -335,9 +335,6 @@ void RpiBus::CreateWorkTable()
 
 void RpiBus::SetSignal(int pin, bool state) const
 {
-    // Only for non-data signals, because these use SetDAT()
-    assert(pin != PIN_DP && (pin < PIN_DT0 || pin > PIN_DT7));
-
     const int index = pin / 10;
     assert(index <= 2);
     const int shift = (pin % 10) * 3;
