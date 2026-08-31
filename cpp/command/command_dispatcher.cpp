@@ -8,6 +8,7 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
+#include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
