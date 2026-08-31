@@ -19,9 +19,10 @@ void S2pDumpExecutor::TestUnitReady() const
     TestUnitReady(cdb);
 }
 
-void S2pDumpExecutor::RequestSense(span<uint8_t> buf) const
+void S2pDumpExecutor::RequestSense() const
 {
     array<uint8_t, 6> cdb = { };
+    array<uint8_t, 4> buf = { };
     cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
@@ -217,13 +218,4 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             return 0xff;
         }
     }
-}
-
-void S2pDumpExecutor::SetInt24(span<uint8_t> buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 2);
-
-    buf[offset] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 16);
-    buf[offset + 1] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 8);
-    buf[offset + 2] = static_cast<uint8_t>(value);
 }

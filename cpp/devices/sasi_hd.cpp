@@ -39,7 +39,7 @@ void SasiHd::Inquiry()
 
 void SasiHd::RequestSense()
 {
-    // Transfer 4 bytes when the allocation length is 0 (SASI specification)
+    // Transfer 4 bytes when the allocation length is 0 (SASI abd SCSI-1 specification)
     int allocation_length = GetCdbByte(4);
     if (!allocation_length) {
         allocation_length = 4;

@@ -22,7 +22,7 @@ using namespace memory_util;
 using namespace s2p_util;
 using namespace sg_util;
 
-ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, lun)
+ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
     SupportsParams(true);
     SetReady(true);
@@ -30,7 +30,9 @@ ScsiGeneric::ScsiGeneric(int lun) : PrimaryDevice(SCSG, lun)
 
 string ScsiGeneric::SetUp()
 {
-    device = GetParam(DEVICE);
+    if (const string &device_as_param = GetParam(DEVICE); !device_as_param.empty()) {
+        device = device_as_param;
+    }
 
     try {
         fd = OpenDevice(device);

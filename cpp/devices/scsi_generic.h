@@ -20,7 +20,7 @@ class ScsiGeneric final : public PrimaryDevice
 
 public:
 
-    explicit ScsiGeneric(int);
+    ScsiGeneric(int, const string&);
     ~ScsiGeneric() override = default;
 
     string SetUp() override;

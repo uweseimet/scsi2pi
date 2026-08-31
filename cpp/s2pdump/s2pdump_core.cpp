@@ -73,7 +73,8 @@ void S2pDump::Banner(bool header) const
         << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
         << "                                     default LUN is 0.\n"
         << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
-        << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024).\n"
+        << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024),\n"
+        << "                                     default is 256 bytes.\n"
 #ifdef BUILD_SCSG
         << "  --scsi-generic/-g DEVICE_FILE      Use the Linux SG driver instead of a\n"
         << "                                     RaSCSI/PiSCSI board.\n"
@@ -316,16 +317,21 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             }
         }
 
-        if (sasi) {
+        if (sasi && !run_inquiry) {
             sasi_capacity = ParseAsUnsignedInt(capacity);
             if (sasi_capacity <= 0) {
                 throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
-            sasi_sector_size = ParseAsUnsignedInt(sector_size);
-            if (sasi_sector_size != 256 && sasi_sector_size != 512
-                && sasi_sector_size != 1024) {
-                throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
+            if (!sector_size.empty()) {
+                sasi_sector_size = ParseAsUnsignedInt(sector_size);
+                if (sasi_sector_size != 256 && sasi_sector_size != 512
+                    && sasi_sector_size != 1024) {
+                    throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
+                }
+            }
+            else {
+                sasi_sector_size = 256;
             }
         }
 
@@ -338,7 +344,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         }
 
         if (filename.empty() && !run_bus_scan && !run_inquiry) {
-            throw ParserException("Missing filename");
+            throw ParserException("Missing drive image filename for backup/restore");
         }
 
         // Avoid -1 as target ID
@@ -872,8 +878,8 @@ bool S2pDump::GetDeviceInfo()
         return false;
     }
 
-    // Clear any pending error condition, e.g. a medium just having being inserted
-    s2pdump_executor->RequestSense( { });
+    // Clear any pending error condition, e.g. a medium just having been inserted
+    s2pdump_executor->RequestSense();
 
     if (scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         return true;
@@ -913,8 +919,8 @@ bool S2pDump::GetDeviceInfo()
 
 void S2pDump::DisplayProperties(int id, int lun) const
 {
-    // Clear any pending error condition, e.g. a medium just having being inserted
-    s2pdump_executor->RequestSense( { });
+    // Clear any pending error condition, e.g. a medium just having been inserted
+    s2pdump_executor->RequestSense();
 
     cout << "\nDevice properties for s2p configuration file:\n";
 

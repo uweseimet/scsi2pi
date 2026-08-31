@@ -118,7 +118,7 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
 #ifdef BUILD_SCSG
     case SCSG:
-        return make_shared<ScsiGeneric>(lun);
+        return make_shared<ScsiGeneric>(lun, filename);
 #endif
 
 #ifdef BUILD_SAHD

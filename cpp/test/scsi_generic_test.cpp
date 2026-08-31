@@ -15,7 +15,7 @@ using namespace testing;
 
 TEST(ScsiGenericTest, Device_Defaults)
 {
-    ScsiGeneric device(0);
+    ScsiGeneric device(0, "");
 
     EXPECT_EQ(SCSG, device.GetType());
     EXPECT_FALSE(device.SupportsImageFile());
@@ -37,23 +37,21 @@ TEST(ScsiGenericTest, Device_Defaults)
 
 TEST(ScsiGenericTest, GetIdentifier)
 {
-    ScsiGeneric device(0);
+    ScsiGeneric device(0, "");
 
     EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
 }
 
 TEST(ScsiGenericTest, SetUp)
 {
-    ScsiGeneric device1(0);
+    ScsiGeneric device1(0, "");
     EXPECT_NE("", device1.SetUp());
 
-    ScsiGeneric device2(0);
-    param_map params;
-    params["device"] = "dev/null";
-    device2.SetParams(params);
+    ScsiGeneric device2(0, "/dev/null");
     EXPECT_NE("", device2.SetUp());
 
-    ScsiGeneric device3(0);
+    ScsiGeneric device3(0, "");
+    param_map params;
     params["device"] = "/dev/sg0123456789";
     device3.SetParams(params);
     EXPECT_NE("", device3.SetUp());
