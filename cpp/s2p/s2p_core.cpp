@@ -191,6 +191,11 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         }
     }
 
+    if (const string &error = CheckForUnknownProperties(); !error.empty()) {
+        CleanUp(error);
+        return EXIT_FAILURE;
+    }
+
     if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
     }, s2p_logger); !error.empty()) {
@@ -198,7 +203,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    s2p_logger->trace("Image folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
+    s2p_logger->trace("Image file folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
 
     try {
         CreateDevices();
@@ -206,14 +211,6 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     catch (const ParserException &e) {
         CleanUp(e.what());
         return EXIT_FAILURE;
-    }
-
-    for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
-        if (!key.starts_with(PropertyHandler::DEVICE)) {
-            CleanUp("Invalid global property \"" + key + "\", check your command line and "
-                + PropertyHandler::CONFIGURATION);
-            return EXIT_FAILURE;
-        }
     }
 
     DisplayAttachedDevices();
@@ -229,6 +226,24 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+string S2p::CheckForUnknownProperties() const
+{
+    for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
+        if (!key.starts_with(PropertyHandler::DEVICE)) {
+            if (key.starts_with(PropertyHandler::PARAMS)) {
+                return fmt::format("Invalid parameters '{}', check your command line and {}", value,
+                    PropertyHandler::CONFIGURATION);
+            }
+            else {
+                return fmt::format("Invalid global property '{}:{}', check your command line and {}", key, value,
+                    PropertyHandler::CONFIGURATION);
+            }
+        }
+    }
+
+    return "";
 }
 
 void S2p::DisplayAttachedDevices() const

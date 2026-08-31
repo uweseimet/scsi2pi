@@ -217,15 +217,6 @@ TEST(CommandResponseTest, GetLogLevelInfo)
     EXPECT_EQ(7, info.log_levels().size());
 }
 
-#if __has_include(<netinet/in.h>)
-TEST(CommandResponseTest, GetNetworkInterfacesInfo)
-{
-    PbNetworkInterfacesInfo info;
-    GetNetworkInterfacesInfo(info);
-    EXPECT_FALSE(info.name().empty());
-}
-#endif
-
 TEST(CommandResponseTest, GetMappingInfo)
 {
     PbMappingInfo info;

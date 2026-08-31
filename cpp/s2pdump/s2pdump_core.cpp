@@ -50,7 +50,7 @@ void S2pDump::TerminationHandler(int)
 void S2pDump::Banner(bool header) const
 {
     if (header) {
-        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Hard Drive/Tape Drive Dump/Restore Tool)\n"
+        cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (SCSI/SASI Hard/Tape Drive Dump/Restore Tool)\n"
             << "Version " << GetVersionString() << "\n"
             << "Copyright (C) 2023-2026 Uwe Seimet\n";
     }

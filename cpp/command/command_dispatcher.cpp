@@ -8,10 +8,6 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#if __has_include(<sys/reboot.h>)
-#include <sys/reboot.h>
-#endif
-#include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -214,31 +210,15 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-#ifdef RB_POWER_OFF
-        sync();
-        if (reboot(RB_POWER_OFF)) {
-            s2p_logger.error("Pi shutdown failed");
-            return false;
-        }
-#else
+        execl("/sbin/shutdown", "shutdown", "-r", "now", nullptr);
         s2p_logger.error("Shutdown is not supported on this platform");
         return false;
-#endif
-        break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-#ifdef RB_AUTOBOOT
-        sync();
-        if (reboot(RB_AUTOBOOT)) {
-            s2p_logger.error("Pi restart failed");
-            return false;
-        }
-#else
+        execl("/sbin/reboot", "reboot", nullptr);
         s2p_logger.error("Restart is not supported on this platform");
         return false;
-#endif
-        break;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));

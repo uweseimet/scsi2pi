@@ -79,7 +79,8 @@ void S2pCtl::Banner(bool usage) const
             << "  --text-protobuf FILENAME       Do not send command to s2p\n"
             << "                                 but write it to a protobuf text file.\n"
             << "  --type/-t DEVICE_TYPE          Optional device type\n"
-            << "                                 (sahd|sccd|scdp|schd|schs|sclp|scmo|scrm|scsg|sctp).\n"
+            << "                                 (sahd|sccd|scdp|schd|schs|sclp|scmo|scrm|scsg\n"
+            << "                                 |sctp).\n"
             << "  --version/-v                   Display the s2pctl version.\n";
     }
 }

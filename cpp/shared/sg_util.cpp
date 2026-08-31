@@ -26,7 +26,7 @@ using namespace memory_util;
 int sg_util::OpenDevice(const string &device)
 {
     if (!device.starts_with("/dev/sg")) {
-        throw IoException(fmt::format("Missing or invalid device file: '{}'", device));
+        throw IoException(fmt::format("Missing or invalid device file: '{}', device file must be '/dev/sg*'", device));
     }
 
 #if __has_include(<scsi/sg.h>)

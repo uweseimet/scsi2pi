@@ -20,7 +20,7 @@ class ScsiGeneric final : public PrimaryDevice
 
 public:
 
-    ScsiGeneric(int, const string&);
+    explicit ScsiGeneric(int);
     ~ScsiGeneric() override = default;
 
     string SetUp() override;
@@ -30,6 +30,8 @@ public:
     {
         return device + " (" + GetPaddedName() + ")";
     }
+
+    param_map GetDefaultParams() const override;
 
     void Dispatch(ScsiCommand) override;
 
@@ -68,6 +70,8 @@ private:
     // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
+
+    static constexpr const char *DEVICE = "device";
 
     // Linux limits the number of bytes that can be transferred in a single SG 3 SCSI request
     static constexpr int MAX_TRANSFER_LENGTH = 65536;

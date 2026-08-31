@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -42,6 +42,8 @@ private:
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
+
+    string CheckForUnknownProperties() const;
 
     void DisplayAttachedDevices() const;
 

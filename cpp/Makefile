@@ -63,7 +63,7 @@ endif
 
 # For building on NetBSD with clang++
 ifeq ($(UNAME_S),NetBSD)
-	CXXFLAGS += -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations
+	CXXFLAGS += -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations -Wno-character-conversion
 endif
 
 # For building on OpenBSD with clang++
