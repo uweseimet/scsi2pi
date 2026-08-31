@@ -57,10 +57,10 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("locale", properties[PropertyHandler::LOCALE]);
 
-    SetUpArgs(args, "-C", "property_files");
+    SetUpArgs(args, "--config-files", "config_files");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
-    EXPECT_EQ("property_files", properties[PropertyHandler::PROPERTY_FILES]);
+    EXPECT_EQ("config_files", properties[PropertyHandler::CONFIG_FILES]);
 
     SetUpArgs(args, "-F", "image_folder");
     properties = ParseArguments(args, ignore_conf);

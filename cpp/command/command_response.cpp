@@ -141,7 +141,7 @@ void GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device)
 void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern, const string &file_pattern,
     logger &logger)
 {
-    const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
+    const string &default_folder = CommandImageSupport::GetInstance().GetImageFolder();
 
     const path default_path(default_folder);
     if (error_code error; !is_directory(default_path, error) || error) {
@@ -189,7 +189,7 @@ void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
     logger &logger)
 {
     server_info.mutable_image_files_info()->set_default_image_folder(
-        CommandImageSupport::GetInstance().GetDefaultFolder());
+        CommandImageSupport::GetInstance().GetImageFolder());
 
     command_response::GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
@@ -279,7 +279,7 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
         image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
 
         const path p(
-            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
+            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename);
 
         image_file.set_read_only(IsReadOnlyFile(p));
 
@@ -296,7 +296,7 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
 void command_response::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern, logger &logger)
 {
-    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
+    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetImageFolder());
     image_files_info.set_depth(CommandImageSupport::GetInstance().GetDepth());
 
     GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
@@ -515,8 +515,8 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
-    operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set default image file folder");
-    AddOperationParameter(*operation, "folder", "Default image file folder name", "", true);
+    operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set image file folder");
+    AddOperationParameter(*operation, "folder", "Image file folder name", "", true);
 
     operation = CreateOperation(operation_info, LOG_LEVEL, "Set log level");
     AddOperationParameter(*operation, "level", "New log level", "", true);

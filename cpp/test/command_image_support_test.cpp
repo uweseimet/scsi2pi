@@ -25,13 +25,13 @@ TEST(CommandImageSupportTest, SetGetDefaultFolder)
 {
     CommandImageSupport &image = CommandImageSupport::GetInstance();
 
-    EXPECT_NE(string::npos, image.GetDefaultFolder().find("/images"));
+    EXPECT_NE(string::npos, image.GetImageFolder().find("/images"));
 
-    EXPECT_FALSE(image.SetDefaultFolder("").empty());
-    EXPECT_FALSE(image.SetDefaultFolder("/not_in_home").empty());
+    EXPECT_FALSE(image.SetImageFolder("").empty());
+    EXPECT_FALSE(image.SetImageFolder("/not_in_home").empty());
 
     if (exists("/var/lib/piscsi/images")) {
-        EXPECT_TRUE(image.SetDefaultFolder("/var/lib/piscsi/images").empty());
+        EXPECT_TRUE(image.SetImageFolder("/var/lib/piscsi/images").empty());
     }
 }
 

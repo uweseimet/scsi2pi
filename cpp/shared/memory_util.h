@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -51,6 +51,7 @@ uint64_t GetInt64(const auto &buf, int offset)
 
 void SetInt16(span<byte>, int, int);
 void SetInt16(span<uint8_t>, int, int);
+void SetInt24(span<uint8_t>, int, int);
 void SetInt32(span<byte>, int, uint32_t);
 void SetInt32(span<uint8_t>, int, uint32_t);
 void SetInt64(span<uint8_t>, int, uint64_t);

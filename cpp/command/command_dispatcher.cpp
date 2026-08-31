@@ -51,12 +51,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_FOLDER: {
         const string &folder = GetParam(command, "folder");
-        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(folder); !error.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(folder); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
         else {
-            s2p_logger.info("Default image folder set to '{}'", folder);
+            s2p_logger.info("Image folder set to '{}'", folder);
             PropertyHandler::GetInstance().AddProperty(PropertyHandler::IMAGE_FOLDER, folder);
             return context.WriteSuccessResult(result);
         }

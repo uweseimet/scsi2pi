@@ -409,7 +409,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/script_generator_test.cpp \
 	test/scsi_cd_test.cpp \
 	test/scsi_hd_test.cpp \
-	test/sg_util_test.cpp \
 	test/simh_util_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
@@ -420,6 +419,7 @@ SRC_S2P_TEST += test/daynaport_test.cpp \
 	test/network_util_test.cpp \
 	test/rpi_bus_test.cpp \
 	test/scsi_generic_test.cpp \
+	test/sg_util_test.cpp \
 	test/tap_driver_test.cpp
 endif
 

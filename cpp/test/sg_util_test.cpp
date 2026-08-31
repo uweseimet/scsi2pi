@@ -165,11 +165,3 @@ TEST(SgUtilTest, SetBlockCount)
     EXPECT_EQ(12345678U, GetInt32(cdb, 10));
     SetInt16(cdb, 10, 0);
 }
-
-TEST(SgUtilTest, SetInt24)
-{
-    vector<uint8_t> buf(4);
-
-    SetInt24(buf, 1, 0x123456);
-    EXPECT_EQ(0x123456, GetInt24(buf, 1));
-}

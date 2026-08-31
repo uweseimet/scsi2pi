@@ -37,11 +37,11 @@ public:
     {
         return depth;
     }
-    const string& GetDefaultFolder() const
+    const string& GetImageFolder() const
     {
-        return default_folder;
+        return image_folder;
     }
-    string SetDefaultFolder(string_view);
+    string SetImageFolder(string_view);
 
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;
@@ -65,5 +65,5 @@ private:
 
     int depth = 1;
 
-    string default_folder;
+    string image_folder;
 };

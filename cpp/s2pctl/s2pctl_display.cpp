@@ -359,7 +359,7 @@ string s2pctl_display::DisplayImageFilesInfo(const PbImageFilesInfo &image_files
 {
     ostringstream s;
 
-    s << "Default image file folder: " << image_files_info.default_image_folder() << '\n';
+    s << "Image file folder: " << image_files_info.default_image_folder() << '\n';
     s << "Supported folder depth: " << image_files_info.depth() << '\n';
 
     if (!image_files_info.image_files().empty()) {

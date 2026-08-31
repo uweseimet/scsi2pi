@@ -128,12 +128,3 @@ void sg_util::SetBlockCount(span<uint8_t> cdb, int length)
         }
     }
 }
-
-void sg_util::SetInt24(span<uint8_t> buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 2);
-
-    buf[offset] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 16);
-    buf[offset + 1] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 8);
-    buf[offset + 2] = static_cast<uint8_t>(value);
-}

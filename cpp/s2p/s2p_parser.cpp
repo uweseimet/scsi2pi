@@ -136,6 +136,7 @@ void s2p_parser::Banner(bool usage)
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
+            << "  --config-files                 List of configuration files.\n"
             << "  --help/-h                      Display this help.\n"
             << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
             << "                                 for SCSI, 0-1 for SASI), default LUN is 0.\n"
@@ -151,7 +152,6 @@ void s2p_parser::Banner(bool usage)
             << "                                 format is VENDOR:PRODUCT:REVISION.\n"
             << "  --port/-p PORT                 s2p server port, default is 6868.\n"
             << "  --property/-c KEY=VALUE        Sets a configuration property.\n"
-            << "  --property-files/-C            List of configuration property files.\n"
             << "  --reserved-ids/-r [IDS]        List of IDs to reserve.\n"
             << "  --scan-depth/-R DEPTH          Scan depth for image file folder.\n"
             << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
@@ -191,13 +191,15 @@ void s2p_parser::Banner(bool usage)
 
 property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_conf) // NOSONAR Acceptable complexity for parsing
 {
-    constexpr int OPT_SCSI_LEVEL = 2;
+    constexpr int OPT_CONFIG_FILES = 2;
     constexpr int OPT_LOG_LIMIT = 3;
+    constexpr int OPT_SCSI_LEVEL = 4;
 
     const vector<option> options = {
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
+        { "config-files", required_argument, nullptr, OPT_CONFIG_FILES },
         { "help", no_argument, nullptr, 'h' },
         { "id", required_argument, nullptr, 'i' },
         { "ignore-conf", no_argument, nullptr, 'I' },
@@ -209,7 +211,6 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "name", required_argument, nullptr, 'n' },
         { "port", required_argument, nullptr, 'p' },
         { "property", required_argument, nullptr, 'c' },
-        { "property-files", required_argument, nullptr, 'C' },
         { "reserved-ids", required_argument, nullptr, 'r' },
         { "scan-depth", required_argument, nullptr, 'R' },
         { "script-file", required_argument, nullptr, 'f' },
@@ -223,12 +224,12 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { nullptr, 0, nullptr, 0 }
     };
 
+    // Global options
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
-        { 'C', PropertyHandler::PROPERTY_FILES },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
         { 'l', PropertyHandler::LOG_PATTERN },
@@ -252,7 +253,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BSZ",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:IF:L:P:R:BSZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";
@@ -310,6 +311,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'I':
             ignore_conf = true;
+            continue;
+
+        case OPT_CONFIG_FILES:
+            properties[PropertyHandler::CONFIG_FILES] = optarg;
             continue;
 
         case OPT_LOG_LIMIT:

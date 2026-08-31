@@ -40,7 +40,8 @@ tuple<int, int, string> GetPwData()
         }
         else {
             // For backward compatibility
-            return {uid, pwd.pw_gid, uid ? pwd.pw_dir : "/home/pi"};
+            const string &dir = uid ? pwd.pw_dir : "/home/pi";
+            return {uid, pwd.pw_gid, exists(dir, error) ? dir : s2p_util::DEFAULT_APP_FOLDER};
         }
     }
 #endif

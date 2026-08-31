@@ -198,6 +198,8 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
+    s2p_logger->trace("Image folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
+
     try {
         CreateDevices();
     }
@@ -252,9 +254,9 @@ bool S2p::Ready() const
 
 int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 {
-    const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
+    const auto &config_files = properties.find(PropertyHandler::CONFIG_FILES);
 
-    property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
+    property_handler.Init(config_files != properties.end() ? config_files->second : "", properties,
         ignore_conf);
 
     if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
@@ -270,11 +272,11 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     LogProperties();
 
     if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(image_folder); !error.empty()) {
             throw ParserException(error);
         }
         else {
-            s2p_logger->info("Default image folder set to '{}'", image_folder);
+            s2p_logger->info("Image folder set to '{}'", image_folder);
         }
     }
 

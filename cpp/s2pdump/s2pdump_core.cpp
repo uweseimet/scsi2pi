@@ -64,7 +64,7 @@ void S2pDump::Banner(bool header) const
         << "  --help/-H                          Display this help.\n"
         << "  --image-file/-f IMAGE_FILE         Source/Destination image file path.\n"
         << "  --inquiry/-I                       Display INQUIRY data and (SCSI only)\n"
-        << "                                     device properties for property files.\n"
+        << "                                     device properties for configuration files.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
         << "                                     error|critical|off), default is 'warning'.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
@@ -916,7 +916,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     // Clear any pending error condition, e.g. a medium just having being inserted
     s2pdump_executor->RequestSense( { });
 
-    cout << "\nDevice properties for s2p properties file:\n";
+    cout << "\nDevice properties for s2p configuration file:\n";
 
     string id_and_lun = "device." + to_string(id);
     if (lun > 0) {

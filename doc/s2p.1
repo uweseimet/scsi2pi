@@ -6,6 +6,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
+[\fB\--config-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--help/-h\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
@@ -17,7 +18,6 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--name/-n\fR \fIVENDOR:PRODUCT:REVISION\fR]
 [\fB\--port/-p\fR \fIPORT\fR]
 [\fB\--property/-c\fR \fIKEY=VALUE\fR]
-[\fB\--property-files/-C\fR \fIPROPERTY_FILES\fR]
 [\fB\--reserved-ids/-r\fR \fIIDS\fR]
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--script-file/-f\fR \fISCRIPT_FILE\fR]
@@ -70,6 +70,10 @@ If there is additional text before the filename extension s2p tries to parse thi
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default is PiSCSI compatible caching.
 .TP
+.BR --config-files/-C\fI " " \fICONFIG_FILES
+An optional comma-separated list of configuration files with s2p configuration properties. The default global property file is /etc/s2p.conf. This file is parsed first.
+Explicitly specified property files override the previously defined properties.
+.TP
 .BR --help/-h\fI " " \fI
 Display this help.
 .TP
@@ -82,7 +86,7 @@ FILE is the name of the image file to use for the SCSI/SASI device. For devices 
 Ignore any properties in the /etc/s2p.conf configuration file.
 .TP
 .BR --image-folder/-F\fI " " \fIFOLDER
-The absolute path of the default image folder. It must be located in /var/lib/piscsi/ or in the PiSCSI user's home directory.
+The absolute path of the image folder. It must be located in /var/lib/piscsi/ or in /home/.
 .TP
 .BR --locale/-z\fI " " \fILOCALE
 Overrides the default locale (language) for client-facing error messages. A client can override this setting.
@@ -105,15 +109,11 @@ The s2p client service port, default is 6868.
 .BR --property/-c\fI " " \fIKEY=VALUE
 Set the s2p configuration property with the name KEY to the value VALUE. Properties set with this option override properties from property files.
 .TP
-.BR --property-files/-C\fI " " \fIPROPERTY_FILES
-An optional comma-separated list of property files with s2p configuration data. The default global property file is /etc/s2p.conf. This file is parsed first.
-Explicitly specified property files override the previously defined properties.
-.TP
 .BR --reserved-ids/-r\fI " " \fIIDS
 An optional comma-separated list of IDs to reserve. Pass an empty list in order to not reserve any ID.
 .TP
 .BR --scan-depth/-R\fI " " \fISCAN_DEPTH
-Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the default image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
+Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR --script-file/-f\fI " " \fISCRIPT_FILE
 Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.

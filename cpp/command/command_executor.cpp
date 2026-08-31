@@ -423,8 +423,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         }
         string filename = storage_device->GetFilename();
         if (!filename.empty()) {
-            if (filename.starts_with(CommandImageSupport::GetInstance().GetDefaultFolder())) {
-                filename = filename.substr(CommandImageSupport::GetInstance().GetDefaultFolder().length() + 1);
+            if (filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder())) {
+                filename = filename.substr(CommandImageSupport::GetInstance().GetImageFolder().length() + 1);
             }
             PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
             return;
@@ -500,8 +500,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     string effective_filename = filename;
 
     if (!exists(filename)) {
-        // If the file does not exist search for it in the default image folder
-        effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
+        // If the file does not exist search for it in the image folder
+        effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;

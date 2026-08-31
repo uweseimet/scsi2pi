@@ -42,6 +42,7 @@ public:
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
 
     // Global property keys
+    static constexpr const char *CONFIG_FILES = "config_files";
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
@@ -49,7 +50,6 @@ public:
     static constexpr const char *LOG_PATTERN = "log_pattern";
     static constexpr const char *MODE_PAGE = "mode_page";
     static constexpr const char *PORT = "port";
-    static constexpr const char *PROPERTY_FILES = "property_files";
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";

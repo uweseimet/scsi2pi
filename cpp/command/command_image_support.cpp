@@ -18,7 +18,7 @@ using namespace s2p_util;
 
 CommandImageSupport::CommandImageSupport()
 {
-    default_folder = GetAppDir() + "/images";
+    image_folder = GetAppDir() + "/images";
 }
 
 bool CommandImageSupport::CheckDepth(string_view filename) const
@@ -28,7 +28,7 @@ bool CommandImageSupport::CheckDepth(string_view filename) const
 
 string CommandImageSupport::GetFullName(const string &filename) const
 {
-    return default_folder + "/" + filename;
+    return image_folder + "/" + filename;
 }
 
 bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
@@ -54,23 +54,24 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetImageFolder(string_view f)
 {
     if (f.empty()) {
-        return "Missing default image folder name";
+        return "Missing image folder name";
     }
 
     // For the sake of transparency, the image path must be an absolute path
     path folder(f);
     if (folder.is_relative()) {
-        return "Default image folder must be specified with an absolute path";
+        return "Image folder must be specified with an absolute path";
     }
 
     // The image folder location is restricted, so that s2p cannot modify data in system directories like "/usr"
-    if (!folder.string().starts_with("/var/lib/piscsi/")) {
+    if (!folder.string().starts_with(s2p_util::DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")) {
         if (const auto app_root = path(GetAppDir()); folder.lexically_relative(app_root).string().starts_with(
             "..")) {
-            return "The default image folder must be located in '/var/lib/piscsi/' if it exists, or in your home directory otherwise";
+            return fmt::format("Invalid image folder '{}'. The folder must be located in '{}' or in '/home'",
+                folder.string(), DEFAULT_APP_FOLDER);
         }
     }
 
@@ -83,7 +84,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
         return string("'") + folder.string() + "' is not a valid or existing folder";
     }
 
-    default_folder = folder.string();
+    image_folder = folder.string();
 
     return "";
 }
@@ -180,7 +181,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
 
     // Delete empty subfolders
     auto folder = path(GetFullName(filename)).parent_path();
-    while (folder != path(default_folder)) {
+    while (folder != path(image_folder)) {
         if (error_code error; !filesystem::is_empty(folder, error) || error) {
             break;
         }
