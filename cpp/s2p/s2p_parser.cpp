@@ -136,6 +136,7 @@ void s2p_parser::Banner(bool usage)
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
+            << "  --connection-type/-C           Either STANDRD or FULLSPEC, default is fullspec.\n"
             << "  --config-files                 List of configuration files.\n"
             << "  --help/-h                      Display this help.\n"
             << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
@@ -157,7 +158,6 @@ void s2p_parser::Banner(bool usage)
             << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI/SPC standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
-            << "  --standard-board/-S            Enable STANDARD board support.\n"
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"
@@ -200,6 +200,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
         { "config-files", required_argument, nullptr, OPT_CONFIG_FILES },
+        { "connection-type", required_argument, nullptr, 'C' },
         { "help", no_argument, nullptr, 'h' },
         { "id", required_argument, nullptr, 'i' },
         { "ignore-conf", no_argument, nullptr, 'I' },
@@ -215,7 +216,6 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "scan-depth", required_argument, nullptr, 'R' },
         { "script-file", required_argument, nullptr, 'f' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
-        { "standard-board", no_argument, nullptr, 'S' },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
@@ -230,13 +230,14 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
+        { 'C', PropertyHandler::CONNECTION_TYPE },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
         { 'l', PropertyHandler::LOG_PATTERN },
         { 'P', PropertyHandler::TOKEN_FILE },
-        { 'R', PropertyHandler::SCAN_DEPTH },
-        { 'S', PropertyHandler::STANDARD_BOARD }
-    };
+        { 'R', PropertyHandler::SCAN_DEPTH }
+}
+;
 
     vector<char*> args = ConvertLegacyOptions(initial_args);
 
@@ -253,7 +254,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:IF:L:P:R:BSZ",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";

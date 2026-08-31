@@ -34,19 +34,24 @@ using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
 
-bool S2p::InitBus(bool in_process, bool log_signals)
+string S2p::InitBus(bool in_process, bool log_signals)
 {
-    const bool standard_board = property_handler.RemoveProperty(PropertyHandler::STANDARD_BOARD, "false") == "true";
-    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, standard_board);
+    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECTION_TYPE, "FULLSPEC");
+    const string &board_type = ToLower(connection_type);
+    if (board_type != "standard" && board_type != "fullspec") {
+        return fmt::format("Invalid connection type '{}'", connection_type);
+    }
+
+    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, board_type == "standard");
     if (!bus) {
-        return false;
+        return "Can't initialize bus";
     }
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory, *s2p_logger);
 
     dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory, *s2p_logger);
 
-    return true;
+    return "";
 }
 
 void S2p::CleanUp(const string &error)
@@ -153,8 +158,8 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    if (!InitBus(in_process, log_signals)) {
-        CleanUp("Can't initialize bus");
+    if (const string &error = InitBus(in_process, log_signals); !error.empty()) {
+        CleanUp(error);
         return EXIT_FAILURE;
     }
 

@@ -6,7 +6,8 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
-[\fB\--config-files/-C\fR \fIPROPERTY_FILES\fR]
+[\fB\--config-files\fR \fIPROPERTY_FILES\fR]
+[\fB\--connection-type/-C\fR \fICONNECTION_TYPE\fR]
 [\fB\--help/-h\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
@@ -22,7 +23,6 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--scan-depth/-R\fR \fISCAN_DEPTH\fR]
 [\fB\--script-file/-f\fR \fISCRIPT_FILE\fR]
 [\fB\--scsi-level\fR \fISCSI_LEVEL\fR]
-[\fB\--standard-board/-S\fR]
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
@@ -70,9 +70,13 @@ If there is additional text before the filename extension s2p tries to parse thi
 .BR --caching-mode/-m\fI " " \fICACHING_MODE
 Caching mode (piscsi|write-through|linux|linux-optimized), default is PiSCSI compatible caching.
 .TP
-.BR --config-files/-C\fI " " \fICONFIG_FILES
+.BR --config-files\fI " " \fICONFIG_FILES
 An optional comma-separated list of configuration files with s2p configuration properties. The default global property file is /etc/s2p.conf. This file is parsed first.
 Explicitly specified property files override the previously defined properties.
+.TP
+.BR --connection-type/-C\fI " " \fICONNECTION_TYPE
+Using STANDARD as the connection type allows s2p to be run with a STANDARD board (without initiator support). In /etc/s2p.conf, to permanently enable this setting, add "connection_type=STANDARD".
+CONNECTION_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
 .TP
 .BR --help/-h\fI " " \fI
 Display this help.
@@ -122,9 +126,6 @@ Create a script file for s2pexec or the in-process tool. This file contains all 
 The optional SCSI/SPC standard level. The default level is device-specific and usually is SCSI-2. Be careful when using this option, you will usually not need it.
 Explicitly setting the level may be required for drives with removable media if they are attached without providing an image file. In this case the SCSI-1-CCS level cannot be derived from the ".is1" or ".hd1" filename extensions and "--scsi-level 1" can be used.
 This option can also be used to "downgrade" a device. USB sticks used with the SCSG device type (SCSI-to-USB bridge) often report newer levels than SCSI-2. Some drivers might require older SCSI levels.
-.TP
-.BR --standard-board/-S\fI " " \fI
-Allows an s2p FULLSPEC board binary (with initiator support) to be run with a STANDARD board (without initiator support). With this option, you can run the s2p binary from the Debian binary package with a STANDARD board. In /etc/s2p.conf, to enable this setting, add "standard_board=true".
 .TP
 .BR --token-file/-P\fI " " \fIACCESS_TOKEN_FILE
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.

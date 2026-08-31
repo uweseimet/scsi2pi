@@ -43,6 +43,7 @@ public:
 
     // Global property keys
     static constexpr const char *CONFIG_FILES = "config_files";
+    static constexpr const char *CONNECTION_TYPE = "connection_type";
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
@@ -53,7 +54,6 @@ public:
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
-    static constexpr const char *STANDARD_BOARD = "standard_board";
     static constexpr const char *TOKEN_FILE = "token_file";
     static constexpr const char *WITHOUT_TYPES = "without_types";
 

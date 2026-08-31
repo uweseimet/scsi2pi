@@ -32,7 +32,7 @@ public:
 
 private:
 
-    bool InitBus(bool, bool);
+    string InitBus(bool, bool);
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);
