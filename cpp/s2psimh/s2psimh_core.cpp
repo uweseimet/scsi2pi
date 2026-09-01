@@ -26,7 +26,8 @@ void S2pSimh::Banner(bool help)
     if (help) {
         cout << "Usage: s2psimh [options] <SIMH_TAP_FILE>\n"
             << "  --add/-a CLASS1:VALUE1,...    Add objects.\n"
-            << "  --binary-data/-b DATA_FILE    Optional binary file to read the record data from.\n"
+            << "  --binary-data/-b DATA_FILE    Optional binary file to read the record data\n"
+            << "                                from.\n"
             << "  --dump/-d                     Dump data record contents.\n"
             << "  --help/-h                     Display this help.\n"
             << "  --hex-data/-x DATA_FILE       Optional text file to read the record data from.\n"
@@ -161,7 +162,8 @@ int S2pSimh::Run(span<char*> args)
 
     simh_file.open(simh_filename, (meta_data.empty() ? ios::in : (ios::in | ios::out)) | ios::binary);
     if (!simh_file) {
-        cerr << "Error: Can't open '" << simh_filename << "': " << strerror(errno) << '\n';
+        cerr << "Error: Can't open '" << simh_filename << "': " << system_error(errno, generic_category()).what()
+            << '\n';
         return EXIT_FAILURE;
     }
 
@@ -189,7 +191,8 @@ int S2pSimh::Analyze()
 
         SimhMetaData meta;
         if (!ReadMetaData(simh_file, meta)) {
-            cerr << "Error: Can't read from '" << simh_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << simh_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 
@@ -291,7 +294,8 @@ int S2pSimh::Add()
 
         data_file.open(data_filename, ios::in);
         if (!data_file.is_open()) {
-            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << data_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 
@@ -319,7 +323,8 @@ int S2pSimh::Add()
         }
 
         if (data_file.bad()) {
-            cerr << "Error: Can't read from '" << data_filename << "': " << strerror(errno) << '\n';
+            cerr << "Error: Can't read from '" << data_filename << "': "
+                << system_error(errno, generic_category()).what() << '\n';
             return EXIT_FAILURE;
         }
 

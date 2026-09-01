@@ -24,7 +24,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 
     property_map properties;
 
-    // Parse the optional global property file unless disabled
+    // Parse the optional global configuration file unless disabled
     if (!ignore_conf && exists(path(CONFIGURATION))) {
         ParsePropertyFile(properties, CONFIGURATION, true);
     }
@@ -33,7 +33,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         ParsePropertyFile(properties, filename, false);
     }
 
-    // Merge properties from property files and from the command line, giving the command line priority
+    // Merge properties from configuration files and from the command line, giving the command line priority
     for (const auto& [key, value] : cmd_properties) {
         properties[key] = value;
     }
@@ -41,7 +41,8 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
     // Normalize properties by adding an explicit LUN where required
     for (const auto& [key, value] : properties) {
         const auto &components = Split(key, '.');
-        if (key.starts_with(PropertyHandler::DEVICE) && key.find(":") == string::npos && components.size() == 3) {
+        if (key.starts_with(PropertyHandler::DEVICE) && key.find(COMPONENT_SEPARATOR) == string::npos
+            && components.size() == 3) {
             AddProperty(components[0] + "." + components[1] + ":0." + components[2], value);
         }
         else {
@@ -54,15 +55,15 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
 
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
 {
-    ifstream property_file(filename);
-    if (!property_file && !default_file) {
+    ifstream config_file(filename);
+    if (!config_file && !default_file) {
         // Only report an error if an explicitly specified file is missing
-        throw ParserException(fmt::format("No property file '{}'", filename));
+        throw ParserException(fmt::format("No configuration file '{}'", filename));
     }
 
     string property;
     int line_no = 0;
-    while (getline(property_file, property)) {
+    while (getline(config_file, property)) {
         ++line_no;
 
         if (!property.empty() && !property.starts_with("#")) {
@@ -75,8 +76,8 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
         }
     }
 
-    if (property_file.fail() && !property_file.eof()) {
-        throw ParserException(fmt::format("Error reading from property file '{}'", filename));
+    if (config_file.fail() && !config_file.eof()) {
+        throw ParserException(fmt::format("Error reading from configuration file '{}'", filename));
     }
 }
 
@@ -126,9 +127,11 @@ bool PropertyHandler::Persist() const
 {
     error_code error;
     remove(CONFIGURATION_OLD, error);
-    rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
-    if (error) {
-        return false;
+    if (exists(path(CONFIGURATION))) {
+        rename(path(CONFIGURATION), path(CONFIGURATION_OLD), error);
+        if (error) {
+            return false;
+        }
     }
 
     ofstream out(CONFIGURATION);

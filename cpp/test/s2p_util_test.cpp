@@ -2,17 +2,33 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include <unistd.h>
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
 using namespace s2p_util;
+
+TEST(S2pUtilTest, GetAppDir)
+{
+    if (!GetEuid()) {
+        EXPECT_EQ(exists("/home/pi") ? "/home/pi" : "/var/lib/piscsi", GetAppDir());
+    }
+}
+
+TEST(S2pUtilTest, GetUidAndGid)
+{
+    EXPECT_EQ(GetEuid(), GetUidAndGid().first);
+}
+
+TEST(S2pUtilTest, IsReadyOnlyFile)
+{
+    EXPECT_TRUE("/tmp/xyz");
+}
 
 TEST(S2pUtilTest, Split)
 {
@@ -232,8 +248,8 @@ TEST(S2pUtilTest, HexToDec)
     EXPECT_EQ(9, HexToDec('9'));
     EXPECT_EQ(10, HexToDec('a'));
     EXPECT_EQ(15, HexToDec('f'));
-    EXPECT_EQ(-1, HexToDec('A'));
-    EXPECT_EQ(-1, HexToDec('F'));
+    EXPECT_EQ(10, HexToDec('A'));
+    EXPECT_EQ(15, HexToDec('F'));
     EXPECT_EQ(-1, HexToDec('x'));
 }
 

@@ -113,7 +113,7 @@ private:
 
     string device_file;
 
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
     shared_ptr<SgAdapter> sg_adapter;
 #endif
 

@@ -5,13 +5,13 @@
 //
 // Copyright (C) 2016-2020 GIMONS
 // Copyright (C) akuker
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include "base/device.h"
+#include "device.h"
 #include "shared/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN
@@ -77,5 +77,6 @@ private:
     static constexpr const char *BRIDGE = "bridge";
     static constexpr const char *INET = "inet";
     static constexpr const char *INTERFACE = "interface";
+    static constexpr const char *MODE = "mode";
 };
 

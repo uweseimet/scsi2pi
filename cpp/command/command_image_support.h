@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -20,9 +20,12 @@ class CommandImageSupport final
 
 public:
 
+    CommandImageSupport(const CommandImageSupport&) = delete;
+    CommandImageSupport& operator=(const CommandImageSupport&) = delete;
+
     static CommandImageSupport& GetInstance()
     {
-        static CommandImageSupport instance; // NOSONAR instance cannot be inlined
+        static CommandImageSupport instance; // NOSONAR Singleton with mutable internal state
         return instance;
     }
 
@@ -34,11 +37,11 @@ public:
     {
         return depth;
     }
-    const string& GetDefaultFolder() const
+    const string& GetImageFolder() const
     {
-        return default_folder;
+        return image_folder;
     }
-    string SetDefaultFolder(string_view);
+    string SetImageFolder(string_view);
 
     bool CreateImage(const CommandContext&) const;
     bool DeleteImage(const CommandContext&) const;
@@ -62,5 +65,5 @@ private:
 
     int depth = 1;
 
-    string default_folder;
+    string image_folder;
 };

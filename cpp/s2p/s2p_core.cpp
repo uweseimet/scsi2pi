@@ -14,14 +14,16 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
 #include <sys/stat.h>
-#include "base/device_factory.h"
 #include "buses/bus_factory.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
 #include "command/command_response.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
@@ -32,20 +34,24 @@ using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
 
-bool S2p::InitBus(bool in_process, bool log_signals)
+string S2p::InitBus(bool in_process, bool log_signals)
 {
-    bus = bus_factory::CreateBus(true, in_process, APP_NAME, log_signals);
-    if (!bus) {
-        return false;
+    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECTION_TYPE, "FULLSPEC");
+    const string &board_type = ToLower(connection_type);
+    if (board_type != "standard" && board_type != "fullspec") {
+        return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    s2p_logger = CreateLogger(APP_NAME);
+    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, board_type == "standard");
+    if (!bus) {
+        return "Can't initialize bus";
+    }
 
     executor = make_unique<CommandExecutor>(*bus, controller_factory, *s2p_logger);
 
     dispatcher = make_shared<CommandDispatcher>(*executor, controller_factory, *s2p_logger);
 
-    return true;
+    return "";
 }
 
 void S2p::CleanUp(const string &error)
@@ -71,9 +77,11 @@ void S2p::ReadAccessToken(const path &filename)
         throw ParserException("Access token file '" + filename.string() + "' must be a regular file");
     }
 
+#if __has_include(<pwd.h>)
     if (struct stat st; stat(filename.c_str(), &st) || st.st_uid || st.st_gid) {
         throw ParserException("Access token file '" + filename.string() + "' must be owned by root");
     }
+#endif
 
     if (const auto perms = filesystem::status(filename).permissions();
     (perms & perms::group_read) != perms::none || (perms & perms::others_read) != perms::none ||
@@ -122,12 +130,9 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_SUCCESS;
     }
 
-    if (!InitBus(in_process, log_signals)) {
-        CleanUp("Can't initialize bus");
-        return EXIT_FAILURE;
-    }
-
     Banner(false);
+
+    s2p_logger = CreateLogger(APP_NAME);
 
     bool ignore_conf = false;
 
@@ -150,6 +155,16 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     }
     if (const string &error = MapExtensions(); !error.empty()) {
         CleanUp(error);
+        return EXIT_FAILURE;
+    }
+
+    if (const string &error = InitBus(in_process, log_signals); !error.empty()) {
+        CleanUp(error);
+        return EXIT_FAILURE;
+    }
+
+    if (!dispatcher->SetLogLevel(log_level)) {
+        CleanUp("Invalid log level: '" + log_level + "'");
         return EXIT_FAILURE;
     }
 
@@ -181,12 +196,19 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         }
     }
 
+    if (const string &error = CheckForUnknownProperties(); !error.empty()) {
+        CleanUp(error);
+        return EXIT_FAILURE;
+    }
+
     if (const string &error = service_thread.Init(port, [this](CommandContext &context) {
         return ExecuteCommand(context);
     }, s2p_logger); !error.empty()) {
         CleanUp(error);
         return EXIT_FAILURE;
     }
+
+    s2p_logger->trace("Image file folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
 
     try {
         CreateDevices();
@@ -196,18 +218,10 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
-        if (!key.starts_with(PropertyHandler::DEVICE)) {
-            CleanUp("Invalid global property \"" + key + "\", check your command line and "
-                + PropertyHandler::CONFIGURATION);
-            return EXIT_FAILURE;
-        }
-    }
-
     DisplayAttachedDevices();
 
     if (!in_process && !bus->IsRaspberryPi()) {
-        cout << "No RaSCSI/PiSCSI board support available, functionality is limited\n" << flush;
+        cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
     SetUpEnvironment();
@@ -217,6 +231,24 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
     ProcessScsiCommands();
 
     return EXIT_SUCCESS;
+}
+
+string S2p::CheckForUnknownProperties() const
+{
+    for (const auto& [key, value] : property_handler.GetUnknownProperties()) {
+        if (!key.starts_with(PropertyHandler::DEVICE)) {
+            if (key.starts_with(PropertyHandler::PARAMS)) {
+                return fmt::format("Invalid parameters '{}', check your command line and {}", value,
+                    PropertyHandler::CONFIGURATION);
+            }
+            else {
+                return fmt::format("Invalid global property '{}:{}', check your command line and {}", key, value,
+                    PropertyHandler::CONFIGURATION);
+            }
+        }
+    }
+
+    return "";
 }
 
 void S2p::DisplayAttachedDevices() const
@@ -242,9 +274,9 @@ bool S2p::Ready() const
 
 int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 {
-    const auto &property_files = properties.find(PropertyHandler::PROPERTY_FILES);
+    const auto &config_files = properties.find(PropertyHandler::CONFIG_FILES);
 
-    property_handler.Init(property_files != properties.end() ? property_files->second : "", properties,
+    property_handler.Init(config_files != properties.end() ? config_files->second : "", properties,
         ignore_conf);
 
     if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
@@ -255,19 +287,16 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 
     // This sets the global level only, there are no attached devices yet
     log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
-    if (!dispatcher->SetLogLevel(log_level)) {
-        throw ParserException("Invalid log level: '" + log_level + "'");
-    }
 
     // Log the properties (on trace level) *after* the log level has been set
     LogProperties();
 
     if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(image_folder); !error.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(image_folder); !error.empty()) {
             throw ParserException(error);
         }
         else {
-            s2p_logger->info("Default image folder set to '{}'", image_folder);
+            s2p_logger->info("Image folder set to '{}'", image_folder);
         }
     }
 
@@ -282,7 +311,8 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 
     if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
         if (!controller_factory.SetScriptFile(script_file)) {
-            throw ParserException("Can't create script file '" + script_file + "': " + strerror(errno));
+            throw ParserException(
+                "Can't create script file '" + script_file + "': " + system_error(errno, generic_category()).what());
         }
         s2p_logger->info("Generating script file '" + script_file + "'");
     }
@@ -305,12 +335,14 @@ void S2p::SetUpEnvironment()
 {
     instance = this;
 
+#ifdef SIGPIPE
     // Signal handler to detach all devices on a KILL or TERM signal
     struct sigaction termination_handler = { };
     termination_handler.sa_handler = TerminationHandler;
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
+#endif
 }
 
 string S2p::MapExtensions() const
@@ -471,7 +503,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
 void S2p::ProcessScsiCommands()
 {
     // On Pis with several cores, avoid context switches for this thread, which executes the SCSI commands
-#ifdef __linux__
+#ifdef CPU_ZERO
     cpu_set_t mask;
     CPU_ZERO(&mask);
     CPU_SET(3, &mask);
@@ -507,7 +539,6 @@ bool S2p::ExecuteCommand(CommandContext &context)
     if (PbResult result; dispatcher->DispatchCommand(context, result)
         && context.GetCommand().operation() == PbOperation::SHUT_DOWN) {
         CleanUp();
-        google::protobuf::ShutdownProtobufLibrary();
         exit(EXIT_SUCCESS);
     }
 

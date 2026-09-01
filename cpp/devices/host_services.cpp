@@ -176,10 +176,12 @@ void HostServices::ReceiveOperationResults()
 
     case ProtobufFormat::JSON: {
         PbResult result;
-        if (!result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()))) {
+        if (!result.ParseFromString(execution_result)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
-        static_cast<void>(MessageToJsonString(result, &data).ok());
+        if (const auto status = MessageToJsonString(result, &data); !status.ok()) {
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        }
         break;
     }
 
@@ -252,13 +254,31 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
     pages[32] = vector<byte>(sizeof(ModePageDateTime) + 2);
 
     if (!changeable) {
+        ModePageDateTime datetime;
+        datetime.major_version = 0x01;
+        datetime.minor_version = 0x00;
+
+        // Work-around for incomplete chrono support in gcc < 13 (bullseye and bookworm)
+#if defined(__cpp_lib_chrono) && (__cpp_lib_chrono >= 201907L)
+        auto now = system_clock::now();
+        zoned_time local_zoned { current_zone(), now };
+        auto local_tp = local_zoned.get_local_time();
+        auto days_tp = floor<days>(local_tp);
+        year_month_day ymd { days_tp };
+        hh_mm_ss hms { local_tp - days_tp };
+
+        datetime.year = static_cast<uint8_t>(static_cast<int>(ymd.year()) - 1900);
+        datetime.month = static_cast<uint8_t>(static_cast<unsigned>(ymd.month()) - 1);
+        datetime.day = static_cast<uint8_t>(static_cast<unsigned>(ymd.day()));
+        datetime.hour = static_cast<uint8_t>(hms.hours().count());
+        datetime.minute = static_cast<uint8_t>(hms.minutes().count());
+        // Ignore leap second for simplicity
+       datetime.second = static_cast<uint8_t>(hms.seconds().count() < 60 ? hms.seconds().count() : 59);
+#else
         const time_t &t = system_clock::to_time_t(system_clock::now());
         tm local_time;
         localtime_r(&t, &local_time);
 
-        ModePageDateTime datetime;
-        datetime.major_version = 0x01;
-        datetime.minor_version = 0x00;
         datetime.year = static_cast<uint8_t>(local_time.tm_year);
         datetime.month = static_cast<uint8_t>(local_time.tm_mon);
         datetime.day = static_cast<uint8_t>(local_time.tm_mday);
@@ -266,6 +286,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
         datetime.minute = static_cast<uint8_t>(local_time.tm_min);
         // Ignore leap second for simplicity
         datetime.second = static_cast<uint8_t>(local_time.tm_sec < 60 ? local_time.tm_sec : 59);
+#endif
 
         memcpy(&pages[32][2], &datetime, sizeof(datetime));
     }

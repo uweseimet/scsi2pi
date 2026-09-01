@@ -13,8 +13,6 @@
 
 int main(int argc, char*[])
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
     const bool disable_logging = argc <= 1;
 
     // If any argument is provided the log level is set to trace
@@ -35,8 +33,6 @@ int main(int argc, char*[])
     if (fd != -1) {
         close(fd);
     }
-
-    google::protobuf::ShutdownProtobufLibrary();
 
     return result;
 }

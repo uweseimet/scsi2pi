@@ -24,7 +24,7 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
 {
     ifstream in(filename, input_format == ProtobufFormat::BINARY ? ios::binary : ios::in);
     if (!in) {
-        return "Can't open input file '" + filename + "': " + strerror(errno);
+        return "Can't open input file '" + filename + "': " + system_error(errno, generic_category()).what();
     }
 
     int length = 0;

@@ -90,18 +90,6 @@ int run(int argc, char *argv[])
         }
     }
 
-    if (client != "s2pctl" && client != "s2pdump" && client != "s2pexec" && client != "s2pproto") {
-        cerr << "Invalid in-process test tool client: '" << client
-            << "', client must be s2pctl, s2pdump, s2pexec or s2pproto\n";
-        return EXIT_FAILURE;
-    }
-
-    // s2pctl and s2pexec do not require arguments because they support an interactive mode
-    if (client != "s2pctl" && client != "s2pexec" && c_args.empty()) {
-        cerr << "Test client '" << client << "' requires arguments\n";
-        return EXIT_FAILURE;
-    }
-
     vector<char*> client_args;
     add_arg(client_args, client);
     for (const auto &arg : Split(c_args, ' ')) {
@@ -138,6 +126,7 @@ int run(int argc, char *argv[])
         auto s2pctl = make_unique<S2pCtl>();
         result = s2pctl->Run(client_args);
     }
+#if __has_include(<linux/gpio.h>) && !defined(BOARD_STANDARD)
     else if (client == "s2pdump") {
         auto s2pdump = make_unique<S2pDump>();
         result = s2pdump->Run(client_args, true, log_signals);
@@ -150,6 +139,10 @@ int run(int argc, char *argv[])
         auto s2proto = make_unique<S2pProto>();
         result = s2proto->Run(client_args, true, log_signals);
     }
+#endif
+    else {
+        cerr << "Invalid in-process test tool client: '" << client << "'\n";
+    }
 
     s2p->CleanUp();
 
@@ -158,11 +151,5 @@ int run(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-    const int status = run(argc, argv);
-
-    google::protobuf::ShutdownProtobufLibrary();
-
-    return status;
+    return run(argc, argv);
 }

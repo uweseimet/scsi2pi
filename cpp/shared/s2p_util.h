@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -20,6 +21,7 @@
 #include "scsi.h"
 
 using namespace std;
+using namespace filesystem;
 
 namespace s2p_util
 {
@@ -38,7 +40,7 @@ struct StringHash
     }
 };
 
-string Join(const auto &collection, const string &separator = ", ")
+inline string Join(const auto &collection, const string &separator = ", ")
 {
     // Using a stream (and not a string) is required in order to correctly convert the element data
     ostringstream s;
@@ -55,8 +57,10 @@ string Join(const auto &collection, const string &separator = ", ")
 }
 
 string GetVersionString();
-string GetHomeDir();
+string GetAppDir();
+int GetEuid();
 pair<int, int> GetUidAndGid();
+bool IsReadOnlyFile(const path&);
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
 string ToUpper(string_view);
 string ToLower(string_view);
@@ -77,7 +81,20 @@ string FormatSenseData(span<const byte>);
 string FormatSenseData(SenseKey, Asc, int = 0);
 
 vector<byte> HexToBytes(const string&);
-int HexToDec(char);
+
+constexpr int HexToDec(char c) noexcept
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1;
+}
 
 string_view Trim(string_view);
 
@@ -85,25 +102,27 @@ void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
-inline const char* to_const_char_ptr(span<const uint8_t> bytes)
+constexpr const char* to_const_char_ptr(span<const uint8_t> bytes)
 {
-    return reinterpret_cast<const char *>(bytes.data());
+    return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-inline char* to_char_ptr(span<uint8_t> bytes)
+constexpr char* to_char_ptr(span<uint8_t> bytes)
 {
-    return reinterpret_cast<char*>(bytes.data());
+    return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
-inline const char* to_const_char_ptr(span<byte> bytes)
+constexpr const char* to_const_char_ptr(span<byte> bytes)
 {
-    return reinterpret_cast<const char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+    return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-inline char* to_char_ptr(span<byte> bytes)
+constexpr char* to_char_ptr(span<byte> bytes)
 {
-    return reinterpret_cast<char*>(bytes.data()); // NOSONAR std::byte cannot be used here, of course
+    return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
+
+static constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
 
 static constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

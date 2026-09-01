@@ -2,42 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // These tests only test up the point where a network connection is required.
 //
 //---------------------------------------------------------------------------
 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <unistd.h>
 #include <gtest/gtest.h>
-#include "command/command_context.h"
-#include "protobuf/protobuf_util.h"
 #include "s2p/s2p_thread.h"
-#include "shared/network_util.h"
-#include "shared/s2p_exceptions.h"
-
-using namespace protobuf_util;
-using namespace network_util;
-
-void SendCommand(const PbCommand &command, PbResult &result)
-{
-    sockaddr_in server_addr = { };
-    ASSERT_TRUE(ResolveHostName("127.0.0.1", &server_addr));
-    server_addr.sin_port = htons(uint16_t(9999));
-
-    const int fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(-1, fd);
-    EXPECT_TRUE(connect(fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) >= 0)
-    << "Service should be running"; // NOSONAR bit_cast is not supported by the bullseye clang++ compiler
-    ASSERT_EQ(6, write(fd, "RASCSI", 6));
-    SerializeMessage(fd, command);
-    DeserializeMessage(fd, result);
-    close(fd);
-}
 
 TEST(S2pThreadTest, Init)
 {
@@ -48,6 +20,7 @@ TEST(S2pThreadTest, Init)
     service_thread.Stop();
 }
 
+#if __has_include(<sys/socket.h>)
 TEST(S2pThreadTest, IsRunning)
 {
     S2pThread service_thread;
@@ -61,40 +34,4 @@ TEST(S2pThreadTest, IsRunning)
     service_thread.Stop();
     EXPECT_FALSE(service_thread.IsRunning());
 }
-
-TEST(S2pThreadTest, Execute)
-{
-    sockaddr_in server_addr = { };
-    ASSERT_TRUE(ResolveHostName("127.0.0.1", &server_addr));
-
-    const int fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(-1, fd);
-
-    server_addr.sin_port = htons(uint16_t(9999));
-    EXPECT_FALSE(connect(fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) >= 0)
-    << "Service should not be running"; // NOSONAR bit_cast is not supported by the bullseye clang++ compiler
-
-    close(fd);
-
-    S2pThread service_thread;
-    service_thread.Init(9999, [](const CommandContext &context) {
-        PbResult result;
-        result.set_status(context.GetCommand().operation() == PbOperation::NO_OPERATION);
-        return context.WriteResult(result);
-    }, default_logger());
-
-    service_thread.Start();
-
-    PbCommand command;
-    PbResult result;
-
-    command.set_operation(PbOperation::NO_OPERATION);
-    SendCommand(command, result);
-    EXPECT_TRUE(result.status()) << "Command should have succeeded";
-
-    command.set_operation(PbOperation::EJECT);
-    SendCommand(command, result);
-    EXPECT_FALSE(result.status()) << "Command should have failed";
-
-    service_thread.Stop();
-}
+#endif

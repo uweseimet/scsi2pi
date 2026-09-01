@@ -43,15 +43,14 @@ void S2pCtl::Banner(bool usage) const
             << "  --host/-H HOST                 s2p host to connect to, default is 'localhost'.\n"
             << "  --id/-i ID[:LUN]               Target device ID (0-7) and LUN\n"
             << "                                 (SCSI: 0-31, SASI: 0-1), default LUN is 0.\n"
-            << "  --image-folder/-F FOLDER       Default location for image files,\n"
-            << "                                 default is '~/images'.\n"
+            << "  --image-folder/-F FOLDER       Location of folder with image files.\n"
             << "  --json-protobuf FILENAME       Do not send command to s2p\n"
             << "                                 but write it to a protobuf JSON file.\n"
             << "  --list-devices/-l              Display device list.\n"
             << "  --list-device-types/-T         List available device types.\n"
             << "  --list-extensions              List supported file extensions\n"
             << "                                 and the device types they map to.\n"
-            << "  --list-images/-e               List images files in the default image folder.\n"
+            << "  --list-images/-e               List images files in the image folder.\n"
             << "  --list-image-info/-E FILENAME  Display image file information.\n"
             << "  --list-interfaces/-N           List network interfaces that are up.\n"
             << "  --list-log-levels              List the available s2p log levels\n"
@@ -80,7 +79,8 @@ void S2pCtl::Banner(bool usage) const
             << "  --text-protobuf FILENAME       Do not send command to s2p\n"
             << "                                 but write it to a protobuf text file.\n"
             << "  --type/-t DEVICE_TYPE          Optional device type\n"
-            << "                                 (sahd|sccd|scdp|schd|schs|sclp|scmo|scrm|scsg|sctp).\n"
+            << "                                 (sahd|sccd|scdp|schd|schs|sclp|scmo|scrm|scsg\n"
+            << "                                 |sctp).\n"
             << "  --version/-v                   Display the s2pctl version.\n";
     }
 }
@@ -390,7 +390,13 @@ int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable comp
             break;
 
         case OPT_PROMPT:
-            token = optarg ? optarg : getpass("Password: ");
+            if (optarg) {
+                token = optarg;
+            }
+            else {
+                cout << "Password: " << flush;
+                getline(cin, token);
+            }
             break;
 
         case 'x':
@@ -481,4 +487,3 @@ PbOperation S2pCtl::ParseOperation(string_view operation)
     const auto &it = OPERATIONS.find(tolower(operation[0]));
     return it != OPERATIONS.end() ? it->second : NO_OPERATION;
 }
-

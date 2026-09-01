@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "base/primary_device.h"
+#include "primary_device.h"
 #include "shared/command_meta_data.h"
 
 using namespace std;
@@ -30,6 +30,8 @@ public:
     {
         return device + " (" + GetPaddedName() + ")";
     }
+
+    param_map GetDefaultParams() const override;
 
     void Dispatch(ScsiCommand) override;
 
@@ -69,11 +71,13 @@ private:
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
 
+    static constexpr const char *DEVICE = "device";
+
     // Linux limits the number of bytes that can be transferred in a single SG 3 SCSI request
     static constexpr int MAX_TRANSFER_LENGTH = 65536;
 
-    static const int TIMEOUT_DEFAULT_SECONDS = 5;
+    static constexpr int TIMEOUT_DEFAULT_SECONDS = 5;
 
     // Sufficient for formatting a floppy disk in a USB floppy drive
-    static const int TIMEOUT_FORMAT_SECONDS = 120;
+    static constexpr int TIMEOUT_FORMAT_SECONDS = 120;
 };

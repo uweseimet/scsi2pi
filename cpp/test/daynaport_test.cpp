@@ -10,55 +10,64 @@
 #include "devices/daynaport.h"
 #include "shared/s2p_exceptions.h"
 
-TEST(DaynaportTest, Device_Defaults)
+class DaynaportTest : public ::testing::Test {
+protected:
+
+    void SetUp() override {
+        tie(controller, daynaport) = CreateDevice(SCDP);
+    }
+
+    void TearDown() override {
+        controller.reset();
+        daynaport.reset();
+    }
+
+    shared_ptr<MockAbstractController> controller;
+    shared_ptr<PrimaryDevice> daynaport;
+};
+
+TEST_F(DaynaportTest, Device_Defaults)
 {
-    DaynaPort daynaport(0);
+    EXPECT_EQ(SCDP, daynaport->GetType());
+    EXPECT_FALSE(daynaport->SupportsImageFile());
+    EXPECT_TRUE(daynaport->SupportsParams());
+    EXPECT_FALSE(daynaport->IsProtectable());
+    EXPECT_FALSE(daynaport->IsProtected());
+    EXPECT_FALSE(daynaport->IsReadOnly());
+    EXPECT_FALSE(daynaport->IsRemovable());
+    EXPECT_FALSE(daynaport->IsRemoved());
+    EXPECT_FALSE(daynaport->IsLocked());
+    EXPECT_FALSE(daynaport->IsStoppable());
+    EXPECT_FALSE(daynaport->IsStopped());
 
-    EXPECT_EQ(SCDP, daynaport.GetType());
-    EXPECT_FALSE(daynaport.SupportsImageFile());
-    EXPECT_TRUE(daynaport.SupportsParams());
-    EXPECT_FALSE(daynaport.IsProtectable());
-    EXPECT_FALSE(daynaport.IsProtected());
-    EXPECT_FALSE(daynaport.IsReadOnly());
-    EXPECT_FALSE(daynaport.IsRemovable());
-    EXPECT_FALSE(daynaport.IsRemoved());
-    EXPECT_FALSE(daynaport.IsLocked());
-    EXPECT_FALSE(daynaport.IsStoppable());
-    EXPECT_FALSE(daynaport.IsStopped());
-
-    const auto& [vendor, product, revision] = daynaport.GetProductData();
+    const auto& [vendor, product, revision] = daynaport->GetProductData();
     EXPECT_EQ("Dayna", vendor);
     EXPECT_EQ("SCSI/Link", product);
     EXPECT_EQ("1.4a", revision);
 }
 
-TEST(DaynaportTest, GetDefaultParams)
+TEST_F(DaynaportTest, GetDefaultParams)
 {
-    DaynaPort daynaport(0);
-
-    const auto &params = daynaport.GetDefaultParams();
-    EXPECT_EQ(3U, params.size());
-    EXPECT_TRUE(params.contains("interface"));
-    EXPECT_TRUE(params.contains("inet"));
+    const auto &params = daynaport->GetDefaultParams();
+    EXPECT_EQ(4U, params.size());
     EXPECT_EQ("true", params.at("bridge"));
+    EXPECT_EQ("bridge", params.at("mode"));
+    EXPECT_TRUE(params.contains("inet"));
+    EXPECT_TRUE(params.contains("interface"));
 }
 
-TEST(DaynaportTest, GetIdentifier)
+TEST_F(DaynaportTest, GetIdentifier)
 {
-    DaynaPort daynaport(0);
-
-    EXPECT_EQ("DaynaPort SCSI/Link", daynaport.GetIdentifier());
+    EXPECT_EQ("DaynaPort SCSI/Link", daynaport->GetIdentifier());
 }
 
-TEST(DaynaportTest, Inquiry)
+TEST_F(DaynaportTest, Inquiry)
 {
     TestShared::Inquiry(SCDP, DeviceType::PROCESSOR, ScsiLevel::SCSI_2, "Dayna   SCSI/Link       1.4a", 0x1f, false);
 }
 
-TEST(DaynaportTest, HandleInquiry)
+TEST_F(DaynaportTest, HandleInquiry)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     controller->SetCdbByte(4, 255);
     EXPECT_EQ(36U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
 
@@ -66,18 +75,15 @@ TEST(DaynaportTest, HandleInquiry)
     EXPECT_EQ(37U, dynamic_pointer_cast<DaynaPort>(daynaport)->HandleInquiry().size());
 }
 
-TEST(DaynaportTest, TestUnitReady)
+TEST_F(DaynaportTest, TestUnitReady)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::TEST_UNIT_READY));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
-TEST(DaynaportTest, WriteData)
+TEST_F(DaynaportTest, WriteData)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
     array<int, 6> cdb = { };
     const array<const uint8_t, 5> buf = { };
 
@@ -94,10 +100,8 @@ TEST(DaynaportTest, WriteData)
     EXPECT_EQ(123, daynaport->WriteData(cdb, buf, 123));
 }
 
-TEST(DaynaportTest, GetMessage6)
+TEST_F(DaynaportTest, GetMessage6)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     controller->SetCdbByte(4, 0x01);
     controller->SetCdbByte(5, 0xc0);
     controller->GetBuffer()[0] = 0x12;
@@ -115,16 +119,14 @@ TEST(DaynaportTest, GetMessage6)
         "Invalid data format");
 }
 
-TEST(DaynaportTest, SendMessage6)
+TEST_F(DaynaportTest, SendMessage6)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     controller->SetCdbByte(5, 0x00);
     Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
 
-    controller->SetCdbByte(3, -1);
-    controller->SetCdbByte(4, -8);
+    controller->SetCdbByte(3, 255);
+    controller->SetCdbByte(4, 0);
     controller->SetCdbByte(5, 0x08);
     Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
@@ -140,20 +142,16 @@ TEST(DaynaportTest, SendMessage6)
     EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6));
 }
 
-TEST(DaynaportTest, TestRetrieveStats)
+TEST_F(DaynaportTest, TestRetrieveStats)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::RETRIEVE_STATS));
 }
 
-TEST(DaynaportTest, SetInterfaceMode)
+TEST_F(DaynaportTest, SetInterfaceMode)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Unknown interface command");
 
@@ -180,10 +178,8 @@ TEST(DaynaportTest, SetInterfaceMode)
         "Not implemented");
 }
 
-TEST(DaynaportTest, SetMcastAddr)
+TEST_F(DaynaportTest, SetMcastAddr)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Length of 0 is not supported");
 
@@ -192,34 +188,26 @@ TEST(DaynaportTest, SetMcastAddr)
     EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR));
 }
 
-TEST(DaynaportTest, EnableInterface)
+TEST_F(DaynaportTest, EnableInterface)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     controller->SetCdbByte(5, 0x80);
     Dispatch(daynaport, ScsiCommand::ENABLE_INTERFACE, SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
 }
 
-TEST(DaynaportTest, DisableInterface)
+TEST_F(DaynaportTest, DisableInterface)
 {
-    auto [controller, daynaport] = CreateDevice(SCDP);
-
     controller->SetCdbByte(5, 0x00);
     Dispatch(daynaport, ScsiCommand::ENABLE_INTERFACE, SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
 }
 
-TEST(DaynaportTest, GetDelayAfterBytes)
+TEST_F(DaynaportTest, GetDelayAfterBytes)
 {
-    DaynaPort daynaport(0);
-
-    EXPECT_EQ(6, daynaport.GetDelayAfterBytes());
+    EXPECT_EQ(6, daynaport->GetDelayAfterBytes());
 }
 
-TEST(DaynaportTest, GetStatistics)
+TEST_F(DaynaportTest, GetStatistics)
 {
-    DaynaPort daynaport(0);
-
-    const auto &statistics = daynaport.GetStatistics();
+    const auto &statistics = daynaport->GetStatistics();
     EXPECT_EQ(2U, statistics.size());
     EXPECT_EQ("byte_read_count", statistics[0].key());
     EXPECT_EQ(0U, statistics[0].value());

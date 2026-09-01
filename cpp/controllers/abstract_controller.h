@@ -12,21 +12,82 @@
 #include <span>
 #include <unordered_set>
 #include <spdlog/spdlog.h>
-#include "phase_handler.h"
 #include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
+#include "shared/scsi.h"
 
 class PrimaryDevice;
 
 using namespace spdlog;
 
-class AbstractController : public PhaseHandler
+class AbstractController
 {
 
 public:
 
     AbstractController(int id, const S2pFormatter&);
-    ~AbstractController() override = default;
+    virtual ~AbstractController() = default;
+
+    virtual void BusFree() = 0;
+    virtual void Selection() = 0;
+    virtual void Command() = 0;
+    virtual void Status() = 0;
+    virtual void DataIn() = 0;
+    virtual void DataOut() = 0;
+    virtual void MsgIn() = 0;
+    virtual void MsgOut() = 0;
+
+    BusPhase GetPhase() const
+    {
+        return phase;
+    }
+
+    void SetPhase(BusPhase p)
+    {
+        phase = p;
+    }
+
+    bool IsSelection() const
+    {
+        return phase == BusPhase::SELECTION;
+    }
+
+    bool IsBusFree() const
+    {
+        return phase == BusPhase::BUS_FREE;
+    }
+
+    bool IsCommand() const
+    {
+        return phase == BusPhase::COMMAND;
+    }
+
+    bool IsStatus() const
+    {
+        return phase == BusPhase::STATUS;
+    }
+
+    bool IsDataIn() const
+    {
+        return phase == BusPhase::DATA_IN;
+    }
+
+    bool IsDataOut() const
+    {
+        return phase == BusPhase::DATA_OUT;
+    }
+
+    bool IsMsgIn() const
+    {
+        return phase == BusPhase::MSG_IN;
+    }
+
+    bool IsMsgOut() const
+    {
+        return phase == BusPhase::MSG_OUT;
+    }
+
+    bool ProcessPhase();
 
     virtual void Error(SenseKey, Asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION,
         StatusCode = StatusCode::CHECK_CONDITION) = 0;
@@ -141,6 +202,8 @@ protected:
 
 private:
 
+    BusPhase phase = BusPhase::BUS_FREE;
+
     array<int, 16> cdb = { };
 
     // Shared transfer data buffer, dynamically resized
@@ -171,4 +234,22 @@ private:
     int initiator_id = UNKNOWN_INITIATOR_ID;
 
     ShutdownMode shutdown_mode = ShutdownMode::NONE;
+
+    using PhaseHandler = void (AbstractController::*)();
+    static constexpr array<PhaseHandler, 11> PHASE_HANDLERS = {
+        &AbstractController::BusFree,
+        // ARBITRATION
+        nullptr,
+        &AbstractController::Selection,
+        // RESELECTION
+        nullptr,
+        &AbstractController::Command,
+        &AbstractController::DataIn,
+        &AbstractController::DataOut,
+        &AbstractController::Status,
+        &AbstractController::MsgIn,
+        &AbstractController::MsgOut,
+        // RESERVED
+        nullptr
+    };
 };

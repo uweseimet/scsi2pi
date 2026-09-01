@@ -5,7 +5,7 @@
 // Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
 // Copyright (C) 2014-2020 GIMONS
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -68,8 +68,6 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
         return true;
     }
 
-    ++cache_miss_write_count;
-
     // Calculate offset (previous tracks are considered to hold 256 sectors)
     off_t offset = track_number << 8;
     offset <<= shift_count;
@@ -81,6 +79,8 @@ bool DiskTrack::Save(const string &path, uint64_t &cache_miss_write_count)
     if (out.fail()) {
         return false;
     }
+
+    ++cache_miss_write_count;
 
     // Write consecutive sectors
     int i = 0;

@@ -2,13 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "base/property_handler.h"
 #include "s2p/s2p_parser.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 #include "generated/s2p_interface.pb.h"
 
@@ -57,10 +57,10 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("locale", properties[PropertyHandler::LOCALE]);
 
-    SetUpArgs(args, "-C", "property_files");
+    SetUpArgs(args, "--config-files", "config_files");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
-    EXPECT_EQ("property_files", properties[PropertyHandler::PROPERTY_FILES]);
+    EXPECT_EQ("config_files", properties[PropertyHandler::CONFIG_FILES]);
 
     SetUpArgs(args, "-F", "image_folder");
     properties = ParseArguments(args, ignore_conf);
@@ -97,7 +97,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("scan_depth", properties[PropertyHandler::SCAN_DEPTH]);
 
-    SetUpArgs(args, "-s", "script_file");
+    SetUpArgs(args, "-f", "script_file");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(1UL, properties.size());
     EXPECT_EQ("script_file", properties[PropertyHandler::SCRIPT_FILE]);
@@ -154,7 +154,7 @@ TEST(S2pParserTest, ParseArguments_SCSI2Pi)
     }
 }
 
-TEST(S2pParserTest, ParseArguments_BlueSCSI)
+TEST(S2pParserTest, ParseArguments_BlueZuluSCSI)
 {
     bool ignore_conf = true;
 
@@ -258,6 +258,13 @@ TEST(S2pParserTest, ParseArguments_BlueSCSI)
     EXPECT_EQ("RE131.hds", properties["device.1:31.params"]);
 
     SetUpArgs(args, "-B", "TP73.tap");
+    properties = ParseArguments(args, ignore_conf);
+    EXPECT_EQ(3UL, properties.size());
+    EXPECT_EQ(PbDeviceType_Name(SCTP), properties["device.7:3.type"]);
+    EXPECT_EQ("512", properties["device.7:3.block_size"]);
+    EXPECT_EQ("TP73.tap", properties["device.7:3.params"]);
+
+    SetUpArgs(args, "-Z", "TP73.tap");
     properties = ParseArguments(args, ignore_conf);
     EXPECT_EQ(3UL, properties.size());
     EXPECT_EQ(PbDeviceType_Name(SCTP), properties["device.7:3.type"]);

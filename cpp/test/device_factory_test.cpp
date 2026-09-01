@@ -2,13 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "base/device_factory.h"
 #include "devices/daynaport.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "devices/optical_memory.h"
 #include "devices/printer.h"
@@ -24,10 +24,10 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCRM, factory.CreateDevice(SCRM, 0, "")->GetType());
     EXPECT_EQ(SCMO, factory.CreateDevice(SCMO, 0, "")->GetType());
     EXPECT_EQ(SCCD, factory.CreateDevice(SCCD, 0, "")->GetType());
-    EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCLP, factory.CreateDevice(SCLP, 0, "")->GetType());
     EXPECT_EQ(SCHS, factory.CreateDevice(SCHS, 0, "")->GetType());
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
+    EXPECT_EQ(SCDP, factory.CreateDevice(SCDP, 0, "")->GetType());
     EXPECT_EQ(SCSG, factory.CreateDevice(SCSG, 0, "")->GetType());
 #endif
     EXPECT_EQ(SCTP, factory.CreateDevice(SCTP, 0, "")->GetType());
@@ -40,6 +40,7 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 {
     const DeviceFactory &factory = DeviceFactory::GetInstance();
 
+    EXPECT_EQ(factory.GetTypeForFile("test.hdf"), SAHD);
     EXPECT_EQ(factory.GetTypeForFile("test.hd1"), SCHD);
     EXPECT_EQ(factory.GetTypeForFile("test.hds"), SCHD);
     EXPECT_EQ(factory.GetTypeForFile("test.HDS"), SCHD);
@@ -63,9 +64,10 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
 {
     const auto &mapping = DeviceFactory::GetInstance().GetExtensionMapping();
 
+    EXPECT_EQ(SAHD, mapping.at("hdf"));
     EXPECT_EQ(SCHD, mapping.at("hd1"));
-    EXPECT_EQ(SCHD, mapping.at("hds"));
     EXPECT_EQ(SCHD, mapping.at("hda"));
+    EXPECT_EQ(SCHD, mapping.at("hds"));
     EXPECT_EQ(SCRM, mapping.at("hdr"));
     EXPECT_EQ(SCMO, mapping.at("mos"));
     EXPECT_EQ(SCCD, mapping.at("iso"));
@@ -82,10 +84,10 @@ TEST(DeviceFactoryTest, AddExtensionMapping)
 
     EXPECT_FALSE(factory.AddExtensionMapping("iso", SCHS));
     auto mapping = factory.GetExtensionMapping();
-    EXPECT_EQ(11U, mapping.size());
+    EXPECT_EQ(12U, mapping.size());
 
     EXPECT_TRUE(factory.AddExtensionMapping("ext", SCCD));
     mapping = factory.GetExtensionMapping();
-    EXPECT_EQ(12U, mapping.size());
+    EXPECT_EQ(13U, mapping.size());
     EXPECT_EQ(SCCD, mapping["ext"]);
 }

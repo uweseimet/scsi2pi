@@ -18,9 +18,7 @@ using namespace s2p_util;
 
 CommandImageSupport::CommandImageSupport()
 {
-    // ~/images is the default folder for device image files,
-    // for the root user it is /home/pi/images for PiSCSI backward compatibility
-    default_folder = GetHomeDir() + "/images";
+    image_folder = GetAppDir() + "/images";
 }
 
 bool CommandImageSupport::CheckDepth(string_view filename) const
@@ -30,47 +28,50 @@ bool CommandImageSupport::CheckDepth(string_view filename) const
 
 string CommandImageSupport::GetFullName(const string &filename) const
 {
-    return default_folder + "/" + filename;
+    return image_folder + "/" + filename;
 }
 
 bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
 {
+    error_code error;
+
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
         // Checking for existence first prevents an error if the top-level folder is a softlink
-        if (error_code error; exists(folder, error)) {
+        if (exists(folder, error)) {
             return true;
         }
 
-        try {
-            create_directories(folder);
-
-            return ChangeOwner(context, folder, false);
+        if (!create_directories(folder, error)) {
+            return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "': " + error.message());
         }
-        catch (const filesystem_error &e) {
-            return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "': " + e.what());
+
+        if (!ChangeOwner(context, folder, false)) {
+            remove(folder, error);
+            return false;
         }
     }
 
     return true;
 }
 
-string CommandImageSupport::SetDefaultFolder(string_view f)
+string CommandImageSupport::SetImageFolder(string_view f)
 {
     if (f.empty()) {
-        return "Missing default image folder name";
+        return "Missing image folder name";
     }
 
     // For the sake of transparency, the image path must be an absolute path
     path folder(f);
     if (folder.is_relative()) {
-        return "Default image folder must be specified with an absolute path";
+        return "Image folder must be specified with an absolute path";
     }
 
-    // The image folder location is restricted, so that s2p cannot modify system folders like "/usr"
-    if (!folder.string().starts_with("/var/lib/piscsi/")) {
-        if (const path home_root = path(GetHomeDir()).parent_path(); folder.lexically_relative(home_root).string().starts_with(
+    // The image folder location is restricted, so that s2p cannot modify data in system directories like "/usr"
+    if (!folder.string().starts_with(s2p_util::DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")) {
+        if (const auto app_root = path(GetAppDir()); folder.lexically_relative(app_root).string().starts_with(
             "..")) {
-            return "Default image folder must be located in '/var/lib/piscsi/' or in '" + home_root.string() + "'";
+            return fmt::format("Invalid image folder '{}'. The folder must be located in '{}' or in '/home'",
+                folder.string(), DEFAULT_APP_FOLDER);
         }
     }
 
@@ -83,7 +84,7 @@ string CommandImageSupport::SetDefaultFolder(string_view f)
         return string("'") + folder.string() + "' is not a valid or existing folder";
     }
 
-    default_folder = folder.string();
+    image_folder = folder.string();
 
     return "";
 }
@@ -113,12 +114,10 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     try {
         len = stoull(size);
     }
-    catch (const invalid_argument&) {
+    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
-    catch (const out_of_range&) {
-        return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
-    }
+
     if (len < 512 || (len & 0x1ff)) {
         return context.ReturnErrorStatus(fmt::format("Invalid image file size: {} (not a multiple of 512)", len));
     }
@@ -132,21 +131,25 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     error_code error;
     path file(full_filename);
     try {
-        ofstream s(file);
+        // Use a scope, so that the file handle is closed before further operations
+        {
+            ofstream s(file);
+        }
 
         if (!ChangeOwner(context, file, read_only)) {
+            remove(file, error);
             return false;
         }
 
         resize_file(file, len);
     }
     catch (const filesystem_error &e) {
-        filesystem::remove(file, error);
+        remove(file, error);
 
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    context.GetLogger().info("Created " + string(read_only ? "read-only " : "") + "image file '" + full_filename +
+    context.GetLogger().info("Created "s + (read_only ? "read-only " : "") + "image file '" + full_filename +
         "' with a size of " + to_string(len) + " bytes");
 
     return context.ReturnSuccessStatus();
@@ -168,7 +171,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Image file '" + full_filename.string() + "' does not exist");
     }
 
-    if (!IsReservedFile(context, full_filename, "delete")) {
+    if (!IsReservedFile(context, full_filename.string(), "delete")) {
         return false;
     }
 
@@ -178,12 +181,12 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
 
     // Delete empty subfolders
     auto folder = path(GetFullName(filename)).parent_path();
-    while (folder != path(default_folder)) {
+    while (folder != path(image_folder)) {
         if (error_code error; !filesystem::is_empty(folder, error) || error) {
             break;
         }
 
-        if (error_code error; !remove(folder)) {
+        if (error_code error; !remove(folder, error)) {
             return context.ReturnErrorStatus("Can't delete empty image folder '" + folder.string() + "'");
         }
 
@@ -287,18 +290,17 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
                                                        perms::owner_write | perms::group_write);
     }
     catch (const filesystem_error &e) {
-        return context.ReturnErrorStatus("Can't " + string(protect ? "protect" : "unprotect") + " image file '" +
+        return context.ReturnErrorStatus("Can't "s + (protect ? "protect" : "unprotect") + " image file '" +
             full_filename + "': " + e.what());
     }
 
-    context.GetLogger().info((protect ? "Protected" : "Unprotected") + string(" image file '") + full_filename + "'");
+    context.GetLogger().info((protect ? "Protected" : "Unprotected") + " image file '"s + full_filename + "'");
 
     return context.ReturnSuccessStatus();
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandImageSupport::IsReservedFile(const CommandContext &context, const string &file, const string &op)
+bool CommandImageSupport::IsReservedFile([[maybe_unused]] const CommandContext &context,
+    [[maybe_unused]] const string &file, [[maybe_unused]]const string &op)
 {
 #ifdef BUILD_STORAGE_DEVICE
     const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
@@ -312,7 +314,6 @@ bool CommandImageSupport::IsReservedFile(const CommandContext &context, const st
     return false;
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from,
     string &to) const
@@ -375,16 +376,13 @@ bool CommandImageSupport::IsValidDstFilename(string_view filename)
 
 bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
 {
+#if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
-    if (chown(filename.c_str(), uid, gid)) {
-        // Remember the current error before the next filesystem operation
-        const int e = errno;
-
-        error_code error;
-        remove(filename, error);
-
-        return context.ReturnErrorStatus("Can't change ownership of '" + filename.string() + "': " + strerror(e));
+    if (gid == -1 || chown(filename.c_str(), uid, gid)) {
+        return context.ReturnErrorStatus(
+            "Can't change ownership of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
     }
+#endif
 
     permissions(filename,
         read_only ?

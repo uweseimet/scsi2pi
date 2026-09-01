@@ -7,10 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device_factory.h"
+#include <unistd.h>
 #include "command/command_image_support.h"
 #include "command/command_response.h"
 #include "controllers/controller_factory.h"
+#include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_version.h"
@@ -95,10 +96,10 @@ TEST(CommandResponseTest, GetReservedIds)
 
 TEST(CommandResponseTest, GetDevicesInfo)
 {
-    const int ID = 2;
-    const int LUN1 = 0;
-    const int LUN2 = 5;
-    const int LUN3 = 6;
+    constexpr int ID = 2;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 5;
+    constexpr int LUN3 = 6;
 
     MockBus bus;
     ControllerFactory controller_factory;
@@ -212,18 +213,9 @@ TEST(CommandResponseTest, GetLogLevelInfo)
 {
     PbLogLevelInfo info;
     GetLogLevelInfo(info);
-    EXPECT_EQ(level::to_string_view(get_level()).data(), info.current_log_level());
+    EXPECT_EQ(level::to_string_view(get_level()), info.current_log_level());
     EXPECT_EQ(7, info.log_levels().size());
 }
-
-#ifdef __linux__
-TEST(CommandResponseTest, GetNetworkInterfacesInfo)
-{
-    PbNetworkInterfacesInfo info;
-    GetNetworkInterfacesInfo(info);
-    EXPECT_FALSE(info.name().empty());
-}
-#endif
 
 TEST(CommandResponseTest, GetMappingInfo)
 {

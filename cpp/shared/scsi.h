@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ enum class ScsiCommand
     WRITE_12 = 0xaa,
     ERASE_12 = 0xac,
     READ_DVD_STRUCTURE = 0xad,
-    WRITE_AND_VERIFY_12 = 0xaf,
+    WRITE_AND_VERIFY_12 = 0xae,
     VERIFY_12 = 0xaf,
     SEND_VOLUME_TAG = 0xb6,
     READ_DEFECT_DATA_12 = 0xb7,
@@ -156,7 +156,7 @@ enum class ScsiCommand
     READ_CD = 0xbe,
     // SCSi2Pi-specific commands (host services)
     EXECUTE_OPERATION = 0xc0,
-    RECEIVE_OPERATION_RESULTS = 0xc1
+    RECEIVE_OPERATION_RESULTS = 0xc1,
 };
 
 enum class MessageCode

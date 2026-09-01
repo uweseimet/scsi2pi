@@ -17,7 +17,7 @@
 //    - https://github.com/PiSCSI/piscsi/wiki/Dayna-Port-SCSI-Link
 //
 // The DaynaPort appears to be a mixture of a SCSI processor device and a SCSI communications device.
-// The emulation requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
+// The emulation requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and Atari 16/32-bit computers.
 //
 //---------------------------------------------------------------------------
 
@@ -78,7 +78,9 @@ string DaynaPort::SetUp()
     }
 #endif
 
-    spdlog::error(error);
+    if (!error.empty()) {
+        spdlog::error(error);
+    }
 
     return "";
 }
@@ -153,7 +155,7 @@ int DaynaPort::GetMessage(data_in_t buf)
         response->flags = ReadDataFlagsType::NO_MORE_DATA;
         return DAYNAPORT_READ_HEADER_SZ;
     }
-    else if (GetLogger().level() == level::trace) {
+    else if (GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size,
             GetController()->FormatBytes(buf, rx_packet_size)));
     }
@@ -211,11 +213,9 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
         LogWarn(fmt::format("Unknown data format: ${:02x}", data_format));
     }
 
-    if (buf.size() && GetLogger().level() == level::trace) {
-        vector<uint8_t> data;
-        ranges::copy(buf, back_inserter(data));
+    if (!buf.empty() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length,
-            GetController()->FormatBytes(data, data_length)));
+            GetController()->FormatBytes(buf, data_length)));
     }
 
     GetController()->SetTransferSize(0, 0);

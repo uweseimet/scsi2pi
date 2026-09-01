@@ -8,7 +8,7 @@
 
 #include "abstract_controller.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "base/primary_device.h"
+#include "devices/primary_device.h"
 #include "buses/bus.h"
 
 using namespace s2p_util;
@@ -41,6 +41,18 @@ void AbstractController::Reset()
     for (const auto& [_, lun] : luns) {
         lun->Reset();
     }
+}
+
+bool AbstractController::ProcessPhase()
+{
+    assert(phase <= BusPhase::RESERVED);
+
+    if (const auto index = static_cast<size_t>(phase); PHASE_HANDLERS[index]) {
+        (this->*PHASE_HANDLERS[index])();
+        return true;
+    }
+
+    return false;
 }
 
 void AbstractController::SetCurrentLength(int length)
@@ -80,8 +92,7 @@ void AbstractController::UpdateOffsetAndLength()
 void AbstractController::CopyToBuffer(span<const uint8_t> buf)
 {
     SetCurrentLength(static_cast<int>(buf.size()));
-
-    memcpy(buffer.data(), buf.data(), buf.size());
+    ranges::copy(buf, buffer.begin());
 }
 
 unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const

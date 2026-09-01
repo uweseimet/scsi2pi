@@ -2,10 +2,11 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
+#include <numeric>
 #include <gtest/gtest.h>
 #include "shared/s2p_formatter.h"
 
@@ -29,18 +30,15 @@ TEST(S2pFormatterTest, FormatBytes)
 000000e0  e0:e1:e2:e3:e4:e5:e6:e7:e8:e9:ea:eb:ec:ed:ee:ef  '................'
 000000f0  f0:f1:f2:f3:f4:f5:f6:f7:f8:f9:fa:fb:fc:fd:fe:ff  '................')";
 
-    const string &str_partial =
-        R"(00000000  40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e     '@ABCDEFGHIJKLMN')";
+    const string &str_partial = "00000000  40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e     '@ABCDEFGHIJKLMN'";
 
-    const string &str_hex_only =
-        R"(40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e)";
+    const string &str_hex_only = "40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e";
 
     S2pFormatter formatter;
 
-    vector<uint8_t> bytes;
-    for (int i = 0; i < 256; ++i) {
-        bytes.emplace_back(i);
-    }
+    vector<uint8_t> bytes(256);
+    iota(bytes.begin(), bytes.end(), 0);
+
     EXPECT_EQ(str_all, formatter.FormatBytes(bytes, bytes.size()));
 
     bytes.clear();

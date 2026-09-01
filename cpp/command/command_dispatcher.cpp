@@ -8,7 +8,6 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#include <sys/reboot.h>
 #include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
@@ -16,7 +15,7 @@
 #include "command_response.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/s2p_interface_util.h"
-#include "base/property_handler.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace command_response;
@@ -49,12 +48,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_FOLDER: {
         const string &folder = GetParam(command, "folder");
-        if (const string &error = CommandImageSupport::GetInstance().SetDefaultFolder(folder); !error.empty()) {
+        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(folder); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
         else {
-            s2p_logger.info("Default image folder set to '{}'", folder);
+            s2p_logger.info("Image folder set to '{}'", folder);
             PropertyHandler::GetInstance().AddProperty(PropertyHandler::IMAGE_FOLDER, folder);
             return context.WriteSuccessResult(result);
         }
@@ -178,26 +177,28 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     if (const string &m = GetParam(context.GetCommand(), "mode"); m == "rascsi") {
         mode = ShutdownMode::STOP_S2P;
     }
+#if __has_include(<sys/reboot.h>)
     else if (m == "system") {
         mode = ShutdownMode::STOP_PI;
     }
     else if (m == "reboot") {
         mode = ShutdownMode::RESTART_PI;
     }
+#endif
     else {
         return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than "rascsi" require root permissions
-    if (mode != ShutdownMode::STOP_S2P && geteuid()) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
+    if (mode == ShutdownMode::STOP_S2P || !GetEuid()) {
+        // Report success now because after a shutdown nothing can be reported anymore
+        PbResult result;
+        context.WriteSuccessResult(result);
+
+        return ShutDown(mode);
     }
 
-    // Report success now because after a shutdown nothing can be reported anymore
-    PbResult result;
-    context.WriteSuccessResult(result);
-
-    return ShutDown(mode);
+    return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
 }
 
 // Shutdown on a SCSI command
@@ -210,33 +211,15 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        sync();
-#if defined(__linux__)
-        if (reboot(RB_POWER_OFF)) {
-#elif defined(__NetBSD__)
-        if (reboot(RB_POWERDOWN, nullptr)) {
-#elif defined(__OpenBSD__)
-        if (reboot(RB_HALT)) {
-#else
-        if (reboot(RB_POWEROFF)) {
-#endif
-            s2p_logger.error("Pi shutdown failed");
-            return false;
-        }
-        break;
+        execl("/sbin/shutdown", "shutdown", "-r", "now", nullptr);
+        s2p_logger.error("Shutdown is not supported on this platform");
+        return false;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        sync();
-#if defined(__NetBSD__)
-        if (reboot(RB_AUTOBOOT, nullptr)) {
-#else
-        if (reboot(RB_AUTOBOOT)) {
-#endif
-            s2p_logger.error("Pi restart failed");
-            return false;
-        }
-        break;
+        execl("/sbin/reboot", "reboot", nullptr);
+        s2p_logger.error("Restart is not supported on this platform");
+        return false;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
@@ -246,13 +229,13 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     return true;
 }
 
-bool CommandDispatcher::SetLogLevel(const string &log_level)
+bool CommandDispatcher::SetLogLevel(string_view log_level)
 {
     int id = -1;
     int lun = -1;
-    string level = log_level;
+    string level(log_level);
 
-    if (const auto &components = Split(log_level, COMPONENT_SEPARATOR, 2); !components.empty()) {
+    if (const auto &components = Split(level, COMPONENT_SEPARATOR, 2); !components.empty()) {
         level = components[0];
 
         if (components.size() > 1) {
@@ -275,14 +258,14 @@ bool CommandDispatcher::SetLogLevel(const string &log_level)
 
     if (id != -1) {
         if (lun == -1) {
-            s2p_logger.info("Set log level for device {} to '{}'", id, level);
+            s2p_logger.info("Log level for device {} is '{}'", id, level);
         }
         else {
-            s2p_logger.info("Set log level for device {}:{} to '{}'", id, lun, level);
+            s2p_logger.info("Log level for device {}:{} is '{}'", id, lun, level);
         }
     }
     else {
-        s2p_logger.info("Set log level to '{}'", level);
+        s2p_logger.info("Log level is '{}'", level);
     }
 
     return true;

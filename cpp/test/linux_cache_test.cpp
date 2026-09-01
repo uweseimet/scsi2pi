@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -29,14 +29,14 @@ TEST(LinuxCache, Init)
     LinuxCache cache5("test", 512, 1, false);
     EXPECT_FALSE(cache5.Init());
 
-    LinuxCache cache6(CreateTempFile(1), 512, 1, false);
+    LinuxCache cache6(CreateTempFile(1).string(), 512, 1, false);
     EXPECT_TRUE(cache6.Init());
 }
 
 TEST(LinuxCache, ReadWriteSectors)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
+    LinuxCache cache(CreateTempFile(buf.size()).string(), static_cast<int>(buf.size()), 1, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadSectors(buf, 1, 1));
@@ -53,7 +53,7 @@ TEST(LinuxCache, ReadWriteSectors)
 TEST(LinuxCache, ReadWriteLong)
 {
     vector<uint8_t> buf(512);
-    LinuxCache cache(CreateTempFile(buf.size()), static_cast<int>(buf.size()), 1, false);
+    LinuxCache cache(CreateTempFile(buf.size()).string(), static_cast<int>(buf.size()), 1, false);
     EXPECT_TRUE(cache.Init());
 
     EXPECT_EQ(0, cache.ReadLong(buf, 1, 1));
@@ -69,7 +69,7 @@ TEST(LinuxCache, ReadWriteLong)
 
 TEST(LinuxCache, Flush)
 {
-    LinuxCache cache(CreateTempFile(1), 512, 1, false);
+    LinuxCache cache(CreateTempFile(1).string(), 512, 1, false);
     EXPECT_TRUE(cache.Flush());
 }
 

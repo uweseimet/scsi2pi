@@ -9,10 +9,12 @@
 #include "sg_util.h"
 #include <fcntl.h>
 #include <unistd.h>
-#ifdef __linux__
+#if __has_include(<scsi/sg.h>)
 #include <scsi/sg.h>
 #endif
+#if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
+#endif
 #include <spdlog/spdlog.h>
 #include "command_meta_data.h"
 #include "memory_util.h"
@@ -24,23 +26,26 @@ using namespace memory_util;
 int sg_util::OpenDevice(const string &device)
 {
     if (!device.starts_with("/dev/sg")) {
-        throw IoException(fmt::format("Missing or invalid device file: '{}'", device));
+        throw IoException(fmt::format("Missing or invalid device file: '{}', device file must be '/dev/sg*'", device));
     }
 
+#if __has_include(<scsi/sg.h>)
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
-        throw IoException(fmt::format("Can't open '{}': {}", device, strerror(errno)));
+        throw IoException(fmt::format("Can't open '{}': {}", device, system_error(errno, generic_category()).what()));
     }
 
-#ifdef __linux__
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
         throw IoException(
-            fmt::format("'{}' is not supported by the Linux SG driver: {}", device, strerror(errno)));
+            fmt::format("'{}' is not supported by the Linux SG driver: {}", device,
+                system_error(errno, generic_category()).what()));
     }
-#endif
 
     return fd;
+#else
+    return -1;
+#endif
 }
 
 int sg_util::GetAllocationLength(span<const uint8_t> cdb)
@@ -122,13 +127,4 @@ void sg_util::SetBlockCount(span<uint8_t> cdb, int length)
             break;
         }
     }
-}
-
-void sg_util::SetInt24(span<uint8_t> buf, int offset, int value)
-{
-    assert(buf.size() > static_cast<size_t>(offset) + 2);
-
-    buf[offset] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 16);
-    buf[offset + 1] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 8);
-    buf[offset + 2] = static_cast<uint8_t>(value);
 }

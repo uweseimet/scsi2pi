@@ -2,13 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <fstream>
+#include <string>
 #include "shared/s2p_defs.h"
 
 class ScriptGenerator final

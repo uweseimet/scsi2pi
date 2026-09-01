@@ -9,6 +9,14 @@
 #include "device.h"
 #include <stdexcept>
 
+using namespace s2p_util;
+
+Device::Device(PbDeviceType t, int l) : type(t), lun(l)
+{
+    // Temporary logger until the device ID has been set
+    device_logger = CreateLogger(fmt::format("[s2p] (ID:LUN ?:{})", lun));
+}
+
 void Device::SetProtected(bool b)
 {
     if (protectable && !read_only) {
@@ -81,9 +89,19 @@ bool Device::Eject(bool force)
     return true;
 }
 
-void Device::CreateLogger()
+void Device::CreateDeviceLogger()
 {
-    device_logger = s2p_util::CreateLogger(fmt::format("[s2p] (ID:LUN {}:{})", GetId(), lun));
+    const auto old_level = device_logger->level();
+    device_logger = CreateLogger(fmt::format("[s2p] (ID:LUN {}:{})", GetId(), lun));
+    device_logger->set_level(old_level);
+    device_logger->set_pattern(log_pattern);
+}
+
+void Device::SetLogPattern(string_view pattern)
+{
+    log_pattern = pattern;
+
+    device_logger->set_pattern(log_pattern);
 }
 
 logger& Device::GetLogger() const

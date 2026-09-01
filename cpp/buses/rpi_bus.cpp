@@ -22,8 +22,21 @@
 using namespace spdlog;
 using namespace s2p_util;
 
+RpiBus::RpiBus(PiType type, bool standard_board) : pi_type(type)
+{
+    if (standard_board) {
+        pin_ind = -1;
+        pin_tad = -1;
+        pin_dtd = -1;
+    }
+}
+
 string RpiBus::SetUp(bool target)
 {
+    if (pin_ind < 0 && !target) {
+        return "Initiator mode requires a FULLSPEC board";
+    }
+
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";
@@ -53,7 +66,7 @@ string RpiBus::SetUp(bool target)
     auto *map = static_cast<uint32_t*>(mmap(nullptr, 0x1000100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_addr));
     if (map == MAP_FAILED) {
         close(fd);
-        return "Can't map memory: " + string(strerror(errno));
+        return "Can't map memory: "s + system_error(errno, generic_category()).what();
     }
 
     // RPI Mailbox property interface
@@ -79,7 +92,7 @@ string RpiBus::SetUp(bool target)
     }
     else {
         close(fd);
-        return "Can't open /dev/vcio: " + string(strerror(errno));
+        return "Can't open /dev/vcio: "s + system_error(errno, generic_category()).what();
     }
 
     armt_addr = map + ARMT_OFFSET / sizeof(uint32_t);
@@ -105,7 +118,7 @@ string RpiBus::SetUp(bool target)
         void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
         if (addr == MAP_FAILED) {
             close(fd);
-            return "Can't map GIC: " + string(strerror(errno));
+            return "Can't map GIC: "s + system_error(errno, generic_category()).what();
         }
 
         // MPR has offset 1
@@ -121,13 +134,13 @@ string RpiBus::SetUp(bool target)
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(PIN_TAD, false);
-    PinSetSignal(PIN_IND, false);
-    PinSetSignal(PIN_DTD, false);
+    PinSetSignal(pin_tad, false);
+    PinSetSignal(pin_ind, false);
+    PinSetSignal(pin_dtd, false);
     PinConfig(PIN_ACT, GPIO_OUTPUT);
-    PinConfig(PIN_TAD, GPIO_OUTPUT);
-    PinConfig(PIN_IND, GPIO_OUTPUT);
-    PinConfig(PIN_DTD, GPIO_OUTPUT);
+    PinConfig(pin_tad, GPIO_OUTPUT);
+    PinConfig(pin_ind, GPIO_OUTPUT);
+    PinConfig(pin_dtd, GPIO_OUTPUT);
 
     PinSetSignal(PIN_ENB, false);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
@@ -143,12 +156,12 @@ string RpiBus::SetUp(bool target)
         return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
     }
 
-#ifdef __linux__
     // Event request setting
     strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
     selevreq.lineoffset = PIN_SEL;
     selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
+    selevreq.fd = -1;
 
     if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
         close(fd);
@@ -156,8 +169,9 @@ string RpiBus::SetUp(bool target)
     }
     close(fd);
 
-    epoll_fd = epoll_create(1);
+    epoll_fd = epoll_create(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {
+        close(selevreq.fd);
         return "Can't create epoll instance";
     }
 
@@ -169,15 +183,14 @@ string RpiBus::SetUp(bool target)
         close(selevreq.fd);
         return "Can't add file descriptor to epoll";
     }
-#endif
 
-    CreateWorkTables();
+    CreateWorkTable();
 
     // Set the initiator signal direction
-    PinSetSignal(PIN_IND, !target);
+    PinSetSignal(pin_ind, !target);
 
     // Set data bus signal directions
-    PinSetSignal(PIN_DTD, target);
+    PinSetSignal(pin_dtd, target);
 
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
@@ -187,21 +200,24 @@ string RpiBus::SetUp(bool target)
 
 void RpiBus::CleanUp()
 {
-#ifdef __linux__
-    // Release SEL signal interrupt
-    close(selevreq.fd);
-#endif
+    if (epoll_fd >= 0) {
+        close(epoll_fd);
+    }
+
+    if (selevreq.fd >= 0) {
+        close(selevreq.fd);
+    }
 
     // Set control signals
     PinSetSignal(PIN_ENB, false);
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(PIN_TAD, false);
-    PinSetSignal(PIN_IND, false);
-    PinSetSignal(PIN_DTD, false);
+    PinSetSignal(pin_tad, false);
+    PinSetSignal(pin_ind, false);
+    PinSetSignal(pin_dtd, false);
     PinConfig(PIN_ACT, GPIO_INPUT);
-    PinConfig(PIN_TAD, GPIO_INPUT);
-    PinConfig(PIN_IND, GPIO_INPUT);
-    PinConfig(PIN_DTD, GPIO_INPUT);
+    PinConfig(pin_tad, GPIO_INPUT);
+    PinConfig(pin_ind, GPIO_INPUT);
+    PinConfig(pin_dtd, GPIO_INPUT);
 
     InitializeSignals();
 
@@ -217,35 +233,31 @@ void RpiBus::Reset() const
     PinSetSignal(PIN_ACT, false);
 
     // Set all signals to off
-    for (const int s : SIGNAL_TABLE) {
-        SetSignal(s, false);
+    for (const int pin : SIGNAL_TABLE) {
+        SetSignal(pin, false);
     }
 
     // Set target signal to input for all modes
-    PinSetSignal(PIN_TAD, false);
+    PinSetSignal(pin_tad, false);
 }
 
 uint8_t RpiBus::WaitForSelection()
 {
-#ifdef __linux__
     if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
         if (errno != EINTR) {
-            warn("epoll_wait failed: {}", strerror(errno));
+            warn("epoll_wait failed: {}", system_error(errno, generic_category()).what());
         }
         return 0;
     }
 
     if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
         if (errno != EINTR) {
-            warn("Reading event failed: {}", strerror(errno));
+            warn("Reading event failed: {}", system_error(errno, generic_category()).what());
         }
         return 0;
     }
 
     return GetSelection();
-#else
-    return 0;
-#endif
 }
 
 void RpiBus::SetBSY(bool state) const
@@ -253,7 +265,7 @@ void RpiBus::SetBSY(bool state) const
     Bus::SetBSY(state);
 
     PinSetSignal(PIN_ACT, state);
-    PinSetSignal(PIN_TAD, state);
+    PinSetSignal(pin_tad, state);
 }
 
 void RpiBus::SetSEL(bool state) const
@@ -266,36 +278,35 @@ void RpiBus::SetSEL(bool state) const
 void RpiBus::SetDir(bool in) const
 {
     // Change the data input/output direction according to the IO signal
-    PinSetSignal(PIN_DTD, !in);
+    PinSetSignal(pin_dtd, !in);
 
     for (const int pin : DATA_PINS) {
         PinSetSignal(pin, !in);
     }
 }
 
-inline void RpiBus::SetDAT(uint8_t dat) const
+void RpiBus::SetDAT(uint8_t dat) const
 {
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
-    fsel |= tblDatSet[1][dat];
+    fsel |= tblDatSet[dat];
     gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
 }
 
 void RpiBus::InitializeSignals() const
 {
-    for (const int s : SIGNAL_TABLE) {
-        PinSetSignal(s, false);
-        PinConfig(s, GPIO_INPUT);
-        ConfigurePullDown(s);
+    for (const int pin : SIGNAL_TABLE) {
+        PinSetSignal(pin, false);
+        PinConfig(pin, GPIO_INPUT);
+        ConfigurePullDown(pin);
     }
 }
 
-void RpiBus::CreateWorkTables()
+void RpiBus::CreateWorkTable()
 {
     array<uint8_t, 256> tblParity;
 
-    // Create parity table
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         uint32_t parity = 0;
         for (int j = 0; j < 8; ++j) {
@@ -305,11 +316,6 @@ void RpiBus::CreateWorkTables()
         tblParity[i] = !parity;
     }
 
-    // Mask data defaults
-    for (auto &tbl : tblDatMsk) {
-        tbl.fill(-1);
-    }
-
     for (uint32_t i = 0; i < tblParity.size(); ++i) {
         // Bit string for inspection
         uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
@@ -317,21 +323,16 @@ void RpiBus::CreateWorkTables()
         // Bit check
         for (const int pin : DATA_PINS) {
             // Offset of the Function Select register for this pin (3 bits per pin)
-            const int index = pin / 10;
             const int shift = (pin % 10) * 3;
 
-            // Mask data (GPIO pin is an output pin)
-            tblDatMsk[index][i] &= ~(0b111 << shift);
-
             // Value (GPIO pin is set to 1)
-            tblDatSet[index][i] |= (bits & 0b001) << shift;
+            tblDatSet[i] |= (bits & 0b001) << shift;
 
             bits >>= 1;
         }
     }
 }
 
-// Set output signal value (except for DP and DT0-DT7)
 void RpiBus::SetSignal(int pin, bool state) const
 {
     const int index = pin / 10;
@@ -360,9 +361,7 @@ void RpiBus::DisableIRQ()
     case PiType::PI_2:
     case PiType::PI_3:
         // RPI2,3 disable core timer IRQ
-#ifdef __linux__
         tint_core = sched_getcpu() + QA7_CORE0_TINTC;
-#endif
         tint_ctl = qa7_regs[tint_core];
         qa7_regs[tint_core] = 0;
         break;
@@ -407,24 +406,28 @@ void RpiBus::EnableIRQ()
 // Pin direction setting (input/output)
 void RpiBus::PinConfig(int pin, int mode) const
 {
-#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
-#endif
 
     const int index = pin / 10;
     const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
     gpio[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
 }
 
-void RpiBus::ConfigurePullDown(int pin) const
+// Set output pin
+void RpiBus::PinSetSignal(int pin, bool state) const
 {
-#ifdef BOARD_STANDARD
     if (pin < 0) {
         return;
     }
-#endif
+
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+}
+
+void RpiBus::ConfigurePullDown(int pin) const
+{
+    assert(pin >= 0);
 
     pin &= 0x1f;
     if (pi_type == PiType::PI_4) {
@@ -445,18 +448,6 @@ void RpiBus::ConfigurePullDown(int pin) const
     }
 }
 
-// Set output pin
-void RpiBus::PinSetSignal(int pin, bool state) const
-{
-#ifdef BOARD_STANDARD
-    if (pin < 0) {
-        return;
-    }
-#endif
-
-    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
-}
-
 void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 {
     const uint32_t data = pads[PAD_0_27];
@@ -464,7 +455,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 }
 
 // Read data from bus
-inline void RpiBus::Acquire() const
+void RpiBus::Acquire() const
 {
     SetSignals(*level);
 }
@@ -493,12 +484,12 @@ RpiBus::PiType RpiBus::GetPiType(const string &device_file)
     }
 
     int type;
-    if(model.find("Zero 2") != string::npos) {
+    if (model.find("Zero 2") != string::npos) {
         type = static_cast<int>(RpiBus::PiType::PI_3);
     }
     else {
         type = model.find("Zero") != string::npos ||
-        model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+            model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
     }
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);

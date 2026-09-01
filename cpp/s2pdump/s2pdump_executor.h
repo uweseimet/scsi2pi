@@ -24,7 +24,7 @@ public:
 
     // Disk and tape support
     void TestUnitReady() const;
-    void RequestSense(span<uint8_t>) const;
+    void RequestSense() const;
     bool Inquiry(span<uint8_t>) const;
     bool ModeSense6(span<uint8_t>) const;
     set<int> ReportLuns();
@@ -75,8 +75,6 @@ protected:
 
     void SpaceBack() const;
     virtual void SpaceBack(span<uint8_t>) const = 0;
-
-    static void SetInt24(span<uint8_t>, int, int);
 
     logger& GetLogger() const
     {

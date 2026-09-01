@@ -14,7 +14,7 @@
 
 #include "disk_cache.h"
 #include <cassert>
-#include "base/device.h"
+#include "device.h"
 #include "disk_track.h"
 
 DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(sectors)
@@ -154,10 +154,22 @@ void DiskCache::UpdateSerial()
         return;
     }
 
-    // Clear serial of all caches
+    // Sort cache slots by their existing serial numbers to preserve relative order
+    ranges::sort(cache, [](const CacheData &d1, const CacheData &d2) {
+        return d1.serial < d2.serial;
+    });
+
+    // Re-index serials sequentially starting from 1
+    uint32_t new_serial = 1;
     for (CacheData &c : cache) {
-        c.serial = 0;
+        if (c.disktrk) {
+            c.serial = new_serial++;
+        } else {
+            c.serial = 0;
+        }
     }
+
+    serial = new_serial;
 }
 
 vector<PbStatistics> DiskCache::GetStatistics(const Device &device) const

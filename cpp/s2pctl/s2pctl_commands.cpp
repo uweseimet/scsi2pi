@@ -9,10 +9,12 @@
 #include "s2pctl_commands.h"
 #include <fstream>
 #include <iostream>
-#include <arpa/inet.h>
-#include <netdb.h>
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
+#endif
+#if __has_include(<sys/socket.h>)
 #include <sys/socket.h>
+#endif
 #include <unistd.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
@@ -120,22 +122,23 @@ bool S2pCtlCommands::SendCommand()
         return true;
     }
 
-    sockaddr_in server_addr = { };
-    if (!ResolveHostName(hostname, &server_addr)) {
+#if __has_include(<sys/socket.h>)
+    auto server_addr = ResolveHostName(hostname);
+    if (!server_addr) {
         throw IoException("Can't resolve hostname '" + hostname + "'");
     }
 
-    const int fd = socket(AF_INET, SOCK_STREAM, 0);
+    const int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {
-        throw IoException("Can't create socket: " + string(strerror(errno)));
+        throw IoException("Can't create socket: "s + system_error(errno, generic_category()).what());
     }
 
-    server_addr.sin_port = htons(uint16_t(port));
-    if (connect(fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+    server_addr->sin_port = htons(uint16_t(port));
+    if (connect(fd, (sockaddr*)(&(*server_addr)), sizeof(*server_addr)) == -1) {
         close(fd);
 
         throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
-            + ": " + strerror(errno));
+        + ": " + system_error(errno, generic_category()).what());
     }
 
     if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
@@ -148,6 +151,7 @@ bool S2pCtlCommands::SendCommand()
     DeserializeMessage(fd, result);
 
     close(fd);
+#endif
 
     if (!result.status()) {
         throw IoException(result.msg());
@@ -428,8 +432,8 @@ void S2pCtlCommands::ExportAsBinary(const PbCommand &cmd, const string &filename
 void S2pCtlCommands::ExportAsJson(const PbCommand &cmd, const string &filename) const
 {
     string json;
-    if (!MessageToJsonString(cmd, &json).ok()) {
-        throw IoException("Can't create JSON data for protobuf JSON file '" + filename + "'");
+    if (const auto status = MessageToJsonString(cmd, &json); !status.ok()) {
+        throw IoException("Can't create JSON data for protobuf JSON file '" + filename + "': " + status.ToString());
     }
 
     ofstream out(filename);

@@ -61,9 +61,9 @@ bool WriteGoodData(ostream&, span<const uint8_t>, int);
 SimhMetaData FromLittleEndian(span<const uint8_t>);
 array<uint8_t, 4> ToLittleEndian(const SimhMetaData&);
 
-static const int64_t META_DATA_SIZE = static_cast<int64_t>(sizeof(uint32_t));
+static constexpr int64_t META_DATA_SIZE = static_cast<int64_t>(sizeof(uint32_t));
 
 // "S2P", private marker magic value for tape object types, the SCSI2Pi type is coded in the low nibble of the LSB
-static const uint32_t PRIVATE_MARKER_MAGIC = 0x00533250;
+static constexpr uint32_t PRIVATE_MARKER_MAGIC = 0x00533250;
 
 }

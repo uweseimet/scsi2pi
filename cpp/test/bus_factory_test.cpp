@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,7 +13,6 @@ using namespace bus_factory;
 
 TEST(BusFactoryTest, CreateBus)
 {
-    auto bus = CreateBus(true, true, "", false);
-    EXPECT_NE(nullptr, bus);
-    EXPECT_NE(nullptr, CreateBus(false, true, "", false));
+    EXPECT_NE(nullptr, CreateBus(true, true, false, ""));
+    EXPECT_NE(nullptr, CreateBus(false, true, false, ""));
 }

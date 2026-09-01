@@ -27,24 +27,31 @@ public:
         int block_offset;
         int block_size;
         bool has_data_out;
+        bool has_custom_data_out;
     };
+
+    CommandMetaData(const CommandMetaData&) = delete;
+    CommandMetaData& operator=(const CommandMetaData&) = delete;
 
     static const CommandMetaData& GetInstance()
     {
-        static const CommandMetaData instance; // NOSONAR instance cannot be inlined
+        static const CommandMetaData instance;
         return instance;
     }
 
-    CdbMetaData GetCdbMetaData(ScsiCommand) const;
+    CdbMetaData GetCdbMetaData(ScsiCommand cmd) const
+    {
+        return cdb_meta_data[static_cast<size_t>(cmd)];
+    }
 
     int GetByteCount(ScsiCommand cmd) const
     {
-        return command_byte_counts[static_cast<int>(cmd)];
+        return command_byte_counts[static_cast<size_t>(cmd)];
     }
 
     const string& GetCommandName(ScsiCommand cmd) const
     {
-        return command_names[static_cast<int>(cmd)];
+        return command_names[static_cast<size_t>(cmd)];
     }
 
     string LogCdb(span<const uint8_t>, string_view) const;

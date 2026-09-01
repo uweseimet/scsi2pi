@@ -3,16 +3,15 @@
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
 // Copyright (C) 2016-2020 GIMONS
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#ifdef __linux__
+#include <string>
 #include <linux/gpio.h>
 #include <sys/epoll.h>
-#endif
 #include "buses/bus.h"
 
 class RpiBus final : public Bus
@@ -28,6 +27,8 @@ public:
         PI_3 = 3,
         PI_4 = 4
     };
+
+    RpiBus(PiType type, bool);
 
     string SetUp(bool) override;
     void Reset() const override;
@@ -57,7 +58,7 @@ private:
 
     void InitializeSignals() const;
 
-    void CreateWorkTables();
+    void CreateWorkTable();
 
     void SetSignal(int, bool) const override;
 
@@ -66,18 +67,28 @@ private:
 
     void SetDir(bool) const override;
 
-    // Set GPIO pin pull up/down resistor setting to PULLDOWN
-    void ConfigurePullDown(int) const;
-
     // GPIO pin direction setting
     void PinConfig(int, int) const;
 
     void PinSetSignal(int, bool) const;
 
+    // Set GPIO pin pull up/down resistor setting to PULLDOWN
+    void ConfigurePullDown(int) const;
+
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
-    PiType pi_type = GetPiType();
+    PiType pi_type;
+
+#ifdef BOARD_STANDARD
+    int pin_ind = -1;
+    int pin_tad = -1;
+    int pin_dtd = -1;
+#else
+    int pin_ind = PIN_IND;
+    int pin_tad = PIN_TAD;
+    int pin_dtd = PIN_DTD;
+#endif
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
@@ -99,21 +110,19 @@ private:
     // Interrupt enabled state
     uint32_t irpt_enb = 0;
 
-    // Interupt control target CPU
+    // Interrupt control target CPU
     int tint_core = 0;
 
-    // Interupt control
+    // Interrupt control
     uint32_t tint_ctl = 0;
 
     // GIC priority setting
     uint32_t gicc_pmr_saved = 0;
 
-#ifdef __linux__
     // SEL signal event request
     struct gpioevent_request selevreq = { };
-#endif
 
-    int epoll_fd = 0;
+    int epoll_fd = -1;
 
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;
@@ -125,10 +134,8 @@ private:
     // GPIO input level
     volatile uint32_t *level = nullptr;
 
-    // Data mask table
-    array<array<uint32_t, 256>, 3> tblDatMsk = { };
-    // Data setting table
-    array<array<uint32_t, 256>, 3> tblDatSet = { };
+    // Data setting table for data pins
+    array<uint32_t, 256> tblDatSet = { };
 
     constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };

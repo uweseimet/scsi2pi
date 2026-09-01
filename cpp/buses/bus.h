@@ -166,7 +166,7 @@ public:
 
     static string GetPhaseName(BusPhase phase)
     {
-        return phase_names[static_cast<int>(phase)];
+        return phase_names[static_cast<size_t>(phase)];
     }
 
 protected:

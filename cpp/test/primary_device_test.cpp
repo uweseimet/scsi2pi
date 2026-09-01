@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device_factory.h"
+#include "devices/device_factory.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace memory_util;
@@ -94,7 +94,7 @@ TEST(PrimaryDeviceTest, Status)
 
 TEST(PrimaryDeviceTest, GetId)
 {
-    const int ID = 5;
+    constexpr int ID = 5;
 
     auto [controller, device] = CreatePrimaryDevice(ID);
 
@@ -431,8 +431,8 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 
 TEST(PrimaryDeviceTest, ReportLuns)
 {
-    const int LUN1 = 1;
-    const int LUN2 = 4;
+    constexpr int LUN1 = 1;
+    constexpr int LUN2 = 4;
 
     auto controller = make_shared<MockAbstractController>(0);
     auto device1 = make_shared<MockPrimaryDevice>(LUN1);

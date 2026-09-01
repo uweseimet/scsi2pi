@@ -30,6 +30,10 @@ ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), d
 
 string ScsiGeneric::SetUp()
 {
+    if (const string &device_as_param = GetParam(DEVICE); !device_as_param.empty()) {
+        device = device_as_param;
+    }
+
     try {
         fd = OpenDevice(device);
     }
@@ -53,6 +57,13 @@ void ScsiGeneric::CleanUp()
         close(fd);
         fd = -1;
     }
+}
+
+param_map ScsiGeneric::GetDefaultParams() const
+{
+    return {
+        {   DEVICE, ""}
+    };
 }
 
 void ScsiGeneric::Dispatch(ScsiCommand cmd)
@@ -143,6 +154,10 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
     if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
+            if (buf.size() < 4) {
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
+            }
+
             format_header.insert(format_header.end(), buf.begin(), buf.begin() + 4);
             byte_count = GetInt16(buf, 2) + 4;
             GetController()->SetTransferSize(byte_count, byte_count);
@@ -161,7 +176,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
 int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 {
     const int length = min(min(remaining_count, static_cast<int>(buf.size())), MAX_TRANSFER_LENGTH);
-    SetBlockCount(local_cdb, length / block_size);
+    SetBlockCount(local_cdb, length / (block_size ? block_size : 512));
 
     sg_io_hdr io_hdr = { };
 
@@ -181,7 +196,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     array<uint8_t, 18> sense_data = { };
     io_hdr.sbp = sense_data.data();
-    io_hdr.mx_sb_len = sense_data.size();
+    io_hdr.mx_sb_len = static_cast<uint8_t>(sense_data.size());
 
     io_hdr.cmdp = local_cdb.data();
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
@@ -191,11 +206,11 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
             TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
-    if (GetController() && GetLogger().level() <= level::debug) {
+    if (GetController() && GetLogger().should_log(level::debug)) {
         LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
     }
 
-    if (write && GetController() && GetLogger().level() == level::trace) {
+    if (write && GetController() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Transferring {} byte(s) to SG driver{}", length,
             length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : ""));
     }
@@ -208,7 +223,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     const int transferred_length = length - io_hdr.resid;
 
-    if (!write && GetController() && GetLogger().level() == level::trace) {
+    if (!write && GetController() && GetLogger().should_log(level::trace)) {
         LogTrace(fmt::format("Transferred {} byte(s) from SG driver{}", transferred_length,
             transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : ""));
     }
@@ -242,7 +257,8 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 {
     if (status == -1) {
         if (GetController()) {
-            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(), strerror(errno)));
+            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(),
+                system_error(errno, generic_category()).what()));
         }
 
         throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);

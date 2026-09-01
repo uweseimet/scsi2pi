@@ -43,25 +43,6 @@ public:
     }
 };
 
-class MockPhaseHandler : public PhaseHandler
-{
-    FRIEND_TEST(PhaseHandlerTest, Phases);
-    FRIEND_TEST(PhaseHandlerTest, ProcessPhase);
-
-public:
-
-    MOCK_METHOD(void, Status, (), (override));
-    MOCK_METHOD(void, DataIn, (), (override));
-    MOCK_METHOD(void, DataOut, (), (override));
-    MOCK_METHOD(void, BusFree, (), (override));
-    MOCK_METHOD(void, Selection, (), (override));
-    MOCK_METHOD(void, Command, (), (override));
-    MOCK_METHOD(void, MsgIn, (), (override));
-    MOCK_METHOD(void, MsgOut, (), (override));
-
-    using PhaseHandler::PhaseHandler;
-};
-
 class MockAbstractController : public AbstractController // NOSONAR Having many methods cannot be avoided
 {
     friend class testing::TestShared;
@@ -108,7 +89,7 @@ public:
         }
     }
 
-    void SetCdbByte(int index, int value) // NONSONAR Having the same name as the inherited method is intentional
+    void SetCdbByte(int index, int value) // NONSONAR Shadowing the inherited method is intentional
     {
         AbstractController::SetCdbByte(index, value);
     }
@@ -194,7 +175,6 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
     FRIEND_TEST(StorageDeviceTest, GetFileSize);
-    FRIEND_TEST(StroageDeviceTest, PreventAllowMediumRemoval);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetGetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
@@ -215,15 +195,15 @@ public:
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetReady(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetRemovable(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b) // NONSONAR Having the same name as the inherited method is intentional
+    void SetLocked(bool b) // NONSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }

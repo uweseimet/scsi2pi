@@ -20,9 +20,30 @@ class PropertyHandler final
 
 public:
 
+    PropertyHandler(const PropertyHandler&) = delete;
+    PropertyHandler& operator=(const PropertyHandler&) = delete;
+
+    static PropertyHandler& GetInstance()
+    {
+        static PropertyHandler instance; // NOSONAR Singleton with mutable internal state
+        return instance;
+    }
+
+    void Init(const string&, const property_map&, bool);
+
+    property_map GetProperties(const string& = "") const;
+    const property_map& GetUnknownProperties() const;
+    string RemoveProperty(const string&, const string& = "");
+    void AddProperty(const string&, string_view);
+    void RemoveProperties(string_view);
+
+    bool Persist() const;
+
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
 
     // Global property keys
+    static constexpr const char *CONFIG_FILES = "config_files";
+    static constexpr const char *CONNECTION_TYPE = "connection_type";
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
@@ -30,7 +51,6 @@ public:
     static constexpr const char *LOG_PATTERN = "log_pattern";
     static constexpr const char *MODE_PAGE = "mode_page";
     static constexpr const char *PORT = "port";
-    static constexpr const char *PROPERTY_FILES = "property_files";
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
@@ -46,22 +66,6 @@ public:
     static constexpr const char *PARAMS = "params";
     static constexpr const char *SCSI_LEVEL = "scsi_level";
     static constexpr const char *TYPE = "type";
-
-    static PropertyHandler& GetInstance()
-    {
-        static PropertyHandler instance; // NOSONAR instance cannot be inlined
-        return instance;
-    }
-
-    void Init(const string&, const property_map&, bool);
-
-    property_map GetProperties(const string& = "") const;
-    const property_map& GetUnknownProperties() const;
-    string RemoveProperty(const string&, const string& = "");
-    void AddProperty(const string&, string_view);
-    void RemoveProperties(string_view);
-
-    bool Persist() const;
 
 private:
 

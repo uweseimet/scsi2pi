@@ -57,15 +57,15 @@ string PrimaryDevice::Init()
 
 void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 {
-    assert(!commands[static_cast<int>(cmd)]);
-    commands[static_cast<int>(cmd)] = c;
+    assert(!commands[static_cast<size_t>(cmd)]);
+    commands[static_cast<size_t>(cmd)] = c;
 }
 
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
-    if (const auto &command = commands[static_cast<int>(cmd)]; command) {
+    if (const auto &command = commands[static_cast<size_t>(cmd)]; command) {
         LogDebug(fmt::format("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
-                static_cast<int>(cmd)));
+                static_cast<size_t>(cmd)));
         command();
     }
     else {
@@ -187,7 +187,7 @@ void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
 
-    CreateLogger();
+    CreateDeviceLogger();
 }
 
 void PrimaryDevice::StatusPhase() const
@@ -284,7 +284,8 @@ void PrimaryDevice::RequestSense()
     }
 
     const auto length = static_cast<int>(min(buf.size(), static_cast<size_t>(allocation_length)));
-    controller->CopyToBuffer(span(reinterpret_cast<const uint8_t*>(buf.data()), length)); // NOSONAR byte cannot be used here
+    controller->CopyToBuffer(
+        span<const uint8_t>(static_cast<const uint8_t*>(static_cast<const void*>(buf.data())), length));
 
     ResetStatus();
 
@@ -427,20 +428,20 @@ int PrimaryDevice::GetCdbByte(int index) const
 
 int PrimaryDevice::GetCdbInt16(int index) const
 {
-    return memory_util::GetInt16(controller->GetCdb(), index);
+    return GetInt16(controller->GetCdb(), index);
 }
 
 int PrimaryDevice::GetCdbInt24(int index) const
 {
-    return memory_util::GetInt24(controller->GetCdb(), index);
+    return GetInt24(controller->GetCdb(), index);
 }
 
 uint32_t PrimaryDevice::GetCdbInt32(int index) const
 {
-    return memory_util::GetInt32(controller->GetCdb(), index);
+    return GetInt32(controller->GetCdb(), index);
 }
 
 uint64_t PrimaryDevice::GetCdbInt64(int index) const
 {
-    return memory_util::GetInt64(controller->GetCdb(), index);
+    return GetInt64(controller->GetCdb(), index);
 }

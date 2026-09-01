@@ -1,6 +1,6 @@
 .TH s2pdump 1
 .SH NAME
-s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
+s2pdump \- SCSI/SASI hard/tape drive dump/restore tool
 .SH SYNOPSIS
 .B s2pdump
 [\fB\--all-luns/-a\fR]
@@ -24,11 +24,11 @@ s2pdump \- SCSI/SASI hard drive/tape drive dump/restore tool
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pdump
-has two modes of operation: dump and restore. These can be used with storage devices like hard drives, magneto optical drives or tape drives. Dump mode can also be used with read-only media such as CD/DVD drives.
+has two modes of operation: dump and restore. These can be used with storage devices like hard drives, magneto-optical drives or tape drives. Dump mode can also be used with read-only media such as CD/DVD drives.
 When using devices managed by the Linux SG driver, s2pdump can be used on any Linux system, not just on a Pi.
 
-When operating in dump mode, s2pdump will copy all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
-When used with a tape drive, the data are dumped in a SIMH-compatible format.
+When operating in dump mode, s2pdump copies all data from a remote drive to an image on the local filesystem. Optionally it generates a .properties file for the web UI. This file can be used to more closely emulate the source drive.
+When used with a tape drive, the data is dumped in a SIMH-compatible format.
 
 In restore mode s2pdump copies the data from a local image to a remote physical drive. The remote drive must be writable.
 Restoring a tape drive expects a SIMH-compatible file.
@@ -38,16 +38,16 @@ Restoring a tape drive expects a SIMH-compatible file.
 .B s2pdump
 requires a FULLSPEC PiSCSI/RaSCSI board.
 
-Usually in order to use the generated drive image with SCSI2Pi, it should be moved to the ~/images folder (or the location specified to s2p).
+To use the generated drive image with SCSI2Pi, it should usually be moved to the drive image folder.
 
 .SH OPTIONS
 .TP
 .BR --all-luns/-a\fI
 Check all LUNs during bus scan. The default is to scan LUN 0 only.
-If the target device supports the REPORT LUNS SCSI command s2pdump uses this command to optimize the scan.
+If the target device supports the REPORT LUNS SCSI command, s2pdump uses this command to optimize the scan.
 .TP
 .BR --board-id/-B\fI " "\fIBOARD_ID
-SCSI ID of the SCSI2Pi board. If not specified ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device. Not relevant for SASI.
+SCSI ID of the SCSI2Pi board. If not specified, ID 7 is used. The SCSI2Pi host will be functioning as the "initiator" device. Not relevant for SASI.
 .TP
 .BR --buffer-size/-b\fI " "\fIBUFFER_SIZE
 The transfer buffer size in bytes. The default size is 1 MiB, the minimum size is 64 KiB.

@@ -91,9 +91,9 @@ private:
     bool SetUpCache();
 
     void ReadWriteLong(uint64_t, uint32_t, bool);
-    void WriteVerify(uint64_t, uint32_t, bool);
+    void WriteVerify(uint64_t, uint32_t);
     uint64_t ValidateBlockAddress(AccessMode);
-    tuple<bool, uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
+    pair<uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
 
     shared_ptr<Cache> cache;
 
@@ -114,6 +114,6 @@ private:
         { 10'737'418'240'000, 1'099'511'627'776, 'T' },
         { 10'485'760'000, 1'073'741'824, 'G' },
         { 1'048'576, 1'048'576, 'M' },
-        { 0, 1014, 'K' }
+        { 0, 1024, 'K' }
     } };
 };

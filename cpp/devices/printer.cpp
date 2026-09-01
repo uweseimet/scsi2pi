@@ -67,7 +67,7 @@ string Printer::SetUp()
         });
 
     error_code error;
-    file_template = temp_directory_path(error); // NOSONAR Publicly writable directory is safe here
+    file_template = temp_directory_path(error).string(); // NOSONAR Publicly writable directory is safe here
     file_template += PRINTER_FILE_PATTERN;
 
     return "";
@@ -170,7 +170,9 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError(fmt::format("Can't create printer output file for pattern '{}': {}", filename, strerror(errno)));
+            LogError(
+                fmt::format("Can't create printer output file for pattern '{}': {}", filename,
+                    system_error(errno, generic_category()).what()));
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }

@@ -8,13 +8,13 @@
 
 #include "command_response.h"
 #include <unistd.h>
-#include "base/device_factory.h"
-#include "base/property_handler.h"
 #include "command_image_support.h"
+#include "devices/device_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/network_util.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_version.h"
 
 using namespace network_util;
@@ -141,7 +141,7 @@ void GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device)
 void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern, const string &file_pattern,
     logger &logger)
 {
-    const string &default_folder = CommandImageSupport::GetInstance().GetDefaultFolder();
+    const string &default_folder = CommandImageSupport::GetInstance().GetImageFolder();
 
     const path default_path(default_folder);
     if (error_code error; !is_directory(default_path, error) || error) {
@@ -189,7 +189,7 @@ void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
     logger &logger)
 {
     server_info.mutable_image_files_info()->set_default_image_folder(
-        CommandImageSupport::GetInstance().GetDefaultFolder());
+        CommandImageSupport::GetInstance().GetImageFolder());
 
     command_response::GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
@@ -279,9 +279,9 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
         image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
 
         const path p(
-            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename);
+            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename);
 
-        image_file.set_read_only(access(p.c_str(), W_OK));
+        image_file.set_read_only(IsReadOnlyFile(p));
 
         error_code error;
         if (is_regular_file(p, error) || (is_symlink(p, error) && !is_block_file(p, error))) {
@@ -296,7 +296,7 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
 void command_response::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern, logger &logger)
 {
-    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetDefaultFolder());
+    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetImageFolder());
     image_files_info.set_depth(CommandImageSupport::GetInstance().GetDepth());
 
     GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
@@ -515,8 +515,8 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
-    operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set default image file folder");
-    AddOperationParameter(*operation, "folder", "Default image file folder name", "", true);
+    operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set image file folder");
+    AddOperationParameter(*operation, "folder", "Image file folder name", "", true);
 
     operation = CreateOperation(operation_info, LOG_LEVEL, "Set log level");
     AddOperationParameter(*operation, "level", "New log level", "", true);
@@ -525,7 +525,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
     operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
-    if (geteuid()) {
+    if (GetEuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
     else {

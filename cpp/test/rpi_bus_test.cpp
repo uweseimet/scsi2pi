@@ -2,13 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2025 Uwe Seimet
+// Copyright (C) 2025-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include <fstream>
 #include <gtest/gtest.h>
-#include "pi/rpi_bus.h"
+#include "buses/rpi_bus.h"
 #include "test_shared.h"
 
 TEST(RpiBusTest, GetPiType)
@@ -56,7 +56,7 @@ TEST(RpiBusTest, GetPiType)
 
 TEST(RpiBusTest, IsRaspberryPi)
 {
-    RpiBus bus;
+    RpiBus bus(RpiBus::PiType::PI_1, false);
 
     EXPECT_TRUE(bus.IsRaspberryPi());
 }

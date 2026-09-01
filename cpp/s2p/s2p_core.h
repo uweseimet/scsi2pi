@@ -2,17 +2,17 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <filesystem>
-#include "base/property_handler.h"
 #include "buses/bus.h"
 #include "command/command_executor.h"
 #include "controllers/controller_factory.h"
+#include "shared/property_handler.h"
 #include "s2p_thread.h"
 
 using namespace filesystem;
@@ -32,7 +32,7 @@ public:
 
 private:
 
-    bool InitBus(bool, bool);
+    string InitBus(bool, bool);
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);
@@ -42,6 +42,8 @@ private:
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
     void ProcessScsiCommands();
+
+    string CheckForUnknownProperties() const;
 
     void DisplayAttachedDevices() const;
 

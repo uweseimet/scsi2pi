@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -41,6 +41,13 @@ TEST(MemoryUtilTest, SetInt16)
     SetInt16(v, 0, 0x1234);
     EXPECT_EQ(byte { 0x12 }, v[0]);
     EXPECT_EQ(byte { 0x34 }, v[1]);
+}
+
+TEST(MemoryUtilTest, SetInt24)
+{
+    vector<uint8_t> buf(4);
+    SetInt24(buf, 1, 0x123456);
+    EXPECT_EQ(0x123456, GetInt24(buf, 1));
 }
 
 TEST(MemoryUtilTest, SetInt32)

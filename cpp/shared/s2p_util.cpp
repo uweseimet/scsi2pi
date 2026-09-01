@@ -9,17 +9,47 @@
 #include "s2p_util.h"
 #include <algorithm>
 #include <cassert>
-#include <filesystem>
+#include <clocale>
 #include <fcntl.h>
+#if __has_include(<pwd.h>)
 #include <pwd.h>
+#endif
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "s2p_version.h"
 #include "shared/memory_util.h"
 
-using namespace filesystem;
 using namespace spdlog;
 using namespace memory_util;
+
+namespace
+{
+
+tuple<int, int, string> GetPwData()
+{
+#if __has_include(<pwd.h>)
+    const char *sudo_user = getenv("SUDO_UID");
+    const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
+
+    passwd pwd = { };
+    passwd *p_pwd;
+
+    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+        if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
+            return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
+        }
+        else {
+            // For backward compatibility
+            const string &dir = uid ? pwd.pw_dir : "/home/pi";
+            return {uid, pwd.pw_gid, exists(dir, error) ? dir : s2p_util::DEFAULT_APP_FOLDER};
+        }
+    }
+#endif
+
+    return {-1, -1 , s2p_util::DEFAULT_APP_FOLDER};
+}
+
+}
 
 string s2p_util::GetVersionString()
 {
@@ -27,37 +57,30 @@ string s2p_util::GetVersionString()
     return fmt::format("{}.{}{}{}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
 }
 
-string s2p_util::GetHomeDir()
+string s2p_util::GetAppDir()
 {
-    const auto [uid, gid] = GetUidAndGid();
+    return get<2>(GetPwData());
+}
 
-    passwd pwd = { };
-    passwd *p_pwd;
-    array<char, 256> pwbuf;
-
-    if (uid && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        return pwd.pw_dir;
-    }
-    else {
-        return "/home/pi";
-    }
+int s2p_util::GetEuid()
+{
+#if __has_include(<pwd.h>)
+    return geteuid();
+#else
+    return -1;
+#endif
 }
 
 pair<int, int> s2p_util::GetUidAndGid()
 {
-    const char *sudo_user = getenv("SUDO_UID");
-    const int uid = sudo_user ? stoi(sudo_user) : geteuid();
-
-    passwd pwd = { };
-    passwd *p_pwd;
-    array<char, 256> pwbuf;
-
-    int gid = -1;
-    if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        gid = pwd.pw_gid;
-    }
-
+    const auto& [uid, gid, _] = GetPwData(); // NOSONAR '_' will be supported in C++-26
     return {uid, gid};
+}
+
+bool s2p_util::IsReadOnlyFile(const path& filename)
+{
+    const auto status = filesystem::status(filename);
+    return exists(status) && (status.permissions() & perms::owner_write) == perms::none;
 }
 
 vector<string> s2p_util::Split(const string &s, char separator, int limit)
@@ -104,7 +127,11 @@ string s2p_util::GetExtensionLowerCase(string_view filename)
 
 string s2p_util::GetLocale()
 {
+#ifdef LC_MESSAGES
     const char *locale = setlocale(LC_MESSAGES, "");
+#else
+    const char *locale = setlocale(LC_ALL, "");
+#endif
     if (locale == nullptr || !strcmp(locale, "C") || !strcmp(locale, "POSIX")) {
         locale = "en";
     }
@@ -153,10 +180,7 @@ int s2p_util::ParseAsUnsignedInt(const string &value)
     try {
         return static_cast<int>(stoul(value));
     }
-    catch (const invalid_argument&) {
-        return -1;
-    }
-    catch (const out_of_range&) {
+    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
         return -1;
     }
 }
@@ -217,23 +241,18 @@ string s2p_util::GetScsiLevel(int scsi_level)
     switch (scsi_level) {
     case 0:
         return "-";
-        break;
 
     case 1:
         return "SCSI-1-CCS";
-        break;
 
     case 2:
         return "SCSI-2";
-        break;
 
     case 3:
         return "SCSI-3 (SPC)";
-        break;
 
     default:
         return "SPC-" + to_string(scsi_level - 2);
-        break;
     }
 }
 
@@ -290,16 +309,14 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
             throw out_of_range("");
         }
 
-        const string &line_lower = ToLower(line);
-
         size_t i = 0;
-        while (i < line_lower.length()) {
-            if (line_lower[i] == ':' && i + 2 < line_lower.length()) {
+        while (i < line.length()) {
+            if (line[i] == ':' && i + 2 < line.length()) {
                 ++i;
             }
 
-            const int b1 = HexToDec(line_lower[i]);
-            const int b2 = HexToDec(line_lower[i + 1]);
+            const int b1 = HexToDec(line[i]);
+            const int b2 = HexToDec(line[i + 1]);
             if (b1 == -1 || b2 == -1) {
                 throw out_of_range("");
             }
@@ -311,19 +328,6 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
     }
 
     return bytes;
-}
-
-int s2p_util::HexToDec(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c -'0';
-    }
-
-    if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    }
-
-    return -1;
 }
 
 string_view s2p_util::Trim(string_view s)

@@ -7,25 +7,39 @@
 //---------------------------------------------------------------------------
 
 #include "bus_factory.h"
-#include <condition_variable>
+#include <spdlog/spdlog.h>
 #include "in_process_bus.h"
-#include "pi/rpi_bus.h"
+#if __has_include (<linux/gpio.h>)
+#include "rpi_bus.h"
+#endif
 
-using namespace spdlog;
-
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, const string &identifier, bool log_signals)
+unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
+    const string &identifier, [[maybe_unused]] bool standard_board)
 {
-    unique_ptr<Bus> bus;
+    auto make_initialized = [target](unique_ptr<Bus> bus) {
+        return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
+    };
 
     if (in_process) {
-        bus = make_unique<InProcessBus>(identifier, log_signals);
-    }
-    else if (RpiBus::GetPiType() != RpiBus::PiType::UNKNOWN) {
-        bus = make_unique<RpiBus>();
-    }
-    else {
-        bus = make_unique<InProcessBus>(identifier, false);
+        return make_initialized(make_unique<InProcessBus>(identifier, log_signals));
     }
 
-    return bus->Init(target) ? std::move(bus) : nullptr;
+#if __has_include (<linux/gpio.h>)
+    if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
+        constexpr bool override_standard_board =
+
+#ifdef BOARD_STANDARD
+            true;
+#else
+            false;
+#endif
+
+        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board);
+        return make_initialized(std::move(bus));    }
+#else
+    spdlog::warn("This platform is not a Raspberry Pi running Linux, functionality is limited");
+#endif
+
+    // Fall back to the in-process bus
+    return make_initialized(make_unique<InProcessBus>(identifier, false));
 }

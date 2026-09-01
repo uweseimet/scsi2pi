@@ -67,7 +67,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init(bool in_process, bool log_signals)
 {
-    bus = bus_factory::CreateBus(false, in_process, APP_NAME, log_signals);
+    bus = bus_factory::CreateBus(false, in_process, log_signals, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -113,7 +113,7 @@ bool S2pProto::ParseArguments(span<char*> args)
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "B:f:F:i:L:hnv",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "B:f:F:i:L:hv",
         options.data(), nullptr)) != -1) {
         switch (opt) {
         case 'B':
@@ -257,7 +257,10 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     if (output_filename.empty()) {
         string json;
-        static_cast<void>(MessageToJsonString(result, &json));
+        if (const auto status = MessageToJsonString(result, &json); !status.ok()) {
+            cerr << "Error: Failed to convert protobuf to JSON: " << status.ToString() << '\n';
+            return EXIT_FAILURE;
+        }
         cout << json << '\n';
         return EXIT_SUCCESS;
     }
@@ -281,7 +284,11 @@ int S2pProto::GenerateOutput(const string &input_filename, const string &output_
 
     case ProtobufFormat::JSON: {
         string json;
-        static_cast<void>(MessageToJsonString(result, &json));
+        if (const auto status = MessageToJsonString(result, &json); !status.ok()) {
+            cerr << "Error: Can't create protobuf data for output file '" << output_filename << "': "
+                << status.ToString() << '\n';
+            return EXIT_FAILURE;
+        }
         out << json << '\n';
         break;
     }

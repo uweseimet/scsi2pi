@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@ TEST(ScriptGeneratorTest, AddCdb)
 
     EXPECT_FALSE(generator.CreateFile(""));
 
-    const string &filename = CreateTempFile();
+    const string &filename = CreateTempFile().string();
     EXPECT_TRUE(generator.CreateFile(filename));
 
     auto cdb = CreateCdb(ScsiCommand::TEST_UNIT_READY, "01:02:03:04:05");
@@ -26,7 +26,7 @@ TEST(ScriptGeneratorTest, AddCdb)
     vector<uint8_t> data = { 0xff, 0xfe, 0xfd, 0xfc };
     generator.AddData(data);
     cdb = CreateCdb(static_cast<ScsiCommand>(0x1f), "01:02:03");
-    assert(!cdb.empty());
+    ASSERT_FALSE(cdb.empty());
     generator.AddCdb(3, 31, cdb);
 
     generator.AddCdb(3, 31, cdb);

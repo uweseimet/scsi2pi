@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,59 +13,67 @@
 #include "devices/host_services.h"
 #include "shared/s2p_exceptions.h"
 
+class HostServicesTest : public ::testing::Test {
+protected:
+
+    void SetUp() override {
+        tie(controller, services) = CreateDevice(SCHS);
+    }
+
+    void TearDown() override {
+        controller.reset();
+        services.reset();
+    }
+
+    shared_ptr<MockAbstractController> controller;
+    shared_ptr<PrimaryDevice> services;
+};
+
 static void ValidateModePages(map<int, vector<byte>> &pages)
 {
     EXPECT_EQ(1U, pages.size()) << "Unexpected number of mode pages";
     EXPECT_EQ(10U, pages[32].size());
 }
 
-TEST(HostServicesTest, DeviceDefaults)
+TEST_F(HostServicesTest, DeviceDefaults)
 {
-    HostServices services(0);
+    EXPECT_EQ(SCHS, services->GetType());
+    EXPECT_FALSE(services->SupportsImageFile());
+    EXPECT_FALSE(services->SupportsParams());
+    EXPECT_FALSE(services->IsProtectable());
+    EXPECT_FALSE(services->IsProtected());
+    EXPECT_FALSE(services->IsReadOnly());
+    EXPECT_FALSE(services->IsRemovable());
+    EXPECT_FALSE(services->IsRemoved());
+    EXPECT_FALSE(services->IsLocked());
+    EXPECT_FALSE(services->IsStoppable());
+    EXPECT_FALSE(services->IsStopped());
 
-    EXPECT_EQ(SCHS, services.GetType());
-    EXPECT_FALSE(services.SupportsImageFile());
-    EXPECT_FALSE(services.SupportsParams());
-    EXPECT_FALSE(services.IsProtectable());
-    EXPECT_FALSE(services.IsProtected());
-    EXPECT_FALSE(services.IsReadOnly());
-    EXPECT_FALSE(services.IsRemovable());
-    EXPECT_FALSE(services.IsRemoved());
-    EXPECT_FALSE(services.IsLocked());
-    EXPECT_FALSE(services.IsStoppable());
-    EXPECT_FALSE(services.IsStopped());
-
-    const auto& [vendor, product, revision] = services.GetProductData();
+    const auto& [vendor, product, revision] = services->GetProductData();
     EXPECT_EQ("SCSI2Pi", vendor);
     EXPECT_EQ("Host Services", product);
     EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
-TEST(HostServicesTest, GetIdentifier)
+TEST_F(HostServicesTest, GetIdentifier)
 {
-    HostServices services(0);
-
-    EXPECT_EQ("Host Services", services.GetIdentifier());
+    EXPECT_EQ("Host Services", services->GetIdentifier());
 }
 
-TEST(HostServicesTest, TestUnitReady)
+TEST_F(HostServicesTest, TestUnitReady)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
-TEST(HostServicesTest, Inquiry)
+TEST_F(HostServicesTest, Inquiry)
 {
     TestShared::Inquiry(SCHS, DeviceType::PROCESSOR, ScsiLevel::SPC_3, "SCSI2Pi Host Services   ", 0x1f, false);
 }
 
-TEST(HostServicesTest, StartStopUnit)
+TEST_F(HostServicesTest, StartStopUnit)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     // STOP
     EXPECT_CALL(*controller, Status);
     EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
@@ -88,10 +96,8 @@ TEST(HostServicesTest, StartStopUnit)
     Dispatch(services, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
-TEST(HostServicesTest, ExecuteOperation)
+TEST_F(HostServicesTest, ExecuteOperation)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     controller->SetCdbByte(1, 0b000);
     Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
@@ -109,10 +115,8 @@ TEST(HostServicesTest, ExecuteOperation)
     EXPECT_NO_THROW(Dispatch(services, ScsiCommand::EXECUTE_OPERATION));
 }
 
-TEST(HostServicesTest, ReceiveOperationResults)
+TEST_F(HostServicesTest, ReceiveOperationResults)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     controller->SetCdbByte(1, 0b000);
     Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Illegal format");
@@ -130,10 +134,8 @@ TEST(HostServicesTest, ReceiveOperationResults)
         Asc::DATA_CURRENTLY_UNAVAILABLE, "No matching initiator ID");
 }
 
-TEST(HostServicesTest, ModeSense6)
+TEST_F(HostServicesTest, ModeSense6)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
@@ -173,10 +175,8 @@ TEST(HostServicesTest, ModeSense6)
         "Subpages are not supported");
 }
 
-TEST(HostServicesTest, ModeSense10)
+TEST_F(HostServicesTest, ModeSense10)
 {
-    auto [controller, services] = CreateDevice(SCHS);
-
     Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
@@ -216,24 +216,22 @@ TEST(HostServicesTest, ModeSense10)
         "Subpages are not supported");
 }
 
-TEST(HostServicesTest, SetUpModePages)
+TEST_F(HostServicesTest, SetUpModePages)
 {
-    HostServices services(0);
     map<int, vector<byte>> pages;
 
     // Non changeable
-    services.SetUpModePages(pages, 0x3f, false);
+    services->SetUpModePages(pages, 0x3f, false);
     ValidateModePages(pages);
 
     // Changeable
     pages.clear();
-    services.SetUpModePages(pages, 0x3f, true);
+    services->SetUpModePages(pages, 0x3f, true);
     ValidateModePages(pages);
 }
 
-TEST(HostServicesTest, WriteData)
+TEST_F(HostServicesTest, WriteData)
 {
-    auto [controller, services] = CreateDevice(SCHS);
     const array<const uint8_t, 1> buf = { };
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::TEST_UNIT_READY));
@@ -247,14 +245,13 @@ TEST(HostServicesTest, WriteData)
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
 }
 
-TEST(HostServicesTest, SetDispatcher)
+TEST_F(HostServicesTest, SetDispatcher)
 {
     ControllerFactory controller_factory;
     MockBus bus;
     CommandExecutor executor(bus, controller_factory, *default_logger());
     auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
 
-    auto [controller, services] = CreateDevice(SCHS);
     dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
     EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
 }

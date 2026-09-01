@@ -6,11 +6,13 @@
 // Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2022-2026 Uwe Seimet
 //
+// This controller supports both the SCSI and SASI protocols
+//
 //---------------------------------------------------------------------------
 
 #include "controller.h"
-#include "base/primary_device.h"
 #include "buses/bus.h"
+#include "devices/primary_device.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "script_generator.h"
@@ -139,7 +141,7 @@ void Controller::Command()
         }
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
-        if (GetLogger().level() <= level::debug) {
+        if (GetLogger().should_log(level::debug)) {
             LogDebug(CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
         }
 
@@ -360,7 +362,7 @@ void Controller::Send()
     assert(bus.GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
-        if (GetLogger().level() == level::trace && IsDataIn()) {
+        if (IsDataIn() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), length);
             LogTrace(fmt::format("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
                 bytes.empty() ? "" : ":\n", bytes));
@@ -440,7 +442,7 @@ void Controller::Receive()
             return;
         }
 
-        if (GetLogger().level() == level::trace && IsDataOut()) {
+        if (IsDataOut() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), curr_length);
             LogTrace(fmt::format("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n",
                 bytes));
@@ -514,13 +516,13 @@ void Controller::TransferToHost()
 
 bool Controller::TransferFromHost(int length)
 {
-    const auto cmd = static_cast<ScsiCommand>(GetCdb()[0]);
-    assert(CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
+    const auto meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0]));
+    assert(meta_data.has_data_out);
 
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
-        if ((cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10) && device->GetType() != SCSG) {
+        if (meta_data.has_custom_data_out && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
         }

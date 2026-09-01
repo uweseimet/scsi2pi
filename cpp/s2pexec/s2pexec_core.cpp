@@ -534,7 +534,7 @@ string S2pExec::ReadData()
 
     ifstream in(filename, text ? ios::in : ios::in | ios::binary);
     if (!in) {
-        return fmt::format("Can't open input file '{}': {}", filename, strerror(errno));
+        return fmt::format("Can't open input file '{}': {}", filename, system_error(errno, generic_category()).what());
     }
 
     if (text) {
@@ -556,7 +556,9 @@ string S2pExec::ReadData()
         in.read(to_char_ptr(buffer), size);
     }
 
-    return in.fail() ? fmt::format("Can't read from file '{}': {}", filename, strerror(errno)) : "";
+    return
+    in.fail() ?
+        fmt::format("Can't read from file '{}': {}", filename, system_error(errno, generic_category()).what()) : "";
 }
 
 string S2pExec::WriteData(span<const uint8_t> data)
@@ -572,13 +574,14 @@ string S2pExec::WriteData(span<const uint8_t> data)
     else {
         ofstream out(filename, text ? ios::out : ios::out | ios::binary);
         if (!out) {
-            return fmt::format("Can't open output file '{}': {}", filename, strerror(errno));
+            return fmt::format("Can't open output file '{}': {}", filename,
+                system_error(errno, generic_category()).what());
         }
 
         hex += "\n";
         out.write(text ? hex.data() : to_const_char_ptr(data), hex.size());
         if (out.fail()) {
-            return fmt::format("Can't write to file '{}': {}", filename, strerror(errno));
+            return fmt::format("Can't write to file '{}': {}", filename, system_error(errno, generic_category()).what());
         }
     }
 

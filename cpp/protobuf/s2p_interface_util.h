@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -21,13 +21,13 @@ namespace s2p_interface_util
 
 static constexpr char KEY_VALUE_SEPARATOR = '=';
 
-string GetParam(const auto &item, const string &key)
+inline string GetParam(const auto &item, const string &key)
 {
     const auto &it = item.params().find(key);
     return it != item.params().end() ? it->second : "";
 }
 
-void SetParam(auto &item, const string &key, string_view value)
+inline void SetParam(auto &item, const string &key, string_view value)
 {
     if (!key.empty() && !value.empty()) {
         auto &map = *item.mutable_params();

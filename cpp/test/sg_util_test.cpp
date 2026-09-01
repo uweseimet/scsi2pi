@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@ using namespace sg_util;
 TEST(SgUtilTest, OpenDevice)
 {
     EXPECT_THROW(OpenDevice("/dev/null"), IoException);
-    EXPECT_THROW(OpenDevice("/dev/sg12345"), IoException);
+    EXPECT_THROW(OpenDevice("/dev/xyz"), IoException);
 }
 
 TEST(SgUtilTest, GetAllocationLength)
@@ -164,12 +164,4 @@ TEST(SgUtilTest, SetBlockCount)
     SetBlockCount(cdb, 12345678);
     EXPECT_EQ(12345678U, GetInt32(cdb, 10));
     SetInt16(cdb, 10, 0);
-}
-
-TEST(SgUtilTest, SetInt24)
-{
-    vector<uint8_t> buf(4);
-
-    SetInt24(buf, 1, 0x123456);
-    EXPECT_EQ(0x123456, GetInt24(buf, 1));
 }

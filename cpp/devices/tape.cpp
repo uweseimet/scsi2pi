@@ -17,8 +17,8 @@
 //---------------------------------------------------------------------------
 
 #include "tape.h"
-#include "base/property_handler.h"
 #include "controllers/abstract_controller.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -486,10 +486,15 @@ void Tape::Space6()
     case ObjectType::BLOCK:
     case ObjectType::FILEMARK:
         {
-        const int count = GetCdbInt24(2);
-        if (count) {
-            // The count is signed
-            FindNextObject(code, count >= 0x800000 ? count - 0x1000000 : count, false);
+        const int raw_count = GetCdbInt24(2);
+        if (raw_count) {
+            const int32_t count = (raw_count & 0x800000) ? (raw_count - 0x1000000) : raw_count;
+
+            if (count < 0 && !tape_position) {
+                RaiseBeginningOfPartition(count);
+            }
+
+            FindNextObject(code, count, false);
         }
     }
         break;
@@ -784,19 +789,26 @@ void Tape::ResetPositions()
 bool Tape::ReadNextMetaData(SimhMetaData &meta_data, bool reverse)
 {
     if (reverse) {
-        // Position before trailing length or marker
-        tape_position -= META_DATA_SIZE;
-
-        if (tape_position < 0) {
+        if (tape_position < META_DATA_SIZE) {
             return false;
         }
+
+        // Position before trailing length or marker
+        tape_position -= META_DATA_SIZE;
 
         file.seekg(tape_position);
         if (!ReadMetaData(file, meta_data)) {
             ++read_error_count;
             throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
         }
-        tape_position -= IsRecord(meta_data) ? Pad(meta_data.value) + META_DATA_SIZE : 0;
+
+        if (IsRecord(meta_data)) {
+            const auto record_bytes = Pad(meta_data.value) + META_DATA_SIZE;
+            if (tape_position < static_cast<int64_t>(record_bytes)) {
+                return false;
+            }
+            tape_position -= record_bytes;
+        }
     }
     else {
         file.seekg(tape_position);

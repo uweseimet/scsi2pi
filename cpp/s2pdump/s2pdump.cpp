@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,5 @@
 
 int main(int argc, char *argv[])
 {
-    vector<char*> args(argv, argv + argc);
-
-    return S2pDump().Run(args, false);
+    return S2pDump().Run( { argv, static_cast<size_t>(argc) }, false);
 }

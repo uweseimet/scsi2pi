@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 // The base class for all mass storage devices with image file support
 //
@@ -11,7 +11,7 @@
 #pragma once
 
 #include <filesystem>
-#include "base/primary_device.h"
+#include "primary_device.h"
 #include "page_handler.h"
 
 class StorageDevice : public PrimaryDevice
@@ -28,7 +28,7 @@ public:
 
     string GetIdentifier() const override
     {
-        return filename.empty() ? "NO MEDIUM" : filename;
+        return filename.empty() ? "NO MEDIUM" : filename.string();
     }
 
     bool SupportsImageFile() const override
@@ -149,8 +149,6 @@ private:
 
     void StartStopUnit();
     void PreventAllowMediumRemoval();
-
-    bool IsReadOnlyFile() const;
 
     int ModeSense6(cdb_t, data_in_t) const override;
     int ModeSense10(cdb_t, data_in_t) const override;

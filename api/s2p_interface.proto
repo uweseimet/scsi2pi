@@ -8,12 +8,12 @@
 
 //
 // Each message sent to the device service s2p is preceded by the magic string "RASCSI".
-// A message starts with a little endian 32 bit header which contains the protobuf message size.
+// A message starts with a little endian 32-bit header which contains the protobuf message size.
 // Unless explicitly specified the order of repeated data returned is undefined.
 // All operations accept an optional access token, specified by the "token" parameter.
 // All operations also accept an optional locale, specified with the "locale" parameter. If there is
 // a localized error message it is returned, with English being the fallback language.
-// This interface is backwards compatible with PiSCSI 24.04.01. Numbers 100 and higher are used for
+// This interface is backwards compatible with PiSCSI 25.12.01. Numbers 100 and higher are used for
 // messages and fields not supported by PiSCSI.
 //
 
@@ -44,7 +44,7 @@ enum PbDeviceType {
     SCHS = 8;
     // Printer device
     SCLP = 9;
-    // Tape device
+    // Streamer (tape) device
     SCTP = 10;
     // Linux SG Driver (e.g. for a SCSI-to-USB bridge)
     SCSG = 11;
@@ -56,11 +56,12 @@ enum PbOperation {
 
     // Attach devices and return the new device list (PbDevicesInfo)
     // Parameters (depending on the device type):
-    //   "file": The filename relative to the default image folder
-    //   "interface": A prioritized comma-separated list of interfaces to create a network bridge for
-    //   "inet": The IP address and netmask for the network bridge
-    //   "cmd": The command to be used for printing, with "%f" as file placeholder
-    //   "device": The device file ("/dev/sg*") for SCSG
+    //   "cmd": The command to be used for printing, with "%f" as file placeholder (SCLP)
+    //   "device": The SG driver device file, i.e. "/dev/sg*" (SCSG)
+    //   "file": The image filename relative to the default image folder
+    //   "bridge": create a network bridge (SCDP)
+    //   "inet": The IP address and netmask for the network bridge (SCDP)
+    //   "interface": A prioritized comma-separated list of interfaces to create a network bridge for (SCDP)
     ATTACH = 1;
 
     // Detach a device and return the new device list (PbDevicesInfo)

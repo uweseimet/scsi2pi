@@ -18,7 +18,7 @@ TEST(DeviceTest, GetDefaultParams)
 
 TEST(DeviceTest, Properties)
 {
-    const int LUN = 5;
+    constexpr int LUN = 5;
 
     MockDevice device(LUN);
 

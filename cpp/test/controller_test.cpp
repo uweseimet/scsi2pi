@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -13,16 +13,14 @@
 
 TEST(ControllerTest, Reset)
 {
-    const int TARGET_ID = 5;
-    const int INITIATOR_ID = 7;
+    constexpr int TARGET_ID = 5;
+    constexpr int INITIATOR_ID = 7;
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
     auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
 
-    controller->Init();
-
-    controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
+    controller->ProcessOnController((1U << TARGET_ID) | (1U << INITIATOR_ID));
     EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());
     controller->Reset();
     EXPECT_EQ(-1, controller->GetInitiatorId());
@@ -30,9 +28,11 @@ TEST(ControllerTest, Reset)
 
 TEST(ControllerTest, Process)
 {
+    constexpr int TARGET_ID = 5;
+
     const S2pFormatter formatter;
-    auto bus = bus_factory::CreateBus(true, true, "", false);
-    auto controller = make_shared<Controller>(*bus, 2, nullptr, formatter);
+    auto bus = bus_factory::CreateBus(true, true, false, "", false);
+    auto controller = make_shared<Controller>(*bus, TARGET_ID, nullptr, formatter);
 
     bus->SetRST(true);
     EXPECT_FALSE(controller->Process());
@@ -40,16 +40,14 @@ TEST(ControllerTest, Process)
 
 TEST(ControllerTest, GetInitiatorId)
 {
-    const int TARGET_ID = 1;
-    const int INITIATOR_ID = 6;
+    constexpr int TARGET_ID = 5;
+    constexpr int INITIATOR_ID = 6;
 
     NiceMock<MockBus> bus;
     const S2pFormatter formatter;
     auto controller = make_shared<Controller>(bus, TARGET_ID, nullptr, formatter);
 
-    controller->Init();
-
-    controller->ProcessOnController((1 << TARGET_ID) + (1 << INITIATOR_ID));
+    controller->ProcessOnController((1U << TARGET_ID) | (1U << INITIATOR_ID));
     EXPECT_EQ(INITIATOR_ID, controller->GetInitiatorId());
 }
 

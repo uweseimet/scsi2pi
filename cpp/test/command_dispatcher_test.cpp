@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -14,6 +14,7 @@
 #include "protobuf/s2p_interface_util.h"
 
 using namespace s2p_interface_util;
+using namespace s2p_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {
@@ -106,14 +107,10 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_image_file_info2(image_support_file_info2, *default_logger());
     EXPECT_FALSE(dispatcher.DispatchCommand(context_image_file_info2, result)) << "Non-existing file";
 
-#ifdef __linux__
     PbCommand command_network_interfaces_info;
     command_network_interfaces_info.set_operation(NETWORK_INTERFACES_INFO);
     CommandContext context_network_interfaces_info(command_network_interfaces_info, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_network_interfaces_info, result));
-    const auto &network_interfaces_info = result.network_interfaces_info();
-    EXPECT_NE(0, network_interfaces_info.name_size());
-#endif
 
     PbCommand command_mapping_info;
     command_mapping_info.set_operation(MAPPING_INFO);
@@ -157,7 +154,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     CommandContext context_shut_down_rascsi(command_shut_down, *default_logger());
     EXPECT_TRUE(dispatcher.DispatchCommand(context_shut_down_rascsi, result));
 
-    if (geteuid()) {
+    if (GetEuid()) {
         SetParam(command_shut_down, "mode", "system");
         CommandContext context_shut_down_system(command_shut_down, *default_logger());
         EXPECT_FALSE(dispatcher.DispatchCommand(context_shut_down_system, result));

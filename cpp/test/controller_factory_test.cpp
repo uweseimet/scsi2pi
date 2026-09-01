@@ -2,21 +2,21 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "base/device_factory.h"
+#include "devices/device_factory.h"
 #include "shared/s2p_defs.h"
 #include "controllers/controller_factory.h"
 
 TEST(ControllerFactoryTest, LifeCycle)
 {
-    const int ID1 = 4;
-    const int ID2 = 5;
-    const int LUN1 = 0;
-    const int LUN2 = 1;
+    constexpr int ID1 = 4;
+    constexpr int ID2 = 5;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 1;
 
     MockBus bus;
     ControllerFactory controller_factory;
@@ -27,14 +27,14 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     device = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_NE(nullptr, device->GetController());
+    ASSERT_NE(nullptr, device->GetController());
     EXPECT_EQ(1U, device->GetController()->GetLunCount());
     EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
     EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
 
     device = device_factory.CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    EXPECT_NE(nullptr, device->GetController());
+    ASSERT_NE(nullptr, device->GetController());
     EXPECT_EQ(2U, device->GetController()->GetLunCount());
     EXPECT_TRUE(controller_factory.DeleteController(*device->GetController()));
 
@@ -48,9 +48,9 @@ TEST(ControllerFactoryTest, LifeCycle)
 
 TEST(ControllerFactoryTest, AttachToController)
 {
-    const int ID = 4;
-    const int LUN1 = 3;
-    const int LUN2 = 0;
+    constexpr int ID = 4;
+    constexpr int LUN1 = 3;
+    constexpr int LUN2 = 0;
 
     MockBus bus;
     ControllerFactory controller_factory;
@@ -69,7 +69,7 @@ TEST(ControllerFactoryTest, SetScriptFile)
     ControllerFactory controller_factory;
 
     EXPECT_FALSE(controller_factory.SetScriptFile(""));
-    const string &filename = CreateTempFile();
+    const string &filename = CreateTempFile().string();
     EXPECT_TRUE(controller_factory.SetScriptFile(filename));
     ifstream file(filename);
     EXPECT_TRUE(file.good());
@@ -77,8 +77,8 @@ TEST(ControllerFactoryTest, SetScriptFile)
 
 TEST(ControllerFactoryTest, ProcessOnController)
 {
-    const int VALID_ID = 0;
-    const int INVALID_ID = 1;
+    constexpr int VALID_ID = 0;
+    constexpr int INVALID_ID = 1;
 
     NiceMock<MockBus> bus;
     ControllerFactory controller_factory;
@@ -95,9 +95,9 @@ TEST(ControllerFactoryTest, ProcessOnController)
 
 TEST(ControllerFactoryTest, SetLogLevel)
 {
-    const int ID = 4;
-    const int LUN1 = 0;
-    const int LUN2 = 3;
+    constexpr int ID = 4;
+    constexpr int LUN1 = 0;
+    constexpr int LUN2 = 3;
 
     MockBus bus;
     ControllerFactory controller_factory;

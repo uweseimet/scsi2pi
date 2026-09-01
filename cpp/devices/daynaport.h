@@ -16,17 +16,14 @@
 // this development. (Farallon's EtherMac is a re-branded DaynaPort
 // SCSI/Link-T).
 //
-// Note: This requires a DaynaPort SCSI Link driver. It has successfully been tested with MacOS and the Atari.
+// Note: This requires a DaynaPort SCSI Link driver.
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <array>
-#if !defined(__NetBSD__) && !defined(__OpenBSD__)
-#include <net/ethernet.h>
-#endif
-#include "base/primary_device.h"
+#include "primary_device.h"
 #include "tap_driver.h"
 
 class DaynaPort final : public PrimaryDevice

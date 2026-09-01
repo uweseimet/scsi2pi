@@ -6,10 +6,142 @@
 //
 //---------------------------------------------------------------------------
 
+#include <numeric>
 #include "mocks.h"
 #include "controllers/script_generator.h"
 #include "shared/s2p_defs.h"
 #include "shared/s2p_exceptions.h"
+
+TEST(AbstractControllerTest, Phases)
+{
+    MockAbstractController handler;
+
+    handler.SetPhase(BusPhase::SELECTION);
+    EXPECT_TRUE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::BUS_FREE);
+    EXPECT_TRUE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::COMMAND);
+    EXPECT_TRUE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::STATUS);
+    EXPECT_TRUE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::DATA_IN);
+    EXPECT_TRUE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::DATA_OUT);
+    EXPECT_TRUE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::MSG_IN);
+    EXPECT_TRUE(handler.IsMsgIn());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgOut());
+
+    handler.SetPhase(BusPhase::MSG_OUT);
+    EXPECT_TRUE(handler.IsMsgOut());
+    EXPECT_FALSE(handler.IsBusFree());
+    EXPECT_FALSE(handler.IsSelection());
+    EXPECT_FALSE(handler.IsCommand());
+    EXPECT_FALSE(handler.IsStatus());
+    EXPECT_FALSE(handler.IsDataIn());
+    EXPECT_FALSE(handler.IsDataOut());
+    EXPECT_FALSE(handler.IsMsgIn());
+}
+
+TEST(AbstractControllerTest, ProcessPhase)
+{
+    MockAbstractController handler;
+
+    handler.SetPhase(BusPhase::SELECTION);
+    EXPECT_CALL(handler, Selection);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::BUS_FREE);
+    EXPECT_CALL(handler, BusFree);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::DATA_IN);
+    EXPECT_CALL(handler, DataIn);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::DATA_OUT);
+    EXPECT_CALL(handler, DataOut);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::COMMAND);
+    EXPECT_CALL(handler, Command);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::STATUS);
+    EXPECT_CALL(handler, Status);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::MSG_IN);
+    EXPECT_CALL(handler, MsgIn);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::MSG_OUT);
+    EXPECT_CALL(handler, MsgOut);
+    EXPECT_TRUE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::ARBITRATION);
+    EXPECT_FALSE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::RESELECTION);
+    EXPECT_FALSE(handler.ProcessPhase());
+
+    handler.SetPhase(BusPhase::RESERVED);
+    EXPECT_FALSE(handler.ProcessPhase());
+}
 
 TEST(AbstractControllerTest, ShutdownMode)
 {
@@ -68,8 +200,8 @@ TEST(AbstractControllerTest, Status)
 
 TEST(AbstractControllerTest, DeviceLunLifeCycle)
 {
-    const int ID = 1;
-    const int LUN = 4;
+    constexpr int ID = 1;
+    constexpr int LUN = 4;
 
     MockAbstractController controller(ID);
 
@@ -80,7 +212,7 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_TRUE(controller.AddDevice(device));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(32)));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(-1)));
-    EXPECT_TRUE(controller.GetLunCount() > 0);
+    EXPECT_GT(controller.GetLunCount(), 0U);
     EXPECT_NE(nullptr, controller.GetDeviceForLun(LUN));
     EXPECT_EQ(nullptr, controller.GetDeviceForLun(0));
     EXPECT_TRUE(controller.RemoveDevice(*device));
@@ -159,6 +291,7 @@ TEST(AbstractControllerTest, CopyToBuffer)
     controller.CopyToBuffer(data);
     EXPECT_EQ(4, controller.GetCurrentLength());
     const auto &buf = controller.GetBuffer();
+    EXPECT_GE(buf.size(), data.size());
     EXPECT_TRUE(equal(data.begin(), data.end(), buf.begin()));
 }
 
@@ -184,10 +317,9 @@ TEST(AbstractControllerTest, FormatBytes)
 
     MockAbstractController controller;
 
-    vector<uint8_t> bytes;
-    for (int i = 0; i < 256; ++i) {
-        bytes.emplace_back(i);
-    }
+    vector<uint8_t> bytes(256);
+    iota(bytes.begin(), bytes.end(), 0);
+
     EXPECT_EQ(str_all, controller.FormatBytes(bytes, bytes.size()));
 }
 

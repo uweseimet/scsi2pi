@@ -6,26 +6,35 @@
 //
 //---------------------------------------------------------------------------
 
+#include <algorithm>
 #include "network_util.h"
 #include <cstring>
+#if __has_include(<ifaddrs.h>)
 #include <ifaddrs.h>
-#include <netdb.h>
-#include <net/if.h>
-#include <netinet/in.h>
+#endif
+#if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
+#endif
+#if __has_include(<netdb.h>)
+#include <netdb.h>
+#endif
+#if __has_include(<net/if.h>)
+#include <net/if.h>
+#endif
 #include <unistd.h>
 
 using namespace std;
 
-#ifdef __linux__
+#if __has_include(<sys/ioctl.h>)
 namespace
 {
 
 bool IsInterfaceUp(const string &interface)
 {
     ifreq ifr = { };
-    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+    ranges::copy(interface, ifr.ifr_name);
+
+    const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {
         return false;
     }
@@ -44,10 +53,11 @@ bool IsInterfaceUp(const string &interface)
 
 vector<uint8_t> network_util::GetMacAddress(const string &interface)
 {
-#ifdef __linux__
+#ifdef SIOCGIFHWADDR
     ifreq ifr = { };
-    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1); // NOSONAR Using strncpy is safe
-    const int fd = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+    ranges::copy(interface, ifr.ifr_name);
+
+    const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {
         return vector<uint8_t>();
     }
@@ -67,7 +77,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
 {
     set<string, less<>> network_interfaces;
 
-#ifdef __linux__
+#if __has_include(<ifaddrs.h>)
     ifaddrs *addrs;
     if (getifaddrs(&addrs) == -1) {
         return network_interfaces;
@@ -77,7 +87,7 @@ set<string, less<>> network_util::GetNetworkInterfaces()
     while (tmp) {
         if (const string name = tmp->ifa_name; tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET &&
             !(tmp->ifa_flags & IFF_LOOPBACK)
-            && (name.starts_with("eth") || name.starts_with("en") || name.starts_with("wlan"))
+            && (name.starts_with("eth") || name.starts_with("em") || name.starts_with("en") || name.starts_with("wlan"))
             && IsInterfaceUp(name)) {
             // Only list interfaces that are up
             network_interfaces.insert(name);
@@ -92,17 +102,20 @@ set<string, less<>> network_util::GetNetworkInterfaces()
     return network_interfaces;
 }
 
-bool network_util::ResolveHostName(const string &host, sockaddr_in *addr)
+#if __has_include(<netinet/in.h>)
+optional<sockaddr_in> network_util::ResolveHostName(const string &host)
 {
     addrinfo hints = { };
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
     if (addrinfo *result; !getaddrinfo(host.c_str(), nullptr, &hints, &result)) {
-        *addr = *reinterpret_cast<sockaddr_in*>(result->ai_addr); // NOSONAR bit_cast is not supported by the bullseye compiler
+        sockaddr_in addr;
+        memcpy(&addr, result->ai_addr, sizeof(sockaddr_in)); // NOSONAR The bullseye compiler does not support bit_cast
         freeaddrinfo(result);
-        return true;
+        return addr;
     }
 
-    return false;
+    return nullopt;
 }
+#endif

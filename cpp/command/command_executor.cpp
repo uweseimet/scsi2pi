@@ -8,15 +8,15 @@
 
 #include "command_executor.h"
 #include <sstream>
-#include "base/device_factory.h"
-#include "base/property_handler.h"
 #include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/abstract_controller.h"
 #include "controllers/controller_factory.h"
+#include "devices/device_factory.h"
 #include "devices/disk.h"
 #include "devices/scsi_generic.h"
 #include "protobuf/s2p_interface_util.h"
+#include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace s2p_interface_util;
@@ -305,10 +305,9 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefinition &pb_device,
-    const shared_ptr<PrimaryDevice> &device, bool dryRun) const
+bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
+    [[maybe_unused]] const PbDeviceDefinition &pb_device,
+    const shared_ptr<PrimaryDevice> &device, [[maybe_unused]] bool dryRun) const
 {
     if (!device->SupportsImageFile()) {
         return false;
@@ -341,7 +340,7 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
     }
 
     s2p_logger.info(
-        "Insert " + string(pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
+        "Insert "s + (pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
         + GetIdentifier(*storage_device));
 
     if (!SetBlockSize(context, storage_device, pb_device.block_size())) {
@@ -364,7 +363,6 @@ bool CommandExecutor::Insert(const CommandContext &context, const PbDeviceDefini
 
     return true;
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
 {
@@ -425,8 +423,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         }
         string filename = storage_device->GetFilename();
         if (!filename.empty()) {
-            if (filename.starts_with(CommandImageSupport::GetInstance().GetDefaultFolder())) {
-                filename = filename.substr(CommandImageSupport::GetInstance().GetDefaultFolder().length() + 1);
+            if (filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder())) {
+                filename = filename.substr(CommandImageSupport::GetInstance().GetImageFolder().length() + 1);
             }
             PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
             return;
@@ -502,8 +500,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     string effective_filename = filename;
 
     if (!exists(filename)) {
-        // If the file does not exist search for it in the default image folder
-        effective_filename = CommandImageSupport::GetInstance().GetDefaultFolder() + "/" + filename;
+        // If the file does not exist search for it in the image folder
+        effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
 
         if (!CheckForReservedFile(context, effective_filename)) {
             return false;
@@ -525,9 +523,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 }
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const string &filename)
+bool CommandExecutor::CheckForReservedFile([[maybe_unused]]const CommandContext &context,
+    [[maybe_unused]]const string &filename)
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
@@ -538,7 +535,6 @@ bool CommandExecutor::CheckForReservedFile(const CommandContext &context, const 
 
     return true;
 }
-#pragma GCC diagnostic pop
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
@@ -660,10 +656,9 @@ bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice 
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-bool CommandExecutor::SetBlockSize(const CommandContext &context, const shared_ptr<PrimaryDevice> &device,
-    int block_size) const
+bool CommandExecutor::SetBlockSize([[maybe_unused]]const CommandContext &context,
+    [[maybe_unused]] const shared_ptr<PrimaryDevice> &device,
+    [[maybe_unused]] int block_size) const
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
@@ -684,7 +679,6 @@ bool CommandExecutor::SetBlockSize(const CommandContext &context, const shared_p
     return false;
 #endif
 }
-#pragma GCC diagnostic pop
 
 bool CommandExecutor::ValidateOperation(const CommandContext &context, const PrimaryDevice &device)
 {

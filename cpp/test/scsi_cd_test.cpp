@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ TEST(ScsiCdTest, GetBlockSizes)
 TEST(ScsiCdTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;
-    MockScsiCd cd(0);
+    ScsiCd cd(0, false);
 
     // Non changeable
     cd.SetUpModePages(pages, 0x3f, false);
@@ -79,7 +79,8 @@ TEST(ScsiCdTest, SetUpModePages)
 
 TEST(ScsiCdTest, Open)
 {
-    MockScsiCd cd(0);
+    ScsiCd cd(0, false);
+    cd.SetCachingMode(PbCachingMode::PISCSI);
 
     EXPECT_THROW(cd.Open(), IoException)<< "Missing filename";
 
@@ -93,11 +94,11 @@ TEST(ScsiCdTest, Open)
 
 TEST(ScsiCdTest, ReadToc)
 {
-    MockAbstractController controller;
+    auto controller = make_shared<NiceMock<MockAbstractController>>();
     auto cd = make_shared<MockScsiCd>(0);
     EXPECT_EQ("", cd->Init());
 
-    controller.AddDevice(cd);
+    controller->AddDevice(cd);
 
     Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT, "Drive is not ready");
 
@@ -106,14 +107,14 @@ TEST(ScsiCdTest, ReadToc)
     cd->SetFilename(CreateTempFile(2048).string());
     cd->ValidateFile();
 
-    controller.SetCdbByte(6, 1);
+    controller->SetCdbByte(6, 1);
     Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB, "Invalid track number");
 
-    controller.SetCdbByte(6, 0);
-    EXPECT_CALL(controller, DataIn);
+    controller->SetCdbByte(6, 0);
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
-    controller.SetCdbByte(1, 0x02);
-    EXPECT_CALL(controller, DataIn);
+    controller->SetCdbByte(1, 0x02);
+    EXPECT_CALL(*controller, DataIn);
     EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
 }
 

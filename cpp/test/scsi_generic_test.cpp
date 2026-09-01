@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -50,7 +50,10 @@ TEST(ScsiGenericTest, SetUp)
     ScsiGeneric device2(0, "/dev/null");
     EXPECT_NE("", device2.SetUp());
 
-    ScsiGeneric device3(0, "/dev/sg0123456789");
+    ScsiGeneric device3(0, "");
+    param_map params;
+    params["device"] = "/dev/sg0123456789";
+    device3.SetParams(params);
     EXPECT_NE("", device3.SetUp());
 }
 
