@@ -136,7 +136,7 @@ void s2p_parser::Banner(bool usage)
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
-            << "  --connection-type/-C           The board type, either STANDARD or FULLSPEC.\n"
+            << "  --connect-type/-C              The board type, either STANDARD or FULLSPEC.\n"
             << "                                 Default is FULLSPEC.\n"
             << "  --config-files                 List of configuration files.\n"
             << "  --help/-h                      Display this help.\n"
@@ -201,7 +201,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
         { "config-files", required_argument, nullptr, OPT_CONFIG_FILES },
-        { "connection-type", required_argument, nullptr, 'C' },
+        { "connect-type", required_argument, nullptr, 'C' },
         { "help", no_argument, nullptr, 'h' },
         { "id", required_argument, nullptr, 'i' },
         { "ignore-conf", no_argument, nullptr, 'I' },

@@ -7,7 +7,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
 [\fB\--config-files\fR \fIPROPERTY_FILES\fR]
-[\fB\--connection-type/-C\fR \fICONNECTION_TYPE\fR]
+[\fB\--connect-type/-C\fR \fICONNECT_TYPE\fR]
 [\fB\--help/-h\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
@@ -74,9 +74,9 @@ Caching mode (piscsi|write-through|linux|linux-optimized), default is PiSCSI com
 An optional comma-separated list of configuration files with s2p configuration properties. The default global property file is /etc/s2p.conf. This file is parsed first.
 Explicitly specified property files override the previously defined properties.
 .TP
-.BR --connection-type/-C\fI " " \fICONNECTION_TYPE
-Using STANDARD as the connection type allows s2p to be run with a STANDARD board (without initiator support). In /etc/s2p.conf, to permanently enable this setting, add "connection_type=STANDARD".
-CONNECTION_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
+.BR --connect-type/-C\fI " " \fICONNECT_TYPE
+Using STANDARD as the connection type allows s2p to be run with a STANDARD board (without initiator support). In /etc/s2p.conf, to permanently enable this setting, add "connect_type=STANDARD".
+CONNECT_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
 .TP
 .BR --help/-h\fI " " \fI
 Display this help.
