@@ -36,7 +36,7 @@ using namespace s2p_util;
 
 string S2p::InitBus(bool in_process, bool log_signals)
 {
-    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECTION_TYPE, "FULLSPEC");
+    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECT_TYPE, "FULLSPEC");
     const string &board_type = ToLower(connection_type);
     if (board_type != "standard" && board_type != "fullspec") {
         return fmt::format("Invalid connection type '{}'", connection_type);

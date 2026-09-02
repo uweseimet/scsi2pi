@@ -231,7 +231,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
-        { 'C', PropertyHandler::CONNECTION_TYPE },
+        { 'C', PropertyHandler::CONNECT_TYPE },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
         { 'l', PropertyHandler::LOG_PATTERN },

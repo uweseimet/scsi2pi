@@ -43,7 +43,7 @@ public:
 
     // Global property keys
     static constexpr const char *CONFIG_FILES = "config_files";
-    static constexpr const char *CONNECTION_TYPE = "connection_type";
+    static constexpr const char *CONNECT_TYPE = "connect_type";
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
