@@ -107,9 +107,6 @@ PREFIX ?= /opt/scsi2pi
 ##     Specifies whether to also build the initiator mode tools for the
 ##     FULLSPEC board. When compiling for the STANDARD board, these tools
 ##     are omitted. The default is FULLSPEC.
-##     You can run the FULLSPEC s2p also with a STANDARD board. Just
-##     use the --standard-board/-S option or add "standard-board=true"
-##     to /etc/s2p.conf.
 BOARD ?= FULLSPEC
 
 VALID_BOARDS := STANDARD FULLSPEC
