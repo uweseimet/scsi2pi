@@ -275,7 +275,9 @@ TEST(S2pUtilTest, CreateLogger)
 TEST(S2pUtilTest, GetLine)
 {
     const string &filename = testing::CreateTempName();
+    testing::TestShared::RememberTempFile(filename);
     ofstream out(filename);
+
     out << "abc\n";
     out << "123 #comment\n";
     out << "# comment\n";

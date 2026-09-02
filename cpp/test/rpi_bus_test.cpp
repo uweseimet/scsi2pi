@@ -14,6 +14,7 @@
 TEST(RpiBusTest, GetPiType)
 {
     const string &filename = testing::CreateTempName();
+    testing::TestShared::RememberTempFile(filename);
     ofstream out(filename);
 
     out << "Raspberry Pi 1" << flush;
