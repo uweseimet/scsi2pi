@@ -103,21 +103,7 @@ endif
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
 PREFIX ?= /opt/scsi2pi
 
-##   BOARD=FULLSPEC
-##     Specifies whether to also build the initiator mode tools for the
-##     FULLSPEC board. When compiling for the STANDARD board, these tools
-##     are omitted. The default is FULLSPEC.
-##     You can run the FULLSPEC s2p also with a STANDARD board. Just
-##     use the --standard-board/-S option or add "standard-board=true"
-##     to /etc/s2p.conf.
-BOARD ?= FULLSPEC
-
-VALID_BOARDS := STANDARD FULLSPEC
-ifeq ($(filter $(VALID_BOARDS),$(BOARD)),)
-  $(error Invalid BOARD "$(BOARD)" — must be one of: $(VALID_BOARDS))
-endif
-
-INITIATOR_SUPPORT := $(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX))
+INITIATOR_SUPPORT := $(IS_LINUX)
 
 CPPFLAGS += -DBOARD_$(BOARD)
 
@@ -198,21 +184,20 @@ LIBDIR := $(BUILD_DIR)/lib
 BINDIR := $(BUILD_DIR)/bin
 GENERATED_DIR := $(BUILD_DIR)/generated
 
-BIN_ALL := \
-	$(BINDIR)/$(S2P) \
+BIN_STANDARD := $(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
-# s2pdump, s2pexec, s2pproto and s2pformat require initiator support
+# s2pdump, s2pexec, s2pproto and s2pformat require initiator mode support
 ifeq ($(INITIATOR_SUPPORT),1)
-	BIN_ALL += $(BINDIR)/$(S2PDUMP)
-	BIN_ALL += $(BINDIR)/$(S2PEXEC)
-	BIN_ALL += $(BINDIR)/$(S2PPROTO)
+	BIN_FULLSPEC = $(BINDIR)/$(S2PDUMP) \
+	$(BINDIR)/$(S2PEXEC) \
+	$(BINDIR)/$(S2PPROTO)
 ifeq ($(ENABLE_SCSG),1)
-	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
+	BIN_FULLSPEC += $(BINDIR)/$(S2PFORMAT)
 endif
 endif
 ifeq ($(ENABLE_SCTP),1)
-	BIN_ALL += $(BINDIR)/$(S2PSIMH)
+	BIN_STANDARD += $(BINDIR)/$(S2PSIMH)
 endif
 
 DIR_SHARED := shared
@@ -424,7 +409,13 @@ SRC_S2P_TEST += test/daynaport_test.cpp \
 endif
 
 SRC_S2PTOOL := s2ptool/s2ptool.cpp \
-	$(SRC_S2PDUMP_CORE) $(SRC_S2PEXEC_CORE) $(SRC_S2PPROTO_CORE)
+	$(SRC_S2PCTL_CORE)
+ifeq ($(INITIATOR_SUPPORT),1)
+	SRC_S2PTOOL += $(SRC_S2PDUMP_CORE)
+	SRC_S2PTOOL += $(SRC_S2PEXEC_CORE)
+	SRC_S2PTOOL += $(SRC_S2PFORMAT_CORE)
+	SRC_S2PTOOL += $(SRC_S2PPROTO_CORE)
+endif
 
 LIB_SHARED := $(LIBDIR)/libshared.a
 LIB_SHARED_PROTOBUF := $(LIBDIR)/libprotobuf.a
@@ -544,16 +535,18 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 
 ## Build targets:
 ##   all             Build all executable files (default target)
+##   standard        Build only executable files for the STANDARD board
 ##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all cpp test coverage
+.PHONY: all coverage standard test tests
 
-cpp: $(BIN_ALL)
+all: $(BIN_STANDARD) $(BIN_FULLSPEC)
 
-all: cpp
+standard: CPPFLAGS += -DBOARD_STANDARD
+standard: $(BIN_STANDARD)
 
 tests: $(BINDIR)/$(S2P_TEST)
 
@@ -590,8 +583,8 @@ $(BINDIR)/$(S2PFORMAT): $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LI
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(SPDLOG_LIBS)
 
 $(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
-	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
+	$(OBJ_S2P_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
 	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
