@@ -13,7 +13,6 @@ s2pdump \- SCSI/SASI hard/tape drive dump/restore tool
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 [\fB\--restore/-r\fR]
 [\fB\--retries/-R\fR \fIRETRIES\fR]
-[\fB\--sasi-capacity/-c\fR \fICAPACITY\fR]
 [\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
 [\fB\--scan/-s\fR]
 [\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
@@ -71,9 +70,6 @@ Run in restore mode. The default is dump mode.
 .BR --retries/-R\fI " " \fIRETRIES
 Set the number of retries when dumping/restoring a disk drive, default is 0.
 .TP
-.BR --sasi-capacity/-c\fI " "\fICAPACITY
-The capacity of the SASI hard drive in sectors. This parameter only has a meaning for SASI drives.
-.TP
 .BR --sasi-sector-size/-z\fI " "\fISECTOR_SIZE
 The sector size of the SASI hard drive in bytes (256, 512, 1024). This parameter only has a meaning for SASI drives.
 .TP
@@ -84,7 +80,7 @@ Scan the bus for SCSI and SASI devices and display their properties.
 Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 .TP
 .BR --sector-count/-C\fI "  " \fICOUNT
-Only for hard drives, not for tape drives: sector count for the dump/restore operation, the default is the drive capacity.
+Only for hard drives, not for tape drives: sector count for the dump/restore operation. For SASI drives, this setting is mandatory, and usually matches the drive's capacity. For SCSI drives, the default is the drive capacity.
 .TP
 .BR --start-sector/-S\fI "  " \fISTART
 Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.

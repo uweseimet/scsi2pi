@@ -69,7 +69,6 @@ void S2pDump::Banner(bool header) const
         << "                                     error|critical|off), default is 'warning'.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
         << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
-        << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024),\n"
         << "                                     default is 256 bytes.\n"
 #ifdef BUILD_SCSG
@@ -79,8 +78,8 @@ void S2pDump::Banner(bool header) const
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
         << "  --scan/-s                          Scan bus for SCSI and SASI devices.\n"
-        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
-        << "                                     default is the capacity.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count, optional for SCSI,\n"
+        << "                                     mandatory for SASI. Default is the capacity.\n"
         << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
         << "  --version/-v                       Display the s2pdump version.\n";
 }
@@ -117,7 +116,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
-        { "sasi-capacity", required_argument, nullptr, 'c' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
         { "scan", no_argument, nullptr, 's' },
         { "scsi-generic", required_argument, nullptr, 'g' },
@@ -139,7 +137,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:Hi:If:L:rR:sS:vz:",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:rR:sS:vz:",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -155,12 +153,9 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             initiator = optarg;
             break;
 
-        case 'c':
-            capacity = optarg;
-            break;
-
         case 'C':
             sector_count = optarg;
+            capacity = optarg;
             break;
 
         case 'f':
@@ -427,8 +422,7 @@ bool S2pDump::DisplayInquiry(bool check_type)
     }
 
     if (device_file.empty()) {
-        cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
-            << target_lun << "\n" << flush;
+        cout << DIVIDER << "\nChecking target ID:LUN " << target_id << ":" << target_lun << "\n" << flush;
     }
     else {
         cout << "Checking device corresponding to Linux SG driver device file '" << device_file << "'\n" << flush;
@@ -540,7 +534,7 @@ string S2pDump::DumpRestore()
     if (sasi) {
         sasi_capacity = ParseAsUnsignedInt(capacity);
         if (sasi_capacity <= 0) {
-            return "Invalid SASI hard drive capacity: '" + capacity + "'";
+            return "Invalid SASI hard drive capacity/sector count: '" + capacity + "'";
         }
 
         if (!sector_size.empty()) {
@@ -899,7 +893,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     // Clear any pending error condition, e.g. a medium just having been inserted
     s2pdump_executor->RequestSense();
 
-    cout << "\nDevice properties for s2p configuration file:\n";
+    cout << "\nDevice properties for s2p configuration file, usually '/etc/s2p.conf':\n";
 
     string id_and_lun = "device." + to_string(id);
     if (lun > 0) {
