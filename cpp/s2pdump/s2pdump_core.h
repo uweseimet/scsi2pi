@@ -85,6 +85,9 @@ private:
 
     bool sasi = false;
 
+    string capacity;
+    string sector_size;
+
     string filename;
 
     shared_ptr<logger> s2pdump_logger;

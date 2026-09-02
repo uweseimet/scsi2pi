@@ -70,9 +70,6 @@ void S2pDump::Banner(bool header) const
         << "  --restore/-r                       Restore instead of dump.\n"
         << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
         << "  --sasi-capacity/-c CAPACITY        SASI drive capacity in sectors.\n"
-        << "  --sasi-id/-h ID[:LUN]              SASI target device ID (0-7) and LUN (0-1),\n"
-        << "                                     default LUN is 0.\n"
-        << "  --sasi-scan/-t                     Scan bus for SASI devices.\n"
         << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024),\n"
         << "                                     default is 256 bytes.\n"
 #ifdef BUILD_SCSG
@@ -81,7 +78,7 @@ void S2pDump::Banner(bool header) const
 #endif
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
-        << "  --scsi-scan/-s                     Scan bus for SCSI devices.\n"
+        << "  --scan/-s                          Scan bus for SCSI and SASI devices.\n"
         << "  --sector-count/-C COUNT            Hard drive sector count,\n"
         << "                                     default is the capacity.\n"
         << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
@@ -114,18 +111,16 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "board-id", required_argument, nullptr, 'B' },
         { "buffer-size", required_argument, nullptr, 'b' },
         { "help", no_argument, nullptr, 'H' },
+        { "id", required_argument, nullptr, 'i' },
         { "image-file", required_argument, nullptr, 'f' },
         { "inquiry", no_argument, nullptr, 'I' },
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
         { "sasi-capacity", required_argument, nullptr, 'c' },
-        { "sasi-id", required_argument, nullptr, 'h' },
-        { "sasi-scan", no_argument, nullptr, 't' },
         { "sasi-sector-size", required_argument, nullptr, 'z' },
+        { "scan", no_argument, nullptr, 's' },
         { "scsi-generic", required_argument, nullptr, 'g' },
-        { "scsi-id", required_argument, nullptr, 'i' },
-        { "scsi-scan", no_argument, nullptr, 's' },
         { "sector-count", required_argument, nullptr, 'C' },
         { "start-sector", required_argument, nullptr, 'S' },
         { "version", no_argument, nullptr, 'v' },
@@ -138,16 +133,13 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     string retry_count;
     string start_sector;
     string sector_count;
-    string capacity;
-    string sector_size;
     int buffer_size = DEFAULT_BUFFER_SIZE;
-    bool scsi = false;
     bool version = false;
     bool help = false;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:h:Hi:If:L:rR:sS:tvz:",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:C:g:Hi:If:L:rR:sS:vz:",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -181,18 +173,12 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             break;
 #endif
 
-        case 'h':
-            id_and_lun = optarg;
-            sasi = true;
-            break;
-
         case 'H':
             help = true;
             break;
 
         case 'i':
             id_and_lun = optarg;
-            scsi = true;
             break;
 
         case 'I':
@@ -213,16 +199,10 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         case 's':
             run_bus_scan = true;
-            scsi = true;
             break;
 
         case 'S':
             start_sector = optarg;
-            break;
-
-        case 't':
-            run_bus_scan = true;
-            sasi = true;
             break;
 
         case 'v':
@@ -251,10 +231,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     if (!SetLogLevel(*s2pdump_logger, log_level)) {
         throw ParserException("Invalid log level '" + log_level + "'");
-    }
-
-    if (scsi && sasi) {
-        throw ParserException("SCSI and SASI functionality cannot be mixed");
     }
 
     if (initiator.empty() && device_file.empty()) {
@@ -314,24 +290,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             retries = ParseAsUnsignedInt(retry_count);
             if (retries < 0) {
                 throw ParserException("Invalid retry count: " + retry_count);
-            }
-        }
-
-        if (sasi && !run_inquiry) {
-            sasi_capacity = ParseAsUnsignedInt(capacity);
-            if (sasi_capacity <= 0) {
-                throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
-            }
-
-            if (!sector_size.empty()) {
-                sasi_sector_size = ParseAsUnsignedInt(sector_size);
-                if (sasi_sector_size != 256 && sasi_sector_size != 512
-                    && sasi_sector_size != 1024) {
-                    throw ParserException("Invalid SASI hard drive sector size: '" + sector_size + "'");
-                }
-            }
-            else {
-                sasi_sector_size = 256;
             }
         }
 
@@ -464,6 +422,10 @@ void S2pDump::ScanBus()
 
 bool S2pDump::DisplayInquiry(bool check_type)
 {
+    if (auto board_executor = dynamic_pointer_cast<BoardExecutor>(s2pdump_executor); board_executor) {
+        board_executor->SetTarget(target_id, target_lun, sasi);
+    }
+
     if (device_file.empty()) {
         cout << DIVIDER << "\nChecking " << (sasi ? "SASI" : "SCSI") << " target ID:LUN " << target_id << ":"
             << target_lun << "\n" << flush;
@@ -472,17 +434,14 @@ bool S2pDump::DisplayInquiry(bool check_type)
         cout << "Checking device corresponding to Linux SG driver device file '" << device_file << "'\n" << flush;
     }
 
-    if (auto board_executor = dynamic_pointer_cast<BoardExecutor>(s2pdump_executor); board_executor) {
-        board_executor->SetTarget(target_id, target_lun, sasi);
-    }
-
     // Clear potential UNIT ATTENTION status
     s2pdump_executor->TestUnitReady();
 
-    vector<uint8_t> buf(36);
+    array<uint8_t, 36> buf = { };
     if (!s2pdump_executor->Inquiry(buf)) {
         return false;
     }
+    sasi = buf[3] == 0;
 
     return sasi ? DisplaySasiInquiry(buf, check_type) : DisplayScsiInquiry(buf, check_type);
 }
@@ -576,6 +535,24 @@ string S2pDump::DumpRestore()
 {
     if (!GetDeviceInfo()) {
         return "Can't get device information";
+    }
+
+    if (sasi) {
+        sasi_capacity = ParseAsUnsignedInt(capacity);
+        if (sasi_capacity <= 0) {
+            return "Invalid SASI hard drive capacity: '" + capacity + "'";
+        }
+
+        if (!sector_size.empty()) {
+            sasi_sector_size = ParseAsUnsignedInt(sector_size);
+            if (sasi_sector_size != 256 && sasi_sector_size != 512
+                && sasi_sector_size != 1024) {
+                return "Invalid SASI hard drive sector size: '" + sector_size + "'";
+            }
+        }
+        else {
+            sasi_sector_size = 256;
+        }
     }
 
     fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
