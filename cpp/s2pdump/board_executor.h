@@ -35,7 +35,7 @@ public:
     // Disk support
     int ReadCapacity10(span<uint8_t>, span<uint8_t>) const override;
     int ReadCapacity16(span<uint8_t>, span<uint8_t>) const override;
-    bool ReadWrite(span<uint8_t>, span<uint8_t>, int) override;
+    bool ReadWrite(span<uint8_t>, span<uint8_t>, int, bool = true) override;
     void SynchronizeCache(span<uint8_t>) const override;
 
     // Tape support
@@ -47,6 +47,11 @@ public:
     void SetTarget(int id, int lun, bool sasi)
     {
         initiator_executor->SetTarget(id, lun, sasi);
+    }
+
+    int GetByteCount() const override
+    {
+        return initiator_executor->GetByteCount();
     }
 
 protected:

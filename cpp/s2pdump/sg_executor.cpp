@@ -48,7 +48,7 @@ int SgExecutor::ReadCapacity16(span<uint8_t> cdb, span<uint8_t> buf) const
     return sg_adapter.SendCommand(cdb, buf, 14, 1);
 }
 
-bool SgExecutor::ReadWrite(span<uint8_t> cdb, span<uint8_t> buf, int length)
+bool SgExecutor::ReadWrite(span<uint8_t> cdb, span<uint8_t> buf, int length, bool)
 {
     return !sg_adapter.SendCommand(cdb, buf, length, LONG_TIMEOUT);
 }

@@ -30,8 +30,8 @@ public:
     set<int> ReportLuns();
 
     // Disk support
-    pair<uint64_t, uint32_t> ReadCapacity(uint32_t);
-    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
+    pair<uint64_t, uint32_t> ReadCapacity(bool);
+    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool, bool, bool = true);
     void SynchronizeCache() const;
 
     // Tape support
@@ -64,7 +64,7 @@ protected:
     // Disk support
     virtual int ReadCapacity10(span<uint8_t>, span<uint8_t>) const = 0;
     virtual int ReadCapacity16(span<uint8_t>, span<uint8_t>) const = 0;
-    virtual bool ReadWrite(span<uint8_t>, span<uint8_t>, int) = 0;
+    virtual bool ReadWrite(span<uint8_t>, span<uint8_t>, int, bool = true) = 0;
     virtual void SynchronizeCache(span<uint8_t>) const = 0;
 
     // Tape support
@@ -73,8 +73,10 @@ protected:
     virtual bool Read(span<uint8_t>, span<uint8_t>, int) = 0;
     virtual bool Write(span<uint8_t>, span<uint8_t>, int) = 0;
 
+    virtual int GetByteCount() const = 0;
+
     pair<uint64_t, uint32_t> ReadScsiCapacity();
-    pair<uint64_t, uint32_t> ReadSasiCapacity(uint32_t);
+    pair<uint64_t, uint32_t> ReadSasiCapacity();
 
     void SpaceBack() const;
     virtual void SpaceBack(span<uint8_t>) const = 0;

@@ -2,12 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <set>
 #include <span>
@@ -35,7 +36,7 @@ public:
     // Disk support
     int ReadCapacity10(span<uint8_t>, span<uint8_t>) const override;
     int ReadCapacity16(span<uint8_t>, span<uint8_t>) const override;
-    bool ReadWrite(span<uint8_t>, span<uint8_t>, int) override;
+    bool ReadWrite(span<uint8_t>, span<uint8_t>, int, bool = true) override;
     void SynchronizeCache(span<uint8_t>) const override;
 
     // Tape support
@@ -43,6 +44,12 @@ public:
     int WriteFilemark(span<uint8_t>) const override;
     bool Read(span<uint8_t>, span<uint8_t>, int) override;
     bool Write(span<uint8_t>, span<uint8_t>, int) override;
+
+    virtual int GetByteCount() const override
+    {
+        assert(false);
+        return 0;
+    }
 
 protected:
 

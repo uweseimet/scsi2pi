@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ public:
 
     void SetTarget(int, int, bool);
 
-    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
+    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool, bool = true);
 
     tuple<SenseKey, Asc, int> GetSenseData();
 

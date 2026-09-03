@@ -69,8 +69,6 @@ void S2pDump::Banner(bool header) const
         << "                                     error|critical|off), default is 'warning'.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
         << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
-        << "  --sasi-sector-size/-z SECTOR_SIZE  SASI drive sector size (256|512|1024),\n"
-        << "                                     default is 256 bytes.\n"
 #ifdef BUILD_SCSG
         << "  --scsi-generic/-g DEVICE_FILE      Use the Linux SG driver instead of a\n"
         << "                                     RaSCSI/PiSCSI board.\n"
@@ -116,7 +114,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "log-level", required_argument, nullptr, 'L' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
-        { "sasi-sector-size", required_argument, nullptr, 'z' },
         { "scan", no_argument, nullptr, 's' },
         { "scsi-generic", required_argument, nullptr, 'g' },
         { "sector-count", required_argument, nullptr, 'C' },
@@ -137,7 +134,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:rR:sS:vz:",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:rR:sS:v",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -201,10 +198,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         case 'v':
             version = true;
-            break;
-
-        case 'z':
-            sector_size = optarg;
             break;
 
         default:
@@ -530,18 +523,6 @@ string S2pDump::DumpRestore()
         return "Can't get device information";
     }
 
-    if (sasi) {
-        if (!sector_size.empty()) {
-            device_info.sector_size = ParseAsUnsignedInt(sector_size);
-            if (device_info.sector_size != 256 && device_info.sector_size != 512 && device_info.sector_size != 1024) {
-                return "Invalid SASI drive sector size: '" + sector_size + "'";
-            }
-        }
-        else {
-            device_info.sector_size = 256;
-        }
-    }
-
     fstream file(filename, (restore ? ios::in : ios::out) | ios::binary);
     if (!file) {
         return "Can't open image file '" + filename + "': " + system_error(errno, generic_category()).what();
@@ -646,15 +627,15 @@ string S2pDump::DumpRestoreTape(fstream &file)
 string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
     auto readWrite = [&]() {
-        int r = 0;
-        while (r <= retries) {
-            if(s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore)) {
-                return true;
+            int r = 0;
+            while (r <= retries) {
+                if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore, sasi)) {
+                    return true;
+                }
+                ++r;
             }
-            ++r;
-        }
-        return false;
-    };
+            return false;
+        };
 
     if (restore) {
         file.read(to_char_ptr(buffer), bytes);
@@ -845,12 +826,13 @@ bool S2pDump::GetDeviceInfo()
         return true;
     }
 
-    const auto [c, s] = s2pdump_executor->ReadCapacity(device_info.sector_size);
+    const auto [c, s] = s2pdump_executor->ReadCapacity(sasi);
     if (!c || !s) {
         trace("Can't read device capacity");
         return false;
     }
 
+    device_info.sector_size = s;
     device_info.capacity = c;
 
     cout << "Sectors:     " << device_info.capacity << "\n"

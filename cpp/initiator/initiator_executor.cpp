@@ -17,7 +17,8 @@ using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
+int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log,
+    bool report_error)
 {
     if (cdb.size() < 6) {
         initiator_logger.error("CDB has less than 6 bytes");
@@ -87,7 +88,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         }
     }
 
-    if (enable_log && status_code) {
+    if (enable_log && status_code && report_error) {
         initiator_logger.warn(GetStatusString(status_code));
     }
 

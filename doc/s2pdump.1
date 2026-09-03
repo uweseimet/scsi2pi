@@ -13,7 +13,6 @@ s2pdump \- SCSI/SASI hard/tape drive dump/restore tool
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
 [\fB\--restore/-r\fR]
 [\fB\--retries/-R\fR \fIRETRIES\fR]
-[\fB\--sasi-sector-size/-z\fR \fISECTOR_SIZE\fR]
 [\fB\--scan/-s\fR]
 [\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
 [\fB\--sector-count/-C\fR \fICOUNT\fR]
@@ -69,9 +68,6 @@ Run in restore mode. The default is dump mode.
 .TP
 .BR --retries/-R\fI " " \fIRETRIES
 Set the number of retries when dumping/restoring a disk drive, default is 0.
-.TP
-.BR --sasi-sector-size/-z\fI " "\fISECTOR_SIZE
-The sector size of the SASI hard drive in bytes (256, 512, 1024). This parameter only has a meaning for SASI drives.
 .TP
 .BR --scan/-s\fI
 Scan the bus for SCSI and SASI devices and display their properties.
