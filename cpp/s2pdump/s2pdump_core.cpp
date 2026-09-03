@@ -449,16 +449,16 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     cout << "\nINQUIRY product data:\n";
 
-    scsi_device_info = { };
-    scsi_device_info.type = static_cast<byte>(buf[0]);
+    device_info = { };
+    device_info.type = static_cast<byte>(buf[0]);
 
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
-    scsi_device_info.vendor = vendor;
-    scsi_device_info.product = product;
-    scsi_device_info.revision = revision;
-    cout << "Vendor:               '" << scsi_device_info.vendor << "'\n";
-    cout << "Product:              '" << scsi_device_info.product << "'\n";
-    cout << "Revision:             '" << scsi_device_info.revision << "'\n";
+    device_info.vendor = vendor;
+    device_info.product = product;
+    device_info.revision = revision;
+    cout << "Vendor:               '" << device_info.vendor << "'\n";
+    cout << "Product:              '" << device_info.product << "'\n";
+    cout << "Revision:             '" << device_info.revision << "'\n";
 
     if (const auto &t = SCSI_DEVICE_TYPES.find(static_cast<byte>(type)); t != SCSI_DEVICE_TYPES.end()) {
         cout << "Device Type:          " << (*t).second << "\n";
@@ -469,9 +469,9 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
-    scsi_device_info.scsi_level = buf[3] & 0x0f;
+    device_info.scsi_level = buf[3] & 0x0f;
     cout << "Response Data Format: ";
-    switch (scsi_device_info.scsi_level) {
+    switch (device_info.scsi_level) {
     case 0:
         cout << "SCSI-1";
         break;
@@ -490,14 +490,14 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
     }
     cout << "\n";
 
-    scsi_device_info.removable = (static_cast<int>(buf[1]) & 0x80) == 0x80;
-    cout << "Removable:            " << (scsi_device_info.removable ? "Yes" : "No")
+    device_info.removable = (static_cast<int>(buf[1]) & 0x80) == 0x80;
+    cout << "Removable:            " << (device_info.removable ? "Yes" : "No")
         << "\n";
 
-    if (check_type && scsi_device_info.type != static_cast<byte>(DeviceType::DIRECT_ACCESS) &&
-        scsi_device_info.type != static_cast<byte>(DeviceType::CD_DVD)
-        && scsi_device_info.type != static_cast<byte>(DeviceType::OPTICAL_MEMORY)
-        && scsi_device_info.type != static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
+    if (check_type && device_info.type != static_cast<byte>(DeviceType::DIRECT_ACCESS) &&
+        device_info.type != static_cast<byte>(DeviceType::CD_DVD)
+        && device_info.type != static_cast<byte>(DeviceType::OPTICAL_MEMORY)
+        && device_info.type != static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         cerr << "Error: Invalid device type for SCSI dump/restore, supported types are DIRECT ACCESS,"
             << " CD-ROM/DVD/BD/DVD-RAM, OPTICAL MEMORY and SEQUENTIAL ACCESS\n";
         return false;
@@ -532,14 +532,13 @@ string S2pDump::DumpRestore()
 
     if (sasi) {
         if (!sector_size.empty()) {
-            sasi_sector_size = ParseAsUnsignedInt(sector_size);
-            if (sasi_sector_size != 256 && sasi_sector_size != 512
-                && sasi_sector_size != 1024) {
-                return "Invalid SASI hard drive sector size: '" + sector_size + "'";
+            device_info.sector_size = ParseAsUnsignedInt(sector_size);
+            if (device_info.sector_size != 256 && device_info.sector_size != 512 && device_info.sector_size != 1024) {
+                return "Invalid SASI drive sector size: '" + sector_size + "'";
             }
         }
         else {
-            sasi_sector_size = 256;
+            device_info.sector_size = 256;
         }
     }
 
@@ -553,8 +552,7 @@ string S2pDump::DumpRestore()
             perm_options::add);
     }
 
-    return
-        scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS) ?
+    return device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS) ?
             DumpRestoreTape(file) : DumpRestoreDisk(file);
 }
 
@@ -572,10 +570,9 @@ string S2pDump::DumpRestoreDisk(fstream &file)
     cout << "Starting " << (restore ? "restore from '" : "dump to '") << filename << "'\n"
         << "  Start sector is " << start << "\n"
         << "  Sector count is " << count << "\n"
+        << "  Sector size is " << device_info.sector_size << " bytes\n"
         << "  Buffer size is " << buffer.size() << " bytes\n\n"
         << flush;
-
-    const uint32_t sector_size = sasi ? sasi_sector_size : scsi_device_info.sector_size;
 
     int sector_offset = start;
 
@@ -585,23 +582,23 @@ string S2pDump::DumpRestoreDisk(fstream &file)
 
     while (remaining && active) {
         auto current_count = static_cast<int>(min(static_cast<size_t>(remaining), buffer.size()));
-        auto sector_count = current_count / sector_size;
-        if (current_count % sector_size) {
+        auto sector_count = current_count / device_info.sector_size;
+        if (current_count % device_info.sector_size) {
             ++sector_count;
         }
 
         if (sasi && sector_count > 256) {
             sector_count = 256;
-            current_count = sector_count * sector_size;
+            current_count = sector_count * device_info.sector_size;
         }
 
         s2pdump_logger->info("Remaining bytes: {}", remaining);
         s2pdump_logger->info("Current sector: {}", sector_offset);
         s2pdump_logger->info("Sector count: {}", sector_count);
-        s2pdump_logger->info("Data transfer size: {}", sector_count * sector_size);
+        s2pdump_logger->info("Data transfer size: {}", sector_count * device_info.sector_size);
         s2pdump_logger->info("Image file chunk size: {}", current_count);
 
-        if (const string &error = ReadWrite(file, sector_offset, sector_count, sector_size, current_count); !error.empty()) {
+        if (const string &error = ReadWrite(file, sector_offset, sector_count, device_info.sector_size, current_count); !error.empty()) {
             return error;
         }
 
@@ -785,23 +782,21 @@ void S2pDump::RestoreTape(istream &file)
 
 long S2pDump::CalculateEffectiveSize()
 {
-    const auto capacity = sasi ? sasi_capacity : scsi_device_info.capacity;
-    if (capacity <= static_cast<uint64_t>(start)) {
-        cerr << "Start sector " << start << " is out of range (" << capacity - 1 << ")\n";
+    if (device_info.capacity <= static_cast<uint64_t>(start)) {
+        cerr << "Start sector " << start << " is out of range (" << device_info.capacity - 1 << ")\n";
         return -1;
     }
 
     if (!count) {
-        count = static_cast<int>(capacity - start);
+        count = static_cast<int>(device_info.capacity - start);
     }
 
-    if (capacity < static_cast<uint64_t>(start + count)) {
-        cerr << "Sector count " << count << " is out of range (" << capacity - start << ")\n";
+    if (device_info.capacity < static_cast<uint64_t>(start + count)) {
+        cerr << "Sector count " << count << " is out of range (" << device_info.capacity - start << ")\n";
         return -1;
     }
 
-    const off_t disk_size_in_bytes = static_cast<off_t>(count)
-        * (sasi ? sasi_sector_size : scsi_device_info.sector_size);
+    const off_t disk_size_in_bytes = static_cast<off_t>(count) * device_info.sector_size;
 
     size_t effective_size;
     if (restore) {
@@ -846,27 +841,22 @@ bool S2pDump::GetDeviceInfo()
     // Clear any pending error condition, e.g. a medium just having been inserted
     s2pdump_executor->RequestSense();
 
-    if (scsi_device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
+    if (device_info.type == static_cast<byte>(DeviceType::SEQUENTIAL_ACCESS)) {
         return true;
     }
 
-    const auto [c, s] = s2pdump_executor->ReadCapacity(sasi_sector_size);
+    const auto [c, s] = s2pdump_executor->ReadCapacity(device_info.sector_size);
     if (!c || !s) {
         trace("Can't read device capacity");
         return false;
     }
 
-    scsi_device_info.capacity = c;
-    scsi_device_info.sector_size = s;
+    device_info.capacity = c;
 
-    if (sasi) {
-        sasi_capacity = c;
-    }
-
-    cout << "Sectors:     " << scsi_device_info.capacity << "\n"
-        << "Sector size: " << scsi_device_info.sector_size << " bytes\n"
-        << "Capacity:    " << scsi_device_info.sector_size * scsi_device_info.capacity / 1024 / 1024 << " MiB ("
-        << scsi_device_info.sector_size * scsi_device_info.capacity << " bytes)\n"
+    cout << "Sectors:     " << device_info.capacity << "\n"
+        << "Sector size: " << device_info.sector_size << " bytes\n"
+        << "Capacity:    " << device_info.sector_size * device_info.capacity / 1024 / 1024 << " MiB ("
+        << device_info.sector_size * device_info.capacity << " bytes)\n"
         << DIVIDER << "\n\n"
         << flush;
 
@@ -887,26 +877,26 @@ void S2pDump::DisplayProperties(int id, int lun) const
     id_and_lun += ".";
 
     cout << id_and_lun << "type=";
-    const auto type = static_cast<int>(scsi_device_info.type);
+    const auto type = static_cast<int>(device_info.type);
     if (const auto &t = S2P_DEVICE_TYPES.find(static_cast<byte>(type & 0x1f)); t != S2P_DEVICE_TYPES.end()) {
         if (string((*t).second) != "SCHD") {
             cout << (*t).second << "\n";
         }
         else {
-            cout << (scsi_device_info.removable ? "SCRM" : "SCHD") << "\n";
+            cout << (device_info.removable ? "SCRM" : "SCHD") << "\n";
         }
     }
     else {
         cout << "UNDEFINED\n";
     }
 
-    if (scsi_device_info.sector_size) {
-        cout << id_and_lun << "block_size=" << scsi_device_info.sector_size << "\n";
+    if (device_info.sector_size) {
+        cout << id_and_lun << "block_size=" << device_info.sector_size << "\n";
     }
 
-    cout << id_and_lun << "name=" << regex_replace(scsi_device_info.vendor, regex(" +$"), "") << ":"
-        << regex_replace(scsi_device_info.product, regex(" +$"), "") << ":"
-        << regex_replace(scsi_device_info.revision, regex(" +$"), "") << "\n" << flush;
+    cout << id_and_lun << "name=" << regex_replace(device_info.vendor, regex(" +$"), "") << ":"
+        << regex_replace(device_info.product, regex(" +$"), "") << ":"
+        << regex_replace(device_info.revision, regex(" +$"), "") << "\n" << flush;
 
     vector<uint8_t> buf(255);
 
