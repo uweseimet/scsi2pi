@@ -30,7 +30,7 @@ public:
     set<int> ReportLuns();
 
     // Disk support
-    pair<uint64_t, uint32_t> ReadCapacity() const;
+    pair<uint64_t, uint32_t> ReadCapacity(uint32_t);
     bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
     void SynchronizeCache() const;
 
@@ -72,6 +72,9 @@ protected:
     virtual int WriteFilemark(span<uint8_t>) const = 0;
     virtual bool Read(span<uint8_t>, span<uint8_t>, int) = 0;
     virtual bool Write(span<uint8_t>, span<uint8_t>, int) = 0;
+
+    pair<uint64_t, uint32_t> ReadScsiCapacity();
+    pair<uint64_t, uint32_t> ReadSasiCapacity(uint32_t);
 
     void SpaceBack() const;
     virtual void SpaceBack(span<uint8_t>) const = 0;

@@ -80,7 +80,7 @@ Scan the bus for SCSI and SASI devices and display their properties.
 Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 .TP
 .BR --sector-count/-C\fI "  " \fICOUNT
-Only for hard drives, not for tape drives: sector count for the dump/restore operation. For SASI drives, this setting is mandatory, and usually matches the drive's capacity. For SCSI drives, the default is the drive capacity.
+Only for hard drives, not for tape drives: sector count for the dump/restore operation. For SCSI drives, the default is the capacity reported by the drive. For SASI drives, s2pdump determines the capacity using the method of interval nesting.
 .TP
 .BR --start-sector/-S\fI "  " \fISTART
 Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.

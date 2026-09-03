@@ -78,8 +78,8 @@ void S2pDump::Banner(bool header) const
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
         << "  --scan/-s                          Scan bus for SCSI and SASI devices.\n"
-        << "  --sector-count/-C COUNT            Hard drive sector count, optional for SCSI,\n"
-        << "                                     mandatory for SASI. Default is the capacity.\n"
+        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "                                     default is the capacity.\n"
         << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
         << "  --version/-v                       Display the s2pdump version.\n";
 }
@@ -155,7 +155,6 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         case 'C':
             sector_count = optarg;
-            capacity = optarg;
             break;
 
         case 'f':
@@ -532,11 +531,6 @@ string S2pDump::DumpRestore()
     }
 
     if (sasi) {
-        sasi_capacity = ParseAsUnsignedInt(capacity);
-        if (sasi_capacity <= 0) {
-            return "Invalid SASI hard drive capacity/sector count: '" + capacity + "'";
-        }
-
         if (!sector_size.empty()) {
             sasi_sector_size = ParseAsUnsignedInt(sector_size);
             if (sasi_sector_size != 256 && sasi_sector_size != 512
@@ -856,32 +850,23 @@ bool S2pDump::GetDeviceInfo()
         return true;
     }
 
-    if (!sasi) {
-        const auto [capacity, sector_size] = s2pdump_executor->ReadCapacity();
-        if (!capacity || !sector_size) {
-            trace("Can't read device capacity");
-            return false;
-        }
-
-        scsi_device_info.capacity = capacity;
-        scsi_device_info.sector_size = sector_size;
+    const auto [c, s] = s2pdump_executor->ReadCapacity(sasi_sector_size);
+    if (!c || !s) {
+        trace("Can't read device capacity");
+        return false;
     }
 
-    uint64_t capacity;
-    uint32_t sector_size;
+    scsi_device_info.capacity = c;
+    scsi_device_info.sector_size = s;
+
     if (sasi) {
-        capacity = sasi_capacity;
-        sector_size = sasi_sector_size;
-    }
-    else {
-        capacity = scsi_device_info.capacity;
-        sector_size = scsi_device_info.sector_size;
+        sasi_capacity = c;
     }
 
-    cout << "Sectors:     " << capacity << "\n"
-        << "Sector size: " << sector_size << " bytes\n"
-        << "Capacity:    " << sector_size * capacity / 1024 / 1024 << " MiB (" << sector_size * capacity
-        << " bytes)\n"
+    cout << "Sectors:     " << scsi_device_info.capacity << "\n"
+        << "Sector size: " << scsi_device_info.sector_size << " bytes\n"
+        << "Capacity:    " << scsi_device_info.sector_size * scsi_device_info.capacity / 1024 / 1024 << " MiB ("
+        << scsi_device_info.sector_size * scsi_device_info.capacity << " bytes)\n"
         << DIVIDER << "\n\n"
         << flush;
 

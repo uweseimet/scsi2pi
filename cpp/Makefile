@@ -535,18 +535,21 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 
 ## Build targets:
 ##   all             Build all executable files (default target)
+##   fullspec        The same as 'all'
 ##   standard        Build only executable files for the STANDARD board
 ##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all coverage standard test tests
+.PHONY: all coverage fullspec standard test tests
 
 all: $(BIN_STANDARD) $(BIN_FULLSPEC)
 
 standard: CPPFLAGS += -DBOARD_STANDARD
 standard: $(BIN_STANDARD)
+
+fullspec: all
 
 tests: $(BINDIR)/$(S2P_TEST)
 

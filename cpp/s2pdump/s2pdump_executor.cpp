@@ -59,7 +59,12 @@ set<int> S2pDumpExecutor::ReportLuns()
     return ReportLuns(cdb, buf);
 }
 
-pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity(uint32_t sasi_sector_size)
+{
+    return sasi_sector_size ? ReadSasiCapacity(sasi_sector_size) : ReadScsiCapacity();
+}
+
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity()
 {
     array<uint8_t, 14> buf = { };
     vector<uint8_t> cdb(10);
@@ -89,6 +94,37 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
     }
 
     return {capacity + 1, GetInt32(buf, sector_size_offset)};
+}
+
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadSasiCapacity(uint32_t sector_size)
+{
+    vector<uint8_t> buf;
+    buf.resize(sector_size);
+
+    if (!ReadWrite(buf, 0, 1, sector_size, false)) {
+        return {0, 0};
+    }
+
+    uint32_t last = (1L << 22) - 1;
+
+    if (ReadWrite(buf, 0, last, sector_size, false)) {
+        return {last + 1, sector_size};
+    }
+
+    uint64_t first = 0;
+
+    while (last - first > 1) {
+        uint32_t mid = first + (last - first) / 2;
+
+        if (ReadWrite(buf, mid, 1, sector_size, false)) {
+            first = mid;
+        }
+        else {
+            last = mid;
+        }
+    }
+
+    return {first + 1, sector_size};
 }
 
 bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)

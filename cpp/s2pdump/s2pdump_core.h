@@ -85,7 +85,6 @@ private:
 
     bool sasi = false;
 
-    string capacity;
     string sector_size;
 
     string filename;
