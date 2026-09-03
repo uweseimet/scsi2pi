@@ -91,12 +91,22 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
     return {capacity + 1, GetInt32(buf, sector_size_offset)};
 }
 
-bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
+bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write,
+    bool sasi)
 {
-    array<uint8_t, 10> cdb = { };
-    cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
-    SetInt32(cdb, 2, bstart);
-    SetInt16(cdb, 7, blength);
+    vector<uint8_t> cdb;
+    if (sasi) {
+        cdb.resize(6);
+        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_6 : ScsiCommand::READ_6);
+        SetInt24(cdb, 1, bstart);
+        cdb[4] = blength == 256 ? 0 : blength;
+    }
+    else {
+        cdb.resize(10);
+        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
+        SetInt32(cdb, 2, bstart);
+        SetInt16(cdb, 7, blength);
+    }
 
     return ReadWrite(cdb, buf, length);
 }

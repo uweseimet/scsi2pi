@@ -31,7 +31,7 @@ public:
 
     // Disk support
     pair<uint64_t, uint32_t> ReadCapacity() const;
-    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool);
+    bool ReadWrite(span<uint8_t>, uint32_t, uint32_t, int, bool, bool);
     void SynchronizeCache() const;
 
     // Tape support

@@ -319,7 +319,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         if (sasi && !run_inquiry) {
             sasi_capacity = ParseAsUnsignedInt(capacity);
-            if (sasi_capacity <= 0) {
+            if (sasi_capacity <= 0 || sasi_capacity > 2097152) {
                 throw ParserException("Invalid SASI hard drive capacity: '" + capacity + "'");
             }
 
@@ -683,16 +683,17 @@ string S2pDump::DumpRestoreTape(fstream &file)
 
 string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
-    auto readWrite = [&]() {
-        int r = 0;
-        while (r <= retries) {
-            if(s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore)) {
-                return true;
+    auto readWrite =
+        [&]() {
+            int r = 0;
+            while (r <= retries) {
+                if(s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore, sasi)) {
+                    return true;
+                }
+                ++r;
             }
-            ++r;
-        }
-        return false;
-    };
+            return false;
+        };
 
     if (restore) {
         file.read(to_char_ptr(buffer), bytes);

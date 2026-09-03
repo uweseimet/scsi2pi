@@ -8,6 +8,7 @@
 
 #include "sasi_hd.h"
 #include "controllers/abstract_controller.h"
+#include "shared/s2p_exceptions.h"
 
 SasiHd::SasiHd(int l, const set<uint32_t> &sector_sizes) : Disk(SAHD, l, false, false, sector_sizes)
 {
@@ -23,6 +24,9 @@ void SasiHd::Open()
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256);
 
     SetBlockCount(GetFileSize() / GetBlockSize());
+    if (GetBlockCount() > 2097152) {
+        throw IoException("The maximum SASI drive capacity is 2097152 sectors");
+    }
 
     FinalizeSetup("SASI HD");
 }
