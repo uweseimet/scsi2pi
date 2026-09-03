@@ -206,7 +206,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
 {
     if (target_lun < 8) {
         // Encode LUN in the CDB for backwards compatibility with SCSI-1-CCS
-        cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
+        cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[cdb_offset + 1] + (target_lun << 5));
     }
 
     const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
