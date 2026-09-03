@@ -8,7 +8,6 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -207,26 +206,24 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     switch (mode) {
     case ShutdownMode::STOP_S2P:
         s2p_logger.info("s2p shutdown requested");
-        break;
+        return true;
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        execl("/sbin/shutdown", "shutdown", "-r", "now", nullptr);
-        s2p_logger.error("Shutdown is not supported on this platform");
+        system("shutdown now");
+        s2p_logger.error("Shutdown failed or is not supported on this platform");
         return false;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        execl("/sbin/reboot", "reboot", nullptr);
-        s2p_logger.error("Restart is not supported on this platform");
+        system("shutdown -r now");
+        s2p_logger.error("Restart failed or is not supported on this platform");
         return false;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
         return false;
     }
-
-    return true;
 }
 
 bool CommandDispatcher::SetLogLevel(string_view log_level)

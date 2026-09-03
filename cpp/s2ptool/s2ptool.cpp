@@ -126,7 +126,6 @@ int run(int argc, char *argv[])
         auto s2pctl = make_unique<S2pCtl>();
         result = s2pctl->Run(client_args);
     }
-#if __has_include(<linux/gpio.h>) && !defined(BOARD_STANDARD)
     else if (client == "s2pdump") {
         auto s2pdump = make_unique<S2pDump>();
         result = s2pdump->Run(client_args, true, log_signals);
@@ -139,7 +138,6 @@ int run(int argc, char *argv[])
         auto s2proto = make_unique<S2pProto>();
         result = s2proto->Run(client_args, true, log_signals);
     }
-#endif
     else {
         cerr << "Invalid virtual bus client: '" << client << "'\n";
     }

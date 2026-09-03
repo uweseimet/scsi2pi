@@ -42,7 +42,7 @@ string S2p::InitBus(bool virtual_bus, bool log_signals)
         return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    bus = bus_factory::CreateBus(true, virtual_bus, log_signals, APP_NAME, board_type == "standard");
+    bus = bus_factory::CreateBus(true, virtual_bus, log_signals, APP_NAME, !virtual_bus && board_type == "standard");
     if (!bus) {
         return "Can't initialize bus";
     }

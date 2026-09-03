@@ -404,7 +404,7 @@ int S2pExec::Run(span<char*> args, bool virtual_bus, bool log_signals)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
-    if (args.size() < 2 || virtual_bus) {
+    if (args.size() < 2) {
         RunInteractive(virtual_bus, log_signals);
         return EXIT_SUCCESS;
     }
