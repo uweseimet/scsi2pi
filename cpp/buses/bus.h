@@ -10,9 +10,9 @@
 
 #include <array>
 #include <string>
+#include "board.h"
 #include "shared/scsi.h"
 #include "shared/s2p_defs.h"
-#include "board.h"
 
 class Bus // NOSONAR The high number of simple convenience methods is justified
 {
@@ -22,18 +22,9 @@ public:
     virtual ~Bus() = default;
 
     bool Init(bool);
+
     virtual void Reset() const;
-
-    virtual string SetUp(bool)
-    {
-        // Nothing to do
-        return "";
-    }
-
-    virtual void CleanUp()
-    {
-        // Nothing to do
-    }
+    virtual void CleanUp() = 0;
 
     virtual void Acquire() const = 0;
 
@@ -172,6 +163,8 @@ public:
 protected:
 
     Bus() = default;
+
+    virtual string SetUp(bool) = 0;
 
     virtual void SetSignal(int, bool) const = 0;
 

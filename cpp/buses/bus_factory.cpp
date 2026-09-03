@@ -40,6 +40,6 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool virtual_bus, bool log_s
     spdlog::warn("This platform is not a Raspberry Pi running Linux, functionality is limited");
 #endif
 
-    // Fall back to the in-process bus
+    // Fall back to the virtual bus
     return make_initialized(make_unique<VirtualBus>(identifier, false));
 }

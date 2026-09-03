@@ -24,7 +24,6 @@ public:
     ~VirtualBus() override = default;
 
     void Reset() const override;
-
     void CleanUp() override;
 
     void Acquire() const override
@@ -48,6 +47,10 @@ public:
     {
         return false;
     }
+
+protected:
+
+    string SetUp(bool) override;
 
 private:
 

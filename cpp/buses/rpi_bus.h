@@ -30,7 +30,6 @@ public:
 
     RpiBus(PiType type, bool);
 
-    string SetUp(bool) override;
     void Reset() const override;
     void CleanUp() override;
 
@@ -53,6 +52,10 @@ public:
     }
 
     static PiType GetPiType(const string& = "/proc/device-tree/model");
+
+protected:
+
+    string SetUp(bool) override;
 
 private:
 

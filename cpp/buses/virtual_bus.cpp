@@ -25,6 +25,12 @@ void VirtualBus::Reset() const
     Bus::Reset();
 }
 
+string VirtualBus::SetUp(bool)
+{
+    // Nothing to do
+    return "";
+}
+
 void VirtualBus::CleanUp()
 {
     {
@@ -32,8 +38,6 @@ void VirtualBus::CleanUp()
         selected = true;
     }
     sel.notify_one();
-
-    Bus::CleanUp();
 }
 
 void VirtualBus::SetDAT(uint8_t dat) const
