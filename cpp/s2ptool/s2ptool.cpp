@@ -107,7 +107,7 @@ int run(int argc, char *argv[])
         s2p->Run(target_args, true, log_signals);
     });
 
-    // Wait for the in-process bus target up to 1 s
+    // Wait for the virtual bus target up to 1 s
     const auto now = chrono::steady_clock::now();
     while (!s2p->Ready()) {
         if (chrono::steady_clock::now() - now >= chrono::seconds(1)) {
@@ -117,7 +117,7 @@ int run(int argc, char *argv[])
     }
 
     if (!s2p->Ready()) {
-        cerr << "Error starting in-process s2p\n";
+        cerr << "Error starting s2p with virtual bus\n";
         return EXIT_FAILURE;
     }
 
@@ -141,7 +141,7 @@ int run(int argc, char *argv[])
     }
 #endif
     else {
-        cerr << "Invalid in-process test tool client: '" << client << "'\n";
+        cerr << "Invalid virtual bus client: '" << client << "'\n";
     }
 
     s2p->CleanUp();

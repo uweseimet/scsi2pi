@@ -15,13 +15,13 @@
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
-class InProcessBus final : public Bus
+class VirtualBus final : public Bus
 {
 
 public:
 
-    InProcessBus(const string&, bool);
-    ~InProcessBus() override = default;
+    VirtualBus(const string&, bool);
+    ~VirtualBus() override = default;
 
     void Reset() const override;
 
@@ -69,7 +69,7 @@ private:
 
     static string GetSignalName(int);
 
-    shared_ptr<spdlog::logger> in_process_logger;
+    shared_ptr<spdlog::logger> virtual_bus_logger;
 
     bool log_signals = true;
 

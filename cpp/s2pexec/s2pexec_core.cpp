@@ -74,14 +74,14 @@ void S2pExec::Banner(bool header, bool usage)
     }
 }
 
-bool S2pExec::Init(bool in_process, bool log_signals)
+bool S2pExec::Init(bool virtual_bus, bool log_signals)
 {
     if (!executor) {
         executor = make_unique<S2pExecExecutor>(*s2pexec_logger);
     }
 
     if (!use_sg) {
-        if (const string &error = executor->Init(initiator_id, APP_NAME, in_process, log_signals); !error.empty()) {
+        if (const string &error = executor->Init(initiator_id, APP_NAME, virtual_bus, log_signals); !error.empty()) {
             cerr << "Error: " << error << '\n';
             return false;
         }
@@ -103,7 +103,7 @@ bool S2pExec::Init(bool in_process, bool log_signals)
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals)
+bool S2pExec::ParseArguments(span<char*> args, bool virtual_bus, bool log_signals)
 {
     const vector<option> options = {
         { "binary-input-file", required_argument, nullptr, 'f' },
@@ -273,7 +273,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     }
 
     if (!is_initialized && (!device_file.empty() || !target.empty())) {
-        is_initialized = Init(in_process, log_signals);
+        is_initialized = Init(virtual_bus, log_signals);
         if (!is_initialized) {
             return false;
         }
@@ -345,7 +345,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     return true;
 }
 
-void S2pExec::RunInteractive(bool in_process, bool log_signals)
+void S2pExec::RunInteractive(bool virtual_bus, bool log_signals)
 {
     if (isatty(STDIN_FILENO)) {
         Banner(true, false);
@@ -383,7 +383,7 @@ void S2pExec::RunInteractive(bool in_process, bool log_signals)
         }
 
         try {
-            if (!ParseArguments(interactive_args, in_process, log_signals)) {
+            if (!ParseArguments(interactive_args, virtual_bus, log_signals)) {
                 continue;
             }
         }
@@ -400,17 +400,17 @@ void S2pExec::RunInteractive(bool in_process, bool log_signals)
     CleanUp();
 }
 
-int S2pExec::Run(span<char*> args, bool in_process, bool log_signals)
+int S2pExec::Run(span<char*> args, bool virtual_bus, bool log_signals)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
-    if (args.size() < 2 || in_process) {
-        RunInteractive(in_process, log_signals);
+    if (args.size() < 2 || virtual_bus) {
+        RunInteractive(virtual_bus, log_signals);
         return EXIT_SUCCESS;
     }
 
     try {
-        if (!ParseArguments(args, in_process, log_signals)) {
+        if (!ParseArguments(args, virtual_bus, log_signals)) {
             return -1;
         }
         else if (version || help) {

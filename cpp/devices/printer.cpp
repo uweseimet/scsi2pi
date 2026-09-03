@@ -126,17 +126,19 @@ void Printer::SynchronizeBuffer()
 
     out.close();
 
+    error_code error;
+    permissions(filename, perms::owner_read | perms::owner_write | perms::group_read | perms::others_read, error);
+
     string cmd = GetParam(CMD);
     const size_t file_position = cmd.find("%f");
     // The format has been verified before
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);
 
-    error_code error;
     LogTrace(fmt::format("Printing file '{}' with {} byte(s) using print command '{}'", filename,
         file_size(path(filename), error), cmd));
 
-    if (system(cmd.c_str())) {
+    if (system(fmt::format("runuser -u lp -- {}", cmd).c_str())) {
         LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
 
         ++print_error_count;

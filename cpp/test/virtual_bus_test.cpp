@@ -7,11 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "buses/in_process_bus.h"
+#include "../buses/virtual_bus.h"
 
-TEST(InProcessBusTest, BSY)
+TEST(VirtualBusTest, BSY)
 {
-    InProcessBus bus("", true);
+    VirtualBus bus("", true);
 
     bus.SetBSY(true);
     EXPECT_TRUE(bus.GetBSY());
@@ -19,9 +19,9 @@ TEST(InProcessBusTest, BSY)
     EXPECT_FALSE(bus.GetBSY());
 }
 
-TEST(InProcessBusTest, SEL)
+TEST(VirtualBusTest, SEL)
 {
-    InProcessBus bus("", true);
+    VirtualBus bus("", true);
 
     bus.SetSEL(true);
     EXPECT_TRUE(bus.GetSEL());
@@ -29,9 +29,9 @@ TEST(InProcessBusTest, SEL)
     EXPECT_FALSE(bus.GetSEL());
 }
 
-TEST(InProcessBusTest, ATN)
+TEST(VirtualBusTest, ATN)
 {
-    InProcessBus bus("", true);
+    VirtualBus bus("", true);
 
     bus.SetATN(true);
     EXPECT_TRUE(bus.GetATN());
@@ -39,9 +39,9 @@ TEST(InProcessBusTest, ATN)
     EXPECT_FALSE(bus.GetATN());
 }
 
-TEST(InProcessBusTest, ACK)
+TEST(VirtualBusTest, ACK)
 {
-    InProcessBus bus("", true);
+    VirtualBus bus("", true);
 
     bus.SetACK(true);
     EXPECT_TRUE(bus.GetACK());
@@ -49,9 +49,9 @@ TEST(InProcessBusTest, ACK)
     EXPECT_FALSE(bus.GetACK());
 }
 
-TEST(InProcessBusTest, REQ)
+TEST(VirtualBusTest, REQ)
 {
-    InProcessBus bus("", true);
+    VirtualBus bus("", true);
 
     bus.SetREQ(true);
     EXPECT_TRUE(bus.GetREQ());
@@ -59,9 +59,9 @@ TEST(InProcessBusTest, REQ)
     EXPECT_FALSE(bus.GetREQ());
 }
 
-TEST(InProcessBusTest, RST)
+TEST(VirtualBusTest, RST)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetRST(true);
     EXPECT_TRUE(bus.GetRST());
@@ -69,9 +69,9 @@ TEST(InProcessBusTest, RST)
     EXPECT_FALSE(bus.GetRST());
 }
 
-TEST(InProcessBusTest, MSG)
+TEST(VirtualBusTest, MSG)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetMSG(true);
     EXPECT_TRUE(bus.GetMSG());
@@ -79,9 +79,9 @@ TEST(InProcessBusTest, MSG)
     EXPECT_FALSE(bus.GetMSG());
 }
 
-TEST(InProcessBusTest, CD)
+TEST(VirtualBusTest, CD)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetCD(true);
     EXPECT_TRUE(bus.GetCD());
@@ -89,9 +89,9 @@ TEST(InProcessBusTest, CD)
     EXPECT_FALSE(bus.GetCD());
 }
 
-TEST(InProcessBusTest, IO)
+TEST(VirtualBusTest, IO)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetIO(true);
     EXPECT_TRUE(bus.GetIO());
@@ -99,9 +99,9 @@ TEST(InProcessBusTest, IO)
     EXPECT_FALSE(bus.GetIO());
 }
 
-TEST(InProcessBusTest, DAT)
+TEST(VirtualBusTest, DAT)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetDAT(0xae);
     EXPECT_EQ(0xae, bus.GetDAT());
@@ -109,18 +109,18 @@ TEST(InProcessBusTest, DAT)
     EXPECT_EQ(0x21, bus.GetDAT());
 }
 
-TEST(InProcessBusTest, Acquire)
+TEST(VirtualBusTest, Acquire)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetDAT(0x12);
     bus.Acquire();
     EXPECT_EQ(0x12U, bus.GetDAT());
 }
 
-TEST(InProcessBusTest, BusPhases)
+TEST(VirtualBusTest, BusPhases)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     EXPECT_EQ(BusPhase::BUS_FREE, bus.GetPhase());
     EXPECT_TRUE(bus.IsPhase(BusPhase::BUS_FREE));
@@ -164,9 +164,9 @@ TEST(InProcessBusTest, BusPhases)
     EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_OUT));
 }
 
-TEST(InProcessBusTest, Init)
+TEST(VirtualBusTest, Init)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetSignals(0x12345678U);
     EXPECT_TRUE(bus.Init(false));
@@ -177,9 +177,9 @@ TEST(InProcessBusTest, Init)
     EXPECT_EQ(0xffffffffU, bus.GetSignals());
 }
 
-TEST(InProcessBusTest, Reset)
+TEST(VirtualBusTest, Reset)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetSignal(PIN_BSY, true);
     EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
@@ -187,9 +187,9 @@ TEST(InProcessBusTest, Reset)
     EXPECT_FALSE(bus.GetSignal(PIN_BSY_MASK));
 }
 
-TEST(InProcessBusTest, SetGetSignal)
+TEST(VirtualBusTest, SetGetSignal)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
@@ -197,9 +197,9 @@ TEST(InProcessBusTest, SetGetSignal)
     EXPECT_FALSE(bus.GetSignal(PIN_REQ_MASK));
 }
 
-TEST(InProcessBusTest, WaitHandshakeACK)
+TEST(VirtualBusTest, WaitHandshakeACK)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_ACK_MASK, true));
@@ -212,9 +212,9 @@ TEST(InProcessBusTest, WaitHandshakeACK)
     EXPECT_FALSE(bus.WaitHandShake(PIN_ACK_MASK, true));
 }
 
-TEST(InProcessBusTest, WaitHandshakeREQ)
+TEST(VirtualBusTest, WaitHandshakeREQ)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_REQ_MASK, true));
@@ -227,9 +227,9 @@ TEST(InProcessBusTest, WaitHandshakeREQ)
     EXPECT_FALSE(bus.WaitHandShake(PIN_REQ_MASK, true));
 }
 
-TEST(InProcessBusTest, IsRaspberryPi)
+TEST(VirtualBusTest, IsRaspberryPi)
 {
-    InProcessBus bus("", false);
+    VirtualBus bus("", false);
 
     EXPECT_FALSE(bus.IsRaspberryPi());
 }

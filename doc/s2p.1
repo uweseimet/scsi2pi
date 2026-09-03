@@ -120,7 +120,7 @@ An optional comma-separated list of IDs to reserve. Pass an empty list in order 
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR --script-file/-f\fI " " \fISCRIPT_FILE
-Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
+Create a script file with a SCSI command sequence. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec.
 .TP
 .BR --scsi-level\fI " " \fILEVEL
 The optional SCSI/SPC standard level. The default level is device-specific and usually is SCSI-2. Be careful when using this option, you will usually not need it.

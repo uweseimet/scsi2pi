@@ -8,20 +8,20 @@
 
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
-#include "in_process_bus.h"
+#include <buses/virtual_bus.h>
 #if __has_include (<linux/gpio.h>)
 #include "rpi_bus.h"
 #endif
 
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
+unique_ptr<Bus> bus_factory::CreateBus(bool target, bool virtual_bus, bool log_signals,
     const string &identifier, [[maybe_unused]] bool standard_board)
 {
     auto make_initialized = [target](unique_ptr<Bus> bus) {
         return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
     };
 
-    if (in_process) {
-        return make_initialized(make_unique<InProcessBus>(identifier, log_signals));
+    if (virtual_bus) {
+        return make_initialized(make_unique<VirtualBus>(identifier, log_signals));
     }
 
 #if __has_include (<linux/gpio.h>)
@@ -41,5 +41,5 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
 #endif
 
     // Fall back to the in-process bus
-    return make_initialized(make_unique<InProcessBus>(identifier, false));
+    return make_initialized(make_unique<VirtualBus>(identifier, false));
 }

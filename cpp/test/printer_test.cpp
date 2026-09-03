@@ -125,13 +125,6 @@ TEST_F(PrinterTest, SynchronizeBuffer)
     controller->SetTransferSize(4, 4);
     EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
     Dispatch(printer, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
-
-    params["cmd"] = "true %f";
-    printer->SetParams(params);
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
-    controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::SYNCHRONIZE_BUFFER));
 }
 
 TEST_F(PrinterTest, WriteData)

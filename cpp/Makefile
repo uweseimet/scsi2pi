@@ -243,7 +243,7 @@ SRC_SHARED_INITIATOR := $(DIR_SHARED_INITIATOR)/initiator_executor.cpp \
 
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
-	$(DIR_BUSES)/in_process_bus.cpp
+	$(DIR_BUSES)/virtual_bus.cpp
 ifdef IS_LINUX
 SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp
 endif
@@ -373,7 +373,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/disk_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_util_test.cpp \
-	test/in_process_bus_test.cpp \
 	test/linux_cache_test.cpp \
 	test/memory_util_test.cpp \
 	test/optical_memory_test.cpp \
@@ -398,7 +397,8 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
 	test/test_setup.cpp \
-	test/test_shared.cpp
+	test/test_shared.cpp \
+	test/virtual_bus_test.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
 	test/network_util_test.cpp \

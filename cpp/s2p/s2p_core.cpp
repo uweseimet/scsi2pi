@@ -34,7 +34,7 @@ using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
 
-string S2p::InitBus(bool in_process, bool log_signals)
+string S2p::InitBus(bool virtual_bus, bool log_signals)
 {
     const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECT_TYPE, "FULLSPEC");
     const string &board_type = ToLower(connection_type);
@@ -42,7 +42,7 @@ string S2p::InitBus(bool in_process, bool log_signals)
         return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, board_type == "standard");
+    bus = bus_factory::CreateBus(true, virtual_bus, log_signals, APP_NAME, board_type == "standard");
     if (!bus) {
         return "Can't initialize bus";
     }
@@ -121,7 +121,7 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-int S2p::Run(span<char*> args, bool in_process, bool log_signals)
+int S2p::Run(span<char*> args, bool virtual_bus, bool log_signals)
 {
     // The --version/-v option shall result in no other action except displaying the version
     if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v") || !strcmp(arg, "--version");})
@@ -158,7 +158,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    if (const string &error = InitBus(in_process, log_signals); !error.empty()) {
+    if (const string &error = InitBus(virtual_bus, log_signals); !error.empty()) {
         CleanUp(error);
         return EXIT_FAILURE;
     }
@@ -220,7 +220,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     DisplayAttachedDevices();
 
-    if (!in_process && !bus->IsRaspberryPi()) {
+    if (!virtual_bus && !bus->IsRaspberryPi()) {
         cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
