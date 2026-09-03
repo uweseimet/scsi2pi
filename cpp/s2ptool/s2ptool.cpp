@@ -18,7 +18,7 @@ using namespace s2p_util;
 
 void usage()
 {
-    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (In-process Tool)\n"
+    cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Virtual Bus Tool)\n"
         << "Version " << GetVersionString() << "\n"
         << "Copyright (C) 2023-2026 Uwe Seimet\n";
 

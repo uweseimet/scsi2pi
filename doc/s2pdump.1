@@ -11,6 +11,7 @@ s2pdump \- SCSI/SASI hard/tape drive dump/restore tool
 [\fB\--image-file/-f\fR \fIIMAGE_FILE\fR]
 [\fB\--inquiry/-I\fR \fIID[:LUN]\fR]
 [\fB\--log-level/-L\fR \fILOG_LEVEL\fR]
+[\fB\--overwrite/-o\fR]
 [\fB\--restore/-r\fR]
 [\fB\--retries/-R\fR \fIRETRIES\fR]
 [\fB\--scan/-s\fR]
@@ -62,6 +63,9 @@ Display INQUIRY data of ID[:LUN] and (SCSI only) device properties for use with 
 .TP
 .BR --log-level/-L\fI " " \fILOG_LEVEL
 Set the log level (trace, debug, info, warning, error, critical, off). The default log level is 'warning'.
+.TP
+.BR --overwrite/-o\fI
+In restore mode, overwrite an existing file.
 .TP
 .BR --restore/-r\fI
 Run in restore mode. The default is dump mode.

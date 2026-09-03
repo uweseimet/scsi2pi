@@ -67,6 +67,7 @@ void S2pDump::Banner(bool header) const
         << "                                     device properties for configuration files.\n"
         << "  --log-level/-L LOG_LEVEL           Log level (trace|debug|info|warning|\n"
         << "                                     error|critical|off), default is 'warning'.\n"
+        << "  --overwrite/-o                     When restoring, overwrite an existing file.\n"
         << "  --restore/-r                       Restore instead of dump.\n"
         << "  --retries/-R                       Number of disk drive retries, default is 0.\n"
 #ifdef BUILD_SCSG
@@ -112,6 +113,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "image-file", required_argument, nullptr, 'f' },
         { "inquiry", no_argument, nullptr, 'I' },
         { "log-level", required_argument, nullptr, 'L' },
+        { "overwrite", no_argument, nullptr, 'o' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
         { "scan", no_argument, nullptr, 's' },
@@ -131,10 +133,11 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     int buffer_size = DEFAULT_BUFFER_SIZE;
     bool version = false;
     bool help = false;
+    bool overwrite = false;
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:rR:sS:v",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:orR:sS:v",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -178,6 +181,10 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         case 'L':
             log_level = optarg;
+            break;
+
+        case 'o':
+            overwrite = true;
             break;
 
         case 'r':
@@ -290,6 +297,11 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         if (filename.empty() && !run_bus_scan && !run_inquiry) {
             throw ParserException("Missing drive image filename for backup/restore");
+        }
+
+        error_code error;
+        if (!restore && !overwrite && exists(filename, error)) {
+            throw ParserException("Drive image file '" + filename + "' already exists, use -o to overwrite");
         }
 
         // Avoid -1 as target ID
