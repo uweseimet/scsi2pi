@@ -63,7 +63,7 @@ TEST_F(HostServicesTest, GetIdentifier)
 TEST_F(HostServicesTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
+    Dispatch(services, ScsiCommand::TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -76,19 +76,19 @@ TEST_F(HostServicesTest, StartStopUnit)
 {
     // STOP
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    Dispatch(services, ScsiCommand::START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    Dispatch(services, ScsiCommand::START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::START_STOP));
+    Dispatch(services, ScsiCommand::START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // START
@@ -112,7 +112,7 @@ TEST_F(HostServicesTest, ExecuteOperation)
 
     controller->SetCdbByte(8, 1);
     controller->SetCdbByte(1, 0b001);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::EXECUTE_OPERATION));
+    Dispatch(services, ScsiCommand::EXECUTE_OPERATION);
 }
 
 TEST_F(HostServicesTest, ReceiveOperationResults)
@@ -148,7 +148,7 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_6));
+    Dispatch(services, ScsiCommand::MODE_SENSE_6);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -164,7 +164,7 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_6));
+    Dispatch(services, ScsiCommand::MODE_SENSE_6);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
 
@@ -189,7 +189,7 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_10));
+    Dispatch(services, ScsiCommand::MODE_SENSE_10);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -205,7 +205,7 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::MODE_SENSE_10));
+    Dispatch(services, ScsiCommand::MODE_SENSE_10);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
@@ -238,7 +238,7 @@ TEST_F(HostServicesTest, WriteData)
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "Illegal command";
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
-    EXPECT_NO_THROW(services->WriteData(controller->GetCdb(), buf, 0));
+    services->WriteData(controller->GetCdb(), buf, 0);
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
@@ -253,5 +253,5 @@ TEST_F(HostServicesTest, SetDispatcher)
     auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
 
     dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
-    EXPECT_NO_THROW(Dispatch(services, ScsiCommand::TEST_UNIT_READY));
+    Dispatch(services, ScsiCommand::TEST_UNIT_READY);
 }

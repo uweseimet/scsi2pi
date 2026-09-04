@@ -160,7 +160,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_6));
+    Dispatch(hd, ScsiCommand::MODE_SENSE_6);
     ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
@@ -168,7 +168,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_6));
+    Dispatch(hd, ScsiCommand::MODE_SENSE_6);
     ValidateDrivePage(controller, 12);
 }
 
@@ -193,7 +193,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockSize(1024);
-    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_10));
+    Dispatch(hd, ScsiCommand::MODE_SENSE_10);
     ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
@@ -201,7 +201,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockCount(0x12345678);
-    EXPECT_NO_THROW(Dispatch(hd, ScsiCommand::MODE_SENSE_10));
+    Dispatch(hd, ScsiCommand::MODE_SENSE_10);
     ValidateDrivePage(controller, 16);
 }
 
@@ -214,7 +214,7 @@ TEST(ScsiHdTest, ModeSelect)
 
     // PF (vendor-specific parameter format) not set must not fail but be ignored
     auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    hd.ModeSelect(cdb, buf, 16);
 
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
@@ -224,13 +224,13 @@ TEST(ScsiHdTest, ModeSelect)
         Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))));
 
     // Length 0 is ignored
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
+    hd.ModeSelect(cdb, buf, 0);
 
     // Page 1 (Read-write error recovery page)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    hd.ModeSelect(cdb, buf, 16);
     buf[4] = 0;
     buf[5] = 0;
 
@@ -240,7 +240,7 @@ TEST(ScsiHdTest, ModeSelect)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    hd.ModeSelect(cdb, buf, 20);
 
     // Invalid length (must be greater than 1)
     EXPECT_THAT([&] {hd.ModeSelect(cdb, buf, 1);}, Throws<ScsiException>(AllOf(
@@ -259,7 +259,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
+    hd.ModeSelect(cdb, buf, 0);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 0
@@ -279,7 +279,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
                 Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
                 Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    hd.ModeSelect(cdb, buf, 16);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 7 (Verify error recovery page)
@@ -291,7 +291,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
                 Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
                 Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 16));
+    hd.ModeSelect(cdb, buf, 16);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 3 (Format device page)
@@ -313,7 +313,7 @@ TEST(ScsiHdTest, ModeSelect6_Single)
                 Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
 
@@ -353,13 +353,13 @@ TEST(ScsiHdTest, ModeSelect6_Multiple)
     // Select sector size of 2048 bytes, which is the current size, once
     auto buf = CreateParameters(format_device_1);
     auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice
     buf = CreateParameters(format_device_2);
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, fmt::format("10:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes
@@ -386,7 +386,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
 
     // A length of 0 is valid, the page data are optional
     hd.SetBlockSize(512);
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 0));
+    hd.ModeSelect(cdb, buf, 0);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 0
@@ -406,7 +406,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
                 Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
                 Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    hd.ModeSelect(cdb, buf, 20);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 7 (Verify error recovery page)
@@ -418,7 +418,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
                 Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
                 Property(&ScsiException::GetAsc, Asc::PARAMETER_LIST_LENGTH_ERROR))))
     << "Not enough command parameters";
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, 20));
+    hd.ModeSelect(cdb, buf, 20);
     EXPECT_EQ(512U, hd.GetBlockSize());
 
     // Page 3 (Format device page)
@@ -440,7 +440,7 @@ TEST(ScsiHdTest, ModeSelect10_Single)
                 Property(&ScsiException::GetAsc, Asc::INVALID_FIELD_IN_PARAMETER_LIST))))
     << "Not enough command parameters";
 
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 }
 
@@ -480,13 +480,13 @@ TEST(ScsiHdTest, ModeSelect10_Multiple)
     // Select sector size of 2048 bytes, which is the current size, once
     auto buf = CreateParameters(format_device_1);
     auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice
     buf = CreateParameters(format_device_2);
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_10, fmt::format("10:00:00:00:00:00:00:{:02x}", buf.size()));
-    EXPECT_NO_THROW(hd.ModeSelect(cdb, buf, buf.size()));
+    hd.ModeSelect(cdb, buf, buf.size());
     EXPECT_EQ(2048U, hd.GetBlockSize());
 
     // Select sector size of 2048 bytes, which is the current size, twice, then try to select a size of 1024 bytes

@@ -125,6 +125,11 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
 void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
     const string &msg)
 {
+    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
+    if (controller) {
+        controller->SetCdbByte(0, static_cast<int>(cmd));
+    }
+
     try {
         device->Dispatch(cmd);
         if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
@@ -139,7 +144,6 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
         }
     }
 
-    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
     if (controller) {
         controller->ResetCdb();
     }

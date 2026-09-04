@@ -71,7 +71,7 @@ TEST_F(PrinterTest, Init)
 TEST_F(PrinterTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::TEST_UNIT_READY));
+    Dispatch(printer, ScsiCommand::TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -83,21 +83,21 @@ TEST_F(PrinterTest, Inquiry)
 TEST_F(PrinterTest, ReserveUnit)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::RESERVE_RESERVE_ELEMENT_6));
+    Dispatch(printer, ScsiCommand::RESERVE_RESERVE_ELEMENT_6);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, ReleaseUnit)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
+    Dispatch(printer, ScsiCommand::RELEASE_RELEASE_ELEMENT_6);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, Print)
 {
     EXPECT_CALL(*controller, DataOut).Times(AtLeast(1));
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::PRINT));
+    Dispatch(printer, ScsiCommand::PRINT);
 
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
@@ -109,7 +109,7 @@ TEST_F(PrinterTest, Print)
 TEST_F(PrinterTest, StopPrint)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(printer, ScsiCommand::STOP_PRINT));
+    Dispatch(printer, ScsiCommand::STOP_PRINT);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -123,7 +123,7 @@ TEST_F(PrinterTest, SynchronizeBuffer)
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
     controller->SetTransferSize(4, 4);
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
+    printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
     Dispatch(printer, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
 }
 
@@ -134,7 +134,7 @@ TEST_F(PrinterTest, WriteData)
     EXPECT_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4), ScsiException);
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
-    EXPECT_NO_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4));
+    printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
 }
 
 TEST_F(PrinterTest, GetStatistics)

@@ -79,10 +79,10 @@ TEST(ScsiGenericTest, Dispatch)
             Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
 
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::WRITE_6));
+    device->Dispatch(ScsiCommand::WRITE_6);
 
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::FORMAT_UNIT));
+    device->Dispatch(ScsiCommand::FORMAT_UNIT);
 
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
     EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT_UNIT) ; },

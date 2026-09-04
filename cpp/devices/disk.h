@@ -68,21 +68,15 @@ protected:
 
 private:
 
-    enum AccessMode
-    {
-        RW6, RW10, RW16, SEEK6, SEEK10
-    };
-
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
-
     void ReadDefectData10() const;
     void ReadCapacity10();
     void ReadCapacity16();
     void ReadFormatCapacities();
     void FormatUnit();
-    void Read(AccessMode);
-    void Write(AccessMode);
-    void Verify(AccessMode);
+    void Read();
+    void Write();
+    void Verify();
     void ReadCapacity16_ReadLong16();
 
     void AddVerifyErrorRecoveryPage(map<int, vector<byte>>&, bool) const;
@@ -90,10 +84,10 @@ private:
 
     bool SetUpCache();
 
-    void ReadWriteLong(uint64_t, uint32_t, bool);
+    void ReadWriteLong();
     void WriteVerify(uint64_t, uint32_t);
-    uint64_t ValidateBlockAddress(AccessMode);
-    pair<uint64_t, uint32_t> CheckAndGetStartAndCount(AccessMode);
+    uint64_t ValidateBlockAddress();
+    pair<uint64_t, uint32_t> CheckAndGetStartAndCount();
 
     shared_ptr<Cache> cache;
 

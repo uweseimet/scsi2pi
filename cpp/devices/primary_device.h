@@ -13,6 +13,7 @@
 #include <functional>
 #include "device.h"
 #include "page_handler.h"
+#include "shared/command_meta_data.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_defs.h"
 
@@ -126,6 +127,11 @@ protected:
     virtual vector<uint8_t> HandleInquiry() const;
     void CheckReady();
 
+    const CommandMetaData::CdbMetaData& GetMetaData() const
+    {
+        return *meta_data;
+    }
+
     virtual void Inquiry();
     virtual void RequestSense();
     void SendDiagnostic() const;
@@ -183,6 +189,8 @@ private:
 
     // Owned by the controller factory
     AbstractController *controller = nullptr;
+
+    const CommandMetaData::CdbMetaData *meta_data = nullptr;
 
     array<command, 256> commands = { };
 

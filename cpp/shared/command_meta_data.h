@@ -39,7 +39,7 @@ public:
         return instance;
     }
 
-    CdbMetaData GetCdbMetaData(ScsiCommand cmd) const
+    const CdbMetaData& GetCdbMetaData(ScsiCommand cmd) const
     {
         return cdb_meta_data[static_cast<size_t>(cmd)];
     }

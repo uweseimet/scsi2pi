@@ -22,7 +22,7 @@ TEST(ProtobufUtilTest, SerializeMessage)
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_WRONLY);
         ASSERT_NE(-1, fd);
-        EXPECT_NO_THROW(SerializeMessage(fd, result));
+        SerializeMessage(fd, result);
         close(fd);
     }
 

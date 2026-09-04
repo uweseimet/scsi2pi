@@ -16,6 +16,7 @@
 #include "disk_cache.h"
 #include "linux_cache.h"
 #include "controllers/abstract_controller.h"
+#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
@@ -47,15 +48,15 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::READ_6, [this]
         {
-            Read(RW6);
+            Read();
         });
     AddCommand(ScsiCommand::WRITE_6, [this]
         {
-            Write(RW6);
+            Write();
         });
     AddCommand(ScsiCommand::SEEK_6, [this]
         {
-            CheckAndGetStartAndCount(SEEK6);
+            CheckAndGetStartAndCount();
             StatusPhase();
         });
     AddCommand(ScsiCommand::READ_CAPACITY_10, [this]
@@ -64,32 +65,32 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::READ_10, [this]
         {
-            Read(RW10);
+            Read();
         });
     AddCommand(ScsiCommand::WRITE_10, [this]
         {
-            Write(RW10);
+            Write();
         });
     AddCommand(ScsiCommand::READ_LONG_10, [this]
         {
-            ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), false);
+            ReadWriteLong();
         });
     AddCommand(ScsiCommand::WRITE_LONG_10, [this]
         {
-            ReadWriteLong(ValidateBlockAddress(RW10), GetCdbInt16(7), true);
+            ReadWriteLong();
         });
     AddCommand(ScsiCommand::WRITE_LONG_16, [this]
         {
-            ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), true);
+            ReadWriteLong();
         });
     AddCommand(ScsiCommand::SEEK_10, [this]
         {
-            CheckAndGetStartAndCount(SEEK10);
+            CheckAndGetStartAndCount();
             StatusPhase();
         });
     AddCommand(ScsiCommand::VERIFY_10, [this]
         {
-            Verify(RW10);
+            Verify();
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
         {
@@ -107,15 +108,15 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::READ_16, [this]
         {
-            Read(RW16);
+            Read();
         });
     AddCommand(ScsiCommand::WRITE_16, [this]
         {
-            Write(RW16);
+            Write();
         });
     AddCommand(ScsiCommand::VERIFY_16, [this]
         {
-            Verify(RW16);
+            Verify();
         });
     AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, [this]
         {
@@ -211,9 +212,9 @@ void Disk::FormatUnit()
     StatusPhase();
 }
 
-void Disk::Read(AccessMode mode)
+void Disk::Read()
 {
-    const auto& [start, count] = CheckAndGetStartAndCount(mode);
+    const auto& [start, count] = CheckAndGetStartAndCount();
     if (count) {
         next_sector = start;
 
@@ -229,17 +230,22 @@ void Disk::Read(AccessMode mode)
     }
 }
 
-void Disk::Write(AccessMode mode)
+void Disk::Write()
 {
-    CheckWritePreconditions();
+    // The CDB must be validated before checking for write protection
+    const auto& [start, count] = CheckAndGetStartAndCount();
 
-    const auto& [start, count] = CheckAndGetStartAndCount(mode);
+    // Writing 0 sectors to write-protected media is not an error condition
+    if (count) {
+        CheckWritePreconditions();
+    }
+
     WriteVerify(start, count);
 }
 
-void Disk::Verify(AccessMode mode)
+void Disk::Verify()
 {
-    const auto& [start, count] = CheckAndGetStartAndCount(mode);
+    const auto& [start, count] = CheckAndGetStartAndCount();
 
     // Flush the cache according to the specification
     FlushCache();
@@ -264,12 +270,14 @@ void Disk::WriteVerify(uint64_t start, uint32_t count)
     }
 }
 
-void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
+void Disk::ReadWriteLong()
 {
-    if (write) {
-        CheckWritePreconditions();
-    }
+    // The CDB must be validated before checking for write protection
+    const int64_t sector = ValidateBlockAddress();
 
+    const auto &meta_data = GetMetaData();
+
+    const uint32_t length = GetCdbInt16(meta_data.allocation_length_offset);
     if (!length) {
         StatusPhase();
         return;
@@ -280,6 +288,10 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
         SetIli();
         SetInformation(length - GetBlockSize());
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+    }
+
+    if (meta_data.has_data_out) {
+        CheckWritePreconditions();
     }
 
     auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
@@ -298,7 +310,7 @@ void Disk::ReadWriteLong(uint64_t sector, uint32_t length, bool write)
 
     GetController()->SetTransferSize(length, length);
 
-    if (write) {
+    if (GetMetaData().has_data_out) {
         next_sector = sector;
 
         DataOutPhase(length);
@@ -514,7 +526,7 @@ void Disk::ReadCapacity16_ReadLong16()
         break;
 
     case 0x11:
-        ReadWriteLong(ValidateBlockAddress(RW16), GetCdbInt16(12), false);
+        ReadWriteLong();
         break;
 
     default:
@@ -522,16 +534,19 @@ void Disk::ReadCapacity16_ReadLong16()
     }
 }
 
-uint64_t Disk::ValidateBlockAddress(AccessMode mode)
+uint64_t Disk::ValidateBlockAddress()
 {
     CheckReady();
 
-    // RelAdr is not supported
-    if (mode == RW10 && GetCdbByte(1) & 0x01) {
+    const auto &meta_data = GetMetaData();
+
+    // RelAdr (READ/WRITE(10) only) is not supported
+    if (meta_data.block_size == 4 && GetCdbByte(1) & 0x01) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
-    const uint64_t sector = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
+    const uint64_t sector =
+        meta_data.block_size == 8 ? GetCdbInt64(meta_data.block_offset) : GetCdbInt32(meta_data.block_offset);
 
     if (sector >= GetBlockCount()) {
         LogTrace(
@@ -554,43 +569,51 @@ void Disk::ChangeBlockSize(uint32_t new_size)
     }
 }
 
-pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount(AccessMode mode)
+pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount()
 {
     CheckReady();
 
     uint64_t start;
     uint32_t count = 0;
 
-    if (mode == RW6 || mode == SEEK6) {
+    // READ/WRITE(6) and SEEK(6) only
+    if (const auto &meta_data = GetMetaData(); meta_data.block_offset == 1) {
         // Mask LUN bits
-        start = GetCdbInt24(1) & 0x1fffff;
+        start = GetCdbInt24(meta_data.block_offset) & 0x1fffff;
 
-        if (mode == RW6) {
-            count = GetCdbByte(4);
+        // READ/WRITE(6) only
+        if (meta_data.block_size == 3) {
+            count = GetCdbByte(meta_data.allocation_length_offset);
             if (!count) {
                 count = 256;
             }
         }
     }
     else {
-        start = mode == RW16 ? GetCdbInt64(2) : GetCdbInt32(2);
+        start =
+            meta_data.block_size == 8 ? GetCdbInt64(meta_data.block_offset) : GetCdbInt32(meta_data.block_offset);
 
-        if (mode == RW16) {
-            count = GetCdbInt32(10);
+        // READ/WRITE(16) only
+        if (meta_data.allocation_length_size == 4) {
+            count = GetCdbInt32(meta_data.allocation_length_offset);
         }
-        else if (mode != SEEK10) {
-            count = GetCdbInt16(7);
+        // Not SEEK(10)
+        else if (meta_data.allocation_length_size) {
+            count = GetCdbInt16(meta_data.allocation_length_offset);
         }
     }
 
     LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
 
-    // Check capacity
-    if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
-        LogTrace(
-            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
-                start, count));
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+    // Accessing sector 0 without a data transfer is always allowed
+    if (start || count) {
+        // Check capacity
+        if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
+            LogTrace(
+                fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
+                    start, count));
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+        }
     }
 
     return {start, count};

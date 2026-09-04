@@ -112,10 +112,10 @@ TEST(ScsiCdTest, ReadToc)
 
     controller->SetCdbByte(6, 0);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
+    Dispatch(cd, ScsiCommand::READ_TOC);
     controller->SetCdbByte(1, 0x02);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(cd, ScsiCommand::READ_TOC));
+    Dispatch(cd, ScsiCommand::READ_TOC);
 }
 
 TEST(ScsiCdTest, ReadData)
@@ -129,5 +129,5 @@ TEST(ScsiCdTest, ModeSelect)
 {
     ScsiCd cd(0, false);
 
-    EXPECT_NO_THROW(cd.ModeSelect( { }, { }, 0));
+    cd.ModeSelect( { }, { }, 0);
 }
