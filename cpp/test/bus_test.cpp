@@ -25,7 +25,7 @@ TEST(BusTest, GetPhaseName)
 
 TEST(BusTest, Init)
 {
-    MockBus bus;
+    NiceMock<MockBus> bus;
 
     bus.SetSignals(0x12345678U);
     EXPECT_EQ(0x12345678U, bus.GetSignals());

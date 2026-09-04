@@ -147,14 +147,14 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
 
 string CreateTempName()
 {
-    static random_device rd;
-    static mt19937_64 gen(rd());
-    static uniform_int_distribution<uint64_t> dis;
+    thread_local random_device rd;
+    thread_local mt19937_64 gen(rd()); // NOSONAR Using this random generator for the unit tests is safe
+    thread_local uniform_int_distribution<uint64_t> dis;
 
     ostringstream ss;
     ss << "scsi2pi_test-" << hex << setfill('0') << setw(16) << dis(gen);
 
-    return (temp_directory_path() / ss.str()).string();
+    return (temp_directory_path() / ss.str()).string(); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> OpenTempFile(const string &extension)

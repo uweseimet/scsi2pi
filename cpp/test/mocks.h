@@ -20,7 +20,7 @@
 
 using namespace testing;
 
-class MockBus : public Bus
+class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
 {
 
 public:
@@ -91,7 +91,7 @@ public:
         }
     }
 
-    void SetCdbByte(int index, int value) // NONSONAR Shadowing the inherited method is intentional
+    void SetCdbByte(int index, int value) // NOSONAR Shadowing the inherited method is intentional
     {
         AbstractController::SetCdbByte(index, value);
     }
@@ -197,15 +197,15 @@ public:
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetReady(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetRemovable(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetLocked(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }

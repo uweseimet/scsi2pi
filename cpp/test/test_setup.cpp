@@ -21,7 +21,9 @@ int main(int argc, char*[])
     int fd = -1;
     if (disable_logging) {
         fd = open("/dev/null", O_WRONLY);
-        dup2(fd, STDERR_FILENO);
+        if (fd != -1) {
+            dup2(fd, STDERR_FILENO);
+        }
     }
 
     testing::InitGoogleTest();

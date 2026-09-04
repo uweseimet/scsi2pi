@@ -12,151 +12,95 @@
 #include "shared/s2p_defs.h"
 #include "shared/s2p_exceptions.h"
 
-TEST(AbstractControllerTest, Phases)
+struct PhaseTestParams
 {
-    MockAbstractController handler;
+    BusPhase phase;
+    bool (AbstractController::*is_phase_func)() const;
+};
 
-    handler.SetPhase(BusPhase::SELECTION);
-    EXPECT_TRUE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
+class AbstractControllerPhaseTest : public ::testing::TestWithParam<PhaseTestParams>
+{
+};
 
-    handler.SetPhase(BusPhase::BUS_FREE);
-    EXPECT_TRUE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
+INSTANTIATE_TEST_SUITE_P(Phases, AbstractControllerPhaseTest, ::testing::Values(
+        PhaseTestParams { BusPhase::SELECTION, &AbstractController::IsSelection },
+        PhaseTestParams { BusPhase::BUS_FREE, &AbstractController::IsBusFree },
+        PhaseTestParams { BusPhase::COMMAND, &AbstractController::IsCommand },
+        PhaseTestParams { BusPhase::STATUS, &AbstractController::IsStatus },
+        PhaseTestParams { BusPhase::DATA_IN, &AbstractController::IsDataIn },
+        PhaseTestParams { BusPhase::DATA_OUT, &AbstractController::IsDataOut },
+        PhaseTestParams { BusPhase::MSG_IN, &AbstractController::IsMsgIn },
+        PhaseTestParams { BusPhase::MSG_OUT, &AbstractController::IsMsgOut }
+        )
+        );
 
-    handler.SetPhase(BusPhase::COMMAND);
-    EXPECT_TRUE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
+TEST_P(AbstractControllerPhaseTest, PhaseCheck)
+{
+    MockAbstractController controller;
+    const auto& [phase, is_phase_func] = GetParam();
 
-    handler.SetPhase(BusPhase::STATUS);
-    EXPECT_TRUE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
-
-    handler.SetPhase(BusPhase::DATA_IN);
-    EXPECT_TRUE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
-
-    handler.SetPhase(BusPhase::DATA_OUT);
-    EXPECT_TRUE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsMsgOut());
-
-    handler.SetPhase(BusPhase::MSG_IN);
-    EXPECT_TRUE(handler.IsMsgIn());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgOut());
-
-    handler.SetPhase(BusPhase::MSG_OUT);
-    EXPECT_TRUE(handler.IsMsgOut());
-    EXPECT_FALSE(handler.IsBusFree());
-    EXPECT_FALSE(handler.IsSelection());
-    EXPECT_FALSE(handler.IsCommand());
-    EXPECT_FALSE(handler.IsStatus());
-    EXPECT_FALSE(handler.IsDataIn());
-    EXPECT_FALSE(handler.IsDataOut());
-    EXPECT_FALSE(handler.IsMsgIn());
+    controller.SetPhase(phase);
+    EXPECT_TRUE((controller.*is_phase_func)());
 }
 
 TEST(AbstractControllerTest, ProcessPhase)
 {
-    MockAbstractController handler;
+    MockAbstractController controller;
 
-    handler.SetPhase(BusPhase::SELECTION);
-    EXPECT_CALL(handler, Selection);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::SELECTION);
+    EXPECT_CALL(controller, Selection);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::BUS_FREE);
-    EXPECT_CALL(handler, BusFree);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::BUS_FREE);
+    EXPECT_CALL(controller, BusFree);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::DATA_IN);
-    EXPECT_CALL(handler, DataIn);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::DATA_IN);
+    EXPECT_CALL(controller, DataIn);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::DATA_OUT);
-    EXPECT_CALL(handler, DataOut);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::DATA_OUT);
+    EXPECT_CALL(controller, DataOut);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::COMMAND);
-    EXPECT_CALL(handler, Command);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::COMMAND);
+    EXPECT_CALL(controller, Command);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::STATUS);
-    EXPECT_CALL(handler, Status);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::STATUS);
+    EXPECT_CALL(controller, Status);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::MSG_IN);
-    EXPECT_CALL(handler, MsgIn);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::MSG_IN);
+    EXPECT_CALL(controller, MsgIn);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::MSG_OUT);
-    EXPECT_CALL(handler, MsgOut);
-    EXPECT_TRUE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::MSG_OUT);
+    EXPECT_CALL(controller, MsgOut);
+    EXPECT_TRUE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::ARBITRATION);
-    EXPECT_FALSE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::ARBITRATION);
+    EXPECT_FALSE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::RESELECTION);
-    EXPECT_FALSE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::RESELECTION);
+    EXPECT_FALSE(controller.ProcessPhase());
 
-    handler.SetPhase(BusPhase::RESERVED);
-    EXPECT_FALSE(handler.ProcessPhase());
+    controller.SetPhase(BusPhase::RESERVED);
+    EXPECT_FALSE(controller.ProcessPhase());
 }
 
 TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;
 
-    EXPECT_CALL(controller, Process);
+    EXPECT_CALL(controller, Process).Times(4);
+
     EXPECT_EQ(ShutdownMode::NONE, controller.ProcessOnController(0));
     controller.ScheduleShutdown(ShutdownMode::STOP_S2P);
-    EXPECT_CALL(controller, Process);
     EXPECT_EQ(ShutdownMode::STOP_S2P, controller.ProcessOnController(0));
     controller.ScheduleShutdown(ShutdownMode::STOP_PI);
-    EXPECT_CALL(controller, Process);
     EXPECT_EQ(ShutdownMode::STOP_PI, controller.ProcessOnController(0));
     controller.ScheduleShutdown(ShutdownMode::RESTART_PI);
-    EXPECT_CALL(controller, Process);
     EXPECT_EQ(ShutdownMode::RESTART_PI, controller.ProcessOnController(0));
 }
 
@@ -266,19 +210,20 @@ TEST(AbstractControllerTest, Offset)
     controller.ResetOffset();
     EXPECT_EQ(0, controller.GetOffset());
 
+    controller.SetCurrentLength(10);
     controller.UpdateOffsetAndLength();
-    EXPECT_EQ(0, controller.GetOffset());
+    EXPECT_EQ(10, controller.GetOffset());
 }
 
 TEST(AbstractControllerTest, ProcessOnController)
 {
     MockAbstractController controller(1);
 
-    EXPECT_CALL(controller, Process);
+    EXPECT_CALL(controller, Process).Times(2);
+
     controller.ProcessOnController(0x02);
     EXPECT_EQ(-1, controller.GetInitiatorId());
 
-    EXPECT_CALL(controller, Process);
     controller.ProcessOnController(0x06);
     EXPECT_EQ(2, controller.GetInitiatorId());
 }

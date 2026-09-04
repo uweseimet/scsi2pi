@@ -14,7 +14,7 @@
 #include "shared/s2p_exceptions.h"
 
 class HostServicesTest : public ::testing::Test {
-protected:
+public:
 
     void SetUp() override {
         tie(controller, services) = CreateDevice(SCHS);

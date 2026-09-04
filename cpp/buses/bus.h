@@ -9,6 +9,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <string>
 #include "board.h"
 #include "shared/scsi.h"
@@ -157,6 +158,8 @@ public:
 
     static string GetPhaseName(BusPhase phase)
     {
+        assert(static_cast<size_t>(phase) < phase_names.size());
+
         return phase_names[static_cast<size_t>(phase)];
     }
 

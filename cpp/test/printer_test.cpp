@@ -11,7 +11,7 @@
 #include "shared/s2p_exceptions.h"
 
 class PrinterTest : public ::testing::Test {
-protected:
+public:
 
     void SetUp() override {
         tie(controller, printer) = CreateDevice(SCLP);

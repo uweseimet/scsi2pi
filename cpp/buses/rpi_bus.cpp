@@ -232,6 +232,8 @@ void RpiBus::Reset() const
     // Turn off active signal
     PinSetSignal(PIN_ACT, false);
 
+    SetDir(true);
+
     // Set all signals to off
     for (const int pin : SIGNAL_TABLE) {
         SetSignal(pin, false);

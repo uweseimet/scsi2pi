@@ -11,7 +11,7 @@
 #include "shared/s2p_exceptions.h"
 
 class DaynaportTest : public ::testing::Test {
-protected:
+public:
 
     void SetUp() override {
         tie(controller, daynaport) = CreateDevice(SCDP);
@@ -78,7 +78,7 @@ TEST_F(DaynaportTest, HandleInquiry)
 TEST_F(DaynaportTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::TEST_UNIT_READY));
+    Dispatch(daynaport, ScsiCommand::TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -105,12 +105,12 @@ TEST_F(DaynaportTest, GetMessage6)
     controller->SetCdbByte(4, 0x01);
     controller->SetCdbByte(5, 0xc0);
     controller->GetBuffer()[0] = 0x12;
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6));
+    Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6);
     EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
 
     controller->SetCdbByte(4, 0x01);
     controller->SetCdbByte(5, 0x80);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6));
+    Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6);
     EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
 
     controller->SetCdbByte(4, 0x00);
@@ -139,7 +139,7 @@ TEST_F(DaynaportTest, SendMessage6)
 
     controller->SetCdbByte(5, 0x80);
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6));
+    Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6);
 }
 
 TEST_F(DaynaportTest, TestRetrieveStats)
@@ -147,7 +147,7 @@ TEST_F(DaynaportTest, TestRetrieveStats)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::RETRIEVE_STATS));
+    Dispatch(daynaport, ScsiCommand::RETRIEVE_STATS);
 }
 
 TEST_F(DaynaportTest, SetInterfaceMode)
@@ -158,12 +158,12 @@ TEST_F(DaynaportTest, SetInterfaceMode)
     // Not implemented, do nothing
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
     EXPECT_CALL(*controller, Status);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE));
+    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE));
+    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE);
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_STATS);
     Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
@@ -185,7 +185,7 @@ TEST_F(DaynaportTest, SetMcastAddr)
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR));
+    Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR);
 }
 
 TEST_F(DaynaportTest, EnableInterface)

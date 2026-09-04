@@ -22,8 +22,7 @@ jobs:
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
       SONAR_SCANNER_VERSION: 8.1.0.6389
-      BUILD_WRAPPER_OUT_DIR: .build_wrapper_out
-      APT_PACKAGES: protobuf-compiler libspdlog-dev libgmock-dev
+      APT_PACKAGES: protobuf-compiler libspdlog-dev libgmock-dev bear
 
     steps:
       - uses: actions/checkout@v7
@@ -36,20 +35,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y $APT_PACKAGES
 
-      - name: Set up build-wrapper and sonar-scanner
+      - name: Set up sonar-scanner
         run: |
           mkdir -p $HOME/.sonar
-          curl -fsSLo /tmp/wrapper.zip $SONAR_SERVER_URL/static/cpp/build-wrapper-linux-x86.zip
-          unzip -o /tmp/wrapper.zip -d $HOME/.sonar/
           curl -fsSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
           unzip -o /tmp/scanner.zip -d $HOME/.sonar/
 
       - name: Compile with coverage data
-        run: |
-          mkdir -p $HOME/$BUILD_WRAPPER_OUT_DIR
-          $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 \
-          --out-dir $HOME/BUILD_WRAPPER_OUT_DIR \
-          make -j $(nproc) DEBUG=1 coverage
+        run: bear -- make -j $(nproc) DEBUG=1 coverage
 
       - name: Run gcov
         run: gcov -p $(find ../build/obj -name '*.gcno')
@@ -63,7 +56,7 @@ jobs:
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
             --define sonar.sourceEncoding=UTF-8 \
-            --define sonar.cfamily.compile-commands=$HOME/BUILD_WRAPPER_OUT_DIR/compile_commands.json \
+            --define sonar.cfamily.compile-commands=compile_commands.json \
             --define sonar.cfamily.gcov.reportsPath=. \
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
