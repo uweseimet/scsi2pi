@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "storage_device.h"
+#include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -24,7 +25,7 @@ string StorageDevice::SetUp()
             PreventAllowMediumRemoval();
         });
 
-    page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters);
+    page_handler = make_unique<PageHandler>(*this, supports_mode_select, supports_save_parameters, true);
 
     return "";
 }
@@ -347,13 +348,10 @@ off_t StorageDevice::GetFileSize() const
     throw IoException("Can't get size of '" + filename.string() + "': " + error.message());
 }
 
-int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
+int StorageDevice::ModeSense6() const
 {
-    // Subpages are not supported
-    if (cdb[3]) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
-
+    const auto &cdb = GetController()->GetCdb();
+    auto &buf = GetController()->GetBuffer();
     const int length = min(static_cast<int>(buf.size()), cdb[4]);
     fill_n(buf.begin(), length, 0);
 
@@ -381,22 +379,16 @@ int StorageDevice::ModeSense6(cdb_t cdb, data_in_t buf) const
     }
 
     if (cdb[2] & 0x3f) {
-        size = page_handler->AddModePages(cdb, buf, size, length, 255);
+        size = page_handler->AddModePages(size, length, 255);
     }
-
-    // The size field does not count itself
-    buf[0] = static_cast<uint8_t>(size - 1);
 
     return size;
 }
 
-int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
+int StorageDevice::ModeSense10() const
 {
-    // Subpages are not supported
-    if (cdb[3]) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
-
+    const auto &cdb = GetController()->GetCdb();
+    auto &buf = GetController()->GetBuffer();
     const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
     fill_n(buf.begin(), length, 0);
 
@@ -440,11 +432,8 @@ int StorageDevice::ModeSense10(cdb_t cdb, data_in_t buf) const
     }
 
     if (cdb[2] & 0x3f) {
-        size = page_handler->AddModePages(cdb, buf, size, length, 65535);
+        size = page_handler->AddModePages(size, length, 65535);
     }
-
-    // The size field does not count itself
-    SetInt16(buf, 0, size - 2);
 
     return size;
 }

@@ -17,18 +17,30 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
 
-PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports_mode_select(m), supports_save_parameters(
-    p)
+PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), supports_mode_select(m), supports_save_parameters(
+    p), supports_block_descriptors(b)
 {
     device.AddCommand(ScsiCommand::MODE_SENSE_6, [this]
         {
-            device.DataInPhase(
-                device.ModeSense6(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
+            ValidateCdb();
+
+            const int size = device.ModeSense6();
+
+            // The size field does not count itself
+            device.GetController()->GetBuffer()[0] = static_cast<uint8_t>(size - 1);
+
+            device.DataInPhase(size);
         });
     device.AddCommand(ScsiCommand::MODE_SENSE_10, [this]
         {
-            device.DataInPhase(
-                device.ModeSense10(device.GetController()->GetCdb(), device.GetController()->GetBuffer()));
+            ValidateCdb();
+
+            const int size = device.ModeSense10();
+
+            // The size field does not count itself
+            SetInt16(device.GetController()->GetBuffer(), 0, size - 2);
+
+            device.DataInPhase(size);
         });
 
     // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
@@ -42,12 +54,24 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports
         });
 }
 
-int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, int max_size) const
+void PageHandler::ValidateCdb() const
+{
+    const auto &cdb = device.GetController()->GetCdb();
+
+    // Subpages are not supported, block descriptor support depends on the device
+    if (cdb[3] || (!supports_block_descriptors && (!(cdb[1] & 0x08)))) {
+        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+    }
+}
+
+int PageHandler::AddModePages(int offset, int length, int max_size) const
 {
     const int max_length = length - offset;
     if (max_length < 0) {
         return length;
     }
+
+    const auto &cdb = device.GetController()->GetCdb();
 
     const bool changeable = (cdb[2] & 0xc0) == 0x40;
 
@@ -57,12 +81,12 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
     map<int, vector<byte>> pages;
     device.SetUpModePages(pages, page_code, changeable);
     const auto& [vendor, product, _] = device.GetProductData();
-    for (const auto& [p, data] : GetCustomModePages(vendor, product)) {
+    for (auto&& [p, data] : GetCustomModePages(vendor, product)) {
         if (data.empty()) {
             pages.erase(p);
         }
         else {
-            pages[p] = data;
+            pages[p] = std::move(data);
         }
     }
 
@@ -87,9 +111,9 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
         }
     }
 
-    if (pages.contains(0)) {
+    if (auto it = pages.find(0); it != pages.end()) {
         // Page data only (there is no standardized size field for page 0)
-        result.insert(result.end(), pages[0].cbegin(), pages[0].cend());
+        result.insert(result.end(), it->second.cbegin(), it->second.cend());
     }
 
     if (static_cast<int>(result.size()) > max_size) {
@@ -97,10 +121,10 @@ int PageHandler::AddModePages(cdb_t cdb, data_in_t buf, int offset, int length, 
     }
 
     const int size = min(max_length, static_cast<int>(result.size()));
-    memcpy(&buf.data()[offset], result.data(), size);
+    memcpy(&(device.GetController()->GetBuffer()).data()[offset], result.data(), size);
 
     // Do not return more than the requested number of bytes
-    return size + offset < length ? size + offset : length;
+    return min(size + offset, length);
 }
 
 map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, const string &product) const
@@ -153,7 +177,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
             trace("Adding/replacing mode page {}: {}", page_code, value);
         }
 
-        pages[page_code] = page_data;
+        pages.insert_or_assign(page_code, std::move(page_data));
     }
 
     return pages;

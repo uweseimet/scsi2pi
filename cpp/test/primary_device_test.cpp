@@ -218,14 +218,14 @@ TEST(PrimaryDeviceTest, ModeSense6)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_EQ(0, device.ModeSense6( { }, { }));
+    EXPECT_EQ(0, device.ModeSense6());
 }
 
 TEST(PrimaryDeviceTest, ModeSense10)
 {
     MockPrimaryDevice device(0);
 
-    EXPECT_EQ(0, device.ModeSense10( { }, { }));
+    EXPECT_EQ(0, device.ModeSense10());
 }
 
 TEST(PrimaryDeviceTest, SetUpModePages)

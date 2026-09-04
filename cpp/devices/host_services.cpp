@@ -4,7 +4,7 @@
 //
 // Copyright (C) 2022-2026 Uwe Seimet
 //
-// Host Services with support for realtime clock, shutdown and command execution
+// Host Services with real-time clock, shutdown and remove command support
 //
 //---------------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ string HostServices::SetUp()
             ReceiveOperationResults();
         });
 
-    page_handler = make_unique<PageHandler>(*this, false, false);
+    page_handler = make_unique<PageHandler>(*this, false, false, false);
 
     return "";
 }
@@ -206,40 +206,24 @@ void HostServices::ReceiveOperationResults()
     DataInPhase(length);
 }
 
-int HostServices::ModeSense6(cdb_t cdb, data_in_t buf) const
+int HostServices::ModeSense6() const
 {
-    // Block descriptors cannot be returned, subpages are not supported
-    if (cdb[3] || !(cdb[1] & 0x08)) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
+    auto &buf = GetController()->GetBuffer();
 
-    const int length = min(static_cast<int>(buf.size()), cdb[4]);
+    const auto length = min(static_cast<int>(buf.size()), GetController()->GetCdb()[4]);
     fill_n(buf.begin(), length, 0);
 
-    const int size = page_handler->AddModePages(cdb, buf, 4, length, 255);
-
-    // The size field does not count itself
-    buf[0] = static_cast<uint8_t>((size - 1));
-
-    return size;
+    return page_handler->AddModePages(4, length, 255);
 }
 
-int HostServices::ModeSense10(cdb_t cdb, data_in_t buf) const
+int HostServices::ModeSense10() const
 {
-    // Block descriptors cannot be returned, subpages are not supported
-    if (cdb[3] || !(cdb[1] & 0x08)) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
-    }
+    auto &buf = GetController()->GetBuffer();
 
-    const int length = min(static_cast<int>(buf.size()), GetInt16(cdb, 7));
+    const auto length = min(static_cast<int>(buf.size()), GetInt16(GetController()->GetCdb(), 7));
     fill_n(buf.begin(), length, 0);
 
-    const int size = page_handler->AddModePages(cdb, buf, 8, length, 65535);
-
-    // The size field does not count itself
-    SetInt16(buf, 0, size - 2);
-
-    return size;
+    return page_handler->AddModePages(8, length, 65535);
 }
 
 void HostServices::SetUpModePages(map<int, vector<byte>> &pages, int page, bool changeable) const

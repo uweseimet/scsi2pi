@@ -150,8 +150,8 @@ private:
     void StartStopUnit();
     void PreventAllowMediumRemoval();
 
-    int ModeSense6(cdb_t, data_in_t) const override;
-    int ModeSense10(cdb_t, data_in_t) const override;
+    int ModeSense6() const override;
+    int ModeSense10() const override;
 
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
     void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;

@@ -130,12 +130,12 @@ protected:
     virtual void RequestSense();
     void SendDiagnostic() const;
 
-    virtual int ModeSense6(cdb_t, data_in_t) const
+    virtual int ModeSense6() const
     {
         // Nothing to do in base class
         return 0;
     }
-    virtual int ModeSense10(cdb_t, data_in_t) const
+    virtual int ModeSense10() const
     {
         // Nothing to do in base class
         return 0;
