@@ -41,7 +41,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3, false, false });
     AddCommand(ScsiCommand::RETRIEVE_STATS, 6, "RETRIEVE STATS", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::WRITE_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 3, true, false });
-    AddCommand(ScsiCommand::SEEK_6, 6, "SEEK(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::SEEK_6, 6, "SEEK(6)", { 0, 0, 1, 0, false, false });
     AddCommand(ScsiCommand::SET_IFACE_MODE, 6, "SET INTERFACE MODE", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SET_MCAST_ADDR, 6, "SET MULTICAST ADDRESS", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::ENABLE_INTERFACE, 6, "ENABLE INTERFACE", { 0, 0, 0, 0, false, false });
@@ -66,7 +66,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_CAPACITY_10, 10, "READ CAPACITY(10)", { -8, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_10, 10, "READ(10)", { 7, 2, 2, 4, false, false });
     AddCommand(ScsiCommand::WRITE_10, 10, "WRITE(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 2, 0, false, false });
     AddCommand(ScsiCommand::ERASE_10, 10, "ERASE(10)", { 7, 2, 2, 4, false, false });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true, false });
     AddCommand(ScsiCommand::VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true, false });
