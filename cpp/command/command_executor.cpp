@@ -499,7 +499,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     string effective_filename = filename;
 
-    if (!exists(filename)) {
+    error_code error;
+    if (!exists(filename, error)) {
         // If the file does not exist search for it in the image folder
         effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
 
