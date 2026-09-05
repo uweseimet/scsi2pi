@@ -138,7 +138,7 @@ void Printer::SynchronizeBuffer()
     LogTrace(fmt::format("Printing file '{}' with {} byte(s) using print command '{}'", filename,
         file_size(path(filename), error), cmd));
 
-    if (system(fmt::format("runuser -u lp -- {}", cmd).c_str())) {
+    if (system(fmt::format("runuser -u lp -g lp -- {}", cmd).c_str())) {
         LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
 
         ++print_error_count;

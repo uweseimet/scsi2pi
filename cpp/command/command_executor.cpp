@@ -499,7 +499,8 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     string effective_filename = filename;
 
-    if (!exists(filename)) {
+    error_code error;
+    if (!exists(filename, error)) {
         // If the file does not exist search for it in the image folder
         effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
 
@@ -524,7 +525,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 #endif
 
 bool CommandExecutor::CheckForReservedFile([[maybe_unused]]const CommandContext &context,
-    [[maybe_unused]]const string &filename)
+    [[maybe_unused]] const string &filename)
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {

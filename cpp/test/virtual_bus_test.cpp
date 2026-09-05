@@ -6,8 +6,9 @@
 //
 //---------------------------------------------------------------------------
 
-#include "mocks.h"
-#include "../buses/virtual_bus.h"
+#include <gtest/gtest.h>
+#include "buses/bus_factory.h"
+#include "buses/virtual_bus.h"
 
 TEST(VirtualBusTest, BSY)
 {
@@ -101,21 +102,21 @@ TEST(VirtualBusTest, IO)
 
 TEST(VirtualBusTest, DAT)
 {
-    VirtualBus bus("", false);
+    const auto &bus = bus_factory::CreateBus(true, true, false, "");
 
-    bus.SetDAT(0xae);
-    EXPECT_EQ(0xae, bus.GetDAT());
-    bus.SetDAT(0x21);
-    EXPECT_EQ(0x21, bus.GetDAT());
+    bus->SetDAT(0xae);
+    EXPECT_EQ(0xae, bus->GetDAT());
+    bus->SetDAT(0x21);
+    EXPECT_EQ(0x21, bus->GetDAT());
 }
 
 TEST(VirtualBusTest, Acquire)
 {
-    VirtualBus bus("", false);
+    const auto &bus = bus_factory::CreateBus(true, true, false, "");
 
-    bus.SetDAT(0x12);
-    bus.Acquire();
-    EXPECT_EQ(0x12U, bus.GetDAT());
+    bus->SetDAT(0x12);
+    bus->Acquire();
+    EXPECT_EQ(0x12U, bus->GetDAT());
 }
 
 TEST(VirtualBusTest, BusPhases)
@@ -229,7 +230,5 @@ TEST(VirtualBusTest, WaitHandshakeREQ)
 
 TEST(VirtualBusTest, IsRaspberryPi)
 {
-    VirtualBus bus("", false);
-
-    EXPECT_FALSE(bus.IsRaspberryPi());
+    EXPECT_FALSE(bus_factory::CreateBus(true, true, false, "")->IsRaspberryPi());
 }

@@ -16,7 +16,6 @@
 #include "disk_cache.h"
 #include "linux_cache.h"
 #include "controllers/abstract_controller.h"
-#include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;

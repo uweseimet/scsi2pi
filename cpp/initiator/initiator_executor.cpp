@@ -25,7 +25,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         return 0xff;
     }
 
-    bus.SetDir(true);
+    bus.SetDataDirIn(true);
 
     status_code = 0xff;
     byte_count = 0;
@@ -69,7 +69,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         bus.Acquire();
 
         // Ensure that the data direction matches the one set by the target
-        bus.SetDir(!bus.GetIO());
+        bus.SetDataDirIn(!bus.GetIO());
 
         if (bus.GetREQ()) {
             try {

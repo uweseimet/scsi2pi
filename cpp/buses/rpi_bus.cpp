@@ -275,7 +275,7 @@ void RpiBus::SetSEL(bool state) const
     PinSetSignal(PIN_ACT, state);
 }
 
-void RpiBus::SetDir(bool in) const
+void RpiBus::SetDataDirIn(bool in) const
 {
     // Change the data input/output direction according to the IO signal
     PinSetSignal(pin_dtd, !in);

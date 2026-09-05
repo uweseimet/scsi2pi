@@ -31,7 +31,7 @@ public:
     MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
     MOCK_METHOD(void, Acquire, (), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (const, override));
-    MOCK_METHOD(void, SetDir, (bool), (const, override));
+    MOCK_METHOD(void, SetDataDirIn, (bool), (const, override));
     MOCK_METHOD(bool, WaitHandShake, (int, bool), (const, override));
     MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));

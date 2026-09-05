@@ -24,37 +24,26 @@ public:
     ~VirtualBus() override = default;
 
     void Reset() const override;
-    void CleanUp() override;
-
-    void Acquire() const override
-    {
-        // Nothing to do
-    }
-
-    void SetDAT(uint8_t) const override;
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) const override;
 
-    uint8_t WaitForSelection() override;
-
-    void WaitNanoSeconds(bool) const override
-    {
-        // Nothing to do
-    }
+private:
 
     bool IsRaspberryPi() const override
     {
         return false;
     }
 
-protected:
-
     string SetUp(bool) override;
-
-private:
+    void CleanUp() override;
 
     void LogSignal(const string&) const;
+
+    void Acquire() const override
+    {
+        // Nothing to do
+    }
 
     void DisableIRQ() override
     {
@@ -65,10 +54,19 @@ private:
         // Nothing to do
     }
 
-    void SetDir(bool) const override
+    void SetDataDirIn(bool) const override
     {
         // Nothing to do
     }
+
+    void SetDAT(uint8_t) const override;
+
+    void WaitNanoSeconds(bool) const override
+    {
+        // Nothing to do
+    }
+
+    uint8_t WaitForSelection() override;
 
     static string GetSignalName(int);
 

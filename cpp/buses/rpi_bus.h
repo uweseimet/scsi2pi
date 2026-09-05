@@ -30,22 +30,6 @@ public:
 
     RpiBus(PiType type, bool);
 
-    void Reset() const override;
-    void CleanUp() override;
-
-    uint8_t WaitForSelection() override;
-
-    // Bus signal acquisition
-    void Acquire() const override;
-
-    void SetBSY(bool) const override;
-
-    void SetSEL(bool) const override;
-
-    void SetDAT(uint8_t) const override;
-
-    void WaitNanoSeconds(bool) const override;
-
     bool IsRaspberryPi() const override
     {
         return true;
@@ -53,11 +37,12 @@ public:
 
     static PiType GetPiType(const string& = "/proc/device-tree/model");
 
-protected:
+private:
 
     string SetUp(bool) override;
+    void CleanUp() override;
 
-private:
+    void Reset() const override;
 
     void InitializeSignals() const;
 
@@ -68,7 +53,7 @@ private:
     void DisableIRQ() override;
     void EnableIRQ() override;
 
-    void SetDir(bool) const override;
+    void SetDataDirIn(bool) const override;
 
     // GPIO pin direction setting
     void PinConfig(int, int) const;
@@ -81,17 +66,25 @@ private:
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
 
+    // Bus signal acquisition
+    void Acquire() const override;
+
+    void SetBSY(bool) const override;
+
+    void SetSEL(bool) const override;
+
+    void SetDAT(uint8_t) const override;
+
+    void WaitNanoSeconds(bool) const override;
+
+    uint8_t WaitForSelection() override;
+
     PiType pi_type;
 
-#ifdef BOARD_STANDARD
-    int pin_ind = -1;
-    int pin_tad = -1;
-    int pin_dtd = -1;
-#else
+    // Set to -1 for the STANDARD board
     int pin_ind = PIN_IND;
     int pin_tad = PIN_TAD;
     int pin_dtd = PIN_DTD;
-#endif
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;

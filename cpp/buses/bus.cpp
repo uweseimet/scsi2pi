@@ -187,11 +187,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 }
 
 // For DATA IN, MESSAGE IN and STATUS
-#ifdef BUILD_SCDP
-int Bus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
-#else
-int Bus::TargetSendHandShake(data_out_t buf, int)
-#endif
+int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -319,7 +315,7 @@ void Bus::SetIO(bool state) const
 {
     SetSignal(PIN_IO, state);
 
-    SetDir(state);
+    SetDataDirIn(state);
 }
 
 // Get input signal value (except for DP and DT0-DT7)

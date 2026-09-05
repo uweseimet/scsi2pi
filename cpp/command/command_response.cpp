@@ -86,8 +86,7 @@ void GetDeviceProperties(shared_ptr<PrimaryDevice> device, PbDeviceProperties &p
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsImageFile()) {
-        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+    if (const auto &storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
         for (const auto &block_size : storage_device->GetSupportedBlockSizes()) {
             properties.add_block_sizes(block_size);
         }
@@ -123,8 +122,7 @@ void GetDevice(shared_ptr<PrimaryDevice> device, PbDevice &pb_device)
     pb_device.mutable_file()->set_name(device->GetIdentifier());
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsImageFile()) {
-        const auto storage_device = static_pointer_cast<const StorageDevice>(device);
+    if (const auto &storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
         pb_device.set_block_size(storage_device->IsRemoved() ? 0 : storage_device->GetBlockSize());
         pb_device.set_block_count(storage_device->IsRemoved() ? 0 : storage_device->GetBlockCount());
         command_response::GetImageFile(*pb_device.mutable_file(),
