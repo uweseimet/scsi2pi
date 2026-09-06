@@ -84,7 +84,7 @@ Display this help.
 .BR --id/-i \fI " "\fIID[:LUN] " " \fIFILE
 ID is the SCSI/SASI ID (0-7). LUN (0-31 for SCSI, 0-1 for SASI) is the optional LUN (logical unit). The default LUN is 0.
 .IP
-FILE is the name of the image file or a block device (/dev/sd*) to use for the SCSI/SASI device. For devices that do not support an image file, the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
+FILE is the name of the image file or a block device (/dev/sd* or /dev/sr*) to use for the SCSI/SASI device. For devices that do not support an image file, the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
 .BR --ignore-conf\fI " " \fI
 Ignore any properties in the /etc/s2p.conf configuration file.

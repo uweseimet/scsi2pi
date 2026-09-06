@@ -14,6 +14,7 @@
 #if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
 #endif
+#include <unistd.h>
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"

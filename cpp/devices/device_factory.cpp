@@ -70,8 +70,11 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     if (type == UNDEFINED) {
         type = GetTypeForFile(filename);
         if (type == UNDEFINED) {
-            if (filename.starts_with("/dev/")) {
+            if (filename.starts_with("/dev/sd")) {
                 type = SCHD;
+            }
+            else if (filename.starts_with("/dev/sr")) {
+                type = SCCD;
             }
         }
     }

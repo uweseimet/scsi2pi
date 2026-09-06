@@ -162,13 +162,12 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
     const BusPhase phase = GetPhase();
 
-    int bytes_received;
-    for (bytes_received = 0; bytes_received < count; ++bytes_received) {
+    auto receive_byte = [this, &phase](uint8_t &byte_out) {
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            break;
+            return false;
         }
 
-        buf[bytes_received] = GetDAT();
+        byte_out = GetDAT();
 
         SetACK(true);
 
@@ -176,16 +175,18 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
         SetACK(false);
 
-        if (!req || !IsPhase(phase)) {
-            break;
-        }
+        return req && IsPhase(phase);
+    };
+
+    int bytes_received = 0;
+    while (bytes_received < count && receive_byte(buf[bytes_received])) {
+        ++bytes_received;
     }
 
     EnableIRQ();
 
     return bytes_received;
 }
-
 // For DATA IN, MESSAGE IN and STATUS
 int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
 {
@@ -235,20 +236,16 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
+    const int last_msg_out = (phase == BusPhase::MSG_OUT) ? count - 1 : -1;
 
-    // Position of the last message byte if in MESSAGE OUT phase
-    const int last_msg_out = phase == BusPhase::MSG_OUT ? count - 1 : -1;
-
-    int bytes_sent;
-    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
-        SetDAT(buf[bytes_sent]);
+    auto send_byte = [this, &phase](uint8_t byte, bool is_last_msg) {
+        SetDAT(byte);
 
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            break;
+            return false;
         }
 
-        // Signal the last MESSAGE OUT byte when in MESSAGE OUT phase
-        if (bytes_sent == last_msg_out) {
+        if (is_last_msg) {
             SetATN(false);
         }
 
@@ -258,9 +255,12 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
         SetACK(false);
 
-        if (!req || !IsPhase(phase)) {
-            break;
-        }
+        return req && IsPhase(phase);
+    };
+
+    int bytes_sent = 0;
+    while (bytes_sent < count && send_byte(buf[bytes_sent], bytes_sent == last_msg_out)) {
+        ++bytes_sent;
     }
 
     EnableIRQ();
