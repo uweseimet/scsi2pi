@@ -55,6 +55,7 @@ jobs:
             --define sonar.host.url=$SONAR_SERVER_URL \
             --define sonar.projectKey=$SONAR_PROJECT_KEY \
             --define sonar.organization=$SONAR_ORGANIZATION \
+            --define sonar.scm.revision=${{ github.sha }} \
             --define sonar.sourceEncoding=UTF-8 \
             --define sonar.cfamily.compile-commands=compile_commands.json \
             --define sonar.cfamily.gcov.reportsPath=. \

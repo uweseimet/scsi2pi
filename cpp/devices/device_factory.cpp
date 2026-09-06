@@ -69,14 +69,6 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     // If no type was specified try to derive the device type from the filename
     if (type == UNDEFINED) {
         type = GetTypeForFile(filename);
-        if (type == UNDEFINED) {
-            if (filename.starts_with("/dev/sd")) {
-                type = SCHD;
-            }
-            else if (filename.starts_with("/dev/sr")) {
-                type = SCCD;
-            }
-        }
     }
 
     switch (type) {
@@ -147,7 +139,19 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
+    if (filename.starts_with("/dev/sd")) {
+        return SCHD;
+    }
+
+    if (filename.starts_with("/dev/sg")) {
+        return SCSG;
+    }
+
+    if (filename.starts_with("/dev/sr")) {
+        return SCCD;
+    }
+
+    return UNDEFINED;
 }
 
 bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)

@@ -775,6 +775,12 @@ void S2pDump::RestoreTape(istream &file)
 
 long S2pDump::CalculateEffectiveSize()
 {
+    if (count - start > static_cast<int>(device_info.capacity)) {
+        cout << "Warning: Effective last sector " << start + count - 1 << " exceeds capacity of "
+            << device_info.capacity << " sector(s)" << "\n\n";
+        device_info.capacity = count - start;
+    }
+
     if (device_info.capacity <= static_cast<uint64_t>(start)) {
         cerr << "Start sector " << start << " is out of range (" << device_info.capacity - 1 << ")\n";
         return -1;
