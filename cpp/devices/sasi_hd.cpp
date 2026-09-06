@@ -23,7 +23,7 @@ void SasiHd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 256);
 
-    SetBlockCount(GetFileSize() / GetBlockSize());
+    SetBlockCount(GetCapacityFromFile() / GetBlockSize());
     if (GetBlockCount() > 2097152) {
         throw IoException("The maximum SASI drive capacity is 2097152 sectors");
     }

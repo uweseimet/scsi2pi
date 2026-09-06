@@ -221,7 +221,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
     param_map params = { pb_device.params().cbegin(), pb_device.params().cend() };
-    if (!device->SupportsImageFile()) {
+    if (!device->SupportsFile()) {
         // Legacy clients like PiSCSI's scsictl might have sent both "file" and "interfaces"
         params.erase("file");
     }
@@ -248,7 +248,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #endif
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsImageFile()) {
+    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
         const string &filename = GetParam(pb_device, "file");
 
         // If no filename was provided the medium is considered not inserted
@@ -261,7 +261,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
                 fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
         }
 
-        if (!ValidateImageFile(context, *static_pointer_cast<StorageDevice>(device), filename)) {
+        if (!ValidateImageFile(context, *storage_device, filename)) {
             return false;
         }
     }
@@ -293,7 +293,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (!device->IsRemoved() && device->SupportsImageFile()) {
+    if (!device->IsRemoved() && device->SupportsFile()) {
         static_pointer_cast<StorageDevice>(device)->ReserveFile();
     }
 #endif
@@ -309,7 +309,7 @@ bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
     [[maybe_unused]] const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, [[maybe_unused]] bool dryRun) const
 {
-    if (!device->SupportsImageFile()) {
+    if (!device->SupportsFile()) {
         return false;
     }
 
@@ -415,7 +415,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsImageFile()) {
+    if (device->SupportsFile()) {
         const auto storage_device = static_pointer_cast<StorageDevice>(device);
         if (storage_device->GetConfiguredBlockSize()) {
             PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
@@ -476,10 +476,10 @@ string CommandExecutor::SetReservedIds(const string &ids)
     reserved_ids = std::move(ids_to_reserve);
 
     if (reserved_ids.empty()) {
-        s2p_logger.info("Cleared reserved IDs");
+        s2p_logger.info("Cleared reserved ID(s)");
     }
     else {
-        s2p_logger.info("Reserved IDs set to {}", Join(reserved_ids));
+        s2p_logger.info("Reserved ID(s) set to {}", Join(reserved_ids));
     }
 
     return "";
@@ -493,23 +493,25 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         return true;
     }
 
-    if (!CheckForReservedFile(context, filename)) {
-        return false;
-    }
-
-    string effective_filename = filename;
+    path effective_filename(filename);
 
     error_code error;
-    if (!exists(filename, error)) {
-        // If the file does not exist search for it in the image folder
+    if (effective_filename.is_relative() || !exists(effective_filename, error)) {
+        // If the path is relative or the file does not exist, search for it in the image folder
         effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
-
-        if (!CheckForReservedFile(context, effective_filename)) {
-            return false;
-        }
     }
 
-    device.SetFilename(effective_filename);
+    if (!exists(effective_filename, error)) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, effective_filename.string());
+    }
+
+    // Check for reserved file
+    if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
+            fmt::format("{}:{}", id, lun));
+    }
+
+    device.SetFilename(effective_filename.string());
 
     try {
         device.Open();
@@ -517,25 +519,12 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     catch (const IoException &e) {
         s2p_logger.error(e.what());
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, device.GetFilename());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, effective_filename.string());
     }
 
     return true;
 }
 #endif
-
-bool CommandExecutor::CheckForReservedFile([[maybe_unused]]const CommandContext &context,
-    [[maybe_unused]] const string &filename)
-{
-#ifdef BUILD_STORAGE_DEVICE
-    if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_IN_USE, filename,
-            fmt::format("{}:{}", id, lun));
-    }
-#endif
-
-    return true;
-}
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
@@ -635,6 +624,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
         return nullptr;
     }
 
+#ifdef BUILD_SCDP
     // SCDP may be attached only once
     if (device->GetType() == SCDP) {
         for (const auto &d : controller_factory.GetAllDevices()) {
@@ -644,6 +634,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
             }
         }
     }
+#endif
 
     return device;
 }
@@ -663,9 +654,8 @@ bool CommandExecutor::SetBlockSize([[maybe_unused]]const CommandContext &context
 {
 #ifdef BUILD_STORAGE_DEVICE
     if (block_size) {
-        if (device->SupportsImageFile()) {
-            if (const auto storage_device = static_pointer_cast<StorageDevice>(device); !storage_device->SetConfiguredBlockSize(
-                block_size)) {
+        if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
+            if (!storage_device->SetConfiguredBlockSize(block_size)) {
                 return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
             }
         }

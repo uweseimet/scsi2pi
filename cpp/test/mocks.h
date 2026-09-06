@@ -176,7 +176,7 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
-    FRIEND_TEST(StorageDeviceTest, GetFileSize);
+    FRIEND_TEST(StorageDeviceTest, GetCapacityFromFile);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetGetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);

@@ -29,7 +29,7 @@ public:
 TEST_F(DaynaportTest, Device_Defaults)
 {
     EXPECT_EQ(SCDP, daynaport->GetType());
-    EXPECT_FALSE(daynaport->SupportsImageFile());
+    EXPECT_FALSE(daynaport->SupportsFile());
     EXPECT_TRUE(daynaport->SupportsParams());
     EXPECT_FALSE(daynaport->IsProtectable());
     EXPECT_FALSE(daynaport->IsProtected());

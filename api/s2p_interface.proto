@@ -57,8 +57,8 @@ enum PbOperation {
     // Attach devices and return the new device list (PbDevicesInfo)
     // Parameters (depending on the device type):
     //   "cmd": The command to be used for printing, with "%f" as file placeholder (SCLP)
-    //   "device": The SG driver device file, i.e. "/dev/sg*" (SCSG)
-    //   "file": The image filename relative to the default image folder
+    //   "file": For storage devices: The image file (relative to the image folder or absolute) or a block device file.
+    //           For the SCSI-to-USB brige (SCSG): An SG driver device file "/dev/sg*".
     //   "bridge": create a network bridge (SCDP)
     //   "inet": The IP address and netmask for the network bridge (SCDP)
     //   "interface": A prioritized comma-separated list of interfaces to create a network bridge for (SCDP)
@@ -320,7 +320,7 @@ message PbImageFile {
     string name = 1;
     // The assumed device type, based on the filename extension
     PbDeviceType type = 2;
-    // The file size in bytes, 0 for block devices in /dev
+    // The image file size or block device capacity in bytes
     uint64 size = 3;
     bool read_only = 4;
 }

@@ -31,7 +31,7 @@ public:
         return filename.empty() ? "NO MEDIUM" : filename.string();
     }
 
-    bool SupportsImageFile() const override
+    bool SupportsFile() const override
     {
         return true;
     }
@@ -130,7 +130,7 @@ protected:
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetFileSize() const;
+    off_t GetCapacityFromFile() const;
 
     void UpdateReadCount(uint64_t count)
     {

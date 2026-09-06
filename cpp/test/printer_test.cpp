@@ -29,7 +29,7 @@ public:
 TEST_F(PrinterTest, Device_Defaults)
 {
     EXPECT_EQ(SCLP, printer->GetType());
-    EXPECT_FALSE(printer->SupportsImageFile());
+    EXPECT_FALSE(printer->SupportsFile());
     EXPECT_TRUE(printer->SupportsParams());
     EXPECT_FALSE(printer->IsProtectable());
     EXPECT_FALSE(printer->IsProtected());

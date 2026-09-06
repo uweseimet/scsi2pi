@@ -70,15 +70,16 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     if (type == UNDEFINED) {
         type = GetTypeForFile(filename);
         if (type == UNDEFINED) {
-            return nullptr;
+            if (filename.starts_with("/dev/")) {
+                type = SCHD;
+            }
         }
     }
 
     switch (type) {
-
 #if defined BUILD_SCHD
     case SCHD: {
-        const string &ext = GetExtensionLowerCase(filename);
+       const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");
     }
 

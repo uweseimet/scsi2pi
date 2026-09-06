@@ -38,7 +38,7 @@ static void ValidateModePages(map<int, vector<byte>> &pages)
 TEST_F(HostServicesTest, DeviceDefaults)
 {
     EXPECT_EQ(SCHS, services->GetType());
-    EXPECT_FALSE(services->SupportsImageFile());
+    EXPECT_FALSE(services->SupportsFile());
     EXPECT_FALSE(services->SupportsParams());
     EXPECT_FALSE(services->IsProtectable());
     EXPECT_FALSE(services->IsProtected());

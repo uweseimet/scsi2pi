@@ -55,7 +55,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
     auto hd = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, "test.hda");
     EXPECT_NE(nullptr, hd);
     EXPECT_EQ(SCHD, hd->GetType());
-    EXPECT_TRUE(hd->SupportsImageFile());
+    EXPECT_TRUE(hd->SupportsFile());
     EXPECT_FALSE(hd->SupportsParams());
     EXPECT_TRUE(hd->IsProtectable());
     EXPECT_FALSE(hd->IsProtected());

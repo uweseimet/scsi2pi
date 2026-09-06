@@ -24,16 +24,11 @@ using namespace sg_util;
 
 ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
-    SupportsParams(true);
     SetReady(true);
 }
 
 string ScsiGeneric::SetUp()
 {
-    if (const string &device_as_param = GetParam(DEVICE); !device_as_param.empty()) {
-        device = device_as_param;
-    }
-
     try {
         fd = OpenDevice(device);
     }
@@ -57,13 +52,6 @@ void ScsiGeneric::CleanUp()
         close(fd);
         fd = -1;
     }
-}
-
-param_map ScsiGeneric::GetDefaultParams() const
-{
-    return {
-        {   DEVICE, ""}
-    };
 }
 
 void ScsiGeneric::Dispatch(ScsiCommand cmd)

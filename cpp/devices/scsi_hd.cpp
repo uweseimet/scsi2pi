@@ -34,7 +34,7 @@ void ScsiHd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
 
-    SetBlockCount(GetFileSize() / GetBlockSize());
+    SetBlockCount(GetCapacityFromFile() / GetBlockSize());
 
     FinalizeSetup("SCSI HD");
 }

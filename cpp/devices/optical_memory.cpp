@@ -25,7 +25,7 @@ void OpticalMemory::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetFileSize();
+    const off_t size = GetCapacityFromFile();
 
     // For some capacities there are hard-coded, well-defined sector sizes and sector counts
     if (const auto &geometry = GEOMETRIES.find(size); geometry != GEOMETRIES.end()) {

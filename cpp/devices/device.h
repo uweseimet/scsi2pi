@@ -93,7 +93,7 @@ public:
         return lun;
     }
 
-    virtual bool SupportsImageFile() const
+    virtual bool SupportsFile() const
     {
         return false;
     }

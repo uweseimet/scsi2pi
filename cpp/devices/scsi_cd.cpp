@@ -42,7 +42,7 @@ void ScsiCd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048);
 
-    SetBlockCount(GetFileSize() / GetBlockSize());
+    SetBlockCount(GetCapacityFromFile() / GetBlockSize());
 
     ValidateFile();
 

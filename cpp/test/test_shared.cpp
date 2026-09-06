@@ -105,7 +105,7 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
-    EXPECT_TRUE(device->SupportsImageFile());
+    EXPECT_TRUE(device->SupportsFile());
     EXPECT_FALSE(device->SupportsParams());
     EXPECT_TRUE(device->IsProtectable());
     EXPECT_FALSE(device->IsProtected());
