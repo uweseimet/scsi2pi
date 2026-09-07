@@ -26,7 +26,7 @@ string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 
     return error;
 #else
-    return "";
+    return "Linux SG driver support is not compiled in";
 #endif
 }
 

@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "s2pproto_core.h"
-#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
@@ -32,8 +31,6 @@ void S2pProto::CleanUp() const
 
 void S2pProto::TerminationHandler(int)
 {
-    instance->bus->SetRST(true);
-
     instance->CleanUp();
 
     // Process will terminate automatically
@@ -76,12 +73,9 @@ bool S2pProto::Init(bool virtual_bus, bool log_signals)
 
     instance = this;
 
-    // Signal handler for cleaning up
-    struct sigaction termination_handler = { };
-    termination_handler.sa_handler = TerminationHandler;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
+    if (!virtual_bus) {
+        SetTerminationHandler(TerminationHandler);
+    }
 
     return true;
 }

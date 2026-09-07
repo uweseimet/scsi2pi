@@ -144,6 +144,9 @@ int DaynaPort::GetMessage(data_in_t buf)
 
     // The first 2 bytes are reserved for the length of the packet
     // The next 4 bytes are reserved for a flag field
+    if (buf.size() <= DAYNAPORT_READ_HEADER_SZ) {
+        return 0;
+    }
     const int rx_packet_size = tap.Receive(
         span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ), GetLogger());
 
@@ -206,6 +209,9 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
     else if (data_format == 0x80) {
         // The data length is specified in the first 2 bytes of the payload
         data_length = buf[1] + ((static_cast<int>(buf[0]) & 0xff) << 8);
+        if (buf.size() < static_cast<size_t>(data_length + 4)) {
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        }
         tap.Send(span(buf.data() + 4, data_length));
         byte_write_count += data_length;
     }

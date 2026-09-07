@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
@@ -22,6 +23,8 @@ public:
 
     VirtualBus(const string&, bool);
     ~VirtualBus() override = default;
+
+    void CleanUp() override;
 
     void Reset() const override;
 
@@ -36,7 +39,6 @@ private:
     }
 
     string SetUp(bool) override;
-    void CleanUp() override;
 
     void LogSignal(const string&) const;
 

@@ -10,7 +10,5 @@
 
 int main(int argc, char *argv[])
 {
-    const vector<char*> args(argv, argv + argc);
-
-    return S2pCtl().Run(args);
+    return S2pCtl().Run( { argv, static_cast<size_t>(argc) }, false, false);
 }

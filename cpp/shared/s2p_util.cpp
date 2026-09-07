@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cassert>
 #include <clocale>
+#include <csignal>
 #include <fcntl.h>
 #if __has_include(<pwd.h>)
 #include <pwd.h>
@@ -349,4 +350,14 @@ shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 void s2p_util::Sleep(const timespec &ns)
 {
     nanosleep(&ns, nullptr);
+}
+
+void s2p_util::SetTerminationHandler(SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer
+{
+    struct sigaction termination_handler = { };
+    termination_handler.sa_handler = handler;
+
+    sigaction(SIGINT, &termination_handler, nullptr);
+    sigaction(SIGTERM, &termination_handler, nullptr);
+    signal(SIGPIPE, SIG_IGN);
 }

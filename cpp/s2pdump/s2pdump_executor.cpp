@@ -109,7 +109,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadSasiCapacity()
         return {0, 0};
     }
 
-    uint32_t last = (1L << 21) - 1;
+    uint32_t last = (1UL << 21) - 1;
 
     if (ReadWrite(buf, last, 1, sector_size, false, true, false)) {
         return {last + 1, sector_size};

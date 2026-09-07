@@ -486,23 +486,26 @@ string CommandExecutor::SetReservedIds(const string &ids)
 }
 
 #ifdef BUILD_STORAGE_DEVICE
-bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &device,
-    const string &filename) const
+bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDevice &device, const string &f) const
 {
-    if (filename.empty()) {
+    if (f.empty()) {
         return true;
     }
 
-    path effective_filename(filename);
+    string filename = f;
 
-    error_code error;
-    if (effective_filename.is_relative() || !exists(effective_filename, error)) {
-        // If the path is relative or the file does not exist, search for it in the image folder
-        effective_filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
+    if (!filename.starts_with('/')) {
+        // If the path is not absolute, assume the file is in the image folder
+        filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
     }
 
-    if (!exists(effective_filename, error)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, effective_filename.string());
+    if (!filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder()) && !filename.starts_with("/home/")
+        && !filename.starts_with("/dev/s") && !filename.starts_with("/tmp/")) { // NOSONAR Using /tmp here is safe
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, f);
+    }
+
+    if (error_code error; !exists(path(filename), error)) {
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, filename);
     }
 
     // Check for reserved file
@@ -511,7 +514,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
             fmt::format("{}:{}", id, lun));
     }
 
-    device.SetFilename(effective_filename.string());
+    device.SetFilename(filename);
 
     try {
         device.Open();
@@ -519,7 +522,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     catch (const IoException &e) {
         s2p_logger.error(e.what());
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, effective_filename.string());
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, filename);
     }
 
     return true;

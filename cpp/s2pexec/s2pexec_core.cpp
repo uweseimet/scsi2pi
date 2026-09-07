@@ -8,7 +8,6 @@
 
 #include "s2pexec_core.h"
 #include <algorithm>
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -88,12 +87,9 @@ bool S2pExec::Init(bool virtual_bus, bool log_signals)
 
         instance = this;
 
-        // Signal handler for cleaning up
-        struct sigaction termination_handler = { };
-        termination_handler.sa_handler = TerminationHandler;
-        sigaction(SIGINT, &termination_handler, nullptr);
-        sigaction(SIGTERM, &termination_handler, nullptr);
-        signal(SIGPIPE, SIG_IGN);
+        if (!virtual_bus) {
+            SetTerminationHandler(TerminationHandler);
+        }
     }
     else if (const string &error = executor->Init(device_file); !error.empty()) {
         cerr << "Error: " << error << '\n';
@@ -506,7 +502,8 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
 
     if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE)) {
         vector<byte> sense_data;
-        transform(buffer.begin(), buffer.begin() + 18, back_inserter(sense_data),
+        const size_t length = min(buffer.size(), static_cast<size_t>(18));
+        transform(buffer.begin(), buffer.begin() + length, back_inserter(sense_data),
             [](const uint8_t d) {return static_cast<byte>(d);});
         s2pexec_logger->debug(FormatSenseData(sense_data));
     }

@@ -88,6 +88,14 @@ TEST(DeviceFactoryTest, AddExtensionMapping)
     auto mapping = factory.GetExtensionMapping();
     EXPECT_EQ(12U, mapping.size());
 
+    EXPECT_FALSE(factory.AddExtensionMapping("ISO", SCHS));
+    mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(12U, mapping.size());
+
+    EXPECT_FALSE(factory.AddExtensionMapping(".iso", SCHS));
+    mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(12U, mapping.size());
+
     EXPECT_TRUE(factory.AddExtensionMapping("ext", SCCD));
     mapping = factory.GetExtensionMapping();
     EXPECT_EQ(13U, mapping.size());

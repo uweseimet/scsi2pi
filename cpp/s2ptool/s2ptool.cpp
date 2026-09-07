@@ -6,6 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include "s2ptool.h"
 #include <getopt.h>
 #include "s2p/s2p_core.h"
 #include "s2pctl/s2pctl_core.h"
@@ -14,9 +15,10 @@
 #include "s2pproto/s2pproto_core.h"
 #include "shared/s2p_util.h"
 
+using namespace s2ptool;
 using namespace s2p_util;
 
-void usage()
+void s2ptool::Usage()
 {
     cout << "SCSI Device Emulator and SCSI Tools SCSI2Pi (Virtual Bus Tool)\n"
         << "Version " << GetVersionString() << "\n"
@@ -33,12 +35,7 @@ void usage()
         << "  --version/-v        Display the s2ptool version.\n";
 }
 
-void add_arg(vector<char*> &args, const string &arg)
-{
-    args.emplace_back(strdup(arg.c_str()));
-}
-
-int run(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     const vector<option> options = {
         { "client", required_argument, nullptr, 'c' },
@@ -51,7 +48,7 @@ int run(int argc, char *argv[])
     };
 
     string client = "s2pexec";
-    string t_args;
+    string s_args;
     string c_args;
     bool log_signals = false;
 
@@ -68,7 +65,7 @@ int run(int argc, char *argv[])
             break;
 
         case 'h':
-            usage();
+            Usage();
             return EXIT_SUCCESS;
 
         case 'l':
@@ -76,7 +73,7 @@ int run(int argc, char *argv[])
             break;
 
         case 's':
-            t_args = optarg;
+            s_args = optarg;
             break;
 
         case 'v':
@@ -84,30 +81,36 @@ int run(int argc, char *argv[])
             return EXIT_SUCCESS;
 
         default:
-            usage();
+            Usage();
 
             return EXIT_FAILURE;
         }
     }
 
-    vector<char*> client_args;
-    add_arg(client_args, client);
-    for (const auto &arg : Split(c_args, ' ')) {
-        add_arg(client_args, arg != "''" && arg != "\"\"" ? arg : "");
+    const unordered_set<string> clients = { "s2pctl", "s2pdump", "s2pexec", "s2pproto" };
+    if (!clients.contains(client)) {
+        cerr << "Invalid virtual bus client: '" << client << "'\n";
+        return EXIT_FAILURE;
     }
 
-    vector<char*> target_args;
-    add_arg(target_args, "s2p");
-    for (const auto &arg : Split(t_args, ' ')) {
-        add_arg(target_args, arg != "''" && arg != "\"\"" ? arg : "");
+    vector<char*> client_args;
+    AddArg(client_args, client);
+    for (const auto &arg : Split(c_args, ' ')) {
+        AddArg(client_args, arg != "''" && arg != "\"\"" ? arg : "");
+    }
+
+    vector<char*> s2p_args;
+    AddArg(s2p_args, "s2p");
+    for (const auto &arg : Split(s_args, ' ')) {
+        AddArg(s2p_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
     const auto s2p = make_shared<S2p>();
-    auto s2p_thread = jthread([&target_args, log_signals, s2p]() {
-        s2p->Run(target_args, true, log_signals);
+    auto s2p_thread = jthread([s2p, s2p_args, log_signals]() mutable {
+        s2p->Run(s2p_args, true, log_signals);
     });
 
-    // Wait for the virtual bus target up to 1 s
+    // Wait for s2p on the virtual bus up to 1 s
     const auto now = chrono::steady_clock::now();
     while (!s2p->Ready()) {
         if (chrono::steady_clock::now() - now >= chrono::seconds(1)) {
@@ -117,37 +120,48 @@ int run(int argc, char *argv[])
     }
 
     if (!s2p->Ready()) {
-        cerr << "Error starting s2p with virtual bus\n";
+        cerr << "Error starting s2p on virtual bus\n";
         return EXIT_FAILURE;
     }
 
-    int result = EXIT_FAILURE;
+    s2p_instance = s2p;
+
+    SetTerminationHandler(TerminationHandler);
+
     if (client == "s2pctl") {
-        auto s2pctl = make_unique<S2pCtl>();
-        result = s2pctl->Run(client_args);
+        runnable = make_unique<S2pCtl>();
     }
     else if (client == "s2pdump") {
-        auto s2pdump = make_unique<S2pDump>();
-        result = s2pdump->Run(client_args, true, log_signals);
+        runnable = make_unique<S2pDump>();
     }
     else if (client == "s2pexec") {
-        auto s2pexec = make_unique<S2pExec>();
-        result = s2pexec->Run(client_args, true, log_signals);
+        runnable = make_unique<S2pExec>();
     }
     else if (client == "s2pproto") {
-        auto s2proto = make_unique<S2pProto>();
-        result = s2proto->Run(client_args, true, log_signals);
+        runnable = make_unique<S2pProto>();
     }
-    else {
-        cerr << "Invalid virtual bus client: '" << client << "'\n";
-    }
+    const int result = runnable->Run(client_args, true, log_signals);
 
-    s2p->CleanUp();
+    TerminationHandler(result - 128);
 
+    // Never reached
     return result;
 }
 
-int main(int argc, char *argv[])
+void s2ptool::AddArg(vector<char*> &args, const string &arg)
 {
-    return run(argc, argv);
+    args.emplace_back(strdup(arg.c_str()));
+}
+
+void s2ptool::TerminationHandler(int sig)
+{
+    if (runnable) {
+        runnable->CleanUp();
+    }
+
+    if (s2p_instance) {
+        s2p_instance->CleanUp();
+    }
+
+    exit(sig + 128);
 }

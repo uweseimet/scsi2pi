@@ -314,8 +314,6 @@ class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, Unload);
-    FRIEND_TEST(TapeTest, ModeSense6);
-    FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
     FRIEND_TEST(TapeTest, ReadPosition);
 

@@ -10,7 +10,6 @@
 
 #include "s2p_core.h"
 #include <chrono>
-#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -224,7 +223,11 @@ int S2p::Run(span<char*> args, bool virtual_bus, bool log_signals)
         cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
-    SetUpEnvironment();
+    instance = this;
+
+    if (!virtual_bus) {
+        SetTerminationHandler(TerminationHandler);
+    }
 
     service_thread.Start();
 
@@ -329,20 +332,6 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     }
 
     return port;
-}
-
-void S2p::SetUpEnvironment()
-{
-    instance = this;
-
-#ifdef SIGPIPE
-    // Signal handler to detach all devices on a KILL or TERM signal
-    struct sigaction termination_handler = { };
-    termination_handler.sa_handler = TerminationHandler;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
-#endif
 }
 
 string S2p::MapExtensions() const

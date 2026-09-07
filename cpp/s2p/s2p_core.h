@@ -36,7 +36,6 @@ private:
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);
-    void SetUpEnvironment();
     string MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();

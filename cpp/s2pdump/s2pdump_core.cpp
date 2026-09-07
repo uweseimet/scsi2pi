@@ -8,7 +8,6 @@
 
 #include "s2pdump_core.h"
 #include <chrono>
-#include <csignal>
 #include <filesystem>
 #include <iostream>
 #include <regex>
@@ -39,8 +38,6 @@ void S2pDump::CleanUp() const
 void S2pDump::TerminationHandler(int)
 {
     if (instance) {
-        instance->bus->SetRST(true);
-
         instance->CleanUp();
     }
 
@@ -92,12 +89,9 @@ bool S2pDump::Init(bool virtual_bus, bool log_signals)
 
     instance = this;
 
-    // Signal handler for cleaning up
-    struct sigaction termination_handler = { };
-    termination_handler.sa_handler = TerminationHandler;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
+    if (!virtual_bus) {
+        SetTerminationHandler(TerminationHandler);
+    }
 
     return true;
 }

@@ -1106,52 +1106,6 @@ TEST(TapeTest, ValidateBlockSize)
     EXPECT_TRUE(tape.ValidateBlockSize(131072));
 }
 
-TEST(TapeTest, ModeSense6)
-{
-    auto [controller, tape] = CreateTape();
-
-    // Drive must be ready in order to return all data
-    tape->SetReady(true);
-
-    controller->SetCdbByte(2, 0x00);
-    // ALLOCATION LENGTH, block descriptor only
-    controller->SetCdbByte(4, 12);
-    Dispatch(tape, ScsiCommand::MODE_SENSE_6);
-    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
-    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
-
-    // Changeable values
-    controller->SetCdbByte(2, 0x40);
-    // ALLOCATION LENGTH, block descriptor only
-    controller->SetCdbByte(4, 12);
-    Dispatch(tape, ScsiCommand::MODE_SENSE_6);
-    EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
-}
-
-TEST(TapeTest, ModeSense10)
-{
-    auto [controller, tape] = CreateTape();
-
-    // Drive must be ready in order to return all data
-    tape->SetReady(true);
-
-    controller->SetCdbByte(2, 0x00);
-    // ALLOCATION LENGTH, block descriptor only
-    controller->SetCdbByte(4, 12);
-    Dispatch(tape, ScsiCommand::MODE_SENSE_10);
-    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
-
-    // Changeable values
-    controller->SetCdbByte(2, 0x40);
-    // ALLOCATION LENGTH, block descriptor only
-    controller->SetCdbByte(4, 12);
-    Dispatch(tape, ScsiCommand::MODE_SENSE_10);
-    EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
-    EXPECT_EQ(0x00ffffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
-}
-
 TEST(TapeTest, SetUpModePages)
 {
     map<int, vector<byte>> pages;

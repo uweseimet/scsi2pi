@@ -138,14 +138,8 @@ bool S2pSimh::ParseArguments(span<char*> args)
     }
 
     if (truncate) {
-        ofstream f(simh_filename);
+        ofstream f(simh_filename, ios::trunc);
         if (!f) {
-            cerr << "Error: Can't open '" << simh_filename << "'\n";
-            return false;
-        }
-        f.close();
-
-        if (::truncate(simh_filename.c_str(), 0) == -1) {
             cerr << "Error: Can't truncate '" << simh_filename << "'\n";
             return false;
         }
@@ -288,7 +282,7 @@ int S2pSimh::Add()
             filesize = file_size(data_filename);
         }
         catch (const filesystem_error &e) {
-            cerr << "Error: Can't get size of '" << data_filename + "': " << e.what() << '\n';
+            cerr << "Error: Can't get size of '" << data_filename << "': " << e.what() << '\n';
             return EXIT_FAILURE;
         }
 

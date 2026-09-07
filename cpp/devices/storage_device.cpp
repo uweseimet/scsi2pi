@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #if __has_include(<linux/fs.h>)
 #include <linux/fs.h>
+#include <sys/stat.h>
 #endif
 #if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
@@ -347,30 +348,40 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
 
 off_t StorageDevice::GetCapacityFromFile() const
 {
-    if (!filename.string().starts_with("/dev/")) {
+    string error_message;
+    const string f = filename.string();
+
+#if __has_include(<linux/fs.h>)
+    if (struct stat st; !stat(f.c_str(), &st) && S_ISBLK(st.st_mode)) {
+        const int fd = open(f.c_str(), O_RDONLY);
+        int error = errno;
+        if (fd != -1) {
+            uint64_t size = 0;
+            const int ret = ioctl(fd, BLKGETSIZE64, &size);
+            error = errno;
+            close(fd);
+
+            if (ret != -1) {
+                return static_cast<off_t>(size);
+            }
+        }
+
+        error_message = system_error(error, generic_category()).what();
+    }
+    else
+#endif
+
+    {
         error_code error;
         const off_t size = file_size(filename, error);
         if (!error) {
             return size;
         }
 
-        throw IoException("Can't get size of '" + filename.string() + "': " + error.message());
+        error_message = error.message();
     }
 
-#if __has_include(<linux/fs.h>)
-    if (const int fd = open(filename.string().c_str(), O_RDONLY); fd != -1) {
-        if (off_t size; ioctl(fd, BLKGETSIZE64, &size) != -1) {
-            close(fd);
-            return size;
-        }
-
-        close(fd);
-
-        throw IoException("Can't get size of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
-    }
-#endif
-
-    throw IoException("Can't get size of '" + filename.string());
+    throw IoException(fmt::format("Can't get file size of '{}': {}", f, error_message));
 }
 
 int StorageDevice::ModeSense6() const

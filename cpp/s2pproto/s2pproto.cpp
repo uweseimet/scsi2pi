@@ -10,5 +10,5 @@
 
 int main(int argc, char *argv[])
 {
-    return S2pProto().Run( { argv, static_cast<size_t>(argc) }, false);
+    return S2pProto().Run( { argv, static_cast<size_t>(argc) }, false, false);
 }

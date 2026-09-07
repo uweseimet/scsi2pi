@@ -102,6 +102,9 @@ void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
+using SignalHandlerPtr = void(*)(int);
+void SetTerminationHandler(SignalHandlerPtr);
+
 constexpr const char* to_const_char_ptr(span<const uint8_t> bytes)
 {
     return static_cast<const char*>(static_cast<const void*>(bytes.data()));

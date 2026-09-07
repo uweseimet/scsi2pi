@@ -123,10 +123,8 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 #endif
 
     default:
-        break;
+        return nullptr;
     }
-
-    return nullptr;
 }
 
 PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
@@ -154,8 +152,13 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
     return UNDEFINED;
 }
 
-bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)
+bool DeviceFactory::AddExtensionMapping(const string &ext, PbDeviceType type)
 {
+    string extension = ToLower(ext);
+    if (extension.starts_with('.')) {
+        extension.erase(0, 1);
+    }
+
     if (mapping.contains(extension)) {
         return false;
     }

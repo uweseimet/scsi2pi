@@ -123,6 +123,7 @@ void Controller::Command()
             }
             else {
                 bus.SetRST(true);
+                bus.Reset();
                 RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             }
             return;
@@ -149,6 +150,7 @@ void Controller::Command()
             LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
                 command_bytes_count, GetCdb()[0], actual_count));
             bus.SetRST(true);
+            bus.Reset();
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             return;
         }
@@ -375,6 +377,7 @@ void Controller::Send()
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             LogWarn(fmt::format("Sent {} byte(s), {} required", l, length));
             bus.SetRST(true);
+            bus.Reset();
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }
@@ -438,6 +441,7 @@ void Controller::Receive()
             != curr_length) {
             LogWarn(fmt::format("Received {} byte(s), {} required", l, curr_length));
             bus.SetRST(true);
+            bus.Reset();
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
             return;
         }

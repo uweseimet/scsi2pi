@@ -15,6 +15,7 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 #include "buses/bus.h"
+#include "shared/runnable.h"
 
 class S2pDumpExecutor;
 class SgAdapter;
@@ -22,12 +23,12 @@ class SgAdapter;
 using namespace chrono;
 using namespace spdlog;
 
-class S2pDump final
+class S2pDump final : public Runnable
 {
 
 public:
 
-    int Run(span<char*>, bool, bool = false);
+    int Run(span<char*>, bool, bool) override;
 
     using DeviceInfo = struct {
         bool removable;
@@ -60,7 +61,7 @@ private:
 
     void Reset() const;
 
-    void CleanUp() const;
+    void CleanUp() const override;
     static void TerminationHandler(int);
 
     void DumpTape(ostream&);

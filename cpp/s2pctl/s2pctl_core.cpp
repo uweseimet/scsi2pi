@@ -85,7 +85,7 @@ void S2pCtl::Banner(bool usage) const
     }
 }
 
-int S2pCtl::Run(const vector<char*> &args)
+int S2pCtl::Run(span<char*> args, bool, bool)
 {
     return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
@@ -124,7 +124,7 @@ int S2pCtl::RunInteractive()
     return EXIT_SUCCESS;
 }
 
-int S2pCtl::ParseArguments(const vector<char*> &args) // NOSONAR Acceptable complexity for parsing
+int S2pCtl::ParseArguments(const span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     constexpr int OPT_PROMPT = 2;
     constexpr int OPT_BINARY_PROTOBUF = 3;
