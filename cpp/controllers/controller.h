@@ -22,7 +22,6 @@ public:
         formatter), bus(b), script_generator(s)
     {
     }
-    ~Controller() override = default;
 
     bool Process() override;
 

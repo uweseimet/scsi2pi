@@ -16,7 +16,6 @@ class OpticalMemory : public Disk
 public:
 
     explicit OpticalMemory(int);
-    ~OpticalMemory() override = default;
 
     void Open() override;
 

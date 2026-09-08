@@ -2,14 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include "shared/command_meta_data.h"
+#include "command_meta_data.h"
 
 using namespace spdlog;
 

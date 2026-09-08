@@ -28,7 +28,7 @@ class S2pDump final : public Runnable
 
 public:
 
-    int Run(span<char*>, bool, bool) override;
+    int Run(span<char*>) override;
 
     using DeviceInfo = struct {
         bool removable;
@@ -44,7 +44,7 @@ public:
 private:
 
     void Banner(bool) const;
-    bool Init(bool, bool);
+    bool Init();
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
     string ReadWrite(fstream&, int, uint32_t, int, int);
@@ -61,7 +61,7 @@ private:
 
     void Reset() const;
 
-    void CleanUp() const override;
+    void CleanUp() const;
     static void TerminationHandler(int);
 
     void DumpTape(ostream&);

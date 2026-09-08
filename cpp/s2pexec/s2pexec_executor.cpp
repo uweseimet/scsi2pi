@@ -30,16 +30,12 @@ string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 #endif
 }
 
-string S2pExecExecutor::Init(int id, const string &name, bool virtual_bus, bool log_signals)
+string S2pExecExecutor::Init(int id, const string &name)
 {
     if (!bus) {
-        bus = bus_factory::CreateBus(false, virtual_bus, log_signals, name);
+        bus = BusFactory::GetInstance().CreateBus(false, name);
         if (!bus) {
             return "Can't initialize bus";
-        }
-
-        if (!virtual_bus && !bus->IsRaspberryPi()) {
-            return "No RaSCSI/PiSCSI board found";
         }
 
         initiator_executor = make_unique<InitiatorExecutor>(*bus, id, s2pexec_logger);

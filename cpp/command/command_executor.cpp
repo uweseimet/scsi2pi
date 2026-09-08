@@ -500,7 +500,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     }
 
     if (!filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder()) && !filename.starts_with("/home/")
-        && !filename.starts_with("/dev/s") && !filename.starts_with("/tmp/")) { // NOSONAR Using /tmp here is safe
+        && !filename.starts_with("/dev/s") && !filename.starts_with(temp_directory_path().string())) { // NOSONAR Using temp_directory_path() here is safe
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, f);
     }
 

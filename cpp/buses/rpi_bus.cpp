@@ -290,8 +290,8 @@ void RpiBus::SetDAT(uint8_t dat) const
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
     fsel |= tblDatSet[dat];
-    gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
+    gpfsel[GPIO_FSEL_1] = fsel;
 }
 
 void RpiBus::InitializeSignals() const

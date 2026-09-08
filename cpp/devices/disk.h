@@ -23,8 +23,6 @@ class Disk : public StorageDevice
 
 public:
 
-    ~Disk() override = default;
-
     string SetUp() override;
     void CleanUp() override;
 

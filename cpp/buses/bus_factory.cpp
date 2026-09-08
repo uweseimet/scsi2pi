@@ -8,13 +8,13 @@
 
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
-#include <buses/virtual_bus.h>
 #if __has_include (<linux/gpio.h>)
 #include "rpi_bus.h"
 #endif
+#include "virtual_bus.h"
 
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool virtual_bus, bool log_signals,
-    const string &identifier, [[maybe_unused]] bool standard_board)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
+    [[maybe_unused]] bool standard_board)
 {
     auto make_initialized = [target](unique_ptr<Bus> bus) {
         return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
@@ -42,4 +42,11 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool virtual_bus, bool log_s
 
     // Fall back to the virtual bus
     return make_initialized(make_unique<VirtualBus>(identifier, false));
+}
+
+void BusFactory::EnableVirtualBus(bool l)
+{
+    virtual_bus = true;
+
+    log_signals = l;
 }

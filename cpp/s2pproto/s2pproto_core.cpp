@@ -62,9 +62,9 @@ void S2pProto::Banner(bool header)
         << "  --version/-v               Display the s2pproto version.\n";
 }
 
-bool S2pProto::Init(bool virtual_bus, bool log_signals)
+bool S2pProto::Init()
 {
-    bus = bus_factory::CreateBus(false, virtual_bus, log_signals, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus(false, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -73,9 +73,7 @@ bool S2pProto::Init(bool virtual_bus, bool log_signals)
 
     instance = this;
 
-    if (!virtual_bus) {
-        SetTerminationHandler(TerminationHandler);
-    }
+    SetTerminationHandler(TerminationHandler);
 
     return true;
 }
@@ -202,7 +200,7 @@ bool S2pProto::ParseArguments(span<char*> args)
     return true;
 }
 
-int S2pProto::Run(span<char*> args, bool virtual_bus, bool log_signals)
+int S2pProto::Run(span<char*> args)
 {
     if (args.size() < 2) {
         Banner(true);
@@ -222,13 +220,8 @@ int S2pProto::Run(span<char*> args, bool virtual_bus, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    if (!Init(virtual_bus, log_signals)) {
+    if (!Init()) {
         cerr << "Error: Can't initialize bus\n";
-        return EXIT_FAILURE;
-    }
-
-    if (!virtual_bus && !bus->IsRaspberryPi()) {
-        cerr << "Error: No RaSCSI/PiSCSI board found\n";
         return EXIT_FAILURE;
     }
 

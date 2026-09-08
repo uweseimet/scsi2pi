@@ -192,17 +192,16 @@ void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
     command_response::GetImageFilesInfo(*server_info.mutable_image_files_info(), folder_pattern, file_pattern, logger);
 }
 
-// This method returns a raw pointer because protobuf does not have support for smart pointers
-PbOperationMetaData* CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
+PbOperationMetaData& CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
     const string &description)
 {
-    PbOperationMetaData meta_data;
+    const auto number = static_cast<int>(operation);
+
+    auto &meta_data = (*operation_info.mutable_operations())[number];
     meta_data.set_server_side_name(PbOperation_Name(operation));
     meta_data.set_description(description);
-    const auto number = static_cast<int>(operation);
-    auto &entry = (*operation_info.mutable_operations())[number];
-    entry = std::move(meta_data);
-    return &entry;
+
+    return meta_data;
 }
 
 void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, const string &description,
@@ -459,7 +458,8 @@ void command_response::GetPropertiesInfo(PbPropertiesInfo &properties_info)
 
 void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 {
-    auto *operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
+    auto *operation = &CreateOperation(operation_info, ATTACH,
+        "Attach device, device-specific parameters are required");
     AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
     AddOperationParameter(*operation, "interface", "Comma-separated prioritized network interface list");
     AddOperationParameter(*operation, "inet", "IP address and netmask of the network bridge");
@@ -473,7 +473,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, STOP, "Stop device, device-specific parameters are required");
 
-    operation = CreateOperation(operation_info, INSERT, "Insert medium, device-specific parameters are required");
+    operation = &CreateOperation(operation_info, INSERT, "Insert medium, device-specific parameters are required");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
 
     CreateOperation(operation_info, EJECT, "Eject medium, device-specific parameters are required");
@@ -482,7 +482,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, UNPROTECT, "Unprotect medium, device-specific parameters are required");
 
-    operation = CreateOperation(operation_info, SERVER_INFO, "Get server information");
+    operation = &CreateOperation(operation_info, SERVER_INFO, "Get server information");
     if (CommandImageSupport::GetInstance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
@@ -494,13 +494,13 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, DEVICE_TYPES_INFO, "Get device properties by device type");
 
-    operation = CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
+    operation = &CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
     if (CommandImageSupport::GetInstance().GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
 
-    operation = CreateOperation(operation_info, IMAGE_FILE_INFO, "Get information on image file");
+    operation = &CreateOperation(operation_info, IMAGE_FILE_INFO, "Get information on image file");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
 
     CreateOperation(operation_info, LOG_LEVEL_INFO, "Get log level information");
@@ -513,16 +513,16 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 
     CreateOperation(operation_info, RESERVED_IDS_INFO, "Get list of reserved device IDs");
 
-    operation = CreateOperation(operation_info, DEFAULT_FOLDER, "Set image file folder");
+    operation = &CreateOperation(operation_info, DEFAULT_FOLDER, "Set image file folder");
     AddOperationParameter(*operation, "folder", "Image file folder name", "", true);
 
-    operation = CreateOperation(operation_info, LOG_LEVEL, "Set log level");
+    operation = &CreateOperation(operation_info, LOG_LEVEL, "Set log level");
     AddOperationParameter(*operation, "level", "New log level", "", true);
 
-    operation = CreateOperation(operation_info, RESERVE_IDS, "Reserve device IDs");
+    operation = &CreateOperation(operation_info, RESERVE_IDS, "Reserve device IDs");
     AddOperationParameter(*operation, "ids", "Comma-separated device ID list", "", true);
 
-    operation = CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
+    operation = &CreateOperation(operation_info, SHUT_DOWN, "Shut down or reboot");
     if (GetEuid()) {
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi" });
     }
@@ -531,30 +531,31 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
         AddOperationParameter(*operation, "mode", "Shutdown mode", "", true, { "rascsi", "system", "reboot" });
     }
 
-    operation = CreateOperation(operation_info, CREATE_IMAGE, "Create an image file");
+    operation = &CreateOperation(operation_info, CREATE_IMAGE, "Create an image file");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
     AddOperationParameter(*operation, "size", "Image file size in bytes", "", true);
     AddOperationParameter(*operation, "read_only", "Read-only flag", "false", false, { "true", "false" });
 
-    operation = CreateOperation(operation_info, DELETE_IMAGE, "Delete image file");
+    operation = &CreateOperation(operation_info, DELETE_IMAGE, "Delete image file");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
 
-    operation = CreateOperation(operation_info, RENAME_IMAGE, "Rename image file");
+    operation = &CreateOperation(operation_info, RENAME_IMAGE, "Rename image file");
     AddOperationParameter(*operation, "from", "Source image file name", "", true);
     AddOperationParameter(*operation, "to", "Destination image file name", "", true);
 
-    operation = CreateOperation(operation_info, COPY_IMAGE, "Copy image file");
+    operation = &CreateOperation(operation_info, COPY_IMAGE, "Copy image file");
     AddOperationParameter(*operation, "from", "Source image file name", "", true);
     AddOperationParameter(*operation, "to", "Destination image file name", "", true);
     AddOperationParameter(*operation, "read_only", "Read-only flag", "false", false, { "true", "false" });
 
-    operation = CreateOperation(operation_info, PROTECT_IMAGE, "Write-protect image file");
+    operation = &CreateOperation(operation_info, PROTECT_IMAGE, "Write-protect image file");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
 
-    operation = CreateOperation(operation_info, UNPROTECT_IMAGE, "Make image file writable");
+    operation = &CreateOperation(operation_info, UNPROTECT_IMAGE, "Make image file writable");
     AddOperationParameter(*operation, "file", "Image file name", "", true);
 
-    operation = CreateOperation(operation_info, CHECK_AUTHENTICATION, "Check whether an authentication token is valid");
+    operation = &CreateOperation(operation_info, CHECK_AUTHENTICATION,
+        "Check whether an authentication token is valid");
     AddOperationParameter(*operation, "token", "Authentication token to be checked", "", true);
 
     CreateOperation(operation_info, PROPERTIES_INFO, "Get current s2p properties");

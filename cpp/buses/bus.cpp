@@ -270,8 +270,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
 bool Bus::WaitHandShake(int pin_mask, bool state) const
 {
-    assert(
-        std::has_single_bit(static_cast<unsigned>(pin_mask)) && pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
+    assert(has_single_bit(static_cast<unsigned>(pin_mask)) && pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 
     // Shortcut for the case where REQ/ACK is already in the required state
     Acquire();
@@ -319,7 +318,7 @@ void Bus::SetIO(bool state) const
 }
 
 // Get input signal value (except for DP and DT0-DT7)
-bool Bus::GetSignal(int pin_mask) const
+inline bool Bus::GetSignal(int pin_mask) const
 {
     assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 

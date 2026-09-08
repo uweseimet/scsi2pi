@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ class S2pCtl final : public Runnable
 
 public:
 
-    int Run(span<char*>, bool, bool) override;
+    int Run(span<char*>) override;
 
 private:
 

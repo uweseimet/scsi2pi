@@ -6,7 +6,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include <buses/virtual_bus.h>
+#include "virtual_bus.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;

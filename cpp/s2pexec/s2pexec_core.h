@@ -22,15 +22,15 @@ class S2pExec final : public Runnable
 
 public:
 
-    int Run(span<char*>, bool, bool) override;
+    int Run(span<char*>) override;
 
 private:
 
     static void Banner(bool, bool);
 
-    bool Init(bool, bool);
-    bool ParseArguments(span<char*>, bool, bool);
-    void RunInteractive(bool, bool);
+    bool Init();
+    bool ParseArguments(span<char*>);
+    void RunInteractive();
     int Run();
 
     tuple<SenseKey, Asc, int> ExecuteCommand();
@@ -39,7 +39,7 @@ private:
     string WriteData(span<const uint8_t>);
     string ConvertData(const string&);
 
-    void CleanUp() const override;
+    void CleanUp() const;
     static void TerminationHandler(int);
 
     unique_ptr<S2pExecExecutor> executor;

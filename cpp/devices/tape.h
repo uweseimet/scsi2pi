@@ -20,7 +20,6 @@ class Tape : public StorageDevice
 public:
 
     explicit Tape(int);
-    ~Tape() override = default;
 
     string SetUp() override;
     void CleanUp() override;

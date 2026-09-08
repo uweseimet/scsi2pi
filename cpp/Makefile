@@ -332,14 +332,11 @@ SRC_S2PCTL_CORE := s2pctl/s2pctl_commands.cpp \
 	s2pctl/s2pctl_display.cpp
 SRC_S2PCTL := s2pctl/s2pctl.cpp
 
-ifeq ($(INITIATOR_SUPPORT),1)
 SRC_S2PDUMP_CORE := s2pdump/board_executor.cpp \
 	s2pdump/s2pdump_core.cpp \
 	s2pdump/s2pdump_executor.cpp
 ifeq ($(ENABLE_SCSG),1)
-ifdef IS_LINUX
 SRC_S2PDUMP_CORE += s2pdump/sg_executor.cpp
-endif
 endif
 SRC_S2PDUMP := $(SRC_S2PDUMP_CORE) s2pdump/s2pdump.cpp
 SRC_S2PEXEC_CORE := s2pexec/s2pexec_core.cpp \
@@ -350,7 +347,6 @@ SRC_S2PPROTO_CORE := s2pproto/s2pproto_core.cpp \
 SRC_S2PPROTO := $(SRC_S2PPROTO_CORE) s2pproto/s2pproto.cpp
 SRC_S2PFORMAT := s2pformat/s2pformat_core.cpp \
 	s2pformat/s2pformat.cpp
-endif
 
 SRC_S2PSIMH := s2psimh/s2psimh_core.cpp \
 	s2psimh/s2psimh.cpp
@@ -409,12 +405,12 @@ SRC_S2P_TEST += test/daynaport_test.cpp \
 endif
 
 SRC_S2PTOOL := s2ptool/s2ptool.cpp \
-	$(SRC_S2PCTL_CORE)
+	$(SRC_S2PCTL_CORE) \
+	$(SRC_S2PDUMP_CORE) \
+	$(SRC_S2PEXEC_CORE) \
+	$(SRC_S2PPROTO_CORE)
 ifeq ($(INITIATOR_SUPPORT),1)
-	SRC_S2PTOOL += $(SRC_S2PDUMP_CORE)
-	SRC_S2PTOOL += $(SRC_S2PEXEC_CORE)
 	SRC_S2PTOOL += $(SRC_S2PFORMAT_CORE)
-	SRC_S2PTOOL += $(SRC_S2PPROTO_CORE)
 endif
 
 LIB_SHARED := $(LIBDIR)/libshared.a

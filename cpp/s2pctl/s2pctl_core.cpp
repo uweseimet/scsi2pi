@@ -85,7 +85,7 @@ void S2pCtl::Banner(bool usage) const
     }
 }
 
-int S2pCtl::Run(span<char*> args, bool, bool)
+int S2pCtl::Run(span<char*> args)
 {
     return args.size() < 2 ? RunInteractive() : ParseArguments(args);
 }
