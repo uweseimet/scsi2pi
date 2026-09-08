@@ -102,7 +102,7 @@ TEST(VirtualBusTest, IO)
 
 TEST(VirtualBusTest, DAT)
 {
-    const auto &bus = bus_factory::CreateBus(true, true, false, "");
+    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
 
     bus->SetDAT(0xae);
     EXPECT_EQ(0xae, bus->GetDAT());
@@ -112,7 +112,7 @@ TEST(VirtualBusTest, DAT)
 
 TEST(VirtualBusTest, Acquire)
 {
-    const auto &bus = bus_factory::CreateBus(true, true, false, "");
+    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
 
     bus->SetDAT(0x12);
     bus->Acquire();
@@ -230,5 +230,5 @@ TEST(VirtualBusTest, WaitHandshakeREQ)
 
 TEST(VirtualBusTest, IsRaspberryPi)
 {
-    EXPECT_FALSE(bus_factory::CreateBus(true, true, false, "")->IsRaspberryPi());
+    EXPECT_FALSE(BusFactory::GetInstance().CreateBus(true, "")->IsRaspberryPi());
 }

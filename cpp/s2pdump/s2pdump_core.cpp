@@ -80,18 +80,16 @@ void S2pDump::Banner(bool header) const
         << "  --version/-v                       Display the s2pdump version.\n";
 }
 
-bool S2pDump::Init(bool virtual_bus, bool log_signals)
+bool S2pDump::Init()
 {
-    bus = bus_factory::CreateBus(false, virtual_bus, log_signals, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus(false, APP_NAME);
     if (!bus) {
         return false;
     }
 
     instance = this;
 
-    if (!virtual_bus) {
-        SetTerminationHandler(TerminationHandler);
-    }
+    SetTerminationHandler(TerminationHandler);
 
     return true;
 }
@@ -316,7 +314,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     return true;
 }
 
-int S2pDump::Run(span<char*> args, bool virtual_bus, bool log_signals)
+int S2pDump::Run(span<char*> args)
 {
     if (args.size() < 2) {
         Banner(true);
@@ -331,12 +329,8 @@ int S2pDump::Run(span<char*> args, bool virtual_bus, bool log_signals)
         }
 
         if (device_file.empty()) {
-            if (!Init(virtual_bus, log_signals)) {
+            if (!Init()) {
                 throw ParserException("Can't initialize bus");
-            }
-
-            if (!virtual_bus && !bus->IsRaspberryPi()) {
-                throw ParserException("No RaSCSI/PiSCSI board found");
             }
         }
     }

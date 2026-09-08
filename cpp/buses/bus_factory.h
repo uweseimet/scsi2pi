@@ -11,9 +11,29 @@
 #include <memory>
 #include "bus.h"
 
-namespace bus_factory
+class BusFactory final
 {
 
-unique_ptr<Bus> CreateBus(bool, bool, bool, const string&, bool = false);
+public:
 
-}
+    BusFactory(const BusFactory&) = delete;
+    BusFactory& operator=(const BusFactory&) = delete;
+
+    static BusFactory& GetInstance()
+    {
+        static BusFactory instance; // NOSONAR Singleton with mutable internal state
+        return instance;
+    }
+
+    unique_ptr<Bus> CreateBus(bool, const string&, bool = false);
+
+    void EnableVirtualBus(bool = false);
+
+private:
+
+    BusFactory() = default;
+
+    bool virtual_bus = false;
+
+    bool log_signals = false;
+};

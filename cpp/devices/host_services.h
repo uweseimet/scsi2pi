@@ -21,7 +21,6 @@ class HostServices : public PrimaryDevice
 public:
 
     explicit HostServices(int);
-    ~HostServices() override = default;
 
     string SetUp() override;
 

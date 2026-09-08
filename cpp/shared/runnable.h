@@ -17,10 +17,5 @@ public:
 
     virtual ~Runnable() = default;
 
-    virtual int Run(std::span<char*>, bool, bool) = 0;
-
-    virtual void CleanUp() const
-    {
-        // Nothing to do in base class
-    }
+    virtual int Run(std::span<char*>) = 0;
 };

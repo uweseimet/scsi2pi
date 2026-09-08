@@ -22,7 +22,6 @@ class VirtualBus final : public Bus
 public:
 
     VirtualBus(const string&, bool);
-    ~VirtualBus() override = default;
 
     void CleanUp() override;
 

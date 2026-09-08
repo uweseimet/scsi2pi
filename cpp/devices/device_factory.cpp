@@ -9,31 +9,31 @@
 #include "device_factory.h"
 #include <filesystem>
 #ifdef BUILD_SCDP
-#include "devices/daynaport.h"
+#include "daynaport.h"
 #endif
 #ifdef BUILD_SCHS
-#include "devices/host_services.h"
+#include "host_services.h"
 #endif
 #ifdef BUILD_SCMO
-#include "devices/optical_memory.h"
+#include "optical_memory.h"
 #endif
 #ifdef BUILD_SCLP
-#include "devices/printer.h"
+#include "printer.h"
 #endif
 #ifdef BUILD_SAHD
-#include "devices/sasi_hd.h"
+#include "sasi_hd.h"
 #endif
 #ifdef BUILD_SCCD
-#include "devices/scsi_cd.h"
+#include "scsi_cd.h"
 #endif
 #ifdef BUILD_SCTP
-#include "devices/tape.h"
+#include "tape.h"
 #endif
 #if defined BUILD_SCHD
-#include "devices/scsi_hd.h"
+#include "scsi_hd.h"
 #endif
 #ifdef BUILD_SCSG
-#include "devices/scsi_generic.h"
+#include "scsi_generic.h"
 #endif
 
 using namespace s2p_util;

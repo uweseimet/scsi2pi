@@ -21,7 +21,6 @@ class ScsiGeneric final : public PrimaryDevice
 public:
 
     ScsiGeneric(int, const string&);
-    ~ScsiGeneric() override = default;
 
     string SetUp() override;
     void CleanUp() override;

@@ -18,17 +18,17 @@ class S2pProto final : public Runnable
 
 public:
 
-    int Run(span<char*>, bool, bool) override;
+    int Run(span<char*>) override;
 
 private:
 
     static void Banner(bool);
 
-    bool Init(bool, bool);
+    bool Init();
     bool ParseArguments(span<char*>);
     int GenerateOutput(const string&, const string&);
 
-    void CleanUp() const override;
+    void CleanUp() const;
     static void TerminationHandler(int);
 
     unique_ptr<Bus> bus;

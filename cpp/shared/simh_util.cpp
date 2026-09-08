@@ -8,7 +8,7 @@
 
 #include "simh_util.h"
 #include <cassert>
-#include "shared/s2p_util.h"
+#include "s2p_util.h"
 
 using namespace s2p_util;
 

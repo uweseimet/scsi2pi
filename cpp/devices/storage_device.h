@@ -19,8 +19,6 @@ class StorageDevice : public PrimaryDevice
 
 public:
 
-    ~StorageDevice() override = default;
-
     string SetUp() override;
     void CleanUp() override;
 

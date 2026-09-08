@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_exceptions.h"
+#include "s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace spdlog;

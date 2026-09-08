@@ -12,9 +12,9 @@
 #include <unistd.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
-#include "shared/memory_util.h"
-#include "shared/s2p_exceptions.h"
-#include "shared/sg_util.h"
+#include "memory_util.h"
+#include "s2p_exceptions.h"
+#include "sg_util.h"
 
 using namespace memory_util;
 using namespace sg_util;

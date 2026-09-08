@@ -24,7 +24,7 @@ class S2p final
 
 public:
 
-    int Run(span<char*>, bool = false, bool = false);
+    int Run(span<char*>);
 
     bool Ready() const;
 
@@ -32,7 +32,7 @@ public:
 
 private:
 
-    string InitBus(bool, bool);
+    string InitBus();
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);

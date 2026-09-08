@@ -16,7 +16,6 @@ class ScsiCd : public Disk
 public:
 
     ScsiCd(int, bool);
-    ~ScsiCd() override = default;
 
     string SetUp() override;
 

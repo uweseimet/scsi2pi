@@ -17,8 +17,8 @@
 #endif
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include "memory_util.h"
 #include "s2p_version.h"
-#include "shared/memory_util.h"
 
 using namespace spdlog;
 using namespace memory_util;
