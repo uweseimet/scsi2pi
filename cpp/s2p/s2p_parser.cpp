@@ -173,7 +173,7 @@ void s2p_parser::Banner(bool usage)
             << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
             << "    hdr: HD image (Removable SCSI-2 HD image)\n";
 #endif
-#ifdef BUILD_SASI
+#ifdef BUILD_SAHD
             cout << "    hdf: HD image (Non-removable SASI HD image)\n";
 #endif
 #ifdef BUILD_SCMO
