@@ -105,7 +105,7 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     vector<char*> args;
     for (const string arg : initial_args) {
         string arg_str(arg);
-        const string &arg_lower = ToLower(arg_str);
+        const string arg_lower = ToLower(arg_str);
 
         if (arg_lower.starts_with("-i")) {
             args.emplace_back(strdup("-i"));
@@ -136,12 +136,13 @@ void s2p_parser::Banner(bool usage)
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
+            << "  --config-files                 List of configuration files.\n"
             << "  --connect-type/-C              The board type, either STANDARD or FULLSPEC.\n"
             << "                                 Default is FULLSPEC.\n"
-            << "  --config-files                 List of configuration files.\n"
+            << "  --enable-irqs/-e               Do not disable IRQs during transfers.\n"
             << "  --help/-h                      Display this help.\n"
             << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
-            << "                                 for SCSI, 0-1 for SASI), default LUN is 0.\n"
+            << "                                 for SCSI, LUN 0-1 for SASI), default LUN is 0.\n"
             << "  --ignore-conf/-I               Ignore /etc/s2p.conf configuration file.\n"
             << "  --image-folder/-F FOLDER       Default folder with image files.\n"
             << "  --locale/-z LOCALE             The locale for client-facing error messages.\n"
@@ -173,7 +174,7 @@ void s2p_parser::Banner(bool usage)
             << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
             << "    hdr: HD image (Removable SCSI-2 HD image)\n";
 #endif
-#ifdef BUILD_SASI
+#ifdef BUILD_SAHD
             cout << "    hdf: HD image (Non-removable SASI HD image)\n";
 #endif
 #ifdef BUILD_SCMO
@@ -202,6 +203,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "caching-mode", required_argument, nullptr, 'm' },
         { "config-files", required_argument, nullptr, OPT_CONFIG_FILES },
         { "connect-type", required_argument, nullptr, 'C' },
+        { "enable-irqs", no_argument, nullptr, 'e' },
         { "help", no_argument, nullptr, 'h' },
         { "id", required_argument, nullptr, 'i' },
         { "ignore-conf", no_argument, nullptr, 'I' },
@@ -227,6 +229,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     // Global options
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
+        { 'd', PropertyHandler::ENABLE_IRQS },
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },
@@ -255,7 +258,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BZ",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:ef:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";

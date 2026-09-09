@@ -106,21 +106,21 @@ vector<string> s2p_util::Split(const string &s, char separator, int limit)
 
 string s2p_util::ToUpper(string_view s)
 {
-    string result(s.begin(), s.end());
-    ranges::transform(result, result.begin(), ::toupper);
+    string result(s);
+    ranges::transform(result, result.begin(), [](unsigned char c) {return static_cast<char>(std::toupper(c));});
     return result;
 }
 
 string s2p_util::ToLower(string_view s)
 {
-    string result(s.begin(), s.end());
-    ranges::transform(result, result.begin(), ::tolower);
+    string result(s);
+    ranges::transform(result, result.begin(), [](unsigned char c) {return static_cast<char>(std::tolower(c));});
     return result;
 }
 
 string s2p_util::GetExtensionLowerCase(string_view filename)
 {
-    const string &ext = ToLower(path(filename).extension().string());
+    const string ext = ToLower(path(filename).extension().string());
 
     // Remove the leading dot
     return ext.empty() ? ext : ext.substr(1);

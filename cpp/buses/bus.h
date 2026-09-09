@@ -48,7 +48,7 @@ public:
     int InitiatorReceiveHandShake(data_in_t);
     int InitiatorSendHandShake(data_out_t);
 
-    uint8_t GetDAT() const
+    virtual uint8_t GetDAT() const
     {
         // A bus settle delay
         WaitNanoSeconds(false);
@@ -173,8 +173,14 @@ protected:
 
     virtual void WaitNanoSeconds(bool) const = 0;
 
-    virtual void EnableIRQ() = 0;
-    virtual void DisableIRQ() = 0;
+    virtual void DisableIRQ()
+    {
+        // Nothing to do by default
+    }
+    virtual void EnableIRQ()
+    {
+        // Nothing to do by default
+    }
 
     uint8_t GetSelection() const;
 

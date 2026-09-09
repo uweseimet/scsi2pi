@@ -12,7 +12,7 @@
 #include <string>
 #include <linux/gpio.h>
 #include <sys/epoll.h>
-#include "buses/bus.h"
+#include "bus.h"
 
 class RpiBus final : public Bus
 {
@@ -28,7 +28,7 @@ public:
         PI_4 = 4
     };
 
-    RpiBus(PiType type, bool);
+    RpiBus(PiType type, bool, bool = true);
 
     bool IsRaspberryPi() const override
     {
@@ -80,6 +80,8 @@ private:
     uint8_t WaitForSelection() override;
 
     PiType pi_type;
+
+    bool enable_irqs;
 
     // Set to -1 for the STANDARD board
     int pin_ind = PIN_IND;

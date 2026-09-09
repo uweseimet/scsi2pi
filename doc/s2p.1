@@ -9,6 +9,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--config-files\fR \fIPROPERTY_FILES\fR]
 [\fB\--connect-type/-C\fR \fICONNECT_TYPE\fR]
 [\fB\--help/-h\fR]
+[\fB\--enable-irqs/-e\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
@@ -77,6 +78,9 @@ Explicitly specified property files override the previously defined properties.
 .BR --connect-type/-C\fI " " \fICONNECT_TYPE
 Using STANDARD as the connection type allows s2p to be run with a STANDARD board (without initiator support). In /etc/s2p.conf, to permanently enable this setting, add "connect_type=STANDARD".
 CONNECT_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
+.TP
+.BR --enable-irqs/-e\fI " " \fI
+Do not disable IRQs during transfers. For testing purposes only.
 .TP
 .BR --help/-h\fI " " \fI
 Display this help.
@@ -156,7 +160,7 @@ Launch s2p with a SASI hard drive image as ID 1
    s2p -i 1 -t sahd /path/to/harddrive.hds
 
 To create an empty 100 MiB drive image, use the following command:
-   dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800
+   dd if=/dev/zero of=/path/to/new_image.hds bs=512 count=204800
 
 In case the fallocate command is available, a much faster alternative to the dd command is:
    fallocate -l 104857600 /path/to/newimage.hda

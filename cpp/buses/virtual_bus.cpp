@@ -22,6 +22,8 @@ void VirtualBus::Reset() const
 {
     virtual_bus_logger->trace("Resetting bus");
 
+    scoped_lock lock(signal_lock);
+
     Bus::Reset();
 }
 
@@ -38,6 +40,13 @@ void VirtualBus::CleanUp()
         selected = true;
     }
     sel.notify_one();
+}
+
+uint8_t VirtualBus::GetDAT() const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::GetDAT();
 }
 
 void VirtualBus::SetDAT(uint8_t dat) const
@@ -88,6 +97,20 @@ void VirtualBus::SetSignal(int pin, bool state) const
         selected = true;
         sel.notify_one();
     }
+}
+
+BusPhase VirtualBus::GetPhase() const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::GetPhase();
+}
+
+bool VirtualBus::IsPhase(BusPhase phase) const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::IsPhase(phase);
 }
 
 uint8_t VirtualBus::WaitForSelection()

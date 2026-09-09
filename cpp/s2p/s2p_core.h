@@ -56,6 +56,8 @@ private:
 
     bool ready = false;
 
+    bool enable_irqs = false;
+
     string access_token;
 
     S2pThread service_thread;

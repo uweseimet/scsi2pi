@@ -187,6 +187,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
     return bytes_received;
 }
+
 // For DATA IN, MESSAGE IN and STATUS
 int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
 {
@@ -194,20 +195,18 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 
     DisableIRQ();
 
-    int bytes_sent;
-    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+    auto send_byte = [this](uint8_t byte, [[maybe_unused]] int index, [[maybe_unused]] int delay_index) {
 #ifdef BUILD_SCDP
-        if (bytes_sent == daynaport_delay_after_bytes) {
+        if (index == delay_index) {
             // Wait for a Daynaport delay
             WaitNanoSeconds(true);
         }
 #endif
 
-        SetDAT(buf[bytes_sent]);
+        SetDAT(byte);
 
         if (!WaitHandShake(PIN_ACK_MASK, false)) {
-            EnableIRQ();
-            return bytes_sent;
+            return false;
         }
 
         SetREQ(true);
@@ -216,12 +215,13 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 
         SetREQ(false);
 
-        if (!ack) {
-            break;
-        }
-    }
+        return ack;
+    };
 
-    WaitHandShake(PIN_ACK_MASK, false);
+    int bytes_sent = 0;
+    while (bytes_sent < count && send_byte(buf[bytes_sent], bytes_sent, daynaport_delay_after_bytes)) {
+        ++bytes_sent;
+    }
 
     EnableIRQ();
 
@@ -318,7 +318,7 @@ void Bus::SetIO(bool state) const
 }
 
 // Get input signal value (except for DP and DT0-DT7)
-inline bool Bus::GetSignal(int pin_mask) const
+bool Bus::GetSignal(int pin_mask) const
 {
     assert(pin_mask >= PIN_ATN_MASK && pin_mask <= PIN_SEL_MASK);
 

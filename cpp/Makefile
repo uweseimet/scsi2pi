@@ -105,8 +105,6 @@ PREFIX ?= /opt/scsi2pi
 
 INITIATOR_SUPPORT := $(IS_LINUX)
 
-CPPFLAGS += -DBOARD_$(BOARD)
-
 ##   ENABLE_*=1
 ##   DISABLE_*=1
 ##     Specifies the device types to build or not to build,

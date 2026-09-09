@@ -46,21 +46,16 @@ private:
         // Nothing to do
     }
 
-    void DisableIRQ() override
-    {
-        // Nothing to do
-    }
-    void EnableIRQ() override
-    {
-        // Nothing to do
-    }
-
     void SetDataDirIn(bool) const override
     {
         // Nothing to do
     }
 
+    uint8_t GetDAT() const override;
     void SetDAT(uint8_t) const override;
+
+    BusPhase GetPhase() const override;
+    bool IsPhase(BusPhase phase) const override;
 
     void WaitNanoSeconds(bool) const override
     {

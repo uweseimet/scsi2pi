@@ -35,13 +35,13 @@ using namespace s2p_util;
 
 string S2p::InitBus()
 {
-    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECT_TYPE, "FULLSPEC");
-    const string &board_type = ToLower(connection_type);
+    const string connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECT_TYPE, "FULLSPEC");
+    const string board_type = ToLower(connection_type);
     if (board_type != "standard" && board_type != "fullspec") {
         return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    bus = BusFactory::GetInstance().CreateBus(true, APP_NAME, board_type == "standard");
+    bus = BusFactory::GetInstance().CreateBus(true, APP_NAME, board_type == "standard", enable_irqs);
     if (!bus) {
         return "Can't initialize bus";
     }
@@ -168,7 +168,7 @@ int S2p::Run(span<char*> args)
     }
 
     controller_factory.SetFormatLimit(128);
-    if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
+    if (const string log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
         if (const int limit = ParseAsUnsignedInt(log_limit); limit == -1) {
             CleanUp("Invalid log limit '" + log_limit + "'");
             return EXIT_FAILURE;
@@ -178,14 +178,14 @@ int S2p::Run(span<char*> args)
         }
     }
 
-    if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
+    if (const string reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
             CleanUp(error);
             return EXIT_FAILURE;
         }
     }
 
-    if (const string &token_file = property_handler.RemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
+    if (const string token_file = property_handler.RemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
         try {
             ReadAccessToken(path(token_file));
         }
@@ -280,7 +280,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     property_handler.Init(config_files != properties.end() ? config_files->second : "", properties,
         ignore_conf);
 
-    if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+    if (const string log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
         s2p_logger->set_pattern(log_pattern);
         spdlog::set_pattern(log_pattern);
         controller_factory.SetLogPattern(log_pattern);
@@ -292,7 +292,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     // Log the properties (on trace level) *after* the log level has been set
     LogProperties();
 
-    if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+    if (const string image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
         if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(image_folder); !error.empty()) {
             throw ParserException(error);
         }
@@ -301,7 +301,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
         }
     }
 
-    if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
+    if (const string scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
         if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
             throw ParserException("Invalid image file scan depth: " + scan_depth);
         }
@@ -310,7 +310,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
         }
     }
 
-    if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
+    if (const string script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
         if (!controller_factory.SetScriptFile(script_file)) {
             throw ParserException(
                 "Can't create script file '" + script_file + "': " + system_error(errno, generic_category()).what());
@@ -323,7 +323,10 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
         throw ParserException("Invalid device types list: '" + without_types + "'");
     }
 
-    const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
+    const string d = property_handler.RemoveProperty(PropertyHandler::ENABLE_IRQS);
+    enable_irqs = ToLower(d) == "true";
+
+    const string p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
     const int port = ParseAsUnsignedInt(p);
     if (port <= 0 || port > 65535) {
         throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");

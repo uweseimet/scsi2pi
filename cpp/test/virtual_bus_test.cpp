@@ -121,48 +121,48 @@ TEST(VirtualBusTest, Acquire)
 
 TEST(VirtualBusTest, BusPhases)
 {
-    VirtualBus bus("", false);
+    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
 
-    EXPECT_EQ(BusPhase::BUS_FREE, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::BUS_FREE));
+    EXPECT_EQ(BusPhase::BUS_FREE, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::BUS_FREE));
 
-    bus.SetBSY(true);
+    bus->SetBSY(true);
 
-    bus.SetIO(true);
-    bus.SetCD(true);
-    bus.SetMSG(true);
-    EXPECT_EQ(BusPhase::MSG_IN, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_IN));
+    bus->SetIO(true);
+    bus->SetCD(true);
+    bus->SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_IN, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::MSG_IN));
 
-    bus.SetIO(true);
-    bus.SetCD(true);
-    bus.SetMSG(false);
-    EXPECT_EQ(BusPhase::STATUS, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::STATUS));
+    bus->SetIO(true);
+    bus->SetCD(true);
+    bus->SetMSG(false);
+    EXPECT_EQ(BusPhase::STATUS, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::STATUS));
 
-    bus.SetIO(true);
-    bus.SetCD(false);
-    bus.SetMSG(false);
-    EXPECT_EQ(BusPhase::DATA_IN, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_IN));
+    bus->SetIO(true);
+    bus->SetCD(false);
+    bus->SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_IN, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::DATA_IN));
 
-    bus.SetIO(false);
-    bus.SetCD(true);
-    bus.SetMSG(true);
-    EXPECT_EQ(BusPhase::MSG_OUT, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::MSG_OUT));
+    bus->SetIO(false);
+    bus->SetCD(true);
+    bus->SetMSG(true);
+    EXPECT_EQ(BusPhase::MSG_OUT, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::MSG_OUT));
 
-    bus.SetIO(false);
-    bus.SetCD(true);
-    bus.SetMSG(false);
-    EXPECT_EQ(BusPhase::COMMAND, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::COMMAND));
+    bus->SetIO(false);
+    bus->SetCD(true);
+    bus->SetMSG(false);
+    EXPECT_EQ(BusPhase::COMMAND, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::COMMAND));
 
-    bus.SetIO(false);
-    bus.SetCD(false);
-    bus.SetMSG(false);
-    EXPECT_EQ(BusPhase::DATA_OUT, bus.GetPhase());
-    EXPECT_TRUE(bus.IsPhase(BusPhase::DATA_OUT));
+    bus->SetIO(false);
+    bus->SetCD(false);
+    bus->SetMSG(false);
+    EXPECT_EQ(BusPhase::DATA_OUT, bus->GetPhase());
+    EXPECT_TRUE(bus->IsPhase(BusPhase::DATA_OUT));
 }
 
 TEST(VirtualBusTest, Init)

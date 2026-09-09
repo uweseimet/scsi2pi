@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <fstream>
 #include <sstream>
+#include <thread>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -22,7 +23,7 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-RpiBus::RpiBus(PiType type, bool standard_board) : pi_type(type)
+RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irqs(e)
 {
     if (standard_board) {
         pin_ind = -1;
@@ -40,6 +41,19 @@ string RpiBus::SetUp(bool target)
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";
+    }
+
+    if (enable_irqs) {
+        if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(3, &cpuset);
+            pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+        }
+
+        sched_param param { };
+        param.sched_priority = 99;
+        pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
     }
 
     off_t base_addr = 0;
@@ -351,6 +365,10 @@ void RpiBus::SetSignal(int pin, bool state) const
 
 void RpiBus::DisableIRQ()
 {
+    if (enable_irqs) {
+        return;
+    }
+
     switch (pi_type) {
     case PiType::PI_1:
         // Stop system timer interrupt with interrupt controller
@@ -380,6 +398,10 @@ void RpiBus::DisableIRQ()
 
 void RpiBus::EnableIRQ()
 {
+    if (enable_irqs) {
+        return;
+    }
+
     switch (pi_type) {
     case PiType::PI_1:
         // Restart the system timer interrupt with the interrupt controller
@@ -412,7 +434,8 @@ void RpiBus::PinConfig(int pin, int mode) const
 
     const int index = pin / 10;
     const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
-    gpio[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
+    gpfsel[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
+    gpio[index] = gpfsel[index];
 }
 
 // Set output pin
@@ -464,9 +487,10 @@ inline void RpiBus::Acquire() const
 // Furthermore, nanosleep() requires interrupts to be enabled.
 void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
+    const uint32_t start = armt_addr[ARMT_FREERUN];
     // Either Daynaport delay or bus settle delay
-    const uint32_t count = armt_addr[ARMT_FREERUN] + (daynaport ? daynaport_count : bus_settle_count);
-    while (armt_addr[ARMT_FREERUN] < count) {
+    const uint32_t delta = daynaport ? daynaport_count : bus_settle_count;
+    while (armt_addr[ARMT_FREERUN] - start < delta) {
         // Intentionally empty
     }
 }

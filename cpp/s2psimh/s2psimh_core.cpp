@@ -466,7 +466,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
             return {};
         }
 
-        const string &cls = ToLower(components[0]);
+        const string cls = ToLower(components[0]);
         const int c = HexToDec(cls[0]);
         if (cls.size() > 1 || c == -1) {
             cerr << "Error: Invalid class '" << cls << "'\n";
