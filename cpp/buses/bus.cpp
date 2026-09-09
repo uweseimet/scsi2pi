@@ -37,8 +37,6 @@ int Bus::TargetCommandHandShake(data_in_t buf)
 {
     assert(!buf.empty());
 
-    DisableIRQ();
-
     SetREQ(true);
 
     bool ack = WaitHandShake(PIN_ACK_MASK, true);
@@ -75,8 +73,6 @@ int Bus::TargetCommandHandShake(data_in_t buf)
 
     const int command_byte_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
     if (!command_byte_count) {
-        EnableIRQ();
-
         // Unknown command
         return 0;
     }
@@ -95,8 +91,6 @@ int Bus::TargetCommandHandShake(data_in_t buf)
             return CommandHandshakeTimeout();
         }
     }
-
-    EnableIRQ();
 
     return bytes_received;
 }
@@ -131,8 +125,6 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 
-    DisableIRQ();
-
     int bytes_received;
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
         SetREQ(true);
@@ -148,8 +140,6 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
         }
     }
 
-    EnableIRQ();
-
     return bytes_received;
 }
 
@@ -157,8 +147,6 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 int Bus::InitiatorReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     const BusPhase phase = GetPhase();
 
@@ -183,16 +171,12 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
         ++bytes_received;
     }
 
-    EnableIRQ();
-
     return bytes_received;
 }
 // For DATA IN, MESSAGE IN and STATUS
 int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     int bytes_sent;
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
@@ -206,7 +190,6 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
         SetDAT(buf[bytes_sent]);
 
         if (!WaitHandShake(PIN_ACK_MASK, false)) {
-            EnableIRQ();
             return bytes_sent;
         }
 
@@ -223,8 +206,6 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 
     WaitHandShake(PIN_ACK_MASK, false);
 
-    EnableIRQ();
-
     return bytes_sent;
 }
 
@@ -232,8 +213,6 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 int Bus::InitiatorSendHandShake(data_out_t buf)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     const BusPhase phase = GetPhase();
     const int last_msg_out = (phase == BusPhase::MSG_OUT) ? count - 1 : -1;
@@ -262,8 +241,6 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     while (bytes_sent < count && send_byte(buf[bytes_sent], bytes_sent == last_msg_out)) {
         ++bytes_sent;
     }
-
-    EnableIRQ();
 
     return bytes_sent;
 }
@@ -344,8 +321,6 @@ uint8_t Bus::GetSelection() const
 
 int Bus::CommandHandshakeTimeout()
 {
-    EnableIRQ();
-
     return -1;
 }
 

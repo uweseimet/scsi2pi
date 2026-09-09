@@ -46,15 +46,6 @@ private:
         // Nothing to do
     }
 
-    void DisableIRQ() override
-    {
-        // Nothing to do
-    }
-    void EnableIRQ() override
-    {
-        // Nothing to do
-    }
-
     void SetDataDirIn(bool) const override
     {
         // Nothing to do

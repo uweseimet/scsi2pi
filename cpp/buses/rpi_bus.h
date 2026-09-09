@@ -50,9 +50,6 @@ private:
 
     void SetSignal(int, bool) const override;
 
-    void DisableIRQ() override;
-    void EnableIRQ() override;
-
     void SetDataDirIn(bool) const override;
 
     // GPIO pin direction setting
@@ -96,24 +93,6 @@ private:
 
     // PADS register
     volatile uint32_t *pads = nullptr;
-
-    // Interrupt control register
-    volatile uint32_t *irp_ctl = nullptr;
-
-    // QA7 register
-    volatile uint32_t *qa7_regs = nullptr;
-
-    // Interrupt enabled state
-    uint32_t irpt_enb = 0;
-
-    // Interrupt control target CPU
-    int tint_core = 0;
-
-    // Interrupt control
-    uint32_t tint_ctl = 0;
-
-    // GIC priority setting
-    uint32_t gicc_pmr_saved = 0;
 
     // SEL signal event request
     struct gpioevent_request selevreq = { };

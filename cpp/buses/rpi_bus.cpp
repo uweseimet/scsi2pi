@@ -115,12 +115,6 @@ string RpiBus::SetUp(bool target)
     // PADS
     pads = map + PADS_OFFSET / sizeof(uint32_t);
 
-    // Interrupt controller (Pi 1)
-    irp_ctl = map + IRPT_OFFSET / sizeof(uint32_t);
-
-    // Quad-A7 control (Pi 2/3)
-    qa7_regs = map + QA7_OFFSET / sizeof(uint32_t);
-
     // Map GIC interrupt priority mask register
     if (pi_type == PiType::PI_4) {
         void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
@@ -355,60 +349,6 @@ void RpiBus::SetSignal(int pin, bool state) const
 
     gpio[index] = data;
     gpfsel[index] = data;
-}
-
-void RpiBus::DisableIRQ()
-{
-    switch (pi_type) {
-    case PiType::PI_1:
-        // Stop system timer interrupt with interrupt controller
-        irpt_enb = irp_ctl[IRPT_ENB_IRQ_1];
-        irp_ctl[IRPT_DIS_IRQ_1] = irpt_enb & 0xf;
-        break;
-
-    case PiType::PI_2:
-    case PiType::PI_3:
-        // RPI2,3 disable core timer IRQ
-        tint_core = sched_getcpu() + QA7_CORE0_TINTC;
-        tint_ctl = qa7_regs[tint_core];
-        qa7_regs[tint_core] = 0;
-        break;
-
-    case PiType::PI_4:
-        // RPI4 disables interrupts via the GIC
-        gicc_pmr_saved = *gicc_mpr;
-        *gicc_mpr = 0;
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
-}
-
-void RpiBus::EnableIRQ()
-{
-    switch (pi_type) {
-    case PiType::PI_1:
-        // Restart the system timer interrupt with the interrupt controller
-        irp_ctl[IRPT_ENB_IRQ_1] = irpt_enb & 0xf;
-        break;
-
-    case PiType::PI_2:
-    case PiType::PI_3:
-        // RPI2,3 re-enable core timer IRQ
-        qa7_regs[tint_core] = tint_ctl;
-        break;
-
-    case PiType::PI_4:
-        // RPI4 enables interrupts via the GIC
-        *gicc_mpr = gicc_pmr_saved;
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
 }
 
 // Pin direction setting (input/output)

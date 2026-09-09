@@ -173,9 +173,6 @@ protected:
 
     virtual void WaitNanoSeconds(bool) const = 0;
 
-    virtual void EnableIRQ() = 0;
-    virtual void DisableIRQ() = 0;
-
     uint8_t GetSelection() const;
 
     // The DaynaPort SCSI Link do a short delay in the middle of transfering
