@@ -198,13 +198,13 @@ void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
 PbOperationMetaData* CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
     const string &description)
 {
-    PbOperationMetaData meta_data;
-    meta_data.set_server_side_name(PbOperation_Name(operation));
-    meta_data.set_description(description);
     const auto number = static_cast<int>(operation);
-    auto &entry = (*operation_info.mutable_operations())[number];
-    entry = std::move(meta_data);
-    return &entry;
+
+    PbOperationMetaData* meta_data = &(*operation_info.mutable_operations())[number];
+    meta_data->set_server_side_name(PbOperation_Name(operation));
+    meta_data->set_description(description);
+
+    return meta_data;
 }
 
 void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, const string &description,
