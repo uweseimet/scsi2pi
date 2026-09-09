@@ -47,7 +47,7 @@ string RpiBus::SetUp(bool target)
     CPU_SET(3, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     sched_param param { };
-    param.sched_priority = 80;
+    param.sched_priority = 99;
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
 
     off_t base_addr = 0;
@@ -275,7 +275,7 @@ void RpiBus::SetDataDirIn(bool in) const
     }
 }
 
-void RpiBus::SetDAT(uint8_t dat) const
+inline void RpiBus::SetDAT(uint8_t dat) const
 {
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
@@ -391,7 +391,7 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 }
 
 // Read data from bus
-void RpiBus::Acquire() const
+inline void RpiBus::Acquire() const
 {
     SetSignals(*level);
 }
