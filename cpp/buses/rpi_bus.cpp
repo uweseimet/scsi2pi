@@ -42,6 +42,11 @@ string RpiBus::SetUp(bool target)
         return "Root permissions are required";
     }
 
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(3, &cpuset);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+
     off_t base_addr = 0;
     switch (pi_type) {
     case RpiBus::PiType::PI_1:
