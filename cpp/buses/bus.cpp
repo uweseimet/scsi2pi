@@ -33,7 +33,7 @@ void Bus::Reset() const
     signals = 0xffffffff;
 }
 
-int Bus::TargetCommandHandShake(data_in_t buf)
+int Bus::TargetCommandHandShake(data_in_t buf) const
 {
     assert(!buf.empty());
 
@@ -46,7 +46,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
     SetREQ(false);
 
     if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-        return CommandHandshakeTimeout();
+        return -1;
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
@@ -67,7 +67,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return CommandHandshakeTimeout();
+            return -1;
         }
     }
 
@@ -88,7 +88,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return CommandHandshakeTimeout();
+            return -1;
         }
     }
 
@@ -121,7 +121,7 @@ int Bus::InitiatorMsgInHandShake() const
 }
 
 // For DATA OUT and MESSAGE OUT
-int Bus::TargetReceiveHandShake(data_in_t buf)
+int Bus::TargetReceiveHandShake(data_in_t buf) const
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -144,7 +144,7 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
 }
 
 // For DATA IN and STATUS
-int Bus::InitiatorReceiveHandShake(data_in_t buf)
+int Bus::InitiatorReceiveHandShake(data_in_t buf) const
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -174,7 +174,7 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
     return bytes_received;
 }
 // For DATA IN, MESSAGE IN and STATUS
-int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
+int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes) const
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -210,7 +210,7 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
-int Bus::InitiatorSendHandShake(data_out_t buf)
+int Bus::InitiatorSendHandShake(data_out_t buf) const
 {
     const auto count = static_cast<int>(buf.size());
 
@@ -317,11 +317,6 @@ uint8_t Bus::GetSelection() const
     } while (chrono::steady_clock::now() < deadline);
 
     return 0;
-}
-
-int Bus::CommandHandshakeTimeout()
-{
-    return -1;
 }
 
 // Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)
