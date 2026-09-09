@@ -99,9 +99,6 @@ private:
 
     int epoll_fd = -1;
 
-    // GIC CPU interface register
-    volatile uint32_t *gicc_mpr = nullptr;
-
     // RAM copy of GPFSEL0-2  values (GPIO Function Select), mutable because these values are external state.
     // Reading the current data from the copy is faster than directly reading them from the ports.
     mutable array<uint32_t, 3> gpfsel = { };
@@ -136,16 +133,9 @@ private:
     constexpr static int GPIO_CLK_0 = 38;
     constexpr static int GPIO_PUPPDN0 = 57;
     constexpr static int PAD_0_27 = 11;
-    constexpr static int IRPT_ENB_IRQ_1 = 4;
-    constexpr static int IRPT_DIS_IRQ_1 = 7;
-    constexpr static int QA7_CORE0_TINTC = 16;
 
-    constexpr static uint32_t IRPT_OFFSET = 0x0000B200;
     constexpr static uint32_t PADS_OFFSET = 0x00100000;
     constexpr static uint32_t GPIO_OFFSET = 0x00200000;
-    constexpr static uint32_t QA7_OFFSET = 0x01000000;
-
-    constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
 
     constexpr static uint32_t DATA_MASK = 0b11111000000000000000000000000000;
 };

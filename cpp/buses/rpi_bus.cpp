@@ -115,18 +115,6 @@ string RpiBus::SetUp(bool target)
     // PADS
     pads = map + PADS_OFFSET / sizeof(uint32_t);
 
-    // Map GIC interrupt priority mask register
-    if (pi_type == PiType::PI_4) {
-        void *addr = mmap(nullptr, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, PI4_ARM_GICC_CTLR);
-        if (addr == MAP_FAILED) {
-            close(fd);
-            return "Can't map GIC: "s + system_error(errno, generic_category()).what();
-        }
-
-        // MPR has offset 1
-        gicc_mpr = static_cast<uint32_t*>(addr) + 1;
-    }
-
     close(fd);
 
     // Set Drive Strength to 16mA

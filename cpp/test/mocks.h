@@ -35,8 +35,6 @@ public:
     MOCK_METHOD(bool, WaitHandShake, (int, bool), (const, override));
     MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));
-    MOCK_METHOD(void, EnableIRQ, (), (override));
-    MOCK_METHOD(void, DisableIRQ, (), (override));
     MOCK_METHOD(bool, IsRaspberryPi, (), (const, override));
 
     MockBus()

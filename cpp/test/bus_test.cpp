@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -70,8 +70,6 @@ TEST(BusTest, TargetCommandHandShake)
 
     EXPECT_CALL(bus, SetSignal).Times(2);
     EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
     EXPECT_CALL(bus, WaitNanoSeconds);
     EXPECT_EQ(-1, bus.TargetCommandHandShake(buf));
@@ -84,8 +82,6 @@ TEST(BusTest, TargetReceiveHandShake)
 
     EXPECT_CALL(bus, SetSignal).Times(2);
     EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
     EXPECT_CALL(bus, WaitNanoSeconds);
     EXPECT_EQ(0, bus.TargetReceiveHandShake(buf));
@@ -97,8 +93,6 @@ TEST(BusTest, InitiatorReceiveHandShake)
     array<uint8_t, 1> buf = { };
 
     EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
     EXPECT_EQ(0, bus.InitiatorReceiveHandShake(buf));
 }
@@ -109,8 +103,6 @@ TEST(BusTest, TargetSendHandShake)
     array<uint8_t, 1> buf = { };
 
     EXPECT_CALL(bus, SetDAT);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
     EXPECT_EQ(0, bus.TargetSendHandShake(buf));
 }
@@ -122,8 +114,6 @@ TEST(BusTest, InitiatorSendHandShake)
 
     EXPECT_CALL(bus, SetDAT);
     EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
     EXPECT_EQ(0, bus.InitiatorSendHandShake(buf));
 }
