@@ -46,6 +46,9 @@ string RpiBus::SetUp(bool target)
     CPU_ZERO(&cpuset);
     CPU_SET(3, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    sched_param param { };
+    param.sched_priority = 80;
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
 
     off_t base_addr = 0;
     switch (pi_type) {
