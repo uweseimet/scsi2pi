@@ -464,9 +464,10 @@ void RpiBus::Acquire() const
 // Furthermore, nanosleep() requires interrupts to be enabled.
 void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
+    const uint32_t start = armt_addr[ARMT_FREERUN];
     // Either Daynaport delay or bus settle delay
-    const uint32_t count = armt_addr[ARMT_FREERUN] + (daynaport ? daynaport_count : bus_settle_count);
-    while (armt_addr[ARMT_FREERUN] < count) {
+    const uint32_t delta = daynaport ? daynaport_count : bus_settle_count;
+    while (static_cast<uint32_t>(armt_addr[ARMT_FREERUN] - start) < delta) {
         // Intentionally empty
     }
 }
