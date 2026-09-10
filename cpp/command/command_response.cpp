@@ -462,7 +462,7 @@ void command_response::GetPropertiesInfo(PbPropertiesInfo &properties_info)
 void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 {
     auto *operation = CreateOperation(operation_info, ATTACH, "Attach device, device-specific parameters are required");
-    AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
+    AddOperationParameter(*operation, "file", "Image file name in case of a mass storage device");
     AddOperationParameter(*operation, "interface", "Comma-separated prioritized network interface list");
     AddOperationParameter(*operation, "inet", "IP address and netmask of the network bridge");
     AddOperationParameter(*operation, "cmd", "Print command for the printer device");
