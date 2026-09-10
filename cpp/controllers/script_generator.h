@@ -19,8 +19,8 @@ public:
 
     bool CreateFile(const string&);
 
-    void AddCdb(int, int, cdb_t);
-    void AddData(span<const uint8_t>);
+    bool AddCdb(int, int, cdb_t);
+    bool AddData(span<const uint8_t>);
 
 private:
 

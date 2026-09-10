@@ -81,7 +81,7 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     }
 }
 
-property_map PropertyHandler::GetProperties(const string &filter) const
+property_map PropertyHandler::GetProperties(string_view filter) const
 {
     if (filter.empty()) {
         return property_cache;
@@ -102,7 +102,7 @@ const property_map& PropertyHandler::GetUnknownProperties() const
     return unknown_properties;
 }
 
-string PropertyHandler::RemoveProperty(const string &key, const string &def)
+string PropertyHandler::ConsumeProperty(const string &key, const string &def)
 {
     if (const auto it = property_cache.find(key); it != property_cache.end()) {
         unknown_properties.erase(key);
@@ -120,7 +120,7 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
 
 void PropertyHandler::RemoveProperties(string_view filter)
 {
-    erase_if(unknown_properties, [&filter](auto &kv) {return kv.first.starts_with(filter);});
+    erase_if(unknown_properties, [filter](auto &kv) {return kv.first.starts_with(filter);});
 }
 
 bool PropertyHandler::Persist() const

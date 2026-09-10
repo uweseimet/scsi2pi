@@ -60,7 +60,7 @@ string Tape::SetUp()
         {
             ReadBlockLimits();
         });
-    AddCommand(ScsiCommand::REWIND, [this]
+    AddCommand(ScsiCommand::REZERO_REWIND, [this]
         {
             CheckReady();
             ResetPositions();
@@ -92,7 +92,7 @@ string Tape::SetUp()
         {
             ReadPosition();
         });
-    AddCommand(ScsiCommand::FORMAT_MEDIUM, [this]
+    AddCommand(ScsiCommand::FORMAT, [this]
         {
             FormatMedium();
         });

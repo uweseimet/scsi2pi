@@ -165,10 +165,23 @@ protected:
     string GetParam(const string&) const;
 
     void CreateDeviceLogger();
-    void LogTrace(const string&) const;
-    void LogDebug(const string&) const;
-    void LogWarn(const string&) const;
-    void LogError(const string&) const;
+
+    void LogTrace(string_view s) const
+    {
+        device_logger->trace(s);
+    }
+    void LogDebug(string_view s) const
+    {
+        device_logger->debug(s);
+    }
+    void LogWarn(string_view s) const
+    {
+        device_logger->warn(s);
+    }
+    void LogError(string_view s) const
+    {
+        device_logger->error(s);
+    }
 
 private:
 

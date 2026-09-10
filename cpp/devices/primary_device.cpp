@@ -264,8 +264,8 @@ void PrimaryDevice::RequestSense()
 
     int effective_lun = controller->GetEffectiveLun();
 
-    // According to the specification REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
-    // Only the Sense Key and ASC are set in order to signal the non-existing LUN.
+    // According to the specification. REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
+    // Only the Sense Key and ASC are set to signal the non-existing LUN.
     if (!controller->GetDeviceForLun(effective_lun)) {
         if (!controller->GetDeviceForLun(0)) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
@@ -273,7 +273,7 @@ void PrimaryDevice::RequestSense()
 
         effective_lun = 0;
 
-        // When signalling an invalid LUN the status must be GOOD
+        // When signalling an invalid LUN, the status must be GOOD
         controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
     }
 
@@ -352,7 +352,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
     vector<byte> buf(18);
 
-    // In SCSI-1 mode only return the extended format if more than 4 bytes have been requested
+    // In SCSI-1 mode, only return the extended format if more than 4 bytes have been requested
     const bool extended = level >= ScsiLevel::SCSI_2 || GetCdbByte(4) > 4;
 
     if (extended) {

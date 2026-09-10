@@ -39,11 +39,13 @@ public:
 
     void SetTarget(int, int, bool);
 
-    void SetLimit(int limit)
+    bool SetLimit(int limit)
     {
         if (initiator_executor) {
-            initiator_executor->SetLimit(limit);
+            return initiator_executor->SetLimit(limit);
         }
+
+        return true;
     }
 
 private:

@@ -51,42 +51,42 @@
 //---------------------------------------------------------------------------
 
 // Control signal pin assignment
-constexpr static int PIN_ACT = 4; // ACTIVE
-constexpr static int PIN_ENB = 5; // ENABLE
+static constexpr int PIN_ACT = 4; // ACTIVE
+static constexpr int PIN_ENB = 5; // ENABLE
 // These are set to -1 for the STANDARD board in rpi_bus.cpp
-constexpr static int PIN_IND = 6; // INITIATOR CTRL DIRECTION
-constexpr static int PIN_TAD = 7; // TARGET CTRL DIRECTION
-constexpr static int PIN_DTD = 8; // DATA DIRECTION
+static constexpr int PIN_IND = 6; // INITIATOR CTRL DIRECTION
+static constexpr int PIN_TAD = 7; // TARGET CTRL DIRECTION
+static constexpr int PIN_DTD = 8; // DATA DIRECTION
 
 // SCSI signal pin assignment
-constexpr static int PIN_DT0 = 10;
-constexpr static int PIN_DT1 = 11;
-constexpr static int PIN_DT2 = 12;
-constexpr static int PIN_DT3 = 13;
-constexpr static int PIN_DT4 = 14;
-constexpr static int PIN_DT5 = 15;
-constexpr static int PIN_DT6 = 16;
-constexpr static int PIN_DT7 = 17;
+static constexpr int PIN_DT0 = 10;
+static constexpr int PIN_DT1 = 11;
+static constexpr int PIN_DT2 = 12;
+static constexpr int PIN_DT3 = 13;
+static constexpr int PIN_DT4 = 14;
+static constexpr int PIN_DT5 = 15;
+static constexpr int PIN_DT6 = 16;
+static constexpr int PIN_DT7 = 17;
 
 // Data parity
-constexpr static int PIN_DP = 18;
+static constexpr int PIN_DP = 18;
 
 // Control signals
-constexpr static int PIN_ATN = 19;
-constexpr static int PIN_ATN_MASK = 1 << PIN_ATN;
-constexpr static int PIN_RST = 20;
-constexpr static int PIN_RST_MASK = 1 << PIN_RST;
-constexpr static int PIN_ACK = 21;
-constexpr static int PIN_ACK_MASK = 1 << PIN_ACK;
-constexpr static int PIN_REQ = 22;
-constexpr static int PIN_REQ_MASK = 1 << PIN_REQ;
-constexpr static int PIN_MSG = 23;
-constexpr static int PIN_MSG_MASK = 1 << PIN_MSG;
-constexpr static int PIN_CD = 24;
-constexpr static int PIN_CD_MASK = 1 << PIN_CD;
-constexpr static int PIN_IO = 25;
-constexpr static int PIN_IO_MASK = 1 << PIN_IO;
-constexpr static int PIN_BSY = 26;
-constexpr static int PIN_BSY_MASK = 1 << PIN_BSY;
-constexpr static int PIN_SEL = 27;
-constexpr static int PIN_SEL_MASK = 1 << PIN_SEL;
+static constexpr int PIN_ATN = 19;
+static constexpr int PIN_ATN_MASK = 1 << PIN_ATN;
+static constexpr int PIN_RST = 20;
+static constexpr int PIN_RST_MASK = 1 << PIN_RST;
+static constexpr int PIN_ACK = 21;
+static constexpr int PIN_ACK_MASK = 1 << PIN_ACK;
+static constexpr int PIN_REQ = 22;
+static constexpr int PIN_REQ_MASK = 1 << PIN_REQ;
+static constexpr int PIN_MSG = 23;
+static constexpr int PIN_MSG_MASK = 1 << PIN_MSG;
+static constexpr int PIN_CD = 24;
+static constexpr int PIN_CD_MASK = 1 << PIN_CD;
+static constexpr int PIN_IO = 25;
+static constexpr int PIN_IO_MASK = 1 << PIN_IO;
+static constexpr int PIN_BSY = 26;
+static constexpr int PIN_BSY_MASK = 1 << PIN_BSY;
+static constexpr int PIN_SEL = 27;
+static constexpr int PIN_SEL_MASK = 1 << PIN_SEL;

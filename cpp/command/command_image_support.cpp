@@ -110,11 +110,18 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Missing file size");
     }
 
+    bool has_error = false;
     off_t len;
     try {
         len = stoull(size);
     }
-    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
+    catch (const invalid_argument&) {
+        has_error = true;
+    }
+    catch (const out_of_range&) {
+        has_error = true;
+    }
+    if (has_error) {
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': Invalid file size: " + size);
     }
 

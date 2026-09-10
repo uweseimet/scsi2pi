@@ -18,6 +18,8 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 6, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
 
+    // 0x1f is omitted intentionally, it is the ICD command extension. See controller.cpp for details.
+
     for (int i = 0x20; i < 0x7f; ++i) {
         AddCommand(static_cast<ScsiCommand>(i), 10, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
@@ -30,13 +32,15 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 12, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
 
+    // 0xc0-0xff are vendor-specific commands with unknown lengths
+
     // This mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
     // and some others typically used with the SCSG device
     AddCommand(ScsiCommand::TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::REZERO, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::REZERO_REWIND, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_BLOCK_LIMITS, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::REQUEST_SENSE, 6, "REQUEST SENSE", { 4, 1, 0, 0, false, false });
-    AddCommand(ScsiCommand::FORMAT_UNIT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
+    AddCommand(ScsiCommand::FORMAT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
     AddCommand(ScsiCommand::REASSIGN_BLOCKS, 6, "REASSIGN BLOCKS", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3, false, false });
     AddCommand(ScsiCommand::RETRIEVE_STATS, 6, "RETRIEVE STATS", { 4, 1, 0, 0, false, false });
@@ -52,7 +56,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::INQUIRY, 6, "INQUIRY", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::VERIFY_6, 6, "VERIFY(6)", { 4, 1, 1, 3, true, false });
     AddCommand(ScsiCommand::MODE_SELECT_6, 6, "MODE SELECT(6)", { 4, 1, 0, 0, true, true });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)(RESERVE ELEMENT(6)",
+    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
@@ -138,13 +142,13 @@ CommandMetaData::CommandMetaData()
         { 7, 2, 0, 0, false, false });
 }
 
-void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string_view name, const CdbMetaData &meta_data)
+void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string name, const CdbMetaData &meta_data)
 {
     assert(meta_data.allocation_length_offset <= 12);
     assert(meta_data.allocation_length_size <= 4);
 
     command_byte_counts[static_cast<size_t>(cmd)] = byte_count;
-    command_names[static_cast<size_t>(cmd)] = name;
+    command_names[static_cast<size_t>(cmd)] = std::move(name);
     cdb_meta_data[static_cast<size_t>(cmd)] = meta_data;
 }
 

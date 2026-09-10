@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <string>
 #include "board.h"
 #include "shared/scsi.h"
@@ -184,14 +185,9 @@ protected:
 
     uint8_t GetSelection() const;
 
-    // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of ns that will be delayed between the
-    // header and the actual data.
-    constexpr static int DAYNAPORT_SEND_DELAY_NS = 100'000;
-
 private:
 
-    int CommandHandshakeTimeout();
+    int FinishTransfer(int);
 
     // The current bus signals, static because there is exactly one set of bus signals
     inline static uint32_t signals = 0xffffffff;
@@ -199,4 +195,6 @@ private:
     static const array<BusPhase, 32> phases;
 
     static const array<string, 11> phase_names;
+
+    static constexpr auto TIMEOUT_3_SECONDS = std::chrono::seconds(3);
 };

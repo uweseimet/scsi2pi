@@ -85,7 +85,7 @@ void StorageDevice::StartStopUnit()
         // Look at the eject bit and eject if necessary
         if (load) {
             if (IsLocked() || !Eject(false)) {
-                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIA_LOAD_OR_EJECT_FAILED);
             }
         }
         else {
@@ -95,7 +95,7 @@ void StorageDevice::StartStopUnit()
     else if (load && !last_filename.empty()) {
         SetFilename(last_filename);
         if (!ReserveFile()) {
-            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED);
+            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIA_LOAD_OR_EJECT_FAILED);
         }
 
         SetMediumChanged(true);

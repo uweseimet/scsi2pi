@@ -61,13 +61,13 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::REZERO, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::REZERO_REWIND, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, ScsiCommand::REZERO);
+    Dispatch(disk, ScsiCommand::REZERO_REWIND);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -75,18 +75,18 @@ TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::FORMAT_UNIT, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
         "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, ScsiCommand::FORMAT_UNIT);
+    Dispatch(disk, ScsiCommand::FORMAT);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, ScsiCommand::FORMAT_UNIT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
 TEST(DiskTest, ReassignBlocks)

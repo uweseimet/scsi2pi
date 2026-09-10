@@ -19,34 +19,39 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 
     if (file.good()) {
         meta_data = FromLittleEndian(data);
+        return true;
     }
-    else {
-        if (!file.eof()) {
-            file.clear();
-            return false;
-        }
 
+    if (!file.eof()) {
         file.clear();
-        meta_data.cls = SimhClass::RESERVERD_MARKER;
-        meta_data.value = static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM);
+        return false;
     }
+
+    file.clear();
+
+    meta_data = { SimhClass::RESERVERD_MARKER, static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM) };
 
     return true;
 }
 
 bool simh_util::IsRecord(const SimhMetaData &meta_data)
 {
+    switch (meta_data.cls) {
     // Tape mark
-    if (meta_data.cls == SimhClass::TAPE_MARK_GOOD_DATA_RECORD) {
-        return meta_data.value;
-    }
+    case SimhClass::TAPE_MARK_GOOD_DATA_RECORD:
+        return meta_data.value != 0;
 
-    // Bad data record, not recovered
-    if (meta_data.cls == SimhClass::BAD_DATA_RECORD && !meta_data.value) {
+        // Bad data record, not recovered
+    case SimhClass::BAD_DATA_RECORD:
+        return meta_data.value != 0;
+
+    case SimhClass::PRIVATE_MARKER:
+    case SimhClass::RESERVERD_MARKER:
         return false;
-    }
 
-    return meta_data.cls != SimhClass::PRIVATE_MARKER && meta_data.cls != SimhClass::RESERVERD_MARKER;
+    default:
+        return true;
+    }
 }
 
 uint32_t simh_util::Pad(int length)
@@ -58,19 +63,19 @@ uint32_t simh_util::Pad(int length)
 
 bool simh_util::WriteFilemark(ostream &file)
 {
-    const array<uint8_t, 4> &filemark = { 0, 0, 0, 0 };
+    static constexpr array<uint8_t, 4> filemark = { };
     file.write(to_const_char_ptr(filemark), filemark.size());
     return file.good();
 }
 
 bool simh_util::WriteGoodData(ostream &file, span<const uint8_t> data, int length)
 {
-    const array<uint8_t, 4> good_data = { static_cast<uint8_t>(length & 0xff),
-        static_cast<uint8_t>((length >> 8) & 0xff), static_cast<uint8_t>((length >> 16) & 0xff),
-        static_cast<uint8_t>((length >> 24) & 0xff) };
+    const auto good_data = ToLittleEndian( { SimhClass::TAPE_MARK_GOOD_DATA_RECORD, static_cast<uint32_t>(length) });
+
     file.write(to_const_char_ptr(good_data), good_data.size());
     file.write(to_const_char_ptr(data), length);
     file.write(to_const_char_ptr(good_data), good_data.size());
+
     return file.good();
 }
 

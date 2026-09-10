@@ -21,7 +21,7 @@ bool ScriptGenerator::CreateFile(const string &filename)
     return file.good();
 }
 
-void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
+bool ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 {
     assert(!cdb.empty());
 
@@ -32,6 +32,7 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
     if (!count) {
         count = static_cast<int>(cdb.size());
     }
+    count = min(count, static_cast<int>(cdb.size()));
 
     for (int i = 0; i < count; ++i) {
         if (i) {
@@ -41,9 +42,11 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
     }
 
     file << flush;
+
+    return file.good();
 }
 
-void ScriptGenerator::AddData(span<const uint8_t> data)
+bool ScriptGenerator::AddData(span<const uint8_t> data)
 {
     assert(!data.empty());
 
@@ -57,4 +60,6 @@ void ScriptGenerator::AddData(span<const uint8_t> data)
     }
 
     file << flush;
+
+    return file.good();
 }

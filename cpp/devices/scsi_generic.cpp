@@ -87,7 +87,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     byte_count = meta_data.block_size ? GetAllocationLength(local_cdb) * block_size : GetAllocationLength(local_cdb);
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cmd == ScsiCommand::FORMAT_UNIT && (static_cast<int>(local_cdb[1]) & 0x10)) {
+    if (cmd == ScsiCommand::FORMAT && (static_cast<int>(local_cdb[1]) & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
@@ -123,7 +123,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
     if (meta_data.has_data_out) {
-        DataOutPhase(chunk_size || cmd != ScsiCommand::FORMAT_UNIT ? chunk_size : -1);
+        DataOutPhase(chunk_size || cmd != ScsiCommand::FORMAT ? chunk_size : -1);
     }
     else {
         GetController()->SetCurrentLength(byte_count);
@@ -139,7 +139,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, send the command when all paramaeters are available
-    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT_UNIT
+    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
             if (buf.size() < 4) {
@@ -190,8 +190,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
     io_hdr.timeout = (
-        local_cdb[0] == static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT) ?
-            TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
+        local_cdb[0] == static_cast<uint8_t>(ScsiCommand::FORMAT) ? TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS)
+        * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetController() && GetLogger().should_log(level::debug)) {

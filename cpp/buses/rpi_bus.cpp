@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <bit>
 #include <cstddef>
 #include <fstream>
 #include <sstream>
@@ -102,7 +103,10 @@ string RpiBus::SetUp(bool target)
         close(vcio_fd);
         const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         bus_settle_count = timer_core_freq * 400 / 1000;
-        daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
+        // The DaynaPort SCSI Link do a short delay in the middle of transfering
+        // a packet. This is the number of ns that will be delayed between the
+        // header and the actual data.
+        daynaport_count = timer_core_freq * 100'000 / 1000;
     }
     else {
         close(fd);
@@ -319,31 +323,21 @@ void RpiBus::InitializeSignals() const
 
 void RpiBus::CreateWorkTable()
 {
-    array<uint8_t, 256> tblParity;
-
-    for (uint32_t i = 0; i < tblParity.size(); ++i) {
-        uint32_t parity = 0;
-        for (int j = 0; j < 8; ++j) {
-            parity ^= (i >> j) & 1;
-        }
-
-        tblParity[i] = !parity;
-    }
-
-    for (uint32_t i = 0; i < tblParity.size(); ++i) {
+    for (uint32_t i = 0; i < 256; ++i) {
+        const uint32_t parity = (popcount(i) % 2 == 0) ? 1 : 0;
         // Bit string for inspection
-        uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
+        uint32_t bits = i | (parity << 8);
 
-        // Bit check
+        uint32_t dat_set = 0;
         for (const int pin : DATA_PINS) {
             // Offset of the Function Select register for this pin (3 bits per pin)
             const int shift = (pin % 10) * 3;
-
             // Value (GPIO pin is set to 1)
-            tblDatSet[i] |= (bits & 0b001) << shift;
-
+            dat_set |= (bits & 1) << shift;
             bits >>= 1;
         }
+
+        tblDatSet[i] = dat_set;
     }
 }
 
@@ -475,12 +469,6 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 {
     const uint32_t data = pads[PAD_0_27];
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
-}
-
-// Read data from bus
-inline void RpiBus::Acquire() const
-{
-    SetSignals(*level);
 }
 
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.

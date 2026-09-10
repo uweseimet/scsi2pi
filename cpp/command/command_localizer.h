@@ -57,7 +57,7 @@ public:
     CommandLocalizer();
     ~CommandLocalizer() = default;
 
-    string Localize(LocalizationKey, const string&, const string& = "", const string& = "", const string& = "") const;
+    string Localize(LocalizationKey, string_view, const string& = "", const string& = "", const string& = "") const;
 
 private:
 

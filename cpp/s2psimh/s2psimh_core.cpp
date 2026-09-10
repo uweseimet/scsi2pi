@@ -76,16 +76,15 @@ bool S2pSimh::ParseArguments(span<char*> args)
             dump = true;
             break;
 
-        case 'l':
-            if (const int l = ParseAsUnsignedInt(string(optarg)); l < 0) {
+        case 'l': {
+            const int l = ParseAsUnsignedInt(string(optarg));
+            if (!formatter.SetLimit(l)) {
                 cerr << "Error: Invalid dump size limit '" << optarg << "'\n";
                 return false;
             }
-            else {
-                formatter.SetLimit(l);
-                limit = static_cast<uint32_t>(l);
-            }
+            limit = static_cast<uint32_t>(l);
             break;
+        }
 
         case 'h':
             help = true;

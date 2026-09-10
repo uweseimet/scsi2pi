@@ -28,7 +28,7 @@ TEST(SgUtilTest, GetAllocationLength)
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
     EXPECT_EQ(8, GetAllocationLength(cdb));
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
     EXPECT_EQ(0, GetAllocationLength(cdb));
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
@@ -58,7 +58,7 @@ TEST(SgUtilTest, UpdateStartBlock)
 {
     vector<uint8_t> cdb(6);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
     UpdateStartBlock(cdb, 255);
     EXPECT_EQ(0, GetInt24(cdb, 1));
 
@@ -110,7 +110,7 @@ TEST(SgUtilTest, SetBlockCount)
 {
     vector<uint8_t> cdb(6);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
     SetBlockCount(cdb, 255);
     EXPECT_EQ(0, cdb[4]);
 

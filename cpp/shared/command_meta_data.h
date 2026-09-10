@@ -60,7 +60,7 @@ private:
 
     CommandMetaData();
 
-    void AddCommand(ScsiCommand, int, string_view, const CdbMetaData&);
+    void AddCommand(ScsiCommand, int, string, const CdbMetaData&);
 
     array<int, 256> command_byte_counts = { };
     array<string, 256> command_names = { };

@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include "shared/network_util.h"
 
-using namespace spdlog;
 using namespace s2p_util;
 using namespace network_util;
 
@@ -29,8 +28,10 @@ TapDriver::TapDriver()
     available_interfaces = GetNetworkInterfaces();
 }
 
-string TapDriver::Init(const param_map &const_params, logger &logger)
+string TapDriver::Init(const param_map &const_params, const logger &l)
 {
+    tap_logger = l;
+
     param_map params = const_params;
     stringstream s(params[INTERFACE]);
     string interface;
@@ -58,7 +59,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
 
     inet = params[INET];
 
-    logger.trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
+    tap_logger.trace("Setting up TAP interface " + BRIDGE_INTERFACE_NAME);
 
     // IFF_NO_PI for no extra packet information
     ifreq ifr = { };
@@ -84,7 +85,7 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         return msg;
     };
 
-    if (const string &error = IpLink(true, logger); !error.empty()) {
+    if (const string &error = IpLink(true); !error.empty()) {
         return cleanUp(error);
     }
 
@@ -96,12 +97,12 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
                 fmt::format("Can't create bridge socket: {}", system_error(errno, generic_category()).what()));
         }
 
-        if (const string &error = CreateBridge(fd, ip_fd, logger); !error.empty()) {
+        if (const string &error = CreateBridge(fd, ip_fd); !error.empty()) {
             close(fd);
             return cleanUp(error);
         }
 
-        logger.trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+        tap_logger.trace(">brctl addif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
         const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, true);
         close(fd);
         if (!error.empty()) {
@@ -109,20 +110,20 @@ string TapDriver::Init(const param_map &const_params, logger &logger)
         }
     }
     else {
-        logger.trace(">ip addr add {} brd + dev {}", inet, BRIDGE_INTERFACE_NAME);
-        if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME, logger); !error.empty()) {
+        tap_logger.trace(">ip addr add {} brd + dev {}", inet, BRIDGE_INTERFACE_NAME);
+        if (const string &error = SetAddressAndNetMask(ip_fd, BRIDGE_INTERFACE_NAME); !error.empty()) {
             return cleanUp(error);
         }
     }
 
     close(ip_fd);
 
-    logger.info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
+    tap_logger.info("Created TAP interface " + BRIDGE_INTERFACE_NAME);
 
     return "";
 }
 
-void TapDriver::CleanUp(logger &logger) const
+void TapDriver::CleanUp() const
 {
     if (tap_fd == -1) {
         return;
@@ -130,21 +131,21 @@ void TapDriver::CleanUp(logger &logger) const
 
     if (bridge_created) {
         if (const int fd = socket(AF_LOCAL, SOCK_STREAM, 0); fd == -1) {
-            logger.error("Can't create bridge socket: {}", system_error(errno, generic_category()).what());
+            tap_logger.error("Can't create bridge socket: {}", system_error(errno, generic_category()).what());
         } else {
-            logger.trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
+            tap_logger.trace(">brctl delif " + BRIDGE_NAME + " " + BRIDGE_INTERFACE_NAME);
             if (const string &error = BrSetIf(fd, BRIDGE_INTERFACE_NAME, false); !error.empty()) {
-                logger.warn("Removing {} from {} failed: {}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
-                logger.warn("You may need to manually remove the TAP device");
+                tap_logger.warn("Removing {} from {} failed: {}", BRIDGE_INTERFACE_NAME, BRIDGE_NAME, error);
+                tap_logger.warn("You may need to manually remove the TAP device");
             }
 
-            logger.trace(">ip link set dev " + BRIDGE_NAME + " down");
+            tap_logger.trace(">ip link set dev " + BRIDGE_NAME + " down");
             if (const string &error = IpLink(fd, BRIDGE_NAME, false); !error.empty()) {
-                logger.warn(error);
+                tap_logger.warn(error);
             }
 
-            if (const string &error = DeleteBridge(fd, logger); !error.empty()) {
-                logger.warn(error);
+            if (const string &error = DeleteBridge(fd); !error.empty()) {
+                tap_logger.warn(error);
             }
 
             close(fd);
@@ -164,17 +165,17 @@ param_map TapDriver::GetDefaultParams() const
     };
 }
 
-string TapDriver::CreateBridge(int bridge_fd, int ip_fd, logger &logger)
+string TapDriver::CreateBridge(int bridge_fd, int ip_fd)
 {
     // Check if the bridge has already been created manually by checking whether there is a MAC address for it
     if (GetMacAddress(BRIDGE_NAME).empty()) {
-        logger.info("Creating {} for interface {}", BRIDGE_NAME, bridge_interface);
+        tap_logger.info("Creating {} for interface {}", BRIDGE_NAME, bridge_interface);
 
-        if (const string &error = AddBridge(bridge_fd, logger); !error.empty()) {
+        if (const string &error = AddBridge(bridge_fd); !error.empty()) {
             return error;
         }
 
-        logger.trace(">ip link set dev " + BRIDGE_NAME + " up");
+        tap_logger.trace(">ip link set dev " + BRIDGE_NAME + " up");
         if (const string &error = IpLink(ip_fd, BRIDGE_NAME, true); !error.empty()) {
             return error;
         }
@@ -185,9 +186,9 @@ string TapDriver::CreateBridge(int bridge_fd, int ip_fd, logger &logger)
     return "";
 }
 
-string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &logger) const
+string TapDriver::SetAddressAndNetMask(int fd, const string &interface) const
 {
-    const auto [address, netmask] = ExtractAddressAndMask(logger);
+    const auto [address, netmask] = ExtractAddressAndMask();
     if (address.empty() || netmask.empty()) {
         return "Error extracting inet address and netmask";
     }
@@ -215,7 +216,7 @@ string TapDriver::SetAddressAndNetMask(int fd, const string &interface, logger &
     return "";
 }
 
-pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
+pair<string, string> TapDriver::ExtractAddressAndMask() const
 {
     string address = inet;
     string netmask = DEFAULT_NETMASK;
@@ -224,7 +225,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
 
         const int m = ParseAsUnsignedInt(components[1]);
         if (m < 8 || m > 32) {
-            logger.error("Invalid CIDR netmask notation '{}'", components[1]);
+            tap_logger.error("Invalid CIDR netmask notation '{}'", components[1]);
             return {"", ""};
         }
 
@@ -236,14 +237,14 @@ pair<string, string> TapDriver::ExtractAddressAndMask(logger &logger) const
     return {address, netmask};
 }
 
-string TapDriver::AddBridge(int fd, logger &logger) const
+string TapDriver::AddBridge(int fd) const
 {
-    logger.trace(">brctl addbr " + BRIDGE_NAME);
+    tap_logger.trace(">brctl addbr " + BRIDGE_NAME);
     if (ioctl(fd, SIOCBRADDBR, BRIDGE_NAME.c_str()) == -1) {
         return "Can't ioctl SIOCBRADDBR";
     }
 
-    logger.trace(">brctl addif {} {}", BRIDGE_NAME, bridge_interface);
+    tap_logger.trace(">brctl addif {} {}", BRIDGE_NAME, bridge_interface);
     if (const string &error = BrSetIf(fd, bridge_interface, true); !error.empty()) {
         return error;
     }
@@ -251,10 +252,10 @@ string TapDriver::AddBridge(int fd, logger &logger) const
     return "";
 }
 
-string TapDriver::DeleteBridge(int fd, logger &logger) const
+string TapDriver::DeleteBridge(int fd) const
 {
     if (bridge_created) {
-        logger.trace(">brctl delbr " + BRIDGE_NAME);
+        tap_logger.trace(">brctl delbr " + BRIDGE_NAME);
         if (ioctl(fd, SIOCBRDELBR, BRIDGE_NAME.c_str()) == -1) {
             return "Removing bridge " + BRIDGE_NAME + " failed: " + system_error(errno, generic_category()).what();
         }
@@ -263,14 +264,14 @@ string TapDriver::DeleteBridge(int fd, logger &logger) const
     return "";
 }
 
-string TapDriver::IpLink(bool up, logger &logger)
+string TapDriver::IpLink(bool up) const
 {
     const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1) {
         return fmt::format("Can't create socket: {}", system_error(errno, generic_category()).what());
     }
 
-    logger.trace(">ip link set {} {}", BRIDGE_INTERFACE_NAME, up ? "up" : "down");
+    tap_logger.trace(">ip link set {} {}", BRIDGE_INTERFACE_NAME, up ? "up" : "down");
     const string result = IpLink(fd, BRIDGE_INTERFACE_NAME, up);
 
     close(fd);
@@ -315,11 +316,11 @@ string TapDriver::BrSetIf(int fd, const string &interface, bool add)
     return "";
 }
 
-void TapDriver::Flush(logger &logger) const
+void TapDriver::Flush() const
 {
     while (HasPendingPackets()) {
         array<uint8_t, ETH_FRAME_LEN + 4> garbage_buffer;
-        static_cast<void>(Receive(garbage_buffer, logger));
+        static_cast<void>(Receive(garbage_buffer));
     }
 }
 
@@ -348,7 +349,7 @@ uint32_t TapDriver::Crc32(span<const uint8_t> data)
     return ~crc;
 }
 
-int TapDriver::Receive(data_in_t buf, logger &logger) const
+int TapDriver::Receive(data_in_t buf) const
 {
     // Check if there is data that can be received
     if (!HasPendingPackets()) {
@@ -357,7 +358,7 @@ int TapDriver::Receive(data_in_t buf, logger &logger) const
 
     auto bytes_received = read(tap_fd, buf.data(), ETH_FRAME_LEN);
     if (bytes_received == -1) {
-        logger.warn("Error while receiving a network packet");
+        tap_logger.warn("Error while receiving a network packet");
         return 0;
     }
 

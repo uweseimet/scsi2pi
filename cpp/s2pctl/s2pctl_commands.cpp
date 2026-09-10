@@ -137,8 +137,9 @@ bool S2pCtlCommands::SendCommand()
     if (connect(fd, (sockaddr*)(&(*server_addr)), sizeof(*server_addr)) == -1) {
         close(fd);
 
-        throw IoException("Can't connect to s2p on host '" + hostname + "', port " + to_string(port)
-        + ": " + system_error(errno, generic_category()).what());
+        throw IoException(
+            fmt::format("Can't connect to s2p on {}:{}: {}", hostname, port,
+                system_error(errno, generic_category()).what()));
     }
 
     if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {

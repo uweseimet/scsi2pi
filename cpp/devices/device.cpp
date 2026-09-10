@@ -109,26 +109,6 @@ logger& Device::GetLogger() const
     return *device_logger;
 }
 
-void Device::LogTrace(const string &s) const
-{
-    device_logger->trace(s);
-}
-
-void Device::LogDebug(const string &s) const
-{
-    device_logger->debug(s);
-}
-
-void Device::LogWarn(const string &s) const
-{
-    device_logger->warn(s);
-}
-
-void Device::LogError(const string &s) const
-{
-    device_logger->error(s);
-}
-
 void Device::EnrichStatistics(vector<PbStatistics> &statistics, PbStatisticsCategory category, const string &key,
     uint64_t value) const
 {

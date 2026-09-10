@@ -60,8 +60,7 @@ bool Controller::Process()
 void Controller::BusFree()
 {
     if (!IsBusFree()) {
-        LogTrace("BUS FREE phase");
-        SetPhase(BusPhase::BUS_FREE);
+        SetPhase(BusPhase::BUS_FREE, "BUS FREE phase");
 
         bus.SetREQ(false);
         bus.SetMSG(false);
@@ -86,8 +85,7 @@ void Controller::BusFree()
 void Controller::Selection()
 {
     if (!IsSelection()) {
-        LogTrace("SELECTION phase");
-        SetPhase(BusPhase::SELECTION);
+        SetPhase(BusPhase::SELECTION, "SELECTION phase");
 
         bus.SetBSY(true);
         return;
@@ -106,8 +104,7 @@ void Controller::Selection()
 void Controller::Command()
 {
     if (!IsCommand()) {
-        LogTrace("COMMAND phase");
-        SetPhase(BusPhase::COMMAND);
+        SetPhase(BusPhase::COMMAND, "COMMAND phase");
 
         bus.SetMSG(false);
         bus.SetCD(true);
@@ -118,7 +115,7 @@ void Controller::Command()
         const int actual_count = bus.TargetCommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
-                LogDebug(fmt::format("Controller received unknown command: ${:02x}", buf[0]));
+                LogDebug(fmt::format("Received an unknown command: ${:02x}", buf[0]));
                 RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
@@ -129,16 +126,15 @@ void Controller::Command()
             return;
         }
 
-        const int command_bytes_count = CommandMetaData::GetInstance().GetByteCount(
-            static_cast<ScsiCommand>(buf[0]));
+        const int command_bytes_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
         assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
 
         for (int i = 0; i < command_bytes_count; ++i) {
             SetCdbByte(i, buf[i]);
         }
 
-        if (script_generator) {
-            script_generator->AddCdb(GetTargetId(), GetEffectiveLun(), GetCdb());
+        if (script_generator && !script_generator->AddCdb(GetTargetId(), GetEffectiveLun(), GetCdb())) {
+            LogWarn("Couldn't append to script file");
         }
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
@@ -148,7 +144,7 @@ void Controller::Command()
 
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
-                command_bytes_count, GetCdb()[0], actual_count));
+                actual_count, GetCdb()[0], command_bytes_count));
             bus.SetRST(true);
             bus.Reset();
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
@@ -222,10 +218,9 @@ void Controller::Status()
         return;
     }
 
-    LogTrace(fmt::format("STATUS phase, status is {} (status code ${:02x})", STATUS_MAPPING.at(GetStatus()),
-        static_cast<int>(GetStatus())));
-
-    SetPhase(BusPhase::STATUS);
+    SetPhase(BusPhase::STATUS,
+        fmt::format("STATUS phase, status is {} (status code ${:02x})", STATUS_MAPPING.at(GetStatus()),
+            static_cast<int>(GetStatus())));
 
     bus.SetMSG(false);
     bus.SetCD(true);
@@ -248,8 +243,7 @@ void Controller::MsgIn()
         return;
     }
 
-    LogTrace("MESSAGE IN phase");
-    SetPhase(BusPhase::MSG_IN);
+    SetPhase(BusPhase::MSG_IN, "MESSAGE IN phase");
 
     bus.SetMSG(true);
     bus.SetCD(true);
@@ -265,15 +259,13 @@ void Controller::MsgOut()
         return;
     }
 
-    LogTrace("MESSAGE OUT phase");
+    SetPhase(BusPhase::MSG_OUT, "MESSAGE OUT phase");
 
     // Process the IDENTIFY message
     if (IsSelection()) {
         atn_msg = true;
         msg_bytes.clear();
     }
-
-    SetPhase(BusPhase::MSG_OUT);
 
     bus.SetMSG(true);
     bus.SetCD(true);
@@ -296,8 +288,7 @@ void Controller::DataIn()
         return;
     }
 
-    LogTrace("DATA IN phase");
-    SetPhase(BusPhase::DATA_IN);
+    SetPhase(BusPhase::DATA_IN, "DATA IN phase");
 
     bus.SetMSG(false);
     bus.SetCD(false);
@@ -322,8 +313,7 @@ void Controller::DataOut()
         SetCurrentLength(0);
     }
 
-    LogTrace("DATA OUT phase");
-    SetPhase(BusPhase::DATA_OUT);
+    SetPhase(BusPhase::DATA_OUT, "DATA OUT phase");
 
     bus.SetMSG(false);
     bus.SetCD(false);
@@ -396,7 +386,7 @@ void Controller::Send()
         return;
     }
 
-    // All data have been transferred
+    // All data has been transferred
 
     switch (GetPhase()) {
     case BusPhase::MSG_IN:
@@ -452,8 +442,9 @@ void Controller::Receive()
                 bytes));
         }
 
-        if (IsDataOut() && script_generator) {
-            script_generator->AddData(span(GetBuffer().data() + GetOffset(), curr_length));
+        if (IsDataOut() && script_generator
+            && !script_generator->AddData(span(GetBuffer().data() + GetOffset(), curr_length))) {
+            LogWarn("Couldn't append to script file");
         }
 
         UpdateOffsetAndLength();
@@ -488,7 +479,7 @@ void Controller::Receive()
 
     switch (GetPhase()) {
     case BusPhase::DATA_OUT:
-        // All data have been transferred
+        // All data has been transferred
         Status();
         break;
 
@@ -589,7 +580,7 @@ void Controller::ParseMessage()
         default:
             if (msg_byte >= 0x80) {
                 identified_lun = static_cast<int>(msg_byte) & 0x1f;
-                LogTrace("Received IDENTIFY message for LUN " + to_string(identified_lun));
+                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
             }
             break;
         }

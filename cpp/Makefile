@@ -33,7 +33,7 @@ DEBUG_FLAGS ?= -g -O0 -DDEBUG
 RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
 
-CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS)
+CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -DSPDLOG_NO_ATOMIC_LEVELS
 CXXFLAGS := -std=c++20 $(WARNING_FLAGS) -pthread -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
@@ -211,7 +211,6 @@ PROTO_API := ../api/s2p_interface.proto
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
-	$(DIR_SHARED)/memory_util.cpp \
 	$(DIR_SHARED)/network_util.cpp \
 	$(DIR_SHARED)/property_handler.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
@@ -521,7 +520,7 @@ $(OBJDIR)/%.o: %.cpp | $(SRC_API)
 
 $(OBJ_API): $(SRC_API)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fno-rtti -fno-exceptions -DGOOGLE_PROTOBUF_NO_RTTI -c $< -o $@
 
 $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 	$(PROTOC) -I ../api --cpp_out=$(GENERATED_DIR) $(PROTO_API)

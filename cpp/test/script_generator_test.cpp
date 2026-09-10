@@ -12,7 +12,7 @@
 
 using namespace testing;
 
-TEST(ScriptGeneratorTest, AddCdb)
+TEST(ScriptGeneratorTest, Add)
 {
     ScriptGenerator generator;
 
@@ -22,19 +22,19 @@ TEST(ScriptGeneratorTest, AddCdb)
     EXPECT_TRUE(generator.CreateFile(filename));
 
     auto cdb = CreateCdb(ScsiCommand::TEST_UNIT_READY, "01:02:03:04:05");
-    generator.AddCdb(1, 2, cdb);
+    EXPECT_TRUE(generator.AddCdb(1, 2, cdb));
     vector<uint8_t> data = { 0xff, 0xfe, 0xfd, 0xfc };
-    generator.AddData(data);
+    EXPECT_TRUE(generator.AddData(data));
     cdb = CreateCdb(static_cast<ScsiCommand>(0x1f), "01:02:03");
     ASSERT_FALSE(cdb.empty());
-    generator.AddCdb(3, 31, cdb);
+    EXPECT_TRUE(generator.AddCdb(3, 31, cdb));
 
-    generator.AddCdb(3, 31, cdb);
+    EXPECT_TRUE(generator.AddCdb(3, 31, cdb));
     data.clear();
     for (uint8_t i = 0; i < 34; ++i) {
         data.push_back(i);
     }
-    generator.AddData(data);
+    EXPECT_TRUE(generator.AddData(data));
 
     ifstream in(filename);
     string line;

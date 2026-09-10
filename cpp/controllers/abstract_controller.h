@@ -25,7 +25,7 @@ class AbstractController
 
 public:
 
-    AbstractController(int id, const S2pFormatter&);
+    AbstractController(int, const S2pFormatter&);
     virtual ~AbstractController() = default;
 
     virtual void BusFree() = 0;
@@ -42,9 +42,10 @@ public:
         return phase;
     }
 
-    void SetPhase(BusPhase p)
+    void SetPhase(BusPhase p, string_view s)
     {
         phase = p;
+        LogTrace(s);
     }
 
     bool IsSelection() const
@@ -187,15 +188,15 @@ protected:
     void UpdateTransferLength(int);
     void UpdateOffsetAndLength();
 
-    void LogTrace(const string &s) const
+    void LogTrace(string_view s) const
     {
         controller_logger->trace(s);
     }
-    void LogDebug(const string &s) const
+    void LogDebug(string_view s) const
     {
         controller_logger->debug(s);
     }
-    void LogWarn(const string &s) const
+    void LogWarn(string_view s) const
     {
         controller_logger->warn(s);
     }
@@ -224,7 +225,7 @@ private:
     // Logical units of this controller mapped to their LUN numbers
     unordered_map<int, shared_ptr<PrimaryDevice>> luns;
 
-    int target_id;
+    const int target_id;
 
     const S2pFormatter &formatter;
 

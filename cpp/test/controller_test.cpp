@@ -56,30 +56,30 @@ TEST(ControllerTest, BusFree)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(BusPhase::BUS_FREE);
+    controller.SetPhase(BusPhase::BUS_FREE, "");
     controller.BusFree();
     EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
 
     controller.SetStatus(StatusCode::CHECK_CONDITION);
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
     EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
     EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
 
     controller.ScheduleShutdown(ShutdownMode::NONE);
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
 
     controller.ScheduleShutdown(ShutdownMode::STOP_PI);
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
 
     controller.ScheduleShutdown(ShutdownMode::RESTART_PI);
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
 
     controller.ScheduleShutdown(ShutdownMode::STOP_S2P);
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
 }
 
@@ -101,16 +101,16 @@ TEST(ControllerTest, Command)
 
     controller.AddDevice(device);
 
-    controller.SetPhase(BusPhase::COMMAND);
+    controller.SetPhase(BusPhase::COMMAND, "");
     EXPECT_CALL(controller, Status).Times(2);
     controller.Command();
     EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.Command();
     EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.Command();
     EXPECT_EQ(BusPhase::COMMAND, controller.GetPhase());
 }
@@ -120,7 +120,7 @@ TEST(ControllerTest, MsgIn)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.MsgIn();
     EXPECT_EQ(BusPhase::MSG_IN, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
@@ -132,7 +132,7 @@ TEST(ControllerTest, MsgOut)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.MsgOut();
     EXPECT_EQ(BusPhase::MSG_OUT, controller.GetPhase());
     EXPECT_EQ(0, controller.GetOffset());
@@ -144,7 +144,7 @@ TEST(ControllerTest, DataIn)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataIn();
@@ -161,7 +161,7 @@ TEST(ControllerTest, DataOut)
     auto bus = make_shared<NiceMock<MockBus>>();
     MockController controller(bus);
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     controller.SetCurrentLength(0);
     EXPECT_CALL(controller, Status);
     controller.DataOut();

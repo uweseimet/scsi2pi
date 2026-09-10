@@ -11,27 +11,28 @@
 #include <cassert>
 #include <cstdint>
 #include <span>
+#include <type_traits>
 
 using namespace std;
 
 namespace memory_util
 {
 
-int GetInt16(const auto &buf, int offset)
+inline int GetInt16(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);
 
     return (static_cast<int>(buf[offset]) << 8) | static_cast<int>(buf[offset + 1]);
 }
 
-int GetInt24(const auto &buf, int offset)
+inline int GetInt24(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 2);
 
     return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
 }
 
-uint32_t GetInt32(const auto &buf, int offset)
+inline uint32_t GetInt32(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
 
@@ -39,7 +40,7 @@ uint32_t GetInt32(const auto &buf, int offset)
         (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
 }
 
-uint64_t GetInt64(const auto &buf, int offset)
+inline uint64_t GetInt64(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 7);
 
@@ -49,11 +50,51 @@ uint64_t GetInt64(const auto &buf, int offset)
         (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
 }
 
-void SetInt16(span<byte>, int, int);
-void SetInt16(span<uint8_t>, int, int);
-void SetInt24(span<uint8_t>, int, int);
-void SetInt32(span<byte>, int, uint32_t);
-void SetInt32(span<uint8_t>, int, uint32_t);
-void SetInt64(span<uint8_t>, int, uint64_t);
+template<typename Container>
+void SetInt16(Container &buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 1);
+
+    using ByteType = decay_t<decltype(buf[0])>;
+
+    buf[offset] = static_cast<ByteType>(value >> 8);
+    buf[offset + 1] = static_cast<ByteType>(value);
+}
+
+inline void SetInt24(span<uint8_t> buf, int offset, int value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 2);
+
+    buf[offset] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 16);
+    buf[offset + 1] = static_cast<uint8_t>(static_cast<uint32_t>(value) >> 8);
+    buf[offset + 2] = static_cast<uint8_t>(value);
+}
+
+template<typename Container>
+void SetInt32(Container &buf, int offset, uint32_t value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 3);
+
+    using ByteType = decay_t<decltype(buf[0])>;
+
+    buf[offset] = static_cast<ByteType>(value >> 24);
+    buf[offset + 1] = static_cast<ByteType>(value >> 16);
+    buf[offset + 2] = static_cast<ByteType>(value >> 8);
+    buf[offset + 3] = static_cast<ByteType>(value);
+}
+
+inline void SetInt64(span<uint8_t> buf, int offset, uint64_t value)
+{
+    assert(buf.size() > static_cast<size_t>(offset) + 7);
+
+    buf[offset] = static_cast<uint8_t>(value >> 56);
+    buf[offset + 1] = static_cast<uint8_t>(value >> 48);
+    buf[offset + 2] = static_cast<uint8_t>(value >> 40);
+    buf[offset + 3] = static_cast<uint8_t>(value >> 32);
+    buf[offset + 4] = static_cast<uint8_t>(value >> 24);
+    buf[offset + 5] = static_cast<uint8_t>(value >> 16);
+    buf[offset + 6] = static_cast<uint8_t>(value >> 8);
+    buf[offset + 7] = static_cast<uint8_t>(value);
+}
 
 }

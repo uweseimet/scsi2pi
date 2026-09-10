@@ -39,7 +39,7 @@ TEST_P(AbstractControllerPhaseTest, PhaseCheck)
     MockAbstractController controller;
     const auto& [phase, is_phase_func] = GetParam();
 
-    controller.SetPhase(phase);
+    controller.SetPhase(phase, "");
     EXPECT_TRUE((controller.*is_phase_func)());
 }
 
@@ -47,45 +47,45 @@ TEST(AbstractControllerTest, ProcessPhase)
 {
     MockAbstractController controller;
 
-    controller.SetPhase(BusPhase::SELECTION);
+    controller.SetPhase(BusPhase::SELECTION, "");
     EXPECT_CALL(controller, Selection);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::BUS_FREE);
+    controller.SetPhase(BusPhase::BUS_FREE, "");
     EXPECT_CALL(controller, BusFree);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::DATA_IN);
+    controller.SetPhase(BusPhase::DATA_IN, "");
     EXPECT_CALL(controller, DataIn);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::DATA_OUT);
+    controller.SetPhase(BusPhase::DATA_OUT, "");
     EXPECT_CALL(controller, DataOut);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::COMMAND);
+    controller.SetPhase(BusPhase::COMMAND, "");
     EXPECT_CALL(controller, Command);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::STATUS);
+    controller.SetPhase(BusPhase::STATUS, "");
     EXPECT_CALL(controller, Status);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::MSG_IN);
+    controller.SetPhase(BusPhase::MSG_IN, "");
     EXPECT_CALL(controller, MsgIn);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::MSG_OUT);
+    controller.SetPhase(BusPhase::MSG_OUT, "");
     EXPECT_CALL(controller, MsgOut);
     EXPECT_TRUE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::ARBITRATION);
+    controller.SetPhase(BusPhase::ARBITRATION, "");
     EXPECT_FALSE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::RESELECTION);
+    controller.SetPhase(BusPhase::RESELECTION, "");
     EXPECT_FALSE(controller.ProcessPhase());
 
-    controller.SetPhase(BusPhase::RESERVED);
+    controller.SetPhase(BusPhase::RESERVED, "");
     EXPECT_FALSE(controller.ProcessPhase());
 }
 
@@ -120,7 +120,7 @@ TEST(AbstractControllerTest, Reset)
     const auto device = make_shared<MockPrimaryDevice>(0);
     controller.AddDevice(device);
 
-    controller.SetPhase(BusPhase::STATUS);
+    controller.SetPhase(BusPhase::STATUS, "");
     controller.SetTransferSize(10, 5);
     controller.SetCurrentLength(20);
     EXPECT_EQ(BusPhase::STATUS, controller.GetPhase());

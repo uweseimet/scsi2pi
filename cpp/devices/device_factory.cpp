@@ -133,7 +133,7 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    if (const auto &it = DEVICE_MAPPING.find(filename); it != DEVICE_MAPPING.end()) {
+    if (const auto &it = ALIAS_MAPPING.find(filename); it != ALIAS_MAPPING.end()) {
         return it->second;
     }
 

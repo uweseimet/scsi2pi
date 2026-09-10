@@ -51,11 +51,9 @@ enum class DeviceType
 enum class ScsiCommand
 {
     TEST_UNIT_READY = 0x00,
-    REZERO = 0x01,
-    REWIND = 0x01,
+    REZERO_REWIND = 0x01,
     REQUEST_SENSE = 0x03,
-    FORMAT_UNIT = 0x04,
-    FORMAT_MEDIUM = 0x04,
+    FORMAT = 0x04,
     READ_BLOCK_LIMITS = 0x05,
     REASSIGN_BLOCKS = 0x07,
     READ_6 = 0x08,
@@ -228,7 +226,7 @@ enum class Asc
     INTERNAL_TARGET_FAILURE = 0x44,
     COMMAND_PHASE_ERROR = 0x4a,
     DATA_PHASE_ERROR = 0x4b,
-    MEDIUM_LOAD_OR_EJECT_FAILED = 0x53,
+    MEDIA_LOAD_OR_EJECT_FAILED = 0x53,
     DATA_CURRENTLY_UNAVAILABLE = 0x55
 };
 

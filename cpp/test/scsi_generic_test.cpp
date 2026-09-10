@@ -82,10 +82,10 @@ TEST(ScsiGenericTest, Dispatch)
     device->Dispatch(ScsiCommand::WRITE_6);
 
     EXPECT_CALL(*controller, DataOut);
-    device->Dispatch(ScsiCommand::FORMAT_UNIT);
+    device->Dispatch(ScsiCommand::FORMAT);
 
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
-    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT_UNIT) ; },
+    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT) ; },
         Throws<ScsiException>(AllOf(
             Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
             Property(&ScsiException::GetAsc, Asc::LOGICAL_UNIT_NOT_SUPPORTED))));

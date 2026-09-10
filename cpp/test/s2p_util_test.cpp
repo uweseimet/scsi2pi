@@ -154,6 +154,7 @@ TEST(S2pUtilTest, ParseAsUnsignedInt)
     EXPECT_EQ(0, ParseAsUnsignedInt("0"));
     EXPECT_EQ(1234, ParseAsUnsignedInt("1234"));
     EXPECT_EQ(1234, ParseAsUnsignedInt(" 1234 "));
+    EXPECT_EQ(-1, ParseAsUnsignedInt("12 34"));
 }
 
 TEST(S2pUtilTest, Banner)

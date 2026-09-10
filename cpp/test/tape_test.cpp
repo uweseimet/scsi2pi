@@ -81,7 +81,7 @@ static void WriteEndOfData(ostream &file)
 
 static void Rewind(shared_ptr<Tape> tape)
 {
-    Dispatch(tape, ScsiCommand::REWIND);
+    Dispatch(tape, ScsiCommand::REZERO_REWIND);
 }
 
 static void ValidateModePages(map<int, vector<byte>> &pages)
@@ -576,7 +576,7 @@ TEST(TapeTest, Rewind)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 600);
 
-    Dispatch(tape, ScsiCommand::REWIND, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+    Dispatch(tape, ScsiCommand::REZERO_REWIND, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
     Rewind(tape);
     CheckPositions(tape, 0, 0);
@@ -1048,13 +1048,13 @@ TEST(TapeTest, FormatMedium_simh)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
 
     CreateImageFile(*tape);
 
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM);
+    Dispatch(tape, ScsiCommand::FORMAT);
     CheckPositions(tape, 0, 0);
     EXPECT_EQ(0b10000000, controller->GetBuffer()[0]) << "BOP must be set";
 
@@ -1064,11 +1064,11 @@ TEST(TapeTest, FormatMedium_simh)
     Dispatch(tape, ScsiCommand::WRITE_FILEMARKS_6);
     controller->SetCdbByte(1, 0);
     controller->SetCdbByte(4, 0);
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::ILLEGAL_REQUEST,
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST,
         Asc::SEQUENTIAL_POSITIONING_ERROR);
 
     tape->SetProtected(true);
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::DATA_PROTECT, Asc::WRITE_PROTECTED);
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::DATA_PROTECT, Asc::WRITE_PROTECTED);
 }
 
 TEST(TapeTest, FormatMedium_tar)
@@ -1076,9 +1076,9 @@ TEST(TapeTest, FormatMedium_tar)
     auto [controller, tape] = CreateTape();
     CreateImageFile(*tape, 512, "tar");
 
-Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
 
-    Dispatch(tape, ScsiCommand::FORMAT_MEDIUM, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
+    Dispatch(tape, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
 }
 
 TEST(TapeTest, GetBlockSizes)

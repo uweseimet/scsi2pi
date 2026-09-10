@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "abstract_controller.h"
+#include <bit>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "devices/primary_device.h"
 #include "buses/bus.h"
@@ -27,7 +28,7 @@ void AbstractController::CleanUp() const
 
 void AbstractController::Reset()
 {
-    SetPhase(BusPhase::BUS_FREE);
+    SetPhase(BusPhase::BUS_FREE, "BUS FREE phase");
 
     offset = 0;
     remaining_length = 0;
@@ -115,10 +116,7 @@ shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
 ShutdownMode AbstractController::ProcessOnController(int ids)
 {
     if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
-        initiator_id = 0;
-        while (!(ids_without_target & (1 << initiator_id))) {
-            ++initiator_id;
-        }
+        initiator_id = countr_zero(static_cast<unsigned int>(ids_without_target));
         LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
     }
     else {

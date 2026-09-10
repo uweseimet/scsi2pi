@@ -45,9 +45,9 @@ public:
         return byte_count;
     }
 
-    void SetLimit(int limit)
+    bool SetLimit(int limit)
     {
-        formatter.SetLimit(limit);
+        return formatter.SetLimit(limit);
     }
 
 private:

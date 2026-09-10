@@ -460,7 +460,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
 {
     auto *operation = &CreateOperation(operation_info, ATTACH,
         "Attach device, device-specific parameters are required");
-    AddOperationParameter(*operation, "name", "Image file name in case of a mass storage device");
+    AddOperationParameter(*operation, "file", "Image file or block device for emulated mass storage device");
     AddOperationParameter(*operation, "interface", "Comma-separated prioritized network interface list");
     AddOperationParameter(*operation, "inet", "IP address and netmask of the network bridge");
     AddOperationParameter(*operation, "cmd", "Print command for the printer device");
@@ -474,7 +474,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     CreateOperation(operation_info, STOP, "Stop device, device-specific parameters are required");
 
     operation = &CreateOperation(operation_info, INSERT, "Insert medium, device-specific parameters are required");
-    AddOperationParameter(*operation, "file", "Image file name", "", true);
+    AddOperationParameter(*operation, "file", "Image file or block device", "", true);
 
     CreateOperation(operation_info, EJECT, "Eject medium, device-specific parameters are required");
 

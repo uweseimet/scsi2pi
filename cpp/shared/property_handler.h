@@ -31,9 +31,9 @@ public:
 
     void Init(const string&, const property_map&, bool);
 
-    property_map GetProperties(const string& = "") const;
+    property_map GetProperties(string_view = "") const;
     const property_map& GetUnknownProperties() const;
-    string RemoveProperty(const string&, const string& = "");
+    string ConsumeProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
     void RemoveProperties(string_view);
 

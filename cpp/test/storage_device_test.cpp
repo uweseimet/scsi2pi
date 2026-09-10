@@ -121,14 +121,14 @@ TEST(StorageDeviceTest, StartStopUnit)
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetReady(false);
-    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED,
+    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIA_LOAD_OR_EJECT_FAILED,
         "START/STOP must fail because device is not ready");
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetLocked(true);
-    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED,
+    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIA_LOAD_OR_EJECT_FAILED,
         "LOAD/EJECT must fail because device is locked");
 
     // Start/Unload
@@ -160,7 +160,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->ReserveFile();
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status).Times(0);
-    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_LOAD_OR_EJECT_FAILED,
+    Dispatch(device, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::MEDIA_LOAD_OR_EJECT_FAILED,
         "Filename is already reserved");
     device->UnreserveFile();
     controller->SetCdbByte(4, 0x03);

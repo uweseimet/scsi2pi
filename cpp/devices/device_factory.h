@@ -45,7 +45,7 @@ private:
 
     DeviceFactory();
 
-    inline static const unordered_map<string_view, PbDeviceType> DEVICE_MAPPING = {
+    inline static const unordered_map<string_view, PbDeviceType> ALIAS_MAPPING = {
         { "daynaport", SCDP },
         { "printer", SCLP },
         { "services", SCHS }

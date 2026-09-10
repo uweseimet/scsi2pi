@@ -171,7 +171,7 @@ void S2pDumpExecutor::SpaceBack() const
 int S2pDumpExecutor::Rewind()
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REWIND);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REZERO_REWIND);
 
     return Rewind(cdb);
 }

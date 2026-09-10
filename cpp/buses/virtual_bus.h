@@ -66,9 +66,9 @@ private:
 
     static string GetSignalName(int);
 
-    shared_ptr<spdlog::logger> virtual_bus_logger;
+    const shared_ptr<spdlog::logger> virtual_bus_logger;
 
-    bool log_signals = true;
+    const bool log_signals;
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;

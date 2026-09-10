@@ -253,8 +253,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         if (!buf.empty()) {
             buffer_size = ParseAsUnsignedInt(buf);
             if (buffer_size < MINIMUM_BUFFER_SIZE) {
-                throw ParserException(
-                    "Buffer size must be at least " + to_string(MINIMUM_BUFFER_SIZE / 1024) + " KiB");
+                throw ParserException(fmt::format("Buffer size must be at least {} KiB", MINIMUM_BUFFER_SIZE));
             }
         }
 
@@ -858,9 +857,9 @@ void S2pDump::DisplayProperties(int id, int lun) const
 
     cout << "\nDevice properties for s2p configuration file, usually '/etc/s2p.conf':\n";
 
-    string id_and_lun = "device." + to_string(id);
+    string id_and_lun = fmt::format("device.{}", id);
     if (lun > 0) {
-        id_and_lun += ":" + to_string(lun);
+        id_and_lun += fmt::format(":{}", lun);
     }
     id_and_lun += ".";
 

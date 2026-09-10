@@ -11,12 +11,15 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "device.h"
 #include "shared/s2p_defs.h"
 
 #ifndef ETH_FRAME_LEN
 static constexpr int ETH_FRAME_LEN = 1514;
 #endif
+
+using namespace spdlog;
 
 class TapDriver final
 {
@@ -26,16 +29,16 @@ public:
     TapDriver();
     ~TapDriver() = default;
 
-    string Init(const param_map&, logger&);
-    void CleanUp(logger&) const;
+    string Init(const param_map&, const logger&);
+    void CleanUp() const;
 
     param_map GetDefaultParams() const;
 
-    int Receive(data_in_t, logger&) const;
+    int Receive(data_in_t) const;
     int Send(data_out_t) const;
     bool HasPendingPackets() const;
 
-    void Flush(logger&) const;
+    void Flush() const;
 
     static uint32_t Crc32(span<const uint8_t>);
 
@@ -45,18 +48,20 @@ public:
     }
 
     // Enable/Disable the piscsi0 interface
-    static string IpLink(bool, logger&);
+    string IpLink(bool) const;
 
 private:
 
-    string AddBridge(int, logger&) const;
-    string DeleteBridge(int, logger&) const;
+    string AddBridge(int) const;
+    string DeleteBridge(int) const;
 
     static string IpLink(int, const string&, bool);
     static string BrSetIf(int fd, const string&, bool);
-    string CreateBridge(int, int, logger&);
-    pair<string, string> ExtractAddressAndMask(logger&) const;
-    string SetAddressAndNetMask(int, const string&, logger&) const;
+    string CreateBridge(int, int);
+    pair<string, string> ExtractAddressAndMask() const;
+    string SetAddressAndNetMask(int, const string&) const;
+
+    logger &tap_logger = *default_logger();
 
     int tap_fd = -1;
 

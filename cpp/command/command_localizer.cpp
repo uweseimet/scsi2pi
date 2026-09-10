@@ -247,7 +247,7 @@ void CommandLocalizer::Add(LocalizationKey key, const string &locale, string_vie
     localized_messages[locale][key] = value;
 }
 
-string CommandLocalizer::Localize(LocalizationKey key, const string &locale, const string &arg1, const string &arg2,
+string CommandLocalizer::Localize(LocalizationKey key, string_view locale, const string &arg1, const string &arg2,
     const string &arg3) const
 {
     auto it = localized_messages.find(ToLower(locale).substr(0, 2));

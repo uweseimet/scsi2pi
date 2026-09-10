@@ -31,12 +31,12 @@ Disk::Disk(PbDeviceType z, int l, bool supports_mode_select, bool supports_save_
 
 string Disk::SetUp()
 {
-    AddCommand(ScsiCommand::REZERO, [this]
+    AddCommand(ScsiCommand::REZERO_REWIND, [this]
         {
             CheckReady();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::FORMAT_UNIT, [this]
+    AddCommand(ScsiCommand::FORMAT, [this]
         {
             FormatUnit();
         });

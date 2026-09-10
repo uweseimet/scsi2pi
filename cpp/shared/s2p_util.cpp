@@ -9,6 +9,7 @@
 #include "s2p_util.h"
 #include <algorithm>
 #include <cassert>
+#include <charconv>
 #include <clocale>
 #include <csignal>
 #include <fcntl.h>
@@ -32,17 +33,18 @@ tuple<int, int, string> GetPwData()
     const char *sudo_user = getenv("SUDO_UID");
     const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
 
-    passwd pwd = { };
-    passwd *p_pwd;
-
-    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
-        if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
-            return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
-        }
-        else {
-            // For backward compatibility
-            const string &dir = uid ? pwd.pw_dir : "/home/pi";
-            return {uid, pwd.pw_gid, exists(dir, error) ? dir : s2p_util::DEFAULT_APP_FOLDER};
+    if (array<char, 256> pwbuf; uid != -1) {
+        passwd pwd = { };
+        passwd *p_pwd = nullptr;
+        if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd) && p_pwd != nullptr) {
+            if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
+                return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
+            }
+            else {
+                // For backward compatibility
+                const string &dir = uid ? pwd.pw_dir : "/home/pi";
+                return {uid, pwd.pw_gid, exists(dir, error) ? dir : s2p_util::DEFAULT_APP_FOLDER};
+            }
         }
     }
 #endif
@@ -54,8 +56,10 @@ tuple<int, int, string> GetPwData()
 
 string s2p_util::GetVersionString()
 {
-    const string &revision = s2p_revision <= 0 ? "" : "." + to_string(s2p_revision);
-    return fmt::format("{}.{}{}{}", s2p_major_version, s2p_minor_version, revision, s2p_suffix);
+    if (s2p_revision > 0) {
+        return fmt::format("{}.{}.{}{}", s2p_major_version, s2p_minor_version, s2p_revision, s2p_suffix);
+    }
+    return fmt::format("{}.{}{}", s2p_major_version, s2p_minor_version, s2p_suffix);
 }
 
 string s2p_util::GetAppDir()
@@ -174,16 +178,20 @@ string s2p_util::GetLine(const string &prompt, istream &in)
 
 int s2p_util::ParseAsUnsignedInt(const string &value)
 {
-    if (value.find_first_not_of(" 0123456789") != string::npos) {
+    const string_view trimmed = Trim(value);
+    if (trimmed.empty()) {
         return -1;
     }
 
-    try {
-        return static_cast<int>(stoul(value));
-    }
-    catch (const logic_error&) { // NOSONAR Intentionally catching a generic exception
+    unsigned long result;
+    const auto [ptr, ec] = from_chars(trimmed.data(), trimmed.data() + trimmed.size(), result);
+
+    if (ec != errc() || ptr != trimmed.data() + trimmed.size()
+        || result > static_cast<unsigned long>(numeric_limits<int>::max())) {
         return -1;
     }
+
+    return static_cast<int>(result);
 }
 
 string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
@@ -227,6 +235,8 @@ string s2p_util::Banner(string_view app)
 
 tuple<string, string, string> s2p_util::GetInquiryProductData(span<const uint8_t> data)
 {
+    assert(data.size() >= 36);
+
     array<char, 9> vendor = { };
     memcpy(vendor.data(), &data[8], 8);
     array<char, 17> product = { };
@@ -253,7 +263,7 @@ string s2p_util::GetScsiLevel(int scsi_level)
         return "SCSI-3 (SPC)";
 
     default:
-        return "SPC-" + to_string(scsi_level - 2);
+        return fmt::format("SPC-{}", scsi_level - 2);
     }
 }
 
@@ -272,6 +282,8 @@ string s2p_util::GetStatusString(int status_code)
 
 string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
+    assert(sense_data.size() >= 14);
+
     const auto flags = static_cast<int>(sense_data[2]);
 
     const string &s = FormatSenseData(static_cast<SenseKey>(flags & 0x0f), static_cast<Asc>(sense_data[12]),
@@ -287,6 +299,8 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
 
 string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, int ascq)
 {
+    assert(static_cast<int>(sense_key) < 16);
+
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
         s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, static_cast<int>(asc), ascq);
@@ -352,12 +366,14 @@ void s2p_util::Sleep(const timespec &ns)
     nanosleep(&ns, nullptr);
 }
 
-void s2p_util::SetTerminationHandler(SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer
+void s2p_util::SetTerminationHandler([[maybe_unused]] SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer
 {
+#ifdef SIGPIPE
     struct sigaction termination_handler = { };
     termination_handler.sa_handler = handler;
 
     sigaction(SIGINT, &termination_handler, nullptr);
     sigaction(SIGTERM, &termination_handler, nullptr);
     signal(SIGPIPE, SIG_IGN);
+#endif
 }

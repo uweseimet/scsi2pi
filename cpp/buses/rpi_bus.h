@@ -67,7 +67,10 @@ private:
     void SetSignalDriveStrength(uint32_t) const;
 
     // Bus signal acquisition
-    void Acquire() const override;
+    void Acquire() const override
+    {
+        SetSignals(*level);
+    }
 
     void SetBSY(bool) const override;
 
@@ -79,9 +82,9 @@ private:
 
     uint8_t WaitForSelection() override;
 
-    PiType pi_type;
+    const PiType pi_type;
 
-    bool enable_irqs;
+    const bool enable_irqs;
 
     // Set to -1 for the STANDARD board
     int pin_ind = PIN_IND;
@@ -135,40 +138,40 @@ private:
     // Data setting table for data pins
     array<uint32_t, 256> tblDatSet = { };
 
-    constexpr static array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
+    static constexpr array<int, 19> SIGNAL_TABLE = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ };
 
-    constexpr static array<int, 9> DATA_PINS = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
+    static constexpr array<int, 9> DATA_PINS = { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
         PIN_DP };
 
-    constexpr static int ARMT_CTRL = 2;
-    constexpr static int ARMT_FREERUN = 8;
+    static constexpr int ARMT_CTRL = 2;
+    static constexpr int ARMT_FREERUN = 8;
 
-    constexpr static uint32_t ARMT_OFFSET = 0x0000B400;
+    static constexpr uint32_t ARMT_OFFSET = 0x0000B400;
 
-    constexpr static int GPIO_INPUT = 0;
-    constexpr static int GPIO_OUTPUT = 1;
+    static constexpr int GPIO_INPUT = 0;
+    static constexpr int GPIO_OUTPUT = 1;
 
-    constexpr static int GPIO_FSEL_0 = 0;
-    constexpr static int GPIO_FSEL_1 = 1;
-    constexpr static int GPIO_FSEL_2 = 2;
-    constexpr static int GPIO_SET_0 = 7;
-    constexpr static int GPIO_CLR_0 = 10;
-    constexpr static int GPIO_LEV_0 = 13;
-    constexpr static int GPIO_PUD = 37;
-    constexpr static int GPIO_CLK_0 = 38;
-    constexpr static int GPIO_PUPPDN0 = 57;
-    constexpr static int PAD_0_27 = 11;
-    constexpr static int IRPT_ENB_IRQ_1 = 4;
-    constexpr static int IRPT_DIS_IRQ_1 = 7;
-    constexpr static int QA7_CORE0_TINTC = 16;
+    static constexpr int GPIO_FSEL_0 = 0;
+    static constexpr int GPIO_FSEL_1 = 1;
+    static constexpr int GPIO_FSEL_2 = 2;
+    static constexpr int GPIO_SET_0 = 7;
+    static constexpr int GPIO_CLR_0 = 10;
+    static constexpr int GPIO_LEV_0 = 13;
+    static constexpr int GPIO_PUD = 37;
+    static constexpr int GPIO_CLK_0 = 38;
+    static constexpr int GPIO_PUPPDN0 = 57;
+    static constexpr int PAD_0_27 = 11;
+    static constexpr int IRPT_ENB_IRQ_1 = 4;
+    static constexpr int IRPT_DIS_IRQ_1 = 7;
+    static constexpr int QA7_CORE0_TINTC = 16;
 
-    constexpr static uint32_t IRPT_OFFSET = 0x0000B200;
-    constexpr static uint32_t PADS_OFFSET = 0x00100000;
-    constexpr static uint32_t GPIO_OFFSET = 0x00200000;
-    constexpr static uint32_t QA7_OFFSET = 0x01000000;
+    static constexpr uint32_t IRPT_OFFSET = 0x0000B200;
+    static constexpr uint32_t PADS_OFFSET = 0x00100000;
+    static constexpr uint32_t GPIO_OFFSET = 0x00200000;
+    static constexpr uint32_t QA7_OFFSET = 0x01000000;
 
-    constexpr static uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
+    static constexpr uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
 
-    constexpr static uint32_t DATA_MASK = 0b11111000000000000000000000000000;
+    static constexpr uint32_t DATA_MASK = 0b11111000000000000000000000000000;
 };

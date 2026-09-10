@@ -274,17 +274,13 @@ bool S2pExec::ParseArguments(span<char*> args)
     }
 
     if (!log_limit.empty()) {
-        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
-            const string l = log_limit;
+        if (const int limit = ParseAsUnsignedInt(log_limit); !formatter.SetLimit(limit)
+            || (executor && !executor->SetLimit(limit))) {
             log_limit.clear();
-            throw ParserException("Invalid log limit: '" + l + "'");
+            throw ParserException("Invalid log limit: '" + log_limit + "'");
         }
-        else {
-            formatter.SetLimit(limit);
-            if (executor) {
-                executor->SetLimit(limit);
-            }
-        }
+
+        log_limit.clear();
     }
 
     if (target_id == initiator_id) {

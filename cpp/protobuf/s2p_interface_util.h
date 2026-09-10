@@ -19,15 +19,13 @@ using namespace s2p_interface;
 namespace s2p_interface_util
 {
 
-static constexpr char KEY_VALUE_SEPARATOR = '=';
-
-inline string GetParam(const auto &item, const string &key)
+string GetParam(const auto &item, const string &key)
 {
     const auto &it = item.params().find(key);
     return it != item.params().end() ? it->second : "";
 }
 
-inline void SetParam(auto &item, const string &key, string_view value)
+void SetParam(auto &item, const string &key, string_view value)
 {
     if (!key.empty() && !value.empty()) {
         auto &map = *item.mutable_params();
@@ -46,7 +44,9 @@ int GetLunMax(PbDeviceType);
 
 string ListDevices(const vector<PbDevice>&);
 
-inline static const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
+inline constexpr char KEY_VALUE_SEPARATOR = '=';
+
+inline const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
     { 'c', SCCD },
     { 'd', SCDP },
     { 'h', SCHD },

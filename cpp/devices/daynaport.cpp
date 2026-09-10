@@ -87,7 +87,7 @@ string DaynaPort::SetUp()
 
 void DaynaPort::CleanUp()
 {
-    tap.CleanUp(GetLogger());
+    tap.CleanUp();
 }
 
 vector<uint8_t> DaynaPort::HandleInquiry() const
@@ -146,7 +146,7 @@ int DaynaPort::GetMessage(data_in_t buf)
     // The next 4 bytes are reserved for a flag field
     assert(buf.size() > DAYNAPORT_READ_HEADER_SZ);
     const int rx_packet_size = tap.Receive(
-        span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ), GetLogger());
+        span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ));
 
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
@@ -369,17 +369,17 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetCdbByte(5) & 0x80) {
-        if (const string &error = TapDriver::IpLink(true, GetLogger()); !error.empty()) {
+        if (const string &error = tap.IpLink(true); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
-        tap.Flush(GetLogger());
+        tap.Flush();
 
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string &error = TapDriver::IpLink(false, GetLogger()); !error.empty()) {
+        if (const string &error = tap.IpLink(false); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }

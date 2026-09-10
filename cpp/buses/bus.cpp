@@ -10,7 +10,6 @@
 
 #include "bus.h"
 #include <bit>
-#include <chrono>
 #include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 
@@ -48,7 +47,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
     SetREQ(false);
 
     if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-        return CommandHandshakeTimeout();
+        return FinishTransfer(-1);
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
@@ -69,16 +68,14 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return CommandHandshakeTimeout();
+            return FinishTransfer(-1);
         }
     }
 
     const int command_byte_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
     if (!command_byte_count) {
-        EnableIRQ();
-
         // Unknown command
-        return 0;
+        return FinishTransfer(0);
     }
 
     int bytes_received;
@@ -92,13 +89,11 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return CommandHandshakeTimeout();
+            return FinishTransfer(-1);
         }
     }
 
-    EnableIRQ();
-
-    return bytes_received;
+    return FinishTransfer(bytes_received);
 }
 
 int Bus::InitiatorMsgInHandShake() const
@@ -144,13 +139,11 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            break;
+            return FinishTransfer(bytes_received);
         }
     }
 
-    EnableIRQ();
-
-    return bytes_received;
+    return FinishTransfer(bytes_received);
 }
 
 // For DATA IN and STATUS
@@ -162,12 +155,13 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
     const BusPhase phase = GetPhase();
 
-    auto receive_byte = [this, &phase](uint8_t &byte_out) {
+    int bytes_received;
+    for (bytes_received = 0; bytes_received < count; ++bytes_received) {
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            return false;
+            return FinishTransfer(bytes_received);
         }
 
-        byte_out = GetDAT();
+        buf[bytes_received] = GetDAT();
 
         SetACK(true);
 
@@ -175,17 +169,12 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 
         SetACK(false);
 
-        return req && IsPhase(phase);
-    };
-
-    int bytes_received = 0;
-    while (bytes_received < count && receive_byte(buf[bytes_received])) {
-        ++bytes_received;
+        if (!req || !IsPhase(phase)) {
+            return FinishTransfer(bytes_received);
+        }
     }
 
-    EnableIRQ();
-
-    return bytes_received;
+    return FinishTransfer(bytes_received);
 }
 
 // For DATA IN, MESSAGE IN and STATUS
@@ -195,18 +184,20 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 
     DisableIRQ();
 
-    auto send_byte = [this](uint8_t byte, [[maybe_unused]] int index, [[maybe_unused]] int delay_index) {
+    int bytes_sent;
+    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
 #ifdef BUILD_SCDP
-        if (index == delay_index) {
+        if (bytes_sent == daynaport_delay_after_bytes) {
             // Wait for a Daynaport delay
             WaitNanoSeconds(true);
         }
 #endif
 
-        SetDAT(byte);
+        SetDAT(buf[bytes_sent]);
+        WaitNanoSeconds(false);
 
         if (!WaitHandShake(PIN_ACK_MASK, false)) {
-            return false;
+            return FinishTransfer(bytes_sent);
         }
 
         SetREQ(true);
@@ -215,17 +206,14 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
 
         SetREQ(false);
 
-        return ack;
-    };
-
-    int bytes_sent = 0;
-    while (bytes_sent < count && send_byte(buf[bytes_sent], bytes_sent, daynaport_delay_after_bytes)) {
-        ++bytes_sent;
+        if (!ack) {
+            break;
+        }
     }
 
-    EnableIRQ();
+    WaitHandShake(PIN_ACK_MASK, false);
 
-    return bytes_sent;
+    return FinishTransfer(bytes_sent);
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
@@ -236,16 +224,21 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
     DisableIRQ();
 
     const BusPhase phase = GetPhase();
-    const int last_msg_out = (phase == BusPhase::MSG_OUT) ? count - 1 : -1;
 
-    auto send_byte = [this, &phase](uint8_t byte, bool is_last_msg) {
-        SetDAT(byte);
+    // Position of the last message byte if in MESSAGE OUT phase
+    const int last_msg_out = phase == BusPhase::MSG_OUT ? count - 1 : -1;
+
+    int bytes_sent;
+    for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
+        SetDAT(buf[bytes_sent]);
+        WaitNanoSeconds(false);
 
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            return false;
+            return FinishTransfer(bytes_sent);
         }
 
-        if (is_last_msg) {
+        // Signal the last MESSAGE OUT byte when in MESSAGE OUT phase
+        if (bytes_sent == last_msg_out) {
             SetATN(false);
         }
 
@@ -255,17 +248,12 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
 
         SetACK(false);
 
-        return req && IsPhase(phase);
-    };
-
-    int bytes_sent = 0;
-    while (bytes_sent < count && send_byte(buf[bytes_sent], bytes_sent == last_msg_out)) {
-        ++bytes_sent;
+        if (!req || !IsPhase(phase)) {
+            return FinishTransfer(bytes_sent);
+        }
     }
 
-    EnableIRQ();
-
-    return bytes_sent;
+    return FinishTransfer(bytes_sent);
 }
 
 bool Bus::WaitHandShake(int pin_mask, bool state) const
@@ -278,8 +266,8 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         return true;
     }
 
-    // Wait up to 3 s
     const auto now = chrono::steady_clock::now();
+    const auto deadline = now + TIMEOUT_3_SECONDS;
     do {
         if (GetRST()) {
             warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
@@ -290,12 +278,18 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         if (GetSignal(pin_mask) == state) {
             return true;
         }
-    } while ((chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - now).count()) < 3);
+    } while (chrono::steady_clock::now() < deadline);
 
     trace("Timeout while waiting for {} to become {}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
 
     return false;
+}
+
+int Bus::FinishTransfer(int count)
+{
+    EnableIRQ();
+    return count;
 }
 
 void Bus::SetBSY(bool state) const
@@ -328,9 +322,9 @@ bool Bus::GetSignal(int pin_mask) const
 
 uint8_t Bus::GetSelection() const
 {
-    // Wait up to 3 s for BSY to be released, signalling the end of the ARBITRATION phase
+    // Wait for BSY to be released, signalling the end of the ARBITRATION phase
     const auto now = chrono::steady_clock::now();
-    const auto deadline = now + chrono::seconds(3);
+    const auto deadline = now + TIMEOUT_3_SECONDS;
     do {
         Acquire();
         if (!GetBSY()) {
@@ -340,13 +334,6 @@ uint8_t Bus::GetSelection() const
     } while (chrono::steady_clock::now() < deadline);
 
     return 0;
-}
-
-int Bus::CommandHandshakeTimeout()
-{
-    EnableIRQ();
-
-    return -1;
 }
 
 // Phase table with the phases based upon the SEL, BSY, I/O, C/D and MSG signals (negative logic)

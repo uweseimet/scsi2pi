@@ -86,6 +86,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
     switch (operation) {
     case DETACH_ALL:
         DetachAll();
+        s2p_logger.info("Detached all devices");
         return context.ReturnSuccessStatus();
 
     case RESERVE_IDS:
@@ -403,8 +404,6 @@ void CommandExecutor::DetachAll() const
 {
     if (controller_factory.DeleteAllControllers()) {
         PropertyHandler::GetInstance().RemoveProperties(PropertyHandler::DEVICE);
-
-        s2p_logger.info("Detached all devices");
     }
 }
 

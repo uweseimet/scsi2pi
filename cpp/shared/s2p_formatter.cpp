@@ -44,14 +44,11 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
         }
 
         str += output_offset;
-        str += fmt::format("{:47}", output_hex);
-        if (!hex_only) {
-            str += fmt::format("  '{}'", output_ascii);
+        if (hex_only) {
+            str += output_hex;
         } else {
-            const auto last_non_space = str.find_last_not_of(' ');
-            if (last_non_space != string::npos) {
-                str.erase(last_non_space + 1);
-            }
+            str += fmt::format("{:47}", output_hex);
+            str += fmt::format("  '{}'", output_ascii);
         }
         if (offset < limit) {
             str += "\n";
@@ -63,4 +60,14 @@ string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool h
     }
 
     return str;
+}
+
+bool S2pFormatter::SetLimit(int limit)
+{
+    if (limit < 0) {
+        return false;
+    }
+
+    format_limit = limit;
+    return true;
 }
