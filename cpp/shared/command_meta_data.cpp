@@ -52,7 +52,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::INQUIRY, 6, "INQUIRY", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::VERIFY_6, 6, "VERIFY(6)", { 4, 1, 1, 3, true, false });
     AddCommand(ScsiCommand::MODE_SELECT_6, 6, "MODE SELECT(6)", { 4, 1, 0, 0, true, true });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)(RESERVE ELEMENT(6)",
+    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
