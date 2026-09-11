@@ -147,7 +147,7 @@ void Controller::Command()
 
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
-                command_bytes_count, GetCdb()[0], actual_count));
+                actual_count, GetCdb()[0], command_bytes_count));
             bus.SetRST(true);
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             return;
