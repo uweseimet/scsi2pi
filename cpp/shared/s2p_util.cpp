@@ -34,7 +34,7 @@ tuple<int, int, string> GetPwData()
     passwd pwd = { };
     passwd *p_pwd;
 
-    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd)) {
+    if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd) && p_pwd) {
         if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
             return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
         }
