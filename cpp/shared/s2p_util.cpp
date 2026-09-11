@@ -32,7 +32,7 @@ tuple<int, int, string> GetPwData()
     const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
 
     passwd pwd = { };
-    passwd *p_pwd;
+    passwd *p_pwd = nullptr;
 
     if (array<char, 256> pwbuf; uid != -1 && !getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd) && p_pwd) {
         if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
