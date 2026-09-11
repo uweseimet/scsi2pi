@@ -132,7 +132,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
     "HARDWARE ERROR",
     "ILLEGAL REQUEST",
     "UNIT ATTENTION",
-    "DATA_PROTECT",
+    "DATA PROTECT",
     "BLANK CHECK",
     "VENDOR SPECIFIC",
     "COPY ABORTED",
