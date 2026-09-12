@@ -30,9 +30,12 @@ TEST(CommandImageSupportTest, SetGetDefaultFolder)
     EXPECT_FALSE(image.SetImageFolder("").empty());
     EXPECT_FALSE(image.SetImageFolder("/not_in_home").empty());
 
-    if (exists("/var/lib/piscsi/images")) {
+    error_code error;
+    if (exists("/var/lib/piscsi/images", error)) {
         EXPECT_TRUE(image.SetImageFolder("/var/lib/piscsi/images").empty());
     }
+
+    EXPECT_TRUE(image.SetImageFolder(temp_directory_path().string()).empty());
 }
 
 TEST(CommandImageSupportTest, CreateImage)

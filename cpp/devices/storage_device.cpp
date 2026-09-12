@@ -8,13 +8,6 @@
 
 #include "storage_device.h"
 #include <fcntl.h>
-#if __has_include(<linux/fs.h>)
-#include <linux/fs.h>
-#include <sys/stat.h>
-#endif
-#if __has_include(<sys/ioctl.h>)
-#include <sys/ioctl.h>
-#endif
 #include <unistd.h>
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
@@ -304,7 +297,7 @@ bool StorageDevice::ValidateBlockSize(uint32_t size) const
 
 void StorageDevice::ValidateFile()
 {
-    GetCapacityFromFile();
+    GetCapacityFromFile(filename);
 
     if (IsReadOnlyFile(filename)) {
         // Permanently write-protected
@@ -344,44 +337,6 @@ id_set StorageDevice::GetIdsForReservedFile(const string &file)
     }
 
     return {-1, -1};
-}
-
-off_t StorageDevice::GetCapacityFromFile() const
-{
-    string error_message;
-    const string f = filename.string();
-
-#if __has_include(<linux/fs.h>)
-    if (struct stat st; !stat(f.c_str(), &st) && S_ISBLK(st.st_mode)) {
-        const int fd = open(f.c_str(), O_RDONLY);
-        int error = errno;
-        if (fd != -1) {
-            uint64_t size = 0;
-            const int ret = ioctl(fd, BLKGETSIZE64, &size);
-            error = errno;
-            close(fd);
-
-            if (ret != -1) {
-                return static_cast<off_t>(size);
-            }
-        }
-
-        error_message = system_error(error, generic_category()).what();
-    }
-    else
-#endif
-
-    {
-        error_code error;
-        const off_t size = file_size(filename, error);
-        if (!error) {
-            return size;
-        }
-
-        error_message = error.message();
-    }
-
-    throw IoException(fmt::format("Can't get file size of '{}': {}", f, error_message));
 }
 
 int StorageDevice::ModeSense6() const

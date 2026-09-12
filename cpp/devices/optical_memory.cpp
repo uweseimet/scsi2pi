@@ -10,8 +10,10 @@
 
 #include "optical_memory.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 OpticalMemory::OpticalMemory(int lun) : Disk(SCMO, lun, true, true, { 512, 1024, 2048, 4096 })
 {
@@ -25,7 +27,7 @@ void OpticalMemory::Open()
 {
     assert(!IsReady());
 
-    const off_t size = GetCapacityFromFile();
+    const off_t size = GetCapacityFromFile(GetFilename());
 
     // For some capacities there are hard-coded, well-defined sector sizes and sector counts
     if (const auto &geometry = GEOMETRIES.find(size); geometry != GEOMETRIES.end()) {

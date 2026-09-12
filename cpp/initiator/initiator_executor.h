@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <optional>
+#include <span>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
@@ -36,7 +38,7 @@ public:
 
     int Execute(span<uint8_t>, span<uint8_t>, int, int, bool, bool = true);
 
-    tuple<SenseKey, Asc, int> GetSenseData();
+    optional<SenseData> GetSenseData();
 
     void ResetBus() const;
 

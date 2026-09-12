@@ -13,12 +13,20 @@
 #include <clocale>
 #include <csignal>
 #include <fcntl.h>
+#if __has_include(<sys/ioctl.h>)
+#include <sys/ioctl.h>
+#endif
+#if __has_include(<linux/fs.h>)
+#include <linux/fs.h>
+#include <sys/stat.h>
+#endif
 #if __has_include(<pwd.h>)
 #include <pwd.h>
 #endif
 #include <unistd.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "memory_util.h"
+#include "s2p_exceptions.h"
 #include "s2p_version.h"
 
 using namespace spdlog;
@@ -355,15 +363,53 @@ string_view s2p_util::Trim(string_view s)
     return "";
 }
 
+void s2p_util::Sleep(const timespec &ns)
+{
+    nanosleep(&ns, nullptr);
+}
+
 shared_ptr<logger> s2p_util::CreateLogger(const string &name)
 {
     auto l = spdlog::get(name);
     return l ? l : stdout_color_st(name);
 }
 
-void s2p_util::Sleep(const timespec &ns)
+off_t s2p_util::GetCapacityFromFile(const string &filename)
 {
-    nanosleep(&ns, nullptr);
+    string error_message;
+    const string f = filename;
+
+#if __has_include(<linux/fs.h>)
+    if (struct stat st; !stat(f.c_str(), &st) && S_ISBLK(st.st_mode)) {
+        const int fd = open(f.c_str(), O_RDONLY);
+        int error = errno;
+        if (fd != -1) {
+            uint64_t size = 0;
+            const int ret = ioctl(fd, BLKGETSIZE64, &size);
+            error = errno;
+            close(fd);
+
+            if (ret != -1) {
+                return static_cast<off_t>(size);
+            }
+        }
+
+        error_message = system_error(error, generic_category()).what();
+    }
+    else
+#endif
+
+    {
+        error_code error;
+        const off_t size = file_size(filename, error);
+        if (!error) {
+            return size;
+        }
+
+        error_message = error.message();
+    }
+
+    throw IoException(fmt::format("Can't get file size of '{}': {}", f, error_message));
 }
 
 void s2p_util::SetTerminationHandler([[maybe_unused]] SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer

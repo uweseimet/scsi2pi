@@ -12,7 +12,6 @@
 #include "shared/s2p_exceptions.h"
 
 // Serialize/Deserialize protobuf message: Length followed by the actual data.
-// A little endian platform is assumed.
 void protobuf_util::SerializeMessage(int fd, const google::protobuf::MessageLite &message)
 {
     vector<uint8_t> data(message.ByteSizeLong());
@@ -63,8 +62,16 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
     size_t offset = 0;
     while (offset < buf.size()) {
         const auto len = read(fd, &buf.data()[offset], buf.size() - offset);
-        if (len <= 0) {
-            return !len ? offset : -1;
+        if (len < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+
+            return -1;
+        }
+
+        if (!len) {
+            return offset;
         }
 
         offset += len;
@@ -78,7 +85,11 @@ size_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
     size_t offset = 0;
     while (offset < buf.size()) {
         const auto len = write(fd, &buf.data()[offset], buf.size() - offset);
-        if (len == -1) {
+        if (len < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+
             return -1;
         }
 

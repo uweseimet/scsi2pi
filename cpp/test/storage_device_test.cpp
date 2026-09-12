@@ -312,23 +312,6 @@ TEST(StorageDeviceTest, GetSetReservedFiles)
     EXPECT_TRUE(reserved_files.contains("filename"));
 }
 
-TEST(StorageDeviceTest, GetCapacityFromFile)
-{
-    MockStorageDevice device;
-
-    const path &filename = CreateTempFile(512);
-    device.SetFilename(filename.string());
-    EXPECT_EQ(512, device.GetCapacityFromFile());
-
-    device.UnreserveFile();
-    device.SetFilename("/dev/null");
-    EXPECT_THROW(device.GetCapacityFromFile(), IoException);
-
-    device.UnreserveFile();
-    device.SetFilename("/non_existing_file");
-    EXPECT_THROW(device.GetCapacityFromFile(), IoException);
-}
-
 TEST(StorageDeviceTest, BlockCount)
 {
     MockStorageDevice device;

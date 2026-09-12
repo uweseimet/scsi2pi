@@ -273,6 +273,16 @@ TEST(S2pUtilTest, CreateLogger)
     EXPECT_EQ(l, CreateLogger("test"));
 }
 
+TEST(S2pUtilTest, GetCapacityFromFile)
+{
+    const path &filename = testing::CreateTempFile(512);
+    EXPECT_EQ(512, GetCapacityFromFile(filename.string()));
+
+    EXPECT_THROW(GetCapacityFromFile("/dev/null"), IoException);
+
+    EXPECT_THROW(GetCapacityFromFile("/non_existing_file"), IoException);
+}
+
 TEST(S2pUtilTest, GetLine)
 {
     const string &filename = testing::CreateTempName();

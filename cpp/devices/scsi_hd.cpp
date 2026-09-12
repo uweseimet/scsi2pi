@@ -9,8 +9,10 @@
 #include "scsi_hd.h"
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 ScsiHd::ScsiHd(int l, bool r, bool apple, bool scsi1, const set<uint32_t> &sector_sizes)
 : Disk(r ? SCRM : SCHD, l, true, true, sector_sizes)
@@ -34,7 +36,7 @@ void ScsiHd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 512);
 
-    SetBlockCount(GetCapacityFromFile() / GetBlockSize());
+    SetBlockCount(GetCapacityFromFile(GetFilename()) / GetBlockSize());
 
     FinalizeSetup("SCSI HD");
 }

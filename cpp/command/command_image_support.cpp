@@ -67,11 +67,12 @@ string CommandImageSupport::SetImageFolder(string_view f)
     }
 
     // The image folder location is restricted, so that s2p cannot modify data in system directories like "/usr"
-    if (!folder.string().starts_with(s2p_util::DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")) {
+    if (!folder.string().starts_with(s2p_util::DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")
+        && !folder.string().starts_with(temp_directory_path().string())) { // NOSONAR Publicly writable directory is safe here
         if (const auto app_root = path(GetAppDir()); folder.lexically_relative(app_root).string().starts_with(
             "..")) {
-            return fmt::format("Invalid image folder '{}'. The folder must be located in '{}' or in '/home'",
-                folder.string(), DEFAULT_APP_FOLDER);
+            return fmt::format("Invalid image folder '{}'. The folder must be located in '{}', '/home' or '{}'",
+                folder.string(), DEFAULT_APP_FOLDER, temp_directory_path().string()); // NOSONAR Publicly writable directory is safe here
         }
     }
 

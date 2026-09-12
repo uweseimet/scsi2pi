@@ -335,6 +335,7 @@ message PbImageFilesInfo {
 
 // Log level information
 message PbLogLevelInfo {
+    reserved 1;
     // List of available log levels, ordered by increasing by severity
     repeated string log_levels = 2;
     string current_log_level = 3;

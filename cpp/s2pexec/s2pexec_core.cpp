@@ -437,16 +437,14 @@ int S2pExec::Run()
 
     int result = EXIT_SUCCESS;
     try {
-        const auto [sense_key, asc, ascq] = ExecuteCommand();
-        if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
-            if (static_cast<int>(sense_key) != -1) {
-                cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
-
-                result = static_cast<int>(asc);
-            }
-            else {
-                result = -1;
-            }
+        const auto sense = ExecuteCommand();
+        if (!sense) {
+            result = -1;
+        }
+        else if (const auto& [sense_key, asc, ascq] = *sense;
+        sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
+            cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
+            result = static_cast<int>(asc);
         }
     }
     catch (const ExecutionException &e) {
@@ -457,7 +455,7 @@ int S2pExec::Run()
     return result;
 }
 
-tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
+optional<SenseData> S2pExec::ExecuteCommand()
 {
     vector<byte> cmd_bytes;
 
@@ -519,7 +517,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
         hex_input_filename.clear();
     }
 
-    return {SenseKey {0}, Asc {0}, 0};
+    return SenseData { .sense_key = SenseKey::NO_SENSE, .asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION, .ascq = 0 };
 }
 
 string S2pExec::ReadData()

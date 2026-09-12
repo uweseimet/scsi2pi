@@ -101,6 +101,8 @@ void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
+off_t GetCapacityFromFile(const string&);
+
 using SignalHandlerPtr = void(*)(int);
 void SetTerminationHandler(SignalHandlerPtr);
 

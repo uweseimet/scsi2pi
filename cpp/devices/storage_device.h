@@ -128,8 +128,6 @@ protected:
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetCapacityFromFile() const;
-
     void UpdateReadCount(uint64_t count)
     {
         block_read_count += count;

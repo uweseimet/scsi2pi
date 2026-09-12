@@ -317,7 +317,7 @@ void Tape::Open()
     block_size_for_descriptor = GetBlockSize();
 
     try {
-        file_size = GetCapacityFromFile();
+        file_size = GetCapacityFromFile(GetFilename());
     }
     catch (const IoException&) {
         file_size = 0;

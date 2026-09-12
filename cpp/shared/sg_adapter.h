@@ -38,7 +38,7 @@ private:
 
     bool EvaluateStatus(int, span<uint8_t>, span<uint8_t>);
 
-    void GetBlockSize();
+    void EvaluateBlockSize();
 
     string device;
 

@@ -22,34 +22,42 @@ inline int GetInt16(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 1);
 
-    return (static_cast<int>(buf[offset]) << 8) | static_cast<int>(buf[offset + 1]);
+    return (static_cast<int>(static_cast<uint8_t>(buf[offset])) << 8) |
+        static_cast<int>(static_cast<uint8_t>(buf[offset + 1]));
 }
 
 inline int GetInt24(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 2);
 
-    return (buf[offset] << 16) | (buf[offset + 1] << 8) | buf[offset + 2];
+    return (static_cast<int>(static_cast<uint8_t>(buf[offset])) << 16) |
+        (static_cast<int>(static_cast<uint8_t>(buf[offset + 1])) << 8) |
+        static_cast<int>(static_cast<uint8_t>(buf[offset + 2]));
 }
 
 inline uint32_t GetInt32(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 3);
 
-    return (static_cast<uint32_t>(buf[offset]) << 24) | (static_cast<uint32_t>(buf[offset + 1]) << 16) |
-        (static_cast<uint32_t>(buf[offset + 2]) << 8) | static_cast<uint32_t>(buf[offset + 3]);
+    return (static_cast<uint32_t>(static_cast<uint8_t>(buf[offset])) << 24) |
+        (static_cast<uint32_t>(static_cast<uint8_t>(buf[offset + 1])) << 16) |
+        (static_cast<uint32_t>(static_cast<uint8_t>(buf[offset + 2])) << 8) |
+        static_cast<uint32_t>(static_cast<uint8_t>(buf[offset + 3]));
 }
 
 inline uint64_t GetInt64(const auto &buf, int offset)
 {
     assert(buf.size() > static_cast<size_t>(offset) + 7);
 
-    return (static_cast<uint64_t>(buf[offset]) << 56) | (static_cast<uint64_t>(buf[offset + 1]) << 48) |
-        (static_cast<uint64_t>(buf[offset + 2]) << 40) | (static_cast<uint64_t>(buf[offset + 3]) << 32) |
-        (static_cast<uint64_t>(buf[offset + 4]) << 24) | (static_cast<uint64_t>(buf[offset + 5]) << 16) |
-        (static_cast<uint64_t>(buf[offset + 6]) << 8) | static_cast<uint64_t>(buf[offset + 7]);
+    return (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset])) << 56) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 1])) << 48) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 2])) << 40) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 3])) << 32) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 4])) << 24) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 5])) << 16) |
+        (static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 6])) << 8) |
+        static_cast<uint64_t>(static_cast<uint8_t>(buf[offset + 7]));
 }
-
 template<typename Container>
 void SetInt16(Container &buf, int offset, int value)
 {
