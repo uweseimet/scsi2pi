@@ -25,7 +25,7 @@ void SasiHd::Open()
 
     SetBlockCount(GetCapacityFromFile() / GetBlockSize());
     if (GetBlockCount() > 2097152) {
-        throw IoException("The maximum SASI drive capacity is 2097152 sectors");
+        LogWarn("The maximum usable SASI drive capacity is 2097152 sectors");
     }
 
     FinalizeSetup("SASI HD");

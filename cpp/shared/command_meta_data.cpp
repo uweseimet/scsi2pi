@@ -24,6 +24,8 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 10, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
 
+    // 0x7f is omitted intentionally, it is the VARIABLE LENGTH CDB opcode
+
     for (int i = 0x80; i < 0xa0; ++i) {
         AddCommand(static_cast<ScsiCommand>(i), 16, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
@@ -132,7 +134,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true, false });
     AddCommand(ScsiCommand::VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true, false });
     AddCommand(ScsiCommand::SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA", { 6, 4, 0, 0, false, false });
+    AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA(12)", { 6, 4, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::PLAY_CD, 12, "PLAY CD", { 6, 4, 2, 4, false, false });

@@ -33,7 +33,7 @@ public:
 
     int ExecuteCommand(span<uint8_t>, span<uint8_t>, int, bool);
 
-    tuple<SenseKey, Asc, int> GetSenseData() const;
+    optional<SenseData> GetSenseData() const;
 
     int GetByteCount() const;
 

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 enum class ScsiLevel
 {
     NONE = 0,
@@ -48,7 +50,7 @@ enum class DeviceType
     OPTICAL_MEMORY = 7
 };
 
-enum class ScsiCommand
+enum class ScsiCommand : uint8_t
 {
     TEST_UNIT_READY = 0x00,
     REZERO_REWIND = 0x01,
@@ -90,8 +92,8 @@ enum class ScsiCommand
     READ_10 = 0x28,
     WRITE_10 = 0x2a,
     SEEK_10 = 0x2b,
-    ERASE_10 = 0x2c,
     LOCATE_10 = 0x2b,
+    ERASE_10 = 0x2c,
     WRITE_AND_VERIFY_10 = 0x2e,
     VERIFY_10 = 0x2f,
     READ_POSITION = 0x34,
@@ -116,8 +118,8 @@ enum class ScsiCommand
     LOG_SENSE = 0x4d,
     READ_DISC_INFORMATION = 0x51,
     READ_TRACK_INFORMATION = 0x52,
-    RESERVE_RESERVE_ELEMENT_10 = 0x56,
     MODE_SELECT_10 = 0x55,
+    RESERVE_RESERVE_ELEMENT_10 = 0x56,
     RELEASE_RELEASE_ELEMENT_10 = 0x57,
     READ_MASTER_CUE = 0x59,
     MODE_SENSE_10 = 0x5a,
@@ -157,7 +159,7 @@ enum class ScsiCommand
     RECEIVE_OPERATION_RESULTS = 0xc1,
 };
 
-enum class MessageCode
+enum class MessageCode : uint8_t
 {
     COMMAND_COMPLETE = 0x00,
     ABORT = 0x06,
@@ -168,7 +170,7 @@ enum class MessageCode
     IDENTIFY = 0x80
 };
 
-enum class StatusCode
+enum class StatusCode : uint8_t
 {
     GOOD = 0x00,
     CHECK_CONDITION = 0x02,
@@ -237,4 +239,11 @@ enum class Ascq
     END_OF_PARTITION_MEDIUM_DETECTED = 0x02,
     BEGINNING_OF_PARTITION_MEDIUM_DETECTED = 0x04,
     END_OF_DATA_DETECTED = 0x05,
+};
+
+struct SenseData
+{
+    SenseKey sense_key;
+    Asc asc;
+    int ascq;
 };

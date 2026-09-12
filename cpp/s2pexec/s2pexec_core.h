@@ -33,7 +33,7 @@ private:
     void RunInteractive();
     int Run();
 
-    tuple<SenseKey, Asc, int> ExecuteCommand();
+    optional<SenseData> ExecuteCommand();
 
     string ReadData();
     string WriteData(span<const uint8_t>);
