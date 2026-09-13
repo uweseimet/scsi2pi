@@ -18,9 +18,8 @@ using namespace protobuf_util;
 bool CommandContext::ReadCommand()
 {
     // Read magic string
-    array<byte, 6> magic;
-    if (const auto bytes_read = ReadBytes(fd, magic); bytes_read) {
-        if (bytes_read != magic.size() || memcmp(magic.data(), "RASCSI", magic.size())) {
+    if (array<byte, 6> magic; ReadBytes(fd, magic)) {
+        if (memcmp(magic.data(), "RASCSI", magic.size())) {
             throw IoException("Invalid magic");
         }
 

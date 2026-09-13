@@ -76,12 +76,8 @@ string CommandImageSupport::SetImageFolder(string_view f)
         }
     }
 
-    // Resolve a potential symlink
-    if (error_code error; is_symlink(folder, error)) {
-        folder = canonical(folder);
-    }
-
-    if (error_code error; !is_directory(folder, error) || error) {
+    // Also resolves symlinks
+    if (error_code error; !is_directory(canonical(folder), error) || error) {
         return string("'") + folder.string() + "' is not a valid or existing folder";
     }
 
@@ -157,8 +153,8 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
         return context.ReturnErrorStatus("Can't create image file '" + full_filename + "': " + e.what());
     }
 
-    context.GetLogger().info("Created "s + (read_only ? "read-only " : "") + "image file '" + full_filename +
-        "' with a size of " + to_string(len) + " bytes");
+    context.GetLogger().info("Created {} image file '{}' with a size of of {} bytes", read_only ? "read-only " : "",
+        full_filename, len);
 
     return context.ReturnSuccessStatus();
 }
@@ -364,22 +360,17 @@ bool CommandImageSupport::ValidateParams(const CommandContext &context, const st
 
 bool CommandImageSupport::IsValidSrcFilename(string_view filename)
 {
-    // Source file must exist and must be a regular file or a symlink
-    path file(filename);
-
+    // Source file must be a regular file or a symlink pointing to a regular file
     error_code error;
-    return is_regular_file(file, error) || is_symlink(file, error);
+    const auto s = status(canonical(path(filename), error));
+    return !error && s.type() == file_type::regular;
 }
 
 bool CommandImageSupport::IsValidDstFilename(string_view filename)
 {
     // Destination file must not yet exist
-    try {
-        return !exists(path(filename));
-    }
-    catch (const filesystem_error&) {
-        return false;
-    }
+    error_code error;
+    return !exists(path(filename), error);
 }
 
 bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)

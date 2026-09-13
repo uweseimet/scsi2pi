@@ -230,8 +230,7 @@ pair<string, string> TapDriver::ExtractAddressAndMask() const
         }
 
         const uint32_t mask = m == 32 ? 0xFFFFFFFFU : ~((1U << (32 - m)) - 1);
-        netmask = to_string((mask >> 24) & 0xff) + '.' + to_string((mask >> 16) & 0xff) + '.' +
-            to_string((mask >> 8) & 0xff) + '.' + to_string(mask & 0xff);
+        netmask = fmt::format("{}.{}.{}.{}", (mask >> 24) & 0xff, (mask >> 16) & 0xff, (mask >> 8) & 0xff, mask & 0xff);
     }
 
     return {address, netmask};

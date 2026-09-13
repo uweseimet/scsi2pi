@@ -32,28 +32,26 @@ bool FilterMatches(const string &input, string_view pattern_lower)
 
 bool ValidateImageFile(const path &image_path, logger &logger)
 {
-    if (image_path.filename().string().starts_with(".")) {
+    if (image_path.filename().string().starts_with('.')) {
         return false;
     }
 
+    // Symlinks are followed
     error_code error;
-    path p(image_path);
-
-    // Follow symlink
-    if (is_symlink(p, error)) {
-        p = image_path.parent_path() / read_symlink(p, error);
-        if (error || !exists(p, error)) {
-            logger.warn("Image file symlink '{}' is broken", image_path.string());
-            return false;
-        }
-    }
-
-    if (is_directory(p, error) || (is_other(p, error) && !is_block_file(p, error))) {
+    const path p = canonical(image_path, error);
+    if (error) {
+        logger.warn("Filename or symbolic link '{}' is invalid: {}", image_path.string(), error.message());
         return false;
     }
 
+    const auto s = status(p, error);
     if (error) {
-        logger.warn("Can't access image file '{}': {}", p.string(), error.message());
+        logger.warn("Can't access image/device file '{}': {}", p.string(), error.message());
+        return false;
+    }
+
+    if (const auto type = s.type(); type == file_type::directory
+        || (type != file_type::regular && type != file_type::block)) {
         return false;
     }
 
@@ -137,8 +135,10 @@ void GetDevice(const PrimaryDevice &device, PbDevice &pb_device)
 #endif
 }
 
-string GetRelativeFolder(const directory_entry &entry, string_view default_folder)
+string GetRelativeFolder(const directory_entry &entry)
 {
+    const string default_folder = CommandImageSupport::GetInstance().GetImageFolder();
+
     const string parent = entry.path().parent_path().string();
     return parent.size() > default_folder.size() ? parent.substr(default_folder.size() + 1) : "";
 }
@@ -173,10 +173,9 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
         if (it.depth() > CommandImageSupport::GetInstance().GetDepth()) {
             it.disable_recursion_pending();
         }
-        else if (const string folder = GetRelativeFolder(*it, default_folder);
-        FilterMatches(folder, folder_pattern_lower) &&
-            FilterMatches(it->path().filename().string(), file_pattern_lower) &&
-            ValidateImageFile(it->path(), logger)) {
+        else if (const string folder = GetRelativeFolder(*it); FilterMatches(folder, folder_pattern_lower)
+            && FilterMatches(it->path().filename().string(), file_pattern_lower)
+            && ValidateImageFile(it->path(), logger)) {
             AddImageFile(image_files_info, folder, it->path().filename().string());
         }
 

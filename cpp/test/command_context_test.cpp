@@ -28,7 +28,7 @@ TEST(CommandContext, ReadCommand)
     vector data = { byte { '1' }, byte { '2' }, byte { '3' } };
     fd = open(CreateTempFileWithData(data).c_str(), O_RDONLY);
     CommandContext context2(fd, *default_logger());
-    EXPECT_THROW(context2.ReadCommand(), IoException);
+    EXPECT_FALSE(context2.ReadCommand());
     close(fd);
 
     // Invalid magic with right length

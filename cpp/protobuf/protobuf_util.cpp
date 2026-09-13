@@ -20,24 +20,20 @@ void protobuf_util::SerializeMessage(int fd, const google::protobuf::MessageLite
     }
 
     // Write the size of the protobuf data as a header
-    if (array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
+    const array<uint8_t, 4> header = { static_cast<uint8_t>(data.size()), static_cast<uint8_t>(data.size() >> 8),
         static_cast<uint8_t>(data.size() >> 16), static_cast<uint8_t>(data.size() >> 24) };
-    WriteBytes(fd, header) != header.size()) {
-        throw IoException("Can't write message size: "s + system_error(errno, generic_category()).what());
-    }
+    WriteBytes(fd, header);
 
-    // Write the actual protobuf data
-    if (WriteBytes(fd, data) != data.size()) {
-        throw IoException("Can't write message data: "s + system_error(errno, generic_category()).what());
-    }
+    // Write the payload
+    WriteBytes(fd, data);
 }
 
 void protobuf_util::DeserializeMessage(int fd, google::protobuf::MessageLite &message)
 {
     // Read the header with the size of the protobuf data
     array<byte, 4> header;
-    if (ReadBytes(fd, header) != header.size()) {
-        throw IoException("Can't read message size: "s + system_error(errno, generic_category()).what());
+    if (!ReadBytes(fd, header)) {
+        throw IoException("Can't read message size");
     }
 
     const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
@@ -46,10 +42,10 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::MessageLite &me
         throw IoException("Invalid message size");
     }
 
-    // Read the binary protobuf data
+    // Read the payload
     vector<byte> data_buf(size);
-    if (ReadBytes(fd, data_buf) != data_buf.size()) {
-        throw IoException("Invalid message data: "s + system_error(errno, generic_category()).what());
+    if (!ReadBytes(fd, data_buf)) {
+        throw IoException("Invalid message data");
     }
 
     if (!message.ParseFromArray(data_buf.data(), size)) {
@@ -57,7 +53,7 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::MessageLite &me
     }
 }
 
-size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
+bool protobuf_util::ReadBytes(int fd, span<byte> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {
@@ -67,20 +63,22 @@ size_t protobuf_util::ReadBytes(int fd, span<byte> buf)
                 continue;
             }
 
-            return -1;
+            throw IoException(
+                fmt::format("Can't read {} message bytes: {}", buf.size(),
+                    system_error(errno, generic_category()).what()));
         }
 
         if (!len) {
-            return offset;
+            break;
         }
 
         offset += len;
     }
 
-    return offset;
+    return offset == buf.size();
 }
 
-size_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
+void protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
 {
     size_t offset = 0;
     while (offset < buf.size()) {
@@ -90,11 +88,11 @@ size_t protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
                 continue;
             }
 
-            return -1;
+            throw IoException(
+                fmt::format("Can't write {} message bytes: {}", buf.size(),
+                    system_error(errno, generic_category()).what()));
         }
 
         offset += len;
     }
-
-    return offset;
 }

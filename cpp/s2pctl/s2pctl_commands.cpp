@@ -142,11 +142,8 @@ bool S2pCtlCommands::SendCommand()
                 system_error(errno, generic_category()).what()));
     }
 
-    if (array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' }; WriteBytes(fd, magic) != magic.size()) {
-        close(fd);
-
-        throw IoException("Can't write magic");
-    }
+    const array<uint8_t, 6> magic = { 'R', 'A', 'S', 'C', 'S', 'I' };
+    WriteBytes(fd, magic);
 
     SerializeMessage(fd, command);
     DeserializeMessage(fd, result);

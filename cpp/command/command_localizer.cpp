@@ -259,7 +259,7 @@ string CommandLocalizer::Localize(LocalizationKey key, string_view locale, const
 
     const auto &m = it->second.find(key);
     if (m == it->second.end()) {
-        return "Missing localization for enum value " + to_string(static_cast<int>(key));
+        return fmt::format("Missing localization for enum value {}", static_cast<int>(key));
     }
 
     string message = m->second;
