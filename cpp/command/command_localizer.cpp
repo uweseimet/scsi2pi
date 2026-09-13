@@ -2,268 +2,244 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #include "command_localizer.h"
 #include <cassert>
-#include <unordered_set>
-
-using namespace s2p_util;
 
 CommandLocalizer::CommandLocalizer()
 {
-    Add(LocalizationKey::ERROR_AUTHENTICATION, "en", "Authentication failed");
-    Add(LocalizationKey::ERROR_AUTHENTICATION, "de", "Authentifizierung fehlgeschlagen");
-    Add(LocalizationKey::ERROR_AUTHENTICATION, "sv", "Autentiseringen misslyckades");
-    Add(LocalizationKey::ERROR_AUTHENTICATION, "fr", "Authentification éronnée");
-    Add(LocalizationKey::ERROR_AUTHENTICATION, "es", "Fallo de autentificación");
+    Add(LocalizationKey::ERROR_AUTHENTICATION, Language::EN, "Authentication failed");
+    Add(LocalizationKey::ERROR_AUTHENTICATION, Language::DE, "Authentifizierung fehlgeschlagen");
+    Add(LocalizationKey::ERROR_AUTHENTICATION, Language::FR, "Authentification éronnée");
+    Add(LocalizationKey::ERROR_AUTHENTICATION, Language::ES, "Fallo de autentificación");
 
-    Add(LocalizationKey::ERROR_OPERATION, "en", "Unknown operation: %1");
-    Add(LocalizationKey::ERROR_OPERATION, "de", "Unbekannte Operation: %1");
-    Add(LocalizationKey::ERROR_OPERATION, "sv", "Okänd operation: %1");
-    Add(LocalizationKey::ERROR_OPERATION, "fr", "Opération inconnue: %1");
-    Add(LocalizationKey::ERROR_OPERATION, "es", "Operación desconocida: %1");
+    Add(LocalizationKey::ERROR_OPERATION, Language::EN, "Unknown operation: {0}");
+    Add(LocalizationKey::ERROR_OPERATION, Language::DE, "Unbekannte Operation: {0}");
+    Add(LocalizationKey::ERROR_OPERATION, Language::FR, "Opération inconnue: {0}");
+    Add(LocalizationKey::ERROR_OPERATION, Language::ES, "Operación desconocida: {0}");
 
-    Add(LocalizationKey::ERROR_LOG_LEVEL, "en", "Invalid log level '%1'");
-    Add(LocalizationKey::ERROR_LOG_LEVEL, "de", "Ungültiger Log-Level '%1'");
-    Add(LocalizationKey::ERROR_LOG_LEVEL, "sv", "Ogiltig loggnivå '%1'");
-    Add(LocalizationKey::ERROR_LOG_LEVEL, "fr", "Niveau de journalisation invalide '%1'");
-    Add(LocalizationKey::ERROR_LOG_LEVEL, "es", "Nivel de registro '%1' no válido");
+    Add(LocalizationKey::ERROR_LOG_LEVEL, Language::EN, "Invalid log level '{0}'");
+    Add(LocalizationKey::ERROR_LOG_LEVEL, Language::DE, "Ungültiger Log-Level '{0}'");
+    Add(LocalizationKey::ERROR_LOG_LEVEL, Language::FR, "Niveau de journalisation invalide '{0}'");
+    Add(LocalizationKey::ERROR_LOG_LEVEL, Language::ES, "Nivel de registro '{0}' no válido");
 
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, "en", "Missing device ID");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, "de", "Fehlende Geräte-ID");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, "sv", "Enhetens id saknas");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, "fr", "ID de périphérique manquante");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, "es", "Falta el ID del dispositivo");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, Language::EN, "Missing device ID");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, Language::DE, "Fehlende Geräte-ID");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, Language::FR, "ID de périphérique manquante");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_ID, Language::ES, "Falta el ID del dispositivo");
 
-    Add(LocalizationKey::ERROR_MISSING_FILENAME, "en", "Missing filename");
-    Add(LocalizationKey::ERROR_MISSING_FILENAME, "de", "Fehlender Dateiname");
-    Add(LocalizationKey::ERROR_MISSING_FILENAME, "sv", "Filnamn saknas");
-    Add(LocalizationKey::ERROR_MISSING_FILENAME, "fr", "Nom de fichier manquant");
-    Add(LocalizationKey::ERROR_MISSING_FILENAME, "es", "Falta el nombre del archivo");
+    Add(LocalizationKey::ERROR_MISSING_FILENAME, Language::EN, "Missing filename");
+    Add(LocalizationKey::ERROR_MISSING_FILENAME, Language::DE, "Fehlender Dateiname");
+    Add(LocalizationKey::ERROR_MISSING_FILENAME, Language::FR, "Nom de fichier manquant");
+    Add(LocalizationKey::ERROR_MISSING_FILENAME, Language::ES, "Falta el nombre del archivo");
 
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "en", "Device %1 requires a filename");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "de", "Gerät %1 benötigt einen Dateinamen");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "sv", "Enhet %1 kräver ett filnamn");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "fr", "Périphérique %1 à besoin d'un nom de fichier");
-    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, "es", "Dispositivo %1 requiere un nombre de archivo");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, Language::EN, "Device {0} requires a filename");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, Language::DE, "Gerät {0} benötigt einen Dateinamen");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, Language::FR, "Périphérique {0} à besoin d'un nom de fichier");
+    Add(LocalizationKey::ERROR_DEVICE_MISSING_FILENAME, Language::ES, "Dispositivo {0} requiere un nombre de archivo");
 
-    Add(LocalizationKey::ERROR_IMAGE_IN_USE, "en", "Image file '%1' is already being used by device %2");
-    Add(LocalizationKey::ERROR_IMAGE_IN_USE, "de", "Image-Datei '%1' wird bereits von Gerät %2 benutzt");
-    Add(LocalizationKey::ERROR_IMAGE_IN_USE, "sv", "Skivbildsfilen '%1' används redan av nhet %2");
-    Add(LocalizationKey::ERROR_IMAGE_IN_USE, "fr", "Le fichier d'image '%1' est déjà utilisé par périphérique %2");
-    Add(LocalizationKey::ERROR_IMAGE_IN_USE, "es",
-        "El archivo de imagen '%1' ya está siendo utilizado por dispositivo %2");
+    Add(LocalizationKey::ERROR_IMAGE_IN_USE, Language::EN, "Image file '{0}' is already being used by device {1}");
+    Add(LocalizationKey::ERROR_IMAGE_IN_USE, Language::DE, "Image-Datei '{0}' wird bereits von Gerät {1} benutzt");
+    Add(LocalizationKey::ERROR_IMAGE_IN_USE, Language::FR,
+        "Le fichier d'image '{0}' est déjà utilisé par périphérique {1}");
+    Add(LocalizationKey::ERROR_IMAGE_IN_USE, Language::ES,
+        "El archivo de imagen '{0}' ya está siendo utilizado por dispositivo {1}");
 
-    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, "en", "Can't create image file info for '%1'");
-    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, "de", "Image-Datei-Information für '%1' kann nicht erzeugt werden");
-    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, "sv", "Kunde ej skapa skivbildsfilsinfo för '%1'");
-    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, "fr", "Ne peux pas créer les informations du fichier image '%1'");
-    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, "es", "No se puede crear información de archivo de imagen para '%1'");
+    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, Language::EN, "Can't create image file info for '{0}'");
+    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, Language::DE,
+        "Image-Datei-Information für '{0}' kann nicht erzeugt werden");
+    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, Language::FR,
+        "Ne peux pas créer les informations du fichier image '{0}'");
+    Add(LocalizationKey::ERROR_IMAGE_FILE_INFO, Language::ES,
+        "No se puede crear información de archivo de imagen para '{0}'");
 
-    Add(LocalizationKey::ERROR_RESERVED_ID, "en", "Device ID %1 is reserved");
-    Add(LocalizationKey::ERROR_RESERVED_ID, "de", "Geräte-ID %1 ist reserviert");
-    Add(LocalizationKey::ERROR_RESERVED_ID, "sv", "Enhets-id %1 är reserverat");
-    Add(LocalizationKey::ERROR_RESERVED_ID, "fr", "ID de périphérique %1 réservée");
-    Add(LocalizationKey::ERROR_RESERVED_ID, "es", "El ID de dispositivo %1 está reservado");
+    Add(LocalizationKey::ERROR_RESERVED_ID, Language::EN, "Device ID {0} is reserved");
+    Add(LocalizationKey::ERROR_RESERVED_ID, Language::DE, "Geräte-ID {0} ist reserviert");
+    Add(LocalizationKey::ERROR_RESERVED_ID, Language::FR, "ID de périphérique {0} réservée");
+    Add(LocalizationKey::ERROR_RESERVED_ID, Language::ES, "El ID de dispositivo {0} está reservado");
 
-    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "en", "Command for non-existing ID %1, unit %2");
-    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "de", "Kommando für nicht existente ID %1, Einheit %2");
-    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "sv", "Kommando för id %1, enhetsnummer %2 som ej existerar");
-    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "fr", "Command pour ID %1, unité %2 non-existant");
-    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, "es", "Comando para ID %1 inexistente, unidad %2");
+    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, Language::EN, "Command for non-existing ID {0}, unit {1}");
+    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, Language::DE, "Kommando für nicht existente ID {0}, Einheit {1}");
+    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, Language::FR, "Command pour ID {0}, unité {1} non-existant");
+    Add(LocalizationKey::ERROR_NON_EXISTING_UNIT, Language::ES, "Comando para ID {0} inexistente, unidad {1}");
 
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "en", "%1:%2: Unknown device type %3");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "de", "%1:%2: Unbekannter Gerätetyp %3");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "sv", "%1:%2: Obekant enhetstyp: %3");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "fr", "%1:%2: Type de périphérique inconnu %3");
-    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, "es", "%1:%2: Tipo de dispositivo desconocido %3");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, Language::EN, "{0}:{1}: Unknown device type {2}");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, Language::DE, "{0}:{1}: Unbekannter Gerätetyp {2}");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, Language::FR, "{0}:{1}: Type de périphérique inconnu {2}");
+    Add(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, Language::ES, "{0}:{1}: Tipo de dispositivo desconocido {2}");
 
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "en",
-        "%1:%2: Device type required for unknown extension of file '%3'");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "de",
-        "%1:%2: Gerätetyp erforderlich für unbekannte Extension der Datei '%3'");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "sv",
-        "%1:%2: Man måste ange enhetstyp för obekant filändelse '%3'");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "fr",
-        "%1:%2: Type de périphérique requis pour extension inconnue du fichier '%3'");
-    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, "es",
-        "%1:%2: Tipo de dispositivo requerido para la extensión desconocida del archivo '%3'");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, Language::EN,
+        "{0}:{1}: Device type required for unknown extension of file '{2}'");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, Language::DE,
+        "{0}:{1}: Gerätetyp erforderlich für unbekannte Extension der Datei '{2}'");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, Language::FR,
+        "{0}:{1}: Type de périphérique requis pour extension inconnue du fichier '{2}'");
+    Add(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, Language::ES,
+        "{0}:{1}: Tipo de dispositivo requerido para la extensión desconocida del archivo '{2}'");
 
-    Add(LocalizationKey::ERROR_DUPLICATE_ID, "en", "Duplicate ID %1, unit %2");
-    Add(LocalizationKey::ERROR_DUPLICATE_ID, "de", "Doppelte ID %1, Einheit %2");
-    Add(LocalizationKey::ERROR_DUPLICATE_ID, "sv", "Duplikat id %1, enhetsnummer %2");
-    Add(LocalizationKey::ERROR_DUPLICATE_ID, "fr", "ID %1, unité %2 dupliquée");
-    Add(LocalizationKey::ERROR_DUPLICATE_ID, "es", "ID duplicado %1, unidad %2");
+    Add(LocalizationKey::ERROR_DUPLICATE_ID, Language::EN, "Duplicate ID {0}, unit {1}");
+    Add(LocalizationKey::ERROR_DUPLICATE_ID, Language::DE, "Doppelte ID {0}, Einheit {1}");
+    Add(LocalizationKey::ERROR_DUPLICATE_ID, Language::FR, "ID {0}, unité {1} dupliquée");
+    Add(LocalizationKey::ERROR_DUPLICATE_ID, Language::ES, "ID duplicado {0}, unidad {1}");
 
-    Add(LocalizationKey::ERROR_DETACH, "en", "Couldn't detach device");
-    Add(LocalizationKey::ERROR_DETACH, "de", "Geräte konnte nicht entfernt werden");
-    Add(LocalizationKey::ERROR_DETACH, "sv", "Kunde ej koppla ifrån enheten");
-    Add(LocalizationKey::ERROR_DETACH, "fr", "Impossible de détacher le périphérique");
-    Add(LocalizationKey::ERROR_DETACH, "es", "No se ha podido desconectar el dispositivo");
+    Add(LocalizationKey::ERROR_DETACH, Language::EN, "Couldn't detach device");
+    Add(LocalizationKey::ERROR_DETACH, Language::DE, "Geräte konnte nicht entfernt werden");
+    Add(LocalizationKey::ERROR_DETACH, Language::FR, "Impossible de détacher le périphérique");
+    Add(LocalizationKey::ERROR_DETACH, Language::ES, "No se ha podido desconectar el dispositivo");
 
-    Add(LocalizationKey::ERROR_EJECT_REQUIRED, "en", "Existing medium must first be ejected");
-    Add(LocalizationKey::ERROR_EJECT_REQUIRED, "de", "Das vorhandene Medium muss erst ausgeworfen werden");
-    Add(LocalizationKey::ERROR_EJECT_REQUIRED, "sv", "Nuvarande skiva måste utmatas först");
-    Add(LocalizationKey::ERROR_EJECT_REQUIRED, "fr", "Media déjà existant doit d'abord être éjecté");
-    Add(LocalizationKey::ERROR_EJECT_REQUIRED, "es", "El medio existente debe ser expulsado primero");
+    Add(LocalizationKey::ERROR_EJECT_REQUIRED, Language::EN, "Existing medium must first be ejected");
+    Add(LocalizationKey::ERROR_EJECT_REQUIRED, Language::DE, "Das vorhandene Medium muss erst ausgeworfen werden");
+    Add(LocalizationKey::ERROR_EJECT_REQUIRED, Language::FR, "Media déjà existant doit d'abord être éjecté");
+    Add(LocalizationKey::ERROR_EJECT_REQUIRED, Language::ES, "El medio existente debe ser expulsado primero");
 
-    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "en", "Once set the device name cannot be changed anymore");
-    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "de",
+    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, Language::EN, "Once set the device name cannot be changed anymore");
+    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, Language::DE,
         "Ein bereits gesetzter Gerätename kann nicht mehr geändert werden");
-    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "sv", "Enhetsnamn kan ej ändras efter att ha fastställts en gång");
-    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "fr",
+    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, Language::FR,
         "Une fois défini, le nom de périphérique ne peut plus être changé");
-    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, "es",
+    Add(LocalizationKey::ERROR_DEVICE_NAME_UPDATE, Language::ES,
         "Una vez establecido el nombre del dispositivo ya no se puede cambiar");
 
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "en", "Invalid shutdown mode '%1'");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "de", "Ungültiger Shutdown-Modus '%1'");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "sv", "Ogiltigt avstängsningsläge: '%1'");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "fr", "Mode d'extinction invalide '%1'");
-    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, "es", "Modo de apagado inválido '%1'");
+    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, Language::EN, "Invalid shutdown mode '{0}'");
+    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, Language::DE, "Ungültiger Shutdown-Modus '{0}'");
+    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, Language::FR, "Mode d'extinction invalide '{0}'");
+    Add(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, Language::ES, "Modo de apagado inválido '{0}'");
 
-    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, "en", "Missing root permission for shutdown or reboot");
-    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, "de", "Fehlende Root-Berechtigung für Shutdown oder Neustart");
-    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, "sv",
-        "Saknar root-rättigheter för att kunna stänga av eller starta om systemet");
-    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, "fr", "Permissions root manquantes pour extinction ou redémarrage");
-    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, "es", "Falta el permiso de root para el apagado o el reinicio");
+    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, Language::EN, "Missing root permission for shutdown or reboot");
+    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, Language::DE,
+        "Fehlende Root-Berechtigung für Shutdown oder Neustart");
+    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, Language::FR,
+        "Permissions root manquantes pour extinction ou redémarrage");
+    Add(LocalizationKey::ERROR_SHUTDOWN_PERMISSION, Language::ES,
+        "Falta el permiso de root para el apagado o el reinicio");
 
-    Add(LocalizationKey::ERROR_FILE_OPEN, "en", "Invalid or non-existing file '%1'");
-    Add(LocalizationKey::ERROR_FILE_OPEN, "de", "Ungültige oder fehlende Datei '%1'");
-    Add(LocalizationKey::ERROR_FILE_OPEN, "sv", "Ogiltig eller saknad fil '%1'");
-    Add(LocalizationKey::ERROR_FILE_OPEN, "fr", "Fichier invalide ou non-existant '%1'");
-    Add(LocalizationKey::ERROR_FILE_OPEN, "es", "Archivo inválido o inexistente '%1'");
+    Add(LocalizationKey::ERROR_FILE_OPEN, Language::EN, "Invalid or non-existing file '{0}'");
+    Add(LocalizationKey::ERROR_FILE_OPEN, Language::DE, "Ungültige oder fehlende Datei '{0}'");
+    Add(LocalizationKey::ERROR_FILE_OPEN, Language::FR, "Fichier invalide ou non-existant '{0}'");
+    Add(LocalizationKey::ERROR_FILE_OPEN, Language::ES, "Archivo inválido o inexistente '{0}'");
 
-    Add(LocalizationKey::ERROR_SCSI_LEVEL, "en", "Invalid SCSI level: %1");
-    Add(LocalizationKey::ERROR_SCSI_LEVEL, "de", "Ungültiger SCSI-Level: %1");
-    Add(LocalizationKey::ERROR_SCSI_LEVEL, "sv", "Ogiltig SCSI nivå: %1");
-    Add(LocalizationKey::ERROR_SCSI_LEVEL, "fr", "Niveau SCSI %1 invalide");
-    Add(LocalizationKey::ERROR_SCSI_LEVEL, "es", "Niveau SCSI %1 invalido");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, Language::EN, "Invalid SCSI level: {0}");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, Language::DE, "Ungültiger SCSI-Level: {0}");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, Language::FR, "Niveau SCSI {0} invalide");
+    Add(LocalizationKey::ERROR_SCSI_LEVEL, Language::ES, "Niveau SCSI {0} invalido");
 
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "en", "Invalid block size: %1 bytes");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "de", "Ungültige Blockgröße: %1 Bytes");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "sv", "Ogiltig blockstorlek: %1 byte");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "fr", "Taille de bloc %1 octets invalide");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE, "es", "Tamaño de bloque %1 bytes invalido");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, Language::EN, "Invalid block size: {0} bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, Language::DE, "Ungültige Blockgröße: {0} Bytes");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, Language::FR, "Taille de bloc {0} octets invalide");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE, Language::ES, "Tamaño de bloque {0} bytes invalido");
 
-    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "en", "Block size for device type %1 is not configurable");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "de",
-        "Blockgröße für Gerätetyp %1 ist nicht konfigurierbar");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "sv",
-        "Enhetstypen %1 kan inte använda andra blockstorlekar");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "fr",
-        "Taille de block pour le type de périphérique %1 non configurable");
-    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, "es",
-        "El tamaño del bloque para el tipo de dispositivo %1 no es configurable");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, Language::EN,
+        "Block size for device type {0} is not configurable");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, Language::DE,
+        "Blockgröße für Gerätetyp {0} ist nicht konfigurierbar");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, Language::FR,
+        "Taille de block pour le type de périphérique {0} non configurable");
+    Add(LocalizationKey::ERROR_BLOCK_SIZE_NOT_CONFIGURABLE, Language::ES,
+        "El tamaño del bloque para el tipo de dispositivo {0} no es configurable");
 
-    Add(LocalizationKey::ERROR_CONTROLLER, "en", "Couldn't create controller");
-    Add(LocalizationKey::ERROR_CONTROLLER, "de", "Controller konnte nicht erzeugt werden");
-    Add(LocalizationKey::ERROR_CONTROLLER, "sv", "Kunde ej skapa gränssnitt");
-    Add(LocalizationKey::ERROR_CONTROLLER, "fr", "Impossible de créer le contrôleur");
-    Add(LocalizationKey::ERROR_CONTROLLER, "es", "No se ha podido crear el controlador");
+    Add(LocalizationKey::ERROR_CONTROLLER, Language::EN, "Couldn't create controller");
+    Add(LocalizationKey::ERROR_CONTROLLER, Language::DE, "Controller konnte nicht erzeugt werden");
+    Add(LocalizationKey::ERROR_CONTROLLER, Language::FR, "Impossible de créer le contrôleur");
+    Add(LocalizationKey::ERROR_CONTROLLER, Language::ES, "No se ha podido crear el controlador");
 
-    Add(LocalizationKey::ERROR_INVALID_ID, "en", "Invalid device ID %1 (0-7)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "de", "Ungültige Geräte-ID %1 (0-7)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "sv", "Ogiltigt enhets-id %1 (0-7)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "fr", "ID de périphérique invalide %1 (0-7)");
-    Add(LocalizationKey::ERROR_INVALID_ID, "es", "ID de dispositivo inválido %1 (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, Language::EN, "Invalid device ID {0} (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, Language::DE, "Ungültige Geräte-ID {0} (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, Language::FR, "ID de périphérique invalide {0} (0-7)");
+    Add(LocalizationKey::ERROR_INVALID_ID, Language::ES, "ID de dispositivo inválido {0} (0-7)");
 
-    Add(LocalizationKey::ERROR_INVALID_LUN, "en", "Invalid LUN %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_LUN, "de", "Ungültige LUN %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_LUN, "sv", "Ogiltigt enhetsnummer %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_LUN, "fr", "LUN invalide %1 (0-%2)");
-    Add(LocalizationKey::ERROR_INVALID_LUN, "es", "LUN invalido %1 (0-%2)");
+    Add(LocalizationKey::ERROR_INVALID_LUN, Language::EN, "Invalid LUN {0} (0-{1})");
+    Add(LocalizationKey::ERROR_INVALID_LUN, Language::DE, "Ungültige LUN {0} (0-{1})");
+    Add(LocalizationKey::ERROR_INVALID_LUN, Language::FR, "LUN invalide {0} (0-{1})");
+    Add(LocalizationKey::ERROR_INVALID_LUN, Language::ES, "LUN invalido {0} (0-{1})");
 
-    Add(LocalizationKey::ERROR_MISSING_LUN0, "en", "Missing LUN 0 for device ID %1");
-    Add(LocalizationKey::ERROR_MISSING_LUN0, "de", "Fehlende LUN 0 für Geräte-ID %1");
-    Add(LocalizationKey::ERROR_MISSING_LUN0, "sv", "Saknar LUN 0 för enhets-ID %1");
-    Add(LocalizationKey::ERROR_MISSING_LUN0, "fr", "LUN 0 manquant pour l'ID de périphérique %1");
-    Add(LocalizationKey::ERROR_MISSING_LUN0, "es", "Falta LUN 0 para la ID del dispositivo %1");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, Language::EN, "Missing LUN 0 for device ID {0}");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, Language::DE, "Fehlende LUN 0 für Geräte-ID {0}");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, Language::FR, "LUN 0 manquant pour l'ID de périphérique {0}");
+    Add(LocalizationKey::ERROR_MISSING_LUN0, Language::ES, "Falta LUN 0 para la ID del dispositivo {0}");
 
-    Add(LocalizationKey::ERROR_LUN0, "en", "LUN 0 cannot be detached as long as there is still another LUN");
-    Add(LocalizationKey::ERROR_LUN0, "de", "LUN 0 kann nicht entfernt werden, solange noch eine andere LUN existiert");
-    Add(LocalizationKey::ERROR_LUN0, "sv",
-        "Enhetsnummer 0 kan ej bli frånkopplat så länge som andra enhetsnummer är anslutna");
-    Add(LocalizationKey::ERROR_LUN0, "fr", "LUN 0 ne peux pas être détaché tant qu'il y'a un autre LUN");
-    Add(LocalizationKey::ERROR_LUN0, "es", "El LUN 0 no se puede desconectar mientras haya otro LUN");
+    Add(LocalizationKey::ERROR_LUN0, Language::EN, "LUN 0 cannot be detached as long as there is still another LUN");
+    Add(LocalizationKey::ERROR_LUN0, Language::DE,
+        "LUN 0 kann nicht entfernt werden, solange noch eine andere LUN existiert");
+    Add(LocalizationKey::ERROR_LUN0, Language::FR, "LUN 0 ne peux pas être détaché tant qu'il y'a un autre LUN");
+    Add(LocalizationKey::ERROR_LUN0, Language::ES, "El LUN 0 no se puede desconectar mientras haya otro LUN");
 
-    Add(LocalizationKey::ERROR_INITIALIZATION, "en", "Initialization of %1 failed");
-    Add(LocalizationKey::ERROR_INITIALIZATION, "de", "Initialisierung von %1 fehlgeschlagen");
-    Add(LocalizationKey::ERROR_INITIALIZATION, "sv", "Kunde ej initialisera %1 ");
-    Add(LocalizationKey::ERROR_INITIALIZATION, "fr", "Echec de l'initialisation de %1");
-    Add(LocalizationKey::ERROR_INITIALIZATION, "es", "La inicialización del %1 falló");
+    Add(LocalizationKey::ERROR_INITIALIZATION, Language::EN, "Initialization of {0} failed");
+    Add(LocalizationKey::ERROR_INITIALIZATION, Language::DE, "Initialisierung von {0} fehlgeschlagen");
+    Add(LocalizationKey::ERROR_INITIALIZATION, Language::FR, "Echec de l'initialisation de {0}");
+    Add(LocalizationKey::ERROR_INITIALIZATION, Language::ES, "La inicialización del {0} falló");
 
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, "en", "%1 operation denied, %2 isn't stoppable");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, "de", "%1-Operation verweigert, %2 ist nicht stopbar");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, "sv", "Operationen %1 nekades för att %2 inte kan stoppas");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, "fr", "Opération %1 refusée, %2 ne peut être stoppé");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, "es", "%1 operación denegada, %2 no se puede parar");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, Language::EN, "{0} operation denied, {1} isn't stoppable");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, Language::DE,
+        "{0}-Operation verweigert, {1} ist nicht stopbar");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, Language::FR,
+        "Opération {0} refusée, {1} ne peut être stoppé");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_STOPPABLE, Language::ES,
+        "{0} operación denegada, {1} no se puede parar");
 
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, "en", "%1 operation denied, %2 isn't removable");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, "de", "%1-Operation verweigert, %2 ist nicht wechselbar");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, "sv",
-        "Operationen %1 nekades för att %2 inte är uttagbar(t)");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, "fr", "Opération %1 refusée, %2 n'est pas détachable");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, "es", "%1 operación denegada, %2 no es removible");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, Language::EN, "{0} operation denied, {1} isn't removable");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, Language::DE,
+        "{0}-Operation verweigert, {1} ist nicht wechselbar");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, Language::FR,
+        "Opération {0} refusée, {1} n'est pas détachable");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_REMOVABLE, Language::ES, "{0} operación denegada, {1} no es removible");
 
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, "en", "%1 operation denied, %2 isn't protectable");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, "de", "%1-Operation verweigert, %2 ist nicht schützbar");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, "sv",
-        "Operationen %1 nekades för att %2 inte är skyddbar(t)");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, "fr", "Opération %1 refusée, %2 n'est pas protégeable");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, "es", "%1 operación denegada, %2 no es protegible");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, Language::EN,
+        "{0} operation denied, {1} isn't protectable");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, Language::DE,
+        "{0}-Operation verweigert, {1} ist nicht schützbar");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, Language::FR,
+        "Opération {0} refusée, {1} n'est pas protégeable");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_PROTECTABLE, Language::ES,
+        "{0} operación denegada, {1} no es protegible");
 
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "en", "%1 operation denied, %2 isn't ready");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "de", "%1-Operation verweigert, %2 ist nicht bereit");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "sv", "Operationen %1 nekades för att %2 inte är redo");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "fr", "Opération %1 refusée, %2 n'est pas prêt");
-    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, "es", "%1 operación denegada, %2 no está listo");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, Language::EN, "{0} operation denied, {1} isn't ready");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, Language::DE, "{0}-Operation verweigert, {1} ist nicht bereit");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, Language::FR, "Opération {0} refusée, {1} n'est pas prêt");
+    Add(LocalizationKey::ERROR_OPERATION_DENIED_READY, Language::ES, "{0} operación denegada, {1} no está listo");
 
-    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "en", "There can only be a single SCDP device");
-    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "de", "Es kann nur ein einziges SCDP-Gerät geben");
-    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "sv", "Det kan bara finnas en enda SCDP-enhet");
-    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "fr", "Il ne peut y avoir qu'un seul périphérique SCDP");
-    Add(LocalizationKey::ERROR_UNIQUE_SCDP, "es", "Sólo puede haber un único dispositivo SCDP");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, Language::EN, "There can only be a single SCDP device");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, Language::DE, "Es kann nur ein einziges SCDP-Gerät geben");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, Language::FR, "Il ne peut y avoir qu'un seul périphérique SCDP");
+    Add(LocalizationKey::ERROR_UNIQUE_SCDP, Language::ES, "Sólo puede haber un único dispositivo SCDP");
 
-    Add(LocalizationKey::ERROR_PERSIST, "en", "Couldn't save '/etc/s2p.conf'");
-    Add(LocalizationKey::ERROR_PERSIST, "de", "'/etc/s2p.conf' konnte nicht gespeichert werden");
-    Add(LocalizationKey::ERROR_PERSIST, "sv", "Kunde inte spara '/etc/s2p.conf'");
-    Add(LocalizationKey::ERROR_PERSIST, "fr", "Impossible d'enregistrer '/etc/s2p.conf'");
-    Add(LocalizationKey::ERROR_PERSIST, "es", "No se pudo guardar '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, Language::EN, "Couldn't save '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, Language::DE, "'/etc/s2p.conf' konnte nicht gespeichert werden");
+    Add(LocalizationKey::ERROR_PERSIST, Language::FR, "Impossible d'enregistrer '/etc/s2p.conf'");
+    Add(LocalizationKey::ERROR_PERSIST, Language::ES, "No se pudo guardar '/etc/s2p.conf'");
+
+    assert(localized_messages.size() == SUPPORTED_LOCALES.size());
 }
 
-void CommandLocalizer::Add(LocalizationKey key, const string &locale, string_view value)
+void CommandLocalizer::Add(LocalizationKey key, Language language, string_view value)
 {
-    // Safeguards against empty messages, duplicate entries and unsupported locales
-    assert(!locale.empty());
     assert(!value.empty());
-    assert(!localized_messages[locale].contains(key));
-    assert((unordered_set < string_view > ( {"en", "de", "sv", "fr", "es"})).contains(locale));
 
-    localized_messages[locale][key] = value;
+    auto &languages = localized_messages[language];
+    assert(!languages.contains(key));
+
+    languages[key] = value;
 }
 
-string CommandLocalizer::Localize(LocalizationKey key, string_view locale, const string &arg1, const string &arg2,
-    const string &arg3) const
+string CommandLocalizer::LocalizeImpl(LocalizationKey key, string_view locale, fmt::format_args args) const
 {
-    auto it = localized_messages.find(ToLower(locale).substr(0, 2));
+    const Language lang = ToLanguage(locale);
+
+    auto it = localized_messages.find(lang);
     if (it == localized_messages.end()) {
-        // Use English as fallback language
-        it = localized_messages.find("en");
+        it = localized_messages.find(Language::EN);
     }
     assert(it != localized_messages.end());
 
-    const auto &m = it->second.find(key);
-    if (m == it->second.end()) {
-        return fmt::format("Missing localization for enum value {}", static_cast<int>(key));
-    }
+    const auto &msg_map = it->second;
+    const auto m = msg_map.find(key);
+    assert(m != msg_map.end());
 
-    string message = m->second;
-    message = regex_replace(message, REGEX1, arg1);
-    message = regex_replace(message, REGEX2, arg2);
-    return regex_replace(message, REGEX3, arg3);
+    try {
+        return fmt::vformat(m->second, args);
+    } catch (const fmt::format_error&) {
+        return m->second;
+    }
 }

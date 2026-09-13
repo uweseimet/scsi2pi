@@ -10,7 +10,6 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
-#include <regex>
 #include <getopt.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus_factory.h"
@@ -881,9 +880,11 @@ void S2pDump::DisplayProperties(int id, int lun) const
         cout << id_and_lun << "block_size=" << device_info.sector_size << "\n";
     }
 
-    cout << id_and_lun << "name=" << regex_replace(device_info.vendor, regex(" +$"), "") << ":"
-        << regex_replace(device_info.product, regex(" +$"), "") << ":"
-        << regex_replace(device_info.revision, regex(" +$"), "") << "\n" << flush;
+    cout << id_and_lun << "name="
+        << string_view(device_info.vendor).substr(0, string_view(device_info.vendor).find_last_not_of(' ') + 1) << ":"
+        << string_view(device_info.product).substr(0, string_view(device_info.product).find_last_not_of(' ') + 1) << ":"
+        << string_view(device_info.revision).substr(0, string_view(device_info.revision).find_last_not_of(' ') + 1)
+        << "\n" << flush;
 
     vector<uint8_t> buf(255);
 

@@ -72,7 +72,7 @@ bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDe
         return dryRun ? true : Unprotect(*device);
 
     default:
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, to_string(static_cast<int>(operation)));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, static_cast<int>(operation));
     }
 }
 
@@ -205,16 +205,16 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     const int lun = pb_device.unit();
 
     if (const int lun_max = GetLunMax(type); lun >= lun_max) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, lun, lun_max - 1);
     }
 
     const int id = pb_device.id();
     if (controller_factory.GetDeviceForIdAndLun(id, lun)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_DUPLICATE_ID, to_string(id), to_string(lun));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_DUPLICATE_ID, id, lun);
     }
 
     if (reserved_ids.contains(id)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_RESERVED_ID, to_string(id));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_RESERVED_ID, id);
     }
 
     const auto device = CreateDevice(context, pb_device);
@@ -605,7 +605,8 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context) const
     const auto &it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
     return
         it == luns.end() ?
-            true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, to_string((*it).first));
+                       true :
+                       context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, (*it).first);
 }
 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,
@@ -616,12 +617,12 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
     auto device = DeviceFactory::GetInstance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
     if (!device) {
         if (pb_device.type() == UNDEFINED) {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, to_string(pb_device.id()),
-                to_string(pb_device.unit()), filename);
+            context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_TYPE, pb_device.id(), pb_device.unit(),
+                filename);
         }
         else {
-            context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, to_string(pb_device.id()),
-                to_string(pb_device.unit()), PbDeviceType_Name(pb_device.type()));
+            context.ReturnLocalizedError(LocalizationKey::ERROR_UNKNOWN_DEVICE_TYPE, pb_device.id(), pb_device.unit(),
+                PbDeviceType_Name(pb_device.type()));
         }
 
         return nullptr;
@@ -645,7 +646,7 @@ shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &co
 bool CommandExecutor::SetScsiLevel(const CommandContext &context, PrimaryDevice &device, int level) const
 {
     if (level && !device.SetScsiLevel(static_cast<ScsiLevel>(level))) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, to_string(level));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_SCSI_LEVEL, level);
     }
 
     return true;
@@ -659,7 +660,7 @@ bool CommandExecutor::SetBlockSize([[maybe_unused]]const CommandContext &context
     if (block_size) {
         if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
             if (!storage_device->SetConfiguredBlockSize(block_size)) {
-                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, to_string(block_size));
+                return context.ReturnLocalizedError(LocalizationKey::ERROR_BLOCK_SIZE, block_size);
             }
         }
         else {
@@ -708,12 +709,12 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
         return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_DEVICE_ID);
     }
     if (id >= 8) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, to_string(id));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_ID, id);
     }
 
     const int lun = device.unit();
     if (const int lun_max = GetLunMax(device.type()); lun < 0 || lun >= lun_max) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, to_string(lun), to_string(lun_max - 1));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_INVALID_LUN, lun, lun_max - 1);
     }
 
     // For all commands except ATTACH the device and LUN must exist
@@ -722,7 +723,7 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
     }
 
     if (!controller_factory.GetDeviceForIdAndLun(id, lun)) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, to_string(id), to_string(lun));
+        return context.ReturnLocalizedError(LocalizationKey::ERROR_NON_EXISTING_UNIT, id, lun);
     }
 
     return true;

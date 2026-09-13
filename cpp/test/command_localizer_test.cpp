@@ -24,8 +24,4 @@ TEST(CommandLocalizer, Localize)
     message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "en");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
-
-    message = command_localizer.Localize(static_cast<LocalizationKey>(1234), "");
-    EXPECT_FALSE(message.empty());
-    EXPECT_NE(string::npos, message.find("enum value"));
 }

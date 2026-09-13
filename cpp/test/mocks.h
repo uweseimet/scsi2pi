@@ -56,7 +56,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
-    const S2pFormatter formatter;
+    inline static const S2pFormatter formatter;
 
 public:
 
