@@ -17,6 +17,7 @@
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace command_image_support;
 using namespace command_response;
 using namespace s2p_interface_util;
 using namespace s2p_util;
@@ -47,7 +48,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_FOLDER: {
         const string &folder = GetParam(command, "folder");
-        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(folder); !error.empty()) {
+        if (const string &error = SetImageFolder(folder); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
@@ -125,20 +126,20 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return CommandImageSupport::GetInstance().CreateImage(context);
+        return CreateImage(context);
 
     case DELETE_IMAGE:
-        return CommandImageSupport::GetInstance().DeleteImage(context);
+        return DeleteImage(context);
 
     case RENAME_IMAGE:
-        return CommandImageSupport::GetInstance().RenameImage(context);
+        return RenameImage(context);
 
     case COPY_IMAGE:
-        return CommandImageSupport::GetInstance().CopyImage(context);
+        return CopyImage(context);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return CommandImageSupport::GetInstance().SetImagePermissions(context);
+        return SetImagePermissions(context);
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::GetInstance().Persist() ?

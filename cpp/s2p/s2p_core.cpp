@@ -29,6 +29,7 @@
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
+using namespace command_image_support;
 using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
@@ -207,7 +208,7 @@ int S2p::Run(span<char*> args)
         return EXIT_FAILURE;
     }
 
-    s2p_logger->trace("Image file folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
+    s2p_logger->trace("Image file folder is '" + GetImageFolder() + "'");
 
     try {
         CreateDevices();
@@ -293,7 +294,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     LogProperties();
 
     if (const string image_folder = property_handler.ConsumeProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(image_folder); !error.empty()) {
+        if (const string &error = SetImageFolder(image_folder); !error.empty()) {
             throw ParserException(error);
         }
         else {
@@ -306,7 +307,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
             throw ParserException("Invalid image file scan depth: " + scan_depth);
         }
         else {
-            CommandImageSupport::GetInstance().SetDepth(depth);
+            SetDepth(depth);
         }
     }
 

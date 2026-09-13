@@ -7,31 +7,71 @@
 //---------------------------------------------------------------------------
 
 #include "command_image_support.h"
+#include <filesystem>
 #include <fstream>
 #include <unistd.h>
 #include "command_context.h"
 #include "devices/storage_device.h"
 #include "protobuf/s2p_interface_util.h"
 
+using namespace filesystem;
 using namespace s2p_interface_util;
 using namespace s2p_util;
 
-CommandImageSupport::CommandImageSupport()
+namespace command_image_support
 {
-    image_folder = GetAppDir() + "/images";
-}
 
-bool CommandImageSupport::CheckDepth(string_view filename) const
+namespace
+{
+
+int depth = 1; // NOSONAR Intentionally encapsulated module state
+string image_folder = GetAppDir() + "/images"; // NOSONAR Intentionally encapsulated module state
+
+bool CheckDepth(string_view filename)
 {
     return ranges::count(filename, '/') <= depth;
 }
 
-string CommandImageSupport::GetFullName(const string &filename) const
+string GetFullName(const string &filename)
 {
     return image_folder + "/" + filename;
 }
 
-bool CommandImageSupport::CreateImageFolder(const CommandContext &context, string_view filename)
+bool IsReservedFile([[maybe_unused]] const CommandContext &context, [[maybe_unused]] const string &file,
+    [[maybe_unused]]const string &op)
+{
+#ifdef BUILD_STORAGE_DEVICE
+    const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
+    if (id != -1) {
+        return context.ReturnErrorStatus(
+            fmt::format("Can't {} image file '{}', it is currently being used by device {}:{}", op, file, id, lun));
+    }
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
+{
+#if __has_include(<pwd.h>)
+    const auto [uid, gid] = GetUidAndGid();
+    if (gid == -1 || chown(filename.c_str(), uid, gid)) {
+        return context.ReturnErrorStatus(
+            "Can't change ownership of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
+    }
+#endif
+
+    permissions(filename,
+        read_only ?
+            perms::owner_read | perms::group_read | perms::others_read :
+            perms::owner_read | perms::group_read | perms::others_read | perms::owner_write | perms::group_write);
+
+    return true;
+}
+
+bool CreateImageFolder(const CommandContext &context, string_view filename)
 {
     error_code error;
 
@@ -54,7 +94,77 @@ bool CommandImageSupport::CreateImageFolder(const CommandContext &context, strin
     return true;
 }
 
-string CommandImageSupport::SetImageFolder(string_view f)
+bool IsValidSrcFilename(string_view filename)
+{
+    // Source file must be a regular file or a symlink pointing to a regular file
+    error_code error;
+    const auto s = status(canonical(path(filename), error));
+    return !error && s.type() == file_type::regular;
+}
+
+bool IsValidDstFilename(string_view filename)
+{
+    // Destination file must not yet exist
+    error_code error;
+    return !exists(path(filename), error);
+}
+
+bool ValidateParams(const CommandContext &context, const string &op, string &from, string &to)
+{
+    from = GetParam(context.GetCommand(), "from");
+    if (from.empty()) {
+        return context.ReturnErrorStatus("Can't " + op + " image file: Missing source filename");
+    }
+
+    if (!CheckDepth(from)) {
+        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + from + "'");
+    }
+
+    to = GetParam(context.GetCommand(), "to");
+    if (to.empty()) {
+        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Missing destination filename");
+    }
+
+    if (!CheckDepth(to)) {
+        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + to + "'");
+    }
+
+    from = GetFullName(from);
+    if (!IsValidSrcFilename(from)) {
+        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Invalid name or type");
+    }
+
+    to = GetFullName(to);
+    if (!IsValidDstFilename(to)) {
+        return context.ReturnErrorStatus(
+            "Can't " + op + " image file '" + from + "' to '" + to + "': File already exists");
+    }
+
+    if (!IsReservedFile(context, from, op)) {
+        return false;
+    }
+
+    return CreateImageFolder(context, to);
+}
+
+}
+
+void SetDepth(int d)
+{
+    depth = d;
+}
+
+int GetDepth()
+{
+    return depth;
+}
+
+const string& GetImageFolder()
+{
+    return image_folder;
+}
+
+string SetImageFolder(string_view f)
 {
     if (f.empty()) {
         return "Missing image folder name";
@@ -86,7 +196,7 @@ string CommandImageSupport::SetImageFolder(string_view f)
     return "";
 }
 
-bool CommandImageSupport::CreateImage(const CommandContext &context) const
+bool CreateImage(const CommandContext &context)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -159,7 +269,7 @@ bool CommandImageSupport::CreateImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::DeleteImage(const CommandContext &context) const
+bool DeleteImage(const CommandContext &context)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -202,7 +312,7 @@ bool CommandImageSupport::DeleteImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::RenameImage(const CommandContext &context) const
+bool RenameImage(const CommandContext &context)
 {
     string from;
     string to;
@@ -222,7 +332,7 @@ bool CommandImageSupport::RenameImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::CopyImage(const CommandContext &context) const
+bool CopyImage(const CommandContext &context)
 {
     string from;
     string to;
@@ -265,7 +375,7 @@ bool CommandImageSupport::CopyImage(const CommandContext &context) const
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::SetImagePermissions(const CommandContext &context) const
+bool SetImagePermissions(const CommandContext &context)
 {
     const string &filename = GetParam(context.GetCommand(), "file");
     if (filename.empty()) {
@@ -303,90 +413,4 @@ bool CommandImageSupport::SetImagePermissions(const CommandContext &context) con
     return context.ReturnSuccessStatus();
 }
 
-bool CommandImageSupport::IsReservedFile([[maybe_unused]] const CommandContext &context,
-    [[maybe_unused]] const string &file, [[maybe_unused]]const string &op)
-{
-#ifdef BUILD_STORAGE_DEVICE
-    const auto [id, lun] = StorageDevice::GetIdsForReservedFile(file);
-    if (id != -1) {
-        return context.ReturnErrorStatus(
-            fmt::format("Can't {} image file '{}', it is currently being used by device {}:{}", op, file, id, lun));
-    }
-
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool CommandImageSupport::ValidateParams(const CommandContext &context, const string &op, string &from,
-    string &to) const
-{
-    from = GetParam(context.GetCommand(), "from");
-    if (from.empty()) {
-        return context.ReturnErrorStatus("Can't " + op + " image file: Missing source filename");
-    }
-
-    if (!CheckDepth(from)) {
-        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + from + "'");
-    }
-
-    to = GetParam(context.GetCommand(), "to");
-    if (to.empty()) {
-        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Missing destination filename");
-    }
-
-    if (!CheckDepth(to)) {
-        return context.ReturnErrorStatus("Invalid folder hierarchy depth '" + to + "'");
-    }
-
-    from = GetFullName(from);
-    if (!IsValidSrcFilename(from)) {
-        return context.ReturnErrorStatus("Can't " + op + " image file '" + from + "': Invalid name or type");
-    }
-
-    to = GetFullName(to);
-    if (!IsValidDstFilename(to)) {
-        return context.ReturnErrorStatus(
-            "Can't " + op + " image file '" + from + "' to '" + to + "': File already exists");
-    }
-
-    if (!IsReservedFile(context, from, op)) {
-        return false;
-    }
-
-    return CreateImageFolder(context, to);
-}
-
-bool CommandImageSupport::IsValidSrcFilename(string_view filename)
-{
-    // Source file must be a regular file or a symlink pointing to a regular file
-    error_code error;
-    const auto s = status(canonical(path(filename), error));
-    return !error && s.type() == file_type::regular;
-}
-
-bool CommandImageSupport::IsValidDstFilename(string_view filename)
-{
-    // Destination file must not yet exist
-    error_code error;
-    return !exists(path(filename), error);
-}
-
-bool CommandImageSupport::ChangeOwner(const CommandContext &context, const path &filename, bool read_only)
-{
-#if __has_include(<pwd.h>)
-    const auto [uid, gid] = GetUidAndGid();
-    if (gid == -1 || chown(filename.c_str(), uid, gid)) {
-        return context.ReturnErrorStatus(
-            "Can't change ownership of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
-    }
-#endif
-
-    permissions(filename,
-        read_only ?
-            perms::owner_read | perms::group_read | perms::others_read :
-            perms::owner_read | perms::group_read | perms::others_read | perms::owner_write | perms::group_write);
-
-    return true;
 }

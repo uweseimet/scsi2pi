@@ -19,6 +19,7 @@
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace command_image_support;
 using namespace s2p_interface_util;
 using namespace s2p_util;
 
@@ -422,8 +423,8 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
         }
         string filename = storage_device->GetFilename();
         if (!filename.empty()) {
-            if (filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder())) {
-                filename = filename.substr(CommandImageSupport::GetInstance().GetImageFolder().length() + 1);
+            if (filename.starts_with(GetImageFolder())) {
+                filename = filename.substr(GetImageFolder().length() + 1);
             }
             PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
             return;
@@ -495,11 +496,11 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
     if (!filename.starts_with('/')) {
         // If the path is not absolute, assume the file is in the image folder
-        filename = CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename;
+        filename = GetImageFolder() + "/" + filename;
     }
 
-    if (!filename.starts_with(CommandImageSupport::GetInstance().GetImageFolder()) && !filename.starts_with("/home/")
-        && !filename.starts_with("/dev/s") && !filename.starts_with(temp_directory_path().string())) { // NOSONAR Using temp_directory_path() here is safe
+    if (!filename.starts_with(GetImageFolder()) && !filename.starts_with("/home/") && !filename.starts_with("/dev/s")
+        && !filename.starts_with(temp_directory_path().string())) { // NOSONAR Using temp_directory_path() here is safe
         return context.ReturnLocalizedError(LocalizationKey::ERROR_FILE_OPEN, f);
     }
 

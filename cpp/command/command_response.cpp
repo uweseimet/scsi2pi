@@ -18,6 +18,7 @@
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 
+using namespace command_image_support;
 using namespace network_util;
 using namespace s2p_util;
 using namespace s2p_interface_util;
@@ -137,7 +138,7 @@ void GetDevice(const PrimaryDevice &device, PbDevice &pb_device)
 
 string GetRelativeFolder(const directory_entry &entry)
 {
-    const string default_folder = CommandImageSupport::GetInstance().GetImageFolder();
+    const string default_folder = GetImageFolder();
 
     const string parent = entry.path().parent_path().string();
     return parent.size() > default_folder.size() ? parent.substr(default_folder.size() + 1) : "";
@@ -155,7 +156,7 @@ void AddImageFile(PbImageFilesInfo &image_files_info, const string &folder, cons
 void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder_pattern, const string &file_pattern,
     logger &logger)
 {
-    const string &default_folder = CommandImageSupport::GetInstance().GetImageFolder();
+    const string &default_folder = GetImageFolder();
 
     const path default_path(default_folder);
     if (error_code error; !is_directory(default_path, error) || error) {
@@ -170,7 +171,7 @@ void GetAvailableImages(PbImageFilesInfo &image_files_info, const string &folder
     const auto end = recursive_directory_iterator();
 
     while (it != end) {
-        if (it.depth() > CommandImageSupport::GetInstance().GetDepth()) {
+        if (it.depth() > GetDepth()) {
             it.disable_recursion_pending();
         }
         else if (const string folder = GetRelativeFolder(*it); FilterMatches(folder, folder_pattern_lower)
@@ -277,7 +278,7 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
         image_file.set_type(DeviceFactory::GetInstance().GetTypeForFile(filename));
 
         const path p(
-            filename[0] == '/' ? filename : CommandImageSupport::GetInstance().GetImageFolder() + "/" + filename);
+            filename[0] == '/' ? filename : GetImageFolder() + "/" + filename);
 
         image_file.set_read_only(IsReadOnlyFile(p));
 
@@ -296,8 +297,8 @@ bool command_response::GetImageFile(PbImageFile &image_file, const string &filen
 void command_response::GetImageFilesInfo(PbImageFilesInfo &image_files_info, const string &folder_pattern,
     const string &file_pattern, logger &logger)
 {
-    image_files_info.set_default_image_folder(CommandImageSupport::GetInstance().GetImageFolder());
-    image_files_info.set_depth(CommandImageSupport::GetInstance().GetDepth());
+    image_files_info.set_default_image_folder(GetImageFolder());
+    image_files_info.set_depth(GetDepth());
 
     GetAvailableImages(image_files_info, folder_pattern, file_pattern, logger);
 }
@@ -484,7 +485,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     CreateOperation(operation_info, UNPROTECT, "Unprotect medium, device-specific parameters are required");
 
     operation = &CreateOperation(operation_info, SERVER_INFO, "Get server information");
-    if (CommandImageSupport::GetInstance().GetDepth()) {
+    if (GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
@@ -496,7 +497,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     CreateOperation(operation_info, DEVICE_TYPES_INFO, "Get device properties by device type");
 
     operation = &CreateOperation(operation_info, DEFAULT_IMAGE_FILES_INFO, "Get information on available image files");
-    if (CommandImageSupport::GetInstance().GetDepth()) {
+    if (GetDepth()) {
         AddOperationParameter(*operation, "folder_pattern", "Pattern for filtering image folder names");
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
