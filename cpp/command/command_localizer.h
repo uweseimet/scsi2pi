@@ -99,8 +99,8 @@ private:
     static constexpr Language ToLanguage(string_view locale)
     {
         if (locale.size() >= 2) {
-            const char c0 = static_cast<char>(tolower(static_cast<unsigned char>(locale[0])));
-            const char c1 = static_cast<char>(tolower(static_cast<unsigned char>(locale[1])));
+            const auto c0 = static_cast<char>(tolower(static_cast<unsigned char>(locale[0])));
+            const auto c1 = static_cast<char>(tolower(static_cast<unsigned char>(locale[1])));
 
             if (c0 == 'd' && c1 == 'e') {
                 return Language::DE;

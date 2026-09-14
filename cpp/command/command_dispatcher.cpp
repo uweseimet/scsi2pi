@@ -64,12 +64,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
-        GetDeviceTypesInfo(*result.mutable_device_types_info(), without_types);
+        GetDeviceTypesInfo(*result.mutable_device_types_info(), excluded_types);
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
         GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
-            executor.GetReservedIds(), without_types, s2p_logger);
+            executor.GetReservedIds(), excluded_types, s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -207,24 +207,30 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
     switch (mode) {
     case ShutdownMode::STOP_S2P:
         s2p_logger.info("s2p shutdown requested");
-        return true;
+        break;
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        system("shutdown now");
-        s2p_logger.error("Shutdown failed or is not supported on this platform");
-        return false;
+        if (system("shutdown now")) {
+            s2p_logger.error("Shutdown failed or is not supported on this platform");
+            return false;
+        }
+        break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        system("shutdown -r now");
-        s2p_logger.error("Restart failed or is not supported on this platform");
-        return false;
+        if (system("shutdown -r now")) {
+            s2p_logger.error("Restart failed or is not supported on this platform");
+            return false;
+        }
+        break;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
         return false;
     }
+
+    return true;
 }
 
 bool CommandDispatcher::SetLogLevel(string_view log_level)
@@ -267,17 +273,4 @@ bool CommandDispatcher::SetLogLevel(string_view log_level)
     }
 
     return true;
-}
-
-bool CommandDispatcher::SetWithoutTypes(const string &types)
-{
-    return ranges::all_of(Split(types, ','), [this](const auto &t) {
-        if (const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
-            without_types.emplace(type);
-            return true;
-        }
-
-        return false;
-    }
-    );
 }

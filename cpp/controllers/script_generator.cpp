@@ -9,16 +9,21 @@
 #include "script_generator.h"
 #include <cassert>
 #include <iomanip>
+#include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
 
-bool ScriptGenerator::CreateFile(const string &filename)
+string ScriptGenerator::CreateFile(const string &filename)
 {
     file.open(filename);
+    if (!file.good()) {
+        return fmt::format("Can't create script file '{}': {}", filename,
+            system_error(errno, generic_category()).what());
+    }
 
-    return file.good();
+    return "";
 }
 
 bool ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)

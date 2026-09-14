@@ -28,12 +28,12 @@ string S2pServer::Init(int port)
 #if __has_include(<sys/socket.h>)
     server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == -1) {
-        return "Can't create server socket: "s + system_error(errno, generic_category()).what();
+        return fmt::format("Can't create server socket: {}", system_error(errno, generic_category()).what());
     }
 
     if (const int enable = 1; setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         CleanUp();
-        return "Can't reuse socket: "s + system_error(errno, generic_category()).what();
+        return fmt::format("Can't reuse socket: {}", system_error(errno, generic_category()).what());
     }
 
     sockaddr_in server = { };

@@ -36,7 +36,8 @@ private:
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);
-    string MapExtensions() const;
+    void SetExcludedTypes() const;
+    void MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);

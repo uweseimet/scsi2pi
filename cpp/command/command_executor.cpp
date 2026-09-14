@@ -594,19 +594,16 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context) const
 
     // Collect LUN bit vectors of new devices
     for (const auto &device : context.GetCommand().devices()) {
-        luns[device.id()] |= 1 << device.unit();
+        luns[device.id()] |= 1U << device.unit();
     }
 
     // Collect LUN bit vectors of existing devices
     for (const auto &device : controller_factory.GetAllDevices()) {
-        luns[device->GetId()] |= 1 << device->GetLun();
+        luns[device->GetId()] |= 1U << device->GetLun();
     }
 
     const auto &it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
-    return
-        it == luns.end() ?
-                       true :
-                       context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, (*it).first);
+    return it == luns.end() ? true : context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_LUN0, (*it).first);
 }
 
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,

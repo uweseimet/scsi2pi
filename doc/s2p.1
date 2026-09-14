@@ -10,6 +10,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--connect-type/-C\fR \fICONNECT_TYPE\fR]
 [\fB\--help/-h\fR]
 [\fB\--enable-irqs/-e\fR]
+[\fB\--excluded-types/-x\fR \fITYPES\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
@@ -27,7 +28,6 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
-[\fB\--without-types/-w\fR \fITYPES\fR]
 [\fB\--zulu-scsi-mode/-Z\fR]
 .SH DESCRIPTION
 .B s2p
@@ -81,6 +81,9 @@ CONNECT_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
 .TP
 .BR --enable-irqs/-e\fI " " \fI
 Do not disable IRQs during transfers. For testing purposes only.
+.TP
+.BR --excluded-types/-x\fI " " \fITYPES
+Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the old PiSCSI web UI. DEVICE_TYPES is usually SCSG, because PiSCSI does not support the SCSI-to-USB bridge.
 .TP
 .BR --help/-h\fI " " \fI
 Display this help.
@@ -139,9 +142,6 @@ The optional case-insensitive device type (SAHD, SCCD, SCDP, SCHD, SCHS, SCLP, S
 .TP
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
-.TP
-.BR --without-types/-w\fI " " \fITYPES
-Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the PiSCSI web UI. DEVICE_TYPES is usually SCSG.
 .TP
 .BR --zulu-scsi-mode/-Z\fI " " \fI
 The same as the BlueSCSI compatibility mode, because both modes are compatible.

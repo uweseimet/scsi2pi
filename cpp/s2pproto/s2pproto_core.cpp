@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
+#include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
@@ -169,12 +170,12 @@ bool S2pProto::ParseArguments(span<char*> args)
     }
 
     if (!SetLogLevel(*default_logger(), log_level)) {
-        throw ParserException("Invalid log level: '" + log_level + "'");
+        throw ParserException(fmt::format("Invalid log level: '{}'", log_level));
     }
 
     initiator_id = ParseAsUnsignedInt(initiator);
     if (initiator_id < 0 || initiator_id > 7) {
-        throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
+        throw ParserException(fmt::format("Invalid initiator ID: '{}'", initiator));
     }
 
     if (const string &error = ParseIdAndLun(target, target_id, target_lun); !error.empty()) {

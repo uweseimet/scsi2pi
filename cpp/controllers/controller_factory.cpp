@@ -58,16 +58,16 @@ bool ControllerFactory::DeleteAllControllers()
     return true;
 }
 
-bool ControllerFactory::SetScriptFile(const string &filename)
+string ControllerFactory::SetScriptFile(const string &filename)
 {
     auto generator = make_shared<ScriptGenerator>();
-    if (!generator->CreateFile(filename)) {
-        return false;
+    if (const string error = generator->CreateFile(filename); !error.empty()) {
+        return error;
     }
 
     script_generator = generator;
 
-    return true;
+    return "";
 }
 
 ShutdownMode ControllerFactory::ProcessOnController(uint8_t ids) const

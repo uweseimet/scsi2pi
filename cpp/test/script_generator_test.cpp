@@ -16,10 +16,10 @@ TEST(ScriptGeneratorTest, Add)
 {
     ScriptGenerator generator;
 
-    EXPECT_FALSE(generator.CreateFile(""));
+    EXPECT_FALSE(generator.CreateFile("").empty());
 
     const string &filename = CreateTempFile().string();
-    EXPECT_TRUE(generator.CreateFile(filename));
+    EXPECT_TRUE(generator.CreateFile(filename).empty());
 
     auto cdb = CreateCdb(ScsiCommand::TEST_UNIT_READY, "01:02:03:04:05");
     EXPECT_TRUE(generator.AddCdb(1, 2, cdb));

@@ -33,7 +33,7 @@ public:
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    bool SetScriptFile(const string&);
+    string SetScriptFile(const string&);
 
     bool SetFormatLimit(int limit)
     {

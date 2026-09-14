@@ -37,7 +37,7 @@ string GetFullName(const string &filename)
     return image_folder + "/" + filename;
 }
 
-bool IsReservedFile([[maybe_unused]] const CommandContext &context, [[maybe_unused]] const string &file,
+bool CheckForReservedFile([[maybe_unused]] const CommandContext &context, [[maybe_unused]] const string &file,
     [[maybe_unused]]const string &op)
 {
 #ifdef BUILD_STORAGE_DEVICE
@@ -49,7 +49,7 @@ bool IsReservedFile([[maybe_unused]] const CommandContext &context, [[maybe_unus
 
     return true;
 #else
-    return false;
+    return true;
 #endif
 }
 
@@ -140,7 +140,7 @@ bool ValidateParams(const CommandContext &context, const string &op, string &fro
             "Can't " + op + " image file '" + from + "' to '" + to + "': File already exists");
     }
 
-    if (!IsReservedFile(context, from, op)) {
+    if (!CheckForReservedFile(context, from, op)) {
         return false;
     }
 
@@ -285,7 +285,7 @@ bool DeleteImage(const CommandContext &context)
         return context.ReturnErrorStatus("Image file '" + full_filename.string() + "' does not exist");
     }
 
-    if (!IsReservedFile(context, full_filename.string(), "delete")) {
+    if (!CheckForReservedFile(context, full_filename.string(), "delete")) {
         return false;
     }
 
@@ -393,7 +393,7 @@ bool SetImagePermissions(const CommandContext &context)
 
     const bool protect = context.GetCommand().operation() == PROTECT_IMAGE;
 
-    if (protect && !IsReservedFile(context, full_filename, "protect")) {
+    if (protect && !CheckForReservedFile(context, full_filename, "protect")) {
         return false;
     }
 

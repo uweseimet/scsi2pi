@@ -113,7 +113,7 @@ void Tape::ValidateFile()
 
     file.open(GetFilename(), ios::in | ios::out | ios::binary);
     if (file.fail()) {
-        throw IoException("Can't open image file '" + GetFilename() + "'");
+        throw IoException(fmt::format("Can't open image file '{}'", GetFilename()));
     }
 
     tar_file = GetExtensionLowerCase(GetFilename()) == "tar";

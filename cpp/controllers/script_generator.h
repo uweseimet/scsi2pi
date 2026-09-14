@@ -17,7 +17,7 @@ class ScriptGenerator final
 
 public:
 
-    bool CreateFile(const string&);
+    string CreateFile(const string&);
 
     bool AddCdb(int, int, cdb_t);
     bool AddData(span<const uint8_t>);
