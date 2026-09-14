@@ -15,36 +15,33 @@
 #if __has_include(<sys/ioctl.h>)
 #include <sys/ioctl.h>
 #endif
-#include <spdlog/spdlog.h>
 #include "command_meta_data.h"
 #include "memory_util.h"
 #include "s2p_exceptions.h"
 
-using namespace spdlog;
 using namespace memory_util;
 
 int sg_util::OpenDevice(const string &device)
 {
     if (!device.starts_with("/dev/sg")) {
-        throw IoException(fmt::format("Missing or invalid device file: '{}', device file must be '/dev/sg*'", device));
+        throw IoException("Missing or invalid device file: '{}', device file must be '/dev/sg*'", device);
     }
 
 #if __has_include(<scsi/sg.h>)
     const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1) {
-        throw IoException(fmt::format("Can't open '{}': {}", device, system_error(errno, generic_category()).what()));
+        throw IoException("Can't open '{}': {}", device, system_error(errno, generic_category()).what());
     }
 
     if (int v; ioctl(fd, SG_GET_VERSION_NUM, &v) < 0 || v < 30000) {
         close (fd);
-        throw IoException(
-            fmt::format("'{}' is not supported by the Linux SG driver: {}", device,
-                system_error(errno, generic_category()).what()));
+        throw IoException("'{}' is not supported by the Linux SG driver: {}", device,
+            system_error(errno, generic_category()).what());
     }
 
     return fd;
 #else
-    throw IoException(fmt::format("Can't open '{}'", device);
+    throw IoException("Can't open '{}'", device);
 #endif
 }
 

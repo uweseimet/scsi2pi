@@ -9,9 +9,11 @@
 #include "abstract_controller.h"
 #include <bit>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "devices/primary_device.h"
 #include "buses/bus.h"
+#include "devices/primary_device.h"
+#include "shared/logger_util.h"
 
+using namespace logger_util;
 using namespace s2p_util;
 
 AbstractController::AbstractController(int id, const S2pFormatter &f) : target_id(id), formatter(f)
@@ -117,7 +119,7 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
 {
     if (const int ids_without_target = ids - (1 << target_id); ids_without_target) {
         initiator_id = countr_zero(static_cast<unsigned int>(ids_without_target));
-        LogTrace(fmt::format("++++ Starting processing for initiator ID {}", initiator_id));
+        LogTrace("++++ Starting processing for initiator ID {}", initiator_id);
     }
     else {
         initiator_id = UNKNOWN_INITIATOR_ID;

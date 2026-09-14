@@ -98,11 +98,11 @@ void Printer::Print()
 {
     const uint32_t length = GetCdbInt24(2);
 
-    LogTrace(fmt::format("Expecting to receive {} byte(s) for printing", length));
+    LogTrace("Expecting to receive {} byte(s) for printing", length);
 
     if (length > GetController()->GetBuffer().size()) {
-        LogError(fmt::format("Transfer buffer overflow: Buffer size is {} bytes, {} byte(s) expected",
-            GetController()->GetBuffer().size(), length));
+        LogError("Transfer buffer overflow: Buffer size is {} bytes, {} byte(s) expected",
+            GetController()->GetBuffer().size(), length);
 
         ++print_error_count;
 
@@ -135,11 +135,11 @@ void Printer::SynchronizeBuffer()
     assert(file_position != string::npos);
     cmd.replace(file_position, 2, filename);
 
-    LogTrace(fmt::format("Printing file '{}' with {} byte(s) using print command '{}'", filename,
-        file_size(path(filename), error), cmd));
+    LogTrace("Printing file '{}' with {} byte(s) using print command '{}'", filename, file_size(path(filename), error),
+        cmd);
 
     if (system(fmt::format("runuser -u lp -g lp -- {}", cmd).c_str())) {
-        LogError(fmt::format("Printing file '{}' failed, the Pi's printing system might not be configured", filename));
+        LogError("Printing file '{}' failed, the Pi's printing system might not be configured", filename);
 
         ++print_error_count;
 
@@ -172,9 +172,8 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError(
-                fmt::format("Can't create printer output file for pattern '{}': {}", filename,
-                    system_error(errno, generic_category()).what()));
+            LogError("Can't create printer output file for pattern '{}': {}", filename,
+                system_error(errno, generic_category()).what());
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
         }
@@ -186,7 +185,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         CheckForFileError();
     }
 
-    LogTrace(fmt::format("Appending {} byte(s) to printer output file '{}'", length, filename));
+    LogTrace("Appending {} byte(s) to printer output file '{}'", length, filename);
 
     out.write(to_const_char_ptr(buf), length);
     CheckForFileError();

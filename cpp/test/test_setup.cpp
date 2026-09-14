@@ -8,7 +8,6 @@
 
 #include <fcntl.h>
 #include <gtest/gtest.h>
-#include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "test_shared.h"
 

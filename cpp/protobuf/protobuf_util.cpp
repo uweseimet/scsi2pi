@@ -63,9 +63,8 @@ bool protobuf_util::ReadBytes(int fd, span<byte> buf)
                 continue;
             }
 
-            throw IoException(
-                fmt::format("Can't read {} message bytes: {}", buf.size(),
-                    system_error(errno, generic_category()).what()));
+            throw IoException("Can't read {} message bytes: {}", buf.size(),
+                system_error(errno, generic_category()).what());
         }
 
         if (!len) {
@@ -88,9 +87,8 @@ void protobuf_util::WriteBytes(int fd, span<const uint8_t> buf)
                 continue;
             }
 
-            throw IoException(
-                fmt::format("Can't write {} message bytes: {}", buf.size(),
-                    system_error(errno, generic_category()).what()));
+            throw IoException("Can't write {} message bytes: {}", buf.size(),
+                system_error(errno, generic_category()).what());
         }
 
         offset += len;

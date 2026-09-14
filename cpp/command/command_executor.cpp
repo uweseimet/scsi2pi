@@ -25,7 +25,7 @@ using namespace s2p_util;
 
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    const string &msg = PrintCommand(context.GetCommand(), pb_device);
+    const string msg = PrintCommand(context.GetCommand(), pb_device);
     if (dryRun) {
         s2p_logger.trace("Validating: " + msg);
     }
@@ -91,7 +91,7 @@ bool CommandExecutor::ProcessCmd(const CommandContext &context)
         return context.ReturnSuccessStatus();
 
     case RESERVE_IDS:
-        if (const string &error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
+        if (const string error = SetReservedIds(GetParam(command, "ids")); !error.empty()) {
             return context.ReturnErrorStatus(error);
         }
         else {
@@ -169,9 +169,9 @@ bool CommandExecutor::Eject(PrimaryDevice &device) const
 
     if (device.Eject(true)) {
         // Remove both potential properties, with and without LUN
-        PropertyHandler::GetInstance().RemoveProperties(
+        PropertyHandler::GetInstance().ConsumeProperties(
             fmt::format("{}{}:{}.params", PropertyHandler::DEVICE, device.GetId(), device.GetLun()));
-        PropertyHandler::GetInstance().RemoveProperties(
+        PropertyHandler::GetInstance().ConsumeProperties(
             fmt::format("{}{}.params", PropertyHandler::DEVICE, device.GetId()));
     }
     else {
@@ -251,7 +251,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 
 #ifdef BUILD_STORAGE_DEVICE
     if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
-        const string &filename = GetParam(pb_device, "file");
+        const string filename = GetParam(pb_device, "file");
 
         // If no filename was provided the medium is considered not inserted
         device->SetRemoved(filename.empty());
@@ -280,7 +280,7 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
         return true;
     }
 
-    if (const string &error = device->Init(); !error.empty()) {
+    if (const string error = device->Init(); !error.empty()) {
         s2p_logger.error(error);
         return context.ReturnLocalizedError(LocalizationKey::ERROR_INITIALIZATION,
             fmt::format("{} {}:{}", GetTypeString(*device), id, lun));
@@ -380,15 +380,15 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         // Remember device data before they become invalid on removal
         const int id = device.GetId();
         const int lun = device.GetLun();
-        const string &identifier = GetIdentifier(device) + ", " + device.GetIdentifier();
+        const string identifier = GetIdentifier(device) + ", " + device.GetIdentifier();
 
         if (!controller->RemoveDevice(device)) {
             return context.ReturnLocalizedError(LocalizationKey::ERROR_DETACH);
         }
 
         // Remove both potential identifiers
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}:{}.", PropertyHandler::DEVICE, id, lun));
-        PropertyHandler::GetInstance().RemoveProperties(fmt::format("{}{}.", PropertyHandler::DEVICE, id));
+        PropertyHandler::GetInstance().ConsumeProperties(fmt::format("{}{}:{}.", PropertyHandler::DEVICE, id, lun));
+        PropertyHandler::GetInstance().ConsumeProperties(fmt::format("{}{}.", PropertyHandler::DEVICE, id));
 
         // If no LUN is left also delete the controller
         if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
@@ -404,13 +404,13 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
 void CommandExecutor::DetachAll() const
 {
     if (controller_factory.DeleteAllControllers()) {
-        PropertyHandler::GetInstance().RemoveProperties(PropertyHandler::DEVICE);
+        PropertyHandler::GetInstance().ConsumeProperties(PropertyHandler::DEVICE);
     }
 }
 
 void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
 {
-    const string &identifier = fmt::format("{}{}:{}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
+    const string identifier = fmt::format("{}{}:{}.", PropertyHandler::DEVICE, device->GetId(), device->GetLun());
     PropertyHandler::GetInstance().AddProperty(identifier + "type", GetTypeString(*device));
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
@@ -609,7 +609,7 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context) const
 shared_ptr<PrimaryDevice> CommandExecutor::CreateDevice(const CommandContext &context,
     const PbDeviceDefinition &pb_device) const
 {
-    const string &filename = GetParam(pb_device, "file");
+    const string filename = GetParam(pb_device, "file");
 
     auto device = DeviceFactory::GetInstance().CreateDevice(pb_device.type(), pb_device.unit(), filename);
     if (!device) {
@@ -729,7 +729,7 @@ bool CommandExecutor::ValidateDevice(const CommandContext &context, const PbDevi
 bool CommandExecutor::SetProductData(const CommandContext &context, const PbDeviceDefinition &pb_device,
     PrimaryDevice &device)
 {
-    const string &error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() },
+    const string error = device.SetProductData( { pb_device.vendor(), pb_device.product(), pb_device.revision() },
         true);
     return error.empty() ? true : context.ReturnErrorStatus(error);
 }

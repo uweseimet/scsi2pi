@@ -211,12 +211,14 @@ PROTO_API := ../api/s2p_interface.proto
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
+	$(DIR_SHARED)/logger_util.cpp \
 	$(DIR_SHARED)/network_util.cpp \
 	$(DIR_SHARED)/property_handler.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
 	$(DIR_SHARED)/s2p_util.cpp \
 	$(DIR_SHARED)/s2p_version.cpp \
-	$(DIR_SHARED)/simh_util.cpp
+	$(DIR_SHARED)/simh_util.cpp \
+	$(DIR_SHARED)/user_util.cpp
 ifeq ($(ENABLE_SCSG),1)
 SRC_SHARED += $(DIR_SHARED)/sg_util.cpp
 ifdef IS_LINUX
@@ -367,6 +369,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_util_test.cpp \
 	test/linux_cache_test.cpp \
+	test/logger_util_test.cpp \
 	test/memory_util_test.cpp \
 	test/optical_memory_test.cpp \
 	test/page_handler_test.cpp \
@@ -389,9 +392,10 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/simh_util_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
+	test/user_util_test.cpp \
+	test/virtual_bus_test.cpp \
 	test/test_setup.cpp \
-	test/test_shared.cpp \
-	test/virtual_bus_test.cpp
+	test/test_shared.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
 	test/network_util_test.cpp \

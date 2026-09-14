@@ -13,13 +13,14 @@
 #include <iostream>
 #include <getopt.h>
 #include <unistd.h>
-#include <spdlog/spdlog.h>
 #include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
+#include "shared/logger_util.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace initiator_util;
+using namespace logger_util;
 using namespace s2p_util;
 
 void S2pExec::CleanUp() const
@@ -247,13 +248,13 @@ bool S2pExec::ParseArguments(span<char*> args)
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
         const string l = log_level;
         log_level.clear();
-        throw ParserException(fmt::format("Invalid log level: '{}'", l));
+        throw ParserException("Invalid log level: '{}'", l);
     }
 
     if (!initiator.empty()) {
         initiator_id = ParseAsUnsignedInt(initiator);
         if (initiator_id < 0 || initiator_id > 7) {
-            throw ParserException(fmt::format("Invalid initiator ID: '{}'", initiator));
+            throw ParserException("Invalid initiator ID: '{}'", initiator);
         }
     }
 
@@ -278,7 +279,7 @@ bool S2pExec::ParseArguments(span<char*> args)
         if (const int limit = ParseAsUnsignedInt(log_limit); !formatter.SetLimit(limit)
             || (executor && !executor->SetLimit(limit))) {
             log_limit.clear();
-            throw ParserException(fmt::format("Invalid log limit: '{}'", log_limit));
+            throw ParserException("Invalid log limit: '{}'", log_limit);
         }
 
         log_limit.clear();
@@ -298,7 +299,7 @@ bool S2pExec::ParseArguments(span<char*> args)
 
     if (!tout.empty()) {
         if (const int t = ParseAsUnsignedInt(tout); t <= 0) {
-            throw ParserException(fmt::format("Invalid command timeout value: '{}'", tout));
+            throw ParserException("Invalid command timeout value: '{}'", tout);
         }
         else {
             timeout = t;
@@ -328,7 +329,7 @@ bool S2pExec::ParseArguments(span<char*> args)
     if (!buf.empty()) {
         buffer_size = ParseAsUnsignedInt(buf);
         if (buffer_size <= 0) {
-            throw ParserException(fmt::format("Invalid receive buffer size: '{}'", buf));
+            throw ParserException("Invalid receive buffer size: '{}'", buf);
         }
     }
     buffer.resize(buffer_size);

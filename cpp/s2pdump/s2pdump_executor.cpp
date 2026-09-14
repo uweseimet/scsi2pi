@@ -194,7 +194,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
         SetInt24(cdb, 2, length);
 
         if (Write(cdb, buf, length)) {
-            throw IoException(fmt::format("Can't write block with {} byte(s)", length));
+            throw IoException("Can't write block with {} byte(s)", length);
         }
 
         return length;
@@ -221,7 +221,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
             return status;
         }
         else if (status && status != 0x02) {
-            throw IoException(fmt::format("Unknown error status {}", status));
+            throw IoException("Unknown error status {}", status);
         }
 
         const SenseKey sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[2]) & 0x0f);

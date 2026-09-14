@@ -9,11 +9,9 @@
 #include "property_handler.h"
 #include <filesystem>
 #include <fstream>
-#include <spdlog/spdlog.h>
 #include "s2p_exceptions.h"
 
 using namespace filesystem;
-using namespace spdlog;
 using namespace s2p_util;
 
 void PropertyHandler::Init(const string &filenames, const property_map &cmd_properties, bool ignore_conf)
@@ -50,7 +48,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         }
     }
 
-    RemoveProperties("mode_page.");
+    ConsumeProperties("mode_page.");
 }
 
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
@@ -58,7 +56,7 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     ifstream config_file(filename);
     if (!config_file && !default_file) {
         // Only report an error if an explicitly specified file is missing
-        throw ParserException(fmt::format("No configuration file '{}'", filename));
+        throw ParserException("No configuration file '{}'", filename);
     }
 
     string property;
@@ -69,7 +67,7 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
         if (!property.empty() && !property.starts_with("#")) {
             const auto kv = Split(property, '=', 2);
             if (kv.size() < 2) {
-                throw ParserException(fmt::format("Invalid property '{}' at line {}", property, line_no));
+                throw ParserException("Invalid property '{}' at line {}", property, line_no);
             }
 
             properties[kv[0]] = kv[1];
@@ -77,7 +75,7 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     }
 
     if (config_file.fail() && !config_file.eof()) {
-        throw ParserException(fmt::format("Error reading from configuration file '{}'", filename));
+        throw ParserException("Error reading from configuration file '{}'", filename);
     }
 }
 
@@ -118,7 +116,7 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
     unknown_properties[key] = value;
 }
 
-void PropertyHandler::RemoveProperties(string_view filter)
+void PropertyHandler::ConsumeProperties(string_view filter)
 {
     erase_if(unknown_properties, [filter](auto &kv) {return kv.first.starts_with(filter);});
 }

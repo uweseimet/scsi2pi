@@ -115,7 +115,7 @@ void Controller::Command()
         const int actual_count = bus.TargetCommandHandShake(buf);
         if (actual_count <= 0) {
             if (!actual_count) {
-                LogDebug(fmt::format("Received an unknown command: ${:02x}", buf[0]));
+                LogDebug("Received an unknown command: ${:02x}", buf[0]);
                 RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
@@ -139,12 +139,13 @@ void Controller::Command()
 
         // Check the log level in order to avoid an unnecessary time-consuming string construction
         if (GetLogger().should_log(level::debug)) {
-            LogDebug(CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller"));
+            LogDebug(fmt::runtime(
+                CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller")));
         }
 
         if (actual_count != command_bytes_count) {
-            LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
-                actual_count, GetCdb()[0], command_bytes_count));
+            LogWarn("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required", actual_count, GetCdb()[0],
+                command_bytes_count);
             bus.SetRST(true);
             bus.Reset();
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
@@ -337,7 +338,7 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
     }
 
     if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
-        LogDebug(FormatSenseData(sense_key, asc));
+        LogDebug(fmt::runtime(FormatSenseData(sense_key, asc)));
 
         // Set Sense Key and ASC in the device for a subsequent REQUEST SENSE
         GetDeviceForLun(lun)->SetStatus(sense_key, asc);
@@ -356,8 +357,8 @@ void Controller::Send()
     if (const auto length = GetCurrentLength(); length) {
         if (IsDataIn() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), length);
-            LogTrace(fmt::format("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
-                bytes.empty() ? "" : ":\n", bytes));
+            LogTrace("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
+                bytes.empty() ? "" : ":\n", bytes);
         }
 
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
@@ -365,7 +366,7 @@ void Controller::Send()
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
         if (const int l = bus.TargetSendHandShake(span(GetBuffer().data() + GetOffset(), length),
             GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
-            LogWarn(fmt::format("Sent {} byte(s), {} required", l, length));
+            LogWarn("Sent {} byte(s), {} required", l, length);
             bus.SetRST(true);
             bus.Reset();
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
@@ -424,12 +425,12 @@ void Controller::Receive()
 
     if (const auto curr_length = GetCurrentLength(); curr_length) {
         if (!IsMsgOut()) {
-            LogTrace(fmt::format("Receiving {} byte(s) at offset {}", curr_length, GetOffset()));
+            LogTrace("Receiving {} byte(s) at offset {}", curr_length, GetOffset());
         }
 
         if (const int l = bus.TargetReceiveHandShake(span(GetBuffer().data() + GetOffset(), curr_length)); l
             != curr_length) {
-            LogWarn(fmt::format("Received {} byte(s), {} required", l, curr_length));
+            LogWarn("Received {} byte(s), {} required", l, curr_length);
             bus.SetRST(true);
             bus.Reset();
             Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
@@ -438,8 +439,7 @@ void Controller::Receive()
 
         if (IsDataOut() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(GetBuffer(), curr_length);
-            LogTrace(fmt::format("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n",
-                bytes));
+            LogTrace("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n", bytes);
         }
 
         if (IsDataOut() && script_generator
@@ -547,7 +547,7 @@ void Controller::XferMsg()
 
         // Do not log IDENTIFY message twice
         if (msg < 0x80) {
-            LogTrace(fmt::format("Received message byte ${:02x}", msg));
+            LogTrace("Received message byte ${:02x}", msg);
         }
     }
 }
@@ -580,7 +580,7 @@ void Controller::ParseMessage()
         default:
             if (msg_byte >= 0x80) {
                 identified_lun = static_cast<int>(msg_byte) & 0x1f;
-                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
+                LogTrace("Received IDENTIFY message for LUN {}", identified_lun);
             }
             break;
         }
@@ -615,7 +615,7 @@ void Controller::RejectExtendedMessage()
             break;
 
         default:
-            LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_bytes[2]));
+            LogTrace("Rejecting extended message ${:02x}", msg_bytes[2]);
             break;
         }
     }

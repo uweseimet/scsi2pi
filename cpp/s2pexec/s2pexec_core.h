@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include "shared/s2p_formatter.h"
 #include "shared/runnable.h"
 #include "s2pexec_executor.h"

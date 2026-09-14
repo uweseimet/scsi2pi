@@ -13,17 +13,6 @@
 
 using namespace s2p_util;
 
-TEST(S2pUtilTest, GetAppDir)
-{
-    if (!GetEuid()) {
-        EXPECT_EQ(exists("/home/pi") ? "/home/pi" : "/var/lib/piscsi", GetAppDir());
-    }
-}
-
-TEST(S2pUtilTest, GetUidAndGid)
-{
-    EXPECT_EQ(GetEuid(), GetUidAndGid().first);
-}
 
 TEST(S2pUtilTest, IsReadyOnlyFile)
 {
@@ -264,13 +253,6 @@ TEST(S2pUtilTest, Trim)
     EXPECT_EQ("x", Trim("x "));
     EXPECT_EQ("x", Trim(" x "));
     EXPECT_EQ("x y", Trim("x y"));
-}
-
-TEST(S2pUtilTest, CreateLogger)
-{
-    const auto l = CreateLogger("test");
-    EXPECT_NE(nullptr, l);
-    EXPECT_EQ(l, CreateLogger("test"));
 }
 
 TEST(S2pUtilTest, GetCapacityFromFile)

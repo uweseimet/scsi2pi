@@ -13,10 +13,12 @@
 #include "command_context.h"
 #include "devices/storage_device.h"
 #include "protobuf/s2p_interface_util.h"
+#include "shared/user_util.h"
 
 using namespace filesystem;
 using namespace s2p_interface_util;
 using namespace s2p_util;
+using namespace user_util;
 
 namespace command_image_support
 {
@@ -177,7 +179,7 @@ string SetImageFolder(string_view f)
     }
 
     // The image folder location is restricted, so that s2p cannot modify data in system directories like "/usr"
-    if (!folder.string().starts_with(s2p_util::DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")
+    if (!folder.string().starts_with(DEFAULT_APP_FOLDER) && !folder.string().starts_with("/home/")
         && !folder.string().starts_with(temp_directory_path().string())) { // NOSONAR Publicly writable directory is safe here
         if (const auto app_root = path(GetAppDir()); folder.lexically_relative(app_root).string().starts_with(
             "..")) {

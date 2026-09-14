@@ -302,7 +302,7 @@ void Disk::ReadWriteLong()
             throw IoException("Can't initialize cache");
         }
         linux_cache = static_pointer_cast<LinuxCache>(cache);
-        LogDebug(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
+        LogDebug("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode));
     }
 
     CheckReady();
@@ -548,8 +548,7 @@ uint64_t Disk::ValidateBlockAddress()
         meta_data.block_size == 8 ? GetCdbInt64(meta_data.block_offset) : GetCdbInt32(meta_data.block_offset);
 
     if (sector >= GetBlockCount()) {
-        LogTrace(
-            fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}", GetBlockCount(), sector));
+        LogTrace("Capacity of {} sector(s) exceeded: Trying to access sector {}", GetBlockCount(), sector);
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
     }
 
@@ -602,15 +601,14 @@ pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount()
         }
     }
 
-    LogTrace(fmt::format("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count));
+    LogTrace("READ/WRITE/VERIFY/SEEK, start sector: {}, sector count: {}", start, count);
 
     // Accessing sector 0 without a data transfer is always allowed
     if (start || count) {
         // Check capacity
         if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
-            LogTrace(
-                fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
-                    start, count));
+            LogTrace("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity, start,
+                count);
             throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
         }
     }

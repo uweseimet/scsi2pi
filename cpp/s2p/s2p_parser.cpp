@@ -10,7 +10,6 @@
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
 #include "generated/s2p_interface.pb.h"
@@ -56,7 +55,7 @@ string ParseFilename(property_map &properties, const string &d, const string &fi
 
     string_view type_id_lun = components[0];
     if (type_id_lun.size() < 3) {
-        throw ParserException(fmt::format("Invalid BlueSCSI/ZuluSCSI filename format: '{}'", specifier));
+        throw ParserException("Invalid BlueSCSI/ZuluSCSI filename format: '{}'", specifier);
     }
 
     // An explicit ID/LUN on the command line overrides the BlueSCSI/ZuluSCSI ID/LUN
@@ -74,7 +73,7 @@ string ParseFilename(property_map &properties, const string &d, const string &fi
     string_view type = type_id_lun.substr(0, 2);
     const auto &t = BLUE_SCSI_TO_S2P_TYPES.find(type);
     if (t == BLUE_SCSI_TO_S2P_TYPES.end()) {
-        throw ParserException(fmt::format("Invalid BlueSCSI/ZuluSCSI device type: '{}'", type));
+        throw ParserException("Invalid BlueSCSI/ZuluSCSI device type: '{}'", type);
     }
     properties[device_key + PropertyHandler::TYPE] = PbDeviceType_Name(t->second);
 
@@ -278,7 +277,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
-                throw ParserException(fmt::format("Invalid property '{}'", optarg));
+                throw ParserException("Invalid property '{}'", optarg);
             }
             else {
                 properties[key_value[0]] = key_value[1];

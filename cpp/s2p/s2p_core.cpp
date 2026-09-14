@@ -25,11 +25,13 @@
 #include "devices/device_factory.h"
 #include "devices/host_services.h"
 #include "protobuf/s2p_interface_util.h"
+#include "shared/logger_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
 using namespace command_image_support;
+using namespace logger_util;
 using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
@@ -74,33 +76,33 @@ void S2p::CleanUp(const string &error)
 void S2p::ReadAccessToken(const path &filename)
 {
     if (error_code error; !is_regular_file(filename, error)) {
-        throw ParserException(fmt::format("Access token file '{}' must be a regular file", filename.string()));
+        throw ParserException("Access token file '{}' must be a regular file", filename.string());
     }
 
 #if __has_include(<pwd.h>)
     if (struct stat st; stat(filename.c_str(), &st) || st.st_uid || st.st_gid) {
-        throw ParserException(fmt::format("Access token file '{}' must be owned by root", filename.string()));
+        throw ParserException("Access token file '{}' must be owned by root", filename.string());
     }
 #endif
 
     if (const auto perms = filesystem::status(filename).permissions();
     (perms & perms::group_read) != perms::none || (perms & perms::others_read) != perms::none ||
         (perms & perms::group_write) != perms::none || (perms & perms::others_write) != perms::none) {
-        throw ParserException(fmt::format("Access token file '{}' must be readable by root only", filename.string()));
+        throw ParserException("Access token file '{}' must be readable by root only", filename.string());
     }
 
     ifstream token_file(filename);
     if (!token_file) {
-        throw ParserException(fmt::format("Can't open access token file '{}'", filename.string()));
+        throw ParserException("Can't open access token file '{}'", filename.string());
     }
 
     getline(token_file, access_token);
     if (token_file.fail()) {
-        throw ParserException(fmt::format("Can't read access token file '{}'", filename.string()));
+        throw ParserException("Can't read access token file '{}'", filename.string());
     }
 
     if (access_token.empty()) {
-        throw ParserException(fmt::format("Access token file '{}' must not be empty", filename.string()));
+        throw ParserException("Access token file '{}' must not be empty", filename.string());
     }
 }
 
@@ -298,7 +300,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
 
     if (const string scan_depth = property_handler.ConsumeProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
         if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
-            throw ParserException(fmt::format("Invalid image file scan depth: {}", scan_depth));
+            throw ParserException("Invalid image file scan depth: {}", scan_depth);
         }
         else {
             SetDepth(depth);
@@ -322,7 +324,7 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     const string p = property_handler.ConsumeProperty(PropertyHandler::PORT, "6868");
     const int port = ParseAsUnsignedInt(p);
     if (port <= 0 || port > 65535) {
-        throw ParserException(fmt::format("Invalid port: '{}', port must be between 1 and 65535", p));
+        throw ParserException("Invalid port: '{}', port must be between 1 and 65535", p);
     }
 
     return port;
@@ -337,7 +339,7 @@ void S2p::SetExcludedTypes() const
     for (const auto &t : components) {
         const auto type = ParseDeviceType(Trim(t));
         if (type == UNDEFINED) {
-            throw ParserException(fmt::format("Invalid excluded device types list: '{}'", excluded_types));
+            throw ParserException("Invalid excluded device types list: '{}'", excluded_types);
         }
 
         parsed_types.insert(type);
@@ -355,17 +357,17 @@ void S2p::MapExtensions() const
 
         const auto &components = Split(key, '.');
         if (components.size() != 2) {
-            throw ParserException(fmt::format("Invalid extension mapping: '{}'", key));
+            throw ParserException("Invalid extension mapping: '{}'", key);
         }
 
         PbDeviceType type = UNDEFINED;
         if (!PbDeviceType_Parse(ToUpper(components[1]), &type) || type == UNDEFINED) {
-            throw ParserException(fmt::format("Invalid device type in extension mapping: '{}'", components[1]));
+            throw ParserException("Invalid device type in extension mapping: '{}'", components[1]);
         }
 
         for (const string &extension : Split(value, ',')) {
             if (!DeviceFactory::GetInstance().AddExtensionMapping(extension, type)) {
-                throw ParserException(fmt::format("Duplicate mapping for extension '{}'", extension));
+                throw ParserException("Duplicate mapping for extension '{}'", extension);
             }
         }
     }
@@ -393,7 +395,7 @@ void S2p::CreateDevices()
         const auto& [key, value] : properties) {
         const auto &key_components = Split(key, '.', 3);
         if (key_components.size() < 3) {
-            throw ParserException(fmt::format("Invalid device definition '{}'", key));
+            throw ParserException("Invalid device definition '{}'", key);
         }
 
         const auto &id_and_lun = key_components[1];
@@ -455,7 +457,7 @@ bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
     if (const auto &it = properties.find(PropertyHandler::DEVICE + id_and_lun + ".active"); it != properties.end()) {
         const string &active = it->second;
         if (active != "true" && active != "false") {
-            throw ParserException(fmt::format("Invalid boolean: '{}'", active));
+            throw ParserException("Invalid boolean: '{}'", active);
         }
         return active == "true";
     }
@@ -473,7 +475,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     }
     else if (key == PropertyHandler::SCSI_LEVEL) {
         if (const int level = ParseAsUnsignedInt(value); level <= 0 || level >= static_cast<int>(ScsiLevel::LAST)) {
-            throw ParserException(fmt::format("Invalid SCSI level: '{}'", value));
+            throw ParserException("Invalid SCSI level: '{}'", value);
         }
         else {
             device.set_scsi_level(level);
@@ -481,7 +483,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
     }
     else if (key == PropertyHandler::BLOCK_SIZE) {
         if (const int block_size = ParseAsUnsignedInt(value); block_size < 0) {
-            throw ParserException(fmt::format("Invalid block size: '{}'", value));
+            throw ParserException("Invalid block size: '{}'", value);
         }
         else {
             device.set_block_size(block_size);

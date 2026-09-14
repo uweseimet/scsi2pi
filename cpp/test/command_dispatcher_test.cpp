@@ -12,9 +12,11 @@
 #include "command/command_executor.h"
 #include "controllers/controller_factory.h"
 #include "protobuf/s2p_interface_util.h"
+#include "shared/user_util.h"
 
 using namespace s2p_interface_util;
 using namespace s2p_util;
+using namespace user_util;
 
 TEST(CommandDispatcherTest, DispatchCommand)
 {

@@ -66,10 +66,10 @@ void StorageDevice::StartStopUnit()
     const bool load = GetCdbByte(4) & 0x02;
 
     if (load) {
-        LogTrace(start ? "Loading medium" : "Ejecting medium");
+        LogTrace(fmt::runtime(start ? "Loading medium" : "Ejecting medium"));
     }
     else {
-        LogTrace(start ? "Starting unit" : "Stopping unit");
+        LogTrace(fmt::runtime(start ? "Starting unit" : "Stopping unit"));
 
         SetStopped(!start);
     }
@@ -248,9 +248,8 @@ uint32_t StorageDevice::VerifyBlockSizeChange(uint32_t requested_size, bool temp
             return requested_size;
         }
         else {
-            LogWarn(fmt::format(
-                "Block size change from {} to {} bytes requested. Configure the block size in the s2p settings.",
-                GetBlockSize(), requested_size));
+            LogWarn("Block size change from {} to {} bytes requested. Configure the block size in the s2p settings.",
+                GetBlockSize(), requested_size);
         }
     }
 
@@ -268,7 +267,7 @@ void StorageDevice::ChangeBlockSize(uint32_t new_size)
         block_size = new_size;
         blocks = current_size * blocks / block_size;
 
-        LogTrace(fmt::format("Changed block size from {} to {} bytes", current_size, block_size));
+        LogTrace("Changed block size from {} to {} bytes", current_size, block_size);
     }
 }
 

@@ -17,7 +17,6 @@
 #include <unordered_map>
 #include <span>
 #include <vector>
-#include <spdlog/spdlog.h>
 #include "scsi.h"
 
 using namespace std;
@@ -56,9 +55,6 @@ inline string Join(const auto &collection, const string &separator = ", ")
 }
 
 string GetVersionString();
-string GetAppDir();
-int GetEuid();
-pair<int, int> GetUidAndGid();
 bool IsReadOnlyFile(const path&);
 vector<string> Split(const string&, char, int = numeric_limits<int>::max());
 string ToUpper(string_view);
@@ -99,8 +95,6 @@ string_view Trim(string_view);
 
 void Sleep(const timespec&);
 
-shared_ptr<spdlog::logger> CreateLogger(const string&);
-
 off_t GetCapacityFromFile(const string&);
 
 using SignalHandlerPtr = void(*)(int);
@@ -125,8 +119,6 @@ constexpr char* to_char_ptr(span<byte> bytes)
 {
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
-
-inline constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
 
 inline constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",

@@ -317,7 +317,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
     CommandContext context(cmd, GetLogger());
     context.SetLocale(s2p_interface_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
-        LogTrace("Failed to execute " + PbOperation_Name(cmd.operation()) + " operation");
+        LogTrace("Failed to execute {} operation", PbOperation_Name(cmd.operation()));
         throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
     }
 

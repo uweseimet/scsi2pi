@@ -64,8 +64,8 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[static_cast<size_t>(cmd)]; command) {
-        LogDebug(fmt::format("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
-                static_cast<size_t>(cmd)));
+        LogDebug("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
+            static_cast<size_t>(cmd));
         meta_data = &CommandMetaData::GetInstance().GetCdbMetaData(cmd);
         command();
     }
@@ -378,7 +378,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[13] = static_cast<byte>(eom);
     }
 
-    LogTrace(fmt::format("Status {}: {}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf)));
+    LogTrace("Status {}: {}", STATUS_MAPPING.at(controller->GetStatus()), FormatSenseData(buf));
 
     return buf;
 }
@@ -402,7 +402,7 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     }
 
     if (initiator_id != -1) {
-        LogTrace(fmt::format("Initiator ID {} tries to access reserved device", initiator_id));
+        LogTrace("Initiator ID {} tries to access reserved device", initiator_id);
     }
     else {
         LogTrace("Unknown initiator tries to access reserved device");

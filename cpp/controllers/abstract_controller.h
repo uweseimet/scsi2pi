@@ -45,7 +45,8 @@ public:
     void SetPhase(BusPhase p, string_view s)
     {
         phase = p;
-        LogTrace(s);
+
+        controller_logger->trace(s);
     }
 
     bool IsSelection() const
@@ -188,17 +189,22 @@ protected:
     void UpdateTransferLength(int);
     void UpdateOffsetAndLength();
 
-    void LogTrace(string_view s) const
+    template<typename ... Args>
+    void LogTrace(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        controller_logger->trace(s);
+        controller_logger->trace(fmt::format(fmt, std::forward<Args>(args)...));
     }
-    void LogDebug(string_view s) const
+
+    template<typename ... Args>
+    void LogDebug(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        controller_logger->debug(s);
+        controller_logger->debug(fmt::format(fmt, std::forward<Args>(args)...));
     }
-    void LogWarn(string_view s) const
+
+    template<typename ... Args>
+    void LogWarn(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        controller_logger->warn(s);
+        controller_logger->warn(fmt::format(fmt, std::forward<Args>(args)...));
     }
 
 private:

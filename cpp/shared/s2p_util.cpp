@@ -24,43 +24,11 @@
 #include <pwd.h>
 #endif
 #include <unistd.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include "memory_util.h"
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
 
-using namespace spdlog;
 using namespace memory_util;
-
-namespace
-{
-
-tuple<int, int, string> GetPwData()
-{
-#if __has_include(<pwd.h>)
-    const char *sudo_user = getenv("SUDO_UID");
-    const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
-
-    if (array<char, 256> pwbuf; uid != -1) {
-        passwd pwd = { };
-        passwd *p_pwd = nullptr;
-        if (!getpwuid_r(uid, &pwd, pwbuf.data(), pwbuf.size(), &p_pwd) && p_pwd != nullptr) {
-            if (error_code error; exists(s2p_util::DEFAULT_APP_FOLDER, error)) {
-                return {uid, pwd.pw_gid, s2p_util::DEFAULT_APP_FOLDER};
-            }
-            else {
-                // For backward compatibility
-                const string &dir = uid ? pwd.pw_dir : "/home/pi";
-                return {uid, pwd.pw_gid, exists(dir, error) ? dir : s2p_util::DEFAULT_APP_FOLDER};
-            }
-        }
-    }
-#endif
-
-    return {-1, -1 , s2p_util::DEFAULT_APP_FOLDER};
-}
-
-}
 
 string s2p_util::GetVersionString()
 {
@@ -68,26 +36,6 @@ string s2p_util::GetVersionString()
         return fmt::format("{}.{}.{}{}", s2p_major_version, s2p_minor_version, s2p_revision, s2p_suffix);
     }
     return fmt::format("{}.{}{}", s2p_major_version, s2p_minor_version, s2p_suffix);
-}
-
-string s2p_util::GetAppDir()
-{
-    return get<2>(GetPwData());
-}
-
-int s2p_util::GetEuid()
-{
-#if __has_include(<pwd.h>)
-    return geteuid();
-#else
-    return -1;
-#endif
-}
-
-pair<int, int> s2p_util::GetUidAndGid()
-{
-    const auto& [uid, gid, _] = GetPwData(); // NOSONAR '_' will be supported in C++-26
-    return {uid, gid};
 }
 
 bool s2p_util::IsReadOnlyFile(const path& filename)
@@ -368,12 +316,6 @@ void s2p_util::Sleep(const timespec &ns)
     nanosleep(&ns, nullptr);
 }
 
-shared_ptr<logger> s2p_util::CreateLogger(const string &name)
-{
-    auto l = spdlog::get(name);
-    return l ? l : stdout_color_st(name);
-}
-
 off_t s2p_util::GetCapacityFromFile(const string &filename)
 {
     string error_message;
@@ -409,7 +351,7 @@ off_t s2p_util::GetCapacityFromFile(const string &filename)
         error_message = error.message();
     }
 
-    throw IoException(fmt::format("Can't get file size of '{}': {}", f, error_message));
+    throw IoException("Can't get file size of '{}': {}", f, error_message);
 }
 
 void s2p_util::SetTerminationHandler([[maybe_unused]] SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer

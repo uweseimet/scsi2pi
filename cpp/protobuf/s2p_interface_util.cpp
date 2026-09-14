@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "s2p_interface_util.h"
-#include <spdlog/spdlog.h>
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
@@ -37,7 +36,7 @@ PbCachingMode s2p_interface_util::ParseCachingMode(const string &value)
         return mode;
     }
 
-    throw ParserException(fmt::format("Invalid caching mode '{}'", value));
+    throw ParserException("Invalid caching mode '{}'", value);
 }
 
 void s2p_interface_util::ParseParameters(PbDeviceDefinition &device, const string &params)

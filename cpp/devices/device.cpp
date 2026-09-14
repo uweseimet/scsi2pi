@@ -8,7 +8,9 @@
 
 #include "device.h"
 #include <stdexcept>
+#include "shared/logger_util.h"
 
+using namespace logger_util;
 using namespace s2p_util;
 
 Device::Device(PbDeviceType t, int l) : type(t), lun(l)

@@ -2,29 +2,24 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2026 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <cstdint>
-#include <limits>
-#include <span>
+#include <algorithm>
 #include <string>
 
 using namespace std;
 
-class S2pFormatter final
+namespace user_util
 {
 
-public:
+string GetAppDir();
+int GetEuid();
+pair<int, int> GetUidAndGid();
 
-    string FormatBytes(span<const uint8_t>, size_t, bool = false) const;
+inline constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
 
-    bool SetLimit(int);
-
-private:
-
-    int format_limit = numeric_limits<int>::max();
-};
+}

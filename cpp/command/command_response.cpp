@@ -17,11 +17,13 @@
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
+#include "shared/user_util.h"
 
 using namespace command_image_support;
 using namespace network_util;
 using namespace s2p_util;
 using namespace s2p_interface_util;
+using namespace user_util;
 
 namespace
 {
@@ -490,7 +492,7 @@ void command_response::GetOperationInfo(PbOperationInfo &operation_info)
     }
     AddOperationParameter(*operation, "file_pattern", "Pattern for filtering image file names");
 
-    CreateOperation(operation_info, VERSION_INFO, "Get device server version");
+    CreateOperation(operation_info, VERSION_INFO, "Get device emulation server version");
 
     CreateOperation(operation_info, DEVICES_INFO, "Get information on attached devices");
 

@@ -16,11 +16,13 @@
 #include "protobuf/s2p_interface_util.h"
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/user_util.h"
 
 using namespace command_image_support;
 using namespace command_response;
 using namespace s2p_interface_util;
 using namespace s2p_util;
+using namespace user_util;
 
 bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {

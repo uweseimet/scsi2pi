@@ -195,12 +195,13 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetController() && GetLogger().should_log(level::debug)) {
-        LogDebug(command_meta_data.LogCdb(local_cdb, "SG driver"));
+
+        LogDebug(fmt::runtime(command_meta_data.LogCdb(local_cdb, "SG driver")));
     }
 
     if (write && GetController() && GetLogger().should_log(level::trace)) {
-        LogTrace(fmt::format("Transferring {} byte(s) to SG driver{}", length,
-            length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : ""));
+        LogTrace("Transferring {} byte(s) to SG driver{}", length,
+            length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : "");
     }
 
     const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
@@ -212,8 +213,8 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     const int transferred_length = length - io_hdr.resid;
 
     if (!write && GetController() && GetLogger().should_log(level::trace)) {
-        LogTrace(fmt::format("Transferred {} byte(s) from SG driver{}", transferred_length,
-            transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : ""));
+        LogTrace("Transferred {} byte(s) from SG driver{}", transferred_length,
+            transferred_length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, transferred_length)) : "");
     }
 
     UpdateInternalBlockSize(buf, length);
@@ -235,7 +236,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     }
 
     if (GetController()) {
-        LogTrace(fmt::format("{} byte(s) transferred, {} byte(s) remaining", transferred_length, remaining_count));
+        LogTrace("{} byte(s) transferred, {} byte(s) remaining", transferred_length, remaining_count);
     }
 
     return transferred_length;
@@ -245,8 +246,7 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 {
     if (status == -1) {
         if (GetController()) {
-            LogError(fmt::format("Transfer of {} byte(s) failed: {}", buf.size(),
-                system_error(errno, generic_category()).what()));
+            LogError("Transfer of {} byte(s) failed: {}", buf.size(), system_error(errno, generic_category()).what());
         }
 
         throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);
@@ -282,7 +282,7 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
     }
 
     if (size && block_size != size) {
-        LogTrace(fmt::format("Updating internal block size to {} bytes", size));
+        LogTrace("Updating internal block size to {} bytes", size);
         block_size = size;
     }
 }

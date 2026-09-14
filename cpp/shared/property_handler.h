@@ -35,7 +35,7 @@ public:
     const property_map& GetUnknownProperties() const;
     string ConsumeProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
-    void RemoveProperties(string_view);
+    void ConsumeProperties(string_view);
 
     bool Persist() const;
 

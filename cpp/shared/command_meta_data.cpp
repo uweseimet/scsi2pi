@@ -10,8 +10,6 @@
 #include <cassert>
 #include <spdlog/spdlog.h>
 
-using namespace spdlog;
-
 CommandMetaData::CommandMetaData()
 {
     for (int i = 0x00; i < 0x1f; ++i) {

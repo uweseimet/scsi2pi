@@ -11,7 +11,6 @@
 #include <iostream>
 #include <fcntl.h>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include "initiator/initiator_util.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_util.h"

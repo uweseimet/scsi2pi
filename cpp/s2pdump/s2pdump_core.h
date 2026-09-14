@@ -21,7 +21,6 @@ class S2pDumpExecutor;
 class SgAdapter;
 
 using namespace chrono;
-using namespace spdlog;
 
 class S2pDump final : public Runnable
 {
@@ -85,7 +84,7 @@ private:
 
     string filename;
 
-    shared_ptr<logger> s2pdump_logger;
+    shared_ptr<spdlog::logger> s2pdump_logger;
     string log_level = "warning";
 
     int start = 0;

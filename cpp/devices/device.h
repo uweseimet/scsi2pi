@@ -166,21 +166,28 @@ protected:
 
     void CreateDeviceLogger();
 
-    void LogTrace(string_view s) const
+    template<typename ... Args>
+    void LogTrace(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        device_logger->trace(s);
+        device_logger->trace(fmt::format(fmt, std::forward<Args>(args)...));
     }
-    void LogDebug(string_view s) const
+
+    template<typename ... Args>
+    void LogDebug(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        device_logger->debug(s);
+        device_logger->debug(fmt::format(fmt, std::forward<Args>(args)...));
     }
-    void LogWarn(string_view s) const
+
+    template<typename ... Args>
+    void LogWarn(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        device_logger->warn(s);
+        device_logger->warn(fmt::format(fmt, std::forward<Args>(args)...));
     }
-    void LogError(string_view s) const
+
+    template<typename ... Args>
+    void LogError(fmt::format_string<Args...> fmt, Args &&... args) const
     {
-        device_logger->error(s);
+        device_logger->error(fmt::format(fmt, std::forward<Args>(args)...));
     }
 
 private:

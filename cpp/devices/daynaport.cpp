@@ -157,8 +157,8 @@ int DaynaPort::GetMessage(data_in_t buf)
         return DAYNAPORT_READ_HEADER_SZ;
     }
     else if (GetLogger().should_log(level::trace)) {
-        LogTrace(fmt::format("Received {} byte(s) of network data:\n{}", rx_packet_size,
-            GetController()->FormatBytes(buf, rx_packet_size)));
+        LogTrace("Received {} byte(s) of network data:\n{}", rx_packet_size,
+            GetController()->FormatBytes(buf, rx_packet_size));
     }
 
     byte_read_count += rx_packet_size;
@@ -212,12 +212,11 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
         byte_write_count += data_length;
     }
     else {
-        LogWarn(fmt::format("Unknown data format: ${:02x}", data_format));
+        LogWarn("Unknown data format: ${:02x}", data_format);
     }
 
     if (!buf.empty() && GetLogger().should_log(level::trace)) {
-        LogTrace(fmt::format("Sent {} byte(s) of network data:\n{}", data_length,
-            GetController()->FormatBytes(buf, data_length)));
+        LogTrace("Sent {} byte(s) of network data:\n{}", data_length, GetController()->FormatBytes(buf, data_length));
     }
 
     GetController()->SetTransferSize(0, 0);
@@ -255,8 +254,8 @@ void DaynaPort::RetrieveStats() const
         buf.data()[5] = mac[5];
     }
 
-    LogDebug(fmt::format("The DaynaPort MAC address is {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-        buf.data()[0], buf.data()[1], buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]));
+    LogDebug("The DaynaPort MAC address is {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", buf.data()[0], buf.data()[1],
+        buf.data()[2], buf.data()[3], buf.data()[4], buf.data()[5]);
 
     const int length = min(static_cast<int>(sizeof(SCSI_LINK_STATS)), GetCdbInt16(3));
     GetController()->SetTransferSize(length, length);
@@ -337,7 +336,7 @@ void DaynaPort::SetInterfaceMode() const
         break;
 
     default:
-        LogWarn(fmt::format("Unknown SetInterfaceMode mode: ${:02x}", GetCdbByte(5)));
+        LogWarn("Unknown SetInterfaceMode mode: ${:02x}", GetCdbByte(5));
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
         break;
     }
@@ -370,7 +369,7 @@ void DaynaPort::EnableInterface() const
 {
     if (GetCdbByte(5) & 0x80) {
         if (const string &error = tap.IpLink(true); !error.empty()) {
-            LogWarn("Can't enable the DaynaPort interface: " + error);
+            LogWarn("Can't enable the DaynaPort interface: {}", error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
@@ -380,7 +379,7 @@ void DaynaPort::EnableInterface() const
     }
     else {
         if (const string &error = tap.IpLink(false); !error.empty()) {
-            LogWarn("Can't disable the DaynaPort interface: " + error);
+            LogWarn("Can't disable the DaynaPort interface: {}", error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 

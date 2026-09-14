@@ -7,9 +7,11 @@
 //---------------------------------------------------------------------------
 
 #include "virtual_bus.h"
+#include "shared/logger_util.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;
+using namespace logger_util;
 using namespace s2p_util;
 
 VirtualBus::VirtualBus(const string &name, bool l) : virtual_bus_logger(CreateLogger(name)), log_signals(l)

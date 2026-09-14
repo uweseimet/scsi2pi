@@ -6,7 +6,6 @@
 //
 //---------------------------------------------------------------------------
 
-#include <spdlog/spdlog.h>
 #include "mocks.h"
 #include "devices/device_factory.h"
 #include "shared/s2p_exceptions.h"

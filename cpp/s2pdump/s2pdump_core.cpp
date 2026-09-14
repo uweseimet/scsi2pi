@@ -11,10 +11,10 @@
 #include <filesystem>
 #include <iostream>
 #include <getopt.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
+#include "shared/logger_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/simh_util.h"
 #include "board_executor.h"
@@ -24,6 +24,8 @@
 #endif
 
 using namespace filesystem;
+using namespace spdlog;
+using namespace logger_util;
 using namespace s2p_util;
 using namespace initiator_util;
 using namespace simh_util;
@@ -216,7 +218,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     }
 
     if (!SetLogLevel(*s2pdump_logger, log_level)) {
-        throw ParserException(fmt::format("Invalid log level '{}'", log_level));
+        throw ParserException("Invalid log level '{}'", log_level);
     }
 
     if (initiator.empty() && device_file.empty()) {
@@ -230,7 +232,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
     if (!initiator.empty()) {
         initiator_id = ParseAsUnsignedInt(initiator);
         if (initiator_id < 0 || initiator_id > 7) {
-            throw ParserException(fmt::format("Invalid initiator ID '{}'", initiator));
+            throw ParserException("Invalid initiator ID '{}'", initiator);
         }
     }
 
@@ -253,28 +255,28 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         if (!buf.empty()) {
             buffer_size = ParseAsUnsignedInt(buf);
             if (buffer_size < MINIMUM_BUFFER_SIZE) {
-                throw ParserException(fmt::format("Buffer size must be at least {} KiB", MINIMUM_BUFFER_SIZE));
+                throw ParserException("Buffer size must be at least {} KiB", MINIMUM_BUFFER_SIZE);
             }
         }
 
         if (!sector_count.empty()) {
             count = ParseAsUnsignedInt(sector_count);
             if (count <= 0) {
-                throw ParserException(fmt::format("Invalid sector count: {}", sector_count));
+                throw ParserException("Invalid sector count: {}", sector_count);
             }
         }
 
         if (!start_sector.empty()) {
             start = ParseAsUnsignedInt(start_sector);
             if (start < 0) {
-                throw ParserException(fmt::format("Invalid start sector: {}", start_sector));
+                throw ParserException("Invalid start sector: {}", start_sector);
             }
         }
 
         if (!retry_count.empty()) {
             retries = ParseAsUnsignedInt(retry_count);
             if (retries < 0) {
-                throw ParserException(fmt::format("Invalid retry count: {}", retry_count));
+                throw ParserException("Invalid retry count: {}", retry_count);
             }
         }
 
@@ -292,7 +294,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
         error_code error;
         if (!restore && !overwrite && exists(filename, error)) {
-            throw ParserException(fmt::format("Drive image file '{}' already exists, use -o to overwrite", filename));
+            throw ParserException("Drive image file '{}' already exists, use -o to overwrite", filename);
         }
 
         // Avoid -1 as target ID
