@@ -50,7 +50,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         }
     }
 
-    RemoveProperties("mode_page.");
+    ConsumeProperties("mode_page.");
 }
 
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
@@ -118,7 +118,7 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
     unknown_properties[key] = value;
 }
 
-void PropertyHandler::RemoveProperties(string_view filter)
+void PropertyHandler::ConsumeProperties(string_view filter)
 {
     erase_if(unknown_properties, [filter](auto &kv) {return kv.first.starts_with(filter);});
 }

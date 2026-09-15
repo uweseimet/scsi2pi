@@ -45,7 +45,8 @@ public:
     void SetPhase(BusPhase p, string_view s)
     {
         phase = p;
-        LogTrace(s);
+
+        controller_logger->trace(s);
     }
 
     bool IsSelection() const
