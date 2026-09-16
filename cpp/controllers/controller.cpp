@@ -153,8 +153,8 @@ void Controller::Command()
         }
 
         const auto control = GetCdb()[command_bytes_count - 1];
-        linked = control & 0x01;
-        flag = control & 0x02;
+        linked = (byte { control } & byte { 0x01 }) != byte { 0 };
+        flag = (byte { control } & byte { 0x02 }) != byte { 0 };
 
         if (flag && !linked) {
             RaiseDeferredError(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
@@ -683,5 +683,5 @@ void Controller::ProvideSenseData()
 int Controller::GetEffectiveLun() const
 {
     // Return LUN from IDENTIFY message, or return the LUN from the CDB as fallback
-    return identified_lun != -1 ? identified_lun : GetCdb()[1] >> 5;
+    return identified_lun != -1 ? identified_lun : to_underlying(byte { GetCdb()[1] } >> 5);
 }

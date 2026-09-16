@@ -29,7 +29,7 @@ enum class ProtobufFormat
 };
 
 // Command Descriptor Block
-using cdb_t = span<const int>;
+using cdb_t = span<const uint8_t>;
 
 using data_in_t = span<uint8_t>;
 using data_out_t = span<const uint8_t>;

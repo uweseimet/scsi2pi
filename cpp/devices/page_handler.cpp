@@ -59,7 +59,7 @@ void PageHandler::ValidateCdb() const
     const auto &cdb = device.GetController()->GetCdb();
 
     // Subpages are not supported, block descriptor support depends on the device
-    if (cdb[3] || (!supports_block_descriptors && (!(cdb[1] & 0x08)))) {
+    if (cdb[3] || (!supports_block_descriptors && ((byte { cdb[1] } & byte { 0x08 }) == byte { 0 }))) {
         throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 }
@@ -73,9 +73,9 @@ int PageHandler::AddModePages(int offset, int length, int max_size) const
 
     const auto &cdb = device.GetController()->GetCdb();
 
-    const bool changeable = (cdb[2] & 0xc0) == 0x40;
+    const bool changeable = (byte { cdb[2] } & byte { 0xc0 }) == byte { 0x40 };
 
-    const auto page_code = cdb[2] & 0x3f;
+    const auto page_code = to_underlying(byte { cdb[2] } & byte { 0x3f });
 
     // Mode page data mapped to the respective page codes, C++ maps are ordered by key
     map<int, vector<byte>> pages;

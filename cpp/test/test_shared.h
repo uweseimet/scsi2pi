@@ -29,7 +29,7 @@ namespace testing
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
 
-vector<int> CreateCdb(ScsiCommand, const string& = "");
+vector<uint8_t> CreateCdb(ScsiCommand, const string& = "");
 vector<uint8_t> CreateParameters(const string&);
 
 string CreateImageFile(StorageDevice&, size_t = 4096, const string& = "");

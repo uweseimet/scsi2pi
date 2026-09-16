@@ -30,7 +30,7 @@ bool ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 {
     assert(!cdb.empty());
 
-    file << "\n-i " << dec << id << COMPONENT_SEPARATOR << lun << " -c " << hex;
+    file << fmt::format("\n-i {}{}{} -c ", id, COMPONENT_SEPARATOR, lun);
 
     int count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(cdb[0]));
     // In case of an unknown command add the complete CDB
@@ -43,7 +43,7 @@ bool ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
         if (i) {
             file << ':';
         }
-        file << setfill('0') << setw(2) << (cdb[i] & 0xff);
+        file << fmt::format("{:02x}", cdb[i]);
     }
 
     file << flush;

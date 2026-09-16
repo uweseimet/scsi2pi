@@ -199,8 +199,7 @@ string SetImageFolder(string_view f)
 
     // Also resolves symlinks
     error_code error;
-    const auto canonical_folder = canonical(folder, error);
-    if (error || !is_directory(canonical_folder, error) || error) {
+    if (const auto canonical_folder = canonical(folder, error); error || !is_directory(canonical_folder, error)) {
         return fmt::format("'{}' is not a valid or existing folder", folder.string());
     }
 

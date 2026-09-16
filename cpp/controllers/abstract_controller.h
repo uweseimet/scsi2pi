@@ -175,7 +175,7 @@ protected:
 
     virtual bool Process() = 0;
 
-    void SetCdbByte(int index, int value)
+    void SetCdbByte(int index, uint8_t value)
     {
         cdb[index] = value;
     }
@@ -214,7 +214,7 @@ private:
 
     BusPhase phase = BusPhase::BUS_FREE;
 
-    array<int, 16> cdb = { };
+    array<uint8_t, 16> cdb = { };
 
     // Shared transfer data buffer, dynamically resized
     inline static auto buffer = vector<uint8_t>(512);

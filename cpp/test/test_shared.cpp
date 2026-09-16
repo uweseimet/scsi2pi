@@ -37,9 +37,9 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice
     return {controller, device};
 }
 
-vector<int> CreateCdb(ScsiCommand cmd, const string &hex)
+vector<uint8_t> CreateCdb(ScsiCommand cmd, const string &hex)
 {
-    vector<int> cdb;
+    vector<uint8_t> cdb;
     cdb.emplace_back(to_underlying(cmd));
     ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {

@@ -212,10 +212,10 @@ int HostServices::ModeSense6() const
 {
     auto &buf = GetController()->GetBuffer();
 
-    const auto length = min(static_cast<int>(buf.size()), GetController()->GetCdb()[4]);
+    const auto length = min(buf.size(), static_cast<size_t>(GetController()->GetCdb()[4]));
     fill_n(buf.begin(), length, 0);
 
-    return page_handler->AddModePages(4, length, 255);
+    return page_handler->AddModePages(4, static_cast<int>(length), 255);
 }
 
 int HostServices::ModeSense10() const

@@ -245,5 +245,5 @@ struct SenseData
 {
     SenseKey sense_key;
     Asc asc;
-    int ascq;
+    uint8_t ascq;
 };
