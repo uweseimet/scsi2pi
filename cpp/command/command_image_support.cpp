@@ -76,9 +76,14 @@ bool CreateImageFolder(const CommandContext &context, string_view filename)
     error_code error;
 
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
-        // Checking for existence first prevents an error if the top-level folder is a softlink
-        if (exists(folder, error)) {
-            return true;
+        if (const auto st = status(folder, error); !error) {
+            if (st.type() == file_type::directory) {
+                return true;
+            }
+
+            if (st.type() != file_type::not_found) {
+                return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "'");
+            }
         }
 
         if (!create_directories(folder, error)) {
