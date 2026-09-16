@@ -147,9 +147,9 @@ void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string name, c
     assert(meta_data.allocation_length_offset <= 12);
     assert(meta_data.allocation_length_size <= 4);
 
-    command_byte_counts[static_cast<size_t>(cmd)] = byte_count;
-    command_names[static_cast<size_t>(cmd)] = std::move(name);
-    cdb_meta_data[static_cast<size_t>(cmd)] = meta_data;
+    command_byte_counts[to_underlying(cmd)] = byte_count;
+    command_names[to_underlying(cmd)] = std::move(name);
+    cdb_meta_data[to_underlying(cmd)] = meta_data;
 }
 
 string CommandMetaData::LogCdb(span<const uint8_t> cdb, string_view type) const

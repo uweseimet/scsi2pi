@@ -9,19 +9,21 @@
 #include <gtest/gtest.h>
 #include "command/command_localizer.h"
 
+using enum LocalizationKey;
+
 TEST(CommandLocalizer, Localize)
 {
     CommandLocalizer command_localizer;
 
-    string message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "");
+    string message = command_localizer.Localize(ERROR_AUTHENTICATION, "");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "de_DE");
+    message = command_localizer.Localize(ERROR_AUTHENTICATION, "de_DE");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 
-    message = command_localizer.Localize(LocalizationKey::ERROR_AUTHENTICATION, "en");
+    message = command_localizer.Localize(ERROR_AUTHENTICATION, "en");
     EXPECT_FALSE(message.empty());
     EXPECT_EQ(string::npos, message.find("enum value"));
 }

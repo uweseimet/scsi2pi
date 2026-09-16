@@ -19,6 +19,7 @@
 class PrimaryDevice;
 
 using namespace spdlog;
+using enum StatusCode;
 using enum SenseKey;
 using enum Asc;
 
@@ -94,7 +95,7 @@ public:
     bool ProcessPhase();
 
     virtual void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION,
-        StatusCode = StatusCode::CHECK_CONDITION) = 0;
+        StatusCode = CHECK_CONDITION) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 
@@ -226,7 +227,7 @@ private:
     // The number of bytes to be transferred with the current handshake cycle
     int chunk_size = 0;
 
-    StatusCode status = StatusCode::GOOD;
+    StatusCode status = GOOD;
 
     shared_ptr<logger> controller_logger;
 

@@ -36,8 +36,9 @@ void protobuf_util::DeserializeMessage(int fd, google::protobuf::MessageLite &me
         throw IoException("Can't read message size");
     }
 
-    const int size = (static_cast<int>(header[3]) << 24) + (static_cast<int>(header[2]) << 16)
-        + (static_cast<int>(header[1]) << 8) + static_cast<int>(header[0]);
+    const uint32_t raw_size = (to_integer<uint32_t>(header[3]) << 24) | (to_integer<uint32_t>(header[2]) << 16)
+        | (to_integer<uint32_t>(header[1]) << 8) | to_integer<uint32_t>(header[0]);
+    const auto size = static_cast<int32_t>(raw_size);
     if (size < 0) {
         throw IoException("Invalid message size");
     }

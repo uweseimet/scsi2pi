@@ -60,11 +60,11 @@ TEST(ControllerTest, BusFree)
     controller.BusFree();
     EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
 
-    controller.SetStatus(StatusCode::CHECK_CONDITION);
+    controller.SetStatus(CHECK_CONDITION);
     controller.SetPhase(BusPhase::RESERVED, "");
     controller.BusFree();
     EXPECT_EQ(BusPhase::BUS_FREE, controller.GetPhase());
-    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
+    EXPECT_EQ(GOOD, controller.GetStatus());
 
     controller.ScheduleShutdown(ShutdownMode::NONE);
     controller.SetPhase(BusPhase::RESERVED, "");
@@ -190,5 +190,5 @@ TEST(ControllerTest, RequestSense)
     device->SetReady(true);
     EXPECT_CALL(controller, Status);
     Dispatch(device, REQUEST_SENSE);
-    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
+    EXPECT_EQ(GOOD, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }

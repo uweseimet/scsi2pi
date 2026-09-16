@@ -126,7 +126,7 @@ TEST(AbstractControllerTest, Reset)
     EXPECT_EQ(BusPhase::STATUS, controller.GetPhase());
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
-    EXPECT_EQ(StatusCode::GOOD, controller.GetStatus());
+    EXPECT_EQ(GOOD, controller.GetStatus());
     EXPECT_EQ(0, controller.GetCurrentLength());
     EXPECT_EQ(0, controller.GetOffset());
     EXPECT_EQ(0, controller.GetRemainingLength());
@@ -138,8 +138,8 @@ TEST(AbstractControllerTest, Status)
 {
     MockAbstractController controller;
 
-    controller.SetStatus(StatusCode::RESERVATION_CONFLICT);
-    EXPECT_EQ(StatusCode::RESERVATION_CONFLICT, controller.GetStatus());
+    controller.SetStatus(RESERVATION_CONFLICT);
+    EXPECT_EQ(RESERVATION_CONFLICT, controller.GetStatus());
 }
 
 TEST(AbstractControllerTest, DeviceLunLifeCycle)

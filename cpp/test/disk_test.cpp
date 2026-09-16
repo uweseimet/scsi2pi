@@ -31,7 +31,7 @@ TEST(DiskTest, Dispatch)
     disk->SetReady(true);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, TEST_UNIT_READY);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetMediumChanged(true);
     Dispatch(disk, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
@@ -68,7 +68,7 @@ TEST(DiskTest, Rezero)
 
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, REZERO_REWIND);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, FormatUnit)
@@ -82,7 +82,7 @@ TEST(DiskTest, FormatUnit)
 
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, FORMAT);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
@@ -100,7 +100,7 @@ TEST(DiskTest, ReassignBlocks)
 
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, REASSIGN_BLOCKS);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, Seek6)
@@ -118,7 +118,7 @@ TEST(DiskTest, Seek6)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SEEK_6);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
     Dispatch(disk, SEEK_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
@@ -140,7 +140,7 @@ TEST(DiskTest, Seek10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SEEK_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(5, 1);
     Dispatch(disk, SEEK_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
@@ -366,7 +366,7 @@ TEST(DiskTest, Write10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, WRITE_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -398,7 +398,7 @@ TEST(DiskTest, Write16)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, WRITE_16);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -432,7 +432,7 @@ TEST(DiskTest, Verify10)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, VERIFY_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, Verify16)
@@ -452,7 +452,7 @@ TEST(DiskTest, Verify16)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, VERIFY_16);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadLong10)
@@ -470,7 +470,7 @@ TEST(DiskTest, ReadLong10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, READ_LONG_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
     Dispatch(disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
@@ -522,7 +522,7 @@ TEST(DiskTest, ReadLong16)
     controller->SetCdbByte(1, 0x11);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, READ_CAPACITY_READ_LONG_16);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
@@ -567,7 +567,7 @@ TEST(DiskTest, WriteLong10)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, WRITE_LONG_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
     Dispatch(disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
@@ -613,7 +613,7 @@ TEST(DiskTest, WriteLong16)
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, WRITE_LONG_16);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetFilename(CreateImageFile(*disk, 512));
     disk->ValidateFile();
@@ -739,7 +739,7 @@ TEST(DiskTest, SynchronizeCache10)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SYNCHRONIZE_CACHE_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, SynchronizeCache16)
@@ -749,7 +749,7 @@ TEST(DiskTest, SynchronizeCache16)
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ReadDefectData)
@@ -758,7 +758,7 @@ TEST(DiskTest, ReadDefectData)
 
     EXPECT_CALL(*controller, DataIn);
     Dispatch(disk, READ_DEFECT_DATA_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(DiskTest, ChangeBlockSize)

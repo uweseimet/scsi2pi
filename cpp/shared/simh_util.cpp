@@ -8,6 +8,7 @@
 
 #include "simh_util.h"
 #include <cassert>
+#include <utility>
 #include "s2p_util.h"
 
 using namespace s2p_util;
@@ -29,7 +30,7 @@ bool simh_util::ReadMetaData(istream &file, SimhMetaData &meta_data)
 
     file.clear();
 
-    meta_data = { SimhClass::RESERVERD_MARKER, static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM) };
+    meta_data = { SimhClass::RESERVERD_MARKER, to_underlying(SimhMarker::END_OF_MEDIUM) };
 
     return true;
 }
@@ -93,5 +94,5 @@ array<uint8_t, 4> simh_util::ToLittleEndian(const SimhMetaData &meta_data)
 {
     return {static_cast<uint8_t>(meta_data.value & 0xff), static_cast<uint8_t>((meta_data.value >> 8) & 0xff),
         static_cast<uint8_t>((meta_data.value >> 16) & 0xff),
-        static_cast<uint8_t>(((meta_data.value >> 24) & 0x0f) | static_cast<uint8_t>((static_cast<uint32_t>(meta_data.cls) << 4)))};
+        static_cast<uint8_t>(((meta_data.value >> 24) & 0x0f) | static_cast<uint8_t>((to_underlying(meta_data.cls) << 4)))};
 }

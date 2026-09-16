@@ -423,8 +423,7 @@ int S2pCtl::ParseArguments(const span<char*> args) // NOSONAR Acceptable complex
             break;
 
         case OPT_SCSI_LEVEL:
-            if (const int level = ParseAsUnsignedInt(optarg); level <= 0
-                || level >= static_cast<int>(ScsiLevel::LAST)) {
+            if (const int level = ParseAsUnsignedInt(optarg); level <= 0 || level >= to_underlying(ScsiLevel::LAST)) {
                 cerr << "Error: Invalid SCSI level '" << optarg << "'\n";
                 return EXIT_FAILURE;
             }

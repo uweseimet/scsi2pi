@@ -86,13 +86,13 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 
     EXPECT_CALL(*controller, Status);
     Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_FALSE(device->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->IsLocked());
 }
 
@@ -106,7 +106,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->IsStopped());
 
     // Stop/Load
@@ -115,7 +115,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetLocked(false);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
@@ -135,14 +135,14 @@ TEST(StorageDeviceTest, StartStopUnit)
     controller->SetCdbByte(4, 0x01);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_FALSE(device->IsStopped());
 
     // Start/Load
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // Start/Load with previous medium
     controller->SetCdbByte(4, 0x02);
@@ -152,7 +152,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     EXPECT_CALL(*controller, Status);
     // Eject existing medium
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->GetFilename().empty());
     EXPECT_EQ("filename", device->GetLastFilename());
     // Re-load medium
@@ -166,7 +166,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ("filename", device->GetFilename());
 }
 

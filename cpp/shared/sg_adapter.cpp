@@ -76,7 +76,7 @@ int SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int len
     bool enable_log)
 {
     // Return deferred sense data, if any
-    if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE) && sense_data_valid) {
+    if (cdb[0] == to_underlying(ScsiCommand::REQUEST_SENSE) && sense_data_valid) {
         const int l = min(length, static_cast<int>(sense_data.size()));
         memcpy(buf.data(), sense_data.data(), l);
         byte_count = l;
@@ -130,17 +130,17 @@ bool SgAdapter::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> cdb)
     }
 
     // Do not consider CONDITION MET an error
-    if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
-        status = static_cast<int>(StatusCode::GOOD);
+    if (status == to_underlying(CONDITION_MET)) {
+        status = to_underlying(GOOD);
     }
 
-    if (status == static_cast<int>(StatusCode::GOOD) && cdb[0] == static_cast<uint8_t>(ScsiCommand::INQUIRY)
+    if (status == to_underlying(GOOD) && cdb[0] == to_underlying(ScsiCommand::INQUIRY)
         && (static_cast<int>(cdb[1]) & 0b11100000)) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         buf[0] = 0x7f;
     }
 
-    if (status != static_cast<int>(StatusCode::GOOD)) {
+    if (status != to_underlying(GOOD)) {
         sense_data_valid = true;
     }
 
@@ -150,7 +150,7 @@ bool SgAdapter::EvaluateStatus(int status, span<uint8_t> buf, span<uint8_t> cdb)
 void SgAdapter::EvaluateBlockSize()
 {
     vector<uint8_t> cdb(10);
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
+    cdb[0] = to_underlying(ScsiCommand::READ_CAPACITY_10);
 
     vector<uint8_t> buf(8);
 

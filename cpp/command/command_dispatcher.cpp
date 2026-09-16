@@ -23,6 +23,7 @@ using namespace command_response;
 using namespace s2p_interface_util;
 using namespace s2p_util;
 using namespace user_util;
+using enum LocalizationKey;
 
 bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult &result)
 {
@@ -30,10 +31,10 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     const PbOperation operation = command.operation();
 
     if (!PbOperation_IsValid(operation)) {
-        s2p_logger.trace("Ignored unknown command with operation opcode {}", static_cast<int>(operation));
+        s2p_logger.trace("Ignored unknown command with operation opcode {}", to_underlying(operation));
 
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_OPERATION, UNKNOWN_OPERATION,
-            to_string(static_cast<int>(operation)));
+        return context.ReturnLocalizedError(ERROR_OPERATION, UNKNOWN_OPERATION,
+            to_string(to_underlying(operation)));
     }
 
     s2p_logger.trace("Executing {} command", PbOperation_Name(operation));
@@ -41,7 +42,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
     switch (operation) {
     case LOG_LEVEL:
         if (const string &log_level = GetParam(command, "level"); !SetLogLevel(log_level)) {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL, log_level);
+            return context.ReturnLocalizedError(ERROR_LOG_LEVEL, log_level);
         }
         else {
             PropertyHandler::GetInstance().AddProperty(PropertyHandler::LOG_LEVEL, log_level);
@@ -89,7 +90,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case IMAGE_FILE_INFO:
         if (const string &filename = GetParam(command, "file"); filename.empty()) {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_MISSING_FILENAME);
+            return context.ReturnLocalizedError(ERROR_MISSING_FILENAME);
         }
         else if (auto image_file = make_unique<PbImageFile>(); GetImageFile(*image_file, filename)) {
             result.set_allocated_image_file_info(image_file.release());
@@ -97,7 +98,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
             return context.WriteResult(result);
         }
         else {
-            return context.ReturnLocalizedError(LocalizationKey::ERROR_IMAGE_FILE_INFO, filename);
+            return context.ReturnLocalizedError(ERROR_IMAGE_FILE_INFO, filename);
         }
 
     case NETWORK_INTERFACES_INFO:
@@ -145,7 +146,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::GetInstance().Persist() ?
-                context.ReturnSuccessStatus() : context.ReturnLocalizedError(LocalizationKey::ERROR_PERSIST);
+                context.ReturnSuccessStatus() : context.ReturnLocalizedError(ERROR_PERSIST);
 
     case NO_OPERATION:
         return context.ReturnSuccessStatus();
@@ -188,7 +189,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
     }
 #endif
     else {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_MODE_INVALID, m);
+        return context.ReturnLocalizedError(ERROR_SHUTDOWN_MODE_INVALID, m);
     }
 
     // Shutdown modes other than "rascsi" require root permissions
@@ -200,7 +201,7 @@ bool CommandDispatcher::ShutDown(const CommandContext &context) const
         return ShutDown(mode);
     }
 
-    return context.ReturnLocalizedError(LocalizationKey::ERROR_SHUTDOWN_PERMISSION);
+    return context.ReturnLocalizedError(ERROR_SHUTDOWN_PERMISSION);
 }
 
 // Shutdown on a SCSI command
@@ -228,7 +229,7 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
         break;
 
     default:
-        s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
+        s2p_logger.error("Invalid shutdown mode {}", to_underlying(mode));
         return false;
     }
 

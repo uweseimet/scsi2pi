@@ -12,6 +12,7 @@
 #include <cassert>
 #include <chrono>
 #include <string>
+#include <utility>
 #include "board.h"
 #include "shared/scsi.h"
 #include "shared/s2p_defs.h"
@@ -161,7 +162,7 @@ public:
     {
         assert(static_cast<size_t>(phase) < phase_names.size());
 
-        return phase_names[static_cast<size_t>(phase)];
+        return phase_names[to_underlying(phase)];
     }
 
 protected:

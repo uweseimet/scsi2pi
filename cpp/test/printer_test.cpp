@@ -72,7 +72,7 @@ TEST_F(PrinterTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(printer, TEST_UNIT_READY);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, Inquiry)
@@ -84,14 +84,14 @@ TEST_F(PrinterTest, ReserveUnit)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(printer, RESERVE_RESERVE_ELEMENT_6);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, ReleaseUnit)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(printer, RELEASE_RELEASE_ELEMENT_6);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, Print)
@@ -110,7 +110,7 @@ TEST_F(PrinterTest, StopPrint)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(printer, STOP_PRINT);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, SynchronizeBuffer)
@@ -121,7 +121,7 @@ TEST_F(PrinterTest, SynchronizeBuffer)
 
     Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
 
-    controller->SetCdbByte(0, static_cast<int>(PRINT));
+    controller->SetCdbByte(0, to_underlying(PRINT));
     controller->SetTransferSize(4, 4);
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
     Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
@@ -130,10 +130,10 @@ TEST_F(PrinterTest, SynchronizeBuffer)
 TEST_F(PrinterTest, WriteData)
 {
     controller->SetTransferSize(4, 4);
-    controller->SetCdbByte(0, static_cast<int>(CLOSE_TRACK_SESSION));
+    controller->SetCdbByte(0, to_underlying(CLOSE_TRACK_SESSION));
     EXPECT_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4), ScsiException);
 
-    controller->SetCdbByte(0, static_cast<int>(PRINT));
+    controller->SetCdbByte(0, to_underlying(PRINT));
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
 }
 

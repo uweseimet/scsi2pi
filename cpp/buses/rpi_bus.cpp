@@ -496,12 +496,11 @@ RpiBus::PiType RpiBus::GetPiType(const string &device_file)
     }
 
     int type;
-    if (model.find("Zero 2") != string::npos) {
-        type = static_cast<int>(RpiBus::PiType::PI_3);
+    if (model.contains("Zero 2")) {
+        type = to_underlying(RpiBus::PiType::PI_3);
     }
     else {
-        type = model.find("Zero") != string::npos ||
-            model.find("Raspberry Pi Model B Plus") != string::npos ? 1 : model.substr(13, 1)[0] - '0';
+        type = model.contains("Zero") || model.contains("Raspberry Pi Model B Plus") ? 1 : model.substr(13, 1)[0] - '0';
     }
     if (type <= 0 || type > 4) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);

@@ -21,6 +21,7 @@
 
 using namespace std;
 using namespace filesystem;
+using enum StatusCode;
 using enum SenseKey;
 using enum Asc;
 
@@ -75,7 +76,7 @@ string GetScsiLevel(int);
 string GetStatusString(int);
 
 string FormatSenseData(span<const byte>);
-string FormatSenseData(SenseKey, Asc, int = 0);
+string FormatSenseData(SenseKey, Asc, uint8_t = 0);
 
 vector<byte> HexToBytes(const string&);
 
@@ -169,16 +170,16 @@ inline const unordered_map<Asc, const char*> ASC_MAPPING = {
 };
 
 inline const unordered_map<StatusCode, const char*> STATUS_MAPPING = {
-    { StatusCode::GOOD, "GOOD" },
-    { StatusCode::CHECK_CONDITION, "CHECK CONDITION" },
-    { StatusCode::CONDITION_MET, "CONDITION MET" },
-    { StatusCode::BUSY, "BUSY" },
-    { StatusCode::INTERMEDIATE, "INTERMEDIATE" },
-    { StatusCode::INTERMEDIATE_CONDITION_MET, "INTERMEDIATE-CONDITION MET" },
-    { StatusCode::RESERVATION_CONFLICT, "RESERVATION CONFLICT" },
-    { StatusCode::COMMAND_TERMINATED, "COMMAND TERMINATED" },
-    { StatusCode::QUEUE_FULL, "QUEUE FULL" },
-    { StatusCode::ACA_ACTIVE, "ACA ACTIVE" },
-    { StatusCode::TASK_ABORTED, "TASK ABORTED" }
+    { GOOD, "GOOD" },
+    { CHECK_CONDITION, "CHECK CONDITION" },
+    { CONDITION_MET, "CONDITION MET" },
+    { BUSY, "BUSY" },
+    { INTERMEDIATE, "INTERMEDIATE" },
+    { INTERMEDIATE_CONDITION_MET, "INTERMEDIATE-CONDITION MET" },
+    { RESERVATION_CONFLICT, "RESERVATION CONFLICT" },
+    { COMMAND_TERMINATED, "COMMAND TERMINATED" },
+    { QUEUE_FULL, "QUEUE FULL" },
+    { ACA_ACTIVE, "ACA ACTIVE" },
+    { TASK_ABORTED, "TASK ABORTED" }
 };
 }

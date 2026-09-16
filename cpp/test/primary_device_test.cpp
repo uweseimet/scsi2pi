@@ -154,14 +154,14 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_FALSE(device->CheckReservation(-1)) << "Device must be reserved for unknown initiator";
-    controller->SetCdbByte(0, static_cast<int>(INQUIRY));
+    controller->SetCdbByte(0, to_underlying(INQUIRY));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for INQUIRY";
-    controller->SetCdbByte(0, static_cast<int>(REQUEST_SENSE));
+    controller->SetCdbByte(0, to_underlying(REQUEST_SENSE));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REQUEST SENSE";
-    controller->SetCdbByte(0, static_cast<int>(RELEASE_RELEASE_ELEMENT_6));
+    controller->SetCdbByte(0, to_underlying(RELEASE_RELEASE_ELEMENT_6));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE (6)";
 
-    controller->SetCdbByte(0, static_cast<int>(PREVENT_ALLOW_MEDIUM_REMOVAL));
+    controller->SetCdbByte(0, to_underlying(PREVENT_ALLOW_MEDIUM_REMOVAL));
     EXPECT_TRUE(device->CheckReservation(1))
         << "Device must not be reserved for PREVENT ALLOW MEDIUM REMOVAL with prevent bit not set";
     controller->SetCdbByte(4, 0x01);
@@ -272,7 +272,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, TEST_UNIT_READY);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST(PrimaryDeviceTest, Inquiry)
@@ -351,7 +351,7 @@ TEST(PrimaryDeviceTest, RequestSense)
 
     device->SetReady(true);
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
     EXPECT_EQ(10, data[7]);
@@ -360,37 +360,37 @@ TEST(PrimaryDeviceTest, RequestSense)
 
     device->SetFilemark();
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x80, data[2]);
     EXPECT_EQ(10, data[7]);
-    EXPECT_EQ(static_cast<uint8_t>(FILEMARK_DETECTED), data[13]);
+    EXPECT_EQ(to_underlying(FILEMARK_DETECTED), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(END_OF_PARTITION_MEDIUM_DETECTED);
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
     EXPECT_EQ(10, data[7]);
-    EXPECT_EQ(static_cast<uint8_t>(END_OF_PARTITION_MEDIUM_DETECTED), data[13]);
+    EXPECT_EQ(to_underlying(END_OF_PARTITION_MEDIUM_DETECTED), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(BEGINNING_OF_PARTITION_MEDIUM_DETECTED);
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
     EXPECT_EQ(10, data[7]);
-    EXPECT_EQ(static_cast<uint8_t>(BEGINNING_OF_PARTITION_MEDIUM_DETECTED), data[13]);
+    EXPECT_EQ(to_underlying(BEGINNING_OF_PARTITION_MEDIUM_DETECTED), data[13]);
     EXPECT_EQ(0U, GetInt32(data, 3));
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetIli();
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x20, data[2]) << "ILI must be set";
     EXPECT_EQ(10, data[7]);
@@ -398,7 +398,7 @@ TEST(PrimaryDeviceTest, RequestSense)
 
     device->SetInformation(0x12345678);
     RequestSense(controller, device);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0xf0, data[0]);
     EXPECT_EQ(0x00, data[2]);
     EXPECT_EQ(10, data[7]);
@@ -408,7 +408,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 0);
     Dispatch(device, REQUEST_SENSE);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x00, data[0]);
 }
 
@@ -418,7 +418,7 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 
     EXPECT_CALL(*controller, Status);
     Dispatch(device, SEND_DIAGNOSTIC);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
     Dispatch(device, SEND_DIAGNOSTIC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,

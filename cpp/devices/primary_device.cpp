@@ -57,15 +57,15 @@ string PrimaryDevice::Init()
 
 void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 {
-    assert(!commands[static_cast<size_t>(cmd)]);
-    commands[static_cast<size_t>(cmd)] = c;
+    assert(!commands[to_underlying(cmd)]);
+    commands[to_underlying(cmd)] = c;
 }
 
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
-    if (const auto &command = commands[static_cast<size_t>(cmd)]; command) {
+    if (const auto &command = commands[to_underlying(cmd)]; command) {
         LogDebug("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
-            static_cast<size_t>(cmd));
+            to_underlying(cmd));
         meta_data = &CommandMetaData::GetInstance().GetCdbMetaData(cmd);
         command();
     }
@@ -274,7 +274,7 @@ void PrimaryDevice::RequestSense()
         effective_lun = 0;
 
         // When signalling an invalid LUN, the status must be GOOD
-        controller->Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
+        controller->Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED, GOOD);
     }
 
     const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -328,12 +328,10 @@ vector<uint8_t> PrimaryDevice::HandleInquiry() const
     vector<uint8_t> buf(0x1f + 5);
 
     const auto device_type = DEVICE_TYPE_MAPPING.find(GetType());
-    buf[0] = static_cast<uint8_t>(
-        device_type != DEVICE_TYPE_MAPPING.end() ? device_type->second : DeviceType::DIRECT_ACCESS);
+    buf[0] = to_underlying(device_type != DEVICE_TYPE_MAPPING.end() ? device_type->second : DeviceType::DIRECT_ACCESS);
     buf[1] = IsRemovable() ? 0x80 : 0x00;
-    buf[2] = static_cast<uint8_t>(level);
-    buf[3] = level >= ScsiLevel::SCSI_2 ?
-            static_cast<uint8_t>(ScsiLevel::SCSI_2) : static_cast<uint8_t>(ScsiLevel::SCSI_1_CCS);
+    buf[2] = to_underlying(level);
+    buf[3] = level >= ScsiLevel::SCSI_2 ? to_underlying(ScsiLevel::SCSI_2) : to_underlying(ScsiLevel::SCSI_1_CCS);
     buf[4] = 0x1f;
     // Signal support of linked commands
     buf[7] = 0x08;

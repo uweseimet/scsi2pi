@@ -37,7 +37,7 @@ void AbstractController::Reset()
     current_length = 0;
     chunk_size = 0;
 
-    status = StatusCode::GOOD;
+    status = GOOD;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
 
@@ -50,7 +50,7 @@ bool AbstractController::ProcessPhase()
 {
     assert(phase <= BusPhase::RESERVED);
 
-    if (const auto index = static_cast<size_t>(phase); PHASE_HANDLERS[index]) {
+    if (const auto index = to_underlying(phase); PHASE_HANDLERS[index]) {
         (this->*PHASE_HANDLERS[index])();
         return true;
     }

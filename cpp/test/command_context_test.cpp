@@ -16,6 +16,7 @@
 
 using namespace testing;
 using namespace protobuf_util;
+using enum LocalizationKey;
 
 TEST(CommandContext, ReadCommand)
 {
@@ -111,7 +112,7 @@ TEST(CommandContext, ReturnLocalizedError)
     CommandContext context(command, *default_logger());
     context.SetLocale("en_US");
 
-    EXPECT_FALSE(context.ReturnLocalizedError(LocalizationKey::ERROR_LOG_LEVEL));
+    EXPECT_FALSE(context.ReturnLocalizedError(ERROR_LOG_LEVEL));
 }
 
 TEST(CommandContext, ReturnSuccessStatus)

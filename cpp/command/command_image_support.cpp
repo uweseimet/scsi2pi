@@ -59,7 +59,7 @@ bool ChangeOwner(const CommandContext &context, const path &filename, bool read_
 {
 #if __has_include(<pwd.h>)
     const auto [uid, gid] = GetUidAndGid();
-    if (gid == -1 || chown(filename.c_str(), uid, gid)) {
+    if (uid == -1 || gid == -1 || chown(filename.c_str(), uid, gid)) {
         return context.ReturnErrorStatus(
             "Can't change ownership of '" + filename.string() + "': " + system_error(errno, generic_category()).what());
     }
@@ -78,9 +78,14 @@ bool CreateImageFolder(const CommandContext &context, string_view filename)
     error_code error;
 
     if (const auto folder = path(filename).parent_path(); !folder.string().empty()) {
-        // Checking for existence first prevents an error if the top-level folder is a softlink
-        if (exists(folder, error)) {
-            return true;
+        if (const auto st = status(folder, error); !error) {
+            if (st.type() == file_type::directory) {
+                return true;
+            }
+
+            if (st.type() != file_type::not_found) {
+                return context.ReturnErrorStatus("Can't create image folder '" + folder.string() + "'");
+            }
         }
 
         if (!create_directories(folder, error)) {
@@ -100,7 +105,11 @@ bool IsValidSrcFilename(string_view filename)
 {
     // Source file must be a regular file or a symlink pointing to a regular file
     error_code error;
-    const auto s = status(canonical(path(filename), error));
+    const auto canon = canonical(path(filename), error);
+    if (error) {
+        return false;
+    }
+    const auto s = status(canon, error);
     return !error && s.type() == file_type::regular;
 }
 
@@ -189,8 +198,10 @@ string SetImageFolder(string_view f)
     }
 
     // Also resolves symlinks
-    if (error_code error; !is_directory(canonical(folder), error) || error) {
-        return string("'") + folder.string() + "' is not a valid or existing folder";
+    error_code error;
+    const auto canonical_folder = canonical(folder, error);
+    if (error || !is_directory(canonical_folder, error) || error) {
+        return fmt::format("'{}' is not a valid or existing folder", folder.string());
     }
 
     image_folder = folder.string();

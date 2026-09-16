@@ -53,7 +53,7 @@ void SasiHd::RequestSense()
     }
 
     // Non-extended format
-    const array<const uint8_t, 4> buf = { static_cast<uint8_t>(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
+    const array<const uint8_t, 4> buf = { to_underlying(GetSenseKey()), static_cast<uint8_t>(GetLun() << 5) };
     GetController()->CopyToBuffer(span(buf.data(), allocation_length));
 
     DataInPhase(allocation_length);

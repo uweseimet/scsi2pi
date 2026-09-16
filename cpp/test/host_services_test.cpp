@@ -64,7 +64,7 @@ TEST_F(HostServicesTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(services, TEST_UNIT_READY);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(HostServicesTest, Inquiry)
@@ -77,19 +77,19 @@ TEST_F(HostServicesTest, StartStopUnit)
     // STOP
     EXPECT_CALL(*controller, Status);
     Dispatch(services, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status);
     Dispatch(services, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
     Dispatch(services, START_STOP);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
@@ -234,13 +234,13 @@ TEST_F(HostServicesTest, WriteData)
 {
     const array<const uint8_t, 1> buf = { };
 
-    controller->SetCdbByte(0, static_cast<int>(TEST_UNIT_READY));
+    controller->SetCdbByte(0, to_underlying(TEST_UNIT_READY));
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "Illegal command";
 
-    controller->SetCdbByte(0, static_cast<int>(EXECUTE_OPERATION));
+    controller->SetCdbByte(0, to_underlying(EXECUTE_OPERATION));
     services->WriteData(controller->GetCdb(), buf, 0);
 
-    controller->SetCdbByte(0, static_cast<int>(EXECUTE_OPERATION));
+    controller->SetCdbByte(0, to_underlying(EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
 }

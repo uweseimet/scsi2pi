@@ -35,7 +35,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
 
     auto command_name = CommandMetaData::GetInstance().GetCommandName(cmd);
     if (command_name.empty()) {
-        command_name = fmt::format("${:02x}", static_cast<int>(cmd));
+        command_name = fmt::format("${:02x}", to_underlying(cmd));
     }
 
     // Only report byte count mismatch for non-linked commands
@@ -76,7 +76,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
                 if (Dispatch(cdb, buffer, length)) {
                     now = steady_clock::now();
                 }
-                else if (status_code != static_cast<int>(StatusCode::INTERMEDIATE)) {
+                else if (status_code != to_underlying(INTERMEDIATE)) {
                     break;
                 }
             }
@@ -265,19 +265,19 @@ void InitiatorExecutor::MsgIn()
     const int msg = bus.InitiatorMsgInHandShake();
     switch (msg) {
     case -1:
-    case static_cast<int>(MessageCode::MESSAGE_REJECT):
+        case to_underlying(MessageCode::MESSAGE_REJECT):
         initiator_logger.error("MESSAGE IN phase failed");
         break;
 
-    case static_cast<int>(MessageCode::COMMAND_COMPLETE):
+    case to_underlying(MessageCode::COMMAND_COMPLETE):
         initiator_logger.trace("Received COMMAND COMPLETE");
         break;
 
-    case static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE):
+    case to_underlying(MessageCode::LINKED_COMMAND_COMPLETE):
         initiator_logger.trace("Received LINKED COMMAND COMPLETE");
         break;
 
-    case static_cast<int>(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG):
+    case to_underlying(MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG):
         initiator_logger.trace("Received LINKED COMMAND COMPLETE WITH FLAG");
         break;
 
@@ -293,8 +293,9 @@ void InitiatorExecutor::MsgOut()
     array<uint8_t, 1> buf;
 
     // IDENTIFY or MESSAGE REJECT
-    buf[0] = next_message == MessageCode::IDENTIFY
-        ? static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message) : static_cast<uint8_t>(next_message);
+    buf[0] =
+        next_message == MessageCode::IDENTIFY ?
+            static_cast<uint8_t>(target_lun) + to_underlying(next_message) : to_underlying(next_message);
 
     if (bus.InitiatorSendHandShake(buf) != static_cast<int>(buf.size())) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
@@ -309,7 +310,7 @@ optional<SenseData> InitiatorExecutor::GetSenseData()
 {
     array<uint8_t, 252> buf = { };
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+    cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     if (Execute(cdb, buf, static_cast<int>(buf.size()), 1, true)) {

@@ -30,7 +30,7 @@ namespace
 
 bool FilterMatches(const string &input, string_view pattern_lower)
 {
-    return pattern_lower.empty() || ToLower(input).find(pattern_lower) != string::npos;
+    return pattern_lower.empty() || ToLower(input).contains(pattern_lower);
 }
 
 bool ValidateImageFile(const path &image_path, logger &logger)
@@ -69,7 +69,7 @@ bool ValidateImageFile(const path &image_path, logger &logger)
 void GetDeviceProperties(const PrimaryDevice &device, PbDeviceProperties &properties)
 {
     properties.set_luns(GetLunMax(device.GetType()));
-    properties.set_scsi_level(static_cast<int>(device.GetScsiLevel()));
+    properties.set_scsi_level(to_underlying(device.GetScsiLevel()));
     properties.set_read_only(device.IsReadOnly());
     properties.set_protectable(device.IsProtectable());
     properties.set_stoppable(device.IsStoppable());
@@ -105,7 +105,7 @@ void GetDevice(const PrimaryDevice &device, PbDevice &pb_device)
     pb_device.set_product(product_data.product);
     pb_device.set_revision(product_data.revision);
     pb_device.set_type(device.GetType());
-    pb_device.set_scsi_level(static_cast<int>(device.GetScsiLevel()));
+    pb_device.set_scsi_level(to_underlying(device.GetScsiLevel()));
 
     GetDeviceProperties(device, *pb_device.mutable_properties());
 
@@ -199,7 +199,7 @@ void GetAvailableImages(PbServerInfo &server_info, const string &folder_pattern,
 PbOperationMetaData& CreateOperation(PbOperationInfo &operation_info, const PbOperation &operation,
     const string &description)
 {
-    const auto number = static_cast<int>(operation);
+    const auto number = to_underlying(operation);
 
     auto &meta_data = (*operation_info.mutable_operations())[number];
     meta_data.set_server_side_name(PbOperation_Name(operation));
@@ -422,7 +422,7 @@ void command_response::GetVersionInfo(PbVersionInfo &version_info)
 
 void command_response::GetLogLevelInfo(PbLogLevelInfo &log_level_info)
 {
-    for (auto level = static_cast<int>(level::trace); level < static_cast<int>(level::n_levels); ++level) {
+    for (auto level = to_underlying(level::trace); level < to_underlying(level::n_levels); ++level) {
         log_level_info.add_log_levels(level::to_string_view(static_cast<level::level_enum>(level)).data());
     }
 

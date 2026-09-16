@@ -46,7 +46,7 @@ void s2p_interface_util::ParseParameters(PbDeviceDefinition &device, const strin
     }
 
     // Old style parameter (filename only), for backwards compatibility and convenience
-    if (params.find(KEY_VALUE_SEPARATOR) == string::npos) {
+    if (!params.contains(KEY_VALUE_SEPARATOR)) {
         SetParam(device, "file", params);
         return;
     }
@@ -64,7 +64,7 @@ string s2p_interface_util::SetCommandParams(PbCommand &command, const string &pa
         return "";
     }
 
-    if (params.find(KEY_VALUE_SEPARATOR) != string::npos) {
+    if (params.contains(KEY_VALUE_SEPARATOR)) {
         return SetFromGenericParams(command, params);
     }
 

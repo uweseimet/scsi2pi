@@ -25,7 +25,7 @@ public:
 
     bool Process() override;
 
-    void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION, StatusCode = StatusCode::CHECK_CONDITION) override;
+    void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION, StatusCode = CHECK_CONDITION) override;
     void Reset() override;
 
     void BusFree() override;

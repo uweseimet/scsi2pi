@@ -40,7 +40,7 @@ pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice
 vector<int> CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<int> cdb;
-    cdb.emplace_back(static_cast<int>(cmd));
+    cdb.emplace_back(to_underlying(cmd));
     ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
         cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
@@ -127,7 +127,7 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
 {
     auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
     if (controller) {
-        controller->SetCdbByte(0, static_cast<int>(cmd));
+        controller->SetCdbByte(0, to_underlying(cmd));
     }
 
     try {

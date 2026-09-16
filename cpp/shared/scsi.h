@@ -10,7 +10,7 @@
 
 #include <cstdint>
 
-enum class ScsiLevel
+enum class ScsiLevel : uint8_t
 {
     NONE = 0,
     SCSI_1_CCS = 1,
@@ -40,7 +40,7 @@ enum class BusPhase
     RESERVED = 10
 };
 
-enum class DeviceType
+enum class DeviceType : uint8_t
 {
     DIRECT_ACCESS = 0,
     SEQUENTIAL_ACCESS = 1,
@@ -185,7 +185,7 @@ enum class StatusCode : uint8_t
     TASK_ABORTED = 0x40
 };
 
-enum class SenseKey
+enum class SenseKey : uint8_t
 {
     NO_SENSE = 0x00,
     RECOVERED_ERROR = 0x01,
@@ -205,7 +205,7 @@ enum class SenseKey
     RESERVED = 0x0f
 };
 
-enum class Asc
+enum class Asc : uint8_t
 {
     NO_ADDITIONAL_SENSE_INFORMATION = 0x00,
     WRITE_FAULT = 0x03,
@@ -232,7 +232,7 @@ enum class Asc
     DATA_CURRENTLY_UNAVAILABLE = 0x55
 };
 
-enum class Ascq
+enum class Ascq : uint8_t
 {
     NONE = 0x00,
     FILEMARK_DETECTED = 0x01,

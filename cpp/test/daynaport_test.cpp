@@ -79,7 +79,7 @@ TEST_F(DaynaportTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
     Dispatch(daynaport, TEST_UNIT_READY);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(DaynaportTest, WriteData)
@@ -87,7 +87,7 @@ TEST_F(DaynaportTest, WriteData)
     array<int, 6> cdb = { };
     const array<const uint8_t, 5> buf = { };
 
-    cdb[0] = static_cast<int>(SEND_MESSAGE_6);
+    cdb[0] = to_underlying(SEND_MESSAGE_6);
 
     cdb[5] = 0x00;
     EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
@@ -159,7 +159,7 @@ TEST_F(DaynaportTest, SetInterfaceMode)
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
     EXPECT_CALL(*controller, Status);
     Dispatch(daynaport, SET_IFACE_MODE);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
     EXPECT_CALL(*controller, DataOut);

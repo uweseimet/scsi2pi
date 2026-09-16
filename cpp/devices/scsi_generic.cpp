@@ -190,8 +190,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
     io_hdr.timeout = (
-        local_cdb[0] == static_cast<uint8_t>(ScsiCommand::FORMAT) ? TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS)
-        * 1000;
+        local_cdb[0] == to_underlying(ScsiCommand::FORMAT) ? TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetController() && GetLogger().should_log(level::debug)) {
@@ -224,7 +223,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     // Replace SCSI level if an explicit level has been configured
     if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY
         && PrimaryDevice::GetScsiLevel() != ScsiLevel::NONE) {
-        buf[2] = static_cast<uint8_t>(GetScsiLevel());
+        buf[2] = to_underlying(GetScsiLevel());
     }
 
     // The remaining count for non-block oriented commands is 0 because there may be less than allocation length bytes
@@ -252,8 +251,8 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
         throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
     }
     // Do not consider CONDITION MET an error
-    else if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
-        status = static_cast<int>(StatusCode::GOOD);
+    else if (status == to_underlying(CONDITION_MET)) {
+        status = to_underlying(GOOD);
     }
 
     if (!status && static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY && GetController()
@@ -294,7 +293,7 @@ string ScsiGeneric::GetDeviceData()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb = { static_cast<uint8_t>(ScsiCommand::INQUIRY), 0, 0, 0, static_cast<uint8_t>(byte_count), 0 };
+    local_cdb = { to_underlying(ScsiCommand::INQUIRY), 0, 0, 0, static_cast<uint8_t>(byte_count), 0 };
 
     try {
         ReadWriteData(span(buf.data(), byte_count));
@@ -319,7 +318,7 @@ void ScsiGeneric::GetBlockSize()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb = { static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10), 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    local_cdb = { to_underlying(ScsiCommand::READ_CAPACITY_10), 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     try {
         // Trigger a block size update

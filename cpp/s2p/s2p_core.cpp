@@ -35,6 +35,7 @@ using namespace logger_util;
 using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
+using enum LocalizationKey;
 
 string S2p::InitBus()
 {
@@ -474,7 +475,7 @@ void S2p::SetDeviceProperties(PbDeviceDefinition &device, const string &key, con
         device.set_type(ParseDeviceType(value));
     }
     else if (key == PropertyHandler::SCSI_LEVEL) {
-        if (const int level = ParseAsUnsignedInt(value); level <= 0 || level >= static_cast<int>(ScsiLevel::LAST)) {
+        if (const int level = ParseAsUnsignedInt(value); level <= 0 || level >= to_underlying(ScsiLevel::LAST)) {
             throw ParserException("Invalid SCSI level: '{}'", value);
         }
         else {
@@ -536,7 +537,7 @@ bool S2p::ExecuteCommand(CommandContext &context)
     }
 
     if (!access_token.empty() && access_token != GetParam(context.GetCommand(), "token")) {
-        return context.ReturnLocalizedError(LocalizationKey::ERROR_AUTHENTICATION, UNAUTHORIZED);
+        return context.ReturnLocalizedError(ERROR_AUTHENTICATION, UNAUTHORIZED);
     }
 
     if (PbResult result; dispatcher->DispatchCommand(context, result)

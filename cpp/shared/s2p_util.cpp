@@ -240,33 +240,35 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
 {
     assert(sense_data.size() >= 14);
 
-    const auto flags = static_cast<int>(sense_data[2]);
+    const byte flags = sense_data[2];
 
-    const string &s = FormatSenseData(static_cast<SenseKey>(flags & 0x0f), static_cast<Asc>(sense_data[12]),
-        static_cast<int>(sense_data[13]));
+    const string &s = FormatSenseData(static_cast<SenseKey>(flags & byte { 0x0f }), static_cast<Asc>(sense_data[12]),
+        to_underlying(sense_data[13]));
 
-    if (!(static_cast<int>(sense_data[0]) & 0x80)) {
+    if ((sense_data[0] & byte { 0x80 }) == byte { 0 }) {
         return s;
     }
 
-    return s + fmt::format(", EOM: {}, ILI: {}, INFORMATION: {}", flags & 0x40 ? "1" : "0", flags & 0x20 ? "1" : "0",
+    return s
+        + fmt::format(", EOM: {}, ILI: {}, INFORMATION: {}", (flags & byte { 0x40 }) != byte { 0 } ? "1" : "0",
+            (flags & byte { 0x20 }) != byte { 0 } ? "1" : "0",
         static_cast<int>(GetInt32(sense_data, 3)));
 }
 
-string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, int ascq)
+string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, uint8_t ascq)
 {
-    assert(static_cast<int>(sense_key) < 16);
+    assert(to_underlying(sense_key) < 16);
 
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, static_cast<int>(asc), ascq);
+        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, to_underlying(asc), ascq);
     }
     else {
-        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", static_cast<int>(asc), ascq);
+        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", to_underlying(asc), ascq);
     }
 
-    return fmt::format("{} (Sense Key ${:02x}), {}", SENSE_KEYS[static_cast<int>(sense_key)],
-        static_cast<int>(sense_key), s_asc);
+    return fmt::format("{} (Sense Key ${:02x}), {}", SENSE_KEYS[to_underlying(sense_key)], to_underlying(sense_key),
+        s_asc);
 }
 
 vector<byte> s2p_util::HexToBytes(const string &hex)

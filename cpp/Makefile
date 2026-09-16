@@ -34,7 +34,7 @@ RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
 
 CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -DSPDLOG_NO_ATOMIC_LEVELS
-CXXFLAGS := -std=c++20 $(WARNING_FLAGS) -pthread -MD -MP
+CXXFLAGS := -std=c++2b $(WARNING_FLAGS) -pthread -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually

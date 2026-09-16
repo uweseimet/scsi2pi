@@ -68,7 +68,7 @@ void Controller::BusFree()
         bus.SetIO(false);
         bus.SetBSY(false);
 
-        SetStatus(StatusCode::GOOD);
+        SetStatus(GOOD);
 
         identified_lun = -1;
 
@@ -195,7 +195,7 @@ void Controller::Execute()
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (opcode != ScsiCommand::REQUEST_SENSE) {
-        SetStatus(StatusCode::GOOD);
+        SetStatus(GOOD);
         device->ResetStatus();
     }
 
@@ -208,7 +208,7 @@ void Controller::Execute()
         }
     }
     else {
-        Error(ILLEGAL_REQUEST, NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+        Error(ILLEGAL_REQUEST, NO_ADDITIONAL_SENSE_INFORMATION, RESERVATION_CONFLICT);
     }
 }
 
@@ -221,7 +221,7 @@ void Controller::Status()
 
     SetPhase(BusPhase::STATUS,
         fmt::format("STATUS phase, status is {} (status code ${:02x})", STATUS_MAPPING.at(GetStatus()),
-            static_cast<int>(GetStatus())));
+            to_underlying(GetStatus())));
 
     bus.SetMSG(false);
     bus.SetCD(true);
@@ -233,8 +233,8 @@ void Controller::Status()
 
     // If this is a successfully terminated linked command convert the status code
     GetBuffer()[0] =
-        linked && GetStatus() == StatusCode::GOOD ?
-            static_cast<uint8_t>(StatusCode::INTERMEDIATE) : static_cast<uint8_t>(GetStatus());
+        linked && GetStatus() == GOOD ?
+            to_underlying(INTERMEDIATE) : to_underlying(GetStatus());
 }
 
 void Controller::MsgIn()
@@ -403,11 +403,11 @@ void Controller::Send()
         SetTransferSize(1, 1);
         // Message byte
         if (linked) {
-            GetBuffer()[0] = static_cast<uint8_t>(
+            GetBuffer()[0] = to_underlying(
                 flag ? MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG : MessageCode::LINKED_COMMAND_COMPLETE);
         }
         else {
-            GetBuffer()[0] = static_cast<uint8_t>(MessageCode::COMMAND_COMPLETE);
+            GetBuffer()[0] = to_underlying(MessageCode::COMMAND_COMPLETE);
         }
         MsgIn();
         break;
@@ -554,20 +554,20 @@ void Controller::XferMsg()
 
 void Controller::ParseMessage()
 {
-    for (const uint8_t msg_byte : msg_bytes) {
+    for (const auto msg_byte : msg_bytes) {
         switch (msg_byte) {
         case 0x01: {
             RejectExtendedMessage();
             break;
         }
 
-        case static_cast<uint8_t>(MessageCode::ABORT): {
+        case to_underlying(MessageCode::ABORT): {
             LogTrace("Received ABORT message");
             BusFree();
             return;
         }
 
-        case static_cast<uint8_t>(MessageCode::BUS_DEVICE_RESET): {
+        case to_underlying(MessageCode::BUS_DEVICE_RESET): {
             LogTrace("Received BUS DEVICE RESET message");
             if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
                 device->SetReset(true);
@@ -670,9 +670,9 @@ void Controller::ProvideSenseData()
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
     buf[0] = 0x70;
-    buf[2] = static_cast<uint8_t>(deferred_sense_key);
+    buf[2] = to_underlying(deferred_sense_key);
     buf[7] = 10;
-    buf[12] = static_cast<uint8_t>(deferred_asc);
+    buf[12] = to_underlying(deferred_asc);
 
     deferred_sense_key = NO_SENSE;
     deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;

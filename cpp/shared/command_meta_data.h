@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <span>
 #include <string>
+#include <utility>
 #include "scsi.h"
 
 using namespace std;
@@ -41,17 +42,17 @@ public:
 
     const CdbMetaData& GetCdbMetaData(ScsiCommand cmd) const
     {
-        return cdb_meta_data[static_cast<size_t>(cmd)];
+        return cdb_meta_data[to_underlying(cmd)];
     }
 
     int GetByteCount(ScsiCommand cmd) const
     {
-        return command_byte_counts[static_cast<size_t>(cmd)];
+        return command_byte_counts[to_underlying(cmd)];
     }
 
     const string& GetCommandName(ScsiCommand cmd) const
     {
-        return command_names[static_cast<size_t>(cmd)];
+        return command_names[to_underlying(cmd)];
     }
 
     string LogCdb(span<const uint8_t>, string_view) const;
