@@ -19,6 +19,8 @@
 class PrimaryDevice;
 
 using namespace spdlog;
+using enum SenseKey;
+using enum Asc;
 
 class AbstractController
 {
@@ -91,7 +93,7 @@ public:
 
     bool ProcessPhase();
 
-    virtual void Error(SenseKey, Asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION,
+    virtual void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION,
         StatusCode = StatusCode::CHECK_CONDITION) = 0;
 
     virtual int GetEffectiveLun() const = 0;

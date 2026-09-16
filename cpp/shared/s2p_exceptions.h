@@ -45,7 +45,7 @@ class ScsiException final : public runtime_error
 
 public:
 
-    explicit ScsiException(SenseKey s, Asc a = Asc::NO_ADDITIONAL_SENSE_INFORMATION)
+    explicit ScsiException(SenseKey s, Asc a = NO_ADDITIONAL_SENSE_INFORMATION)
     : runtime_error(s2p_util::FormatSenseData(s, a)), sense_key(s), asc(a)
     {
     }

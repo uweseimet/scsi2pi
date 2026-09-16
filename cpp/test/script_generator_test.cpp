@@ -21,7 +21,7 @@ TEST(ScriptGeneratorTest, Add)
     const string &filename = CreateTempFile().string();
     EXPECT_TRUE(generator.CreateFile(filename).empty());
 
-    auto cdb = CreateCdb(ScsiCommand::TEST_UNIT_READY, "01:02:03:04:05");
+    auto cdb = CreateCdb(TEST_UNIT_READY, "01:02:03:04:05");
     EXPECT_TRUE(generator.AddCdb(1, 2, cdb));
     vector<uint8_t> data = { 0xff, 0xfe, 0xfd, 0xfc };
     EXPECT_TRUE(generator.AddData(data));

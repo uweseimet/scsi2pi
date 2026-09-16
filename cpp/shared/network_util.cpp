@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include <algorithm>
+#include <bit>
 #include "network_util.h"
 #include <cstring>
 #if __has_include(<ifaddrs.h>)
@@ -110,8 +111,7 @@ optional<sockaddr_in> network_util::ResolveHostName(const string &host)
     hints.ai_socktype = SOCK_STREAM;
 
     if (addrinfo *result; !getaddrinfo(host.c_str(), nullptr, &hints, &result)) {
-        sockaddr_in addr;
-        memcpy(&addr, result->ai_addr, sizeof(sockaddr_in)); // NOSONAR The bullseye compiler does not support bit_cast
+        auto addr = *bit_cast<sockaddr_in*>(result->ai_addr);
         freeaddrinfo(result);
         return addr;
     }

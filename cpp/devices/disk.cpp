@@ -205,7 +205,7 @@ void Disk::FormatUnit()
 
     // FMTDATA is not supported
     if (GetCdbByte(1) & 0x10) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
@@ -286,7 +286,7 @@ void Disk::ReadWriteLong()
     if (length != GetBlockSize()) {
         SetIli();
         SetInformation(length - GetBlockSize());
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     if (meta_data.has_data_out) {
@@ -416,7 +416,7 @@ int Disk::ReadData(data_in_t buf)
     CheckReady();
 
     if (!cache->ReadSectors(buf, next_sector, sector_transfer_count)) {
-        throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
+        throw ScsiException(MEDIUM_ERROR, READ_ERROR);
     }
 
     next_sector += sector_transfer_count;
@@ -439,7 +439,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int l)
         assert(linux_cache);
 
         if (!linux_cache->WriteLong(buf, next_sector, GetController()->GetChunkSize())) {
-            throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_FAULT);
+            throw ScsiException(MEDIUM_ERROR, WRITE_FAULT);
         }
 
         UpdateWriteCount(1);
@@ -449,7 +449,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int l)
 
     if ((command != ScsiCommand::VERIFY_10 && command != ScsiCommand::VERIFY_16)
         && !cache->WriteSectors(buf, next_sector, sector_transfer_count)) {
-        throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_FAULT);
+        throw ScsiException(MEDIUM_ERROR, WRITE_FAULT);
     }
 
     next_sector += sector_transfer_count;
@@ -464,7 +464,7 @@ void Disk::ReadCapacity10()
     CheckReady();
 
     if (!GetBlockCount()) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT);
+        throw ScsiException(ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT);
     }
 
     // If the capacity exceeds 32 bit, -1 must be returned and the client has to use READ CAPACITY(16)
@@ -481,7 +481,7 @@ void Disk::ReadCapacity16()
     CheckReady();
 
     if (!GetBlockCount()) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::MEDIUM_NOT_PRESENT);
+        throw ScsiException(ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT);
     }
 
     fill_n(GetController()->GetBuffer().begin(), 32, 0);
@@ -529,7 +529,7 @@ void Disk::ReadCapacity16_ReadLong16()
         break;
 
     default:
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 }
 
@@ -541,7 +541,7 @@ uint64_t Disk::ValidateBlockAddress()
 
     // RelAdr (READ/WRITE(10) only) is not supported
     if (meta_data.block_size == 4 && GetCdbByte(1) & 0x01) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     const uint64_t sector =
@@ -549,7 +549,7 @@ uint64_t Disk::ValidateBlockAddress()
 
     if (sector >= GetBlockCount()) {
         LogTrace("Capacity of {} sector(s) exceeded: Trying to access sector {}", GetBlockCount(), sector);
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+        throw ScsiException(ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
     }
 
     return sector;
@@ -609,7 +609,7 @@ pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount()
         if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
             LogTrace("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity, start,
                 count);
-            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+            throw ScsiException(ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
         }
     }
 

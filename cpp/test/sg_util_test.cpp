@@ -14,6 +14,7 @@
 
 using namespace memory_util;
 using namespace sg_util;
+using enum ScsiCommand;
 
 TEST(SgUtilTest, OpenDevice)
 {
@@ -25,31 +26,31 @@ TEST(SgUtilTest, GetAllocationLength)
 {
     vector<uint8_t> cdb(16);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
+    cdb[0] = static_cast<uint8_t>(READ_CAPACITY_10);
     EXPECT_EQ(8, GetAllocationLength(cdb));
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
+    cdb[0] = static_cast<uint8_t>(FORMAT);
     EXPECT_EQ(0, GetAllocationLength(cdb));
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
+    cdb[0] = static_cast<uint8_t>(READ_6);
     EXPECT_EQ(0, GetAllocationLength(cdb));
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
+    cdb[0] = static_cast<uint8_t>(INQUIRY);
     cdb[4] = 10;
     EXPECT_EQ(10, GetAllocationLength(cdb));
     cdb[4] = 0;
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_LONG_10);
+    cdb[0] = static_cast<uint8_t>(READ_LONG_10);
     SetInt16(cdb, 7, 0x1234);
     EXPECT_EQ(0x1234, GetAllocationLength(cdb));
     SetInt16(cdb, 7, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CD);
+    cdb[0] = static_cast<uint8_t>(READ_CD);
     SetInt24(cdb, 6, 0x123456);
     EXPECT_EQ(0x123456, GetAllocationLength(cdb));
     SetInt24(cdb, 6, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REPORT_LUNS);
+    cdb[0] = static_cast<uint8_t>(REPORT_LUNS);
     SetInt32(cdb, 6, 0x12345678);
     EXPECT_EQ(0x12345678, GetAllocationLength(cdb));
 }
@@ -58,50 +59,50 @@ TEST(SgUtilTest, UpdateStartBlock)
 {
     vector<uint8_t> cdb(6);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
+    cdb[0] = static_cast<uint8_t>(FORMAT);
     UpdateStartBlock(cdb, 255);
     EXPECT_EQ(0, GetInt24(cdb, 1));
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
+    cdb[0] = static_cast<uint8_t>(READ_6);
     UpdateStartBlock(cdb, 0x123456);
     EXPECT_EQ(0x123456, GetInt24(cdb, 1));
     SetInt24(cdb, 1, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_6);
+    cdb[0] = static_cast<uint8_t>(WRITE_6);
     UpdateStartBlock(cdb, 0x654321);
     EXPECT_EQ(0x654321, GetInt24(cdb, 1));
     SetInt24(cdb, 1, 0);
 
     cdb.resize(10);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_10);
+    cdb[0] = static_cast<uint8_t>(READ_10);
     UpdateStartBlock(cdb, 0x12345678);
     EXPECT_EQ(0x12345678U, GetInt32(cdb, 2));
     SetInt32(cdb, 2, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_10);
+    cdb[0] = static_cast<uint8_t>(WRITE_10);
     UpdateStartBlock(cdb, 0x87654321);
     EXPECT_EQ(0x87654321, GetInt32(cdb, 2));
     SetInt32(cdb, 2, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_10);
+    cdb[0] = static_cast<uint8_t>(VERIFY_10);
     UpdateStartBlock(cdb, 0x87654321);
     EXPECT_EQ(0x87654321, GetInt32(cdb, 2));
     SetInt32(cdb, 2, 0);
 
     cdb.resize(16);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_16);
+    cdb[0] = static_cast<uint8_t>(READ_16);
     UpdateStartBlock(cdb, 0x12345678);
     EXPECT_EQ(0x12345678U, GetInt64(cdb, 2));
     SetInt64(cdb, 2, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_16);
+    cdb[0] = static_cast<uint8_t>(WRITE_16);
     UpdateStartBlock(cdb, 0x12345678);
     EXPECT_EQ(0x12345678U, GetInt64(cdb, 2));
     SetInt64(cdb, 2, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_16);
+    cdb[0] = static_cast<uint8_t>(VERIFY_16);
     UpdateStartBlock(cdb, 0x12345678);
     EXPECT_EQ(0x12345678U, GetInt64(cdb, 2));
 }
@@ -110,57 +111,57 @@ TEST(SgUtilTest, SetBlockCount)
 {
     vector<uint8_t> cdb(6);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
+    cdb[0] = static_cast<uint8_t>(FORMAT);
     SetBlockCount(cdb, 255);
     EXPECT_EQ(0, cdb[4]);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
+    cdb[0] = static_cast<uint8_t>(READ_6);
     SetBlockCount(cdb, 1);
     EXPECT_EQ(1, cdb[4]);
     cdb[4] = 0;
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_6);
+    cdb[0] = static_cast<uint8_t>(WRITE_6);
     SetBlockCount(cdb, 2);
     EXPECT_EQ(2, cdb[4]);
     cdb[4] = 0;
 
     cdb.resize(10);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_10);
+    cdb[0] = static_cast<uint8_t>(READ_10);
     SetBlockCount(cdb, 12345);
     EXPECT_EQ(12345, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_10);
+    cdb[0] = static_cast<uint8_t>(WRITE_10);
     SetBlockCount(cdb, 54321);
     EXPECT_EQ(54321, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_10);
+    cdb[0] = static_cast<uint8_t>(VERIFY_10);
     SetBlockCount(cdb, 12345);
     EXPECT_EQ(12345, GetInt16(cdb, 7));
     SetInt16(cdb, 7, 0);
 
     cdb.resize(12);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CD);
+    cdb[0] = static_cast<uint8_t>(READ_CD);
     SetBlockCount(cdb, 12345);
     EXPECT_EQ(12345, GetInt24(cdb, 6));
     SetInt24(cdb, 6, 0);
 
     cdb.resize(16);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_16);
+    cdb[0] = static_cast<uint8_t>(READ_16);
     SetBlockCount(cdb, 12345678);
     EXPECT_EQ(12345678U, GetInt32(cdb, 10));
     SetInt16(cdb, 10, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_16);
+    cdb[0] = static_cast<uint8_t>(WRITE_16);
     SetBlockCount(cdb, 87654321);
     EXPECT_EQ(87654321U, GetInt32(cdb, 10));
     SetInt16(cdb, 10, 0);
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::VERIFY_16);
+    cdb[0] = static_cast<uint8_t>(VERIFY_16);
     SetBlockCount(cdb, 12345678);
     EXPECT_EQ(12345678U, GetInt32(cdb, 10));
     SetInt16(cdb, 10, 0);

@@ -60,7 +60,7 @@ void PageHandler::ValidateCdb() const
 
     // Subpages are not supported, block descriptor support depends on the device
     if (cdb[3] || (!supports_block_descriptors && (!(cdb[1] & 0x08)))) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 }
 
@@ -91,7 +91,7 @@ int PageHandler::AddModePages(int offset, int length, int max_size) const
     }
 
     if (pages.empty()) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     // Holds all mode page data
@@ -117,7 +117,7 @@ int PageHandler::AddModePages(int offset, int length, int max_size) const
     }
 
     if (static_cast<int>(result.size()) > max_size) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     const int size = min(max_length, static_cast<int>(result.size()));
@@ -186,7 +186,7 @@ map<int, vector<byte>> PageHandler::GetCustomModePages(const string &vendor, con
 void PageHandler::ModeSelect(int length) const
 {
     if (!supports_mode_select || (!supports_save_parameters && (device.GetCdbByte(1) & 0x01))) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     device.DataOutPhase(length);

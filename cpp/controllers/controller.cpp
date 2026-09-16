@@ -50,7 +50,7 @@ bool Controller::Process()
 
     // TODO Catch ScsiException here instead of everywhere else and call Error()?
     if (!ProcessPhase()) {
-        Error(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        Error(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         return false;
     }
 
@@ -116,12 +116,12 @@ void Controller::Command()
         if (actual_count <= 0) {
             if (!actual_count) {
                 LogDebug("Received an unknown command: ${:02x}", buf[0]);
-                RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
+                RaiseDeferredError(ILLEGAL_REQUEST, INVALID_COMMAND_OPERATION_CODE);
             }
             else {
                 bus.SetRST(true);
                 bus.Reset();
-                RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
+                RaiseDeferredError(ABORTED_COMMAND, COMMAND_PHASE_ERROR);
             }
             return;
         }
@@ -148,7 +148,7 @@ void Controller::Command()
                 command_bytes_count);
             bus.SetRST(true);
             bus.Reset();
-            RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
+            RaiseDeferredError(ABORTED_COMMAND, COMMAND_PHASE_ERROR);
             return;
         }
 
@@ -157,18 +157,18 @@ void Controller::Command()
         flag = control & 0x02;
 
         if (flag && !linked) {
-            RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+            RaiseDeferredError(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
             return;
         }
 
         // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_sense_key != SenseKey::NO_SENSE
+        if (deferred_sense_key != NO_SENSE
             && static_cast<ScsiCommand>(GetCdb()[0]) == ScsiCommand::REQUEST_SENSE) {
             ProvideSenseData();
             return;
         }
-        deferred_sense_key = SenseKey::NO_SENSE;
-        deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+        deferred_sense_key = NO_SENSE;
+        deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
 
         Execute();
     }
@@ -185,7 +185,7 @@ void Controller::Execute()
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
         if (opcode != ScsiCommand::INQUIRY && opcode != ScsiCommand::REQUEST_SENSE) {
-            Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
+            Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
             return;
         }
 
@@ -208,7 +208,7 @@ void Controller::Execute()
         }
     }
     else {
-        Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+        Error(ILLEGAL_REQUEST, NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
     }
 }
 
@@ -332,12 +332,12 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
     }
 
     int lun = GetEffectiveLun();
-    if (asc == Asc::LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
+    if (asc == LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
         assert(GetDeviceForLun(0));
         lun = 0;
     }
 
-    if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
+    if (sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION) {
         LogDebug(fmt::runtime(FormatSenseData(sense_key, asc)));
 
         // Set Sense Key and ASC in the device for a subsequent REQUEST SENSE
@@ -369,7 +369,7 @@ void Controller::Send()
             LogWarn("Sent {} byte(s), {} required", l, length);
             bus.SetRST(true);
             bus.Reset();
-            Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
+            Error(ABORTED_COMMAND, DATA_PHASE_ERROR);
             return;
         }
 
@@ -433,7 +433,7 @@ void Controller::Receive()
             LogWarn("Received {} byte(s), {} required", l, curr_length);
             bus.SetRST(true);
             bus.Reset();
-            Error(SenseKey::ABORTED_COMMAND, Asc::DATA_PHASE_ERROR);
+            Error(ABORTED_COMMAND, DATA_PHASE_ERROR);
             return;
         }
 
@@ -674,8 +674,8 @@ void Controller::ProvideSenseData()
     buf[7] = 10;
     buf[12] = static_cast<uint8_t>(deferred_asc);
 
-    deferred_sense_key = SenseKey::NO_SENSE;
-    deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+    deferred_sense_key = NO_SENSE;
+    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
 
     DataIn();
 }

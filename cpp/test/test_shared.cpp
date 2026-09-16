@@ -72,7 +72,7 @@ void TestShared::RequestSense(shared_ptr<MockAbstractController> controller, sha
 {
     // Allocation length
     controller->SetCdbByte(4, 255);
-    Dispatch(device, ScsiCommand::REQUEST_SENSE);
+    Dispatch(device, REQUEST_SENSE);
 }
 
 void TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, const string &ident,
@@ -83,7 +83,7 @@ void TestShared::Inquiry(PbDeviceType type, DeviceType t, ScsiLevel l, const str
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    device->Dispatch(ScsiCommand::INQUIRY);
+    device->Dispatch(INQUIRY);
     const auto &buffer = controller->GetBuffer();
     EXPECT_EQ(t, static_cast<DeviceType>(buffer[0]));
     EXPECT_EQ(removable ? 0x80 : 0x00, buffer[1]);
@@ -132,7 +132,7 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
 
     try {
         device->Dispatch(cmd);
-        if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
+        if (sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION) {
             FAIL() << msg;
         }
     }

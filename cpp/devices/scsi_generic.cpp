@@ -58,7 +58,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 {
     count = command_meta_data.GetByteCount(cmd);
     if (!count) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_COMMAND_OPERATION_CODE);
     }
 
     local_cdb.resize(count);
@@ -96,7 +96,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
     if (GetController()->GetEffectiveLun() && cmd != ScsiCommand::INQUIRY) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
+        throw ScsiException(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
     }
 
     auto &buf = GetController()->GetBuffer();
@@ -143,7 +143,7 @@ int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
             if (buf.size() < 4) {
-                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
+                throw ScsiException(ILLEGAL_REQUEST, PARAMETER_LIST_LENGTH_ERROR);
             }
 
             format_header.insert(format_header.end(), buf.begin(), buf.begin() + 4);
@@ -249,7 +249,7 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
             LogError("Transfer of {} byte(s) failed: {}", buf.size(), system_error(errno, generic_category()).what());
         }
 
-        throw ScsiException(SenseKey::ABORTED_COMMAND, write ? Asc::WRITE_ERROR : Asc::READ_ERROR);
+        throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
     }
     // Do not consider CONDITION MET an error
     else if (status == static_cast<int>(StatusCode::CONDITION_MET)) {
@@ -267,7 +267,7 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
         deferred_sense_data_valid = true;
 
         // Set the return status to CHECK CONDITION
-        throw ScsiException(SenseKey::NO_SENSE);
+        throw ScsiException(NO_SENSE);
     }
 }
 

@@ -63,7 +63,7 @@ TEST_F(HostServicesTest, GetIdentifier)
 TEST_F(HostServicesTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, ScsiCommand::TEST_UNIT_READY);
+    Dispatch(services, TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -76,71 +76,71 @@ TEST_F(HostServicesTest, StartStopUnit)
 {
     // STOP
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, ScsiCommand::START_STOP);
+    Dispatch(services, START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, ScsiCommand::START_STOP);
+    Dispatch(services, START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, ScsiCommand::START_STOP);
+    Dispatch(services, START_STOP);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
-    Dispatch(services, ScsiCommand::START_STOP, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+    Dispatch(services, START_STOP, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 }
 
 TEST_F(HostServicesTest, ExecuteOperation)
 {
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b001);
-    Dispatch(services, ScsiCommand::EXECUTE_OPERATION, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal length");
 
     controller->SetCdbByte(8, 1);
     controller->SetCdbByte(1, 0b001);
-    Dispatch(services, ScsiCommand::EXECUTE_OPERATION);
+    Dispatch(services, EXECUTE_OPERATION);
 }
 
 TEST_F(HostServicesTest, ReceiveOperationResults)
 {
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b11000);
-    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b010);
-    Dispatch(services, ScsiCommand::RECEIVE_OPERATION_RESULTS, SenseKey::ILLEGAL_REQUEST,
-        Asc::DATA_CURRENTLY_UNAVAILABLE, "No matching initiator ID");
+    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST,
+        DATA_CURRENTLY_UNAVAILABLE, "No matching initiator ID");
 }
 
 TEST_F(HostServicesTest, ModeSense6)
 {
-    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -148,7 +148,7 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, ScsiCommand::MODE_SENSE_6);
+    Dispatch(services, MODE_SENSE_6);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -164,24 +164,24 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, ScsiCommand::MODE_SENSE_6);
+    Dispatch(services, MODE_SENSE_6);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, ScsiCommand::MODE_SENSE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
 TEST_F(HostServicesTest, ModeSense10)
 {
-    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -189,7 +189,7 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, ScsiCommand::MODE_SENSE_10);
+    Dispatch(services, MODE_SENSE_10);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -205,14 +205,14 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, ScsiCommand::MODE_SENSE_10);
+    Dispatch(services, MODE_SENSE_10);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, ScsiCommand::MODE_SENSE_10, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
@@ -234,13 +234,13 @@ TEST_F(HostServicesTest, WriteData)
 {
     const array<const uint8_t, 1> buf = { };
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::TEST_UNIT_READY));
+    controller->SetCdbByte(0, static_cast<int>(TEST_UNIT_READY));
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "Illegal command";
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
+    controller->SetCdbByte(0, static_cast<int>(EXECUTE_OPERATION));
     services->WriteData(controller->GetCdb(), buf, 0);
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::EXECUTE_OPERATION));
+    controller->SetCdbByte(0, static_cast<int>(EXECUTE_OPERATION));
     controller->SetCdbByte(8, 1);
     EXPECT_THROW(services->WriteData(controller->GetCdb(), buf, 0), ScsiException)<< "protobuf data are invalid";
 }
@@ -253,5 +253,5 @@ TEST_F(HostServicesTest, SetDispatcher)
     auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
 
     dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
-    Dispatch(services, ScsiCommand::TEST_UNIT_READY);
+    Dispatch(services, TEST_UNIT_READY);
 }

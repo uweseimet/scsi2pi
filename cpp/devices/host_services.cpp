@@ -97,6 +97,8 @@ using namespace google::protobuf::util;
 using namespace memory_util;
 using namespace s2p_interface_util;
 using namespace s2p_util;
+using enum SenseKey;
+using enum Asc;
 
 HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
@@ -136,7 +138,7 @@ void HostServices::StartStopUnit() const
         GetController()->ScheduleShutdown(ShutdownMode::RESTART_PI);
     }
     else {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
@@ -150,7 +152,7 @@ void HostServices::ExecuteOperation()
 
     const int length = GetCdbInt16(7);
     if (!length) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -164,7 +166,7 @@ void HostServices::ReceiveOperationResults()
 
     const auto &it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::DATA_CURRENTLY_UNAVAILABLE);
+        throw ScsiException(ILLEGAL_REQUEST, DATA_CURRENTLY_UNAVAILABLE);
     }
     const string &execution_result = it->second;
 
@@ -177,10 +179,10 @@ void HostServices::ReceiveOperationResults()
     case ProtobufFormat::JSON: {
         PbResult result;
         if (!result.ParseFromString(execution_result)) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         if (const auto status = MessageToJsonString(result, &data); !status.ok()) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         break;
     }
@@ -188,7 +190,7 @@ void HostServices::ReceiveOperationResults()
     case ProtobufFormat::TEXT: {
         if (PbResult result; !result.ParseFromArray(execution_result.data(), static_cast<int>(execution_result.size()))
             || !TextFormat::PrintToString(result, &data)) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         break;
     }
@@ -279,7 +281,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt16(7);
@@ -292,25 +294,25 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
     switch (input_format) {
     case ProtobufFormat::BINARY:
         if (!cmd.ParseFromArray(buf.data(), length)) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         break;
 
     case ProtobufFormat::JSON:
         if (string c(to_const_char_ptr(buf), length); !JsonStringToMessage(c, &cmd).ok()) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         break;
 
     case ProtobufFormat::TEXT:
         if (string c(reinterpret_cast<const char*>(buf.data()), length); !TextFormat::ParseFromString(c, &cmd)) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         break;
 
     default:
         assert(false);
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     PbResult result;
@@ -318,7 +320,7 @@ int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
     context.SetLocale(s2p_interface_util::GetParam(cmd, "locale"));
     if (!dispatcher->DispatchCommand(context, result)) {
         LogTrace("Failed to execute {} operation", PbOperation_Name(cmd.operation()));
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
     }
 
     execution_results[GetController()->GetInitiatorId()] = result.SerializeAsString();
@@ -339,6 +341,6 @@ ProtobufFormat HostServices::ConvertFormat() const
         return ProtobufFormat::TEXT;
 
     default:
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 }

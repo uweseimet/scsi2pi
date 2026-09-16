@@ -71,7 +71,7 @@ TEST_F(PrinterTest, Init)
 TEST_F(PrinterTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, ScsiCommand::TEST_UNIT_READY);
+    Dispatch(printer, TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -83,33 +83,33 @@ TEST_F(PrinterTest, Inquiry)
 TEST_F(PrinterTest, ReserveUnit)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, ScsiCommand::RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(printer, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, ReleaseUnit)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, ScsiCommand::RELEASE_RELEASE_ELEMENT_6);
+    Dispatch(printer, RELEASE_RELEASE_ELEMENT_6);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, Print)
 {
     EXPECT_CALL(*controller, DataOut).Times(AtLeast(1));
-    Dispatch(printer, ScsiCommand::PRINT);
+    Dispatch(printer, PRINT);
 
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    Dispatch(printer, ScsiCommand::PRINT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(printer, PRINT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Buffer overflow was not reported");
 }
 
 TEST_F(PrinterTest, StopPrint)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, ScsiCommand::STOP_PRINT);
+    Dispatch(printer, STOP_PRINT);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -119,21 +119,21 @@ TEST_F(PrinterTest, SynchronizeBuffer)
     params["cmd"] = "false %f";
     printer->SetParams(params);
 
-    Dispatch(printer, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
+    controller->SetCdbByte(0, static_cast<int>(PRINT));
     controller->SetTransferSize(4, 4);
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
-    Dispatch(printer, ScsiCommand::SYNCHRONIZE_BUFFER, SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
 }
 
 TEST_F(PrinterTest, WriteData)
 {
     controller->SetTransferSize(4, 4);
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::CLOSE_TRACK_SESSION));
+    controller->SetCdbByte(0, static_cast<int>(CLOSE_TRACK_SESSION));
     EXPECT_THROW(printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4), ScsiException);
 
-    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PRINT));
+    controller->SetCdbByte(0, static_cast<int>(PRINT));
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
 }
 

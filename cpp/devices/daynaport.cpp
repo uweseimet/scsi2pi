@@ -266,7 +266,7 @@ void DaynaPort::RetrieveStats() const
 void DaynaPort::GetMessage6()
 {
     if (GetCdbByte(5) != 0xc0 && GetCdbByte(5) != 0x80) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     const auto length = GetMessage(GetController()->GetBuffer());
@@ -288,7 +288,7 @@ void DaynaPort::SendMessage6() const
     }
 
     if (!length) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -337,7 +337,7 @@ void DaynaPort::SetInterfaceMode() const
 
     default:
         LogWarn("Unknown SetInterfaceMode mode: ${:02x}", GetCdbByte(5));
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
         break;
     }
 }
@@ -346,7 +346,7 @@ void DaynaPort::SetMcastAddr() const
 {
     const int length = GetCdbByte(4);
     if (!length) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     // Currently the multicast address passed is ignored
@@ -370,7 +370,7 @@ void DaynaPort::EnableInterface() const
     if (GetCdbByte(5) & 0x80) {
         if (const string &error = tap.IpLink(true); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: {}", error);
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
 
         tap.Flush();
@@ -380,7 +380,7 @@ void DaynaPort::EnableInterface() const
     else {
         if (const string &error = tap.IpLink(false); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: {}", error);
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
 
         LogDebug("The DaynaPort interface has been disabled");

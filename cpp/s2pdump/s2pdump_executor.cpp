@@ -227,12 +227,12 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
         const SenseKey sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[2]) & 0x0f);
 
         // EOD or EOM?
-        if (sense_key == SenseKey::BLANK_CHECK || static_cast<int>(sense_data[2]) & 0x40) {
+        if (sense_key == BLANK_CHECK || static_cast<int>(sense_data[2]) & 0x40) {
             GetLogger().debug("No more data");
             return NO_MORE_DATA;
         }
 
-        if (sense_key == SenseKey::MEDIUM_ERROR) {
+        if (sense_key == MEDIUM_ERROR) {
             if (has_error) {
                 return BAD_BLOCK;
             }

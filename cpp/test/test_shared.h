@@ -17,6 +17,9 @@
 
 using namespace filesystem;
 using namespace s2p_interface;
+using enum SenseKey;
+using enum Asc;
+using enum ScsiCommand;
 
 class PrimaryDevice;
 class MockAbstractController;
@@ -39,8 +42,8 @@ string ReadTempFileToString(const string&);
 
 void SetUpProperties(string_view, string_view = "", const property_map& = { });
 
-void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = SenseKey::NO_SENSE, Asc =
-    Asc::NO_ADDITIONAL_SENSE_INFORMATION, const string& = "");
+void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = NO_SENSE, Asc = NO_ADDITIONAL_SENSE_INFORMATION,
+    const string& = "");
 
 void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
 
@@ -53,8 +56,8 @@ public:
     static void RequestSense(shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>);
     static void Inquiry(PbDeviceType, DeviceType, ScsiLevel, const string&, int, bool, const string& = "");
     static void TestRemovableDrive(PbDeviceType, const string&, const string&);
-    static void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = SenseKey::NO_SENSE, Asc =
-        Asc::NO_ADDITIONAL_SENSE_INFORMATION, const string& = "");
+    static void Dispatch(shared_ptr<PrimaryDevice>, ScsiCommand, SenseKey = NO_SENSE, Asc =
+        NO_ADDITIONAL_SENSE_INFORMATION, const string& = "");
 
     static void CleanUp()
     {

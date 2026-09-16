@@ -158,7 +158,7 @@ bool CommandExecutor::Stop(PrimaryDevice &device) const
 
     device.Stop();
 
-    device.SetStatus(SenseKey::NO_SENSE, Asc::NO_ADDITIONAL_SENSE_INFORMATION);
+    device.SetStatus(NO_SENSE, NO_ADDITIONAL_SENSE_INFORMATION);
 
     return true;
 }

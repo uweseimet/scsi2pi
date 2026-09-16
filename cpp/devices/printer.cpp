@@ -106,7 +106,7 @@ void Printer::Print()
 
         ++print_error_count;
 
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     GetController()->SetTransferSize(length, length);
@@ -121,7 +121,7 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
     }
 
     out.close();
@@ -145,7 +145,7 @@ void Printer::SynchronizeBuffer()
 
         CleanUp();
 
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
     }
 
     ++file_print_count;
@@ -158,7 +158,7 @@ void Printer::SynchronizeBuffer()
 int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
     if (cdb[0] != static_cast<int>(ScsiCommand::PRINT)) {
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+        throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
     }
 
     const auto length = GetCdbInt24(2);
@@ -175,7 +175,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
             LogError("Can't create printer output file for pattern '{}': {}", filename,
                 system_error(errno, generic_category()).what());
             ++print_error_count;
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+            throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
         }
 
         close(fd);
@@ -198,7 +198,7 @@ void Printer::CheckForFileError()
     if (out.fail()) {
         out.clear();
         ++print_error_count;
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
     }
 }
 

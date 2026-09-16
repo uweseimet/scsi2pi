@@ -65,28 +65,28 @@ TEST(ScsiGenericTest, Dispatch)
 
     EXPECT_THAT([&] { device->Dispatch(static_cast<ScsiCommand>(0x1f)); },
         Throws<ScsiException>(AllOf(
-            Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::GetAsc, Asc::INVALID_COMMAND_OPERATION_CODE))));
+            Property(&ScsiException::GetSenseKey, ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, INVALID_COMMAND_OPERATION_CODE))));
 
-    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::TEST_UNIT_READY) ; },
+    EXPECT_THAT([&] { device->Dispatch(TEST_UNIT_READY) ; },
         Throws<ScsiException>(AllOf(
-        Property(&ScsiException::GetSenseKey, SenseKey::ABORTED_COMMAND),
-        Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
+        Property(&ScsiException::GetSenseKey, ABORTED_COMMAND),
+        Property(&ScsiException::GetAsc, READ_ERROR))));
 
-    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::READ_6) ; },
+    EXPECT_THAT([&] { device->Dispatch(READ_6) ; },
         Throws<ScsiException>(AllOf(
-            Property(&ScsiException::GetSenseKey, SenseKey::ABORTED_COMMAND),
-            Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
+            Property(&ScsiException::GetSenseKey, ABORTED_COMMAND),
+            Property(&ScsiException::GetAsc, READ_ERROR))));
 
     EXPECT_CALL(*controller, DataOut);
-    device->Dispatch(ScsiCommand::WRITE_6);
+    device->Dispatch(WRITE_6);
 
     EXPECT_CALL(*controller, DataOut);
-    device->Dispatch(ScsiCommand::FORMAT);
+    device->Dispatch(FORMAT);
 
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
-    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT) ; },
+    EXPECT_THAT([&] { device->Dispatch(FORMAT) ; },
         Throws<ScsiException>(AllOf(
-            Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
-            Property(&ScsiException::GetAsc, Asc::LOGICAL_UNIT_NOT_SUPPORTED))));
+            Property(&ScsiException::GetSenseKey, ILLEGAL_REQUEST),
+            Property(&ScsiException::GetAsc, LOGICAL_UNIT_NOT_SUPPORTED))));
 }

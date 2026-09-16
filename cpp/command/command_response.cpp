@@ -340,7 +340,7 @@ void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevi
     }
 
     for (const auto& [i, l] : id_sets) {
-        // Work-around for the bullseye compiler, which has issues with referencing i/l in the lambda below
+        // Work-around for old versions of clang++, which have issues with referencing i/l in the lambda below
         const int id = i;
         const int lun = l;
         if (const auto &it = ranges::find_if(devices,

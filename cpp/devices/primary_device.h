@@ -17,6 +17,10 @@
 #include "shared/memory_util.h"
 #include "shared/s2p_defs.h"
 
+using enum SenseKey;
+using enum Asc;
+using enum Ascq;
+
 class AbstractController;
 
 class PrimaryDevice : public Device // NOSONAR The number of fields and methods is justified, the complexity is low
@@ -178,9 +182,9 @@ private:
     ScsiLevel level = ScsiLevel::NONE;
     ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;
 
-    SenseKey sense_key = SenseKey::NO_SENSE;
-    Asc asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
-    Ascq eom = Ascq::NONE;
+    SenseKey sense_key = NO_SENSE;
+    Asc asc = NO_ADDITIONAL_SENSE_INFORMATION;
+    Ascq eom = NONE;
 
     bool valid = false;
     bool filemark = false;

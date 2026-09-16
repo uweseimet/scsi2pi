@@ -70,7 +70,7 @@ void PrimaryDevice::Dispatch(ScsiCommand cmd)
         command();
     }
     else {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_COMMAND_OPERATION_CODE);
     }
 }
 
@@ -91,13 +91,13 @@ void PrimaryDevice::SetStatus(enum SenseKey s, enum Asc a)
 
 void PrimaryDevice::ResetStatus()
 {
-    sense_key = SenseKey::NO_SENSE;
-    asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+    sense_key = NO_SENSE;
+    asc = NO_ADDITIONAL_SENSE_INFORMATION;
     valid = false;
     filemark = false;
     ili = false;
     information = 0;
-    eom = Ascq::NONE;
+    eom = NONE;
 }
 
 void PrimaryDevice::SetFilemark()
@@ -212,7 +212,7 @@ void PrimaryDevice::Inquiry()
 {
     // Reserved bits, EVPD, CMDDT and page code check
     if ((GetCdbByte(1) & 0x1f) || GetCdbByte(2)) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     const auto &buf = HandleInquiry();
@@ -234,7 +234,7 @@ void PrimaryDevice::ReportLuns() const
 {
     // Only SELECT REPORT mode 0 is supported
     if (GetCdbByte(2)) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     const uint32_t allocation_length = GetCdbInt32(6);
@@ -259,7 +259,7 @@ void PrimaryDevice::RequestSense()
 {
     // The descriptor format is not supported
     if (GetCdbByte(1) & 0x01) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     int effective_lun = controller->GetEffectiveLun();
@@ -268,13 +268,13 @@ void PrimaryDevice::RequestSense()
     // Only the Sense Key and ASC are set to signal the non-existing LUN.
     if (!controller->GetDeviceForLun(effective_lun)) {
         if (!controller->GetDeviceForLun(0)) {
-            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
 
         effective_lun = 0;
 
         // When signalling an invalid LUN, the status must be GOOD
-        controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
+        controller->Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
     }
 
     const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -297,7 +297,7 @@ void PrimaryDevice::SendDiagnostic() const
 {
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     StatusPhase();
@@ -308,18 +308,18 @@ void PrimaryDevice::CheckReady()
     // Not ready if reset
     if (IsReset()) {
         SetReset(false);
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::POWER_ON_OR_RESET);
+        throw ScsiException(UNIT_ATTENTION, POWER_ON_OR_RESET);
     }
 
     // Not ready if it needs attention
     if (IsAttn()) {
         SetAttn(false);
-        throw ScsiException(SenseKey::UNIT_ATTENTION, Asc::NOT_READY_TO_READY_TRANSITION);
+        throw ScsiException(UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
     }
 
     // Return status if not ready
     if (!IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+        throw ScsiException(NOT_READY, MEDIUM_NOT_PRESENT);
     }
 }
 
@@ -346,8 +346,8 @@ vector<uint8_t> PrimaryDevice::HandleInquiry() const
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
     // Return not ready only if there are no errors
-    if (sense_key == SenseKey::NO_SENSE && !IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    if (sense_key == NO_SENSE && !IsReady()) {
+        throw ScsiException(NOT_READY, MEDIUM_NOT_PRESENT);
     }
 
     vector<byte> buf(18);
@@ -371,9 +371,9 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
 
     if (filemark) {
         buf[2] |= byte { 0x80 };
-        buf[13] = static_cast<byte>(Ascq::FILEMARK_DETECTED);
+        buf[13] = static_cast<byte>(FILEMARK_DETECTED);
     }
-    else if (eom != Ascq::NONE) {
+    else if (eom != NONE) {
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }
@@ -419,7 +419,7 @@ void PrimaryDevice::DiscardReservation()
 void PrimaryDevice::ModeSelect(cdb_t, data_out_t, int)
 {
     // There is no default implementation of MODE SELECT
-    throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+    throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 }
 
 int PrimaryDevice::GetCdbByte(int index) const

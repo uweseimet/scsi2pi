@@ -78,7 +78,7 @@ TEST_F(DaynaportTest, HandleInquiry)
 TEST_F(DaynaportTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(daynaport, ScsiCommand::TEST_UNIT_READY);
+    Dispatch(daynaport, TEST_UNIT_READY);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 }
 
@@ -87,7 +87,7 @@ TEST_F(DaynaportTest, WriteData)
     array<int, 6> cdb = { };
     const array<const uint8_t, 5> buf = { };
 
-    cdb[0] = static_cast<int>(ScsiCommand::SEND_MESSAGE_6);
+    cdb[0] = static_cast<int>(SEND_MESSAGE_6);
 
     cdb[5] = 0x00;
     EXPECT_EQ(0, daynaport->WriteData(cdb, buf, 0));
@@ -105,41 +105,41 @@ TEST_F(DaynaportTest, GetMessage6)
     controller->SetCdbByte(4, 0x01);
     controller->SetCdbByte(5, 0xc0);
     controller->GetBuffer()[0] = 0x12;
-    Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6);
+    Dispatch(daynaport, GET_MESSAGE_6);
     EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
 
     controller->SetCdbByte(4, 0x01);
     controller->SetCdbByte(5, 0x80);
-    Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6);
+    Dispatch(daynaport, GET_MESSAGE_6);
     EXPECT_EQ(0x12, controller->GetBuffer()[0]) << "No data must be returned when trying to read the root sector";
 
     controller->SetCdbByte(4, 0x00);
     controller->SetCdbByte(5, 0xff);
-    Dispatch(daynaport, ScsiCommand::GET_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, GET_MESSAGE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Invalid data format");
 }
 
 TEST_F(DaynaportTest, SendMessage6)
 {
     controller->SetCdbByte(5, 0x00);
-    Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SEND_MESSAGE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
 
     controller->SetCdbByte(3, 255);
     controller->SetCdbByte(4, 0);
     controller->SetCdbByte(5, 0x08);
-    Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SEND_MESSAGE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
 
     controller->SetCdbByte(3, 0);
     controller->SetCdbByte(4, 0);
     controller->SetCdbByte(5, 0xff);
-    Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SEND_MESSAGE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Invalid transfer length");
 
     controller->SetCdbByte(5, 0x80);
     EXPECT_CALL(*controller, DataOut);
-    Dispatch(daynaport, ScsiCommand::SEND_MESSAGE_6);
+    Dispatch(daynaport, SEND_MESSAGE_6);
 }
 
 TEST_F(DaynaportTest, TestRetrieveStats)
@@ -147,57 +147,57 @@ TEST_F(DaynaportTest, TestRetrieveStats)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(daynaport, ScsiCommand::RETRIEVE_STATS);
+    Dispatch(daynaport, RETRIEVE_STATS);
 }
 
 TEST_F(DaynaportTest, SetInterfaceMode)
 {
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SET_IFACE_MODE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Unknown interface command");
 
     // Not implemented, do nothing
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMODE);
     EXPECT_CALL(*controller, Status);
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE);
+    Dispatch(daynaport, SET_IFACE_MODE);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SETMAC);
     EXPECT_CALL(*controller, DataOut);
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE);
+    Dispatch(daynaport, SET_IFACE_MODE);
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_STATS);
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SET_IFACE_MODE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Not implemented");
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_ENABLE);
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SET_IFACE_MODE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Not implemented");
 
     controller->SetCdbByte(5, DaynaPort::CMD_SCSILINK_SET);
-    Dispatch(daynaport, ScsiCommand::SET_IFACE_MODE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SET_IFACE_MODE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Not implemented");
 }
 
 TEST_F(DaynaportTest, SetMcastAddr)
 {
-    Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB,
+    Dispatch(daynaport, SET_MCAST_ADDR, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Length of 0 is not supported");
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, DataOut);
-    Dispatch(daynaport, ScsiCommand::SET_MCAST_ADDR);
+    Dispatch(daynaport, SET_MCAST_ADDR);
 }
 
 TEST_F(DaynaportTest, EnableInterface)
 {
     controller->SetCdbByte(5, 0x80);
-    Dispatch(daynaport, ScsiCommand::ENABLE_INTERFACE, SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+    Dispatch(daynaport, ENABLE_INTERFACE, ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
 }
 
 TEST_F(DaynaportTest, DisableInterface)
 {
     controller->SetCdbByte(5, 0x00);
-    Dispatch(daynaport, ScsiCommand::ENABLE_INTERFACE, SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+    Dispatch(daynaport, ENABLE_INTERFACE, ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
 }
 
 TEST_F(DaynaportTest, GetDelayAfterBytes)

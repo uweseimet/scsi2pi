@@ -70,14 +70,14 @@ void ScsiCd::ReadToc()
 
     // Track must be 1, except for lead out track ($AA)
     if (track > 1 && track != 0xaa) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
     uint8_t track_number = 1;
     uint32_t track_address = first_lba;
     if (track && !track_initialized) {
         if (track != 0xaa) {
-            throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+            throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
         }
 
         track_number = 0xaa;
@@ -145,14 +145,14 @@ int ScsiCd::ReadData(data_in_t buf)
     CheckReady();
 
     if (const auto lba = static_cast<uint32_t>(GetNextSector()); first_lba > lba || last_lba < lba) {
-        throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE);
+        throw ScsiException(ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
     }
 
     if (!track_initialized) {
         SetBlockCount(last_lba - first_lba + 1);
 
         if (!InitCache(GetFilename())) {
-            throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::READ_ERROR);
+            throw ScsiException(MEDIUM_ERROR, READ_ERROR);
         }
 
         track_initialized = true;
