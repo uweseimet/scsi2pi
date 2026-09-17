@@ -8,7 +8,6 @@
 
 #include <fstream>
 #include <iomanip>
-#include <sstream>
 #include <random>
 #include <fcntl.h>
 #include <unistd.h>
@@ -155,10 +154,7 @@ string CreateTempName()
     thread_local mt19937_64 gen(rd()); // NOSONAR Using this random generator for the unit tests is safe
     thread_local uniform_int_distribution<uint64_t> dis;
 
-    ostringstream ss;
-    ss << "scsi2pi_test-" << hex << setfill('0') << setw(16) << dis(gen);
-
-    return (temp_directory_path() / ss.str()).string(); // NOSONAR Publicly writable directory is safe here
+    return (temp_directory_path() / fmt::format("scsi2pi_test-{:016x}", dis(gen))).string(); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> OpenTempFile(const string &extension)

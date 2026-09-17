@@ -22,7 +22,7 @@ using namespace std;
 namespace network_util
 {
 
-vector<uint8_t> GetMacAddress(const string&);
+vector<uint8_t> GetMacAddress(string_view);
 set<string, less<>> GetNetworkInterfaces();
 #if __has_include(<netinet/in.h>)
 optional<sockaddr_in> ResolveHostName(const string&);

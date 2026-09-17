@@ -10,9 +10,11 @@
 //---------------------------------------------------------------------------
 
 #include "disk_track.h"
+#include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <fstream>
-#include <spdlog/spdlog.h>
+#include <memory>
 
 void DiskTrack::Init(int64_t track, int size, int sectors)
 {

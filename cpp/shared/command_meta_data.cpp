@@ -35,7 +35,7 @@ CommandMetaData::CommandMetaData()
     // 0xc0-0xff are vendor-specific commands with unknown lengths
 
     // This mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
-    // and some others typically used with the SCSG device
+    // and some others typically used with the SCSG device (SCSI-to-USB bridge)
     AddCommand(ScsiCommand::TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::REZERO_REWIND, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_BLOCK_LIMITS, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false, false });

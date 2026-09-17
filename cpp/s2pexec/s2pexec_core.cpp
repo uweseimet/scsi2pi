@@ -444,7 +444,7 @@ int S2pExec::Run()
             result = -1;
         }
         else if (const auto& [sense_key, asc, ascq] = *sense;
-        sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
+        sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION || ascq != NO_QUALIFIER) {
             cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
             result = static_cast<int>(asc);
         }
@@ -519,7 +519,7 @@ optional<SenseData> S2pExec::ExecuteCommand()
         hex_input_filename.clear();
     }
 
-    return SenseData { .sense_key = NO_SENSE, .asc = NO_ADDITIONAL_SENSE_INFORMATION, .ascq = 0 };
+    return SenseData { .sense_key = NO_SENSE, .asc = NO_ADDITIONAL_SENSE_INFORMATION, .ascq = NO_QUALIFIER };
 }
 
 string S2pExec::ReadData()

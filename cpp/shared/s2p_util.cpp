@@ -243,7 +243,7 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
     const byte flags = sense_data[2];
 
     const string &s = FormatSenseData(static_cast<SenseKey>(flags & byte { 0x0f }), static_cast<Asc>(sense_data[12]),
-        to_underlying(sense_data[13]));
+        static_cast<Ascq>(sense_data[13]));
 
     if ((sense_data[0] & byte { 0x80 }) == byte { 0 }) {
         return s;
@@ -255,16 +255,16 @@ string s2p_util::FormatSenseData(span<const byte> sense_data)
         static_cast<int>(GetInt32(sense_data, 3)));
 }
 
-string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, uint8_t ascq)
+string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, Ascq ascq)
 {
     assert(to_underlying(sense_key) < 16);
 
     string s_asc;
     if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, to_underlying(asc), ascq);
+        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, to_underlying(asc), to_underlying(ascq));
     }
     else {
-        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", to_underlying(asc), ascq);
+        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", to_underlying(asc), to_underlying(ascq));
     }
 
     return fmt::format("{} (Sense Key ${:02x}), {}", SENSE_KEYS[to_underlying(sense_key)], to_underlying(sense_key),

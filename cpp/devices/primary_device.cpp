@@ -97,7 +97,7 @@ void PrimaryDevice::ResetStatus()
     filemark = false;
     ili = false;
     information = 0;
-    eom = NONE;
+    eom = NO_QUALIFIER;
 }
 
 void PrimaryDevice::SetFilemark()
@@ -371,7 +371,7 @@ vector<byte> PrimaryDevice::HandleRequestSense() const
         buf[2] |= byte { 0x80 };
         buf[13] = static_cast<byte>(FILEMARK_DETECTED);
     }
-    else if (eom != NONE) {
+    else if (eom != NO_QUALIFIER) {
         buf[2] |= byte { 0x40 };
         buf[13] = static_cast<byte>(eom);
     }

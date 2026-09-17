@@ -329,7 +329,7 @@ optional<SenseData> InitiatorExecutor::GetSenseData()
     return SenseData {
         .sense_key = static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f),
         .asc = static_cast<Asc>(buf[12]),
-        .ascq = buf[13]
+        .ascq = static_cast<Ascq>(buf[13])
     };
 }
 

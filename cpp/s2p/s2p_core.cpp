@@ -12,7 +12,6 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
 #endif

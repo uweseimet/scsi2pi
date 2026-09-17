@@ -30,10 +30,11 @@ using namespace std;
 namespace
 {
 
-bool IsInterfaceUp(const string &interface)
+bool IsInterfaceUp(string_view interface)
 {
     ifreq ifr = { };
-    ranges::copy(interface, ifr.ifr_name);
+    const size_t len = min(interface.size(), sizeof(ifr.ifr_name) - 1);
+    ranges::copy_n(interface.begin(), len, ifr.ifr_name);
 
     const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {
@@ -52,11 +53,12 @@ bool IsInterfaceUp(const string &interface)
 }
 #endif
 
-vector<uint8_t> network_util::GetMacAddress(const string &interface)
+vector<uint8_t> network_util::GetMacAddress(string_view interface)
 {
 #ifdef SIOCGIFHWADDR
     ifreq ifr = { };
-    ranges::copy(interface, ifr.ifr_name);
+    const size_t len = min(interface.size(), sizeof(ifr.ifr_name) - 1);
+    ranges::copy_n(interface.begin(), len, ifr.ifr_name);
 
     const int fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (fd == -1) {

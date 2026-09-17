@@ -196,9 +196,9 @@ TEST(S2pUtilTest, GetStatusString)
 TEST(S2pUtilTest, FormatSenseData)
 {
     EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), COMMAND PHASE ERROR (ASC $4a), ASCQ $00", FormatSenseData(
-        ABORTED_COMMAND, COMMAND_PHASE_ERROR, 0x00));
+        ABORTED_COMMAND, COMMAND_PHASE_ERROR, NO_QUALIFIER));
     EXPECT_EQ("ABORTED COMMAND (Sense Key $0b), ASC $ff, ASCQ $ff", FormatSenseData(
-        ABORTED_COMMAND, static_cast<Asc>(0xff), 0xff));
+        ABORTED_COMMAND, static_cast<Asc>(0xff), static_cast<Ascq>(0xff)));
 }
 
 TEST(S2pUtilTest, GetHexBytes)

@@ -13,10 +13,10 @@
 #include <filesystem>
 #include <iostream>
 #include <limits>
-#include <sstream>
 #include <unordered_map>
 #include <span>
 #include <vector>
+#include <fmt/ranges.h>
 #include "scsi.h"
 
 using namespace std;
@@ -24,6 +24,7 @@ using namespace filesystem;
 using enum StatusCode;
 using enum SenseKey;
 using enum Asc;
+using enum Ascq;
 
 namespace s2p_util
 {
@@ -43,18 +44,7 @@ struct StringHash
 
 inline string Join(const auto &collection, const string &separator = ", ")
 {
-    // Using a stream (and not a string) is required in order to correctly convert the element data
-    ostringstream s;
-
-    for (const auto &element : collection) {
-        if (s.tellp()) {
-            s << separator;
-        }
-
-        s << element;
-    }
-
-    return s.str();
+    return fmt::to_string(fmt::join(collection, separator));
 }
 
 string GetVersionString();
@@ -76,7 +66,7 @@ string GetScsiLevel(int);
 string GetStatusString(int);
 
 string FormatSenseData(span<const byte>);
-string FormatSenseData(SenseKey, Asc, uint8_t = 0);
+string FormatSenseData(SenseKey, Asc, Ascq = NO_QUALIFIER);
 
 vector<byte> HexToBytes(const string&);
 

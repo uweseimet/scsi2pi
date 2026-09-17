@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 
 #include "tap_driver.h"
-#include <sstream>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <linux/if_tun.h>

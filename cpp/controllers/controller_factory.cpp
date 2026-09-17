@@ -103,16 +103,25 @@ void ControllerFactory::SetLogLevel(int id, int lun, level::level_enum level)
 {
     log_level = level;
 
-    for (const auto &device : GetAllDevices()) {
-        if (id == -1 || (device->GetId() == id && (lun == -1 || device->GetLun() == lun))) {
-            device->GetController()->GetLogger().set_level(log_level);
-            device->GetController()->GetLogger().set_pattern(log_pattern);
-            device->GetLogger().set_level(log_level);
-            device->SetLogPattern(log_pattern);
+    for (const auto& [target_id, controller] : controllers) {
+        const bool target_matches = id == -1 || target_id == id;
+
+        if (target_matches) {
+            controller->GetLogger().set_level(log_level);
+            controller->GetLogger().set_pattern(log_pattern);
         }
         else {
-            device->GetController()->GetLogger().set_level(level::level_enum::off);
-            device->GetLogger().set_level(level::level_enum::off);
+            controller->GetLogger().set_level(level::level_enum::off);
+        }
+
+        for (const auto &device : controller->GetDevices()) {
+            if (target_matches && (lun == -1 || device->GetLun() == lun)) {
+                device->GetLogger().set_level(log_level);
+                device->SetLogPattern(log_pattern);
+            }
+            else {
+                device->GetLogger().set_level(level::level_enum::off);
+            }
         }
     }
 }

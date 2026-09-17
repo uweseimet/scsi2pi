@@ -97,7 +97,7 @@ optional<SenseData> S2pExecExecutor::GetSenseData() const
         return SenseData {
             .sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[0]) & 0x0f),
             .asc = static_cast<Asc>(sense_data[12]),
-            .ascq = sense_data[13]
+            .ascq = static_cast<Ascq>(sense_data[13])
         };
     }
 #endif

@@ -228,7 +228,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     // Global options
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
-        { 'd', PropertyHandler::ENABLE_IRQS },
+        { 'e', PropertyHandler::ENABLE_IRQS },
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },

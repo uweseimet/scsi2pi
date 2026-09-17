@@ -234,7 +234,7 @@ enum class Asc : uint8_t
 
 enum class Ascq : uint8_t
 {
-    NONE = 0x00,
+    NO_QUALIFIER = 0x00,
     FILEMARK_DETECTED = 0x01,
     END_OF_PARTITION_MEDIUM_DETECTED = 0x02,
     BEGINNING_OF_PARTITION_MEDIUM_DETECTED = 0x04,
@@ -245,5 +245,5 @@ struct SenseData
 {
     SenseKey sense_key;
     Asc asc;
-    uint8_t ascq;
+    Ascq ascq;
 };

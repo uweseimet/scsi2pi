@@ -184,7 +184,7 @@ private:
 
     SenseKey sense_key = NO_SENSE;
     Asc asc = NO_ADDITIONAL_SENSE_INFORMATION;
-    Ascq eom = NONE;
+    Ascq eom = NO_QUALIFIER;
 
     bool valid = false;
     bool filemark = false;

@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "command_executor.h"
-#include <sstream>
+#include <ranges>
 #include "command_context.h"
 #include "command_image_support.h"
 #include "controllers/abstract_controller.h"
@@ -416,8 +416,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
-        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
         if (storage_device->GetConfiguredBlockSize()) {
             PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
                 to_string(storage_device->GetConfiguredBlockSize()));
@@ -459,16 +458,17 @@ void CommandExecutor::DisplayDeviceInfo(const PrimaryDevice &device) const
 string CommandExecutor::SetReservedIds(const string &ids)
 {
     unordered_set<int> ids_to_reserve;
-    stringstream ss(ids);
-    string id;
-    while (getline(ss, id, ',')) {
+
+    for (const auto part : ids | views::split(',')) {
+        const string id(part.begin(), part.end());
+
         const int res_id = ParseAsUnsignedInt(id);
         if (res_id == -1 || res_id > 7) {
-            return "Invalid ID '" + id + "'";
+            return fmt::format("Invalid ID '{}'", id);
         }
 
         if (controller_factory.GetDeviceForIdAndLun(res_id, 0)) {
-            return "ID " + id + " is currently in use";
+            return fmt::format("ID {} is currently in use", id);
         }
 
         ids_to_reserve.insert(res_id);
@@ -480,7 +480,8 @@ string CommandExecutor::SetReservedIds(const string &ids)
         s2p_logger.info("Cleared reserved ID(s)");
     }
     else {
-        s2p_logger.info("Reserved ID(s) set to {}", Join(reserved_ids));
+        const set<int> sorted_ids(reserved_ids.begin(), reserved_ids.end());
+        s2p_logger.info("Reserved ID(s) set to {}", Join(sorted_ids));
     }
 
     return "";
@@ -532,60 +533,59 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
 
 string CommandExecutor::PrintCommand(const PbCommand &command, const PbDeviceDefinition &pb_device)
 {
-    ostringstream s;
-    s << "operation=" << PbOperation_Name(command.operation());
+    string s = fmt::format("operation={}", PbOperation_Name(command.operation()));
 
     // Use a sorted map
     if (const map<string, string, less<>> &params = { command.params().cbegin(), command.params().cend() }; !params.empty()) {
-        s << ", command parameters=";
+        s += ", command parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : params) {
             if (!isFirst) {
-                s << ", ";
+                s += ", ";
             }
             isFirst = false;
             string v = key != "token" ? value : "????";
-            s << "'" << key << "=" << v << "'";
+            s += fmt::format("'{}={}'", key, v);
         }
     }
 
-    s << ", device=" << pb_device.id() << ":" << pb_device.unit();
+    s += fmt::format(", device={}:{}", pb_device.id(), pb_device.unit());
 
     if (pb_device.type() != UNDEFINED) {
-        s << ", type=" << PbDeviceType_Name(pb_device.type());
+        s += fmt::format(", type={}", PbDeviceType_Name(pb_device.type()));
     }
 
     if (pb_device.params_size()) {
-        s << ", device parameters=";
+        s += ", device parameters=";
         bool isFirst = true;
         for (const auto& [key, value] : pb_device.params()) {
             if (!isFirst) {
-                s << ":";
+                s += ":";
             }
             isFirst = false;
-            s << "'" << key << "=" << value << "'";
+            s += fmt::format("'{}={}'", key, value);
         }
     }
 
     if (!pb_device.vendor().empty()) {
-        s << ", vendor='" << pb_device.vendor() << '\'';
+        s += fmt::format(", vendor='{}'", pb_device.vendor());
     }
     if (!pb_device.product().empty()) {
-        s << ", product='" << pb_device.product() << '\'';
+        s += fmt::format(", product='{}'", pb_device.product());
     }
     if (!pb_device.revision().empty()) {
-        s << ", revision='" << pb_device.revision() << '\'';
+        s += fmt::format(", revision='{}'", pb_device.revision());
     }
 
     if (pb_device.block_size()) {
-        s << ", block size=" << pb_device.block_size();
+        s += fmt::format(", block size={}", pb_device.block_size());
     }
 
     if (pb_device.caching_mode() != PbCachingMode::DEFAULT) {
-        s << ", caching mode=" << PbCachingMode_Name(pb_device.caching_mode());
+        s += fmt::format(", caching mode={}", PbCachingMode_Name(pb_device.caching_mode()));
     }
 
-    return s.str();
+    return s;
 }
 
 bool CommandExecutor::EnsureLun0(const CommandContext &context) const
