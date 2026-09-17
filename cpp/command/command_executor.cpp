@@ -415,8 +415,7 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
     const auto& [vendor, product, revision] = device->GetProductData();
     PropertyHandler::GetInstance().AddProperty(identifier + "name", vendor + ":" + product + ":" + revision);
 #ifdef BUILD_STORAGE_DEVICE
-    if (device->SupportsFile()) {
-        const auto storage_device = static_pointer_cast<StorageDevice>(device);
+    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
         if (storage_device->GetConfiguredBlockSize()) {
             PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
                 to_string(storage_device->GetConfiguredBlockSize()));
