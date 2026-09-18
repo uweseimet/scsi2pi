@@ -106,12 +106,14 @@ void S2p::ReadAccessToken(const path &filename)
     }
 }
 
-void S2p::LogDevices(const string &devices) const
+void S2p::LogDevices(string_view devices) const
 {
-    stringstream ss(devices);
-    string line;
+    size_t pos = 0;
+    while (pos < devices.size()) {
+        const size_t nl = devices.find('\n', pos);
+        const string_view line = nl == string_view::npos ? devices.substr(pos) : devices.substr(pos, nl - pos);
+        pos = nl == string_view::npos ? devices.size() : nl + 1;
 
-    while (getline(ss, line)) {
         s2p_logger->info(line);
     }
 }

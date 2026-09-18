@@ -34,7 +34,7 @@ private:
 
     string InitBus();
     void ReadAccessToken(const path&);
-    void LogDevices(const string&) const;
+    void LogDevices(string_view) const;
     int ParseProperties(const property_map&, bool);
     void SetExcludedTypes() const;
     void MapExtensions() const;

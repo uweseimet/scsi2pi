@@ -402,7 +402,7 @@ bool S2pCtlCommands::HandleOperationInfo()
 
 bool S2pCtlCommands::EvaluateParams(string_view image_params, const string &key1, const string &key2)
 {
-    if (const auto &components = Split(string(image_params), COMPONENT_SEPARATOR, 2); components.size() == 2) {
+    if (const auto &components = Split(image_params, COMPONENT_SEPARATOR, 2); components.size() == 2) {
         SetParam(command, key1, components[0]);
         SetParam(command, key2, components[1]);
 

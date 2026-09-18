@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include <fstream>
-#include <iomanip>
 #include <random>
 #include <fcntl.h>
 #include <unistd.h>

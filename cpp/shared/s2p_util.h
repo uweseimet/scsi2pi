@@ -49,7 +49,7 @@ inline string Join(const auto &collection, const string &separator = ", ")
 
 string GetVersionString();
 bool IsReadOnlyFile(const path&);
-vector<string> Split(const string&, char, int = numeric_limits<int>::max());
+vector<string> Split(string_view, char, int = numeric_limits<int>::max());
 string ToUpper(string_view);
 string ToLower(string_view);
 string GetExtensionLowerCase(string_view);
@@ -68,7 +68,7 @@ string GetStatusString(int);
 string FormatSenseData(span<const byte>);
 string FormatSenseData(SenseKey, Asc, Ascq = NO_QUALIFIER);
 
-vector<byte> HexToBytes(const string&);
+vector<byte> HexToBytes(string_view);
 
 constexpr int HexToDec(char c) noexcept
 {

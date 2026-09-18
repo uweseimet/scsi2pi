@@ -44,22 +44,31 @@ bool s2p_util::IsReadOnlyFile(const path& filename)
     return exists(status) && (status.permissions() & perms::owner_write) == perms::none;
 }
 
-vector<string> s2p_util::Split(const string &s, char separator, int limit)
+vector<string> s2p_util::Split(string_view s, char separator, int limit)
 {
     assert(limit >= 0);
 
-    string component;
+    const size_t n = s.size();
+    size_t pos = 0;
+
     vector<string> result;
-    stringstream str(s);
 
-    while (--limit > 0 && getline(str, component, separator)) {
-        result.push_back(component);
+    while (--limit > 0) {
+        if (pos == n) {
+            return result;
+        }
+
+        const size_t sep_pos = s.find(separator, pos);
+        if (sep_pos == string_view::npos) {
+            break;
+        }
+
+        result.emplace_back(s.substr(pos, sep_pos - pos));
+
+        pos = sep_pos + 1;
     }
 
-    if (!str.eof()) {
-        getline(str, component);
-        result.push_back(component);
-    }
+    result.emplace_back(s.substr(pos));
 
     return result;
 }
@@ -104,6 +113,7 @@ string s2p_util::GetLine(const string &prompt, istream &in)
 {
     string input;
     string line;
+
     while (true) {
         if (!line.ends_with('\\') && isatty(STDIN_FILENO)) {
             cout << prompt << ">";
@@ -271,13 +281,16 @@ string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, Ascq ascq)
         s_asc);
 }
 
-vector<byte> s2p_util::HexToBytes(const string &hex)
+vector<byte> s2p_util::HexToBytes(string_view hex)
 {
     vector<byte> bytes;
 
-    stringstream ss(hex);
-    string line;
-    while (getline(ss, line)) {
+    size_t pos = 0;
+    while (pos < hex.size()) {
+        const size_t nl = hex.find('\n', pos);
+        const string_view line = nl == string_view::npos ? hex.substr(pos) : hex.substr(pos, nl - pos);
+        pos = nl == string_view::npos ? hex.size() : nl + 1;
+
         if (line.starts_with(":") || line.ends_with(":")) {
             throw out_of_range("");
         }
@@ -286,6 +299,10 @@ vector<byte> s2p_util::HexToBytes(const string &hex)
         while (i < line.length()) {
             if (line[i] == ':' && i + 2 < line.length()) {
                 ++i;
+            }
+
+            if (i + 1 >= line.length()) {
+                throw out_of_range("");
             }
 
             const int b1 = HexToDec(line[i]);
