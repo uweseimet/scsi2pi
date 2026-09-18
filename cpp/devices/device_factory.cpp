@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "device_factory.h"
-#include <filesystem>
 #ifdef BUILD_SCDP
 #include "daynaport.h"
 #endif
@@ -35,7 +34,9 @@
 #ifdef BUILD_SCSG
 #include "scsi_generic.h"
 #endif
+#include "shared/file_util.h"
 
+using namespace file_util;
 using namespace s2p_util;
 
 DeviceFactory::DeviceFactory()
@@ -64,7 +65,7 @@ DeviceFactory::DeviceFactory()
 #endif
 }
 
-shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const string &filename) const
+shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun, const path &filename) const
 {
     // If no type was specified try to derive the device type from the filename
     if (type == UNDEFINED) {
@@ -127,25 +128,27 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     }
 }
 
-PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
+PbDeviceType DeviceFactory::GetTypeForFile(const path &filename) const
 {
     if (const auto &it = mapping.find(GetExtensionLowerCase(filename)); it != mapping.end()) {
         return it->second;
     }
 
-    if (const auto &it = ALIAS_MAPPING.find(filename); it != ALIAS_MAPPING.end()) {
+    const string f = filename.string();
+
+    if (const auto &it = ALIAS_MAPPING.find(f); it != ALIAS_MAPPING.end()) {
         return it->second;
     }
 
-    if (filename.starts_with("/dev/sd")) {
+    if (f.starts_with("/dev/sd")) {
         return SCHD;
     }
 
-    if (filename.starts_with("/dev/sg")) {
+    if (f.starts_with("/dev/sg")) {
         return SCSG;
     }
 
-    if (filename.starts_with("/dev/sr")) {
+    if (f.starts_with("/dev/sr")) {
         return SCCD;
     }
 

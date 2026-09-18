@@ -22,6 +22,7 @@
 #include "protobuf/s2p_interface_util.h"
 #include "shared/network_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "s2pctl_display.h"
 
 using namespace google::protobuf;

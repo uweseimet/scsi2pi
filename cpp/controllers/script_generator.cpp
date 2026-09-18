@@ -8,7 +8,8 @@
 
 #include "script_generator.h"
 #include <cassert>
-#include <spdlog/spdlog.h>
+#include <iomanip>
+#include <spdlog/fmt/fmt.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include "command/command_context.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
 using namespace s2p_util;
 

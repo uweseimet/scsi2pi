@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <system_error>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 #include <unistd.h>
 #if __has_include(<netinet/in.h>)
 #include <netinet/in.h>

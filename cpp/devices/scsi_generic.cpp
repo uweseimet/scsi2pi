@@ -15,11 +15,13 @@
 #include <sys/ioctl.h>
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/scsi_util.h"
 #include "shared/sg_util.h"
 
 using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
+using namespace scsi_util;
 using namespace sg_util;
 
 ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)

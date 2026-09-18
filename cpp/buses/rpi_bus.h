@@ -28,7 +28,7 @@ public:
         PI_4 = 4
     };
 
-    RpiBus(PiType type, bool, bool = true);
+    RpiBus(PiType type, bool, bool);
 
     bool IsRaspberryPi() const override
     {
@@ -60,8 +60,8 @@ private:
 
     void PinSetSignal(int, bool) const;
 
-    // Set GPIO pin pull up/down resistor setting to PULLDOWN
-    void ConfigurePullDown(int) const;
+    // Set GPIO pin pull up/down resistor setting
+    void DisablePulls(int) const;
 
     // Set GPIO drive strength
     void SetSignalDriveStrength(uint32_t) const;
@@ -84,7 +84,8 @@ private:
 
     const PiType pi_type;
 
-    const bool enable_irqs;
+    const bool enable_irq;
+    bool irq_disabled = false;
 
     // Set to -1 for the STANDARD board
     int pin_ind = PIN_IND;

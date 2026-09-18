@@ -12,9 +12,11 @@
 #include "buses/bus.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
+#include "shared/scsi_util.h"
 
 using namespace chrono;
 using namespace s2p_util;
+using namespace scsi_util;
 using namespace initiator_util;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log,

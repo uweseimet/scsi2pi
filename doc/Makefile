@@ -8,8 +8,6 @@
 
 .DEFAULT_GOAL := all
 
-BOARD ?= FULLSPEC
-
 TARGET := /opt/scsi2pi
 
 INSTALL_DIR := $(TARGET)/man/man1/
@@ -17,19 +15,15 @@ INSTALL_DIR := $(TARGET)/man/man1/
 MANPAGES = s2p.1 \
 	s2pctl.1 \
 	s2psimh.1 \
-	s2ptool.1
-ifneq ($(BOARD), STANDARD)
-	MANPAGES += s2pdump.1 \
+	s2ptool.1 \
+	s2pdump.1 \
 	s2pexec.1 \
 	s2pproto.1 \
 	s2pformat.1
-endif
 
 INSTALL_PAGES := $(addprefix $(INSTALL_DIR),$(MANPAGES))
 
 all: doc
-
-fullspec:
 
 standard:
 

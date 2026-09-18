@@ -24,11 +24,8 @@
 #include <pwd.h>
 #endif
 #include <unistd.h>
-#include "memory_util.h"
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
-
-using namespace memory_util;
 
 string s2p_util::GetVersionString()
 {
@@ -36,12 +33,6 @@ string s2p_util::GetVersionString()
         return fmt::format("{}.{}.{}{}", s2p_major_version, s2p_minor_version, s2p_revision, s2p_suffix);
     }
     return fmt::format("{}.{}{}", s2p_major_version, s2p_minor_version, s2p_suffix);
-}
-
-bool s2p_util::IsReadOnlyFile(const path& filename)
-{
-    const auto status = filesystem::status(filename);
-    return exists(status) && (status.permissions() & perms::owner_write) == perms::none;
 }
 
 vector<string> s2p_util::Split(string_view s, char separator, int limit)
@@ -85,14 +76,6 @@ string s2p_util::ToLower(string_view s)
     string result(s);
     ranges::transform(result, result.begin(), [](unsigned char c) {return static_cast<char>(std::tolower(c));});
     return result;
-}
-
-string s2p_util::GetExtensionLowerCase(string_view filename)
-{
-    const string ext = ToLower(path(filename).extension().string());
-
-    // Remove the leading dot
-    return ext.empty() ? ext : ext.substr(1);
 }
 
 string s2p_util::GetLocale()
@@ -199,88 +182,6 @@ string s2p_util::Banner(string_view app)
         app, GetVersionString());
 }
 
-tuple<string, string, string> s2p_util::GetInquiryProductData(span<const uint8_t> data)
-{
-    assert(data.size() >= 36);
-
-    array<char, 9> vendor = { };
-    memcpy(vendor.data(), &data[8], 8);
-    array<char, 17> product = { };
-    memcpy(product.data(), &data[16], 16);
-    array<char, 5> revision = { };
-    memcpy(revision.data(), &data[32], 4);
-
-    return {vendor.data(),product.data(), revision.data()};
-}
-
-string s2p_util::GetScsiLevel(int scsi_level)
-{
-    switch (scsi_level) {
-    case 0:
-        return "-";
-
-    case 1:
-        return "SCSI-1-CCS";
-
-    case 2:
-        return "SCSI-2";
-
-    case 3:
-        return "SCSI-3 (SPC)";
-
-    default:
-        return fmt::format("SPC-{}", scsi_level - 2);
-    }
-}
-
-string s2p_util::GetStatusString(int status_code)
-{
-    if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
-        return fmt::format("Device reported {} (status code ${:02x})", it->second, status_code);
-    }
-    else if (status_code != 0xff) {
-        return fmt::format("Device reported an unknown status (status code ${:02x})", status_code);
-    }
-    else {
-        return "Device did not respond";
-    }
-}
-
-string s2p_util::FormatSenseData(span<const byte> sense_data)
-{
-    assert(sense_data.size() >= 14);
-
-    const byte flags = sense_data[2];
-
-    const string &s = FormatSenseData(static_cast<SenseKey>(flags & byte { 0x0f }), static_cast<Asc>(sense_data[12]),
-        static_cast<Ascq>(sense_data[13]));
-
-    if ((sense_data[0] & byte { 0x80 }) == byte { 0 }) {
-        return s;
-    }
-
-    return s
-        + fmt::format(", EOM: {}, ILI: {}, INFORMATION: {}", (flags & byte { 0x40 }) != byte { 0 } ? "1" : "0",
-            (flags & byte { 0x20 }) != byte { 0 } ? "1" : "0",
-        static_cast<int>(GetInt32(sense_data, 3)));
-}
-
-string s2p_util::FormatSenseData(SenseKey sense_key, Asc asc, Ascq ascq)
-{
-    assert(to_underlying(sense_key) < 16);
-
-    string s_asc;
-    if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
-        s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, to_underlying(asc), to_underlying(ascq));
-    }
-    else {
-        s_asc = fmt::format("ASC ${:02x}, ASCQ ${:02x}", to_underlying(asc), to_underlying(ascq));
-    }
-
-    return fmt::format("{} (Sense Key ${:02x}), {}", SENSE_KEYS[to_underlying(sense_key)], to_underlying(sense_key),
-        s_asc);
-}
-
 vector<byte> s2p_util::HexToBytes(string_view hex)
 {
     vector<byte> bytes;
@@ -328,49 +229,6 @@ string_view s2p_util::Trim(string_view s)
     }
 
     return "";
-}
-
-void s2p_util::Sleep(const timespec &ns)
-{
-    nanosleep(&ns, nullptr);
-}
-
-off_t s2p_util::GetCapacityFromFile(const string &filename)
-{
-    string error_message;
-    const string f = filename;
-
-#if __has_include(<linux/fs.h>)
-    if (struct stat st; !stat(f.c_str(), &st) && S_ISBLK(st.st_mode)) {
-        const int fd = open(f.c_str(), O_RDONLY);
-        int error = errno;
-        if (fd != -1) {
-            uint64_t size = 0;
-            const int ret = ioctl(fd, BLKGETSIZE64, &size);
-            error = errno;
-            close(fd);
-
-            if (ret != -1) {
-                return static_cast<off_t>(size);
-            }
-        }
-
-        error_message = system_error(error, generic_category()).what();
-    }
-    else
-#endif
-
-    {
-        error_code error;
-        const off_t size = file_size(filename, error);
-        if (!error) {
-            return size;
-        }
-
-        error_message = error.message();
-    }
-
-    throw IoException("Can't get file size of '{}': {}", f, error_message);
 }
 
 void s2p_util::SetTerminationHandler([[maybe_unused]] SignalHandlerPtr handler) // NOSONAR sigaction() requires a raw pointer

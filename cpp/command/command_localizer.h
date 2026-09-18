@@ -12,7 +12,7 @@
 #include <cctype>
 #include <string>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 
 using namespace std;
 

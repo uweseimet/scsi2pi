@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -61,71 +61,4 @@ TEST(BusTest, GetDAT)
     EXPECT_CALL(bus, WaitNanoSeconds(false));
     EXPECT_CALL(bus, Acquire);
     EXPECT_EQ(0b11111111, bus.GetDAT());
-}
-
-TEST(BusTest, TargetCommandHandShake)
-{
-    MockBus bus;
-    array<uint8_t, 1> buf = { };
-
-    EXPECT_CALL(bus, SetSignal).Times(2);
-    EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_CALL(bus, WaitNanoSeconds);
-    EXPECT_EQ(-1, bus.TargetCommandHandShake(buf));
-}
-
-TEST(BusTest, TargetReceiveHandShake)
-{
-    MockBus bus;
-    array<uint8_t, 1> buf = { };
-
-    EXPECT_CALL(bus, SetSignal).Times(2);
-    EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_CALL(bus, WaitNanoSeconds);
-    EXPECT_EQ(0, bus.TargetReceiveHandShake(buf));
-}
-
-TEST(BusTest, InitiatorReceiveHandShake)
-{
-    MockBus bus;
-    array<uint8_t, 1> buf = { };
-
-    EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_EQ(0, bus.InitiatorReceiveHandShake(buf));
-}
-
-TEST(BusTest, TargetSendHandShake)
-{
-    MockBus bus;
-    array<uint8_t, 1> buf = { };
-
-    EXPECT_CALL(bus, SetDAT);
-    EXPECT_CALL(bus, WaitNanoSeconds);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_EQ(0, bus.TargetSendHandShake(buf));
-}
-
-TEST(BusTest, InitiatorSendHandShake)
-{
-    MockBus bus;
-    array<uint8_t, 1> buf = { };
-
-    EXPECT_CALL(bus, SetDAT);
-    EXPECT_CALL(bus, WaitNanoSeconds);
-    EXPECT_CALL(bus, Acquire);
-    EXPECT_CALL(bus, EnableIRQ);
-    EXPECT_CALL(bus, DisableIRQ);
-    EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_EQ(0, bus.InitiatorSendHandShake(buf));
 }

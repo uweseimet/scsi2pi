@@ -4,16 +4,16 @@
 //
 // Copyright (C) 2021-2026 Uwe Seimet
 //
-// The DeviceFactory creates devices based on their type and the image file extension
-//
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <filesystem>
 #include <unordered_map>
 #include "shared/s2p_util.h"
 #include "generated/s2p_interface.pb.h"
 
+using namespace filesystem;
 using namespace s2p_interface;
 
 class PrimaryDevice;
@@ -32,8 +32,8 @@ public:
         return instance;
     }
 
-    shared_ptr<PrimaryDevice> CreateDevice(PbDeviceType, int, const string&) const;
-    PbDeviceType GetTypeForFile(const string&) const;
+    shared_ptr<PrimaryDevice> CreateDevice(PbDeviceType, int, const path&) const;
+    PbDeviceType GetTypeForFile(const path&) const;
 
     const auto& GetExtensionMapping() const
     {

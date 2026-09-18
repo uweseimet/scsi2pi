@@ -15,10 +15,12 @@
 #include "devices/primary_device.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/scsi_util.h"
 #include "script_generator.h"
 
 using namespace spdlog;
 using namespace s2p_util;
+using namespace scsi_util;
 
 void Controller::Reset()
 {

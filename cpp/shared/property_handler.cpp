@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include "s2p_exceptions.h"
+#include "s2p_util.h"
 
 using namespace filesystem;
 using namespace s2p_util;

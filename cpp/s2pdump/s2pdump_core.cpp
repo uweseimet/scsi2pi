@@ -19,15 +19,18 @@
 #include "shared/simh_util.h"
 #include "board_executor.h"
 #ifdef BUILD_SCSG
+#include "shared/s2p_util.h"
+#include "shared/scsi_util.h"
 #include "shared/sg_adapter.h"
 #include "sg_executor.h"
 #endif
 
 using namespace filesystem;
 using namespace spdlog;
+using namespace initiator_util;
 using namespace logger_util;
 using namespace s2p_util;
-using namespace initiator_util;
+using namespace scsi_util;
 using namespace simh_util;
 
 void S2pDump::CleanUp() const

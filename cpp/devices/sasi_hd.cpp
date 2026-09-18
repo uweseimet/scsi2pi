@@ -8,9 +8,11 @@
 
 #include "sasi_hd.h"
 #include "controllers/abstract_controller.h"
+#include "shared/file_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
+using namespace file_util;
 using namespace s2p_util;
 
 SasiHd::SasiHd(int l, const set<uint32_t> &sector_sizes) : Disk(SAHD, l, false, false, sector_sizes)

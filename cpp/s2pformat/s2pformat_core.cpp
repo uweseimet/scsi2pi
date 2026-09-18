@@ -14,10 +14,12 @@
 #include "initiator/initiator_util.h"
 #include "shared/memory_util.h"
 #include "shared/s2p_util.h"
+#include "shared/scsi_util.h"
 
+using namespace initiator_util;
 using namespace memory_util;
 using namespace s2p_util;
-using namespace initiator_util;
+using namespace scsi_util;
 
 void S2pFormat::Banner(bool header) const
 {

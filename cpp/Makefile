@@ -213,12 +213,14 @@ PROTO_API := ../api/s2p_interface.proto
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
+	$(DIR_SHARED)/file_util.cpp \
 	$(DIR_SHARED)/logger_util.cpp \
 	$(DIR_SHARED)/network_util.cpp \
 	$(DIR_SHARED)/property_handler.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
 	$(DIR_SHARED)/s2p_util.cpp \
 	$(DIR_SHARED)/s2p_version.cpp \
+	$(DIR_SHARED)/scsi_util.cpp \
 	$(DIR_SHARED)/simh_util.cpp \
 	$(DIR_SHARED)/user_util.cpp
 ifeq ($(ENABLE_SCSG),1)
@@ -227,7 +229,6 @@ ifdef IS_LINUX
 SRC_SHARED += $(DIR_SHARED)/sg_adapter.cpp
 endif
 endif
-
 
 SRC_SHARED_PROTOBUF := $(DIR_SHARED_PROTOBUF)/protobuf_util.cpp \
 	$(DIR_SHARED_PROTOBUF)/s2p_interface_util.cpp
@@ -244,6 +245,8 @@ SRC_SHARED_INITIATOR := $(DIR_SHARED_INITIATOR)/initiator_executor.cpp \
 
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
+	$(DIR_BUSES)/initiator_bus.cpp \
+	$(DIR_BUSES)/target_bus.cpp \
 	$(DIR_BUSES)/virtual_bus.cpp
 ifdef IS_LINUX
 SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp
@@ -368,7 +371,9 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/device_test.cpp \
 	test/disk_cache_test.cpp \
 	test/disk_test.cpp \
+	test/file_util_test.cpp \
 	test/host_services_test.cpp \
+	test/initiator_bus_test.cpp \
 	test/initiator_util_test.cpp \
 	test/linux_cache_test.cpp \
 	test/logger_util_test.cpp \
@@ -385,12 +390,14 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/s2p_formatter_test.cpp \
 	test/s2p_interface_util_test.cpp \
 	test/s2p_parser_test.cpp \
+	test/target_bus_test.cpp \
 	test/s2p_thread_test.cpp \
 	test/s2p_util_test.cpp \
 	test/sasi_hd_test.cpp \
 	test/script_generator_test.cpp \
 	test/scsi_cd_test.cpp \
 	test/scsi_hd_test.cpp \
+	test/scsi_util_test.cpp \
 	test/simh_util_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
@@ -534,21 +541,18 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 
 ## Build targets:
 ##   all             Build all executable files (default target)
-##   fullspec        The same as 'all'
 ##   standard        Build only executable files for the STANDARD board
 ##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all coverage fullspec standard test tests
+.PHONY: all coverage standard test tests
 
 all: $(BIN_STANDARD) $(BIN_FULLSPEC)
 
 standard: CPPFLAGS += -DBOARD_STANDARD
 standard: $(BIN_STANDARD)
-
-fullspec: all
 
 tests: $(BINDIR)/$(S2P_TEST)
 
@@ -561,8 +565,8 @@ coverage: test
 
 $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_API)
 
-$(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) \
+$(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_CONTROLLER) $(LIB_BUS) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_CONTROLLER) $(LIB_BUS) \
 	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $(BINDIR)
@@ -584,10 +588,10 @@ $(BINDIR)/$(S2PSIMH): $(OBJ_S2PSIMH) $(LIB_SHARED) | $(BINDIR)
 $(BINDIR)/$(S2PFORMAT): $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(SPDLOG_LIBS)
 
-$(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
+$(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_CONTROLLER) $(LIB_BUS) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
-	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
+	$(LIB_SHARED_INITIATOR) $(LIB_CONTROLLER) $(LIB_BUS) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) | $(BINDIR)

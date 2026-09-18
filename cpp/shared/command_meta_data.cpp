@@ -8,7 +8,9 @@
 
 #include "command_meta_data.h"
 #include <cassert>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
+
+using enum ScsiCommand;
 
 CommandMetaData::CommandMetaData()
 {
@@ -36,109 +38,100 @@ CommandMetaData::CommandMetaData()
 
     // This mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
     // and some others typically used with the SCSG device (SCSI-to-USB bridge)
-    AddCommand(ScsiCommand::TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::REZERO_REWIND, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_BLOCK_LIMITS, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::REQUEST_SENSE, 6, "REQUEST SENSE", { 4, 1, 0, 0, false, false });
-    AddCommand(ScsiCommand::FORMAT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
-    AddCommand(ScsiCommand::REASSIGN_BLOCKS, 6, "REASSIGN BLOCKS", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3, false, false });
-    AddCommand(ScsiCommand::RETRIEVE_STATS, 6, "RETRIEVE STATS", { 4, 1, 0, 0, false, false });
-    AddCommand(ScsiCommand::WRITE_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 3, true, false });
-    AddCommand(ScsiCommand::SEEK_6, 6, "SEEK(6)", { 0, 0, 1, 0, false, false });
-    AddCommand(ScsiCommand::SET_IFACE_MODE, 6, "SET INTERFACE MODE", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::SET_MCAST_ADDR, 6, "SET MULTICAST ADDRESS", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::ENABLE_INTERFACE, 6, "ENABLE INTERFACE", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_REVERSE, 6, "READ REVERSE(6)", { 4, 1, 1, 3, false, false });
-    AddCommand(ScsiCommand::SYNCHRONIZE_BUFFER, 6, "SYNCHRONIZE BUFFER/WRITE_FILEMARKS(6)",
-        { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::SPACE_6, 6, "SPACE(6)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::INQUIRY, 6, "INQUIRY", { 4, 1, 0, 0, false, false });
-    AddCommand(ScsiCommand::VERIFY_6, 6, "VERIFY(6)", { 4, 1, 1, 3, true, false });
-    AddCommand(ScsiCommand::MODE_SELECT_6, 6, "MODE SELECT(6)", { 4, 1, 0, 0, true, true });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)",
-        { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)",
-        { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::ERASE_6, 6, "ERASE(6)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, true });
-    AddCommand(ScsiCommand::START_STOP, 6, "START STOP UNIT/STOP PRINT", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::SEND_DIAGNOSTIC, 6, "SEND DIAGNOSTIC", { 3, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, 6, "PREVENT ALLOW MEDIUM REMOVAL",
-        { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_FORMAT_CAPACITIES, 10, "READ FORMAT CAPACITIES", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_CAPACITY_10, 10, "READ CAPACITY(10)", { -8, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_10, 10, "READ(10)", { 7, 2, 2, 4, false, false });
-    AddCommand(ScsiCommand::WRITE_10, 10, "WRITE(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 2, 0, false, false });
-    AddCommand(ScsiCommand::ERASE_10, 10, "ERASE(10)", { 7, 2, 2, 4, false, false });
-    AddCommand(ScsiCommand::WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::READ_POSITION, 10, "READ POSITION", { -20, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true, false });
-    AddCommand(ScsiCommand::WRITE_BUFFER, 10, "WRITE BUFFER", { 6, 3, 0, 0, true, false });
-    AddCommand(ScsiCommand::READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 2, 4, false, false });
-    AddCommand(ScsiCommand::WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::WRITE_SAME_10, 10, "WRITE SAME(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::READ_SUB_CHANNEL, 10, "READ SUB-CHANNEL", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_TOC, 10, "READ TOC", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_HEADER, 10, "READ HEADER", { 7, 2, 2, 4, false, false });
-    AddCommand(ScsiCommand::PLAY_AUDIO_10, 10, "PLAY AUDIO(10)", { 7, 2, 2, 4, false, false });
-    AddCommand(ScsiCommand::GET_CONFIGURATION, 10, "GET CONFIGURATION", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::PLAY_AUDIO_MSF, 10, "PLAY AUDIO MSF", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::PLAY_AUDIO_TRACK_INDEX, 10, "PLAY AUDIO TRACK/INDEX", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::GET_EVENT_STATUS_NOTIFICATION, 10, "GET EVENT/STATUS NOTIFICATION", { 7, 2, 0, 0, false,
-        false });
-    AddCommand(ScsiCommand::PAUSE_RESUME, 10, "PAUSE/RESUME", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::LOG_SELECT, 10, "LOG SELECT", { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::LOG_SENSE, 10, "LOG SENSE", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_DISC_INFORMATION, 10, "READ DISC INFORMATION", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_TRACK_INFORMATION, 10, "READ TRACK INFORMATION", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_10, 10, "RESERVE(10)/RESERVE ELEMENT(10)",
-        { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_10, 10, "RELEASE(10)/RELEASE ELEMENT(10)",
-        { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::READ_MASTER_CUE, 10, "READ MASTER CUE", { 6, 3, 0, 0, false, false });
-    AddCommand(ScsiCommand::MODE_SENSE_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::CLOSE_TRACK_SESSION, 10, "CLOSE TRACK/SESSION", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_BUFFER_CAPACITY, 10, "READ BUFFER CAPACITY", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::PERSISTENT_RESERVE_IN, 10, "PERSISTENT RESERVE IN", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::PERSISTENT_RESERVE_OUT, 10, "PERSISTENT RESERVE OUT", { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::WRITE_FILEMARKS_16, 16, "WRITE FILEMARKS(16)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::REBUILD_READ_REVERSE_16, 16, "REBUILD(16)/READ REVERSE(16)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_16, 16, "READ(16)", { 10, 4, 2, 8, false, false });
-    AddCommand(ScsiCommand::WRITE_16, 16, "WRITE(16)", { 10, 4, 2, 8, true, false });
-    AddCommand(ScsiCommand::WRITE_AND_VERIFY_16, 16, "WRITE AND VERIFY(16)", { 10, 4, 2, 8, true, false });
-    AddCommand(ScsiCommand::VERIFY_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true, false });
-    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false,
-        false });
-    AddCommand(ScsiCommand::LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 10, 4, 2, 8, false, false });
-    AddCommand(ScsiCommand::READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, 16, "READ CAPACITY(16)/READ LONG(16)",
-        { 12, 2, 2, 8, false, false });
-    AddCommand(ScsiCommand::WRITE_LONG_16, 16, "WRITE LONG(16)", { 12, 2, 2, 8, true, false });
-    AddCommand(ScsiCommand::REPORT_LUNS, 12, "REPORT LUNS", { 6, 4, 0, 0, false, false });
-    AddCommand(ScsiCommand::BLANK, 12, "BLANK", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::PLAY_AUDIO_12, 12, "PLAY AUDIO(12)", { 6, 4, 2, 4, false, false });
-    AddCommand(ScsiCommand::READ_12, 12, "READ(12)", { 6, 4, 2, 4, false, false });
-    AddCommand(ScsiCommand::WRITE_12, 12, "WRITE(12)", { 6, 4, 2, 4, true, false });
-    AddCommand(ScsiCommand::ERASE_12, 12, "ERASE(12)", { 6, 4, 2, 4, false, false });
-    AddCommand(ScsiCommand::READ_DVD_STRUCTURE, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true, false });
-    AddCommand(ScsiCommand::VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true, false });
-    AddCommand(ScsiCommand::SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA(12)", { 6, 4, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::PLAY_CD, 12, "PLAY CD", { 6, 4, 2, 4, false, false });
-    AddCommand(ScsiCommand::READ_CD, 12, "READ CD", { 6, 3, 2, 4, false, false });
-    AddCommand(ScsiCommand::EXECUTE_OPERATION, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::RECEIVE_OPERATION_RESULTS, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)",
+    AddCommand(TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false, false });
+    AddCommand(REZERO_REWIND, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_BLOCK_LIMITS, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false, false });
+    AddCommand(REQUEST_SENSE, 6, "REQUEST SENSE", { 4, 1, 0, 0, false, false });
+    AddCommand(FORMAT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
+    AddCommand(REASSIGN_BLOCKS, 6, "REASSIGN BLOCKS", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3, false, false });
+    AddCommand(RETRIEVE_STATS, 6, "RETRIEVE STATS", { 4, 1, 0, 0, false, false });
+    AddCommand(WRITE_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 3, true, false });
+    AddCommand(SEEK_6, 6, "SEEK(6)", { 0, 0, 1, 0, false, false });
+    AddCommand(SET_IFACE_MODE, 6, "SET INTERFACE MODE", { 0, 0, 0, 0, false, false });
+    AddCommand(SET_MCAST_ADDR, 6, "SET MULTICAST ADDRESS", { 0, 0, 0, 0, false, false });
+    AddCommand(ENABLE_INTERFACE, 6, "ENABLE INTERFACE", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_REVERSE, 6, "READ REVERSE(6)", { 4, 1, 1, 3, false, false });
+    AddCommand(SYNCHRONIZE_BUFFER, 6, "SYNCHRONIZE BUFFER/WRITE_FILEMARKS(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(SPACE_6, 6, "SPACE(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(INQUIRY, 6, "INQUIRY", { 4, 1, 0, 0, false, false });
+    AddCommand(VERIFY_6, 6, "VERIFY(6)", { 4, 1, 1, 3, true, false });
+    AddCommand(MODE_SELECT_6, 6, "MODE SELECT(6)", { 4, 1, 0, 0, true, true });
+    AddCommand(RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(ERASE_6, 6, "ERASE(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, true });
+    AddCommand(START_STOP, 6, "START STOP UNIT/STOP PRINT", { 0, 0, 0, 0, false, false });
+    AddCommand(SEND_DIAGNOSTIC, 6, "SEND DIAGNOSTIC", { 3, 2, 0, 0, false, false });
+    AddCommand(PREVENT_ALLOW_MEDIUM_REMOVAL, 6, "PREVENT ALLOW MEDIUM REMOVAL", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_FORMAT_CAPACITIES, 10, "READ FORMAT CAPACITIES", { 7, 2, 0, 0, false, false });
+    AddCommand(READ_CAPACITY_10, 10, "READ CAPACITY(10)", { -8, 0, 0, 0, false, false });
+    AddCommand(READ_10, 10, "READ(10)", { 7, 2, 2, 4, false, false });
+    AddCommand(WRITE_10, 10, "WRITE(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 2, 0, false, false });
+    AddCommand(ERASE_10, 10, "ERASE(10)", { 7, 2, 2, 4, false, false });
+    AddCommand(WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(READ_POSITION, 10, "READ POSITION", { -20, 0, 0, 0, false, false });
+    AddCommand(SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false, false });
+    AddCommand(MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true, false });
+    AddCommand(WRITE_BUFFER, 10, "WRITE BUFFER", { 6, 3, 0, 0, true, false });
+    AddCommand(READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false, false });
+    AddCommand(READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 2, 4, false, false });
+    AddCommand(WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(WRITE_SAME_10, 10, "WRITE SAME(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(READ_SUB_CHANNEL, 10, "READ SUB-CHANNEL", { 7, 2, 0, 0, false, false });
+    AddCommand(READ_TOC, 10, "READ TOC", { 7, 2, 0, 0, false, false });
+    AddCommand(READ_HEADER, 10, "READ HEADER", { 7, 2, 2, 4, false, false });
+    AddCommand(PLAY_AUDIO_10, 10, "PLAY AUDIO(10)", { 7, 2, 2, 4, false, false });
+    AddCommand(GET_CONFIGURATION, 10, "GET CONFIGURATION", { 7, 2, 0, 0, false, false });
+    AddCommand(PLAY_AUDIO_MSF, 10, "PLAY AUDIO MSF", { 0, 0, 0, 0, false, false });
+    AddCommand(PLAY_AUDIO_TRACK_INDEX, 10, "PLAY AUDIO TRACK/INDEX", { 0, 0, 0, 0, false, false });
+    AddCommand(GET_EVENT_STATUS_NOTIFICATION, 10, "GET EVENT/STATUS NOTIFICATION", { 7, 2, 0, 0, false, false });
+    AddCommand(PAUSE_RESUME, 10, "PAUSE/RESUME", { 0, 0, 0, 0, false, false });
+    AddCommand(LOG_SELECT, 10, "LOG SELECT", { 7, 2, 0, 0, true, false });
+    AddCommand(LOG_SENSE, 10, "LOG SENSE", { 7, 2, 0, 0, false, false });
+    AddCommand(READ_DISC_INFORMATION, 10, "READ DISC INFORMATION", { 7, 2, 0, 0, false, false });
+    AddCommand(READ_TRACK_INFORMATION, 10, "READ TRACK INFORMATION", { 7, 2, 0, 0, false, false });
+    AddCommand(RESERVE_RESERVE_ELEMENT_10, 10, "RESERVE(10)/RESERVE ELEMENT(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(RELEASE_RELEASE_ELEMENT_10, 10, "RELEASE(10)/RELEASE ELEMENT(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(READ_MASTER_CUE, 10, "READ MASTER CUE", { 6, 3, 0, 0, false, false });
+    AddCommand(MODE_SENSE_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false, false });
+    AddCommand(CLOSE_TRACK_SESSION, 10, "CLOSE TRACK/SESSION", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_BUFFER_CAPACITY, 10, "READ BUFFER CAPACITY", { 7, 2, 0, 0, false, false });
+    AddCommand(PERSISTENT_RESERVE_IN, 10, "PERSISTENT RESERVE IN", { 7, 2, 0, 0, false, false });
+    AddCommand(PERSISTENT_RESERVE_OUT, 10, "PERSISTENT RESERVE OUT", { 7, 2, 0, 0, true, false });
+    AddCommand(WRITE_FILEMARKS_16, 16, "WRITE FILEMARKS(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(REBUILD_READ_REVERSE_16, 16, "REBUILD(16)/READ REVERSE(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(READ_16, 16, "READ(16)", { 10, 4, 2, 8, false, false });
+    AddCommand(WRITE_16, 16, "WRITE(16)", { 10, 4, 2, 8, true, false });
+    AddCommand(WRITE_AND_VERIFY_16, 16, "WRITE AND VERIFY(16)", { 10, 4, 2, 8, true, false });
+    AddCommand(VERIFY_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true, false });
+    AddCommand(SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 10, 4, 2, 8, false, false });
+    AddCommand(READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false, false });
+    AddCommand(READ_CAPACITY_READ_LONG_16, 16, "READ CAPACITY(16)/READ LONG(16)", { 12, 2, 2, 8, false, false });
+    AddCommand(WRITE_LONG_16, 16, "WRITE LONG(16)", { 12, 2, 2, 8, true, false });
+    AddCommand(REPORT_LUNS, 12, "REPORT LUNS", { 6, 4, 0, 0, false, false });
+    AddCommand(BLANK, 12, "BLANK", { 0, 0, 0, 0, false, false });
+    AddCommand(PLAY_AUDIO_12, 12, "PLAY AUDIO(12)", { 6, 4, 2, 4, false, false });
+    AddCommand(READ_12, 12, "READ(12)", { 6, 4, 2, 4, false, false });
+    AddCommand(WRITE_12, 12, "WRITE(12)", { 6, 4, 2, 4, true, false });
+    AddCommand(ERASE_12, 12, "ERASE(12)", { 6, 4, 2, 4, false, false });
+    AddCommand(READ_DVD_STRUCTURE, 12, "READ DVD STRUCTURE", { 8, 2, 0, 0, false, false });
+    AddCommand(WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true, false });
+    AddCommand(VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true, false });
+    AddCommand(SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false, false });
+    AddCommand(READ_DEFECT_DATA_12, 12, "READ DEFECT DATA(12)", { 6, 4, 0, 0, false, false });
+    AddCommand(READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false, false });
+    AddCommand(SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false, false });
+    AddCommand(PLAY_CD, 12, "PLAY CD", { 6, 4, 2, 4, false, false });
+    AddCommand(READ_CD, 12, "READ CD", { 6, 3, 2, 4, false, false });
+    AddCommand(EXECUTE_OPERATION, 10, "EXECUTE OPERATION (SCSI2Pi-specific)", { 7, 2, 0, 0, true, false });
+    AddCommand(RECEIVE_OPERATION_RESULTS, 10, "RECEIVE OPERATION RESULTS (SCSI2Pi-specific)",
         { 7, 2, 0, 0, false, false });
 }
 

@@ -9,12 +9,14 @@
 #include "s2pctl_display.h"
 #include <map>
 #include <set>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_util.h"
+#include "shared/scsi_util.h"
 
 using namespace s2p_interface_util;
 using namespace s2p_util;
+using namespace scsi_util;
 
 namespace
 {

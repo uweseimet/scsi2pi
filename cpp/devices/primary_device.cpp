@@ -11,9 +11,11 @@
 #include "controllers/abstract_controller.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/scsi_util.h"
 
 using namespace memory_util;
 using namespace s2p_util;
+using namespace scsi_util;
 
 string PrimaryDevice::Init()
 {

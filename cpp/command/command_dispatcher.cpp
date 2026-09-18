@@ -16,6 +16,7 @@
 #include "protobuf/s2p_interface_util.h"
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "shared/user_util.h"
 
 using namespace command_image_support;

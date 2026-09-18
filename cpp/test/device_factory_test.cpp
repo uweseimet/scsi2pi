@@ -40,26 +40,26 @@ TEST(DeviceFactoryTest, GetTypeForFile)
 {
     const DeviceFactory &factory = DeviceFactory::GetInstance();
 
-    EXPECT_EQ(factory.GetTypeForFile("test.hdf"), SAHD);
-    EXPECT_EQ(factory.GetTypeForFile("test.hd1"), SCHD);
-    EXPECT_EQ(factory.GetTypeForFile("test.hds"), SCHD);
-    EXPECT_EQ(factory.GetTypeForFile("test.HDS"), SCHD);
-    EXPECT_EQ(factory.GetTypeForFile("test.hda"), SCHD);
-    EXPECT_EQ(factory.GetTypeForFile("test.hdr"), SCRM);
-    EXPECT_EQ(factory.GetTypeForFile("test.mos"), SCMO);
-    EXPECT_EQ(factory.GetTypeForFile("test.iso"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("test.cdr"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("test.toast"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("test.is1"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("test.suffix.iso"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("daynaport"), SCDP);
-    EXPECT_EQ(factory.GetTypeForFile("printer"), SCLP);
-    EXPECT_EQ(factory.GetTypeForFile("services"), SCHS);
-    EXPECT_EQ(factory.GetTypeForFile("/dev/sda"), SCHD);
-    EXPECT_EQ(factory.GetTypeForFile("/dev/sr0"), SCCD);
-    EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
-    EXPECT_EQ(factory.GetTypeForFile("unknown"), UNDEFINED);
-    EXPECT_EQ(factory.GetTypeForFile("test.iso.suffix"), UNDEFINED);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.hdf")), SAHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.hd1")), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.hds")), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.HDS")), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.hda")), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.hdr")), SCRM);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.mos")), SCMO);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.iso")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.cdr")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.toast")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.is1")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.suffix.iso")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("daynaport")), SCDP);
+    EXPECT_EQ(factory.GetTypeForFile(path("printer")), SCLP);
+    EXPECT_EQ(factory.GetTypeForFile(path("services")), SCHS);
+    EXPECT_EQ(factory.GetTypeForFile(path("/dev/sda")), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile(path("/dev/sr0")), SCCD);
+    EXPECT_EQ(factory.GetTypeForFile(path("/dev/sg0")), SCSG);
+    EXPECT_EQ(factory.GetTypeForFile(path("unknown")), UNDEFINED);
+    EXPECT_EQ(factory.GetTypeForFile(path("test.iso.suffix")), UNDEFINED);
 }
 
 TEST(DeviceFactoryTest, GetExtensionMapping)

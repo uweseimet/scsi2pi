@@ -14,7 +14,7 @@
 #include "virtual_bus.h"
 
 unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
-    [[maybe_unused]] bool standard_board, bool enable_irqs)
+    [[maybe_unused]] bool standard_board, [[maybe_unused]] bool enable_irq)
 {
     auto make_initialized = [target](unique_ptr<Bus> bus) {
         return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
@@ -34,7 +34,7 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
             false;
 #endif
 
-        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board, enable_irqs);
+        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board, enable_irq);
         return make_initialized(std::move(bus));
     }
 #else

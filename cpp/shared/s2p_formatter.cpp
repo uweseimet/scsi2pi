@@ -7,7 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "s2p_formatter.h"
-#include <spdlog/spdlog.h>
+#include <algorithm>
+#include <spdlog/fmt/fmt.h>
 
 string S2pFormatter::FormatBytes(span<const uint8_t> bytes, size_t count, bool hex_only) const
 {

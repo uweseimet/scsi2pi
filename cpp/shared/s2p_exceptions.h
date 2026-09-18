@@ -9,8 +9,8 @@
 #pragma once
 
 #include <stdexcept>
-#include <spdlog/spdlog.h>
-#include "s2p_util.h"
+#include <spdlog/fmt/fmt.h>
+#include "scsi_util.h"
 
 class ParserException final : public runtime_error
 {
@@ -46,7 +46,7 @@ class ScsiException final : public runtime_error
 public:
 
     explicit ScsiException(SenseKey s, Asc a = NO_ADDITIONAL_SENSE_INFORMATION)
-    : runtime_error(s2p_util::FormatSenseData(s, a)), sense_key(s), asc(a)
+    : runtime_error(scsi_util::FormatSenseData(s, a)), sense_key(s), asc(a)
     {
     }
     ~ScsiException() override = default;

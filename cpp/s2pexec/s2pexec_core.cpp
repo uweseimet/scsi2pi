@@ -17,11 +17,14 @@
 #include "shared/command_meta_data.h"
 #include "shared/logger_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
+#include "shared/scsi_util.h"
 
 using namespace filesystem;
 using namespace initiator_util;
 using namespace logger_util;
 using namespace s2p_util;
+using namespace scsi_util;
 
 void S2pExec::CleanUp() const
 {

@@ -10,9 +10,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "controllers/abstract_controller.h"
+#include "shared/file_util.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
+using namespace file_util;
 using namespace memory_util;
 using namespace s2p_util;
 

@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "protobuf/s2p_interface_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "s2pctl_commands.h"
 

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "command_executor.h"
+#include <filesystem>
 #include <ranges>
 #include "command_context.h"
 #include "command_image_support.h"
@@ -19,6 +20,7 @@
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace filesystem;
 using namespace command_image_support;
 using namespace s2p_interface_util;
 using namespace s2p_util;

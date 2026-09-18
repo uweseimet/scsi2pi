@@ -18,10 +18,12 @@
 
 #include "tape.h"
 #include "controllers/abstract_controller.h"
+#include "shared/file_util.h"
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
 using namespace spdlog;
+using namespace file_util;
 using namespace memory_util;
 using namespace s2p_util;
 
@@ -116,7 +118,7 @@ void Tape::ValidateFile()
         throw IoException("Can't open image file '{}'", GetFilename());
     }
 
-    tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
+    tar_file = GetExtensionLowerCase(path(GetFilename())) == "tar";
 
     if (IsReady()) {
         SetAttn(true);

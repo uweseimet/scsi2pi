@@ -15,9 +15,11 @@
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_version.h"
+#include "shared/scsi_util.h"
 
 using namespace filesystem;
 using namespace s2p_util;
+using namespace scsi_util;
 
 namespace testing
 {

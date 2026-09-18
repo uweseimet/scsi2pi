@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include "command_localizer.h"
 #include "generated/s2p_interface.pb.h"
 

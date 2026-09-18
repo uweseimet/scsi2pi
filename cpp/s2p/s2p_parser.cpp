@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include "controllers/controller_factory.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace s2p_util;
