@@ -207,7 +207,7 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
         SetREQ(false);
 
         if (!ack) {
-            break;
+            return FinishTransfer(bytes_sent);
         }
     }
 
@@ -266,9 +266,8 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         return true;
     }
 
-    const auto now = chrono::steady_clock::now();
-    const auto deadline = now + TIMEOUT_3_SECONDS;
-    do {
+    chrono::steady_clock::time_point deadline;
+    for (unsigned n = 1;; ++n) {
         if (GetRST()) {
             warn("Received RST signal during {} phase, aborting", GetPhaseName(GetPhase()));
             return false;
@@ -278,7 +277,18 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
         if (GetSignal(pin_mask) == state) {
             return true;
         }
-    } while (chrono::steady_clock::now() < deadline);
+
+        // Read the clock only every 256 polls because it may be expensive
+        if (!(n & 0xff)) {
+            const auto now = chrono::steady_clock::now();
+            if (n == 0x100) {
+                deadline = now + TIMEOUT_3_SECONDS;
+            }
+            else if (now >= deadline) {
+                break;
+            }
+        }
+    }
 
     trace("Timeout while waiting for {} to become {}", pin_mask == PIN_ACK_MASK ? "ACK" : "REQ",
         state ? "true" : "false");
@@ -300,7 +310,7 @@ void Bus::SetBSY(bool state) const
         SetSignal(PIN_MSG, false);
         SetSignal(PIN_CD, false);
         SetSignal(PIN_REQ, false);
-        SetSignal(PIN_IO, false);
+        SetIO(false);
     }
 }
 

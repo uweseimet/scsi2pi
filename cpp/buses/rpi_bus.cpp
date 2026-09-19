@@ -24,7 +24,7 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irqs(e)
+RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irq(e)
 {
     if (standard_board) {
         pin_ind = -1;
@@ -44,14 +44,14 @@ string RpiBus::SetUp(bool target)
         return "Root permissions are required";
     }
 
-    if (enable_irqs) {
-        if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
-            cpu_set_t cpuset;
-            CPU_ZERO(&cpuset);
-            CPU_SET(3, &cpuset);
-            pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-        }
+    if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(3, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    }
 
+    if (enable_irq) {
         sched_param param { };
         param.sched_priority = 99;
         pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
@@ -348,9 +348,9 @@ void RpiBus::SetSignal(int pin, bool state) const
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
-        data |= (0b001 << shift);
+        data |= (0b001U << shift);
     } else {
-        data &= ~(0b111 << shift);
+        data &= ~(0b111U << shift);
     }
 
     gpio[index] = data;
@@ -359,7 +359,7 @@ void RpiBus::SetSignal(int pin, bool state) const
 
 void RpiBus::DisableIRQ()
 {
-    if (enable_irqs) {
+    if (enable_irq) {
         return;
     }
 
@@ -392,7 +392,7 @@ void RpiBus::DisableIRQ()
 
 void RpiBus::EnableIRQ()
 {
-    if (enable_irqs) {
+    if (enable_irq) {
         return;
     }
 
@@ -427,7 +427,7 @@ void RpiBus::PinConfig(int pin, int mode) const
     }
 
     const int index = pin / 10;
-    const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
+    const uint32_t mask = ~(0b111U << ((pin % 10) * 3));
     gpfsel[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
     gpio[index] = gpfsel[index];
 }
@@ -439,7 +439,7 @@ void RpiBus::PinSetSignal(int pin, bool state) const
         return;
     }
 
-    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1U << pin;
 }
 
 void RpiBus::ConfigurePullDown(int pin) const
@@ -458,7 +458,7 @@ void RpiBus::ConfigurePullDown(int pin) const
 
         gpio[GPIO_PUD] = 0;
         Sleep(ts);
-        gpio[GPIO_CLK_0] = 1 << pin;
+        gpio[GPIO_CLK_0] = 1U << pin;
         Sleep(ts);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;

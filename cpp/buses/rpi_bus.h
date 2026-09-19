@@ -28,7 +28,7 @@ public:
         PI_4 = 4
     };
 
-    RpiBus(PiType type, bool, bool = true);
+    RpiBus(PiType type, bool, bool);
 
     bool IsRaspberryPi() const override
     {
@@ -84,7 +84,7 @@ private:
 
     const PiType pi_type;
 
-    const bool enable_irqs;
+    const bool enable_irq;
 
     // Set to -1 for the STANDARD board
     int pin_ind = PIN_IND;

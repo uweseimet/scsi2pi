@@ -57,7 +57,7 @@ TEST(RpiBusTest, GetPiType)
 
 TEST(RpiBusTest, IsRaspberryPi)
 {
-    RpiBus bus(RpiBus::PiType::PI_1, false);
+    RpiBus bus(RpiBus::PiType::PI_1, false, false);
 
     EXPECT_TRUE(bus.IsRaspberryPi());
 }
