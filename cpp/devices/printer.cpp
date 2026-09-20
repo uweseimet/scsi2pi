@@ -121,7 +121,7 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND);
     }
 
     out.close();
@@ -145,7 +145,7 @@ void Printer::SynchronizeBuffer()
 
         CleanUp();
 
-        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND);
     }
 
     ++file_print_count;
@@ -175,7 +175,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
             LogError("Can't create printer output file for pattern '{}': {}", filename,
                 system_error(errno, generic_category()).what());
             ++print_error_count;
-            throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+            throw ScsiException(ABORTED_COMMAND);
         }
 
         close(fd);
@@ -198,7 +198,7 @@ void Printer::CheckForFileError()
     if (out.fail()) {
         out.clear();
         ++print_error_count;
-        throw ScsiException(ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+        throw ScsiException(ABORTED_COMMAND);
     }
 }
 

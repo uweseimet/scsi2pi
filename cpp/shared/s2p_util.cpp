@@ -12,18 +12,6 @@
 #include <charconv>
 #include <clocale>
 #include <csignal>
-#include <fcntl.h>
-#if __has_include(<sys/ioctl.h>)
-#include <sys/ioctl.h>
-#endif
-#if __has_include(<linux/fs.h>)
-#include <linux/fs.h>
-#include <sys/stat.h>
-#endif
-#if __has_include(<pwd.h>)
-#include <pwd.h>
-#endif
-#include <unistd.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
 
@@ -158,7 +146,7 @@ string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
         id = ParseAsUnsignedInt(components[0]);
         if (id < 0 || id > 7) {
             id = -1;
-            return "Invalid device ID: '" + components[0] + "' (0-7)";
+            return fmt::format("Invalid device ID: {}' (0-7)", components[0]);
         }
 
         if (components.size() > 1) {
@@ -166,7 +154,7 @@ string s2p_util::ParseIdAndLun(const string &id_spec, int &id, int &lun)
             if (lun < 0 || lun >= 32) {
                 id = -1;
                 lun = -1;
-                return "Invalid LUN (0-31)";
+                return fmt::format("Invalid LUN: '{}' (0-31)", components[1]);
             }
         }
     }

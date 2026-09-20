@@ -50,8 +50,14 @@ TEST(S2pFormatterTest, FormatBytes)
     EXPECT_EQ(str_partial, formatter.FormatBytes(bytes, bytes.size()));
     EXPECT_EQ(str_hex_only, formatter.FormatBytes(bytes, bytes.size(), true));
 
+    formatter.SetLimit(15);
+    EXPECT_EQ("40:41:42:43:44:45:46:47:48:49:4a:4b:4c:4d:4e", formatter.FormatBytes(bytes, bytes.size(), true));
+
     formatter.SetLimit(0);
     EXPECT_EQ("", formatter.FormatBytes(bytes, bytes.size(), true));
+
+    formatter.SetLimit(1);
+    EXPECT_EQ("40\n... (14 more)", formatter.FormatBytes(bytes, bytes.size(), true));
 
     formatter.SetLimit(2);
     EXPECT_EQ("40:41\n... (13 more)", formatter.FormatBytes(bytes, bytes.size(), true));

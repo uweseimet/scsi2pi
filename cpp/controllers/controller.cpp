@@ -360,8 +360,11 @@ void Controller::Send()
     assert(bus.GetIO());
 
     if (const auto length = GetCurrentLength(); length) {
+        assert(static_cast<size_t>(GetOffset() + length) <= GetBuffer().size());
+        const span<uint8_t> data(GetBuffer().data() + GetOffset(), length);
+
         if (IsDataIn() && GetLogger().should_log(level::trace)) {
-            const string &bytes = FormatBytes(GetBuffer(), length);
+            const string &bytes = FormatBytes(data, length);
             LogTrace("Sending {} byte(s) at offset {} in DATA IN phase{}{}", length, GetOffset(),
                 bytes.empty() ? "" : ":\n", bytes);
         }
@@ -369,8 +372,7 @@ void Controller::Send()
         // The DaynaPort delay work-around for the Mac should be taken from the respective LUN, but as there are
         // no Mac Daynaport drivers for LUNs other than 0 the current work-around is fine. The work-around is
         // required for cases where the actually requested LUN does not exist but is tested for with INQUIRY.
-        if (const int l = bus.TargetSendHandShake(span(GetBuffer().data() + GetOffset(), length),
-            GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
+        if (const int l = bus.TargetSendHandShake(data, GetDeviceForLun(0)->GetDelayAfterBytes()); l != length) {
             LogWarn("Sent {} byte(s), {} required", l, length);
             bus.SetRST(true);
             bus.Reset();
@@ -429,12 +431,14 @@ void Controller::Receive()
     assert(!bus.GetIO());
 
     if (const auto curr_length = GetCurrentLength(); curr_length) {
+        assert(static_cast<size_t>(GetOffset() + curr_length) <= GetBuffer().size());
+        const span<uint8_t> data(GetBuffer().data() + GetOffset(), curr_length);
+
         if (!IsMsgOut()) {
             LogTrace("Receiving {} byte(s) at offset {}", curr_length, GetOffset());
         }
 
-        if (const int l = bus.TargetReceiveHandShake(span(GetBuffer().data() + GetOffset(), curr_length)); l
-            != curr_length) {
+        if (const int l = bus.TargetReceiveHandShake(data); l != curr_length) {
             LogWarn("Received {} byte(s), {} required", l, curr_length);
             bus.SetRST(true);
             bus.Reset();
@@ -443,12 +447,11 @@ void Controller::Receive()
         }
 
         if (IsDataOut() && GetLogger().should_log(level::trace)) {
-            const string &bytes = FormatBytes(GetBuffer(), curr_length);
+            const string &bytes = FormatBytes(data, curr_length);
             LogTrace("Received {} byte(s) in DATA OUT phase{}{}", curr_length, bytes.empty() ? "" : ":\n", bytes);
         }
 
-        if (IsDataOut() && script_generator
-            && !script_generator->AddData(span(GetBuffer().data() + GetOffset(), curr_length))) {
+        if (IsDataOut() && script_generator && !script_generator->AddData(data)) {
             LogWarn("Couldn't append to script file");
         }
 

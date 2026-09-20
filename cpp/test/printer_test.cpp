@@ -119,12 +119,12 @@ TEST_F(PrinterTest, SynchronizeBuffer)
     params["cmd"] = "false %f";
     printer->SetParams(params);
 
-    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, NO_ADDITIONAL_SENSE_INFORMATION);
 
     controller->SetCdbByte(0, to_underlying(PRINT));
     controller->SetTransferSize(4, 4);
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
-    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, IO_PROCESS_TERMINATED);
+    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, NO_ADDITIONAL_SENSE_INFORMATION);
 }
 
 TEST_F(PrinterTest, WriteData)

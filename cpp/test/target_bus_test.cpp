@@ -8,7 +8,7 @@
 
 #include "mocks.h"
 
-TEST(BusTest, TargetCommandHandShake)
+TEST(TargetBusTest, TargetCommandHandShake)
 {
     MockBus bus;
     array<uint8_t, 1> buf = { };
@@ -22,7 +22,7 @@ TEST(BusTest, TargetCommandHandShake)
     EXPECT_EQ(-1, bus.TargetCommandHandShake(buf));
 }
 
-TEST(BusTest, TargetReceiveHandShake)
+TEST(TargetBusTest, TargetReceiveHandShake)
 {
     MockBus bus;
     array<uint8_t, 1> buf = { };
@@ -36,7 +36,7 @@ TEST(BusTest, TargetReceiveHandShake)
     EXPECT_EQ(0, bus.TargetReceiveHandShake(buf));
 }
 
-TEST(BusTest, TargetSendHandShake)
+TEST(TargetBusTest, TargetSendHandShake)
 {
     MockBus bus;
     array<uint8_t, 1> buf = { };

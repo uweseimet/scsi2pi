@@ -85,7 +85,7 @@ void Bus::SetBSY(bool state) const
         SetSignal(PIN_MSG, false);
         SetSignal(PIN_CD, false);
         SetSignal(PIN_REQ, false);
-        SetIO(false);
+        SetSignal(PIN_IO, false);
     }
 }
 

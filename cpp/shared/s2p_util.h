@@ -81,7 +81,7 @@ constexpr char* to_char_ptr(span<uint8_t> bytes)
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
-constexpr const char* to_const_char_ptr(span<byte> bytes)
+constexpr const char* to_const_char_ptr(span<const byte> bytes)
 {
     return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }

@@ -41,14 +41,13 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), 
             device.DataInPhase(size);
         });
 
-    // Devices that support MODE SENSE must (at least formally) also support MODE SELECT
     device.AddCommand(ScsiCommand::MODE_SELECT_6, [this]
         {
             ModeSelect(device.GetCdbByte(4));
         });
     device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
         {
-            ModeSelect(device.GetCdbInt24(7));
+            ModeSelect(device.GetCdbInt16(7));
         });
 }
 
