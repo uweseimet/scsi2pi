@@ -28,8 +28,8 @@ void Controller::Reset()
 
     identified_lun = -1;
 
-    deferred_sense_key = NO_SENSE;
-    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
+    deferred_sense_key = SenseKey::NO_SENSE;
+    deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
 
     ResetFlags();
 }

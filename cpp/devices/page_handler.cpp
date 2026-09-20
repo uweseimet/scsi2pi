@@ -50,7 +50,7 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), 
         });
     device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
         {
-            ModeSelect(device.GetCdbInt24(7));
+            ModeSelect(device.GetCdbInt16(7));
         });
 }
 
