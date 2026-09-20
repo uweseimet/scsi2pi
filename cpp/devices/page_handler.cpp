@@ -38,7 +38,7 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p) : device(d), supports
         });
     device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
         {
-            ModeSelect(device.GetCdbInt24(7));
+            ModeSelect(device.GetCdbInt16(7));
         });
 }
 
