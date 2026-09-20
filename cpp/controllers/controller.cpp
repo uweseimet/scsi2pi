@@ -30,6 +30,9 @@ void Controller::Reset()
 
     identified_lun = -1;
 
+    deferred_sense_key = NO_SENSE;
+    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
+
     ResetFlags();
 }
 
@@ -642,6 +645,16 @@ void Controller::ProcessMessage()
     if (atn_msg) {
         atn_msg = false;
         ParseMessage();
+        msg_bytes.clear();
+
+        if (IsBusFree()) {
+            return;
+        }
+
+        if (IsMsgIn()) {
+            atn_msg = true;
+            return;
+        }
     }
 
     Command();
