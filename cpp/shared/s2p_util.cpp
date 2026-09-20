@@ -97,8 +97,10 @@ string s2p_util::GetLine(const string &prompt, istream &in)
     string input;
     string line;
 
+    const bool interactive = &in == &cin && isatty(STDIN_FILENO);
+
     while (true) {
-        if (!line.ends_with('\\') && isatty(STDIN_FILENO)) {
+        if (!line.ends_with('\\') && interactive) {
             cout << prompt << ">";
         }
 
