@@ -62,8 +62,14 @@ bool ValidateImageFile(const path &image_path, logger &logger)
         return false;
     }
 
-    if (GetCapacityFromFile(p.string()) < 256) {
-        logger.warn("Image/Device file '{}' is invalid", p.string());
+    try {
+        if (GetCapacityFromFile(p.string()) < 256) {
+            logger.warn("Image/Device file '{}' has less than 256 bytes", p.string());
+            return false;
+        }
+    }
+    catch (const IoException &e) {
+        logger.warn("Image/Device file '{}' is invalid: {}", p.string(), e.what());
         return false;
     }
 
