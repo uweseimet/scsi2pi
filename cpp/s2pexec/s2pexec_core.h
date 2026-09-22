@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,9 +10,10 @@
 
 #include <spdlog/spdlog.h>
 #include "shared/s2p_formatter.h"
+#include "shared/runnable.h"
 #include "s2pexec_executor.h"
 
-class S2pExec final
+class S2pExec final : public Runnable
 {
     class ExecutionException : public runtime_error
     {
@@ -21,18 +22,18 @@ class S2pExec final
 
 public:
 
-    int Run(span<char*>, bool, bool = false);
+    int Run(span<char*>) override;
 
 private:
 
     static void Banner(bool, bool);
 
-    bool Init(bool, bool);
-    bool ParseArguments(span<char*>, bool, bool);
-    void RunInteractive(bool, bool);
+    bool Init();
+    bool ParseArguments(span<char*>);
+    void RunInteractive();
     int Run();
 
-    tuple<SenseKey, Asc, int> ExecuteCommand();
+    optional<SenseData> ExecuteCommand();
 
     string ReadData();
     string WriteData(span<const uint8_t>);

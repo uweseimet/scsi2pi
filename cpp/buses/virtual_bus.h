@@ -12,66 +12,63 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
-class InProcessBus final : public Bus
+class VirtualBus final : public Bus
 {
 
 public:
 
-    InProcessBus(const string&, bool);
-    ~InProcessBus() override = default;
-
-    void Reset() const override;
+    VirtualBus(const string&, bool);
 
     void CleanUp() override;
 
-    void Acquire() const override
-    {
-        // Nothing to do
-    }
-
-    void SetDAT(uint8_t) const override;
+    void Reset() const override;
 
     bool GetSignal(int) const override;
     void SetSignal(int, bool) const override;
 
-    uint8_t WaitForSelection() override;
-
-    void WaitNanoSeconds(bool) const override
-    {
-        // Nothing to do
-    }
+private:
 
     bool IsRaspberryPi() const override
     {
         return false;
     }
 
-private:
+    string SetUp(bool) override;
 
     void LogSignal(const string&) const;
 
-    void DisableIRQ() override
-    {
-        // Nothing to do
-    }
-    void EnableIRQ() override
+    void Acquire() const override
     {
         // Nothing to do
     }
 
-    void SetDir(bool) const override
+    void SetDataDirIn(bool) const override
     {
         // Nothing to do
     }
+
+    uint8_t GetDAT() const override;
+    void SetDAT(uint8_t) const override;
+
+    BusPhase GetPhase() const override;
+    bool IsPhase(BusPhase phase) const override;
+
+    void WaitNanoSeconds(bool) const override
+    {
+        // Nothing to do
+    }
+
+    uint8_t WaitForSelection() override;
 
     static string GetSignalName(int);
 
-    shared_ptr<spdlog::logger> in_process_logger;
+    const shared_ptr<spdlog::logger> virtual_bus_logger;
 
-    bool log_signals = true;
+    const bool log_signals;
 
     // For de-duplicating the signal logging
     mutable string last_log_msg;

@@ -154,6 +154,7 @@ TEST(S2pUtilTest, ParseAsUnsignedInt)
     EXPECT_EQ(0, ParseAsUnsignedInt("0"));
     EXPECT_EQ(1234, ParseAsUnsignedInt("1234"));
     EXPECT_EQ(1234, ParseAsUnsignedInt(" 1234 "));
+    EXPECT_EQ(-1, ParseAsUnsignedInt("12 34"));
 }
 
 TEST(S2pUtilTest, Banner)
@@ -272,10 +273,22 @@ TEST(S2pUtilTest, CreateLogger)
     EXPECT_EQ(l, CreateLogger("test"));
 }
 
+TEST(S2pUtilTest, GetCapacityFromFile)
+{
+    const path &filename = testing::CreateTempFile(512);
+    EXPECT_EQ(512, GetCapacityFromFile(filename.string()));
+
+    EXPECT_THROW(GetCapacityFromFile("/dev/null"), IoException);
+
+    EXPECT_THROW(GetCapacityFromFile("/non_existing_file"), IoException);
+}
+
 TEST(S2pUtilTest, GetLine)
 {
     const string &filename = testing::CreateTempName();
+    testing::TestShared::RememberTempFile(filename);
     ofstream out(filename);
+
     out << "abc\n";
     out << "123 #comment\n";
     out << "# comment\n";

@@ -7,12 +7,12 @@
 //---------------------------------------------------------------------------
 
 #include "s2pproto_core.h"
-#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
+#include <spdlog/spdlog.h>
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 #include "shared/s2p_exceptions.h"
@@ -32,8 +32,6 @@ void S2pProto::CleanUp() const
 
 void S2pProto::TerminationHandler(int)
 {
-    instance->bus->SetRST(true);
-
     instance->CleanUp();
 
     // Process will terminate automatically
@@ -65,9 +63,9 @@ void S2pProto::Banner(bool header)
         << "  --version/-v               Display the s2pproto version.\n";
 }
 
-bool S2pProto::Init(bool in_process, bool log_signals)
+bool S2pProto::Init()
 {
-    bus = bus_factory::CreateBus(false, in_process, log_signals, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus(false, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -76,12 +74,7 @@ bool S2pProto::Init(bool in_process, bool log_signals)
 
     instance = this;
 
-    // Signal handler for cleaning up
-    struct sigaction termination_handler = { };
-    termination_handler.sa_handler = TerminationHandler;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
+    SetTerminationHandler(TerminationHandler);
 
     return true;
 }
@@ -177,12 +170,12 @@ bool S2pProto::ParseArguments(span<char*> args)
     }
 
     if (!SetLogLevel(*default_logger(), log_level)) {
-        throw ParserException("Invalid log level: '" + log_level + "'");
+        throw ParserException(fmt::format("Invalid log level: '{}'", log_level));
     }
 
     initiator_id = ParseAsUnsignedInt(initiator);
     if (initiator_id < 0 || initiator_id > 7) {
-        throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
+        throw ParserException(fmt::format("Invalid initiator ID: '{}'", initiator));
     }
 
     if (const string &error = ParseIdAndLun(target, target_id, target_lun); !error.empty()) {
@@ -208,7 +201,7 @@ bool S2pProto::ParseArguments(span<char*> args)
     return true;
 }
 
-int S2pProto::Run(span<char*> args, bool in_process, bool log_signals)
+int S2pProto::Run(span<char*> args)
 {
     if (args.size() < 2) {
         Banner(true);
@@ -228,13 +221,8 @@ int S2pProto::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    if (!Init(in_process, log_signals)) {
+    if (!Init()) {
         cerr << "Error: Can't initialize bus\n";
-        return EXIT_FAILURE;
-    }
-
-    if (!in_process && !bus->IsRaspberryPi()) {
-        cerr << "Error: No RaSCSI/PiSCSI board found\n";
         return EXIT_FAILURE;
     }
 

@@ -39,7 +39,7 @@ public:
         return instance;
     }
 
-    CdbMetaData GetCdbMetaData(ScsiCommand cmd) const
+    const CdbMetaData& GetCdbMetaData(ScsiCommand cmd) const
     {
         return cdb_meta_data[static_cast<size_t>(cmd)];
     }
@@ -60,7 +60,7 @@ private:
 
     CommandMetaData();
 
-    void AddCommand(ScsiCommand, int, string_view, const CdbMetaData&);
+    void AddCommand(ScsiCommand, int, string, const CdbMetaData&);
 
     array<int, 256> command_byte_counts = { };
     array<string, 256> command_names = { };

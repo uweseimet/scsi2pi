@@ -61,7 +61,7 @@ TEST(CommandDispatcherTest, DispatchCommand)
     PbCommand command_device_types_info2;
     command_device_types_info2.set_operation(DEVICE_TYPES_INFO);
     CommandContext context_device_types_info2(command_device_types_info2, *default_logger());
-    dispatcher.SetWithoutTypes( { "SCHD,  SCCD" });
+    dispatcher.SetExcludedTypes( { SCHD, SCCD });
     EXPECT_TRUE(dispatcher.DispatchCommand(context_device_types_info2, result2));
     device_types_info = result2.device_types_info();
     const int count2 = device_types_info.properties().size();
@@ -237,16 +237,4 @@ TEST(CommandDispatcherTest, SetLogLevel)
     EXPECT_EQ(level::level_enum::info, default_logger()->level());
 
     default_logger()->set_level(level);
-}
-
-TEST(CommandDispatcherTest, SetWithoutTypes)
-{
-    ControllerFactory controller_factory;
-    MockBus bus;
-    CommandExecutor executor(bus, controller_factory, *default_logger());
-    CommandDispatcher dispatcher(executor, controller_factory, *default_logger());
-
-    EXPECT_TRUE(dispatcher.SetWithoutTypes(""));
-    EXPECT_FALSE(dispatcher.SetWithoutTypes("xyz"));
-    EXPECT_TRUE(dispatcher.SetWithoutTypes("SCHD"));
 }

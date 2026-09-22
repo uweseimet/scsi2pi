@@ -17,6 +17,7 @@
 #include "shared/s2p_version.h"
 
 using namespace spdlog;
+using namespace command_image_support;
 using namespace command_response;
 using namespace s2p_interface_util;
 
@@ -163,7 +164,8 @@ TEST(CommandResponseTest, GetServerInfo)
 
     PbCommand command;
     PbServerInfo info1;
-    CommandImageSupport::GetInstance().SetDepth(1234);
+
+    SetDepth(1234);
 
     GetServerInfo(info1, command, devices, ids, { }, *default_logger());
     EXPECT_TRUE(info1.has_version_info());

@@ -10,7 +10,6 @@
 
 #include "s2p_core.h"
 #include <chrono>
-#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -30,19 +29,20 @@
 #include "shared/s2p_version.h"
 #include "s2p_parser.h"
 
+using namespace command_image_support;
 using namespace s2p_interface_util;
 using namespace s2p_parser;
 using namespace s2p_util;
 
-string S2p::InitBus(bool in_process, bool log_signals)
+string S2p::InitBus()
 {
-    const string &connection_type = property_handler.RemoveProperty(PropertyHandler::CONNECTION_TYPE, "FULLSPEC");
-    const string &board_type = ToLower(connection_type);
+    const string connection_type = property_handler.ConsumeProperty(PropertyHandler::CONNECT_TYPE, "FULLSPEC");
+    const string board_type = ToLower(connection_type);
     if (board_type != "standard" && board_type != "fullspec") {
         return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    bus = bus_factory::CreateBus(true, in_process, log_signals, APP_NAME, board_type == "standard");
+    bus = BusFactory::GetInstance().CreateBus(true, APP_NAME, board_type == "standard", enable_irqs);
     if (!bus) {
         return "Can't initialize bus";
     }
@@ -74,33 +74,33 @@ void S2p::CleanUp(const string &error)
 void S2p::ReadAccessToken(const path &filename)
 {
     if (error_code error; !is_regular_file(filename, error)) {
-        throw ParserException("Access token file '" + filename.string() + "' must be a regular file");
+        throw ParserException(fmt::format("Access token file '{}' must be a regular file", filename.string()));
     }
 
 #if __has_include(<pwd.h>)
     if (struct stat st; stat(filename.c_str(), &st) || st.st_uid || st.st_gid) {
-        throw ParserException("Access token file '" + filename.string() + "' must be owned by root");
+        throw ParserException(fmt::format("Access token file '{}' must be owned by root", filename.string()));
     }
 #endif
 
     if (const auto perms = filesystem::status(filename).permissions();
     (perms & perms::group_read) != perms::none || (perms & perms::others_read) != perms::none ||
         (perms & perms::group_write) != perms::none || (perms & perms::others_write) != perms::none) {
-        throw ParserException("Access token file '" + filename.string() + "' must be readable by root only");
+        throw ParserException(fmt::format("Access token file '{}' must be readable by root only", filename.string()));
     }
 
     ifstream token_file(filename);
     if (!token_file) {
-        throw ParserException("Can't open access token file '" + filename.string() + "'");
+        throw ParserException(fmt::format("Can't open access token file '{}'", filename.string()));
     }
 
     getline(token_file, access_token);
     if (token_file.fail()) {
-        throw ParserException("Can't read access token file '" + filename.string() + "'");
+        throw ParserException(fmt::format("Can't read access token file '{}'", filename.string()));
     }
 
     if (access_token.empty()) {
-        throw ParserException("Access token file '" + filename.string() + "' must not be empty");
+        throw ParserException(fmt::format("Access token file '{}' must not be empty", filename.string()));
     }
 }
 
@@ -121,7 +121,7 @@ void S2p::TerminationHandler(int)
     // Process will terminate automatically
 }
 
-int S2p::Run(span<char*> args, bool in_process, bool log_signals)
+int S2p::Run(span<char*> args)
 {
     // The --version/-v option shall result in no other action except displaying the version
     if (ranges::find_if(args, [](const char *arg) {return !strcmp(arg, "-v") || !strcmp(arg, "--version");})
@@ -153,25 +153,21 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         CleanUp(e.what());
         return EXIT_FAILURE;
     }
-    if (const string &error = MapExtensions(); !error.empty()) {
-        CleanUp(error);
-        return EXIT_FAILURE;
-    }
 
-    if (const string &error = InitBus(in_process, log_signals); !error.empty()) {
+    if (const string &error = InitBus(); !error.empty()) {
         CleanUp(error);
         return EXIT_FAILURE;
     }
 
     if (!dispatcher->SetLogLevel(log_level)) {
-        CleanUp("Invalid log level: '" + log_level + "'");
+        CleanUp(fmt::format("Invalid log level: '{}'", log_level));
         return EXIT_FAILURE;
     }
 
     controller_factory.SetFormatLimit(128);
-    if (const string &log_limit = property_handler.RemoveProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
+    if (const string log_limit = property_handler.ConsumeProperty(PropertyHandler::LOG_LIMIT); !log_limit.empty()) {
         if (const int limit = ParseAsUnsignedInt(log_limit); limit == -1) {
-            CleanUp("Invalid log limit '" + log_limit + "'");
+            CleanUp(fmt::format("Invalid log limit '{}'", log_limit));
             return EXIT_FAILURE;
         }
         else {
@@ -179,14 +175,14 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         }
     }
 
-    if (const string &reserved_ids = property_handler.RemoveProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
+    if (const string reserved_ids = property_handler.ConsumeProperty(PropertyHandler::RESERVED_IDS); !reserved_ids.empty()) {
         if (const string &error = executor->SetReservedIds(reserved_ids); !error.empty()) {
             CleanUp(error);
             return EXIT_FAILURE;
         }
     }
 
-    if (const string &token_file = property_handler.RemoveProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
+    if (const string token_file = property_handler.ConsumeProperty(PropertyHandler::TOKEN_FILE); !token_file.empty()) {
         try {
             ReadAccessToken(path(token_file));
         }
@@ -208,7 +204,7 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
         return EXIT_FAILURE;
     }
 
-    s2p_logger->trace("Image file folder is '" + CommandImageSupport::GetInstance().GetImageFolder() + "'");
+    s2p_logger->trace("Image file folder is '{}'", GetImageFolder());
 
     try {
         CreateDevices();
@@ -220,11 +216,13 @@ int S2p::Run(span<char*> args, bool in_process, bool log_signals)
 
     DisplayAttachedDevices();
 
-    if (!in_process && !bus->IsRaspberryPi()) {
+    if (!bus->IsRaspberryPi()) {
         cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
-    SetUpEnvironment();
+    instance = this;
+
+    SetTerminationHandler(TerminationHandler);
 
     service_thread.Start();
 
@@ -279,95 +277,98 @@ int S2p::ParseProperties(const property_map &properties, bool ignore_conf)
     property_handler.Init(config_files != properties.end() ? config_files->second : "", properties,
         ignore_conf);
 
-    if (const string &log_pattern = property_handler.RemoveProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
+    if (const string log_pattern = property_handler.ConsumeProperty(PropertyHandler::LOG_PATTERN); !log_pattern.empty()) {
         s2p_logger->set_pattern(log_pattern);
         spdlog::set_pattern(log_pattern);
         controller_factory.SetLogPattern(log_pattern);
     }
 
     // This sets the global level only, there are no attached devices yet
-    log_level = property_handler.RemoveProperty(PropertyHandler::LOG_LEVEL, "info");
+    log_level = property_handler.ConsumeProperty(PropertyHandler::LOG_LEVEL, "info");
 
     // Log the properties (on trace level) *after* the log level has been set
     LogProperties();
 
-    if (const string &image_folder = property_handler.RemoveProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
-        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(image_folder); !error.empty()) {
+    if (const string image_folder = property_handler.ConsumeProperty(PropertyHandler::IMAGE_FOLDER); !image_folder.empty()) {
+        if (const string &error = SetImageFolder(image_folder); !error.empty()) {
             throw ParserException(error);
         }
-        else {
-            s2p_logger->info("Image folder set to '{}'", image_folder);
-        }
+        s2p_logger->info("Image folder set to '{}'", image_folder);
     }
 
-    if (const string &scan_depth = property_handler.RemoveProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
+    if (const string scan_depth = property_handler.ConsumeProperty(PropertyHandler::SCAN_DEPTH, "1"); !scan_depth.empty()) {
         if (const int depth = ParseAsUnsignedInt(scan_depth); depth < 0) {
-            throw ParserException("Invalid image file scan depth: " + scan_depth);
+            throw ParserException(fmt::format("Invalid image file scan depth: {}", scan_depth));
         }
         else {
-            CommandImageSupport::GetInstance().SetDepth(depth);
+            SetDepth(depth);
         }
     }
 
-    if (const string &script_file = property_handler.RemoveProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
-        if (!controller_factory.SetScriptFile(script_file)) {
-            throw ParserException(
-                "Can't create script file '" + script_file + "': " + system_error(errno, generic_category()).what());
+    if (const string script_file = property_handler.ConsumeProperty(PropertyHandler::SCRIPT_FILE); !script_file.empty()) {
+        if (const string error = controller_factory.SetScriptFile(script_file); !error.empty()) {
+            throw ParserException(error);
         }
-        s2p_logger->info("Generating script file '" + script_file + "'");
+        s2p_logger->info("Generating script file '{}'", script_file);
     }
 
-    if (const string &without_types = property_handler.RemoveProperty(PropertyHandler::WITHOUT_TYPES); !dispatcher->SetWithoutTypes(
-        without_types)) {
-        throw ParserException("Invalid device types list: '" + without_types + "'");
-    }
+    SetExcludedTypes();
 
-    const string &p = property_handler.RemoveProperty(PropertyHandler::PORT, "6868");
+    MapExtensions();
+
+    const string d = property_handler.ConsumeProperty(PropertyHandler::ENABLE_IRQS);
+    enable_irqs = ToLower(d) == "true";
+
+    const string p = property_handler.ConsumeProperty(PropertyHandler::PORT, "6868");
     const int port = ParseAsUnsignedInt(p);
     if (port <= 0 || port > 65535) {
-        throw ParserException("Invalid port: '" + p + "', port must be between 1 and 65535");
+        throw ParserException(fmt::format("Invalid port: '{}', port must be between 1 and 65535", p));
     }
 
     return port;
 }
 
-void S2p::SetUpEnvironment()
+void S2p::SetExcludedTypes() const
 {
-    instance = this;
+    const string excluded_types = property_handler.ConsumeProperty(PropertyHandler::EXCLUDED_TYPES);
+    const auto &components = Split(excluded_types, ',');
 
-#ifdef SIGPIPE
-    // Signal handler to detach all devices on a KILL or TERM signal
-    struct sigaction termination_handler = { };
-    termination_handler.sa_handler = TerminationHandler;
-    sigaction(SIGINT, &termination_handler, nullptr);
-    sigaction(SIGTERM, &termination_handler, nullptr);
-    signal(SIGPIPE, SIG_IGN);
-#endif
+    unordered_set < PbDeviceType > parsed_types;
+    for (const auto &t : components) {
+        const auto type = ParseDeviceType(Trim(t));
+        if (type == UNDEFINED) {
+            throw ParserException(fmt::format("Invalid excluded device types list: '{}'", excluded_types));
+        }
+
+        parsed_types.insert(type);
+    }
+
+    if (!parsed_types.empty()) {
+        dispatcher->SetExcludedTypes(parsed_types);
+    }
 }
 
-string S2p::MapExtensions() const
+void S2p::MapExtensions() const
 {
     for (const auto& [key, value] : property_handler.GetProperties("extensions.")) {
-        property_handler.RemoveProperty(key);
+        property_handler.ConsumeProperty(key);
 
         const auto &components = Split(key, '.');
         if (components.size() != 2) {
-            return "Invalid extension mapping: '" + key + "'";
+            throw ParserException(fmt::format("Invalid extension mapping: '{}'", key));
         }
 
         PbDeviceType type = UNDEFINED;
-        if (PbDeviceType_Parse(ToUpper(components[1]), &type) && type == UNDEFINED) {
-            continue;
+        if (!PbDeviceType_Parse(ToUpper(components[1]), &type) || type == UNDEFINED) {
+            throw ParserException(fmt::format("Invalid device type in extension mapping: '{}'", components[1]));
         }
 
         for (const string &extension : Split(value, ',')) {
             if (!DeviceFactory::GetInstance().AddExtensionMapping(extension, type)) {
-                return "Duplicate extension mapping for extension '" + extension + "'";
+                throw ParserException(fmt::format("Duplicate mapping for extension '{}'", extension));
             }
         }
     }
-
-    return "";
 }
 
 void S2p::LogProperties() const
@@ -433,7 +434,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
 
         CommandContext context(command, *s2p_logger);
         PbResult result;
-        context.SetLocale(property_handler.RemoveProperty(PropertyHandler::LOCALE, GetLocale()));
+        context.SetLocale(property_handler.ConsumeProperty(PropertyHandler::LOCALE, GetLocale()));
         if (!dispatcher->DispatchCommand(context, result)) {
             throw ParserException("Can't attach devices");
         }

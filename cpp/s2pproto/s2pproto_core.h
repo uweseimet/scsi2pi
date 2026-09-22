@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,19 +11,20 @@
 #include <vector>
 #include "buses/bus.h"
 #include "s2pproto_executor.h"
+#include "shared/runnable.h"
 
-class S2pProto final
+class S2pProto final : public Runnable
 {
 
 public:
 
-    int Run(span<char*>, bool, bool = false);
+    int Run(span<char*>) override;
 
 private:
 
     static void Banner(bool);
 
-    bool Init(bool, bool);
+    bool Init();
     bool ParseArguments(span<char*>);
     int GenerateOutput(const string&, const string&);
 

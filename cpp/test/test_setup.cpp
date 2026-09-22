@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
+#include "buses/bus_factory.h"
 #include "test_shared.h"
 
 int main(int argc, char*[])
@@ -21,8 +22,12 @@ int main(int argc, char*[])
     int fd = -1;
     if (disable_logging) {
         fd = open("/dev/null", O_WRONLY);
-        dup2(fd, STDERR_FILENO);
+        if (fd != -1) {
+            dup2(fd, STDERR_FILENO);
+        }
     }
+
+    BusFactory::GetInstance().EnableVirtualBus();
 
     testing::InitGoogleTest();
     testing::GTEST_FLAG(shuffle) = true;

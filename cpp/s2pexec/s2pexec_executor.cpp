@@ -26,20 +26,16 @@ string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 
     return error;
 #else
-    return "";
+    return "Linux SG driver support is not compiled in";
 #endif
 }
 
-string S2pExecExecutor::Init(int id, const string &name, bool in_process, bool log_signals)
+string S2pExecExecutor::Init(int id, const string &name)
 {
     if (!bus) {
-        bus = bus_factory::CreateBus(false, in_process, log_signals, name);
+        bus = BusFactory::GetInstance().CreateBus(false, name);
         if (!bus) {
             return "Can't initialize bus";
-        }
-
-        if (!in_process && !bus->IsRaspberryPi()) {
-            return "No RaSCSI/PiSCSI board found";
         }
 
         initiator_executor = make_unique<InitiatorExecutor>(*bus, id, s2pexec_logger);
@@ -87,7 +83,7 @@ int S2pExecExecutor::ExecuteCommand(span<uint8_t> cdb, span<uint8_t> buf, int ti
     return 0xff;
 }
 
-tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
+optional<SenseData> S2pExecExecutor::GetSenseData() const
 {
 #ifdef BUILD_SCSG
     if (is_sg) {
@@ -98,7 +94,11 @@ tuple<SenseKey, Asc, int> S2pExecExecutor::GetSenseData() const
 
         sg_adapter->SendCommand(cdb, sense_data, static_cast<int>(sense_data.size()), 1);
 
-        return {static_cast<SenseKey>(static_cast<int>(sense_data[0]) & 0x0f), static_cast<Asc>(sense_data[12]), sense_data[13]};
+        return SenseData {
+            .sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[0]) & 0x0f),
+            .asc = static_cast<Asc>(sense_data[12]),
+            .ascq = sense_data[13]
+        };
     }
 #endif
 

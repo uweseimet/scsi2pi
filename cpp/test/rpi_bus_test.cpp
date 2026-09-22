@@ -14,6 +14,7 @@
 TEST(RpiBusTest, GetPiType)
 {
     const string &filename = testing::CreateTempName();
+    testing::TestShared::RememberTempFile(filename);
     ofstream out(filename);
 
     out << "Raspberry Pi 1" << flush;
@@ -56,7 +57,7 @@ TEST(RpiBusTest, GetPiType)
 
 TEST(RpiBusTest, IsRaspberryPi)
 {
-    RpiBus bus(RpiBus::PiType::PI_1, false);
+    RpiBus bus(RpiBus::PiType::PI_1, false, false);
 
     EXPECT_TRUE(bus.IsRaspberryPi());
 }

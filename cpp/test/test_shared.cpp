@@ -105,7 +105,7 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
 
     EXPECT_NE(nullptr, device);
     EXPECT_EQ(type, device->GetType());
-    EXPECT_TRUE(device->SupportsImageFile());
+    EXPECT_TRUE(device->SupportsFile());
     EXPECT_FALSE(device->SupportsParams());
     EXPECT_TRUE(device->IsProtectable());
     EXPECT_FALSE(device->IsProtected());
@@ -125,6 +125,11 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
 void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
     const string &msg)
 {
+    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
+    if (controller) {
+        controller->SetCdbByte(0, static_cast<int>(cmd));
+    }
+
     try {
         device->Dispatch(cmd);
         if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION) {
@@ -139,7 +144,6 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
         }
     }
 
-    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
     if (controller) {
         controller->ResetCdb();
     }
@@ -147,14 +151,14 @@ void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, Sen
 
 string CreateTempName()
 {
-    static random_device rd;
-    static mt19937_64 gen(rd());
-    static uniform_int_distribution<uint64_t> dis;
+    thread_local random_device rd;
+    thread_local mt19937_64 gen(rd()); // NOSONAR Using this random generator for the unit tests is safe
+    thread_local uniform_int_distribution<uint64_t> dis;
 
     ostringstream ss;
     ss << "scsi2pi_test-" << hex << setfill('0') << setw(16) << dis(gen);
 
-    return (temp_directory_path() / ss.str()).string();
+    return (temp_directory_path() / ss.str()).string(); // NOSONAR Publicly writable directory is safe here
 }
 
 pair<int, path> OpenTempFile(const string &extension)

@@ -11,8 +11,10 @@
 #include "scsi_cd.h"
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 
 using namespace memory_util;
+using namespace s2p_util;
 
 ScsiCd::ScsiCd(int l, bool scsi1) : Disk(SCCD, l, true, false, { 512, 2048 })
 {
@@ -42,7 +44,7 @@ void ScsiCd::Open()
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048);
 
-    SetBlockCount(GetFileSize() / GetBlockSize());
+    SetBlockCount(GetCapacityFromFile(GetFilename()) / GetBlockSize());
 
     ValidateFile();
 

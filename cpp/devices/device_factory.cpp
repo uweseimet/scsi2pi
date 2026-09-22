@@ -9,31 +9,31 @@
 #include "device_factory.h"
 #include <filesystem>
 #ifdef BUILD_SCDP
-#include "devices/daynaport.h"
+#include "daynaport.h"
 #endif
 #ifdef BUILD_SCHS
-#include "devices/host_services.h"
+#include "host_services.h"
 #endif
 #ifdef BUILD_SCMO
-#include "devices/optical_memory.h"
+#include "optical_memory.h"
 #endif
 #ifdef BUILD_SCLP
-#include "devices/printer.h"
+#include "printer.h"
 #endif
 #ifdef BUILD_SAHD
-#include "devices/sasi_hd.h"
+#include "sasi_hd.h"
 #endif
 #ifdef BUILD_SCCD
-#include "devices/scsi_cd.h"
+#include "scsi_cd.h"
 #endif
 #ifdef BUILD_SCTP
-#include "devices/tape.h"
+#include "tape.h"
 #endif
 #if defined BUILD_SCHD
-#include "devices/scsi_hd.h"
+#include "scsi_hd.h"
 #endif
 #ifdef BUILD_SCSG
-#include "devices/scsi_generic.h"
+#include "scsi_generic.h"
 #endif
 
 using namespace s2p_util;
@@ -69,16 +69,12 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
     // If no type was specified try to derive the device type from the filename
     if (type == UNDEFINED) {
         type = GetTypeForFile(filename);
-        if (type == UNDEFINED) {
-            return nullptr;
-        }
     }
 
     switch (type) {
-
 #if defined BUILD_SCHD
     case SCHD: {
-        const string &ext = GetExtensionLowerCase(filename);
+       const string &ext = GetExtensionLowerCase(filename);
         return make_shared<ScsiHd>(lun, false, ext == "hda", ext == "hd1");
     }
 
@@ -127,10 +123,8 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 #endif
 
     default:
-        break;
+        return nullptr;
     }
-
-    return nullptr;
 }
 
 PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
@@ -139,15 +133,32 @@ PbDeviceType DeviceFactory::GetTypeForFile(const string &filename) const
         return it->second;
     }
 
-    if (const auto &it = DEVICE_MAPPING.find(filename); it != DEVICE_MAPPING.end()) {
+    if (const auto &it = ALIAS_MAPPING.find(filename); it != ALIAS_MAPPING.end()) {
         return it->second;
     }
 
-    return filename.starts_with("/dev/sg") ? SCSG : UNDEFINED;
+    if (filename.starts_with("/dev/sd")) {
+        return SCHD;
+    }
+
+    if (filename.starts_with("/dev/sg")) {
+        return SCSG;
+    }
+
+    if (filename.starts_with("/dev/sr")) {
+        return SCCD;
+    }
+
+    return UNDEFINED;
 }
 
-bool DeviceFactory::AddExtensionMapping(const string &extension, PbDeviceType type)
+bool DeviceFactory::AddExtensionMapping(const string &ext, PbDeviceType type)
 {
+    string extension = ToLower(ext);
+    if (extension.starts_with('.')) {
+        extension.erase(0, 1);
+    }
+
     if (mapping.contains(extension)) {
         return false;
     }

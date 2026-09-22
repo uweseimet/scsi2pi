@@ -8,12 +8,12 @@
 
 #include "s2pexec_core.h"
 #include <algorithm>
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
 #include <unistd.h>
+#include <spdlog/spdlog.h>
 #include "initiator/initiator_util.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
@@ -74,26 +74,21 @@ void S2pExec::Banner(bool header, bool usage)
     }
 }
 
-bool S2pExec::Init(bool in_process, bool log_signals)
+bool S2pExec::Init()
 {
     if (!executor) {
         executor = make_unique<S2pExecExecutor>(*s2pexec_logger);
     }
 
     if (!use_sg) {
-        if (const string &error = executor->Init(initiator_id, APP_NAME, in_process, log_signals); !error.empty()) {
+        if (const string &error = executor->Init(initiator_id, APP_NAME); !error.empty()) {
             cerr << "Error: " << error << '\n';
             return false;
         }
 
         instance = this;
 
-        // Signal handler for cleaning up
-        struct sigaction termination_handler = { };
-        termination_handler.sa_handler = TerminationHandler;
-        sigaction(SIGINT, &termination_handler, nullptr);
-        sigaction(SIGTERM, &termination_handler, nullptr);
-        signal(SIGPIPE, SIG_IGN);
+        SetTerminationHandler(TerminationHandler);
     }
     else if (const string &error = executor->Init(device_file); !error.empty()) {
         cerr << "Error: " << error << '\n';
@@ -103,7 +98,7 @@ bool S2pExec::Init(bool in_process, bool log_signals)
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals)
+bool S2pExec::ParseArguments(span<char*> args)
 {
     const vector<option> options = {
         { "binary-input-file", required_argument, nullptr, 'f' },
@@ -252,13 +247,13 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     if (!SetLogLevel(*s2pexec_logger, log_level)) {
         const string l = log_level;
         log_level.clear();
-        throw ParserException("Invalid log level: '" + l + "'");
+        throw ParserException(fmt::format("Invalid log level: '{}'", l));
     }
 
     if (!initiator.empty()) {
         initiator_id = ParseAsUnsignedInt(initiator);
         if (initiator_id < 0 || initiator_id > 7) {
-            throw ParserException("Invalid initiator ID: '" + initiator + "' (0-7)");
+            throw ParserException(fmt::format("Invalid initiator ID: '{}'", initiator));
         }
     }
 
@@ -273,24 +268,20 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     }
 
     if (!is_initialized && (!device_file.empty() || !target.empty())) {
-        is_initialized = Init(in_process, log_signals);
+        is_initialized = Init();
         if (!is_initialized) {
             return false;
         }
     }
 
     if (!log_limit.empty()) {
-        if (const int limit = ParseAsUnsignedInt(log_limit); limit < 0) {
-            const string l = log_limit;
+        if (const int limit = ParseAsUnsignedInt(log_limit); !formatter.SetLimit(limit)
+            || (executor && !executor->SetLimit(limit))) {
             log_limit.clear();
-            throw ParserException("Invalid log limit: '" + l + "'");
+            throw ParserException(fmt::format("Invalid log limit: '{}'", log_limit));
         }
-        else {
-            formatter.SetLimit(limit);
-            if (executor) {
-                executor->SetLimit(limit);
-            }
-        }
+
+        log_limit.clear();
     }
 
     if (target_id == initiator_id) {
@@ -307,7 +298,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
 
     if (!tout.empty()) {
         if (const int t = ParseAsUnsignedInt(tout); t <= 0) {
-            throw ParserException("Invalid command timeout value: '" + tout + "'");
+            throw ParserException(fmt::format("Invalid command timeout value: '{}'", tout));
         }
         else {
             timeout = t;
@@ -337,7 +328,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     if (!buf.empty()) {
         buffer_size = ParseAsUnsignedInt(buf);
         if (buffer_size <= 0) {
-            throw ParserException("Invalid receive buffer size: '" + buf + "'");
+            throw ParserException(fmt::format("Invalid receive buffer size: '{}'", buf));
         }
     }
     buffer.resize(buffer_size);
@@ -345,7 +336,7 @@ bool S2pExec::ParseArguments(span<char*> args, bool in_process, bool log_signals
     return true;
 }
 
-void S2pExec::RunInteractive(bool in_process, bool log_signals)
+void S2pExec::RunInteractive()
 {
     if (isatty(STDIN_FILENO)) {
         Banner(true, false);
@@ -383,7 +374,7 @@ void S2pExec::RunInteractive(bool in_process, bool log_signals)
         }
 
         try {
-            if (!ParseArguments(interactive_args, in_process, log_signals)) {
+            if (!ParseArguments(interactive_args)) {
                 continue;
             }
         }
@@ -400,17 +391,17 @@ void S2pExec::RunInteractive(bool in_process, bool log_signals)
     CleanUp();
 }
 
-int S2pExec::Run(span<char*> args, bool in_process, bool log_signals)
+int S2pExec::Run(span<char*> args)
 {
     s2pexec_logger = CreateLogger(APP_NAME);
 
-    if (args.size() < 2 || in_process) {
-        RunInteractive(in_process, log_signals);
+    if (args.size() < 2) {
+        RunInteractive();
         return EXIT_SUCCESS;
     }
 
     try {
-        if (!ParseArguments(args, in_process, log_signals)) {
+        if (!ParseArguments(args)) {
             return -1;
         }
         else if (version || help) {
@@ -436,23 +427,25 @@ int S2pExec::Run(span<char*> args, bool in_process, bool log_signals)
 
 int S2pExec::Run()
 {
-    if (reset_bus && executor) {
+    if (!executor) {
+        return EXIT_FAILURE;
+    }
+
+    if (reset_bus) {
         executor->ResetBus();
         return EXIT_SUCCESS;
     }
 
     int result = EXIT_SUCCESS;
     try {
-        const auto [sense_key, asc, ascq] = ExecuteCommand();
-        if (sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
-            if (static_cast<int>(sense_key) != -1) {
-                cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
-
-                result = static_cast<int>(asc);
-            }
-            else {
-                result = -1;
-            }
+        const auto sense = ExecuteCommand();
+        if (!sense) {
+            result = -1;
+        }
+        else if (const auto& [sense_key, asc, ascq] = *sense;
+        sense_key != SenseKey::NO_SENSE || asc != Asc::NO_ADDITIONAL_SENSE_INFORMATION || ascq) {
+            cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
+            result = static_cast<int>(asc);
         }
     }
     catch (const ExecutionException &e) {
@@ -463,7 +456,7 @@ int S2pExec::Run()
     return result;
 }
 
-tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
+optional<SenseData> S2pExec::ExecuteCommand()
 {
     vector<byte> cmd_bytes;
 
@@ -472,7 +465,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
     }
     catch (const out_of_range&)
     {
-        throw ExecutionException("Invalid CDB input format: '" + command + "'");
+        throw ExecutionException(fmt::format("Invalid CDB input format: '{}'", command));
     }
 
     vector<uint8_t> cdb;
@@ -506,7 +499,8 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
 
     if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE)) {
         vector<byte> sense_data;
-        transform(buffer.begin(), buffer.begin() + 18, back_inserter(sense_data),
+        const size_t length = min(buffer.size(), static_cast<size_t>(18));
+        transform(buffer.begin(), buffer.begin() + length, back_inserter(sense_data),
             [](const uint8_t d) {return static_cast<byte>(d);});
         s2pexec_logger->debug(FormatSenseData(sense_data));
     }
@@ -524,7 +518,7 @@ tuple<SenseKey, Asc, int> S2pExec::ExecuteCommand()
         hex_input_filename.clear();
     }
 
-    return {SenseKey {0}, Asc {0}, 0};
+    return SenseData { .sense_key = SenseKey::NO_SENSE, .asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION, .ascq = 0 };
 }
 
 string S2pExec::ReadData()

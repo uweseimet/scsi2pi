@@ -59,7 +59,12 @@ set<int> S2pDumpExecutor::ReportLuns()
     return ReportLuns(cdb, buf);
 }
 
-pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity(bool sasi)
+{
+    return sasi ? ReadSasiCapacity() : ReadScsiCapacity();
+}
+
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity()
 {
     array<uint8_t, 14> buf = { };
     vector<uint8_t> cdb(10);
@@ -91,14 +96,59 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity() const
     return {capacity + 1, GetInt32(buf, sector_size_offset)};
 }
 
-bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write)
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadSasiCapacity()
 {
-    array<uint8_t, 10> cdb = { };
-    cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
-    SetInt32(cdb, 2, bstart);
-    SetInt16(cdb, 7, blength);
+    array<uint8_t, 1024> buf = { };
 
-    return ReadWrite(cdb, buf, length);
+    if (!ReadWrite(buf, 0, 1, 1024, false, true, true)) {
+        return {0, 0};
+    }
+
+    const int sector_size = GetByteCount();
+    if (!sector_size) {
+        return {0, 0};
+    }
+
+    uint32_t last = (1UL << 21) - 1;
+
+    if (ReadWrite(buf, last, 1, sector_size, false, true, false)) {
+        return {last + 1, sector_size};
+    }
+
+    uint64_t first = 0;
+
+    while (last - first > 1) {
+        const uint32_t mid = first + (last - first) / 2;
+
+        if (ReadWrite(buf, mid, 1, sector_size, false, true, false)) {
+            first = mid;
+        }
+        else {
+            last = mid;
+        }
+    }
+
+    return {first + 1, sector_size};
+}
+
+bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t blength, int length, bool is_write,
+    bool sasi, bool report_error)
+{
+    vector<uint8_t> cdb;
+    if (sasi) {
+        cdb.resize(6);
+        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_6 : ScsiCommand::READ_6);
+        SetInt24(cdb, 1, bstart);
+        cdb[4] = blength == 256 ? 0 : blength;
+    }
+    else {
+        cdb.resize(10);
+        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
+        SetInt32(cdb, 2, bstart);
+        SetInt16(cdb, 7, blength);
+    }
+
+    return ReadWrite(cdb, buf, length, report_error);
 }
 
 void S2pDumpExecutor::SynchronizeCache() const
@@ -121,7 +171,7 @@ void S2pDumpExecutor::SpaceBack() const
 int S2pDumpExecutor::Rewind()
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REWIND);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::REZERO_REWIND);
 
     return Rewind(cdb);
 }

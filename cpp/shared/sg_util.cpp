@@ -44,7 +44,7 @@ int sg_util::OpenDevice(const string &device)
 
     return fd;
 #else
-    return -1;
+    throw IoException(fmt::format("Can't open '{}'", device);
 #endif
 }
 

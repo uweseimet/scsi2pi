@@ -9,10 +9,12 @@
 #pragma once
 
 #include <array>
+#include <cassert>
+#include <chrono>
 #include <string>
+#include "board.h"
 #include "shared/scsi.h"
 #include "shared/s2p_defs.h"
-#include "board.h"
 
 class Bus // NOSONAR The high number of simple convenience methods is justified
 {
@@ -22,18 +24,9 @@ public:
     virtual ~Bus() = default;
 
     bool Init(bool);
+
     virtual void Reset() const;
-
-    virtual string SetUp(bool)
-    {
-        // Nothing to do
-        return "";
-    }
-
-    virtual void CleanUp()
-    {
-        // Nothing to do
-    }
+    virtual void CleanUp() = 0;
 
     virtual void Acquire() const = 0;
 
@@ -45,7 +38,7 @@ public:
 
     virtual bool IsRaspberryPi() const = 0;
 
-    virtual void SetDir(bool) const = 0;
+    virtual void SetDataDirIn(bool) const = 0;
 
     virtual bool WaitHandShake(int, bool) const;
 
@@ -56,7 +49,7 @@ public:
     int InitiatorReceiveHandShake(data_in_t);
     int InitiatorSendHandShake(data_out_t);
 
-    uint8_t GetDAT() const
+    virtual uint8_t GetDAT() const
     {
         // A bus settle delay
         WaitNanoSeconds(false);
@@ -166,6 +159,8 @@ public:
 
     static string GetPhaseName(BusPhase phase)
     {
+        assert(static_cast<size_t>(phase) < phase_names.size());
+
         return phase_names[static_cast<size_t>(phase)];
     }
 
@@ -173,23 +168,26 @@ protected:
 
     Bus() = default;
 
+    virtual string SetUp(bool) = 0;
+
     virtual void SetSignal(int, bool) const = 0;
 
     virtual void WaitNanoSeconds(bool) const = 0;
 
-    virtual void EnableIRQ() = 0;
-    virtual void DisableIRQ() = 0;
+    virtual void DisableIRQ()
+    {
+        // Nothing to do by default
+    }
+    virtual void EnableIRQ()
+    {
+        // Nothing to do by default
+    }
 
     uint8_t GetSelection() const;
 
-    // The DaynaPort SCSI Link do a short delay in the middle of transfering
-    // a packet. This is the number of ns that will be delayed between the
-    // header and the actual data.
-    constexpr static int DAYNAPORT_SEND_DELAY_NS = 100'000;
-
 private:
 
-    int CommandHandshakeTimeout();
+    int FinishTransfer(int);
 
     // The current bus signals, static because there is exactly one set of bus signals
     inline static uint32_t signals = 0xffffffff;
@@ -197,4 +195,6 @@ private:
     static const array<BusPhase, 32> phases;
 
     static const array<string, 11> phase_names;
+
+    static constexpr auto TIMEOUT_3_SECONDS = std::chrono::seconds(3);
 };

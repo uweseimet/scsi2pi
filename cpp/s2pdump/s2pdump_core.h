@@ -15,6 +15,7 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 #include "buses/bus.h"
+#include "shared/runnable.h"
 
 class S2pDumpExecutor;
 class SgAdapter;
@@ -22,14 +23,14 @@ class SgAdapter;
 using namespace chrono;
 using namespace spdlog;
 
-class S2pDump final
+class S2pDump final : public Runnable
 {
 
 public:
 
-    int Run(span<char*>, bool, bool = false);
+    int Run(span<char*>) override;
 
-    using ScsiDeviceInfo = struct {
+    using DeviceInfo = struct {
         bool removable;
         byte type;
         int scsi_level;
@@ -43,7 +44,7 @@ public:
 private:
 
     void Banner(bool) const;
-    bool Init(bool, bool);
+    bool Init();
     bool ParseArguments(span<char*>);
     void DisplayBoardId() const;
     string ReadWrite(fstream&, int, uint32_t, int, int);
@@ -72,10 +73,7 @@ private:
 
     shared_ptr<S2pDumpExecutor> s2pdump_executor;
 
-    ScsiDeviceInfo scsi_device_info = { };
-
-    int sasi_capacity = 0;
-    int sasi_sector_size = 0;
+    DeviceInfo device_info = { };
 
     vector<uint8_t> buffer;
 

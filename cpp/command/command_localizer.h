@@ -2,14 +2,27 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2025 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
-#include <regex>
-#include "shared/s2p_util.h"
+#include <array>
+#include <cctype>
+#include <string>
+#include <unordered_map>
+#include <spdlog/spdlog.h>
+
+using namespace std;
+
+enum class Language
+{
+    DE,
+    EN,
+    ES,
+    FR
+};
 
 enum class LocalizationKey
 {
@@ -57,15 +70,59 @@ public:
     CommandLocalizer();
     ~CommandLocalizer() = default;
 
-    string Localize(LocalizationKey, const string&, const string& = "", const string& = "", const string& = "") const;
+    template<typename ... Args>
+    string Localize(LocalizationKey key, string_view locale, Args &&... args) const
+    {
+        return LocalizeImpl(key, locale, fmt::make_format_args(args...));
+    }
 
 private:
 
-    void Add(LocalizationKey, const string&, string_view);
+    static constexpr string_view ToStringView(Language language)
+    {
+        switch (language) {
+        case Language::DE:
+            return "de";
 
-    unordered_map<string, unordered_map<LocalizationKey, string>, s2p_util::StringHash, equal_to<>> localized_messages;
+        case Language::ES:
+            return "es";
 
-    inline static const regex REGEX1 = regex("%1");
-    inline static const regex REGEX2 = regex("%2");
-    inline static const regex REGEX3 = regex("%3");
+        case Language::FR:
+            return "fr";
+
+        case Language::EN:
+        default:
+            return "en";
+        }
+    }
+
+    static constexpr Language ToLanguage(string_view locale)
+    {
+        if (locale.size() >= 2) {
+            const auto c0 = static_cast<char>(tolower(static_cast<unsigned char>(locale[0])));
+            const auto c1 = static_cast<char>(tolower(static_cast<unsigned char>(locale[1])));
+
+            if (c0 == 'd' && c1 == 'e') {
+                return Language::DE;
+            }
+
+            if (c0 == 'f' && c1 == 'r') {
+                return Language::FR;
+            }
+
+            if (c0 == 'e' && c1 == 's') {
+                return Language::ES;
+            }
+        }
+
+        return Language::EN;
+    }
+
+    void Add(LocalizationKey, Language, string_view);
+
+    string LocalizeImpl(LocalizationKey, string_view, fmt::format_args) const;
+
+    unordered_map<Language, unordered_map<LocalizationKey, string>> localized_messages;
+
+    inline static constexpr array<string_view, 4> SUPPORTED_LOCALES = { "de", "en", "es", "fr" };
 };

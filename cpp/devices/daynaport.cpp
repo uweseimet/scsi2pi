@@ -87,7 +87,7 @@ string DaynaPort::SetUp()
 
 void DaynaPort::CleanUp()
 {
-    tap.CleanUp(GetLogger());
+    tap.CleanUp();
 }
 
 vector<uint8_t> DaynaPort::HandleInquiry() const
@@ -144,8 +144,9 @@ int DaynaPort::GetMessage(data_in_t buf)
 
     // The first 2 bytes are reserved for the length of the packet
     // The next 4 bytes are reserved for a flag field
+    assert(buf.size() > DAYNAPORT_READ_HEADER_SZ);
     const int rx_packet_size = tap.Receive(
-        span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ), GetLogger());
+        span(buf.data() + DAYNAPORT_READ_HEADER_SZ, buf.size() - DAYNAPORT_READ_HEADER_SZ));
 
     // If we didn't receive anything, return size of 0
     if (rx_packet_size <= 0) {
@@ -206,6 +207,7 @@ int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
     else if (data_format == 0x80) {
         // The data length is specified in the first 2 bytes of the payload
         data_length = buf[1] + ((static_cast<int>(buf[0]) & 0xff) << 8);
+        assert(buf.size() >= static_cast<size_t>(data_length + 4));
         tap.Send(span(buf.data() + 4, data_length));
         byte_write_count += data_length;
     }
@@ -367,17 +369,17 @@ void DaynaPort::SetMcastAddr() const
 void DaynaPort::EnableInterface() const
 {
     if (GetCdbByte(5) & 0x80) {
-        if (const string &error = TapDriver::IpLink(true, GetLogger()); !error.empty()) {
+        if (const string &error = tap.IpLink(true); !error.empty()) {
             LogWarn("Can't enable the DaynaPort interface: " + error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
-        tap.Flush(GetLogger());
+        tap.Flush();
 
         LogDebug("The DaynaPort interface has been enabled");
     }
     else {
-        if (const string &error = TapDriver::IpLink(false, GetLogger()); !error.empty()) {
+        if (const string &error = tap.IpLink(false); !error.empty()) {
             LogWarn("Can't disable the DaynaPort interface: " + error);
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }

@@ -33,8 +33,8 @@ DEBUG_FLAGS ?= -g -O0 -DDEBUG
 RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
 
-CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS)
-CXXFLAGS := -std=c++20 $(WARNING_FLAGS) -MD -MP
+CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -DSPDLOG_NO_ATOMIC_LEVELS
+CXXFLAGS := -std=c++20 $(WARNING_FLAGS) -pthread -MD -MP
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
@@ -103,23 +103,7 @@ endif
 ##   The path to install binaries and manpages in, default is /opt/scsi2pi
 PREFIX ?= /opt/scsi2pi
 
-##   BOARD=FULLSPEC
-##     Specifies whether to also build the initiator mode tools for the
-##     FULLSPEC board. When compiling for the STANDARD board, these tools
-##     are omitted. The default is FULLSPEC.
-##     You can run the FULLSPEC s2p also with a STANDARD board. Just
-##     use the --standard-board/-S option or add "standard-board=true"
-##     to /etc/s2p.conf.
-BOARD ?= FULLSPEC
-
-VALID_BOARDS := STANDARD FULLSPEC
-ifeq ($(filter $(VALID_BOARDS),$(BOARD)),)
-  $(error Invalid BOARD "$(BOARD)" — must be one of: $(VALID_BOARDS))
-endif
-
-INITIATOR_SUPPORT := $(and $(filter FULLSPEC,$(BOARD)),$(IS_LINUX))
-
-CPPFLAGS += -DBOARD_$(BOARD)
+INITIATOR_SUPPORT := $(IS_LINUX)
 
 ##   ENABLE_*=1
 ##   DISABLE_*=1
@@ -198,21 +182,20 @@ LIBDIR := $(BUILD_DIR)/lib
 BINDIR := $(BUILD_DIR)/bin
 GENERATED_DIR := $(BUILD_DIR)/generated
 
-BIN_ALL := \
-	$(BINDIR)/$(S2P) \
+BIN_STANDARD := $(BINDIR)/$(S2P) \
 	$(BINDIR)/$(S2PCTL) \
 	$(BINDIR)/$(S2PTOOL)
-# s2pdump, s2pexec, s2pproto and s2pformat require initiator support
+# s2pdump, s2pexec, s2pproto and s2pformat require initiator mode support
 ifeq ($(INITIATOR_SUPPORT),1)
-	BIN_ALL += $(BINDIR)/$(S2PDUMP)
-	BIN_ALL += $(BINDIR)/$(S2PEXEC)
-	BIN_ALL += $(BINDIR)/$(S2PPROTO)
+	BIN_FULLSPEC = $(BINDIR)/$(S2PDUMP) \
+	$(BINDIR)/$(S2PEXEC) \
+	$(BINDIR)/$(S2PPROTO)
 ifeq ($(ENABLE_SCSG),1)
-	BIN_ALL += $(BINDIR)/$(S2PFORMAT)
+	BIN_FULLSPEC += $(BINDIR)/$(S2PFORMAT)
 endif
 endif
 ifeq ($(ENABLE_SCTP),1)
-	BIN_ALL += $(BINDIR)/$(S2PSIMH)
+	BIN_STANDARD += $(BINDIR)/$(S2PSIMH)
 endif
 
 DIR_SHARED := shared
@@ -228,7 +211,6 @@ PROTO_API := ../api/s2p_interface.proto
 SRC_API := $(GENERATED_DIR)/s2p_interface.pb.cpp
 
 SRC_SHARED := $(DIR_SHARED)/command_meta_data.cpp \
-	$(DIR_SHARED)/memory_util.cpp \
 	$(DIR_SHARED)/network_util.cpp \
 	$(DIR_SHARED)/property_handler.cpp \
 	$(DIR_SHARED)/s2p_formatter.cpp \
@@ -258,7 +240,7 @@ SRC_SHARED_INITIATOR := $(DIR_SHARED_INITIATOR)/initiator_executor.cpp \
 
 SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/bus_factory.cpp \
-	$(DIR_BUSES)/in_process_bus.cpp
+	$(DIR_BUSES)/virtual_bus.cpp
 ifdef IS_LINUX
 SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp
 endif
@@ -347,14 +329,11 @@ SRC_S2PCTL_CORE := s2pctl/s2pctl_commands.cpp \
 	s2pctl/s2pctl_display.cpp
 SRC_S2PCTL := s2pctl/s2pctl.cpp
 
-ifeq ($(INITIATOR_SUPPORT),1)
 SRC_S2PDUMP_CORE := s2pdump/board_executor.cpp \
 	s2pdump/s2pdump_core.cpp \
 	s2pdump/s2pdump_executor.cpp
 ifeq ($(ENABLE_SCSG),1)
-ifdef IS_LINUX
 SRC_S2PDUMP_CORE += s2pdump/sg_executor.cpp
-endif
 endif
 SRC_S2PDUMP := $(SRC_S2PDUMP_CORE) s2pdump/s2pdump.cpp
 SRC_S2PEXEC_CORE := s2pexec/s2pexec_core.cpp \
@@ -365,7 +344,6 @@ SRC_S2PPROTO_CORE := s2pproto/s2pproto_core.cpp \
 SRC_S2PPROTO := $(SRC_S2PPROTO_CORE) s2pproto/s2pproto.cpp
 SRC_S2PFORMAT := s2pformat/s2pformat_core.cpp \
 	s2pformat/s2pformat.cpp
-endif
 
 SRC_S2PSIMH := s2psimh/s2psimh_core.cpp \
 	s2psimh/s2psimh.cpp
@@ -388,7 +366,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/disk_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_util_test.cpp \
-	test/in_process_bus_test.cpp \
 	test/linux_cache_test.cpp \
 	test/memory_util_test.cpp \
 	test/optical_memory_test.cpp \
@@ -413,7 +390,8 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
 	test/test_setup.cpp \
-	test/test_shared.cpp
+	test/test_shared.cpp \
+	test/virtual_bus_test.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
 	test/network_util_test.cpp \
@@ -424,7 +402,13 @@ SRC_S2P_TEST += test/daynaport_test.cpp \
 endif
 
 SRC_S2PTOOL := s2ptool/s2ptool.cpp \
-	$(SRC_S2PDUMP_CORE) $(SRC_S2PEXEC_CORE) $(SRC_S2PPROTO_CORE)
+	$(SRC_S2PCTL_CORE) \
+	$(SRC_S2PDUMP_CORE) \
+	$(SRC_S2PEXEC_CORE) \
+	$(SRC_S2PPROTO_CORE)
+ifeq ($(INITIATOR_SUPPORT),1)
+	SRC_S2PTOOL += $(SRC_S2PFORMAT_CORE)
+endif
 
 LIB_SHARED := $(LIBDIR)/libshared.a
 LIB_SHARED_PROTOBUF := $(LIBDIR)/libprotobuf.a
@@ -536,7 +520,7 @@ $(OBJDIR)/%.o: %.cpp | $(SRC_API)
 
 $(OBJ_API): $(SRC_API)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fno-rtti -fno-exceptions -DGOOGLE_PROTOBUF_NO_RTTI -c $< -o $@
 
 $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 	$(PROTOC) -I ../api --cpp_out=$(GENERATED_DIR) $(PROTO_API)
@@ -544,16 +528,18 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 
 ## Build targets:
 ##   all             Build all executable files (default target)
+##   standard        Build only executable files for the STANDARD board
 ##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all cpp test coverage
+.PHONY: all coverage standard test tests
 
-cpp: $(BIN_ALL)
+all: $(BIN_STANDARD) $(BIN_FULLSPEC)
 
-all: cpp
+standard: CPPFLAGS += -DBOARD_STANDARD
+standard: $(BIN_STANDARD)
 
 tests: $(BINDIR)/$(S2P_TEST)
 
@@ -568,7 +554,7 @@ $(SRC_S2P_CORE) $(SRC_S2PCTL_CORE) $(SRC_S2PPROTO) $(SRC_S2PTOOL): $(OBJ_API)
 
 $(BINDIR)/$(S2P): $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(OBJ_S2P_CORE) $(OBJ_S2P) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2P) $(LIB_SHARED_COMMAND) $(LIB_BUS) $(LIB_CONTROLLER) \
-	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
+	$(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2PCTL): $(LIB_SHARED_PROTOBUF) $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PCTL_CORE) $(OBJ_S2PCTL) $(LIB_SHARED_PROTOBUF) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
@@ -581,7 +567,7 @@ $(BINDIR)/$(S2PEXEC): $(OBJ_S2PEXEC) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SH
 
 $(BINDIR)/$(S2PPROTO): $(OBJ_S2PPROTO) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(OBJ_API) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PPROTO) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) \
-	$(OBJ_API)  $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
+	$(OBJ_API) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2PSIMH): $(OBJ_S2PSIMH) $(LIB_SHARED) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PSIMH) $(LIB_SHARED) $(SPDLOG_LIBS)
@@ -590,14 +576,14 @@ $(BINDIR)/$(S2PFORMAT): $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LI
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2PFORMAT) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_SHARED) $(SPDLOG_LIBS)
 
 $(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
-	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
-	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread
+	$(OBJ_S2P_CORE) $(OBJ_S2PTOOL) | $(BINDIR)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PTOOL) $(LIB_SHARED_COMMAND) \
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
 	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) | $(BINDIR)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
-	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lpthread -lgmock -lgtest
+	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lgmock -lgtest
 
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)
 

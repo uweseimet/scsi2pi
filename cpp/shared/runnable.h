@@ -2,13 +2,20 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2026 Uwe Seimet
+// Copyright (C) 2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "s2pctl_core.h"
+#pragma once
 
-int main(int argc, char *argv[])
+#include <span>
+
+class Runnable
 {
-    return S2pCtl().Run( { argv, static_cast<size_t>(argc) });
-}
+
+public:
+
+    virtual ~Runnable() = default;
+
+    virtual int Run(std::span<char*>) = 0;
+};

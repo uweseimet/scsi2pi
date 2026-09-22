@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "shared/s2p_exceptions.h"
+#include "s2p_exceptions.h"
 
 using namespace filesystem;
 using namespace spdlog;
@@ -50,7 +50,7 @@ void PropertyHandler::Init(const string &filenames, const property_map &cmd_prop
         }
     }
 
-    RemoveProperties("mode_page.");
+    ConsumeProperties("mode_page.");
 }
 
 void PropertyHandler::ParsePropertyFile(property_map &properties, const string &filename, bool default_file)
@@ -81,7 +81,7 @@ void PropertyHandler::ParsePropertyFile(property_map &properties, const string &
     }
 }
 
-property_map PropertyHandler::GetProperties(const string &filter) const
+property_map PropertyHandler::GetProperties(string_view filter) const
 {
     if (filter.empty()) {
         return property_cache;
@@ -102,7 +102,7 @@ const property_map& PropertyHandler::GetUnknownProperties() const
     return unknown_properties;
 }
 
-string PropertyHandler::RemoveProperty(const string &key, const string &def)
+string PropertyHandler::ConsumeProperty(const string &key, const string &def)
 {
     if (const auto it = property_cache.find(key); it != property_cache.end()) {
         unknown_properties.erase(key);
@@ -118,9 +118,9 @@ void PropertyHandler::AddProperty(const string &key, string_view value)
     unknown_properties[key] = value;
 }
 
-void PropertyHandler::RemoveProperties(string_view filter)
+void PropertyHandler::ConsumeProperties(string_view filter)
 {
-    erase_if(unknown_properties, [&filter](auto &kv) {return kv.first.starts_with(filter);});
+    erase_if(unknown_properties, [filter](auto &kv) {return kv.first.starts_with(filter);});
 }
 
 bool PropertyHandler::Persist() const

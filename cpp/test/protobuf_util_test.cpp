@@ -22,7 +22,7 @@ TEST(ProtobufUtilTest, SerializeMessage)
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_WRONLY);
         ASSERT_NE(-1, fd);
-        EXPECT_NO_THROW(SerializeMessage(fd, result));
+        SerializeMessage(fd, result);
         close(fd);
     }
 
@@ -87,16 +87,16 @@ TEST(ProtobufUtilTest, ReadBytes)
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_RDONLY);
         ASSERT_NE(-1, fd);
-        EXPECT_EQ(0U, ReadBytes(fd, buf1));
-        EXPECT_EQ(0U, ReadBytes(fd, buf2));
+        EXPECT_FALSE(ReadBytes(fd, buf1));
+        EXPECT_TRUE(ReadBytes(fd, buf2));
         close(fd);
     }
 
     if (exists("/dev/zero")) {
         const int fd = open("/dev/zero", O_RDONLY);
         ASSERT_NE(-1, fd);
-        EXPECT_EQ(1U, ReadBytes(fd, buf1));
-        EXPECT_EQ(0U, ReadBytes(fd, buf2));
+        EXPECT_TRUE(ReadBytes(fd, buf1));
+        EXPECT_TRUE(ReadBytes(fd, buf2));
         close (fd);
     }
 }
@@ -107,8 +107,8 @@ TEST(ProtobufUtilTest, WriteBytes)
 
     auto [fd, filename] = OpenTempFile();
     ASSERT_NE(-1, fd);
-    EXPECT_EQ(4U, WriteBytes(fd, buf));
+    EXPECT_NO_THROW(WriteBytes(fd, buf));
     close(fd);
 
-    EXPECT_EQ(static_cast<size_t>(-1), WriteBytes(-1, buf)) << "Writing to an invalid descriptor must fail";
+    EXPECT_THROW(WriteBytes(-1, buf), IoException)<< "Writing to an invalid descriptor must fail";
 }

@@ -300,7 +300,7 @@ string s2pctl_display::DisplayDeviceTypesInfo(const PbDeviceTypesInfo &device_ty
         }
 
         if (properties.supports_file()) {
-            s << indent << "Image files are supported";
+            s << indent << "Image files or device files are supported";
             indent = "\n        ";
         }
 

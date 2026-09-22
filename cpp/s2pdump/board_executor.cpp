@@ -68,9 +68,9 @@ int BoardExecutor::ReadCapacity16(span<uint8_t> cdb, span<uint8_t> buf) const
     return initiator_executor->Execute(cdb, buf, 14, 1, true);
 }
 
-bool BoardExecutor::ReadWrite(span<uint8_t> cdb, span<uint8_t> buf, int length)
+bool BoardExecutor::ReadWrite(span<uint8_t> cdb, span<uint8_t> buf, int length, bool report_error)
 {
-    return !initiator_executor->Execute(cdb, buf, length, LONG_TIMEOUT, true);
+    return !initiator_executor->Execute(cdb, buf, length, LONG_TIMEOUT, true, report_error);
 }
 
 void BoardExecutor::SynchronizeCache(span<uint8_t> cdb) const

@@ -60,7 +60,7 @@ string Tape::SetUp()
         {
             ReadBlockLimits();
         });
-    AddCommand(ScsiCommand::REWIND, [this]
+    AddCommand(ScsiCommand::REZERO_REWIND, [this]
         {
             CheckReady();
             ResetPositions();
@@ -92,7 +92,7 @@ string Tape::SetUp()
         {
             ReadPosition();
         });
-    AddCommand(ScsiCommand::FORMAT_MEDIUM, [this]
+    AddCommand(ScsiCommand::FORMAT, [this]
         {
             FormatMedium();
         });
@@ -113,7 +113,7 @@ void Tape::ValidateFile()
 
     file.open(GetFilename(), ios::in | ios::out | ios::binary);
     if (file.fail()) {
-        throw IoException("Can't open image file '" + GetFilename() + "'");
+        throw IoException(fmt::format("Can't open image file '{}'", GetFilename()));
     }
 
     tar_file = GetExtensionLowerCase(GetFilename()) == "tar";
@@ -317,7 +317,7 @@ void Tape::Open()
     block_size_for_descriptor = GetBlockSize();
 
     try {
-        file_size = GetFileSize();
+        file_size = GetCapacityFromFile(GetFilename());
     }
     catch (const IoException&) {
         file_size = 0;

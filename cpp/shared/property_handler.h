@@ -31,11 +31,11 @@ public:
 
     void Init(const string&, const property_map&, bool);
 
-    property_map GetProperties(const string& = "") const;
+    property_map GetProperties(string_view = "") const;
     const property_map& GetUnknownProperties() const;
-    string RemoveProperty(const string&, const string& = "");
+    string ConsumeProperty(const string&, const string& = "");
     void AddProperty(const string&, string_view);
-    void RemoveProperties(string_view);
+    void ConsumeProperties(string_view);
 
     bool Persist() const;
 
@@ -43,7 +43,9 @@ public:
 
     // Global property keys
     static constexpr const char *CONFIG_FILES = "config_files";
-    static constexpr const char *CONNECTION_TYPE = "connection_type";
+    static constexpr const char *CONNECT_TYPE = "connect_type";
+    static constexpr const char *ENABLE_IRQS = "enable_irqs";
+    static constexpr const char *EXCLUDED_TYPES = "excluded_types";
     static constexpr const char *IMAGE_FOLDER = "image_folder";
     static constexpr const char *LOCALE = "locale";
     static constexpr const char *LOG_LEVEL = "log_level";
@@ -55,7 +57,6 @@ public:
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
     static constexpr const char *TOKEN_FILE = "token_file";
-    static constexpr const char *WITHOUT_TYPES = "without_types";
 
     // Device-specific property keys
     static constexpr const char *DEVICE = "device.";

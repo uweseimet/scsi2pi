@@ -98,7 +98,7 @@ int S2pFormat::Run(span<char*> args)
     }
 
     if (!ParseArguments(args)) {
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     if (device.empty()) {
@@ -145,14 +145,14 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     vector<uint8_t> cdb(6);
 
     if (ExecuteCommand(cdb, { }, 3)) {
-        cerr << "Error: Can't get drive data: "s << system_error(errno, generic_category()).what() << '\n';
+        cerr << "Error: Can't get drive data\n";
         return {};
     }
 
     cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
     if (ExecuteCommand(cdb, buf, 3)) {
-        cerr << "Error: Can't get drive data: "s << system_error(errno, generic_category()).what() << '\n';
+        cerr << "Error: Can't get drive data\n";
         return {};
     }
 
@@ -162,10 +162,10 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     cout << "Revision: '" << revision << "'\n";
 
     cdb.resize(10);
-    buf.resize(252);
+    buf.resize(259);
     cdb[4] = 0;
     cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_FORMAT_CAPACITIES);
-    cdb[8] = static_cast<uint8_t>(buf.size());
+    SetInt16(cdb, 7, static_cast<int>(buf.size()));
 
     if (ExecuteCommand(cdb, buf, 5)) {
         return {};
@@ -176,7 +176,8 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
 
     vector<FormatDescriptor> descriptors;
 
-    for (auto i = 12; i < buf[3]; i += 8) {
+    const int limit = min(4 + static_cast<int>(buf[3]), static_cast<int>(buf.size()));
+    for (auto i = 12; i + 8 <= limit; i += 8) {
         // Ignore other format types than 0
         if (!(static_cast<int>(buf[i + 4]) & 0x03)) {
             descriptors.push_back( { GetInt32(buf, i), GetInt32(buf, i + 4) & 0xffffff });
@@ -203,7 +204,11 @@ int S2pFormat::SelectFormat(span<const FormatDescriptor> descriptors)
     try {
         n = stoi(input);
     }
-    catch (const logic_error&)
+    catch (const invalid_argument&)
+    {
+        return 0;
+    }
+    catch (const out_of_range&)
     {
         return 0;
     }
@@ -227,7 +232,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
     vector<uint8_t> cdb(6);
     vector<uint8_t> parameters;
 
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT_UNIT);
+    cdb[0] = static_cast<uint8_t>(ScsiCommand::FORMAT);
     if (n) {
         // FmtData
         cdb[1] = 0x17;
@@ -240,7 +245,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
 
     const int status = ExecuteCommand(cdb, parameters, 3600);
 
-    return status ? fmt::format("Can't format drive: {}", system_error(errno, generic_category()).what()) : "";
+    return status ? "Can't format drive" : "";
 }
 
 int S2pFormat::ExecuteCommand(span<const uint8_t> cdb, span<uint8_t> buf, int timeout)

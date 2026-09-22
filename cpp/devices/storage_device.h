@@ -19,8 +19,6 @@ class StorageDevice : public PrimaryDevice
 
 public:
 
-    ~StorageDevice() override = default;
-
     string SetUp() override;
     void CleanUp() override;
 
@@ -31,7 +29,7 @@ public:
         return filename.empty() ? "NO MEDIUM" : filename.string();
     }
 
-    bool SupportsImageFile() const override
+    bool SupportsFile() const override
     {
         return true;
     }
@@ -130,8 +128,6 @@ protected:
 
     virtual void ChangeBlockSize(uint32_t);
 
-    off_t GetFileSize() const;
-
     void UpdateReadCount(uint64_t count)
     {
         block_read_count += count;
@@ -150,8 +146,8 @@ private:
     void StartStopUnit();
     void PreventAllowMediumRemoval();
 
-    int ModeSense6(cdb_t, data_in_t) const override;
-    int ModeSense10(cdb_t, data_in_t) const override;
+    int ModeSense6() const override;
+    int ModeSense10() const override;
 
     void AddReadWriteErrorRecoveryPage(map<int, vector<byte>>&) const;
     void AddDisconnectReconnectPage(map<int, vector<byte>>&) const;

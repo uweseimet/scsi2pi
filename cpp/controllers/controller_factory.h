@@ -33,11 +33,11 @@ public:
     unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
-    bool SetScriptFile(const string&);
+    string SetScriptFile(const string&);
 
-    void SetFormatLimit(int limit)
+    bool SetFormatLimit(int limit)
     {
-        formatter.SetLimit(limit);
+        return formatter.SetLimit(limit);
     }
 
     void SetLogLevel(int id, int lun, spdlog::level::level_enum);

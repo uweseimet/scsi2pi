@@ -24,7 +24,7 @@ class S2p final
 
 public:
 
-    int Run(span<char*>, bool = false, bool = false);
+    int Run(span<char*>);
 
     bool Ready() const;
 
@@ -32,12 +32,12 @@ public:
 
 private:
 
-    string InitBus(bool, bool);
+    string InitBus();
     void ReadAccessToken(const path&);
     void LogDevices(const string&) const;
     int ParseProperties(const property_map&, bool);
-    void SetUpEnvironment();
-    string MapExtensions() const;
+    void SetExcludedTypes() const;
+    void MapExtensions() const;
     void LogProperties() const;
     void CreateDevices();
     void AttachInitialDevices(PbCommand&);
@@ -56,6 +56,8 @@ private:
     static void TerminationHandler(int);
 
     bool ready = false;
+
+    bool enable_irqs = false;
 
     string access_token;
 

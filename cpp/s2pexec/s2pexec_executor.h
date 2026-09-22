@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -26,24 +26,26 @@ public:
     }
 
     string Init(const string&);
-    string Init(int, const string&, bool, bool);
+    string Init(int, const string&);
     void CleanUp();
 
     void ResetBus();
 
     int ExecuteCommand(span<uint8_t>, span<uint8_t>, int, bool);
 
-    tuple<SenseKey, Asc, int> GetSenseData() const;
+    optional<SenseData> GetSenseData() const;
 
     int GetByteCount() const;
 
     void SetTarget(int, int, bool);
 
-    void SetLimit(int limit)
+    bool SetLimit(int limit)
     {
         if (initiator_executor) {
-            initiator_executor->SetLimit(limit);
+            return initiator_executor->SetLimit(limit);
         }
+
+        return true;
     }
 
 private:
@@ -59,7 +61,4 @@ private:
     logger &s2pexec_logger;
 
     bool is_sg = false;
-
-    // The SCSI ExecuteOperation custom command supports a byte count of up to 65535 bytes
-    static constexpr int BUFFER_SIZE = 65535;
 };

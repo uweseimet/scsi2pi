@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <system_error>
+#include <spdlog/spdlog.h>
 #include <unistd.h>
 #if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
@@ -27,26 +28,26 @@ string S2pServer::Init(int port)
 #if __has_include(<sys/socket.h>)
     server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == -1) {
-        return "Can't create server socket: "s + system_error(errno, generic_category()).what();
+        return fmt::format("Can't create server socket: {}", system_error(errno, generic_category()).what());
     }
 
     if (const int enable = 1; setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1) {
         CleanUp();
-        return "Can't reuse socket: "s + system_error(errno, generic_category()).what();
+        return fmt::format("Can't reuse socket: {}", system_error(errno, generic_category()).what());
     }
 
     sockaddr_in server = { };
     server.sin_family = AF_INET;
     server.sin_port = htons(static_cast<uint16_t>(port));
     server.sin_addr.s_addr = INADDR_ANY;
-    if (bind(server_socket, (const sockaddr*)&server, static_cast<socklen_t>(sizeof(sockaddr_in))) < 0) {
+    if (::bind(server_socket, (const sockaddr*)&server, static_cast<socklen_t>(sizeof(sockaddr_in))) < 0) {
         CleanUp();
-        return "Port " + to_string(port) + " is in use, s2p may already be running";
+        return fmt::format("Port {} is in use, s2p may already be running", port);
     }
 
     if (listen(server_socket, 2) == -1) {
         CleanUp();
-        return "Can't listen on server socket: "s + system_error(errno, generic_category()).what();
+        return fmt::format("Can't listen on server socket: {}", system_error(errno, generic_category()).what());
     }
 
     running = true;

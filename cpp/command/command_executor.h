@@ -89,7 +89,6 @@ private:
     static string GetTypeString(const Device&);
     static string GetIdentifier(const Device&);
 
-    static bool CheckForReservedFile(const CommandContext&, const string&);
     static void SetUpDeviceProperties(shared_ptr<PrimaryDevice>);
 
     Bus &bus;

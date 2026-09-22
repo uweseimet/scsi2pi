@@ -18,8 +18,8 @@ TEST(ScsiGenericTest, Device_Defaults)
     ScsiGeneric device(0, "");
 
     EXPECT_EQ(SCSG, device.GetType());
-    EXPECT_FALSE(device.SupportsImageFile());
-    EXPECT_TRUE(device.SupportsParams());
+    EXPECT_TRUE(device.SupportsFile());
+    EXPECT_FALSE(device.SupportsParams());
     EXPECT_FALSE(device.IsProtectable());
     EXPECT_FALSE(device.IsProtected());
     EXPECT_FALSE(device.IsReadOnly());
@@ -79,13 +79,13 @@ TEST(ScsiGenericTest, Dispatch)
             Property(&ScsiException::GetAsc, Asc::READ_ERROR))));
 
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::WRITE_6));
+    device->Dispatch(ScsiCommand::WRITE_6);
 
     EXPECT_CALL(*controller, DataOut);
-    EXPECT_NO_THROW(device->Dispatch(ScsiCommand::FORMAT_UNIT));
+    device->Dispatch(ScsiCommand::FORMAT);
 
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
-    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT_UNIT) ; },
+    EXPECT_THAT([&] { device->Dispatch(ScsiCommand::FORMAT) ; },
         Throws<ScsiException>(AllOf(
             Property(&ScsiException::GetSenseKey, SenseKey::ILLEGAL_REQUEST),
             Property(&ScsiException::GetAsc, Asc::LOGICAL_UNIT_NOT_SUPPORTED))));

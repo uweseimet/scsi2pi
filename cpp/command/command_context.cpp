@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -18,9 +18,8 @@ using namespace protobuf_util;
 bool CommandContext::ReadCommand()
 {
     // Read magic string
-    array<byte, 6> magic;
-    if (const auto bytes_read = ReadBytes(fd, magic); bytes_read) {
-        if (bytes_read != magic.size() || memcmp(magic.data(), "RASCSI", magic.size())) {
+    if (array<byte, 6> magic; ReadBytes(fd, magic)) {
+        if (memcmp(magic.data(), "RASCSI", magic.size())) {
             throw IoException("Invalid magic");
         }
 
@@ -49,34 +48,11 @@ bool CommandContext::WriteSuccessResult(PbResult &result) const
     return WriteResult(result);
 }
 
-bool CommandContext::ReturnLocalizedError(LocalizationKey key, const string &arg1, const string &arg2,
-    const string &arg3) const
-{
-    return ReturnLocalizedError(key, NO_ERROR_CODE, arg1, arg2, arg3);
-}
-
-bool CommandContext::ReturnLocalizedError(LocalizationKey key, PbErrorCode error_code, const string &arg1,
-    const string &arg2, const string &arg3) const
-{
-    static const CommandLocalizer command_localizer;
-
-    // For the logfile always use English
-    // Do not log unknown operations as an error for backward/forward compatibility with old/new clients
-    if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
-        s2p_logger.trace(command_localizer.Localize(key, "en", arg1, arg2, arg3));
-    }
-    else {
-        s2p_logger.error(command_localizer.Localize(key, "en", arg1, arg2, arg3));
-    }
-
-    return ReturnStatus(false, command_localizer.Localize(key, locale, arg1, arg2, arg3), error_code, false);
-}
-
 bool CommandContext::ReturnStatus(bool status, const string &msg, PbErrorCode error_code, bool enable_log) const
 {
     // Do not log twice if logging has already been done in the localized error handling above
     if (enable_log && !status && !msg.empty()) {
-        s2p_logger.error(msg);
+        context_logger.error(msg);
     }
 
     if (fd == -1) {

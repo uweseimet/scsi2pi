@@ -27,16 +27,15 @@ namespace s2p_util
 {
 
 // Separator for compound options like ID:LUN
-static constexpr char COMPONENT_SEPARATOR = ':';
+inline constexpr char COMPONENT_SEPARATOR = ':';
 
 struct StringHash
 {
     using is_transparent = void;
 
-    size_t operator()(string_view sv) const
+    size_t operator()(string_view s) const
     {
-        hash<string_view> hasher;
-        return hasher(sv);
+        return hash<string_view> { }(s);
     }
 };
 
@@ -102,6 +101,11 @@ void Sleep(const timespec&);
 
 shared_ptr<spdlog::logger> CreateLogger(const string&);
 
+off_t GetCapacityFromFile(const string&);
+
+using SignalHandlerPtr = void(*)(int);
+void SetTerminationHandler(SignalHandlerPtr);
+
 constexpr const char* to_const_char_ptr(span<const uint8_t> bytes)
 {
     return static_cast<const char*>(static_cast<const void*>(bytes.data()));
@@ -122,9 +126,9 @@ constexpr char* to_char_ptr(span<byte> bytes)
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
-static constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
+inline constexpr const char *DEFAULT_APP_FOLDER = "/var/lib/piscsi";
 
-static constexpr array<const char*, 16> SENSE_KEYS = {
+inline constexpr array<const char*, 16> SENSE_KEYS = {
     "NO SENSE",
     "RECOVERED ERROR",
     "NOT READY",
@@ -132,7 +136,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
     "HARDWARE ERROR",
     "ILLEGAL REQUEST",
     "UNIT ATTENTION",
-    "DATA_PROTECT",
+    "DATA PROTECT",
     "BLANK CHECK",
     "VENDOR SPECIFIC",
     "COPY ABORTED",
@@ -144,7 +148,7 @@ static constexpr array<const char*, 16> SENSE_KEYS = {
 };
 
 // This map only contains mappings for ASCs used by s2p or the Linux SG driver
-static const unordered_map<Asc, const char*> ASC_MAPPING = {
+inline const unordered_map<Asc, const char*> ASC_MAPPING = {
     { Asc::NO_ADDITIONAL_SENSE_INFORMATION, "NO ADDITIONAL SENSE INFORMATION" },
     { Asc::WRITE_FAULT, "PERIPHERAL DEVICE WRITE FAULT" },
     { Asc::IO_PROCESS_TERMINATED, "I/O PROCESS TERMINATED" },
@@ -166,11 +170,11 @@ static const unordered_map<Asc, const char*> ASC_MAPPING = {
     { Asc::INTERNAL_TARGET_FAILURE, "INTERNAL TARGET FAILURE" },
     { Asc::COMMAND_PHASE_ERROR, "COMMAND PHASE ERROR" },
     { Asc::DATA_PHASE_ERROR, "DATA PHASE ERROR" },
-    { Asc::MEDIUM_LOAD_OR_EJECT_FAILED, "MEDIA LOAD OR EJECT FAILED" },
-    { Asc::DATA_CURRENTLY_UNAVAILABLE, "DATA CURRENTLY UNAVAILALBLE" }
+    { Asc::MEDIA_LOAD_OR_EJECT_FAILED, "MEDIA LOAD OR EJECT FAILED" },
+    { Asc::DATA_CURRENTLY_UNAVAILABLE, "DATA CURRENTLY UNAVAILABLE" }
 };
 
-static const unordered_map<StatusCode, const char*> STATUS_MAPPING = {
+inline const unordered_map<StatusCode, const char*> STATUS_MAPPING = {
     { StatusCode::GOOD, "GOOD" },
     { StatusCode::CHECK_CONDITION, "CHECK CONDITION" },
     { StatusCode::CONDITION_MET, "CONDITION MET" },

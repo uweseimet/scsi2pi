@@ -20,16 +20,18 @@
 
 using namespace testing;
 
-class MockBus : public Bus
+class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
 {
 
 public:
 
+    MOCK_METHOD(string, SetUp, (bool), (override));
+    MOCK_METHOD(void, CleanUp, (), (override));
     MOCK_METHOD(void, SetBSY, (bool), (const, override));
     MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
     MOCK_METHOD(void, Acquire, (), (const, override));
     MOCK_METHOD(void, SetSignal, (int, bool), (const, override));
-    MOCK_METHOD(void, SetDir, (bool), (const, override));
+    MOCK_METHOD(void, SetDataDirIn, (bool), (const, override));
     MOCK_METHOD(bool, WaitHandShake, (int, bool), (const, override));
     MOCK_METHOD(uint8_t, WaitForSelection, (), (override));
     MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));
@@ -54,7 +56,7 @@ class MockAbstractController : public AbstractController // NOSONAR Having many 
     FRIEND_TEST(AbstractControllerTest, Offset);
     FRIEND_TEST(AbstractControllerTest, ScriptGenerator);
 
-    const S2pFormatter formatter;
+    inline static const S2pFormatter formatter;
 
 public:
 
@@ -89,7 +91,7 @@ public:
         }
     }
 
-    void SetCdbByte(int index, int value) // NONSONAR Shadowing the inherited method is intentional
+    void SetCdbByte(int index, int value) // NOSONAR Shadowing the inherited method is intentional
     {
         AbstractController::SetCdbByte(index, value);
     }
@@ -174,7 +176,7 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, CheckWritePreconditions);
     FRIEND_TEST(StorageDeviceTest, MediumChanged);
     FRIEND_TEST(StorageDeviceTest, GetIdsForReservedFile);
-    FRIEND_TEST(StorageDeviceTest, GetFileSize);
+    FRIEND_TEST(StorageDeviceTest, GetCapacityFromFile);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetGetBlockSize);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
@@ -195,15 +197,15 @@ public:
     }
     ~MockStorageDevice() override = default;
 
-    void SetReady(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetReady(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetReady(b);
     }
-    void SetRemovable(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetRemovable(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetRemovable(b);
     }
-    void SetLocked(bool b) // NONSONAR Shadowing the inherited method is intentional
+    void SetLocked(bool b) // NOSONAR Shadowing the inherited method is intentional
     {
         PrimaryDevice::SetLocked(b);
     }
@@ -312,8 +314,6 @@ class MockTape : public Tape
 {
     FRIEND_TEST(TapeTest, ValidateFile);
     FRIEND_TEST(TapeTest, Unload);
-    FRIEND_TEST(TapeTest, ModeSense6);
-    FRIEND_TEST(TapeTest, ModeSense10);
     FRIEND_TEST(TapeTest, VerifyBlockSizeChange);
     FRIEND_TEST(TapeTest, ReadPosition);
 

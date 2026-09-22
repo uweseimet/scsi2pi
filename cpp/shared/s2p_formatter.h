@@ -2,12 +2,13 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2024-2025 Uwe Seimet
+// Copyright (C) 2024-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <limits>
 #include <span>
@@ -22,10 +23,7 @@ public:
 
     string FormatBytes(span<const uint8_t>, size_t, bool = false) const;
 
-    void SetLimit(int limit)
-    {
-        format_limit = limit;
-    }
+    bool SetLimit(int);
 
 private:
 

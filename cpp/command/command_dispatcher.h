@@ -38,7 +38,10 @@ public:
 
     bool SetLogLevel(string_view);
 
-    bool SetWithoutTypes(const string&);
+    void SetExcludedTypes(const unordered_set<PbDeviceType> &types)
+    {
+        excluded_types = types;
+    }
 
 private:
 
@@ -51,5 +54,5 @@ private:
 
     logger &s2p_logger;
 
-    unordered_set<PbDeviceType> without_types;
+    unordered_set<PbDeviceType> excluded_types;
 };

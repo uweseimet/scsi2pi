@@ -16,7 +16,6 @@ class SasiHd final : public Disk
 public:
 
     explicit SasiHd(int, const set<uint32_t>& = { 256, 512, 1024 });
-    ~SasiHd() override = default;
 
     void Open() override;
 

@@ -76,16 +76,15 @@ bool S2pSimh::ParseArguments(span<char*> args)
             dump = true;
             break;
 
-        case 'l':
-            if (const int l = ParseAsUnsignedInt(string(optarg)); l < 0) {
+        case 'l': {
+            const int l = ParseAsUnsignedInt(string(optarg));
+            if (!formatter.SetLimit(l)) {
                 cerr << "Error: Invalid dump size limit '" << optarg << "'\n";
                 return false;
             }
-            else {
-                formatter.SetLimit(l);
-                limit = static_cast<uint32_t>(l);
-            }
+            limit = static_cast<uint32_t>(l);
             break;
+        }
 
         case 'h':
             help = true;
@@ -138,14 +137,8 @@ bool S2pSimh::ParseArguments(span<char*> args)
     }
 
     if (truncate) {
-        ofstream f(simh_filename);
+        ofstream f(simh_filename, ios::trunc);
         if (!f) {
-            cerr << "Error: Can't open '" << simh_filename << "'\n";
-            return false;
-        }
-        f.close();
-
-        if (::truncate(simh_filename.c_str(), 0) == -1) {
             cerr << "Error: Can't truncate '" << simh_filename << "'\n";
             return false;
         }
@@ -288,7 +281,7 @@ int S2pSimh::Add()
             filesize = file_size(data_filename);
         }
         catch (const filesystem_error &e) {
-            cerr << "Error: Can't get size of '" << data_filename + "': " << e.what() << '\n';
+            cerr << "Error: Can't get size of '" << data_filename << "': " << e.what() << '\n';
             return EXIT_FAILURE;
         }
 
@@ -472,7 +465,7 @@ vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
             return {};
         }
 
-        const string &cls = ToLower(components[0]);
+        const string cls = ToLower(components[0]);
         const int c = HexToDec(cls[0]);
         if (cls.size() > 1 || c == -1) {
             cerr << "Error: Invalid class '" << cls << "'\n";

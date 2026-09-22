@@ -18,9 +18,13 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 6, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
 
+    // 0x1f is omitted intentionally, it is the ICD command extension. See controller.cpp for details.
+
     for (int i = 0x20; i < 0x7f; ++i) {
         AddCommand(static_cast<ScsiCommand>(i), 10, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
+
+    // 0x7f is omitted intentionally, it is the VARIABLE LENGTH CDB opcode
 
     for (int i = 0x80; i < 0xa0; ++i) {
         AddCommand(static_cast<ScsiCommand>(i), 16, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
@@ -30,18 +34,20 @@ CommandMetaData::CommandMetaData()
         AddCommand(static_cast<ScsiCommand>(i), 12, fmt::format("command ${:02x}", i), { 0, 0, 0, 0, false, false });
     }
 
+    // 0xc0-0xff are vendor-specific commands with unknown lengths
+
     // This mapping contains all commands supported by s2p (see https://www.scsi2pi.net/en/scsi_commands.html)
     // and some others typically used with the SCSG device
     AddCommand(ScsiCommand::TEST_UNIT_READY, 6, "TEST UNIT READY", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::REZERO, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::REZERO_REWIND, 6, "REZERO/REWIND", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_BLOCK_LIMITS, 6, "READ BLOCK LIMITS", { -6, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::REQUEST_SENSE, 6, "REQUEST SENSE", { 4, 1, 0, 0, false, false });
-    AddCommand(ScsiCommand::FORMAT_UNIT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
+    AddCommand(ScsiCommand::FORMAT, 6, "FORMAT UNIT/FORMAT MEDIUM", { 0, 0, 0, 0, true, false });
     AddCommand(ScsiCommand::REASSIGN_BLOCKS, 6, "REASSIGN BLOCKS", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_6, 6, "READ(6)/GET MESSAGE(6)", { 4, 1, 1, 3, false, false });
     AddCommand(ScsiCommand::RETRIEVE_STATS, 6, "RETRIEVE STATS", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::WRITE_6, 6, "WRITE(6)/SEND MESSAGE(6)/PRINT", { 4, 1, 1, 3, true, false });
-    AddCommand(ScsiCommand::SEEK_6, 6, "SEEK(6)", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::SEEK_6, 6, "SEEK(6)", { 0, 0, 1, 0, false, false });
     AddCommand(ScsiCommand::SET_IFACE_MODE, 6, "SET INTERFACE MODE", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SET_MCAST_ADDR, 6, "SET MULTICAST ADDRESS", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::ENABLE_INTERFACE, 6, "ENABLE INTERFACE", { 0, 0, 0, 0, false, false });
@@ -52,7 +58,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::INQUIRY, 6, "INQUIRY", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::VERIFY_6, 6, "VERIFY(6)", { 4, 1, 1, 3, true, false });
     AddCommand(ScsiCommand::MODE_SELECT_6, 6, "MODE SELECT(6)", { 4, 1, 0, 0, true, true });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)(RESERVE ELEMENT(6)",
+    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
@@ -66,7 +72,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_CAPACITY_10, 10, "READ CAPACITY(10)", { -8, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_10, 10, "READ(10)", { 7, 2, 2, 4, false, false });
     AddCommand(ScsiCommand::WRITE_10, 10, "WRITE(10)", { 7, 2, 2, 4, true, false });
-    AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::SEEK_10, 10, "SEEK(10)/LOCATE(10)", { 0, 0, 2, 0, false, false });
     AddCommand(ScsiCommand::ERASE_10, 10, "ERASE(10)", { 7, 2, 2, 4, false, false });
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true, false });
     AddCommand(ScsiCommand::VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true, false });
@@ -76,9 +82,9 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true, false });
     AddCommand(ScsiCommand::WRITE_BUFFER, 10, "WRITE BUFFER", { 6, 3, 0, 0, true, false });
     AddCommand(ScsiCommand::READ_BUFFER_10, 10, "READ BUFFER(10)", { 6, 3, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::WRITE_SAME_10, 10, "WRITE SAME(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(ScsiCommand::READ_LONG_10, 10, "READ LONG(10)", { 7, 2, 2, 4, false, false });
+    AddCommand(ScsiCommand::WRITE_LONG_10, 10, "WRITE LONG(10)", { 7, 2, 2, 4, true, false });
+    AddCommand(ScsiCommand::WRITE_SAME_10, 10, "WRITE SAME(10)", { 7, 2, 2, 4, true, false });
     AddCommand(ScsiCommand::READ_SUB_CHANNEL, 10, "READ SUB-CHANNEL", { 7, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_TOC, 10, "READ TOC", { 7, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_HEADER, 10, "READ HEADER", { 7, 2, 2, 4, false, false });
@@ -113,11 +119,11 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false,
         false });
     AddCommand(ScsiCommand::LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(ScsiCommand::ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 10, 4, 2, 8, false, false });
     AddCommand(ScsiCommand::READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, 16, "READ CAPACITY(16)/READ LONG(16)",
-        { 12, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::WRITE_LONG_16, 16, "WRITE LONG(16)", { 12, 2, 0, 0, true, false });
+        { 12, 2, 2, 8, false, false });
+    AddCommand(ScsiCommand::WRITE_LONG_16, 16, "WRITE LONG(16)", { 12, 2, 2, 8, true, false });
     AddCommand(ScsiCommand::REPORT_LUNS, 12, "REPORT LUNS", { 6, 4, 0, 0, false, false });
     AddCommand(ScsiCommand::BLANK, 12, "BLANK", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::PLAY_AUDIO_12, 12, "PLAY AUDIO(12)", { 6, 4, 2, 4, false, false });
@@ -128,7 +134,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::WRITE_AND_VERIFY_12, 12, "WRITE AND VERIFY(12)", { 6, 4, 2, 4, true, false });
     AddCommand(ScsiCommand::VERIFY_12, 12, "VERIFY(12)", { 6, 4, 2, 4, true, false });
     AddCommand(ScsiCommand::SEND_VOLUME_TAG, 12, "SEND VOLUME TAG", { 8, 2, 0, 0, false, false });
-    AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA", { 6, 4, 0, 0, false, false });
+    AddCommand(ScsiCommand::READ_DEFECT_DATA_12, 12, "READ DEFECT DATA(12)", { 6, 4, 0, 0, false, false });
     AddCommand(ScsiCommand::READ_CD_MSF, 12, "READ CD MSF", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SET_CD_SPEED, 12, "SET CD SPEED", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::PLAY_CD, 12, "PLAY CD", { 6, 4, 2, 4, false, false });
@@ -138,13 +144,13 @@ CommandMetaData::CommandMetaData()
         { 7, 2, 0, 0, false, false });
 }
 
-void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string_view name, const CdbMetaData &meta_data)
+void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string name, const CdbMetaData &meta_data)
 {
     assert(meta_data.allocation_length_offset <= 12);
     assert(meta_data.allocation_length_size <= 4);
 
     command_byte_counts[static_cast<size_t>(cmd)] = byte_count;
-    command_names[static_cast<size_t>(cmd)] = name;
+    command_names[static_cast<size_t>(cmd)] = std::move(name);
     cdb_meta_data[static_cast<size_t>(cmd)] = meta_data;
 }
 

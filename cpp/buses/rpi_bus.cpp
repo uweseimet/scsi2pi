@@ -8,9 +8,11 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <bit>
 #include <cstddef>
 #include <fstream>
 #include <sstream>
+#include <thread>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -22,7 +24,7 @@
 using namespace spdlog;
 using namespace s2p_util;
 
-RpiBus::RpiBus(PiType type, bool standard_board) : pi_type(type)
+RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irq(e)
 {
     if (standard_board) {
         pin_ind = -1;
@@ -40,6 +42,19 @@ string RpiBus::SetUp(bool target)
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";
+    }
+
+    if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(3, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    }
+
+    if (enable_irq) {
+        sched_param param { };
+        param.sched_priority = 99;
+        pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
     }
 
     off_t base_addr = 0;
@@ -88,7 +103,10 @@ string RpiBus::SetUp(bool target)
         close(vcio_fd);
         const uint32_t timer_core_freq = maxclock[6] / 1'000'000;
         bus_settle_count = timer_core_freq * 400 / 1000;
-        daynaport_count = timer_core_freq * DAYNAPORT_SEND_DELAY_NS / 1000;
+        // The DaynaPort SCSI Link do a short delay in the middle of transfering
+        // a packet. This is the number of ns that will be delayed between the
+        // header and the actual data.
+        daynaport_count = timer_core_freq * 100'000 / 1000;
     }
     else {
         close(fd);
@@ -275,7 +293,7 @@ void RpiBus::SetSEL(bool state) const
     PinSetSignal(PIN_ACT, state);
 }
 
-void RpiBus::SetDir(bool in) const
+void RpiBus::SetDataDirIn(bool in) const
 {
     // Change the data input/output direction according to the IO signal
     PinSetSignal(pin_dtd, !in);
@@ -290,8 +308,8 @@ void RpiBus::SetDAT(uint8_t dat) const
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
     fsel |= tblDatSet[dat];
-    gpfsel[GPIO_FSEL_1] = fsel;
     gpio[GPIO_FSEL_1] = fsel;
+    gpfsel[GPIO_FSEL_1] = fsel;
 }
 
 void RpiBus::InitializeSignals() const
@@ -305,31 +323,21 @@ void RpiBus::InitializeSignals() const
 
 void RpiBus::CreateWorkTable()
 {
-    array<uint8_t, 256> tblParity;
-
-    for (uint32_t i = 0; i < tblParity.size(); ++i) {
-        uint32_t parity = 0;
-        for (int j = 0; j < 8; ++j) {
-            parity ^= (i >> j) & 1;
-        }
-
-        tblParity[i] = !parity;
-    }
-
-    for (uint32_t i = 0; i < tblParity.size(); ++i) {
+    for (uint32_t i = 0; i < 256; ++i) {
+        const uint32_t parity = (popcount(i) % 2 == 0) ? 1 : 0;
         // Bit string for inspection
-        uint32_t bits = i | (static_cast<uint32_t>(tblParity[i]) << 8);
+        uint32_t bits = i | (parity << 8);
 
-        // Bit check
+        uint32_t dat_set = 0;
         for (const int pin : DATA_PINS) {
             // Offset of the Function Select register for this pin (3 bits per pin)
             const int shift = (pin % 10) * 3;
-
             // Value (GPIO pin is set to 1)
-            tblDatSet[i] |= (bits & 0b001) << shift;
-
+            dat_set |= (bits & 1) << shift;
             bits >>= 1;
         }
+
+        tblDatSet[i] = dat_set;
     }
 }
 
@@ -340,9 +348,9 @@ void RpiBus::SetSignal(int pin, bool state) const
     const int shift = (pin % 10) * 3;
     uint32_t data = gpfsel[index];
     if (state) {
-        data |= (0b001 << shift);
+        data |= (0b001U << shift);
     } else {
-        data &= ~(0b111 << shift);
+        data &= ~(0b111U << shift);
     }
 
     gpio[index] = data;
@@ -351,6 +359,10 @@ void RpiBus::SetSignal(int pin, bool state) const
 
 void RpiBus::DisableIRQ()
 {
+    if (enable_irq) {
+        return;
+    }
+
     switch (pi_type) {
     case PiType::PI_1:
         // Stop system timer interrupt with interrupt controller
@@ -380,6 +392,10 @@ void RpiBus::DisableIRQ()
 
 void RpiBus::EnableIRQ()
 {
+    if (enable_irq) {
+        return;
+    }
+
     switch (pi_type) {
     case PiType::PI_1:
         // Restart the system timer interrupt with the interrupt controller
@@ -411,8 +427,9 @@ void RpiBus::PinConfig(int pin, int mode) const
     }
 
     const int index = pin / 10;
-    const uint32_t mask = ~(0b111 << ((pin % 10) * 3));
-    gpio[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
+    const uint32_t mask = ~(0b111U << ((pin % 10) * 3));
+    gpfsel[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
+    gpio[index] = gpfsel[index];
 }
 
 // Set output pin
@@ -422,7 +439,7 @@ void RpiBus::PinSetSignal(int pin, bool state) const
         return;
     }
 
-    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1 << pin;
+    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1U << pin;
 }
 
 void RpiBus::ConfigurePullDown(int pin) const
@@ -441,7 +458,7 @@ void RpiBus::ConfigurePullDown(int pin) const
 
         gpio[GPIO_PUD] = 0;
         Sleep(ts);
-        gpio[GPIO_CLK_0] = 1 << pin;
+        gpio[GPIO_CLK_0] = 1U << pin;
         Sleep(ts);
         gpio[GPIO_PUD] = 0;
         gpio[GPIO_CLK_0] = 0;
@@ -454,19 +471,14 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
 
-// Read data from bus
-void RpiBus::Acquire() const
-{
-    SetSignals(*level);
-}
-
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 // Furthermore, nanosleep() requires interrupts to be enabled.
 void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
+    const uint32_t start = armt_addr[ARMT_FREERUN];
     // Either Daynaport delay or bus settle delay
-    const uint32_t count = armt_addr[ARMT_FREERUN] + (daynaport ? daynaport_count : bus_settle_count);
-    while (armt_addr[ARMT_FREERUN] < count) {
+    const uint32_t delta = daynaport ? daynaport_count : bus_settle_count;
+    while (armt_addr[ARMT_FREERUN] - start < delta) {
         // Intentionally empty
     }
 }

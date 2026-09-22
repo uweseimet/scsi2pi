@@ -23,7 +23,7 @@ namespace protobuf_util
 
 void SerializeMessage(int, const google::protobuf::MessageLite&);
 void DeserializeMessage(int, google::protobuf::MessageLite&);
-size_t ReadBytes(int, span<byte>);
-size_t WriteBytes(int, span<const uint8_t>);
+bool ReadBytes(int, span<byte>);
+void WriteBytes(int, span<const uint8_t>);
 
 }

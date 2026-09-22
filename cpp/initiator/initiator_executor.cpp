@@ -17,14 +17,15 @@ using namespace chrono;
 using namespace s2p_util;
 using namespace initiator_util;
 
-int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log)
+int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log,
+    bool report_error)
 {
     if (cdb.size() < 6) {
         initiator_logger.error("CDB has less than 6 bytes");
         return 0xff;
     }
 
-    bus.SetDir(true);
+    bus.SetDataDirIn(true);
 
     status_code = 0xff;
     byte_count = 0;
@@ -68,7 +69,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         bus.Acquire();
 
         // Ensure that the data direction matches the one set by the target
-        bus.SetDir(!bus.GetIO());
+        bus.SetDataDirIn(!bus.GetIO());
 
         if (bus.GetREQ()) {
             try {
@@ -87,7 +88,7 @@ int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int leng
         }
     }
 
-    if (enable_log && status_code) {
+    if (enable_log && status_code && report_error) {
         initiator_logger.warn(GetStatusString(status_code));
     }
 
@@ -205,7 +206,7 @@ void InitiatorExecutor::Command(span<uint8_t> cdb)
 {
     if (target_lun < 8) {
         // Encode LUN in the CDB for backwards compatibility with SCSI-1-CCS
-        cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[1] + (target_lun << 5));
+        cdb[cdb_offset + 1] = static_cast<uint8_t>(cdb[cdb_offset + 1] + (target_lun << 5));
     }
 
     const int sent_count = bus.InitiatorSendHandShake(cdb.subspan(cdb_offset));
@@ -292,7 +293,8 @@ void InitiatorExecutor::MsgOut()
     array<uint8_t, 1> buf;
 
     // IDENTIFY or MESSAGE REJECT
-    buf[0] = static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message);
+    buf[0] = next_message == MessageCode::IDENTIFY
+        ? static_cast<uint8_t>(target_lun) + static_cast<uint8_t>(next_message) : static_cast<uint8_t>(next_message);
 
     if (bus.InitiatorSendHandShake(buf) != static_cast<int>(buf.size())) {
         initiator_logger.error("MESSAGE OUT phase for {} message failed",
@@ -303,7 +305,7 @@ void InitiatorExecutor::MsgOut()
     next_message = MessageCode::IDENTIFY;
 }
 
-tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
+optional<SenseData> InitiatorExecutor::GetSenseData()
 {
     array<uint8_t, 252> buf = { };
     array<uint8_t, 6> cdb = { };
@@ -312,7 +314,7 @@ tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
 
     if (Execute(cdb, buf, static_cast<int>(buf.size()), 1, true)) {
         initiator_logger.error("Can't execute REQUEST SENSE");
-        return {SenseKey {-1}, Asc {-1}, -1};
+        return nullopt;
     }
 
     initiator_logger.trace(formatter.FormatBytes(buf, byte_count));
@@ -320,10 +322,14 @@ tuple<SenseKey, Asc, int> InitiatorExecutor::GetSenseData()
     if (byte_count < 18) {
         initiator_logger.warn(
             "Device did not return standard REQUEST SENSE data, sense data details are not available");
-        return {SenseKey {-1}, Asc {-1}, -1};
+        return nullopt;
     }
 
-    return {static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f), static_cast<Asc>(buf[12]), buf[13]};
+    return SenseData {
+        .sense_key = static_cast<SenseKey>(static_cast<int>(buf[2]) & 0x0f),
+        .asc = static_cast<Asc>(buf[12]),
+        .ascq = buf[13]
+    };
 }
 
 void InitiatorExecutor::ResetBus() const

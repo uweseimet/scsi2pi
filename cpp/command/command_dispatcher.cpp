@@ -8,7 +8,6 @@
 
 #include "command_dispatcher.h"
 #include <fstream>
-#include <unistd.h>
 #include "command_context.h"
 #include "command_executor.h"
 #include "command_image_support.h"
@@ -18,6 +17,7 @@
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"
 
+using namespace command_image_support;
 using namespace command_response;
 using namespace s2p_interface_util;
 using namespace s2p_util;
@@ -48,7 +48,7 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
 
     case DEFAULT_FOLDER: {
         const string &folder = GetParam(command, "folder");
-        if (const string &error = CommandImageSupport::GetInstance().SetImageFolder(folder); !error.empty()) {
+        if (const string &error = SetImageFolder(folder); !error.empty()) {
             result.set_msg(error);
             return context.WriteResult(result);
         }
@@ -64,12 +64,12 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return context.WriteSuccessResult(result);
 
     case DEVICE_TYPES_INFO:
-        GetDeviceTypesInfo(*result.mutable_device_types_info(), without_types);
+        GetDeviceTypesInfo(*result.mutable_device_types_info(), excluded_types);
         return context.WriteSuccessResult(result);
 
     case SERVER_INFO:
         GetServerInfo(*result.mutable_server_info(), command, controller_factory.GetAllDevices(),
-            executor.GetReservedIds(), without_types, s2p_logger);
+            executor.GetReservedIds(), excluded_types, s2p_logger);
         return context.WriteSuccessResult(result);
 
     case VERSION_INFO:
@@ -126,20 +126,20 @@ bool CommandDispatcher::DispatchCommand(const CommandContext &context, PbResult 
         return ShutDown(context);
 
     case CREATE_IMAGE:
-        return CommandImageSupport::GetInstance().CreateImage(context);
+        return CreateImage(context);
 
     case DELETE_IMAGE:
-        return CommandImageSupport::GetInstance().DeleteImage(context);
+        return DeleteImage(context);
 
     case RENAME_IMAGE:
-        return CommandImageSupport::GetInstance().RenameImage(context);
+        return RenameImage(context);
 
     case COPY_IMAGE:
-        return CommandImageSupport::GetInstance().CopyImage(context);
+        return CopyImage(context);
 
     case PROTECT_IMAGE:
     case UNPROTECT_IMAGE:
-        return CommandImageSupport::GetInstance().SetImagePermissions(context);
+        return SetImagePermissions(context);
 
     case PERSIST_CONFIGURATION:
         return PropertyHandler::GetInstance().Persist() ?
@@ -211,15 +211,19 @@ bool CommandDispatcher::ShutDown(ShutdownMode mode) const
 
     case ShutdownMode::STOP_PI:
         s2p_logger.info("Pi shutdown requested");
-        execl("/sbin/shutdown", "shutdown", "-r", "now", nullptr);
-        s2p_logger.error("Shutdown is not supported on this platform");
-        return false;
+        if (system("shutdown now")) {
+            s2p_logger.error("Shutdown failed or is not supported on this platform");
+            return false;
+        }
+        break;
 
     case ShutdownMode::RESTART_PI:
         s2p_logger.info("Pi restart requested");
-        execl("/sbin/reboot", "reboot", nullptr);
-        s2p_logger.error("Restart is not supported on this platform");
-        return false;
+        if (system("shutdown -r now")) {
+            s2p_logger.error("Restart failed or is not supported on this platform");
+            return false;
+        }
+        break;
 
     default:
         s2p_logger.error("Invalid shutdown mode {}", static_cast<int>(mode));
@@ -269,17 +273,4 @@ bool CommandDispatcher::SetLogLevel(string_view log_level)
     }
 
     return true;
-}
-
-bool CommandDispatcher::SetWithoutTypes(const string &types)
-{
-    return ranges::all_of(Split(types, ','), [this](const auto &t) {
-        if (const auto type = ParseDeviceType(Trim(t)); type != UNDEFINED) {
-            without_types.emplace(type);
-            return true;
-        }
-
-        return false;
-    }
-    );
 }

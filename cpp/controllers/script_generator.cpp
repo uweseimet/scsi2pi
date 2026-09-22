@@ -9,19 +9,24 @@
 #include "script_generator.h"
 #include <cassert>
 #include <iomanip>
+#include <spdlog/spdlog.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
 
 using namespace s2p_util;
 
-bool ScriptGenerator::CreateFile(const string &filename)
+string ScriptGenerator::CreateFile(const string &filename)
 {
     file.open(filename);
+    if (!file.good()) {
+        return fmt::format("Can't create script file '{}': {}", filename,
+            system_error(errno, generic_category()).what());
+    }
 
-    return file.good();
+    return "";
 }
 
-void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
+bool ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
 {
     assert(!cdb.empty());
 
@@ -32,6 +37,7 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
     if (!count) {
         count = static_cast<int>(cdb.size());
     }
+    count = min(count, static_cast<int>(cdb.size()));
 
     for (int i = 0; i < count; ++i) {
         if (i) {
@@ -41,9 +47,11 @@ void ScriptGenerator::AddCdb(int id, int lun, cdb_t cdb)
     }
 
     file << flush;
+
+    return file.good();
 }
 
-void ScriptGenerator::AddData(span<const uint8_t> data)
+bool ScriptGenerator::AddData(span<const uint8_t> data)
 {
     assert(!data.empty());
 
@@ -57,4 +65,6 @@ void ScriptGenerator::AddData(span<const uint8_t> data)
     }
 
     file << flush;
+
+    return file.good();
 }

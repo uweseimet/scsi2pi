@@ -8,20 +8,20 @@
 
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
-#include "in_process_bus.h"
 #if __has_include (<linux/gpio.h>)
 #include "rpi_bus.h"
 #endif
+#include "virtual_bus.h"
 
-unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_signals,
-    const string &identifier, [[maybe_unused]] bool standard_board)
+unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
+    [[maybe_unused]] bool standard_board, [[maybe_unused]] bool enable_irq)
 {
     auto make_initialized = [target](unique_ptr<Bus> bus) {
         return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
     };
 
-    if (in_process) {
-        return make_initialized(make_unique<InProcessBus>(identifier, log_signals));
+    if (virtual_bus) {
+        return make_initialized(make_unique<VirtualBus>(identifier, log_signals));
     }
 
 #if __has_include (<linux/gpio.h>)
@@ -34,12 +34,20 @@ unique_ptr<Bus> bus_factory::CreateBus(bool target, bool in_process, bool log_si
             false;
 #endif
 
-        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board);
-        return make_initialized(std::move(bus));    }
+        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board, enable_irq);
+        return make_initialized(std::move(bus));
+    }
 #else
     spdlog::warn("This platform is not a Raspberry Pi running Linux, functionality is limited");
 #endif
 
-    // Fall back to the in-process bus
-    return make_initialized(make_unique<InProcessBus>(identifier, false));
+    // Fall back to the virtual bus
+    return make_initialized(make_unique<VirtualBus>(identifier, false));
+}
+
+void BusFactory::EnableVirtualBus(bool l)
+{
+    virtual_bus = true;
+
+    log_signals = l;
 }

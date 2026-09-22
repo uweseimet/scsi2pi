@@ -55,6 +55,8 @@ TEST(DeviceFactoryTest, GetTypeForFile)
     EXPECT_EQ(factory.GetTypeForFile("daynaport"), SCDP);
     EXPECT_EQ(factory.GetTypeForFile("printer"), SCLP);
     EXPECT_EQ(factory.GetTypeForFile("services"), SCHS);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/sda"), SCHD);
+    EXPECT_EQ(factory.GetTypeForFile("/dev/sr0"), SCCD);
     EXPECT_EQ(factory.GetTypeForFile("/dev/sg0"), SCSG);
     EXPECT_EQ(factory.GetTypeForFile("unknown"), UNDEFINED);
     EXPECT_EQ(factory.GetTypeForFile("test.iso.suffix"), UNDEFINED);
@@ -84,6 +86,14 @@ TEST(DeviceFactoryTest, AddExtensionMapping)
 
     EXPECT_FALSE(factory.AddExtensionMapping("iso", SCHS));
     auto mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(12U, mapping.size());
+
+    EXPECT_FALSE(factory.AddExtensionMapping("ISO", SCHS));
+    mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(12U, mapping.size());
+
+    EXPECT_FALSE(factory.AddExtensionMapping(".iso", SCHS));
+    mapping = factory.GetExtensionMapping();
     EXPECT_EQ(12U, mapping.size());
 
     EXPECT_TRUE(factory.AddExtensionMapping("ext", SCCD));

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2021-2024 Uwe Seimet
+// Copyright (C) 2021-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ class CommandContext final
 
 public:
 
-    CommandContext(const PbCommand &cmd, logger &l) : command(cmd), s2p_logger(l)
+    CommandContext(const PbCommand &cmd, logger &l) : command(cmd), context_logger(l)
     {
     }
-    CommandContext(int f, logger &l) : fd(f), s2p_logger(l)
+    CommandContext(int f, logger &l) : fd(f), context_logger(l)
     {
     }
     ~CommandContext() = default;
@@ -39,15 +39,34 @@ public:
         return command;
     }
 
-    bool ReturnLocalizedError(LocalizationKey, const string& = "", const string& = "", const string& = "") const;
-    bool ReturnLocalizedError(LocalizationKey, PbErrorCode, const string& = "", const string& = "",
-        const string& = "") const;
     bool ReturnSuccessStatus() const;
     bool ReturnErrorStatus(const string&) const;
 
+    template<typename ... Args>
+    bool ReturnLocalizedError(LocalizationKey key, Args &&... args) const
+    {
+        return ReturnLocalizedError(key, PbErrorCode::NO_ERROR_CODE, std::forward<Args>(args)...);
+    }
+
+    template<typename ... Args>
+    bool ReturnLocalizedError(LocalizationKey key, PbErrorCode error_code, Args &&... args) const
+    {
+        static const CommandLocalizer command_localizer;
+
+        if (error_code == PbErrorCode::UNKNOWN_OPERATION) {
+            context_logger.trace(command_localizer.Localize(key, "en", std::as_const(args)...));
+        }
+        else {
+            context_logger.error(command_localizer.Localize(key, "en", std::as_const(args)...));
+        }
+
+        return ReturnStatus(false, command_localizer.Localize(key, locale, std::forward<Args>(args)...), error_code,
+            false);
+    }
+
     logger& GetLogger() const
     {
-        return s2p_logger;
+        return context_logger;
     }
 
 private:
@@ -60,5 +79,5 @@ private:
 
     int fd = -1;
 
-    logger &s2p_logger;
+    logger &context_logger;
 };

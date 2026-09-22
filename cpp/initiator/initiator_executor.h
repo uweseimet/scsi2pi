@@ -2,12 +2,14 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2025 Uwe Seimet
+// Copyright (C) 2023-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
 #pragma once
 
+#include <optional>
+#include <span>
 #include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
@@ -34,9 +36,9 @@ public:
 
     void SetTarget(int, int, bool);
 
-    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool);
+    int Execute(span<uint8_t>, span<uint8_t>, int, int, bool, bool = true);
 
-    tuple<SenseKey, Asc, int> GetSenseData();
+    optional<SenseData> GetSenseData();
 
     void ResetBus() const;
 
@@ -45,9 +47,9 @@ public:
         return byte_count;
     }
 
-    void SetLimit(int limit)
+    bool SetLimit(int limit)
     {
-        formatter.SetLimit(limit);
+        return formatter.SetLimit(limit);
     }
 
 private:

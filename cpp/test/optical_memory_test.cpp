@@ -128,7 +128,7 @@ TEST(OpticalMemoryTest, ModeSelect)
 
     // PF (vendor-specific parameter format) not set must not fail but be ignored
     auto cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "00");
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
+    mo.ModeSelect(cdb, buf, 16);
 
     cdb = CreateCdb(ScsiCommand::MODE_SELECT_6, "10");
 
@@ -142,7 +142,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[4] = 0x01;
     // Page length
     buf[5] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 16));
+    mo.ModeSelect(cdb, buf, 16);
     buf[4] = 0;
     buf[5] = 0;
 
@@ -158,7 +158,7 @@ TEST(OpticalMemoryTest, ModeSelect)
     buf[8] = 0x01;
     // Page length
     buf[9] = 0x0a;
-    EXPECT_NO_THROW(mo.ModeSelect(cdb, buf, 20));
+    mo.ModeSelect(cdb, buf, 20);
 }
 
 TEST(OpticalMemoryTest, Open)

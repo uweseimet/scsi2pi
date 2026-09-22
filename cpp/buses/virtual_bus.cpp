@@ -6,37 +6,50 @@
 //
 //---------------------------------------------------------------------------
 
-#include "in_process_bus.h"
+#include "virtual_bus.h"
 #include "shared/s2p_util.h"
 
 using namespace spdlog;
 using namespace s2p_util;
 
-InProcessBus::InProcessBus(const string &name, bool l) : in_process_logger(CreateLogger(name)), log_signals(l)
+VirtualBus::VirtualBus(const string &name, bool l) : virtual_bus_logger(CreateLogger(name)), log_signals(l)
 {
     // Log without timestamps
-    in_process_logger->set_pattern("[%n] [%^%l%$] %v");
+    virtual_bus_logger->set_pattern("[%n] [%^%l%$] %v");
 }
 
-void InProcessBus::Reset() const
+void VirtualBus::Reset() const
 {
-    in_process_logger->trace("Resetting bus");
+    virtual_bus_logger->trace("Resetting bus");
+
+    scoped_lock lock(signal_lock);
 
     Bus::Reset();
 }
 
-void InProcessBus::CleanUp()
+string VirtualBus::SetUp(bool)
+{
+    // Nothing to do
+    return "";
+}
+
+void VirtualBus::CleanUp()
 {
     {
         scoped_lock lock(sel_lock);
         selected = true;
     }
     sel.notify_one();
-
-    Bus::CleanUp();
 }
 
-void InProcessBus::SetDAT(uint8_t dat) const
+uint8_t VirtualBus::GetDAT() const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::GetDAT();
+}
+
+void VirtualBus::SetDAT(uint8_t dat) const
 {
     scoped_lock lock(signal_lock);
 
@@ -46,7 +59,7 @@ void InProcessBus::SetDAT(uint8_t dat) const
     SetSignals(~s);
 }
 
-bool InProcessBus::GetSignal(int pin_mask) const
+bool VirtualBus::GetSignal(int pin_mask) const
 {
     scoped_lock lock(signal_lock);
 
@@ -61,7 +74,7 @@ bool InProcessBus::GetSignal(int pin_mask) const
     return state;
 }
 
-void InProcessBus::SetSignal(int pin, bool state) const
+void VirtualBus::SetSignal(int pin, bool state) const
 {
     assert(pin >= PIN_ATN && pin <= PIN_SEL);
 
@@ -86,7 +99,21 @@ void InProcessBus::SetSignal(int pin, bool state) const
     }
 }
 
-uint8_t InProcessBus::WaitForSelection()
+BusPhase VirtualBus::GetPhase() const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::GetPhase();
+}
+
+bool VirtualBus::IsPhase(BusPhase phase) const
+{
+    scoped_lock lock(signal_lock);
+
+    return Bus::IsPhase(phase);
+}
+
+uint8_t VirtualBus::WaitForSelection()
 {
     {
         unique_lock lock(sel_lock);
@@ -104,17 +131,17 @@ uint8_t InProcessBus::WaitForSelection()
     return GetSelection();
 }
 
-void InProcessBus::LogSignal(const string &msg) const
+void VirtualBus::LogSignal(const string &msg) const
 {
     scoped_lock guard(last_log_msg_mutex);
 
     if (msg != last_log_msg) {
-        in_process_logger->trace(msg);
+        virtual_bus_logger->trace(msg);
         last_log_msg = msg;
     }
 }
 
-string InProcessBus::GetSignalName(int pin_mask)
+string VirtualBus::GetSignalName(int pin_mask)
 {
     const auto &it = SIGNALS_TO_LOG.find(pin_mask);
     return it != SIGNALS_TO_LOG.end() ? it->second : "";

@@ -8,62 +8,25 @@
 
 #pragma once
 
-#include <filesystem>
-
-using namespace std;
-using namespace filesystem;
+#include <string>
 
 class CommandContext;
 
-class CommandImageSupport final
+using namespace std;
+
+namespace command_image_support
 {
 
-public:
+void SetDepth(int);
+int GetDepth();
 
-    CommandImageSupport(const CommandImageSupport&) = delete;
-    CommandImageSupport& operator=(const CommandImageSupport&) = delete;
+const string& GetImageFolder();
+string SetImageFolder(string_view);
 
-    static CommandImageSupport& GetInstance()
-    {
-        static CommandImageSupport instance; // NOSONAR Singleton with mutable internal state
-        return instance;
-    }
+bool CreateImage(const CommandContext &context);
+bool DeleteImage(const CommandContext &context);
+bool RenameImage(const CommandContext &context);
+bool CopyImage(const CommandContext &context);
+bool SetImagePermissions(const CommandContext &context);
 
-    void SetDepth(int d)
-    {
-        depth = d;
-    }
-    int GetDepth() const
-    {
-        return depth;
-    }
-    const string& GetImageFolder() const
-    {
-        return image_folder;
-    }
-    string SetImageFolder(string_view);
-
-    bool CreateImage(const CommandContext&) const;
-    bool DeleteImage(const CommandContext&) const;
-    bool RenameImage(const CommandContext&) const;
-    bool CopyImage(const CommandContext&) const;
-    bool SetImagePermissions(const CommandContext&) const;
-
-private:
-
-    CommandImageSupport();
-
-    bool CheckDepth(string_view) const;
-    string GetFullName(const string&) const;
-    bool ValidateParams(const CommandContext&, const string&, string&, string&) const;
-
-    static bool IsReservedFile(const CommandContext&, const string&, const string&);
-    static bool IsValidSrcFilename(string_view);
-    static bool IsValidDstFilename(string_view);
-    static bool CreateImageFolder(const CommandContext&, string_view);
-    static bool ChangeOwner(const CommandContext&, const path&, bool);
-
-    int depth = 1;
-
-    string image_folder;
-};
+}

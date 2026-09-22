@@ -9,6 +9,8 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--config-files\fR \fIPROPERTY_FILES\fR]
 [\fB\--connect-type/-C\fR \fICONNECT_TYPE\fR]
 [\fB\--help/-h\fR]
+[\fB\--enable-irqs/-e\fR]
+[\fB\--excluded-types/-x\fR \fITYPES\fR]
 [\fB\--id/-i n[:u]\fR \fIIMAGE_FILE\fR]
 [\fB\--ignore-conf/-I\fR]
 [\fB\--image-folder/-F\fR \fIIMAGE_FOLDER\fR]
@@ -26,7 +28,6 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
-[\fB\--without-types/-w\fR \fITYPES\fR]
 [\fB\--zulu-scsi-mode/-Z\fR]
 .SH DESCRIPTION
 .B s2p
@@ -78,13 +79,19 @@ Explicitly specified property files override the previously defined properties.
 Using STANDARD as the connection type allows s2p to be run with a STANDARD board (without initiator support). In /etc/s2p.conf, to permanently enable this setting, add "connect_type=STANDARD".
 CONNECT_TYPE can be STANDARD or FULLSPEC, with FULLSPEC being the default.
 .TP
+.BR --enable-irqs/-e\fI " " \fI
+Do not disable IRQs during transfers. For testing purposes only.
+.TP
+.BR --excluded-types/-x\fI " " \fITYPES
+Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the old PiSCSI web UI. DEVICE_TYPES is usually SCSG, because PiSCSI does not support the SCSI-to-USB bridge.
+.TP
 .BR --help/-h\fI " " \fI
 Display this help.
 .TP
 .BR --id/-i \fI " "\fIID[:LUN] " " \fIFILE
 ID is the SCSI/SASI ID (0-7). LUN (0-31 for SCSI, 0-1 for SASI) is the optional LUN (logical unit). The default LUN is 0.
 .IP
-FILE is the name of the image file to use for the SCSI/SASI device. For devices that do not support an image file the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
+FILE is the name of the image file or a block device (/dev/sd* or /dev/sr*) to use for the SCSI/SASI device. For devices that do not support an image file, the filename may have a special meaning or a dummy name can be provided. For SCDP it is an optional prioritized list of network interfaces, an optional IP address and netmask, e.g. "interface=eth0,eth1,wlan0:inet=10.10.20.1/24". For SCLP it is the print command to be used and a reservation timeout in seconds, e.g. "cmd=lp -oraw %f:timeout=60". For SCTP append mode can be configured with "append=MAXIMUM_FILE_SIZE".
 .TP
 .BR --ignore-conf\fI " " \fI
 Ignore any properties in the /etc/s2p.conf configuration file.
@@ -120,7 +127,7 @@ An optional comma-separated list of IDs to reserve. Pass an empty list in order 
 Scan for image files recursively, up to a depth of SCAN_DEPTH. Depth 0 means to ignore any folders within the image folder. Be careful when using this option with many sub-folders in the default image folder. The default depth is 1.
 .TP
 .BR --script-file/-f\fI " " \fISCRIPT_FILE
-Create a script file for s2pexec or the in-process tool. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec or the in-process tool.
+Create a script file with a SCSI command sequence. This file contains all SCSI command blocks and their DATA OUT data and can be executed by s2pexec.
 .TP
 .BR --scsi-level\fI " " \fILEVEL
 The optional SCSI/SPC standard level. The default level is device-specific and usually is SCSI-2. Be careful when using this option, you will usually not need it.
@@ -131,13 +138,10 @@ This option can also be used to "downgrade" a device. USB sticks used with the S
 Enable authentication and read the access token from the specified file. The access token file must be owned by root and must be readable by root only.
 .TP
 .BR --type/-t\fI " " \fIDEVICE_TYPE
-The optional case-insensitive device type (SAHD, SCCD, SCDP, SCHD, SCHS, SCLP, SCMO, SCRM, SCSG, SCTP). If no type is specified for devices that support an image file, s2p tries to derive the type from the file extension.
+The optional case-insensitive device type (SAHD, SCCD, SCDP, SCHD, SCHS, SCLP, SCMO, SCRM, SCSG, SCTP). If no type is specified for devices that support an image file or a block device, s2p tries to derive the type from the filename and the file extension.
 .TP
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
-.TP
-.BR --without-types/-w\fI " " \fITYPES
-Do not report the device types in the comma-separated list in the SCSI2Pi API, in order to avoid problems with the PiSCSI web UI. DEVICE_TYPES is usually SCSG.
 .TP
 .BR --zulu-scsi-mode/-Z\fI " " \fI
 The same as the BlueSCSI compatibility mode, because both modes are compatible.
@@ -156,7 +160,7 @@ Launch s2p with a SASI hard drive image as ID 1
    s2p -i 1 -t sahd /path/to/harddrive.hds
 
 To create an empty 100 MiB drive image, use the following command:
-   dd if=/dev/zero of=/path/to/newimage.hda bs=512 count=204800
+   dd if=/dev/zero of=/path/to/new_image.hds bs=512 count=204800
 
 In case the fallocate command is available, a much faster alternative to the dd command is:
    fallocate -l 104857600 /path/to/newimage.hda

@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2024 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -11,23 +11,24 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "shared/runnable.h"
 #include "generated/s2p_interface.pb.h"
 
 using namespace std;
 using namespace s2p_interface;
 
-class S2pCtl final
+class S2pCtl final : public Runnable
 {
 
 public:
 
-    int Run(const vector<char*>&);
+    int Run(span<char*>) override;
 
 private:
 
     void Banner(bool) const;
     int RunInteractive();
-    int ParseArguments(const vector<char*>&);
+    int ParseArguments(const span<char*>);
 
     static PbOperation ParseOperation(string_view);
 

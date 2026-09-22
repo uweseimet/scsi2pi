@@ -105,7 +105,7 @@ vector<char*> ConvertLegacyOptions(const span<char*> &initial_args)
     vector<char*> args;
     for (const string arg : initial_args) {
         string arg_str(arg);
-        const string &arg_lower = ToLower(arg_str);
+        const string arg_lower = ToLower(arg_str);
 
         if (arg_lower.starts_with("-i")) {
             args.emplace_back(strdup("-i"));
@@ -136,12 +136,15 @@ void s2p_parser::Banner(bool usage)
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
             << "                                 |linux-optimized), default is PiSCSI\n"
             << "                                 compatible caching.\n"
+            << "  --config-files                 List of configuration files.\n"
             << "  --connect-type/-C              The board type, either STANDARD or FULLSPEC.\n"
             << "                                 Default is FULLSPEC.\n"
-            << "  --config-files                 List of configuration files.\n"
+            << "  --enable-irqs/-e               Do not disable IRQs during transfers.\n"
+            << "  --excluded-types/-x TYPES      Do not report the listed device types in the\n"
+            << "                                 API (for old PiSCSI web UI compatibility).\n"
             << "  --help/-h                      Display this help.\n"
             << "  --id/-i ID[:LUN]               SCSI/SASI target device ID (0-7) and LUN (0-31\n"
-            << "                                 for SCSI, 0-1 for SASI), default LUN is 0.\n"
+            << "                                 for SCSI, LUN 0-1 for SASI), default LUN is 0.\n"
             << "  --ignore-conf/-I               Ignore /etc/s2p.conf configuration file.\n"
             << "  --image-folder/-F FOLDER       Default folder with image files.\n"
             << "  --locale/-z LOCALE             The locale for client-facing error messages.\n"
@@ -162,8 +165,6 @@ void s2p_parser::Banner(bool usage)
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"
-            << "  --without-types/-w TYPES       Do not report the listed device types in the\n"
-            << "                                 API (for PiSCSI web UI compatibility).\n"
             << "  --zulu-scsi-mode/-Z            Enable ZuluSCSI filename compatibility mode.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n";
@@ -173,7 +174,7 @@ void s2p_parser::Banner(bool usage)
             << "    hda: HD image (Apple compatible non-removable SCSI-2 HD image)\n"
             << "    hdr: HD image (Removable SCSI-2 HD image)\n";
 #endif
-#ifdef BUILD_SASI
+#ifdef BUILD_SAHD
             cout << "    hdf: HD image (Non-removable SASI HD image)\n";
 #endif
 #ifdef BUILD_SCMO
@@ -202,6 +203,8 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "caching-mode", required_argument, nullptr, 'm' },
         { "config-files", required_argument, nullptr, OPT_CONFIG_FILES },
         { "connect-type", required_argument, nullptr, 'C' },
+        { "enable-irqs", no_argument, nullptr, 'e' },
+        { "excluded-types", required_argument, nullptr, 'x' },
         { "help", no_argument, nullptr, 'h' },
         { "id", required_argument, nullptr, 'i' },
         { "ignore-conf", no_argument, nullptr, 'I' },
@@ -220,18 +223,18 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
-        { "without-types", required_argument, nullptr, 'w' },
         { "zulu-scsi-mode", no_argument, nullptr, 'Z' },
         { nullptr, 0, nullptr, 0 }
     };
 
     // Global options
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
+        { 'e', PropertyHandler::ENABLE_IRQS },
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },
         { 'f', PropertyHandler::SCRIPT_FILE },
         { 'z', PropertyHandler::LOCALE },
-        { 'C', PropertyHandler::CONNECTION_TYPE },
+        { 'C', PropertyHandler::CONNECT_TYPE },
         { 'F', PropertyHandler::IMAGE_FOLDER },
         { 'L', PropertyHandler::LOG_LEVEL },
         { 'l', PropertyHandler::LOG_PATTERN },
@@ -255,7 +258,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:f:hl:m:n:p:r:s:t:z:w:C:IF:L:P:R:BZ",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:ef:hl:m:n:p:r:s:t:x:z:C:IF:L:P:R:BZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";
@@ -275,7 +278,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 'c':
             if (const auto &key_value = Split(optarg, '=', 2); key_value.size() < 2 || key_value[0].empty()) {
-                throw ParserException("Invalid property '"s + optarg + "'");
+                throw ParserException(fmt::format("Invalid property '{}'", optarg));
             }
             else {
                 properties[key_value[0]] = key_value[1];
@@ -307,8 +310,8 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
             type = ToLower(optarg);
             continue;
 
-        case 'w':
-            properties[PropertyHandler::WITHOUT_TYPES] = optarg;
+        case 'x':
+            properties[PropertyHandler::EXCLUDED_TYPES] = optarg;
             continue;
 
         case 'I':
