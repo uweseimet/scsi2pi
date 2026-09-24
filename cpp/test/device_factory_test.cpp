@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
@@ -80,24 +80,30 @@ TEST(DeviceFactoryTest, GetExtensionMapping)
     EXPECT_EQ(SCTP, mapping.at("tap"));
 }
 
-TEST(DeviceFactoryTest, AddExtensionMapping)
+TEST(DeviceFactoryTest, UpdateExtensionMapping)
 {
     DeviceFactory &factory = DeviceFactory::GetInstance();
 
-    EXPECT_FALSE(factory.AddExtensionMapping("iso", SCHS));
+    EXPECT_FALSE(factory.UpdateExtensionMapping("iso", SCHS));
     auto mapping = factory.GetExtensionMapping();
     EXPECT_EQ(12U, mapping.size());
 
-    EXPECT_FALSE(factory.AddExtensionMapping("ISO", SCHS));
+    EXPECT_FALSE(factory.UpdateExtensionMapping("ISO", SCHS));
     mapping = factory.GetExtensionMapping();
     EXPECT_EQ(12U, mapping.size());
 
-    EXPECT_FALSE(factory.AddExtensionMapping(".iso", SCHS));
+    EXPECT_FALSE(factory.UpdateExtensionMapping(".iso", SCHS));
     mapping = factory.GetExtensionMapping();
     EXPECT_EQ(12U, mapping.size());
 
-    EXPECT_TRUE(factory.AddExtensionMapping("ext", SCCD));
+    EXPECT_FALSE(factory.UpdateExtensionMapping("", SCCD));
+
+    EXPECT_TRUE(factory.UpdateExtensionMapping("ext", SCCD));
     mapping = factory.GetExtensionMapping();
     EXPECT_EQ(13U, mapping.size());
     EXPECT_EQ(SCCD, mapping["ext"]);
+
+    EXPECT_TRUE(factory.UpdateExtensionMapping("ext", UNDEFINED));
+    mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(12U, mapping.size());
 }

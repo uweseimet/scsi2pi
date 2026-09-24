@@ -449,7 +449,7 @@ int S2pExec::Run()
         else if (const auto& [sense_key, asc, ascq] = *sense;
         sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION || ascq != NO_QUALIFIER) {
             cerr << "Error: " << FormatSenseData(sense_key, asc, ascq) << '\n';
-            result = static_cast<int>(asc);
+            result = to_underlying(asc);
         }
     }
     catch (const ExecutionException &e) {
@@ -473,7 +473,7 @@ optional<SenseData> S2pExec::ExecuteCommand()
     }
 
     vector<uint8_t> cdb;
-    ranges::transform(cmd_bytes, back_inserter(cdb), [](const byte b) {return static_cast<uint8_t>(b) & 0xff;});
+    ranges::transform(cmd_bytes, back_inserter(cdb), [](const byte b) {return to_underlying(b & byte {0xff});});
 
     if (!data.empty()) {
         if (const string &error = ConvertData(data); !error.empty()) {
@@ -486,8 +486,7 @@ optional<SenseData> S2pExec::ExecuteCommand()
         }
     }
 
-    const int status_code = executor->ExecuteCommand(cdb, buffer, timeout, true);
-    if (status_code) {
+    if (const int status_code = executor->ExecuteCommand(cdb, buffer, timeout, true); status_code) {
         if (status_code != 0xff) {
             if (request_sense) {
                 return executor->GetSenseData();
@@ -501,7 +500,7 @@ optional<SenseData> S2pExec::ExecuteCommand()
         }
     }
 
-    if (cdb[0] == static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE)) {
+    if (cdb[0] == to_underlying(ScsiCommand::REQUEST_SENSE)) {
         vector<byte> sense_data;
         const size_t length = min(buffer.size(), static_cast<size_t>(18));
         transform(buffer.begin(), buffer.begin() + length, back_inserter(sense_data),
@@ -559,12 +558,12 @@ string S2pExec::ReadData()
         fmt::format("Can't read from file '{}': {}", filename, system_error(errno, generic_category()).what()) : "";
 }
 
-string S2pExec::WriteData(span<const uint8_t> data)
+string S2pExec::WriteData(span<const uint8_t> d) const
 {
     const bool text = binary_output_filename.empty();
     const string &filename = text ? hex_output_filename : binary_output_filename;
 
-    string hex = formatter.FormatBytes(data, data.size(), hex_only);
+    string hex = formatter.FormatBytes(d, d.size(), hex_only);
 
     if (filename.empty()) {
         cout << hex << '\n';
@@ -577,7 +576,7 @@ string S2pExec::WriteData(span<const uint8_t> data)
         }
 
         hex += "\n";
-        out.write(text ? hex.data() : to_const_char_ptr(data), hex.size());
+        out.write(text ? hex.data() : to_const_char_ptr(d), hex.size());
         if (out.fail()) {
             return fmt::format("Can't write to file '{}': {}", filename, system_error(errno, generic_category()).what());
         }
@@ -597,7 +596,7 @@ string S2pExec::ConvertData(const string &hex)
     }
 
     buffer.clear();
-    ranges::transform(bytes, back_inserter(buffer), [](const byte b) {return static_cast<uint8_t>(b);});
+    ranges::transform(bytes, back_inserter(buffer), [](const byte b) {return to_underlying(b);});
 
     return "";
 }

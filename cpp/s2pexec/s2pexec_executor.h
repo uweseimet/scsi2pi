@@ -29,7 +29,7 @@ public:
     string Init(int, const string&);
     void CleanUp();
 
-    void ResetBus();
+    void ResetBus() const;
 
     int ExecuteCommand(span<uint8_t>, span<uint8_t>, int, bool);
 

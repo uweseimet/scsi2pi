@@ -39,7 +39,7 @@ public:
     {
         return mapping;
     }
-    bool AddExtensionMapping(const string&, PbDeviceType);
+    bool UpdateExtensionMapping(const string&, PbDeviceType);
 
 private:
 

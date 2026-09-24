@@ -35,7 +35,7 @@ private:
     optional<SenseData> ExecuteCommand();
 
     string ReadData();
-    string WriteData(span<const uint8_t>);
+    string WriteData(span<const uint8_t>) const;
     string ConvertData(const string&);
 
     void CleanUp() const;

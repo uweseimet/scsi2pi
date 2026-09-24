@@ -368,7 +368,7 @@ void S2p::MapExtensions() const
         }
 
         for (const string &extension : Split(value, ',')) {
-            if (!DeviceFactory::GetInstance().AddExtensionMapping(extension, type)) {
+            if (!DeviceFactory::GetInstance().UpdateExtensionMapping(extension, type)) {
                 throw ParserException("Duplicate mapping for extension '{}'", extension);
             }
         }

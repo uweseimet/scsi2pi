@@ -155,18 +155,23 @@ PbDeviceType DeviceFactory::GetTypeForFile(const path &filename) const
     return UNDEFINED;
 }
 
-bool DeviceFactory::AddExtensionMapping(const string &ext, PbDeviceType type)
+bool DeviceFactory::UpdateExtensionMapping(const string &ext, PbDeviceType type)
 {
     string extension = ToLower(ext);
     if (extension.starts_with('.')) {
         extension.erase(0, 1);
     }
 
-    if (mapping.contains(extension)) {
-        return false;
-    }
+    if (type != UNDEFINED) {
+        if (extension.empty() || mapping.contains(extension)) {
+            return false;
+        }
 
-    mapping[extension] = type;
+        mapping[extension] = type;
+    }
+    else {
+        mapping.erase(extension);
+    }
 
     return true;
 }

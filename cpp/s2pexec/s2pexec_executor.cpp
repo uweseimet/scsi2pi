@@ -61,7 +61,7 @@ void S2pExecExecutor::CleanUp()
     is_sg = false;
 }
 
-void S2pExecExecutor::ResetBus()
+void S2pExecExecutor::ResetBus() const
 {
     if (!is_sg && bus) {
         initiator_executor->ResetBus();
@@ -89,7 +89,7 @@ optional<SenseData> S2pExecExecutor::GetSenseData() const
     if (is_sg) {
         array<uint8_t, 14> sense_data;
         array<uint8_t, 6> cdb = { };
-        cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+        cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
         cdb[4] = static_cast<uint8_t>(sense_data.size());
 
         sg_adapter->SendCommand(cdb, sense_data, static_cast<int>(sense_data.size()), 1);
