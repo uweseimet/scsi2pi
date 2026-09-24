@@ -58,9 +58,8 @@ string scsi_util::GetStatusString(int status_code)
     else if (status_code != 0xff) {
         return fmt::format("Device reported an unknown status (status code ${:02x})", status_code);
     }
-    else {
-        return "Device did not respond";
-    }
+
+    return "Device did not respond";
 }
 
 string scsi_util::FormatSenseData(span<const byte> sense_data)

@@ -11,10 +11,19 @@
 #include "buses/rpi_bus.h"
 #include "test_shared.h"
 
+using namespace s2p_test;
+
+TEST(RpiBusTest, SetUp)
+{
+    RpiBus bus(RpiBus::PiType::UNKNOWN, true, false);
+
+    EXPECT_FALSE(bus.Init(false));
+}
+
 TEST(RpiBusTest, GetPiType)
 {
-    const string &filename = testing::CreateTempName();
-    testing::TestShared::RememberTempFile(filename);
+    const string &filename = CreateTempName();
+    TestShared::RememberTempFile(filename);
     ofstream out(filename);
 
     out << "Raspberry Pi 1" << flush;

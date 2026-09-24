@@ -323,9 +323,11 @@ optional<SenseData> InitiatorExecutor::GetSenseData()
     initiator_logger.trace(formatter.FormatBytes(buf, byte_count));
 
     if (byte_count < 18) {
-        initiator_logger.warn(
-            "Device did not return standard REQUEST SENSE data, sense data details are not available");
-        return nullopt;
+        initiator_logger.warn("Device did not return standard sense data, but returned only {} instead of 18 bytes",
+            byte_count);
+        if (byte_count < 14) {
+            return nullopt;
+        }
     }
 
     return SenseData {

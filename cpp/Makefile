@@ -374,6 +374,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/file_util_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_bus_test.cpp \
+	test/initiator_executor_test.cpp \
 	test/initiator_util_test.cpp \
 	test/linux_cache_test.cpp \
 	test/logger_util_test.cpp \
@@ -390,7 +391,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/s2p_formatter_test.cpp \
 	test/s2p_interface_util_test.cpp \
 	test/s2p_parser_test.cpp \
-	test/target_bus_test.cpp \
 	test/s2p_thread_test.cpp \
 	test/s2p_util_test.cpp \
 	test/sasi_hd_test.cpp \
@@ -401,6 +401,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/simh_util_test.cpp \
 	test/storage_device_test.cpp \
 	test/tape_test.cpp \
+	test/target_bus_test.cpp \
 	test/user_util_test.cpp \
 	test/virtual_bus_test.cpp \
 	test/test_setup.cpp \

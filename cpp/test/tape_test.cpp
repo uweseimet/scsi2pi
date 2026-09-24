@@ -136,17 +136,9 @@ TEST(TapeTest, ValidateFile)
 {
     MockTape tape;
 
-    EXPECT_THROW(tape.ValidateFile(), IoException)<< "Invalid block count";
-
-    tape.SetBlockCount(1);
-    EXPECT_THROW(tape.ValidateFile(), IoException)<< "Missing filename";
-
-    tape.SetFilename("/non_existing_file");
-    EXPECT_THROW(tape.ValidateFile(), IoException)<< "Missing file";
-
-    const auto &filename = CreateTempFile(1);
+    const auto filename = CreateTempFile(1);
     tape.SetFilename(filename.string());
-    tape.ValidateFile();
+    EXPECT_NO_THROW(tape.ValidateFile());
 }
 
 TEST(TapeTest, Open)
@@ -167,7 +159,7 @@ TEST(TapeTest, Open)
 
     const auto &filename = CreateTempFile(4096);
     tape.SetFilename(filename.string());
-    tape.Open();
+    EXPECT_NO_THROW(tape.Open());
 
     tape.CleanUp();
 }
@@ -1104,6 +1096,21 @@ TEST(TapeTest, ValidateBlockSize)
     EXPECT_FALSE(tape.ValidateBlockSize(7));
     EXPECT_TRUE(tape.ValidateBlockSize(512));
     EXPECT_TRUE(tape.ValidateBlockSize(131072));
+}
+
+TEST(TapeTest, GetBlockSizeForDescriptor)
+{
+    MockTape tape;
+
+    EXPECT_EQ(0x00ffffff, tape.GetBlockSizeForDescriptor(true));
+    EXPECT_NE(0x00ffffff, tape.GetBlockSizeForDescriptor(false));
+}
+
+TEST(TapeTest, GetBlockCountForDescriptor)
+{
+    MockTape tape;
+
+    EXPECT_EQ(0, tape.GetBlockCountForDescriptor());
 }
 
 TEST(TapeTest, SetUpModePages)

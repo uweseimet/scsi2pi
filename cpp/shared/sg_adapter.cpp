@@ -59,7 +59,7 @@ int SgAdapter::SendCommand(span<const uint8_t> cdb, span<uint8_t> buf, int total
 
         if (const int status = SendCommandInternal(local_cdb, span(buf.data() + offset, buf.size() - offset), length,
             timeout, true); status
-            || !command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])).block_size) {
+            || !CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])).block_size) {
             return status;
         }
 
@@ -94,7 +94,7 @@ int SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int len
     }
     else {
         io_hdr.dxfer_direction =
-            command_meta_data.GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])).has_data_out ?
+            CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0])).has_data_out ?
                 SG_DXFER_TO_DEV : SG_DXFER_FROM_DEV;
     }
 
@@ -110,7 +110,7 @@ int SgAdapter::SendCommandInternal(span<uint8_t> cdb, span<uint8_t> buf, int len
     io_hdr.timeout = timeout * 1000;
 
     if (enable_log && sg_logger.level() <= level::debug) {
-        sg_logger.debug(command_meta_data.LogCdb(cdb, fmt::format("SG driver ({})", device)));
+        sg_logger.debug(CommandMetaData::GetInstance().LogCdb(cdb, fmt::format("SG driver ({})", device)));
     }
 
     const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;

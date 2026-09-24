@@ -13,7 +13,7 @@
 #include "shared/s2p_exceptions.h"
 
 using namespace protobuf_util;
-using namespace testing;
+using namespace s2p_test;
 
 TEST(ProtobufUtilTest, SerializeMessage)
 {

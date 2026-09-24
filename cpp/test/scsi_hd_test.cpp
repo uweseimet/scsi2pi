@@ -101,26 +101,26 @@ TEST(ScsiHdTest, GetProductData)
     hd_kb.SetBlockCount(1);
     hd_kb.FinalizeSetup("SCSI HD");
     string s = hd_kb.GetProductData().product;
-    EXPECT_NE(string::npos, s.find("1 KiB"));
+    EXPECT_TRUE(s.contains("1 KiB"));
 
     hd_mb.SetFilename(filename.string());
     hd_mb.SetBlockSize(1024);
     hd_mb.SetBlockCount(1'048'576 / 1024);
     hd_mb.FinalizeSetup("SCSI HD");
     s = hd_mb.GetProductData().product;
-    EXPECT_NE(string::npos, s.find("1 MiB"));
+    EXPECT_TRUE(s.contains("1 MiB"));
     hd_gb.SetFilename(filename.string());
     hd_gb.SetBlockSize(1024);
     hd_gb.SetBlockCount(10'737'418'240 / 1024);
     hd_gb.FinalizeSetup("SCSI HD");
     s = hd_gb.GetProductData().product;
-    EXPECT_NE(string::npos, s.find("10 GiB"));
+    EXPECT_TRUE(s.contains("10 GiB"));
     hd_tb.SetFilename(filename.string());
     hd_tb.SetBlockSize(1024);
     hd_tb.SetBlockCount(10'737'418'240);
     hd_tb.FinalizeSetup("SCSI HD");
     s = hd_tb.GetProductData().product;
-    EXPECT_NE(string::npos, s.find("10 TiB"));
+    EXPECT_TRUE(s.contains("10 TiB"));
 }
 
 TEST(ScsiHdTest, SetUpModePages)

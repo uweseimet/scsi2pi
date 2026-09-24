@@ -10,7 +10,8 @@
 #include "devices/daynaport.h"
 #include "shared/s2p_exceptions.h"
 
-class DaynaportTest : public ::testing::Test {
+class DaynaportTest : public ::testing::Test
+{
 public:
 
     void SetUp() override {

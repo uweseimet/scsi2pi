@@ -16,14 +16,13 @@ TEST(CommandLocalizer, Localize)
     CommandLocalizer command_localizer;
 
     string message = command_localizer.Localize(ERROR_AUTHENTICATION, "");
-    EXPECT_FALSE(message.empty());
-    EXPECT_EQ(string::npos, message.find("enum value"));
+    EXPECT_FALSE(message.contains("enum value"));
 
     message = command_localizer.Localize(ERROR_AUTHENTICATION, "de_DE");
     EXPECT_FALSE(message.empty());
-    EXPECT_EQ(string::npos, message.find("enum value"));
+    EXPECT_FALSE(message.contains("enum value"));
 
     message = command_localizer.Localize(ERROR_AUTHENTICATION, "en");
     EXPECT_FALSE(message.empty());
-    EXPECT_EQ(string::npos, message.find("enum value"));
+    EXPECT_FALSE(message.contains("enum value"));
 }

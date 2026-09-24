@@ -14,6 +14,7 @@
 #include "devices/device_factory.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "shared/s2p_version.h"
 #include "shared/scsi_util.h"
 
@@ -21,7 +22,7 @@ using namespace filesystem;
 using namespace s2p_util;
 using namespace scsi_util;
 
-namespace testing
+namespace s2p_test
 {
 
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType type, int lun,
@@ -41,7 +42,7 @@ vector<uint8_t> CreateCdb(ScsiCommand cmd, const string &hex)
 {
     vector<uint8_t> cdb;
     cdb.emplace_back(to_underlying(cmd));
-    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<int>(b);});
+    ranges::transform(HexToBytes(hex), back_inserter(cdb), [](const byte b) {return to_integer<uint8_t>(b);});
     if (CommandMetaData::GetInstance().GetByteCount(cmd)) {
         cdb.resize(CommandMetaData::GetInstance().GetByteCount(cmd));
     }
@@ -57,7 +58,7 @@ vector<uint8_t> CreateParameters(const string &hex)
 
 string CreateImageFile(StorageDevice &device, size_t size, const string &extension)
 {
-    const auto &filename = CreateTempFile(size, extension);
+    const auto filename = CreateTempFile(size, extension);
     device.SetFilename(filename.string());
     device.Open();
     return filename.string();
@@ -160,10 +161,7 @@ string CreateTempName()
 
 pair<int, path> OpenTempFile(const string &extension)
 {
-    const string name = CreateTempName();
-    path filename = name;
-
-    path effective_name = filename;
+    path effective_name = CreateTempName();
     if (!extension.empty()) {
         effective_name += "." + extension;
     }
@@ -229,4 +227,4 @@ void Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand command, SenseKey s,
     TestShared::Dispatch(device, command, s, a, msg);
 }
 
-};
+}

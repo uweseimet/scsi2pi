@@ -252,18 +252,19 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 
         throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
     }
+
     // Do not consider CONDITION MET an error
-    else if (status == to_underlying(CONDITION_MET)) {
+    if (status == to_underlying(CONDITION_MET)) {
         status = to_underlying(GOOD);
     }
 
-    if (!status && static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY && GetController()
-        && GetController()->GetEffectiveLun()) {
+    if (status == to_underlying(GOOD) && local_cdb[0] == to_underlying(ScsiCommand::INQUIRY)
+        && GetController() && GetController()->GetEffectiveLun()) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         buf[0] = 0x7f;
     }
 
-    if (status) {
+    if (status != to_underlying(GOOD)) {
         memcpy(deferred_sense_data.data(), sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = true;
 

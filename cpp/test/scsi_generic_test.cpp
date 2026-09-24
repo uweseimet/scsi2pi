@@ -11,7 +11,7 @@
 #include "devices/scsi_generic.h"
 #include "shared/s2p_exceptions.h"
 
-using namespace testing;
+using namespace s2p_test;
 
 TEST(ScsiGenericTest, Device_Defaults)
 {
@@ -32,14 +32,14 @@ TEST(ScsiGenericTest, Device_Defaults)
     const auto& [vendor, product, revision] = device.GetProductData();
     EXPECT_EQ("SCSI2Pi", vendor);
     EXPECT_EQ("", product);
-    EXPECT_EQ(testing::TestShared::GetVersion(), revision);
+    EXPECT_EQ(TestShared::GetVersion(), revision);
 }
 
 TEST(ScsiGenericTest, GetIdentifier)
 {
     ScsiGeneric device(0, "");
 
-    EXPECT_EQ(" (SCSI2Pi                 " + testing::TestShared::GetVersion() + ")", device.GetIdentifier());
+    EXPECT_EQ(" (SCSI2Pi                 " + TestShared::GetVersion() + ")", device.GetIdentifier());
 }
 
 TEST(ScsiGenericTest, SetUp)

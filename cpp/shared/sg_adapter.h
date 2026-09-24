@@ -44,8 +44,6 @@ private:
 
     logger &sg_logger;
 
-    const CommandMetaData &command_meta_data = CommandMetaData::GetInstance();
-
     int fd = -1;
 
     uint32_t block_size = 512;

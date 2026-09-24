@@ -8,6 +8,7 @@
 
 #include "command_meta_data.h"
 #include <cassert>
+#include <iterator>
 #include <spdlog/fmt/fmt.h>
 
 using enum ScsiCommand;

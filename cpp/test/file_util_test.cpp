@@ -14,6 +14,7 @@
 
 using namespace filesystem;
 using namespace file_util;
+using namespace s2p_test;
 
 TEST(FileUtilTest, IsReadyOnlyFile)
 {
@@ -29,7 +30,7 @@ TEST(FileUtilTest, GetExtensionLowerCase)
 
 TEST(FileUtilTest, GetCapacityFromFile)
 {
-    const path &filename = testing::CreateTempFile(512);
+    const path &filename = CreateTempFile(512);
     EXPECT_EQ(512, GetCapacityFromFile(filename));
 
     EXPECT_THROW(GetCapacityFromFile("/dev/null"), IoException);

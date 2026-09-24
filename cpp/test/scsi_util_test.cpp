@@ -38,19 +38,19 @@ TEST(ScsiUtilTest, GetScsiLevel)
 
 TEST(ScsiUtilTest, GetStatusString)
 {
-    EXPECT_NE(string::npos, GetStatusString(0x00).find("GOOD"));
-    EXPECT_NE(string::npos, GetStatusString(0x02).find("CHECK CONDITION"));
-    EXPECT_NE(string::npos, GetStatusString(0x04).find("CONDITION MET"));
-    EXPECT_NE(string::npos, GetStatusString(0x08).find("BUSY"));
-    EXPECT_NE(string::npos, GetStatusString(0x10).find("INTERMEDIATE"));
-    EXPECT_NE(string::npos, GetStatusString(0x14).find("INTERMEDIATE-CONDITION MET"));
-    EXPECT_NE(string::npos, GetStatusString(0x18).find("RESERVATION CONFLICT"));
-    EXPECT_NE(string::npos, GetStatusString(0x22).find("COMMAND TERMINATED"));
-    EXPECT_NE(string::npos, GetStatusString(0x28).find("QUEUE FULL"));
-    EXPECT_NE(string::npos, GetStatusString(0x30).find("ACA ACTIVE"));
-    EXPECT_NE(string::npos, GetStatusString(0x40).find("TASK ABORTED"));
-    EXPECT_NE(string::npos, GetStatusString(0xfe).find("unknown"));
-    EXPECT_NE(string::npos, GetStatusString(0xff).find("respond"));
+    EXPECT_TRUE(GetStatusString(0x00).contains("GOOD"));
+    EXPECT_TRUE(GetStatusString(0x02).contains("CHECK CONDITION"));
+    EXPECT_TRUE(GetStatusString(0x04).contains("CONDITION MET"));
+    EXPECT_TRUE(GetStatusString(0x08).contains("BUSY"));
+    EXPECT_TRUE(GetStatusString(0x10).contains("INTERMEDIATE"));
+    EXPECT_TRUE(GetStatusString(0x14).contains("INTERMEDIATE-CONDITION MET"));
+    EXPECT_TRUE(GetStatusString(0x18).contains("RESERVATION CONFLICT"));
+    EXPECT_TRUE(GetStatusString(0x22).contains("COMMAND TERMINATED"));
+    EXPECT_TRUE(GetStatusString(0x28).contains("QUEUE FULL"));
+    EXPECT_TRUE(GetStatusString(0x30).contains("ACA ACTIVE"));
+    EXPECT_TRUE(GetStatusString(0x40).contains("TASK ABORTED"));
+    EXPECT_TRUE(GetStatusString(0xfe).contains("unknown"));
+    EXPECT_TRUE(GetStatusString(0xff).contains("respond"));
 }
 
 TEST(ScsiUtilTest, FormatSenseData)

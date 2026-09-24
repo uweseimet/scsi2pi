@@ -12,7 +12,7 @@
 
 using namespace s2p_util;
 using namespace simh_util;
-using namespace testing;
+using namespace s2p_test;
 
 TEST(SimhUtilTest, ReadMetaData)
 {

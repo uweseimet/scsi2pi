@@ -13,7 +13,8 @@
 #include "devices/host_services.h"
 #include "shared/s2p_exceptions.h"
 
-class HostServicesTest : public ::testing::Test {
+class HostServicesTest : public ::testing::Test
+{
 public:
 
     void SetUp() override {

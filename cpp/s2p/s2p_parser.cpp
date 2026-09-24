@@ -7,6 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include "s2p/s2p_parser.h"
+#include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <getopt.h>
@@ -15,6 +17,7 @@
 #include "shared/s2p_util.h"
 #include "generated/s2p_interface.pb.h"
 
+using namespace filesystem;
 using namespace s2p_util;
 using namespace s2p_interface;
 
@@ -32,7 +35,7 @@ void SetDeviceProperty(property_map &properties, const string &key, const string
 string_view ParseNumber(string_view s)
 {
     size_t i = 0;
-    while (i < s.size() && isdigit(s[i])) {
+    while (i < s.size() && isdigit(static_cast<unsigned char>(s[i]))) {
         ++i;
     }
 
@@ -41,7 +44,7 @@ string_view ParseNumber(string_view s)
 
 string ParseFilename(property_map &properties, const string &d, const string &filename)
 {
-    const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
+    static const unordered_map<string_view, PbDeviceType> BLUE_SCSI_TO_S2P_TYPES = {
         { "CD", SCCD },
         { "FD", SCHD },
         { "HD", SCHD },
@@ -50,8 +53,7 @@ string ParseFilename(property_map &properties, const string &d, const string &fi
         { "TP", SCTP }
     };
 
-    const auto index = filename.find('.');
-    const string &specifier = index == string::npos ? filename : filename.substr(0, index);
+    const string specifier = path(filename).stem().string();
     const auto &components = Split(specifier, '_');
 
     string_view type_id_lun = components[0];

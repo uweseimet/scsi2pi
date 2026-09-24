@@ -32,7 +32,7 @@ int main(int argc, char*[])
     testing::GTEST_FLAG(shuffle) = true;
     const int result = RUN_ALL_TESTS();
 
-    testing::TestShared::CleanUp();
+    s2p_test::TestShared::CleanUp();
 
     if (fd != -1) {
         close(fd);

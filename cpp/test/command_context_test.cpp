@@ -14,7 +14,7 @@
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
-using namespace testing;
+using namespace s2p_test;
 using namespace protobuf_util;
 using enum LocalizationKey;
 

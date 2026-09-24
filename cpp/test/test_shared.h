@@ -24,7 +24,7 @@ using enum ScsiCommand;
 class PrimaryDevice;
 class MockAbstractController;
 
-namespace testing
+namespace s2p_test
 {
 pair<shared_ptr<MockAbstractController>, shared_ptr<PrimaryDevice>> CreateDevice(PbDeviceType, int lun = 0,
     const string& = "");
@@ -61,6 +61,8 @@ public:
 
     static void CleanUp()
     {
+        lock_guard lock(temp_files_mutex);
+
         for (const string &filename : temp_files) {
             error_code error;
             remove(path(filename), error);
@@ -69,8 +71,12 @@ public:
 
     static void RememberTempFile(const string &filename)
     {
+        lock_guard lock(temp_files_mutex);
+
         temp_files.insert(filename);
     }
+
+    inline static mutex temp_files_mutex;
 
     inline static unordered_set<string, s2p_util::StringHash, equal_to<>> temp_files;
 };

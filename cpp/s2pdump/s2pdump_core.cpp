@@ -16,6 +16,7 @@
 #include "initiator/initiator_util.h"
 #include "shared/logger_util.h"
 #include "shared/s2p_exceptions.h"
+#include "shared/s2p_util.h"
 #include "shared/simh_util.h"
 #include "board_executor.h"
 #ifdef BUILD_SCSG

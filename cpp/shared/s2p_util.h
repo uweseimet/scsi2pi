@@ -29,7 +29,7 @@ struct StringHash
 {
     using is_transparent = void;
 
-    size_t operator()(string_view s) const
+    size_t operator()(string_view s) const noexcept
     {
         return hash<string_view> { }(s);
     }
@@ -71,22 +71,22 @@ string_view Trim(string_view);
 using SignalHandlerPtr = void(*)(int);
 void SetTerminationHandler(SignalHandlerPtr);
 
-constexpr const char* to_const_char_ptr(span<const uint8_t> bytes)
+constexpr const char* to_const_char_ptr(span<const uint8_t> bytes) noexcept
 {
     return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-constexpr char* to_char_ptr(span<uint8_t> bytes)
+constexpr char* to_char_ptr(span<uint8_t> bytes) noexcept
 {
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }
 
-constexpr const char* to_const_char_ptr(span<const byte> bytes)
+constexpr const char* to_const_char_ptr(span<const byte> bytes) noexcept
 {
     return static_cast<const char*>(static_cast<const void*>(bytes.data()));
 }
 
-constexpr char* to_char_ptr(span<byte> bytes)
+constexpr char* to_char_ptr(span<byte> bytes) noexcept
 {
     return static_cast<char*>(static_cast<void*>(bytes.data()));
 }

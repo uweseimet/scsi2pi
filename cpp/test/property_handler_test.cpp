@@ -12,7 +12,7 @@
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
-using namespace testing;
+using namespace s2p_test;
 
 TEST(PropertyHandlerTest, Init)
 {

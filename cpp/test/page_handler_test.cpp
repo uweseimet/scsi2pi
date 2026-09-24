@@ -13,7 +13,7 @@
 #include "devices/page_handler.h"
 #include "test_shared.h"
 
-using namespace testing;
+using namespace s2p_test;
 
 TEST(PageHandlerTest, GetCustomModePages)
 {

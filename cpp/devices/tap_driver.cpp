@@ -32,9 +32,7 @@ string TapDriver::Init(const param_map &const_params, const logger &l)
     tap_logger = l;
 
     param_map params = const_params;
-    stringstream s(params[INTERFACE]);
-    string interface;
-    while (getline(s, interface, ',')) {
+    for (const string &interface : Split(params[INTERFACE], ',')) {
         if (available_interfaces.contains(interface)) {
             bridge_interface = interface;
             break;

@@ -230,9 +230,6 @@ string CommandLocalizer::LocalizeImpl(LocalizationKey key, string_view locale, f
     const Language lang = ToLanguage(locale);
 
     auto it = localized_messages.find(lang);
-    if (it == localized_messages.end()) {
-        it = localized_messages.find(Language::EN);
-    }
     assert(it != localized_messages.end());
 
     const auto &msg_map = it->second;

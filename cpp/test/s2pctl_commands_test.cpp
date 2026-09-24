@@ -14,7 +14,7 @@
 #include "shared/s2p_exceptions.h"
 #include "test_shared.h"
 
-using namespace testing;
+using namespace s2p_test;
 using namespace s2p_interface_util;
 
 TEST(S2pCtlCommandsTest, Execute)
@@ -126,10 +126,10 @@ TEST(S2pCtlCommandsTest, Export)
     auto [fd_json, filename_json] = OpenTempFile();
     S2pCtlCommands commands2(command, "localhost", 0, "", filename_json.string(), "");
     EXPECT_TRUE(commands2.Execute("", "", "", "", ""));
-    EXPECT_NE(string::npos, ReadTempFileToString(filename_json.string()).find(PbOperation_Name(OPERATION_INFO)));
+    EXPECT_TRUE(ReadTempFileToString(filename_json.string()).contains(PbOperation_Name(OPERATION_INFO)));
 
     auto [fd_txt, filename_txt] = OpenTempFile();
     S2pCtlCommands commands3(command, "localhost", 0, "", "", filename_txt.string());
     EXPECT_TRUE(commands3.Execute("", "", "", "", ""));
-    EXPECT_NE(string::npos, ReadTempFileToString(filename_txt.string()).find(PbOperation_Name(OPERATION_INFO)));
+    EXPECT_TRUE(ReadTempFileToString(filename_txt.string()).contains(PbOperation_Name(OPERATION_INFO)));
 }

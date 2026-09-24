@@ -39,7 +39,7 @@ string file_util::GetExtensionLowerCase(const path &filename)
 off_t file_util::GetCapacityFromFile(const path &filename)
 {
     string error_message;
-    const auto f = string(filename);
+    const auto f = filename.string();
 
 #if __has_include(<linux/fs.h>)
     if (struct stat st; !stat(f.c_str(), &st) && S_ISBLK(st.st_mode)) {

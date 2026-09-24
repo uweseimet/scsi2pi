@@ -12,6 +12,7 @@
 #include <charconv>
 #include <clocale>
 #include <csignal>
+#include <unistd.h>
 #include "s2p_exceptions.h"
 #include "s2p_version.h"
 

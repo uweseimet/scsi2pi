@@ -22,7 +22,7 @@ TEST(CommandImageSupportTest, Depth)
 
 TEST(CommandImageSupportTest, DefaultFolder)
 {
-    EXPECT_NE(string::npos, GetImageFolder().find("/images"));
+    EXPECT_TRUE(GetImageFolder().contains("/images"));
 
     EXPECT_FALSE(SetImageFolder("").empty());
     EXPECT_FALSE(SetImageFolder("/not_in_home").empty());

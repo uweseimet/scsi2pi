@@ -35,7 +35,11 @@ TEST(StorageDeviceTest, ValidateFile)
 {
     MockStorageDevice device;
 
-    device.SetBlockCount(0);
+    EXPECT_THROW(device.ValidateFile(), IoException)<< "Invalid block count";
+
+    device.SetBlockCount(1);
+    EXPECT_THROW(device.ValidateFile(), IoException)<< "Missing filename";
+
     device.SetFilename("/non_existing_file");
     EXPECT_THROW(device.ValidateFile(), IoException);
 

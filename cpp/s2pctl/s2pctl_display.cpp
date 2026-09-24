@@ -417,7 +417,7 @@ string s2pctl_display::DisplayOperationInfo(const PbOperationInfo &operation_inf
             sorted_operations[PbOperation_Name(static_cast<PbOperation>(ordinal))] = meta_data;
         }
         else {
-            // If the server-side operation is unknown for the client use the server-provided operation name
+            // If the server-side operation is unknown, use the server-provided operation name
             // No further operation information is available in this case
             sorted_operations[meta_data.server_side_name()] = unknown_operation;
         }

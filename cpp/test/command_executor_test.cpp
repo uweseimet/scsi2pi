@@ -234,20 +234,20 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(512);
     SetParam(definition, "file", filename.string());
     bool result = executor.ProcessDeviceCmd(context, definition, false);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(result) << "Error attaching " + filename.string();
     controller_factory.DeleteAllControllers();
 
     filename = CreateTempFile(513);
     SetParam(definition, "file", filename.string());
     result = executor.ProcessDeviceCmd(context, definition, false);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(result) << "Error attaching " + filename.string();
 
     definition.set_type(SCCD);
     definition.set_unit(LUN + 1);
     filename = CreateTempFile(2048);
     SetParam(definition, "file", filename.string());
     result = executor.ProcessDeviceCmd(context, definition, false);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(result) << "Error attaching " + filename.string();
 
     definition.set_type(SCMO);
     definition.set_unit(LUN + 2);
@@ -255,7 +255,7 @@ TEST(CommandExecutorTest, Attach)
     filename = CreateTempFile(4096);
     SetParam(definition, "file", filename.string());
     result = executor.ProcessDeviceCmd(context, definition, false);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(result) << "Error attaching " + filename.string();
 
     controller_factory.DeleteAllControllers();
 }
@@ -309,7 +309,7 @@ TEST(CommandExecutorTest, Insert)
     SetParam(definition, "file", filename.string());
     static_pointer_cast<Disk>(device)->SetCachingMode(PbCachingMode::PISCSI);
     const bool result = executor.Insert(context, definition, device, false);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(result) << "Error inserting " + filename.string();
 }
 
 TEST(CommandExecutorTest, Detach)
@@ -425,20 +425,20 @@ TEST(CommandExecutorTest, PrintCommand)
     PbCommand command;
 
     string s = CommandExecutor::PrintCommand(command, definition);
-    EXPECT_NE(s.find("operation="), string::npos);
-    EXPECT_EQ(s.find("key1=value1"), string::npos);
-    EXPECT_EQ(s.find("key2=value2"), string::npos);
+    EXPECT_TRUE(s.contains("operation="));
+    EXPECT_FALSE(s.contains("key1=value1"));
+    EXPECT_FALSE(s.contains("key2=value2"));
 
     SetParam(command, "key1", "value1");
     s = CommandExecutor::PrintCommand(command, definition);
-    EXPECT_NE(s.find("operation="), string::npos);
-    EXPECT_NE(s.find("key1=value1"), string::npos);
+    EXPECT_TRUE(s.contains("operation="));
+    EXPECT_TRUE(s.contains("key1=value1"));
 
     SetParam(command, "key2", "value2");
     s = CommandExecutor::PrintCommand(command, definition);
-    EXPECT_NE(s.find("operation="), string::npos);
-    EXPECT_NE(s.find("key1=value1"), string::npos);
-    EXPECT_NE(s.find("key2=value2"), string::npos);
+    EXPECT_TRUE(s.contains("operation="));
+    EXPECT_TRUE(s.contains("key1=value1"));
+    EXPECT_TRUE(s.contains("key2=value2"));
 }
 
 TEST(CommandExecutorTest, CreateDevice)

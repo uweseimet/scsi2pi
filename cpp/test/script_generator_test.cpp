@@ -10,7 +10,7 @@
 #include "controllers/script_generator.h"
 #include "test_shared.h"
 
-using namespace testing;
+using namespace s2p_test;
 
 TEST(ScriptGeneratorTest, Add)
 {

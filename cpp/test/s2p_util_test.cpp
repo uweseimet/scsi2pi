@@ -12,6 +12,7 @@
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
+using namespace s2p_test;
 using namespace s2p_util;
 
 TEST(S2pUtilTest, Split)
@@ -195,8 +196,8 @@ TEST(S2pUtilTest, Trim)
 
 TEST(S2pUtilTest, GetLine)
 {
-    const string &filename = testing::CreateTempName();
-    testing::TestShared::RememberTempFile(filename);
+    const string &filename = CreateTempName();
+    TestShared::RememberTempFile(filename);
     ofstream out(filename);
 
     out << "abc\n";

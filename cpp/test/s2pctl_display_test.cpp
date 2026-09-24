@@ -42,31 +42,26 @@ TEST(S2pCtlDisplayTest, DisplayDeviceInfo)
 
     device.set_block_size(1234);
     string s = DisplayDeviceInfo(device);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("1234"));
+    EXPECT_TRUE(s.contains("1234"));
 
     device.set_block_count(4321);
     s = DisplayDeviceInfo(device);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("5332114"));
+    EXPECT_TRUE(s.contains("5332114"));
 
     device.mutable_properties()->set_supports_file(true);
     auto *file = device.mutable_file();
     file->set_name("filename");
     s = DisplayDeviceInfo(device);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("filename"));
+    EXPECT_TRUE(s.contains("filename"));
 
     device.mutable_properties()->set_supports_params(true);
     (*device.mutable_params())["key1"] = "value1";
     s = DisplayDeviceInfo(device);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("key1=value1"));
+    EXPECT_TRUE(s.contains("key1=value1"));
     (*device.mutable_params())["key2"] = "value2";
     s = DisplayDeviceInfo(device);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("key1=value1"));
-    EXPECT_NE(string::npos, s.find("key2=value2"));
+    EXPECT_TRUE(s.contains("key1=value1"));
+    EXPECT_TRUE(s.contains("key2=value2"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayVersionInfo)
@@ -78,39 +73,36 @@ TEST(S2pCtlDisplayTest, DisplayVersionInfo)
     info.set_patch_version(3);
     info.set_identifier("identifier");
     string s = DisplayVersionInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("1.2.3"));
-    EXPECT_NE(string::npos, s.find("identifier"));
-    EXPECT_EQ(string::npos, s.find("development"));
+    EXPECT_TRUE(s.contains("1.2.3"));
+    EXPECT_TRUE(s.contains("identifier"));
+    EXPECT_FALSE(s.contains("development"));
 
     info.set_patch_version(-1);
     s = DisplayVersionInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("1.2"));
+    EXPECT_TRUE(s.contains("1.2"));
 
     info.set_suffix("rc");
     s = DisplayVersionInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("rc"));
+    EXPECT_TRUE(s.contains("rc"));
 
     info.set_major_version(21);
     info.set_minor_version(11);
     info.set_identifier("");
     s = DisplayVersionInfo(info);
-    EXPECT_NE(string::npos, s.find("RaSCSI"));
-    EXPECT_NE(string::npos, s.find("development"));
+    EXPECT_TRUE(s.contains("RaSCSI"));
+    EXPECT_TRUE(s.contains("development"));
 
     info.set_major_version(22);
     s = DisplayVersionInfo(info);
-    EXPECT_NE(string::npos, s.find("PiSCSI"));
-    EXPECT_NE(string::npos, s.find("development"));
+    EXPECT_TRUE(s.contains("PiSCSI"));
+    EXPECT_TRUE(s.contains("development"));
 
     info.set_patch_version(0);
     s = DisplayVersionInfo(info);
-    EXPECT_EQ(string::npos, s.find("development"));
+    EXPECT_FALSE(s.contains("development"));
     info.set_patch_version(1);
     s = DisplayVersionInfo(info);
-    EXPECT_EQ(string::npos, s.find("development"));
+    EXPECT_FALSE(s.contains("development"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayLogLevelInfo)
@@ -122,8 +114,7 @@ TEST(S2pCtlDisplayTest, DisplayLogLevelInfo)
 
     info.add_log_levels("test");
     s = DisplayLogLevelInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("test"));
+    EXPECT_TRUE(s.contains("test"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
@@ -164,10 +155,17 @@ TEST(S2pCtlDisplayTest, DisplayDeviceTypesInfo)
         ++ordinal;
     }
 
-    const string s = DisplayDeviceTypesInfo(info);
+    string s = DisplayDeviceTypesInfo(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("key1=value1"));
-    EXPECT_NE(string::npos, s.find("key2=value2"));
+    EXPECT_TRUE(s.contains("key1=value1"));
+    EXPECT_TRUE(s.contains("key2=value2"));
+    EXPECT_FALSE(s.contains("  ? "));
+
+    auto *type_properties = info.add_properties();
+    type_properties->set_type(static_cast<PbDeviceType>(4000));
+    s = DisplayDeviceTypesInfo(info);
+    EXPECT_FALSE(s.empty());
+    EXPECT_TRUE(s.contains("  ? "));
 }
 
 TEST(S2pCtlDisplayTest, DisplayReservedIdsInfo)
@@ -180,12 +178,12 @@ TEST(S2pCtlDisplayTest, DisplayReservedIdsInfo)
     info.mutable_ids()->Add(5);
     s = DisplayReservedIdsInfo(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("5"));
+    EXPECT_TRUE(s.contains("5"));
 
     info.mutable_ids()->Add(6);
     s = DisplayReservedIdsInfo(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("5, 6"));
+    EXPECT_TRUE(s.contains("5, 6"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayNetworkInterfaces)
@@ -198,12 +196,11 @@ TEST(S2pCtlDisplayTest, DisplayNetworkInterfaces)
     info.mutable_name()->Add("eth0");
     s = DisplayNetworkInterfaces(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("eth0"));
+    EXPECT_TRUE(s.contains("eth0"));
 
     info.mutable_name()->Add("wlan0");
     s = DisplayNetworkInterfaces(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("eth0, wlan0"));
+    EXPECT_TRUE(s.contains("eth0, wlan0"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
@@ -211,13 +208,13 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     PbStatisticsInfo info;
 
     string s = DisplayStatisticsInfo(info);
-    EXPECT_NE(string::npos, s.find("Statistics:"));
-    EXPECT_EQ(string::npos, s.find("INFO"));
-    EXPECT_EQ(string::npos, s.find("WARNING"));
-    EXPECT_EQ(string::npos, s.find("ERROR"));
-    EXPECT_EQ(string::npos, s.find("info"));
-    EXPECT_EQ(string::npos, s.find("warning"));
-    EXPECT_EQ(string::npos, s.find("error"));
+    EXPECT_TRUE(s.contains("Statistics:"));
+    EXPECT_FALSE(s.contains("INFO"));
+    EXPECT_FALSE(s.contains("WARNING"));
+    EXPECT_FALSE(s.contains("ERROR"));
+    EXPECT_FALSE(s.contains("info"));
+    EXPECT_FALSE(s.contains("warning"));
+    EXPECT_FALSE(s.contains("error"));
 
     auto *st1 = info.add_statistics();
     st1->set_id(1);
@@ -226,13 +223,13 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st1->set_key("info");
     st1->set_value(1);
     s = DisplayStatisticsInfo(info);
-    EXPECT_NE(string::npos, s.find("Statistics:"));
-    EXPECT_NE(string::npos, s.find("INFO"));
-    EXPECT_EQ(string::npos, s.find("WARNING"));
-    EXPECT_EQ(string::npos, s.find("ERROR"));
-    EXPECT_NE(string::npos, s.find("info"));
-    EXPECT_EQ(string::npos, s.find("warning"));
-    EXPECT_EQ(string::npos, s.find("error"));
+    EXPECT_TRUE(s.contains("Statistics:"));
+    EXPECT_TRUE(s.contains("INFO"));
+    EXPECT_FALSE(s.contains("WARNING"));
+    EXPECT_FALSE(s.contains("ERROR"));
+    EXPECT_TRUE(s.contains("info"));
+    EXPECT_FALSE(s.contains("warning"));
+    EXPECT_FALSE(s.contains("error"));
     auto *st2 = info.add_statistics();
     st2->set_id(2);
     st2->set_unit(2);
@@ -240,13 +237,13 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st2->set_key("warning");
     st2->set_value(2);
     s = DisplayStatisticsInfo(info);
-    EXPECT_NE(string::npos, s.find("Statistics:"));
-    EXPECT_NE(string::npos, s.find("INFO"));
-    EXPECT_NE(string::npos, s.find("WARNING"));
-    EXPECT_EQ(string::npos, s.find("ERROR"));
-    EXPECT_NE(string::npos, s.find("info"));
-    EXPECT_NE(string::npos, s.find("warning"));
-    EXPECT_EQ(string::npos, s.find("error"));
+    EXPECT_TRUE(s.contains("Statistics:"));
+    EXPECT_TRUE(s.contains("INFO"));
+    EXPECT_TRUE(s.contains("WARNING"));
+    EXPECT_FALSE(s.contains("ERROR"));
+    EXPECT_TRUE(s.contains("info"));
+    EXPECT_TRUE(s.contains("warning"));
+    EXPECT_FALSE(s.contains("error"));
     auto *st3 = info.add_statistics();
     st3->set_id(3);
     st3->set_unit(3);
@@ -254,13 +251,13 @@ TEST(S2pCtlDisplayTest, DisplayStatisticsInfo)
     st3->set_key("error");
     st3->set_value(3);
     s = DisplayStatisticsInfo(info);
-    EXPECT_NE(string::npos, s.find("Statistics:"));
-    EXPECT_NE(string::npos, s.find("INFO"));
-    EXPECT_NE(string::npos, s.find("WARNING"));
-    EXPECT_NE(string::npos, s.find("ERROR"));
-    EXPECT_NE(string::npos, s.find("info"));
-    EXPECT_NE(string::npos, s.find("warning"));
-    EXPECT_NE(string::npos, s.find("error"));
+    EXPECT_TRUE(s.contains("Statistics:"));
+    EXPECT_TRUE(s.contains("INFO"));
+    EXPECT_TRUE(s.contains("WARNING"));
+    EXPECT_TRUE(s.contains("ERROR"));
+    EXPECT_TRUE(s.contains("info"));
+    EXPECT_TRUE(s.contains("warning"));
+    EXPECT_TRUE(s.contains("error"));
     auto *st4 = info.add_statistics();
     st4->set_id(4);
     st4->set_unit(4);
@@ -304,22 +301,19 @@ TEST(S2pCtlDisplayTest, DisplayImageFile)
 
     file.set_name("filename");
     s = DisplayImageFile(file);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("filename"));
-    EXPECT_EQ(string::npos, s.find("read-only"));
-    EXPECT_EQ(string::npos, s.find("SCHD"));
+    EXPECT_TRUE(s.contains("filename"));
+    EXPECT_FALSE(s.contains("read-only"));
+    EXPECT_FALSE(s.contains("SCHD"));
 
     file.set_read_only(true);
     s = DisplayImageFile(file);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("filename"));
-    EXPECT_NE(string::npos, s.find("read-only"));
-    EXPECT_EQ(string::npos, s.find("SCHD"));
+    EXPECT_TRUE(s.contains("filename"));
+    EXPECT_TRUE(s.contains("read-only"));
+    EXPECT_FALSE(s.contains("SCHD"));
 
     file.set_type(SCHD);
     s = DisplayImageFile(file);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("SCHD"));
+    EXPECT_TRUE(s.contains("SCHD"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayImageFilesInfo)
@@ -327,14 +321,13 @@ TEST(S2pCtlDisplayTest, DisplayImageFilesInfo)
     PbImageFilesInfo info;
 
     string s = DisplayImageFilesInfo(info);
-    EXPECT_FALSE(DisplayImageFilesInfo(info).empty());
-    EXPECT_EQ(string::npos, s.find("filename"));
+    EXPECT_FALSE(s.contains("filename"));
 
     PbImageFile *file = info.add_image_files();
     file->set_name("filename");
     s = DisplayImageFilesInfo(info);
     EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("filename"));
+    EXPECT_TRUE(s.contains("filename"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayMappingInfo)
@@ -342,13 +335,11 @@ TEST(S2pCtlDisplayTest, DisplayMappingInfo)
     PbMappingInfo info;
 
     string s = DisplayMappingInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_EQ(string::npos, s.find("key->SCHD"));
+    EXPECT_FALSE(s.contains("key->SCHD"));
 
     (*info.mutable_mapping())["key"] = SCHD;
     s = DisplayMappingInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("key->SCHD"));
+    EXPECT_TRUE(s.contains("key->SCHD"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
@@ -357,8 +348,8 @@ TEST(S2pCtlDisplayTest, DisplayPropertiesInfo)
 
     (*info.mutable_s2p_properties())["key"] = "value";
     const string &s = DisplayPropertiesInfo(info);
-    EXPECT_NE(string::npos, s.find("s2p properties"));
-    EXPECT_NE(string::npos, s.find("key=value"));
+    EXPECT_TRUE(s.contains("s2p properties"));
+    EXPECT_TRUE(s.contains("key=value"));
 }
 
 TEST(S2pCtlDisplayTest, DisplayOperationInfo)
@@ -384,26 +375,23 @@ TEST(S2pCtlDisplayTest, DisplayOperationInfo)
     param3->add_permitted_values("permitted_value3_2");
     (*info.mutable_operations())[0] = meta_data;
     s = DisplayOperationInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find(PbOperation_Name(NO_OPERATION)));
+    EXPECT_TRUE(s.contains(PbOperation_Name(NO_OPERATION)));
 
     meta_data.set_server_side_name("server_side_name");
     meta_data.set_description("description");
     (*info.mutable_operations())[0] = meta_data;
     s = DisplayOperationInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("default_key1"));
-    EXPECT_NE(string::npos, s.find("default_value1"));
-    EXPECT_NE(string::npos, s.find("default_key2"));
-    EXPECT_NE(string::npos, s.find("default_value2"));
-    EXPECT_NE(string::npos, s.find("description2"));
-    EXPECT_NE(string::npos, s.find("description3"));
-    EXPECT_NE(string::npos, s.find("permitted_value3_1"));
-    EXPECT_NE(string::npos, s.find("permitted_value3_2"));
-    EXPECT_EQ(string::npos, s.find("server_side_name"));
+    EXPECT_TRUE(s.contains("default_key1"));
+    EXPECT_TRUE(s.contains("default_value1"));
+    EXPECT_TRUE(s.contains("default_key2"));
+    EXPECT_TRUE(s.contains("default_value2"));
+    EXPECT_TRUE(s.contains("description2"));
+    EXPECT_TRUE(s.contains("description3"));
+    EXPECT_TRUE(s.contains("permitted_value3_1"));
+    EXPECT_TRUE(s.contains("permitted_value3_2"));
+    EXPECT_FALSE(s.contains("server_side_name"));
 
     (*info.mutable_operations())[1234] = meta_data;
     s = DisplayOperationInfo(info);
-    EXPECT_FALSE(s.empty());
-    EXPECT_NE(string::npos, s.find("server_side_name"));
+    EXPECT_TRUE(s.contains("server_side_name"));
 }

@@ -18,6 +18,7 @@
 #include "devices/tape.h"
 #include "test_shared.h"
 
+using namespace s2p_test;
 using namespace testing;
 
 class MockBus : public Bus // NOSONAR Having many methods cannot be avoided
@@ -47,7 +48,7 @@ public:
 
 class MockAbstractController : public AbstractController // NOSONAR Having many methods cannot be avoided
 {
-    friend class testing::TestShared;
+    friend class TestShared;
 
     FRIEND_TEST(AbstractControllerTest, Reset);
     FRIEND_TEST(AbstractControllerTest, Message);

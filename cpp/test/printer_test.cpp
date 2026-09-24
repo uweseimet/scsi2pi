@@ -10,7 +10,8 @@
 #include "devices/printer.h"
 #include "shared/s2p_exceptions.h"
 
-class PrinterTest : public ::testing::Test {
+class PrinterTest : public ::testing::Test
+{
 public:
 
     void SetUp() override {

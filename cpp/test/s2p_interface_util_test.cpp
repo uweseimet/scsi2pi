@@ -177,11 +177,10 @@ TEST(S2pInterfaceUtilTest, ListDevices)
     device.set_type(SCLP);
     devices.emplace_back(device);
     const string device_list = ListDevices(devices);
-    EXPECT_FALSE(device_list.empty());
-    EXPECT_NE(string::npos, device_list.find("SCHS"));
-    EXPECT_NE(string::npos, device_list.find("SCHD"));
-    EXPECT_NE(string::npos, device_list.find("SCDP"));
-    EXPECT_NE(string::npos, device_list.find("SCLP"));
+    EXPECT_TRUE(device_list.contains("SCHS"));
+    EXPECT_TRUE(device_list.contains("SCHD"));
+    EXPECT_TRUE(device_list.contains("SCDP"));
+    EXPECT_TRUE(device_list.contains("SCLP"));
     EXPECT_LT(device_list.find("SCLP"), device_list.find("SCHS"));
 }
 
