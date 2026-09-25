@@ -102,7 +102,7 @@ bool S2pExec::Init()
     return true;
 }
 
-bool S2pExec::ParseArguments(span<char*> args)
+bool S2pExec::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
     const vector<option> options = {
         { "binary-input-file", required_argument, nullptr, 'f' },

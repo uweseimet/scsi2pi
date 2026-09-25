@@ -404,6 +404,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/target_bus_test.cpp \
 	test/user_util_test.cpp \
 	test/virtual_bus_test.cpp \
+	test/integration_test.cpp \
 	test/test_setup.cpp \
 	test/test_shared.cpp
 ifdef IS_LINUX
@@ -468,6 +469,7 @@ OBJ_S2P := $(call obj_files,$(SRC_S2P))
 OBJ_S2PCTL_CORE := $(call obj_files,$(SRC_S2PCTL_CORE))
 OBJ_S2PCTL := $(call obj_files,$(SRC_S2PCTL))
 OBJ_S2PDUMP := $(call obj_files,$(SRC_S2PDUMP))
+OBJ_S2PEXEC_CORE := $(call obj_files,$(SRC_S2PEXEC_CORE))
 OBJ_S2PEXEC := $(call obj_files,$(SRC_S2PEXEC))
 OBJ_S2PPROTO := $(call obj_files,$(SRC_S2PPROTO))
 OBJ_S2PSIMH := $(call obj_files,$(SRC_S2PSIMH))
@@ -545,10 +547,11 @@ $(SRC_API): $(PROTO_API) | $(GENERATED_DIR)
 ##   standard        Build only executable files for the STANDARD board
 ##   tests           Build (but do not run) unit tests
 ##   test            Build and run unit tests
+##   integration     Build and run integration tests
 ##   coverage        Build and run unit tests and create coverage files
 ##                   Run 'make clean' between coverage and non-coverage builds.
 .DEFAULT_GOAL := all
-.PHONY: all coverage standard test tests
+.PHONY: all coverage standard test integration test_all tests
 
 all: $(BIN_STANDARD) $(BIN_FULLSPEC)
 
@@ -559,6 +562,9 @@ tests: $(BINDIR)/$(S2P_TEST)
 
 test: tests
 	$(BINDIR)/$(S2P_TEST)
+
+integration: tests
+	$(BINDIR)/$(S2P_TEST) -i
 
 coverage: CXXFLAGS += --coverage
 coverage: LDFLAGS += --coverage
@@ -595,8 +601,8 @@ $(BINDIR)/$(S2PTOOL): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_CONTRO
 	$(LIB_SHARED_INITIATOR) $(LIB_CONTROLLER) $(LIB_BUS) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS)
 
 $(BINDIR)/$(S2P_TEST): $(LIB_SHARED_COMMAND) $(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) \
-	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) | $(BINDIR)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
+	$(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PEXEC_CORE) $(OBJ_S2P_TEST) | $(BINDIR)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_S2P_CORE) $(OBJ_S2PCTL_CORE) $(OBJ_S2PEXEC_CORE) $(OBJ_S2P_TEST) $(LIB_SHARED_COMMAND) \
 	$(LIB_SHARED_INITIATOR) $(LIB_BUS) $(LIB_CONTROLLER) $(LIB_DEVICE) $(LIB_SHARED) $(SPDLOG_LIBS) $(PROTOBUF_LIBS) -lgmock -lgtest
 
 .PHONY: $(S2P) $(S2PCTL) $(S2PDUMP) $(S2PEXEC) $(S2PPROTO) $(S2PSIMH) $(S2PFORMAT) $(S2PTOOL) $(S2P_TEST)

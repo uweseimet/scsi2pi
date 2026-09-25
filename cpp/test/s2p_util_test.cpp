@@ -196,7 +196,7 @@ TEST(S2pUtilTest, Trim)
 
 TEST(S2pUtilTest, GetLine)
 {
-    const string &filename = CreateTempName();
+    const string filename = CreateTempName();
     TestShared::RememberTempFile(filename);
     ofstream out(filename);
 
