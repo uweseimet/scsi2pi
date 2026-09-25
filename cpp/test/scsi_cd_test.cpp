@@ -107,12 +107,21 @@ TEST(ScsiCdTest, ReadToc)
     cd->SetFilename(CreateTempFile(2048).string());
     cd->ValidateFile();
 
-    controller->SetCdbByte(6, 1);
+    controller->SetCdbByte(6, 2);
     Dispatch(cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Invalid track number");
+
+    controller->SetCdbByte(6, 1);
+    Dispatch(cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Uninitialized track");
+
+    // Lead out track
+    controller->SetCdbByte(6, 0xaa);
+    EXPECT_CALL(*controller, DataIn);
+    Dispatch(cd, READ_TOC);
 
     controller->SetCdbByte(6, 0);
     EXPECT_CALL(*controller, DataIn);
     Dispatch(cd, READ_TOC);
+
     controller->SetCdbByte(1, 0x02);
     EXPECT_CALL(*controller, DataIn);
     Dispatch(cd, READ_TOC);

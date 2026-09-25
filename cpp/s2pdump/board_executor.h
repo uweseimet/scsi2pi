@@ -20,6 +20,17 @@ class BoardExecutor final : public S2pDumpExecutor
 
 public:
 
+    using S2pDumpExecutor::TestUnitReady;
+    using S2pDumpExecutor::RequestSense;
+    using S2pDumpExecutor::Inquiry;
+    using S2pDumpExecutor::ModeSense6;
+    using S2pDumpExecutor::ReportLuns;
+    using S2pDumpExecutor::ReadWrite;
+    using S2pDumpExecutor::SynchronizeCache;
+    using S2pDumpExecutor::Rewind;
+    using S2pDumpExecutor::WriteFilemark;
+    using S2pDumpExecutor::SpaceBack;
+
     BoardExecutor(Bus &bus, int id, logger &l) : S2pDumpExecutor(l), initiator_executor(
         make_unique<InitiatorExecutor>(bus, id, l))
     {

@@ -29,7 +29,7 @@ private:
     bool ParseArguments(span<char*>);
 
     vector<FormatDescriptor> GetFormatDescriptors();
-    int SelectFormat(span<const S2pFormat::FormatDescriptor>);
+    int SelectFormat(span<const S2pFormat::FormatDescriptor>) const;
     string Format(span<const S2pFormat::FormatDescriptor>, int);
     int ExecuteCommand(span<const uint8_t>, span<uint8_t>, int);
 

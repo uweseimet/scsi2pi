@@ -94,8 +94,7 @@ public:
 
     bool ProcessPhase();
 
-    virtual void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION,
-        StatusCode = CHECK_CONDITION) = 0;
+    virtual void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION, StatusCode = CHECK_CONDITION) = 0;
 
     virtual int GetEffectiveLun() const = 0;
 

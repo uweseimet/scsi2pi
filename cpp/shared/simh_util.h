@@ -37,7 +37,7 @@ enum class SimhClass
     RESERVERD_MARKER = 15,
 };
 
-enum class SimhMarker
+enum class SimhMarker : uint32_t
 {
     ERASE_GAP = 0xffffffe,
     END_OF_MEDIUM = 0xfffffff

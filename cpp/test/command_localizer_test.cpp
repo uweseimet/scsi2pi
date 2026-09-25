@@ -19,10 +19,14 @@ TEST(CommandLocalizer, Localize)
     EXPECT_FALSE(message.contains("enum value"));
 
     message = command_localizer.Localize(ERROR_AUTHENTICATION, "de_DE");
-    EXPECT_FALSE(message.empty());
-    EXPECT_FALSE(message.contains("enum value"));
+    EXPECT_TRUE(message.contains("fehlgeschlagen"));
 
     message = command_localizer.Localize(ERROR_AUTHENTICATION, "en");
-    EXPECT_FALSE(message.empty());
-    EXPECT_FALSE(message.contains("enum value"));
+    EXPECT_TRUE(message.contains("failed"));
+
+    message = command_localizer.Localize(ERROR_AUTHENTICATION, "fr");
+    EXPECT_TRUE(message.contains("éronnée"));
+
+    message = command_localizer.Localize(ERROR_AUTHENTICATION, "es");
+    EXPECT_TRUE(message.contains("Fallo"));
 }

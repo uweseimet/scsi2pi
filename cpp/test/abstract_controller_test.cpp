@@ -12,10 +12,11 @@
 #include "shared/s2p_defs.h"
 #include "shared/s2p_exceptions.h"
 
+using IsPhaseFuncPtr = bool (AbstractController::*)() const;
 struct PhaseTestParams
 {
     BusPhase phase;
-    bool (AbstractController::*is_phase_func)() const;
+    IsPhaseFuncPtr is_phase_func;
 };
 
 class AbstractControllerPhaseTest : public ::testing::TestWithParam<PhaseTestParams>

@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "s2pdump_executor.h"
+#include <numeric>
 #include "shared/s2p_exceptions.h"
 #include "shared/memory_util.h"
 #include "shared/scsi.h"
@@ -23,7 +24,7 @@ void S2pDumpExecutor::RequestSense() const
 {
     array<uint8_t, 6> cdb = { };
     array<uint8_t, 4> buf = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+    cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     RequestSense(cdb, buf);
@@ -32,7 +33,7 @@ void S2pDumpExecutor::RequestSense() const
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::INQUIRY);
+    cdb[0] = to_underlying(ScsiCommand::INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     return Inquiry(cdb, buf);
@@ -41,7 +42,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::MODE_SENSE_6);
+    cdb[0] = to_underlying(ScsiCommand::MODE_SENSE_6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buf.size());
@@ -53,7 +54,7 @@ set<int> S2pDumpExecutor::ReportLuns()
 {
     array<uint8_t, 512> buf = { };
     array<uint8_t, 12> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REPORT_LUNS);
+    cdb[0] = to_underlying(ScsiCommand::REPORT_LUNS);
     SetInt16(cdb, 8, buf.size());
 
     return ReportLuns(cdb, buf);
@@ -64,11 +65,11 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadCapacity(bool sasi)
     return sasi ? ReadSasiCapacity() : ReadScsiCapacity();
 }
 
-pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity()
+pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity() const
 {
     array<uint8_t, 14> buf = { };
     vector<uint8_t> cdb(10);
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_10);
+    cdb[0] = to_underlying(ScsiCommand::READ_CAPACITY_10);
 
     if (ReadCapacity10(cdb, buf)) {
         return {0, 0};
@@ -80,7 +81,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity()
 
     if (static_cast<int32_t>(capacity) == -1) {
         cdb.resize(16);
-        cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_CAPACITY_READ_LONG_16);
+        cdb[0] = to_underlying(ScsiCommand::READ_CAPACITY_READ_LONG_16);
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
@@ -115,10 +116,10 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadSasiCapacity()
         return {last + 1, sector_size};
     }
 
-    uint64_t first = 0;
+    uint32_t first = 0;
 
     while (last - first > 1) {
-        const uint32_t mid = first + (last - first) / 2;
+        const auto mid = midpoint(first, last);
 
         if (ReadWrite(buf, mid, 1, sector_size, false, true, false)) {
             first = mid;
@@ -137,13 +138,13 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
     vector<uint8_t> cdb;
     if (sasi) {
         cdb.resize(6);
-        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_6 : ScsiCommand::READ_6);
+        cdb[0] = to_underlying(is_write ? ScsiCommand::WRITE_6 : ScsiCommand::READ_6);
         SetInt24(cdb, 1, bstart);
         cdb[4] = blength == 256 ? 0 : blength;
     }
     else {
         cdb.resize(10);
-        cdb[0] = static_cast<uint8_t>(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
+        cdb[0] = to_underlying(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
         SetInt32(cdb, 2, bstart);
         SetInt16(cdb, 7, blength);
     }
@@ -154,7 +155,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
 void S2pDumpExecutor::SynchronizeCache() const
 {
     array<uint8_t, 10> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::SYNCHRONIZE_CACHE_10);
+    cdb[0] = to_underlying(ScsiCommand::SYNCHRONIZE_CACHE_10);
 
     SynchronizeCache(cdb);
 }
@@ -162,16 +163,16 @@ void S2pDumpExecutor::SynchronizeCache() const
 void S2pDumpExecutor::SpaceBack() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::SPACE_6);
+    cdb[0] = to_underlying(ScsiCommand::SPACE_6);
     SetInt24(cdb, 2, -1);
 
     SpaceBack(cdb);
 }
 
-int S2pDumpExecutor::Rewind()
+int S2pDumpExecutor::Rewind() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::REZERO_REWIND);
+    cdb[0] = to_underlying(ScsiCommand::REZERO_REWIND);
 
     return Rewind(cdb);
 }
@@ -179,7 +180,7 @@ int S2pDumpExecutor::Rewind()
 int S2pDumpExecutor::WriteFilemark() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_FILEMARKS_6);
+    cdb[0] = to_underlying(ScsiCommand::WRITE_FILEMARKS_6);
     SetInt24(cdb, 2, 1);
 
     return WriteFilemark(cdb);
@@ -190,7 +191,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     // Restore
     if (length) {
         array<uint8_t, 6> cdb = { };
-        cdb[0] = static_cast<uint8_t>(ScsiCommand::WRITE_6);
+        cdb[0] = to_underlying(ScsiCommand::WRITE_6);
         SetInt24(cdb, 2, length);
 
         if (Write(cdb, buf, length)) {
@@ -204,7 +205,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     bool has_error = false;
     while (true) {
         array<uint8_t, 6> cdb = { };
-        cdb[0] = static_cast<uint8_t>(ScsiCommand::READ_6);
+        cdb[0] = to_underlying(ScsiCommand::READ_6);
         SetInt24(cdb, 2, default_length);
 
         if (!Read(cdb, buf, default_length)) {
@@ -214,17 +215,16 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         array<uint8_t, 14> sense_data = { };
         array<uint8_t, 6> sense_cdb = { };
-        sense_cdb[0] = static_cast<uint8_t>(ScsiCommand::REQUEST_SENSE);
+        sense_cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
         sense_cdb[4] = static_cast<uint8_t>(sense_data.size());
-        const int status = RequestSense(sense_cdb, sense_data);
-        if (status == 0xff) {
+        if (const int status = RequestSense(sense_cdb, sense_data); status == 0xff) {
             return status;
         }
         else if (status && status != 0x02) {
             throw IoException("Unknown error status {}", status);
         }
 
-        const SenseKey sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[2]) & 0x0f);
+        const auto sense_key = static_cast<SenseKey>(static_cast<int>(sense_data[2]) & 0x0f);
 
         // EOD or EOM?
         if (sense_key == BLANK_CHECK || static_cast<int>(sense_data[2]) & 0x40) {

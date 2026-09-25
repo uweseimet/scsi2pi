@@ -27,8 +27,7 @@ TEST(CommandImageSupportTest, DefaultFolder)
     EXPECT_FALSE(SetImageFolder("").empty());
     EXPECT_FALSE(SetImageFolder("/not_in_home").empty());
 
-    error_code error;
-    if (exists("/var/lib/piscsi/images", error)) {
+    if (error_code error; exists("/var/lib/piscsi/images", error)) {
         EXPECT_TRUE(SetImageFolder("/var/lib/piscsi/images").empty());
     }
 

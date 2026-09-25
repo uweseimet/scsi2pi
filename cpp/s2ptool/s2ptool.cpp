@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         AddArg(client_args, arg != "''" && arg != "\"\"" ? arg : "");
     }
 
-    unordered_map<string, function<unique_ptr<Runnable>()>> clients = {
+    unordered_map<string, function<unique_ptr<Runnable>()>, s2p_util::StringHash, equal_to<>> clients = {
         { "s2pctl", []()
             {
                 return make_unique<S2pCtl>();

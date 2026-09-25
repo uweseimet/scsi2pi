@@ -26,7 +26,7 @@ TEST(LinuxCache, Init)
     LinuxCache cache4("", 512, 1, false);
     EXPECT_FALSE(cache4.Init());
 
-    LinuxCache cache5("test", 512, 1, false);
+    LinuxCache cache5("_test_", 512, 1, false);
     EXPECT_FALSE(cache5.Init());
 
     LinuxCache cache6(CreateTempFile(1).string(), 512, 1, false);

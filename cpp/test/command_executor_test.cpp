@@ -193,11 +193,7 @@ TEST(CommandExecutorTest, Attach)
     CommandContext context(command, *default_logger());
 
     definition.set_id(ID);
-    definition.set_unit(32);
     EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false));
-
-    const auto device = DeviceFactory::GetInstance().CreateDevice(SCHD, LUN, "");
-    definition.set_unit(LUN);
 
     executor.SetReservedIds("3");
     EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false)) << "Reserved ID not rejected";
@@ -207,7 +203,10 @@ TEST(CommandExecutorTest, Attach)
 
     definition.set_type(SCHS);
     EXPECT_TRUE(executor.ProcessDeviceCmd(context, definition, false));
+    definition.set_unit(32);
+    EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false));
     controller_factory.DeleteAllControllers();
+    definition.set_unit(LUN);
 
     definition.set_type(SCHD);
     EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false)) << "Drive without sectors not rejected";
@@ -215,6 +214,10 @@ TEST(CommandExecutorTest, Attach)
     definition.set_revision("invalid revision");
     EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false)) << "Drive with invalid revision not rejected";
     definition.set_revision("1234");
+
+    definition.set_scsi_level(to_underlying(ScsiLevel::LAST));
+    EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false)) << "Drive with invalid SCSI level not rejected";
+    definition.set_scsi_level(2);
 
     definition.set_block_size(1);
     EXPECT_FALSE(executor.ProcessDeviceCmd(context, definition, false))

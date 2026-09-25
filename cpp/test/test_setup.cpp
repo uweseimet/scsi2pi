@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
 
     for (int i = 1; i < argc; ++i) {
         const string_view arg(argv[i]);
-        if (!arg.rfind("-i", 0) || !arg.rfind("--integration-tests", 0)) {
+        if (arg.rfind("-i", 0) == 0 || arg.rfind("--integration-tests", 0) == 0) {
             integration_tests = ParseBoolFlag(arg, "-i", "--integration-tests", integration_tests);
-        } else if (!arg.rfind("-l", 0) || !arg.rfind("--enable-logging", 0)) {
+        } else if (arg.rfind("-l", 0) == 0 || arg.rfind("--enable-logging", 0) == 0) {
             enable_logging = ParseBoolFlag(arg, "-l", "--enable-logging", enable_logging);
         }
         else {

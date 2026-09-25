@@ -17,7 +17,7 @@
 #include "device.h"
 #include "disk_track.h"
 
-DiskCache::DiskCache(const string &path, int size, uint64_t sectors) : sec_path(path), blocks(sectors)
+DiskCache::DiskCache(string_view path, int size, uint64_t sectors) : sec_path(path), blocks(sectors)
 {
     while ((1 << shift_count) != size) {
         ++shift_count;

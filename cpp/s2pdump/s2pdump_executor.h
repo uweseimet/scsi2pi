@@ -35,11 +35,9 @@ public:
     void SynchronizeCache() const;
 
     // Tape support
-    int Rewind();
+    int Rewind() const;
     int WriteFilemark() const;
     int ReadWrite(span<uint8_t>, int);
-
-    logger &s2pdump_logger;
 
     static constexpr int NO_MORE_DATA = -1;
     static constexpr int BAD_BLOCK = -2;
@@ -75,7 +73,7 @@ protected:
 
     virtual int GetByteCount() const = 0;
 
-    pair<uint64_t, uint32_t> ReadScsiCapacity();
+    pair<uint64_t, uint32_t> ReadScsiCapacity() const;
     pair<uint64_t, uint32_t> ReadSasiCapacity();
 
     void SpaceBack() const;
@@ -87,6 +85,8 @@ protected:
     }
 
 private:
+
+    logger &s2pdump_logger;
 
     int default_length = 0xffffff;
 };

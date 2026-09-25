@@ -205,6 +205,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
             break;
 
         default:
+            assert(false);
             throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_PARAMETER_LIST);
         }
 

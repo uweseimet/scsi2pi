@@ -20,7 +20,7 @@ class DiskCache final : public Cache
 
 public:
 
-    DiskCache(const string&, int, uint64_t);
+    DiskCache(string_view, int, uint64_t);
     ~DiskCache() override = default;
 
     bool Init() override;

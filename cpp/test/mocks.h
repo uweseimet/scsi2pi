@@ -92,7 +92,7 @@ public:
         }
     }
 
-    void SetCdbByte(int index, int value) // NOSONAR Shadowing the inherited method is intentional
+    void SetCdbByte(int index, uint8_t value) // NOSONAR Shadowing the inherited method is intentional
     {
         AbstractController::SetCdbByte(index, value);
     }
@@ -180,6 +180,7 @@ class MockStorageDevice : public StorageDevice
     FRIEND_TEST(StorageDeviceTest, GetCapacityFromFile);
     FRIEND_TEST(StorageDeviceTest, StartStopUnit);
     FRIEND_TEST(StorageDeviceTest, SetGetBlockSize);
+    FRIEND_TEST(StorageDeviceTest, ModeSelect);
     FRIEND_TEST(StorageDeviceTest, EvaluateBlockDescriptors);
     FRIEND_TEST(StorageDeviceTest, VerifyBlockSizeChange);
     FRIEND_TEST(StorageDeviceTest, BlockCount);

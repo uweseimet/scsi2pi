@@ -204,14 +204,9 @@ bool CommandExecutor::Unprotect(PrimaryDevice &device) const
 
 bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
-    const PbDeviceType type = pb_device.type();
+    const int id = pb_device.id();
     const int lun = pb_device.unit();
 
-    if (const int lun_max = GetLunMax(type); lun >= lun_max) {
-        return context.ReturnLocalizedError(ERROR_INVALID_LUN, lun, lun_max - 1);
-    }
-
-    const int id = pb_device.id();
     if (controller_factory.GetDeviceForIdAndLun(id, lun)) {
         return context.ReturnLocalizedError(ERROR_DUPLICATE_ID, id, lun);
     }

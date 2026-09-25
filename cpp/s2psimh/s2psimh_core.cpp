@@ -9,6 +9,7 @@
 #include "s2psimh_core.h"
 #include <cstring>
 #include <filesystem>
+#include <utility>
 #include <getopt.h>
 #include <unistd.h>
 #include "shared/s2p_util.h"
@@ -309,10 +310,8 @@ int S2pSimh::Add()
                     return EXIT_FAILURE;
                 }
 
-                copy(bytes.begin(), bytes.end(), back_inserter(input_data));
+                ranges::copy(bytes, back_inserter(input_data));
             }
-
-            filesize = input_data.size();
         }
 
         if (data_file.bad()) {
@@ -369,10 +368,10 @@ int S2pSimh::Add()
 void S2pSimh::PrintClass(const SimhMetaData &meta) const
 {
     cout << "Offset " << old_position << hex << "/$" << old_position << ": Class " << uppercase
-        << static_cast<int>(meta.cls) << nouppercase << dec;
+        << to_underlying(meta.cls) << nouppercase << dec;
 }
 
-void S2pSimh::PrintValue(const SimhMetaData &meta)
+void S2pSimh::PrintValue(const SimhMetaData &meta) const
 {
     cout << " " << meta.value << " ($" << hex << meta.value << ")\n" << dec;
 }
@@ -421,7 +420,7 @@ bool S2pSimh::PrintRecord(const string &identifier, const SimhMetaData &meta)
     return true;
 }
 
-bool S2pSimh::PrintReservedMarker(const simh_util::SimhMetaData &meta)
+bool S2pSimh::PrintReservedMarker(const SimhMetaData &meta) const
 {
     cout << ", reserved marker";
 
@@ -454,7 +453,7 @@ bool S2pSimh::ReadRecord(span<uint8_t> buf)
     return simh_file.good();
 }
 
-vector<SimhMetaData> S2pSimh::ParseObject(const string &s)
+vector<SimhMetaData> S2pSimh::ParseObject(const string &s) const
 {
     vector<SimhMetaData> objects;
 

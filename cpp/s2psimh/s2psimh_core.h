@@ -33,13 +33,13 @@ private:
     int Analyze();
 
     void PrintClass(const simh_util::SimhMetaData&) const;
-    void PrintValue(const simh_util::SimhMetaData&);
+    void PrintValue(const simh_util::SimhMetaData&) const;
     bool PrintRecord(const string&, const simh_util::SimhMetaData&);
-    bool PrintReservedMarker(const simh_util::SimhMetaData&);
+    bool PrintReservedMarker(const simh_util::SimhMetaData&) const;
 
     bool ReadRecord(span<uint8_t>);
 
-    vector<simh_util::SimhMetaData> ParseObject(const string&);
+    vector<simh_util::SimhMetaData> ParseObject(const string&) const;
 
     S2pFormatter formatter;
 

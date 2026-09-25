@@ -22,6 +22,8 @@ class CommandMetaData final
 
 public:
 
+    // For commands without an explicit allocation length field, such as READ CAPACITY(10),
+    // the implicit length is encoded as a negative length offset
     using CdbMetaData = struct {
         int allocation_length_offset;
         int allocation_length_size;

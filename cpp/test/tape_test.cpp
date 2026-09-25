@@ -17,13 +17,13 @@ static void CheckPosition(const AbstractController &controller, shared_ptr<Prima
     fill_n(controller.GetBuffer().begin(), 12, 0xff);
     Dispatch(tape, READ_POSITION);
 
-    ASSERT_TRUE(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
+    EXPECT_TRUE(position == GetInt32(controller.GetBuffer(), 4) && position == GetInt32(controller.GetBuffer(), 8));
 }
 
 static void CheckPositions(shared_ptr<PrimaryDevice> tape, uint32_t position, uint32_t object_location)
 {
     auto *c = dynamic_cast<MockAbstractController*>(tape->GetController());
-    ASSERT_NE(nullptr, c);
+    EXPECT_NE(nullptr, c);
     c->ResetCdb();
     c->SetCdbByte(1, 0x01);
     CheckPosition(*c, tape, position);
@@ -374,7 +374,7 @@ TEST(TapeTest, Read16)
 {
     auto [controller, tape] = CreateTape();
 
-    Dispatch(tape, READ_6, NOT_READY, MEDIUM_NOT_PRESENT);
+    Dispatch(tape, READ_16, NOT_READY, MEDIUM_NOT_PRESENT);
 
     const string &filename = CreateImageFile(*tape);
 
@@ -901,7 +901,7 @@ TEST(TapeTest, Locate10_simh)
     controller->SetCdbByte(1, 0x02);
     Dispatch(tape, LOCATE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 
-fstream file(filename);
+    fstream file(filename);
     WriteGoodData(file);
     WriteGoodData(file);
     WriteFilemark(file);
@@ -1102,15 +1102,15 @@ TEST(TapeTest, GetBlockSizeForDescriptor)
 {
     MockTape tape;
 
-    EXPECT_EQ(0x00ffffff, tape.GetBlockSizeForDescriptor(true));
-    EXPECT_NE(0x00ffffff, tape.GetBlockSizeForDescriptor(false));
+    EXPECT_EQ(0x00ffffffU, tape.GetBlockSizeForDescriptor(true));
+    EXPECT_NE(0x00ffffffU, tape.GetBlockSizeForDescriptor(false));
 }
 
 TEST(TapeTest, GetBlockCountForDescriptor)
 {
     MockTape tape;
 
-    EXPECT_EQ(0, tape.GetBlockCountForDescriptor());
+    EXPECT_EQ(0U, tape.GetBlockCountForDescriptor());
 }
 
 TEST(TapeTest, SetUpModePages)

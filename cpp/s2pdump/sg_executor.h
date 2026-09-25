@@ -22,6 +22,17 @@ class SgExecutor final : public S2pDumpExecutor
 
 public:
 
+    using S2pDumpExecutor::TestUnitReady;
+    using S2pDumpExecutor::RequestSense;
+    using S2pDumpExecutor::Inquiry;
+    using S2pDumpExecutor::ModeSense6;
+    using S2pDumpExecutor::ReportLuns;
+    using S2pDumpExecutor::ReadWrite;
+    using S2pDumpExecutor::SynchronizeCache;
+    using S2pDumpExecutor::Rewind;
+    using S2pDumpExecutor::WriteFilemark;
+    using S2pDumpExecutor::SpaceBack;
+
     SgExecutor(SgAdapter &adapter, logger &l) : S2pDumpExecutor(l), sg_adapter(adapter)
     {
     }
@@ -45,9 +56,8 @@ public:
     bool Read(span<uint8_t>, span<uint8_t>, int) override;
     bool Write(span<uint8_t>, span<uint8_t>, int) override;
 
-    virtual int GetByteCount() const override
+    int GetByteCount() const override
     {
-        assert(false);
         return 0;
     }
 

@@ -296,8 +296,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             throw ParserException("Missing drive image filename for backup/restore");
         }
 
-        error_code error;
-        if (!restore && !overwrite && exists(filename, error)) {
+        if (error_code error; !restore && !overwrite && exists(filename, error)) {
             throw ParserException("Drive image file '{}' already exists, use -o to overwrite", filename);
         }
 
@@ -333,10 +332,8 @@ int S2pDump::Run(span<char*> args)
             return EXIT_SUCCESS;
         }
 
-        if (device_file.empty()) {
-            if (!Init()) {
-                throw ParserException("Can't initialize bus");
-            }
+        if (device_file.empty() && !Init()) {
+            throw ParserException("Can't initialize bus");
         }
     }
     catch (const ParserException &e) {
@@ -467,7 +464,7 @@ bool S2pDump::DisplayScsiInquiry(span<const uint8_t> buf, bool check_type)
 
     cout << "SCSI Level:           " << GetScsiLevel(buf[2]) << '\n';
 
-    device_info.scsi_level = buf[3] & 0x0f;
+    device_info.scsi_level = static_cast<int>(buf[3]) & 0x0f;
     cout << "Response Data Format: ";
     switch (device_info.scsi_level) {
     case 0:
@@ -631,7 +628,8 @@ string S2pDump::DumpRestoreTape(fstream &file)
 
 string S2pDump::ReadWrite(fstream &file, int sector_offset, uint32_t sector_count, int sector_size, int bytes)
 {
-    auto readWrite = [&]() {
+    auto readWrite =
+        [this, sector_offset, sector_count, sector_size]() {
             int r = 0;
             while (r <= retries) {
                 if (s2pdump_executor->ReadWrite(buffer, sector_offset, sector_count, sector_count * sector_size, restore, sasi)) {
@@ -718,7 +716,7 @@ void S2pDump::RestoreTape(istream &file)
         }
 
         if (meta_data.cls == SimhClass::RESERVERD_MARKER
-            && meta_data.value == static_cast<uint32_t>(SimhMarker::END_OF_MEDIUM)) {
+            && meta_data.value == to_underlying(SimhMarker::END_OF_MEDIUM)) {
             return;
         }
 
@@ -870,8 +868,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     id_and_lun += ".";
 
     cout << id_and_lun << "type=";
-    const auto type = static_cast<int>(device_info.type);
-    if (const auto &t = S2P_DEVICE_TYPES.find(static_cast<byte>(type & 0x1f)); t != S2P_DEVICE_TYPES.end()) {
+    if (const auto &t = S2P_DEVICE_TYPES.find(device_info.type & byte { 0x1f }); t != S2P_DEVICE_TYPES.end()) {
         if (string((*t).second) != "SCHD") {
             cout << (*t).second << "\n";
         }
@@ -903,7 +900,7 @@ void S2pDump::DisplayProperties(int id, int lun) const
     const int length = buf[0] + 1;
     int offset = 4;
     while (offset < length) {
-        const int page_code = buf[offset] & 0x3f;
+        const int page_code = static_cast<int>(buf[offset]) & 0x3f;
         ++offset;
 
         // Mode page 0 has no length field, i.e. its length is the remaining number of bytes

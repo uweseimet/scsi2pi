@@ -7,12 +7,9 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include <fstream>
-#include "test_shared.h"
 #include "shared/s2p_exceptions.h"
 #include "shared/s2p_util.h"
 
-using namespace s2p_test;
 using namespace s2p_util;
 
 TEST(S2pUtilTest, Split)
@@ -196,25 +193,22 @@ TEST(S2pUtilTest, Trim)
 
 TEST(S2pUtilTest, GetLine)
 {
-    const string filename = CreateTempName();
-    TestShared::RememberTempFile(filename);
-    ofstream out(filename);
+    stringstream stream;
 
-    out << "abc\n";
-    out << "123 #comment\n";
-    out << "# comment\n";
-    out << " def \n";
-    out << "\n";
-    out << "xyz\\\n";
-    out << "123\n";
-    out << "exit\n";
-    out << "zzz";
-    out.close();
+    stream << "abc\n";
+    stream << "123 #comment\n";
+    stream << "# comment\n";
+    stream << " def \n";
+    stream << "\n";
+    stream << "xyz\\\n";
+    stream << "123\n";
+    stream << "exit\n";
+    stream << "zzz";
 
-    ifstream in(filename);
+    stream.seekp(0);
 
-    EXPECT_EQ("abc", GetLine("", in));
-    EXPECT_EQ("123", GetLine("", in));
-    EXPECT_EQ("def", GetLine("", in));
-    EXPECT_EQ("xyz123", GetLine("", in));
+    EXPECT_EQ("abc", GetLine("", stream));
+    EXPECT_EQ("123", GetLine("", stream));
+    EXPECT_EQ("def", GetLine("", stream));
+    EXPECT_EQ("xyz123", GetLine("", stream));
 }

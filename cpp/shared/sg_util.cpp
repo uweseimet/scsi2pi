@@ -49,7 +49,6 @@ int sg_util::GetAllocationLength(span<const uint8_t> cdb)
 {
     const auto &meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(cdb[0]));
 
-    // For commands without allocation length field the length is coded as a negative offset
     if (meta_data.allocation_length_offset < 0) {
         return -meta_data.allocation_length_offset;
     }

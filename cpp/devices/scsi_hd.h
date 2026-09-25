@@ -15,7 +15,7 @@ class ScsiHd : public Disk
 
 public:
 
-    ScsiHd(int, bool, bool, bool, const set<uint32_t>& = { 512, 1024, 2048, 4096 });
+    ScsiHd(int, bool, bool, bool, const set<uint32_t>& = set<uint32_t> { 512, 1024, 2048, 4096 });
 
     void Open() override;
 

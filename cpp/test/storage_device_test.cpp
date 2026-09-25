@@ -351,6 +351,13 @@ TEST(StorageDeviceTest, ChangeBlockSize)
     EXPECT_EQ(512U, device.GetBlockSize());
 }
 
+TEST(StorageDeviceTest, ModeSelect)
+{
+    MockStorageDevice device;
+
+    EXPECT_NO_THROW(device.ModeSelect( { }, { }, 0));
+}
+
 TEST(StorageDeviceTest, EvaluateBlockDescriptors)
 {
     MockStorageDevice device;
