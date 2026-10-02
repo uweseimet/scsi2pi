@@ -71,13 +71,13 @@ string Pi5Bus::SetUp(bool target)
     PinSetSignal(pin_tad, false);
     PinSetSignal(pin_ind, false);
     PinSetSignal(pin_dtd, false);
-    PinConfig(PIN_ACT, true);
-    PinConfig(pin_tad, true);
-    PinConfig(pin_ind, true);
-    PinConfig(pin_dtd, true);
+    SetSignal(PIN_ACT, true);
+    SetSignal(pin_tad, true);
+    SetSignal(pin_ind, true);
+    SetSignal(pin_dtd, true);
 
     PinSetSignal(PIN_ENB, false);
-    PinConfig(PIN_ENB, true);
+    SetSignal(PIN_ENB, true);
 
     // Initialize SEL signal interrupt, the RP1 is the first GPIO chip
     const int chip_fd = open("/dev/gpiochip0", 0);
@@ -155,10 +155,10 @@ void Pi5Bus::CleanUp()
     PinSetSignal(pin_tad, false);
     PinSetSignal(pin_ind, false);
     PinSetSignal(pin_dtd, false);
-    PinConfig(PIN_ACT, false);
-    PinConfig(pin_tad, false);
-    PinConfig(pin_ind, false);
-    PinConfig(pin_dtd, false);
+    SetSignal(PIN_ACT, false);
+    SetSignal(pin_tad, false);
+    SetSignal(pin_ind, false);
+    SetSignal(pin_dtd, false);
 
     InitializeSignals();
 
@@ -273,20 +273,15 @@ void Pi5Bus::InitializeSignals() const
 {
     for (const int pin : SIGNAL_TABLE) {
         PinSetSignal(pin, false);
-        PinConfig(pin, false);
+        SetSignal(pin, false);
         gpio[PADS_OFFSET + 1 + pin] = gpio[PADS_OFFSET + 1 + pin] & ~PAD_PULL_MASK;
     }
 }
 
 void Pi5Bus::SetSignal(int pin, bool state) const
 {
-    SetOutputEnable(1U << pin, state);
-}
-
-void Pi5Bus::PinConfig(int pin, bool output) const
-{
     if (pin >= 0) {
-        SetOutputEnable(1U << pin, output);
+        SetOutputEnable(1U << pin, state);
     }
 }
 

@@ -31,7 +31,6 @@ public:
     int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY) override;
 
     // RP1 register layout (see the RP1 peripherals datasheet), offsets in 32-bit words
-    static constexpr int IO_BANK_OFFSET = 0;
     static constexpr int RIO_OFFSET = 0x10000 / 4;
     static constexpr int PADS_OFFSET = 0x20000 / 4;
     static constexpr int RIO_OUT = 0;
@@ -48,7 +47,7 @@ public:
 
     static constexpr int GetControlRegister(int pin)
     {
-        return IO_BANK_OFFSET + pin * 2 + 1;
+        return pin * 2 + 1;
     }
 
 private:
@@ -78,8 +77,6 @@ private:
     uint8_t WaitForSelection() override;
 
     void InitializeSignals() const;
-
-    void PinConfig(int, bool) const;
 
     void PinSetSignal(int, bool) const;
 
