@@ -114,12 +114,13 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
         }
 #endif
 
-        SetDAT(buf[bytes_sent]);
-        WaitNanoSeconds(false);
-
+        // Keep the previous byte on the bus until the initiator has released ACK
         if (!WaitHandShake(PIN_ACK_MASK, false)) {
             return FinishTransfer(bytes_sent);
         }
+
+        SetDAT(buf[bytes_sent]);
+        WaitNanoSeconds(false);
 
         SetREQ(true);
 
